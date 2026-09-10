@@ -114,6 +114,7 @@
           }
         ],
         "repaired": false,
+        "repairSource": "None",
         "parts": [
           {
             "partNumber": "47201-0K090",
@@ -123,7 +124,17 @@
             "partNumber": "04465-0K240",
             "isAvailable": false
           }
-        ]
+        ],
+        "trace": {
+          "campaignLaborCodes": [
+            "LAB-BRK-01"
+          ],
+          "interchangeableLaborCodes": [],
+          "warrantyClaims": [],
+          "serviceHistoryLaborLinesExamined": 1,
+          "serviceHistoryLaborLines": [],
+          "repairSource": "None"
+        }
       }
     ],
     "vehicleSpecification": {
@@ -601,11 +612,38 @@
           }
         ],
         "repaired": true,
+        "repairDate": "2024-08-10",
+        "repairSource": "SSCRecord",
         "parts": [
           {
             "partNumber": "89661-0K720"
           }
-        ]
+        ],
+        "trace": {
+          "campaignLaborCodes": [
+            "LAB-ECU-01"
+          ],
+          "interchangeableLaborCodes": [],
+          "recordRepairDate": "2024-08-10",
+          "warrantyClaims": [
+            {
+              "claimStatus": "Accepted",
+              "statusQualifies": true,
+              "campaignCodeInComment": false,
+              "matchedLaborCodes": [
+                {
+                  "laborCode": "LAB-ECU-01",
+                  "campaignLaborCode": "LAB-ECU-01"
+                }
+              ],
+              "matches": true,
+              "selected": true
+            }
+          ],
+          "serviceHistoryLaborLinesExamined": 2,
+          "serviceHistoryLaborLines": [],
+          "repairSource": "SSCRecord"
+        }
       }
     ],
     "vehicleSpecification": {

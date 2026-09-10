@@ -31,7 +31,8 @@
         <h1 class="mt-1 text-2xl font-bold tracking-tight">Vehicle lookup</h1>
         <p class="lede text-base-content/70 mt-2">
           The shell that holds all eight vehicle components and shows one at a time. The VIN field and the tab strip below belong to the host — a page embedding this component has
-          to build them, and they are what drive <code>fetchVin()</code> and <code>active-element</code>.
+          to build them, and they are what drive <code>fetchVin()</code> and <code>active-element</code>. This page sets <code>ssc-query-string</code>, so a search from any tab but
+          SSC leaves the SSC tab saying the campaign check was not run, with a button to run it — the way a host that only logs SSC lookups is wired.
         </p>
       </header>
 
@@ -81,8 +82,8 @@
                 { value: 'vehicle-specification', label: 'Specification' },
                 { value: 'vehicle-sale-information', label: 'Sale information' },
                 { value: 'vehicle-accessories', label: 'Accessories' },
-                { value: 'vehicle-warranty-details', label: 'Warranty & SSC' },
-                { value: 'vehicle-warranty-timeline', label: 'Warranty timeline' },
+                { value: 'vehicle-warranty-timeline', label: 'Warranty' },
+                { value: 'vehicle-ssc', label: 'SSC' },
                 { value: 'vehicle-service-history', label: 'Service history' },
                 { value: 'vehicle-paint-thickness', label: 'Paint thickness' },
                 { value: 'vehicle-claimable-items', label: 'Claimable items' },
@@ -111,8 +112,9 @@
               language="en"
               query-string=""
               active-element="vehicle-specification"
+              ssc-query-string="logCampaignCheck=true"
               base-url="http://localhost:7204/api/secure-vehicle-lookup/"
-              children-props='{"vehicle-claimable-items":{"showTrace":true},"vehicle-warranty-details":{"showSsc":true,"recaptchaKey":"6LetFoYqAAAAAE0fg-070Qtm3z-DG24sMJ8wzY1f"},"vehicle-paint-thickness":{"showCertificateButton":true},"dynamic-claim":{"claimEndPoint":"http://localhost:5015/api/vehicle/service-claim","claim-via-barcode-scanner":"false"}}'
+              children-props='{"vehicle-claimable-items":{"showTrace":true},"vehicle-ssc":{"showTrace":true,"recaptchaKey":"6LetFoYqAAAAAE0fg-070Qtm3z-DG24sMJ8wzY1f"},"vehicle-paint-thickness":{"showCertificateButton":true},"dynamic-claim":{"claimEndPoint":"http://localhost:5015/api/vehicle/service-claim","claim-via-barcode-scanner":"false"}}'
             ></vehicle-lookup>
           </div>
         </div>

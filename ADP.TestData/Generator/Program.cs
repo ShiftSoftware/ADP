@@ -186,7 +186,8 @@ static async Task<VehicleLookupDTO> GenerateVehicleLookup(
         VehicleSpecification = await new VehicleSpecificationEvaluator(storageService).Evaluate(vehicle),
         ServiceHistory = await new VehicleServiceHistoryEvaluator(aggregate, options, serviceProvider)
             .Evaluate("en", ShiftSoftware.ADP.Lookup.Services.Enums.ConsistencyLevels.Strong),
-        SSC = new VehicleSSCEvaluator(aggregate).Evaluate(),
+        // Traced so the generated mocks carry a repair trace for the web components' SSC demo pages.
+        SSC = new VehicleSSCEvaluator(aggregate, options).Evaluate(includeTrace: true),
         NextServiceDate = aggregate.LaborLines?.Max(x => x.NextServiceDate),
         Accessories = await new VehicleAccessoriesEvaluator(aggregate, options, serviceProvider)
             .Evaluate("en"),

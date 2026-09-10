@@ -17,7 +17,17 @@ This is done through a multi-source repair status check:
 - **Warranty Claims**: The system also checks warranty claims (if available) to confirm completion. This is determined by validating the Labor Operation Code and the presence of the Campaign Code in the warranty notes.
 - **Labor Lines**: As a final step, the system reviews labor lines retrieved from the DMS (if available) for evidence that the recall-related work has been performed.
 
+The sources are consulted in that order, and the first one that holds decides both the status and the repair date; the result names which source decided (`RepairSource`).
+
 By combining these sources, the system ensures the most accurate status for each recall. This helps service teams and customers know not just whether a vehicle is affected, but also whether the recall has already been addressed.
+
+### Interchangeable Labor Operation Codes
+The recall feed lists one labor operation code per campaign, but a dealer system may book the same repair under a sibling code — a revision suffix, a superseded number. Left alone, such a repair goes unrecognised and the recall shows as still open on a vehicle that was fixed.
+
+A deployment declares which codes are used interchangeably in `LookupOptions.SSCInterchangeableLaborCodeGroups`: each group is a set of equivalent codes, and a warranty claim or labor line carrying any member of a group counts as the campaign's repair whichever member the campaign itself lists. Groups that share a code are merged, and codes are compared trimmed and case-insensitively. The groups are deliberately not scoped to a campaign: in practice a code belongs to exactly one campaign family, and the campaign codes themselves are the least reliable key in hand-maintained data. The list is deployment-specific data and lives in the host's configuration, not in the platform.
+
+### Explaining a Repair Status
+When a request sets `VehicleLookupRequestOptions.TraceSSCEvaluation`, every recall in the response carries a trace of the evidence behind its status: the campaign's labor codes and the interchangeable codes accepted for them, every warranty claim on the vehicle with how it was judged, and the service-history labor lines that matched. The `<vehicle-ssc>` web component fetches this with `?trace=ssc` and shows it per campaign. The trace lists claim and invoice details, so hosts turn the option on only for callers permitted to see them.
 
 
 ## Recalls on **Unauthorized** Vehicles

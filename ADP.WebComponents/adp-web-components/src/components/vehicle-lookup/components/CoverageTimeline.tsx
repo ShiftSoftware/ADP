@@ -4,6 +4,8 @@ import { InferType } from 'yup';
 import warrantyTimelineSchema from '~locales/vehicleLookup/warrantyTimeline/type';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
+import { BADGE_GLYPHS } from './glyphs';
+
 type TimelineLocale = InferType<typeof warrantyTimelineSchema>;
 
 type Tone = {
@@ -256,15 +258,6 @@ const positionTodayPill = (head: HTMLElement | undefined, todayPosition: number)
   else apply();
 };
 
-// Inline rather than an ~assets import: the glyph takes its colour from the badge
-// state via currentColor, which an <img src> cannot do.
-const BADGE_GLYPHS = {
-  positive:
-    'M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z',
-  negative:
-    'M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM175 175c9.4-9.4 24.6-9.4 33.9 0l47 47 47-47c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6 0-33.9z',
-};
-
 /**
  * Why the warranty has not started. Possession is not a sale: while the distributor, an intermediary
  * or an un-invoiced broker still holds the vehicle, coverage deliberately has not begun and the
@@ -346,8 +339,10 @@ export default function CoverageTimeline({ vehicleInformation, locale, isAuthori
   const activatingBroker = vehicleInformation?.warranty?.activatedByBrokerName || '';
 
   // "Activated by" is only truthful once something started the coverage. Before that the company is
-  // just the dealer holding it, and when a broker started it both parties matter.
-  const dealerLabel = activatingBroker || notice ? locale.dealer : locale.activatedBy;
+  // just the dealer holding it, and when a broker started it both parties matter. A vehicle with no
+  // coverage at all — an older response without `startState`, or one the distributor has no records
+  // for — has nobody to have activated anything, so it gets the plain label too.
+  const dealerLabel = activatingBroker || notice || !hasCoverage ? locale.dealer : locale.activatedBy;
 
   const hasActiveWarranty = coverages.some(coverage => coverageStatus(coverage, snapshot) === 'active');
 

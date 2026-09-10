@@ -6,13 +6,16 @@
       "wireContract": "adp.vehicle-lookup.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["activeElement", "baseUrl", "childrenProps", "disableVinValidation", "hiddenTabs", "language", "queryString", "separateSsc"],
+        "properties": ["activeElement", "baseUrl", "childrenProps", "disableVinValidation", "hiddenTabs", "language", "queryString", "sscQueryString"],
         "methods": ["fetchVin"],
         "owns": ["vehicle lookup request", "response distribution to child components", "active child rendering"]
       },
       "runtimeAssets": {
         "locales": "dist/locales",
-        "notes": ["The host owns tab navigation and selects the activeElement."]
+        "notes": [
+          "The host owns tab navigation and selects the activeElement.",
+          "With sscQueryString set, only a search made from the SSC tab counts as a campaign check; a search from another tab leaves the SSC tab saying the check was not run, with a control to run it. It reaches vehicle-ssc as lookupQueryString, so it never joins a trace request."
+        ]
       }
     },
     "vehicle-specification": {
@@ -80,17 +83,23 @@
         "notes": []
       }
     },
-    "vehicle-warranty-details": {
-      "wireContract": "adp.vehicle-warranty-details.v1",
+    "vehicle-ssc": {
+      "wireContract": "adp.vehicle-ssc.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString", "showSsc", "showWarranty"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString", "lookupQueryString", "showTrace"],
         "methods": ["fetchVin"],
-        "owns": ["lookup request", "response handling", "loading and error state", "warranty and campaign rendering"]
+        "owns": ["lookup request", "response handling", "loading and error state", "campaign rendering", "repair-status trace fetch"]
       },
       "runtimeAssets": {
         "locales": "dist/locales",
-        "notes": ["Unauthorized campaign lookup and reCAPTCHA configuration are host policy and remain optional raw API properties."]
+        "notes": [
+          "Replaces the campaign half of the retired vehicle-warranty-details; warranty coverage is vehicle-warranty-timeline.",
+          "Unauthorized campaign lookup and reCAPTCHA configuration are host policy and remain optional raw API properties.",
+          "showTrace exposes claim and invoice details per campaign; the host gates it on its own permission check and its endpoint must honour ?trace=ssc.",
+          "A lookup-logging flag belongs in lookupQueryString, which joins the lookup request only: the trace request re-reads a lookup already logged and never carries it. The host endpoint must refuse to log traced requests as well (the ADP lookup service does).",
+          "Opening a campaign's evidence brings its row to the top of the page and follows the page while the drawer opens; a host whose fixed header covers the top of the page sets scroll-padding-top on its scroll container."
+        ]
       }
     },
     "vehicle-warranty-timeline": {
@@ -103,10 +112,7 @@
       },
       "runtimeAssets": {
         "locales": "dist/locales",
-        "notes": [
-          "Warranty coverage only. Campaign rendering, reCAPTCHA and unauthorized campaign lookup are not part of this component; hosts that need them keep vehicle-warranty-details.",
-          "Adopted by pointing a host tab at this tag instead of vehicle-warranty-details. The two can coexist in one deployment."
-        ]
+        "notes": ["Warranty coverage only. Campaign rendering, reCAPTCHA and unauthorized campaign lookup belong to vehicle-ssc."]
       }
     },
     "vehicle-claimable-items": {

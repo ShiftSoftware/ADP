@@ -1,0 +1,39 @@
+/*
+ * Design tokens shared by the vehicle-lookup panels written in the newer design language
+ * (warranty timeline, SSC campaigns). Every panel is its own shadow root, so the tokens are
+ * declared on :host and each component @imports this file rather than one panel reading
+ * another's variables.
+ *
+ * Colour roles, not colour names: a panel says --green-tint for "a positive verdict's field"
+ * and never a hex, so the palette can move in one place.
+ */
+:host {
+  --paper: #ffffff;
+  --paper-soft: #f7f9fa;
+  --ink: #1a2530;
+  --muted: #5f6c78;
+  /* Dates sit a shade darker than --muted. At 13px they are read, not glanced at, and the
+     muted grey was thin against the rail's soft paper. */
+  --date-ink: #46535e;
+  --line: #d5dce2;
+  --line-soft: #e8ecef;
+  --blue: #3071a9;
+  --blue-dark: #275e8f;
+  --blue-tint: #e8f1f8;
+  --green: #2c8a58;
+  --green-dark: #216b44;
+  --green-tint: #e8f4ed;
+  --red: #b42318;
+  --red-dark: #9b2c2c;
+  --red-tint: #fff1f0;
+  --amber: #b7791f;
+  --amber-dark: #8a5a12;
+  --amber-tint: #fff7e6;
+  --violet: #755aa5;
+  --violet-dark: #5f4887;
+  --violet-tint: #f1ecf8;
+  --shadow: 0 18px 45px rgba(27, 45, 61, 0.1), 0 2px 7px rgba(27, 45, 61, 0.06);
+  /* One duration for everything that appears, disappears or resizes, so a card settles as a
+     single movement instead of a sequence of unrelated ones. */
+  --settle: 320ms;
+}

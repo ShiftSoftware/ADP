@@ -1,0 +1,121 @@
+/*
+ * Motion primitives shared by the vehicle-lookup panels written in the newer design language.
+ *
+ * THE RULE — nothing on screen appears from nothing or vanishes into nothing. An element that
+ * exists in one state and not in the next gets there by a movement the eye can follow: it fades,
+ * its height slides, or it cross-fades with what replaces it in the same place — and whatever sits
+ * below it moves with it. In JSX that means `{condition && <div />}` is only ever used for content
+ * that mounts or unmounts *inside* one of these primitives while that primitive hides it; a bare
+ * mount or unmount is a pop. The write-up, with the review method and the state checklist, is
+ * .shift/repos/adp/web-components/motion.md — read it before adding a state to a panel.
+ *
+ *   .collapsible / .collapsible-body   a region that slides open and shut (grid-template-rows
+ *                                      0fr ↔ 1fr). Keep the outgoing content mounted until it has
+ *                                      shut; swap content only while it is shut.
+ *   .layer-stack / .layer              layers sharing one cell; the one with data-active="true" is
+ *                                      shown, the others fade out under it. For a strip whose
+ *                                      meaning changes (a skeleton, a notice, a heading row).
+ *   .sheen                             the in-progress treatment: a neutral shape with a band of
+ *                                      light sweeping left to right. Applied to the shapes that stay
+ *                                      on screen through a load, in place of their content.
+ *
+ * Every duration is --settle (lookup-tokens.css), so a card settles as one movement rather than a
+ * sequence of unrelated ones.
+ */
+
+.collapsible {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows var(--settle) ease,
+    opacity calc(var(--settle) - 60ms) ease,
+    visibility 0s linear var(--settle);
+}
+
+.collapsible[data-open='true'] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows var(--settle) ease,
+    opacity calc(var(--settle) - 60ms) ease,
+    visibility 0s;
+}
+
+/* overflow:hidden clips the content while shut and zeroes the automatic minimum size, which is
+   what lets the 0fr track actually reach zero instead of stopping at the content's height. */
+.collapsible-body {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.layer-stack {
+  display: grid;
+}
+
+/* Every layer takes the whole stack — all columns, one row — so the stack is as tall as its
+   tallest layer whichever one is showing, and nothing below it moves when they swap. Visibility
+   follows opacity with a delay so a hidden layer cannot be tabbed to or clicked through. */
+.layer-stack > .layer {
+  grid-row: 1;
+  grid-column: 1 / -1;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--settle) ease,
+    visibility 0s linear var(--settle);
+}
+
+.layer-stack > .layer[data-active='true'] {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--settle) ease,
+    visibility 0s;
+}
+
+/* A single band of light travelling left to right on repeat, over the flat grey a skeleton is
+   made of. Starts and ends clear of the box so the band enters and leaves rather than appearing
+   mid-sweep. A shape that carries verdict colours of its own (a pill) is coloured neutral by its
+   own stylesheet before the sheen is applied, and after its verdict rules in source order — the
+   sheen must not be an overlay on such a shape: two nested antialiased curves never land on the
+   same subpixels, and the colour underneath fringes the rim. */
+.sheen {
+  color: transparent;
+  background-color: #dcdfe4;
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 255, 255, 0) 100%);
+  background-repeat: no-repeat;
+  background-size: 45% 100%;
+  animation: lookup-sheen 1.3s linear infinite;
+}
+
+@keyframes lookup-sheen {
+  from {
+    background-position: -100% 0;
+  }
+
+  to {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes lookup-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Reduced motion keeps every state change but makes it immediate. The sheen repeats forever, so
+   it has to be stopped here and not merely shortened. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

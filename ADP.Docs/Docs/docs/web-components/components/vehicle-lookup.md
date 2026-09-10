@@ -14,7 +14,7 @@ other children, so switching tabs is instant and does not re-fetch.
 ## Live Demo
 
 <div markdown="0">
-  <script type="module" src="https://cdn.jsdelivr.net/npm/adp-web-components@0.1.97/dist/shift-components/shift-components.esm.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/adp-web-components@0.4.0/dist/shift-components/shift-components.esm.js"></script>
 
   <style>
     .vl-demo-tabs {
@@ -89,7 +89,8 @@ other children, so switching tabs is instant and does not re-fetch.
     <button class="vl-demo-tab active" data-tab="vehicle-specification" disabled>Specification</button>
     <button class="vl-demo-tab" data-tab="vehicle-sale-information" disabled>Sale Information</button>
     <button class="vl-demo-tab" data-tab="vehicle-accessories" disabled>Accessories</button>
-    <button class="vl-demo-tab" data-tab="vehicle-warranty-details" disabled>Warranty &amp; SSC</button>
+    <button class="vl-demo-tab" data-tab="vehicle-warranty-timeline" disabled>Warranty</button>
+    <button class="vl-demo-tab" data-tab="vehicle-ssc" disabled>SSC</button>
     <button class="vl-demo-tab" data-tab="vehicle-service-history" disabled>Service History</button>
     <button class="vl-demo-tab" data-tab="vehicle-paint-thickness" disabled>Paint Thickness</button>
     <button class="vl-demo-tab" data-tab="vehicle-claimable-items" disabled>Claimable Items</button>
@@ -220,7 +221,8 @@ updates `activeElement` on click. A single VIN search populates all children.
   <button onclick="lookup.activeElement = 'vehicle-specification'">Specification</button>
   <button onclick="lookup.activeElement = 'vehicle-sale-information'">Sale Information</button>
   <button onclick="lookup.activeElement = 'vehicle-accessories'">Accessories</button>
-  <button onclick="lookup.activeElement = 'vehicle-warranty-details'">Warranty &amp; SSC</button>
+  <button onclick="lookup.activeElement = 'vehicle-warranty-timeline'">Warranty</button>
+  <button onclick="lookup.activeElement = 'vehicle-ssc'">SSC</button>
   <button onclick="lookup.activeElement = 'vehicle-service-history'">Service History</button>
   <button onclick="lookup.activeElement = 'vehicle-paint-thickness'">Paint Thickness</button>
   <button onclick="lookup.activeElement = 'vehicle-claimable-items'">Claimable Items</button>
@@ -245,13 +247,14 @@ updates `activeElement` on click. A single VIN search populates all children.
 
 | Property               | Attribute                | Type                      | Default | Description                                                                                           |
 |------------------------|--------------------------|---------------------------|---------|-------------------------------------------------------------------------------------------------------|
-| `activeElement`        | `active-element`         | `string`                  | `''`    | Tag of the child to render. One of `vehicle-specification`, `vehicle-sale-information`, `vehicle-accessories`, `vehicle-warranty-details`, `vehicle-service-history`, `vehicle-paint-thickness`, `vehicle-claimable-items`. |
+| `activeElement`        | `active-element`         | `string`                  | `''`    | Tag of the child to render. One of `vehicle-specification`, `vehicle-sale-information`, `vehicle-accessories`, `vehicle-warranty-timeline`, `vehicle-ssc`, `vehicle-service-history`, `vehicle-paint-thickness`, `vehicle-claimable-items`. |
 | `baseUrl`              | `base-url`               | `string`                  | `''`    | Base URL for the vehicle lookup API. Passed down to the active child.                                  |
 | `isDev`                | `is-dev`                 | `boolean`                 | `false` | Enables development mode. Loads mock data from `mockUrl` (or the published CDN mocks) instead of hitting the API. |
 | `mockUrl`              | `mock-url`               | `string`                  | `''`    | Custom URL for the mock data file. Only used when `isDev` is `true`. If empty, the wrapper loads the mock file published with the NPM package. |
 | `language`             | `language`               | `string`                  | `'en'`  | Language code for localization (`en`, `ku`, `ar`, `ru`).                                               |
 | `disableVinValidation` | `disable-vin-validation` | `boolean`                 | `false` | Disables VIN format validation on the active child.                                                    |
 | `queryString`          | `query-string`           | `string`                  | `''`    | Extra query string appended to API requests.                                                           |
+| `sscQueryString`       | `ssc-query-string`       | `string`                  | `''`    | Appended to the SSC tab's own request only — e.g. a logging flag — so that only a search made from the SSC tab counts as a campaign check. A search from any other tab leaves the SSC tab in its "not checked yet" state, naming the VIN and offering to run the check itself; that run hydrates the other tabs like any search. Reaches `<vehicle-ssc>` as `lookup-query-string`, so it never joins the trace request. |
 | `childrenProps`        | `children-props`         | `string` &#124; `object`  | &mdash; | JSON string (or object) of per-child prop overrides. See below.                                        |
 | `errorStateListener`   | &mdash;                  | `(error: string) => void` | &mdash; | Callback invoked whenever the wrapper's error message changes.                                         |
 | `loadingStateChanged`  | &mdash;                  | `(isLoading: boolean) => void` | &mdash; | Callback invoked whenever any child enters / leaves the loading state.                             |
@@ -264,7 +267,7 @@ updates `activeElement` on click. A single VIN search populates all children.
 | Method                                   | Description                                                                                      |
 |------------------------------------------|--------------------------------------------------------------------------------------------------|
 | `fetchVin(vin, headers?)`                | Fetches data for the given VIN via the active child. Other children are hydrated from the response. |
-| `handleLoadData(response, activeChild?)` | Distributes a pre-loaded `VehicleLookupDTO` to the children without making an HTTP call.         |
+| `handleLoadData(response, activeChild?)` | Distributes a pre-loaded `VehicleLookupDTO` to the children without making an HTTP call. With `sscQueryString` set and `activeChild` another tab, the SSC child is told the lookup skipped it (`skipLookup`) instead. |
 | `setBlazorRef(ref)`                      | Registers a `DotNetObjectReference` so Blazor hosts can receive callbacks by name.               |
 
 ---
@@ -280,8 +283,8 @@ Use `childrenProps` to forward them:
   active-element="vehicle-specification"
   base-url="https://your-api.com/"
   children-props='{
-    "vehicle-warranty-details": {
-      "showSsc": true,
+    "vehicle-ssc": {
+      "showTrace": false,
       "recaptchaKey": "YOUR_RECAPTCHA_SITE_KEY"
     },
     "vehicle-claimable-items": {

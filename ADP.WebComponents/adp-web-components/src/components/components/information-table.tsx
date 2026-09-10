@@ -1,7 +1,11 @@
 import { JSXBase } from '@stencil/core/internal';
 import { Component, h, Prop, State, Watch, Element } from '@stencil/core';
 import cn from '~lib/cn';
+import { revealBelow } from '~lib/reveal-below';
 import { ArrowIcon } from '~assets/arrow-icon';
+
+/** How long an opening sub-row takes to settle: its flexible-container's 50ms debounce and 500ms height transition. */
+const SUB_ROW_SETTLE_MS = 600;
 
 export type InformationTableColumn = {
   key: string;
@@ -51,8 +55,14 @@ export class InformationTable {
 
   private isExpanded = (rowIndex: number) => this.expandedRowIndexes.includes(rowIndex);
 
+  /** Lets go of the row the page is following: the one whose sub-row last opened. */
+  private stopFollowingRow?: () => void;
+
   private toggleExpanded = (rowIndex: number) => {
     const currentlyExpanded = this.isExpanded(rowIndex);
+
+    this.stopFollowingRow?.();
+    this.stopFollowingRow = undefined;
 
     if (currentlyExpanded) {
       this.expandedRowIndexes = this.expandedRowIndexes.filter(i => i !== rowIndex);
@@ -62,13 +72,12 @@ export class InformationTable {
     this.expandedRowIndexes = this.allowMultipleExpanded ? [...this.expandedRowIndexes, rowIndex] : [rowIndex];
 
     if (this.scrollExpandedIntoView) {
-      requestAnimationFrame(() => {
-        const rows = this.el.querySelectorAll('.info-table-data-tr, .information-table-row');
-        const row = rows[rowIndex] as HTMLElement | undefined;
-        if (row && typeof row.scrollIntoView === 'function') {
-          row.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      });
+      // Brings the row to the top of the page and holds it there while its sub-row slides open
+      // beneath it — the sub-row's container starts growing after its own debounce, and the page
+      // keeps following until it has settled, so the reader sees what they opened.
+      const rows = this.el.querySelectorAll('.info-table-data-tr, .information-table-row');
+      const row = rows[rowIndex];
+      if (row) this.stopFollowingRow = revealBelow(row, SUB_ROW_SETTLE_MS);
     }
   };
 
@@ -78,8 +87,15 @@ export class InformationTable {
 
     if (staticTableRowHeight) this.tableRowHeight = staticTableRowHeight;
     if (this.isLoading) {
+      this.stopFollowingRow?.();
+      this.stopFollowingRow = undefined;
       this.expandedRowIndexes = [];
     } else this.tableRowHeight = 'auto';
+  }
+
+  disconnectedCallback() {
+    this.stopFollowingRow?.();
+    this.stopFollowingRow = undefined;
   }
 
   private renderCellContent = (value: any) => {

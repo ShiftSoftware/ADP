@@ -167,23 +167,23 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 11
   await testRunner.AndAsync("company 10 is named \"Sample Dealer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table536 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table556 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "InvoiceNumber"});
-                table536.AddRow(new string[] {
+                table556.AddRow(new string[] {
                             "JTMAB7BJ0T4224184",
                             "2026-05-20",
                             "5",
                             "30018218"});
-                table536.AddRow(new string[] {
+                table556.AddRow(new string[] {
                             "JTMAB7BJ0T4224184",
                             "2026-05-25",
                             "10",
                             "11000191"});
 #line 12
-  await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table536, "And ");
+  await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table556, "And ");
 #line hidden
 #line 16
   await testRunner.WhenAsync("evaluating sale information for \"JTMAB7BJ0T4224184\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -246,33 +246,33 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 29
   await testRunner.AndAsync("company 10 is named \"Sample Dealer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table537 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table557 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "InvoiceNumber"});
-                table537.AddRow(new string[] {
+                table557.AddRow(new string[] {
                             "JTMAB7BJ0T4224184",
                             "2026-05-10",
                             "5",
                             "30018218"});
-                table537.AddRow(new string[] {
+                table557.AddRow(new string[] {
                             "JTMAB7BJ0T4224184",
                             "2026-05-15",
                             "8",
                             "80000002"});
-                table537.AddRow(new string[] {
+                table557.AddRow(new string[] {
                             "JTMAB7BJ0T4224184",
                             "2026-05-12",
                             "7",
                             "70000001"});
-                table537.AddRow(new string[] {
+                table557.AddRow(new string[] {
                             "JTMAB7BJ0T4224184",
                             "2026-05-25",
                             "10",
                             "11000191"});
 #line 30
-  await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table537, "And ");
+  await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table557, "And ");
 #line hidden
 #line 36
   await testRunner.WhenAsync("evaluating sale information for \"JTMAB7BJ0T4224184\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -341,28 +341,28 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 50
   await testRunner.AndAsync("company 10 is named \"Selling Dealer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table538 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table558 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "InvoiceNumber"});
-                table538.AddRow(new string[] {
+                table558.AddRow(new string[] {
                             "JTMAB7BJ0T4224184",
                             "2026-05-10",
                             "5",
                             "DIST-1"});
-                table538.AddRow(new string[] {
+                table558.AddRow(new string[] {
                             "JTMAB7BJ0T4224184",
                             "2026-05-12",
                             "7",
                             "INT-1"});
-                table538.AddRow(new string[] {
+                table558.AddRow(new string[] {
                             "JTMAB7BJ0T4224184",
                             "2026-05-25",
                             "10",
                             "DEALER-1"});
 #line 51
-  await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table538, "And ");
+  await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table558, "And ");
 #line hidden
 #line 56
   await testRunner.WhenAsync("evaluating sale information for \"JTMAB7BJ0T4224184\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -419,18 +419,18 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 66
   await testRunner.AndAsync("company 10 is named \"Sample Dealer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table539 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table559 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "InvoiceNumber"});
-                table539.AddRow(new string[] {
+                table559.AddRow(new string[] {
                             "JTMW43FV10D999999",
                             "2026-03-01",
                             "10",
                             "DLR-0001"});
 #line 67
-  await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table539, "And ");
+  await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table559, "And ");
 #line hidden
 #line 70
   await testRunner.AndAsync("vehicle \"JTMW43FV10D999999\" has an embedded distributor leg with invoice \"DIST-IN" +
@@ -504,18 +504,18 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 85
   await testRunner.AndAsync("company 10 is named \"Sample Dealer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table540 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table560 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "InvoiceNumber"});
-                table540.AddRow(new string[] {
+                table560.AddRow(new string[] {
                             "JTMW43FV10D888888",
                             "2026-03-01",
                             "10",
                             "DLR-0002"});
 #line 86
-  await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table540, "And ");
+  await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table560, "And ");
 #line hidden
 #line 89
   await testRunner.WhenAsync("evaluating sale information for \"JTMW43FV10D888888\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -566,18 +566,18 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 98
   await testRunner.AndAsync("company 10 is named \"Sample Dealer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table541 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table561 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "InvoiceNumber"});
-                table541.AddRow(new string[] {
+                table561.AddRow(new string[] {
                             "JTMW43FV10D777777",
                             "2026-03-01",
                             "10",
                             "DLR-0003"});
 #line 99
-  await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table541, "And ");
+  await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table561, "And ");
 #line hidden
 #line 102
   await testRunner.AndAsync("vehicle \"JTMW43FV10D777777\" has an embedded distributor leg with invoice \"DIST-20" +
@@ -629,18 +629,18 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 111
   await testRunner.GivenAsync("company 10 is named \"Plain Dealer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table542 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table562 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "InvoiceNumber"});
-                table542.AddRow(new string[] {
+                table562.AddRow(new string[] {
                             "JTMW43FV10D123456",
                             "2026-01-15",
                             "10",
                             "INV-100"});
 #line 112
-  await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table542, "And ");
+  await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table562, "And ");
 #line hidden
 #line 115
   await testRunner.WhenAsync("evaluating sale information for \"JTMW43FV10D123456\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -691,20 +691,20 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 126
   await testRunner.AndAsync("company 5 is named \"Sample Distributor\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table543 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table563 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "InvoiceNumber",
                             "AccountNumber"});
-                table543.AddRow(new string[] {
+                table563.AddRow(new string[] {
                             "JTMAB7BJ0T4224184",
                             "2024-11-01",
                             "5",
                             "20024815",
                             "DIST-DIRECT-01"});
 #line 127
-  await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table543, "And ");
+  await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table563, "And ");
 #line hidden
 #line 130
   await testRunner.WhenAsync("evaluating sale information for \"JTMAB7BJ0T4224184\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");

@@ -58,7 +58,7 @@ const localeMapper = {
     "locales/vehicleLookup/saleInformation/",
     "locales/vehicleLookup/serviceHistory/",
     "locales/vehicleLookup/specification/",
-    "locales/vehicleLookup/warranty/",
+    "locales/vehicleLookup/ssc/",
     "locales/vehicleLookup/warrantyTimeline/"
   ],
   "vehicleLookup.claimableItems": [
@@ -76,8 +76,8 @@ const localeMapper = {
   "vehicleLookup.specification": [
     "locales/vehicleLookup/specification/"
   ],
-  "vehicleLookup.warranty": [
-    "locales/vehicleLookup/warranty/"
+  "vehicleLookup.ssc": [
+    "locales/vehicleLookup/ssc/"
   ],
   "vehicleLookup.warrantyTimeline": [
     "locales/vehicleLookup/warrantyTimeline/"

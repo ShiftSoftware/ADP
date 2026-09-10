@@ -149,6 +149,18 @@ to Noto Kufi Arabic. See `src/templates/assets/fonts/README.md`.
 Full design language, rules and migration plan:
 `.shift/repos/adp/web-components/templates-design-language.md`
 
+State invariants for the vehicle-lookup panels — what a panel may assert about a vehicle that is
+not loaded yet, or that the distributor has no records for (an empty list is never a verdict):
+`.shift/repos/adp/web-components/vehicle-lookup-invariants.md`. Read it before touching a panel's
+empty, idle or unauthorized state, or a fixture.
+
+Motion — **nothing on screen appears or disappears without a transition**, a loading state must not
+presume the outcome, and every state pair (not only idle → loaded) is a transition to design. The
+owner reviews every component change against this, with pairs of still + mid-transition
+screenshots. The rule, its reasoning, the shared primitives (`src/components/style/lookup-motion.css`)
+and the review checklist: `.shift/repos/adp/web-components/motion.md`. Read it before adding a
+state to a component or changing what a state renders.
+
 **Path aliases** (configured in `stencil.config.ts`):
 `~api`, `~lib`, `~locales`, `~features`, `~types`, `~assets`
 

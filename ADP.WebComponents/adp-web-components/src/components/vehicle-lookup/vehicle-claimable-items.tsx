@@ -9,7 +9,7 @@ import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-s
 
 import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
-import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent } from '~features/vehicle-lookup-component';
+import { RequestHeadersProvider, resolveRequestHeaders, setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent } from '~features/vehicle-lookup-component';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
 import { ClaimableItem } from './components/claimable-item';
@@ -68,6 +68,13 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   @Prop() headers: object = {};
   @Prop() queryString: string = '';
   @Prop() uploadMultipleDocumentsAtTheForm: boolean = true;
+
+  /** Asked for the current headers before every request this component makes itself (trace, claim); lets a host refresh its token on demand. */
+  @Prop() requestHeadersProvider?: RequestHeadersProvider;
+  /** Name of a [JSInvokable] method on the Blazor reference that answers with the current headers. */
+  @Prop() blazorRequestHeadersProvider: string = '';
+
+  lastRequestHeaders?: object;
 
   @Prop() errorCallback?: BlazorInvokableFunction<(errorMessage: ErrorKeys) => void>;
   @Prop() loadingStateChange?: BlazorInvokableFunction<(isLoading: boolean) => void>;
@@ -565,9 +572,12 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     try {
       const traceQuery = [this.queryString, 'trace=html'].filter(Boolean).join('&');
       const url = `${this.baseUrl}${this.vehicleLookup.vin}${traceQuery ? `?${traceQuery}` : ''}`;
+      // Resolved now rather than read off the prop: the bearer handed over at search time may
+      // have expired by the time the trace is opened, and the host's provider can refresh it.
+      const headers = await resolveRequestHeaders(this);
       const response = await fetch(url, {
         method: 'GET',
-        headers: { Accept: 'text/html', ...((this.headers as Record<string, string>) || {}) },
+        headers: { Accept: 'text/html', ...headers },
         signal: this.traceAbortController.signal,
       });
 
@@ -655,11 +665,15 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
         });
       }
 
+      // Same reason as the trace fetch: a claim submitted long after the search must not reuse
+      // the search's token.
+      const requestHeaders = await resolveRequestHeaders(this);
+
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', this.claimEndPoint);
 
-        Object.entries(this.headers || {}).forEach(([key, value]) => {
+        Object.entries(requestHeaders).forEach(([key, value]) => {
           xhr.setRequestHeader(key, value as string);
         });
 

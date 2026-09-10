@@ -15,10 +15,9 @@ import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, Language
  * Warranty coverage as a single dated rail: the standard warranty followed by every
  * extended coverage in sequence.
  *
- * Deliberately separate from `vehicle-warranty-details` rather than a mode of it. This
- * panel shows warranty and nothing else — no campaign table, no reCAPTCHA, no unauthorized
- * campaign lookup — so hosts adopt it by pointing their warranty tab at this tag and can
- * keep the original panel untouched for as long as they like.
+ * This panel shows warranty and nothing else — no campaign table, no reCAPTCHA, no
+ * unauthorized campaign lookup; those belong to `vehicle-ssc`. Hosts point their warranty
+ * tab at this tag and their campaign tab at that one.
  */
 @Component({
   shadow: true,

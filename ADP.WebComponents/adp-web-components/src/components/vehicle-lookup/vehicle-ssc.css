@@ -1,0 +1,1363 @@
+/*
+ * Special Service Campaigns — the stylesheet for <vehicle-ssc>, in the design language of the
+ * warranty timeline: tokens from lookup-tokens.css, motion from lookup-motion.css, a card with an
+ * accent bar, split-cap verdict pills, container queries rather than viewport ones.
+ *
+ * The card is three fixed parts — header, lead strip, body — and every state is a different
+ * content of the same three (see the note on SscCampaigns). Nothing here is display:none'd
+ * between states: the strip's layers cross-fade, the body slides, the pill and the strip carry
+ * the sheen while a lookup is in flight.
+ */
+
+@import '../style/lookup-tokens.css';
+@import '../style/lookup-motion.css';
+@import '../../features/vehicle-info-layout/vehicle-info-layout.css';
+
+:host {
+  display: block;
+  /* The panel is embedded at whatever width the host gives it, so its breakpoints read its own
+     width rather than the window's. */
+  container-type: inline-size;
+  container-name: ssc-panel;
+  /* Ties the chip columns: past this a long parts list would push the description into a
+     sliver. */
+  --chips-max: 300px;
+  /* The lead strip's height in every state, so the strip is the same band whether it carries the
+     headings, a notice or the skeleton. */
+  --lead-height: 38px;
+  /* The verdict pill's width while it is a skeleton: idle, and in flight. */
+  --pill-rest: 132px;
+  /* The body never shuts below this: the header's height at rest (16 + 30 + 12), so the strip sits
+     between two equal bands whether or not there is anything below it. */
+  --body-rest: 58px;
+  --blue-rim: rgba(48, 113, 169, 0.32);
+  /* The attention hue's rim and halo. Violet is reserved for "required, not done": it is neither a
+     verdict colour nor amber's "the records have nothing", so it cannot be read as either. */
+  --violet-rim: rgba(117, 90, 165, 0.42);
+  --violet-halo: rgba(117, 90, 165, 0.45);
+}
+
+.ssc-panel,
+.ssc-panel *,
+.ssc-panel *::before,
+.ssc-panel *::after {
+  box-sizing: border-box;
+}
+
+.ssc-panel {
+  padding: 16px;
+  color: var(--ink);
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Card
+   ------------------------------------------------------------------------------------------- */
+
+.ssc-card {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  box-shadow: var(--shadow);
+}
+
+/* The accent bar reads the verdict: red while a campaign is open, green when the vehicle is
+   clear, amber for a statement without a verdict, neutral before a lookup. It carries a colour,
+   which interpolates — but it fades over a load anyway so the next vehicle's colour never snaps
+   in the frame the data lands. */
+.ssc-card::before {
+  position: absolute;
+  z-index: 3;
+  inset: 0 0 auto;
+  height: 4px;
+  background: var(--line);
+  content: '';
+  transition:
+    background var(--settle) ease,
+    opacity var(--settle) ease;
+}
+
+.ssc-card[data-verdict='negative']::before {
+  background: var(--red);
+}
+
+.ssc-card[data-verdict='positive']::before {
+  background: var(--green);
+}
+
+.ssc-card[data-verdict='neutral']::before {
+  background: var(--amber);
+}
+
+/* A required action not taken: the bar breathes until the check is run. */
+.ssc-card[data-verdict='attention']::before {
+  background: var(--violet);
+  animation: ssc-attention-bar 2.4s ease-in-out infinite;
+}
+
+.ssc-card[data-phase='busy']::before {
+  opacity: 0;
+}
+
+.ssc-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+}
+
+/* A class, not a heading element: the component is embedded in a host page and must not inject
+   a heading into that page's outline. */
+.ssc-title {
+  font-size: clamp(16px, 3.2cqw, 20px);
+  font-weight: 760;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.ssc-summary {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Verdict pill (shared shape with the warranty timeline)
+   ------------------------------------------------------------------------------------------- */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 30px;
+  overflow: hidden;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.005em;
+  transition:
+    color var(--settle) ease,
+    background var(--settle) ease,
+    box-shadow var(--settle) ease;
+}
+
+.status-badge.is-positive {
+  color: var(--green-dark);
+  background: var(--green-tint);
+  box-shadow: inset 0 0 0 1px rgba(44, 138, 88, 0.32);
+}
+
+.status-badge.is-negative {
+  color: var(--red-dark);
+  background: var(--red-tint);
+  box-shadow: inset 0 0 0 1px rgba(180, 35, 24, 0.28);
+}
+
+/* A statement without a verdict: "not in the distributor's records", "vehicle not found". */
+.status-badge.is-neutral {
+  color: var(--amber-dark);
+  background: var(--amber-tint);
+  box-shadow: inset 0 0 0 1px rgba(183, 121, 31, 0.32);
+}
+
+/* A required action not taken: "check required". Violet, reserved for exactly this — red already
+   means an open campaign and amber means the records have nothing to say. */
+.status-badge.is-attention {
+  color: var(--violet-dark);
+  background: var(--violet-tint);
+  box-shadow: inset 0 0 0 1px var(--violet-rim);
+}
+
+.status-badge.is-idle {
+  color: var(--muted);
+  background: var(--line-soft);
+  box-shadow: inset 0 0 0 1px rgba(95, 108, 120, 0.22);
+}
+
+.status-badge > span {
+  padding: 6px 13px 6px 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.badge-icon {
+  display: block;
+  flex: 0 0 auto;
+  align-self: stretch;
+  width: 34px;
+  height: auto;
+  padding: 6px 9px;
+  color: #ffffff;
+  transition:
+    opacity var(--settle) ease,
+    background var(--settle) ease;
+}
+
+.status-badge.is-positive .badge-icon {
+  background: var(--green);
+}
+
+.status-badge.is-negative .badge-icon {
+  background: var(--red);
+}
+
+.status-badge.is-neutral .badge-icon {
+  background: var(--amber);
+}
+
+.status-badge.is-attention .badge-icon {
+  background: var(--violet);
+}
+
+.status-badge.is-idle .badge-icon {
+  background: var(--line);
+}
+
+/* The header pill's width follows its text, and text cannot be transitioned to. The pill's
+   max-width can: it is clamped to the skeleton width while in flight and released on settle, so
+   the pill shrinks to the skeleton and grows to its verdict instead of jumping between them. */
+.ssc-summary .status-badge {
+  min-width: var(--pill-rest);
+  max-width: 360px;
+  transition:
+    color var(--settle) ease,
+    background var(--settle) ease,
+    box-shadow var(--settle) ease,
+    max-width var(--settle) ease;
+}
+
+.ssc-summary .status-badge.is-idle {
+  max-width: var(--pill-rest);
+}
+
+/* In flight the pill carries no verdict, so every colour that says one goes neutral and the
+   sheen sweeps it. Below the verdict colours on purpose: these tie on specificity and win on
+   source order. The shape is coloured itself rather than overlaid, see lookup-motion.css. */
+.ssc-card[data-phase='busy'] .ssc-summary .status-badge {
+  max-width: var(--pill-rest);
+  color: transparent;
+  background-color: #dcdfe4;
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 255, 255, 0) 100%);
+  background-repeat: no-repeat;
+  background-size: 45% 100%;
+  box-shadow: inset 0 0 0 1px rgba(95, 108, 120, 0.42);
+  animation: lookup-sheen 1.3s linear infinite;
+}
+
+.ssc-card[data-phase='busy'] .ssc-summary .status-badge .badge-icon {
+  background: #dcdfe4;
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   The grid: lead strip and body share one set of column tracks
+   ------------------------------------------------------------------------------------------- */
+
+/* Columns take what their content needs and the description absorbs the slack. The heading
+   cells in the lead strip and the row cells in the body are subgrids of this, so they size the
+   tracks together — the browser does the fitting, no per-column pixel widths. */
+.ssc-grid {
+  display: grid;
+  grid-template-columns: minmax(auto, max-content) minmax(200px, 1fr) minmax(auto, max-content) minmax(auto, max-content) minmax(auto, max-content);
+  /* A width the columns cannot fit (a long locale on a narrow host) scrolls sideways, as the
+     service-history table does, rather than being cut off by the card. */
+  overflow-x: auto;
+}
+
+.ssc-grid.has-trace {
+  grid-template-columns: minmax(auto, max-content) minmax(200px, 1fr) minmax(auto, max-content) minmax(auto, max-content) minmax(auto, max-content) max-content;
+}
+
+.ssc-lead,
+.ssc-lead-columns,
+.ssc-body,
+.ssc-body-inner,
+.ssc-rows,
+.ssc-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Lead strip: one band, three layers
+   ------------------------------------------------------------------------------------------- */
+
+.ssc-lead {
+  min-height: var(--lead-height);
+  box-shadow:
+    inset 0 1px 0 var(--line),
+    inset 0 -1px 0 var(--line);
+}
+
+.ssc-lead > .layer {
+  min-height: var(--lead-height);
+}
+
+/* Idle it is the flat grey of a shape with nothing to say; in flight it darkens a shade and the
+   sheen sweeps it, in step with the pill. */
+.ssc-lead-skeleton {
+  background-color: var(--line-soft);
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 255, 255, 0) 100%);
+  background-repeat: no-repeat;
+  background-size: 45% 100%;
+  background-position: -100% 0;
+  transition:
+    opacity var(--settle) ease,
+    visibility 0s linear var(--settle),
+    background-color var(--settle) ease;
+}
+
+.ssc-card[data-phase='busy'] .ssc-lead-skeleton {
+  background-color: #dcdfe4;
+  animation: lookup-sheen 1.3s linear infinite;
+}
+
+.ssc-lead-notice {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 20px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.ssc-lead-notice.is-positive {
+  color: var(--green-dark);
+  background: var(--green-tint);
+  box-shadow:
+    inset 0 1px 0 rgba(44, 138, 88, 0.18),
+    inset 0 -1px 0 rgba(44, 138, 88, 0.18);
+}
+
+.ssc-lead-notice.is-negative {
+  color: var(--red-dark);
+  background: var(--red-tint);
+  box-shadow:
+    inset 0 1px 0 rgba(180, 35, 24, 0.18),
+    inset 0 -1px 0 rgba(180, 35, 24, 0.18);
+}
+
+.ssc-lead-notice.is-neutral {
+  color: var(--amber-dark);
+  background: var(--amber-tint);
+  box-shadow:
+    inset 0 1px 0 rgba(183, 121, 31, 0.22),
+    inset 0 -1px 0 rgba(183, 121, 31, 0.22);
+}
+
+/* The attention strip shouts by pattern, not by borrowing a verdict colour: a hatched hazard band
+   on its reading edge, the text a weight up. */
+.ssc-lead-notice.is-attention {
+  position: relative;
+  padding-inline-start: 38px;
+  color: var(--violet-dark);
+  background: var(--violet-tint);
+  box-shadow:
+    inset 0 1px 0 var(--violet-rim),
+    inset 0 -1px 0 var(--violet-rim);
+  font-weight: 700;
+}
+
+.ssc-lead-notice.is-attention::before {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 16px;
+  background: repeating-linear-gradient(135deg, var(--violet) 0 5px, transparent 5px 11px);
+  opacity: 0.85;
+  content: '';
+}
+
+.notice-icon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+}
+
+.ssc-lead-columns {
+  background: var(--paper-soft);
+}
+
+.ssc-lead-columns > .ssc-cell {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* The one-word stand-in for the headings on narrow panels. */
+.ssc-columns-label {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Body: rows
+   ------------------------------------------------------------------------------------------- */
+
+.ssc-body {
+  min-height: var(--body-rest);
+}
+
+.ssc-body-inner {
+  align-content: start;
+}
+
+.ssc-row {
+  transition: background var(--settle) ease;
+}
+
+.ssc-row:not(:first-child) {
+  border-top: 1px solid var(--line-soft);
+}
+
+.ssc-row[data-open='true'] {
+  background: var(--blue-tint);
+}
+
+.ssc-row > .ssc-cell {
+  padding: 12px;
+}
+
+.ssc-code {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ssc-code strong {
+  font-weight: 760;
+  letter-spacing: 0.01em;
+}
+
+/* The one column allowed to grow: a floor so short descriptions do not cede everything to the
+   chips, and wrapping anywhere so a long one never forces the grid wide. */
+.ssc-description {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ssc-status {
+  white-space: nowrap;
+}
+
+.ssc-status-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.ssc-status-source {
+  padding-inline-start: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ssc-trace-cell {
+  white-space: nowrap;
+}
+
+.ssc-none {
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Chips
+   ------------------------------------------------------------------------------------------- */
+
+.ssc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: var(--chips-max);
+}
+
+.ssc-chip {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.ssc-chip.is-accent {
+  color: var(--blue-dark);
+  background: var(--blue-tint);
+  box-shadow: inset 0 0 0 1px rgba(48, 113, 169, 0.32);
+}
+
+.ssc-chip.is-neutral {
+  color: var(--muted);
+  background: var(--line-soft);
+  box-shadow: inset 0 0 0 1px rgba(95, 108, 120, 0.22);
+}
+
+.ssc-chip.is-positive {
+  color: var(--green-dark);
+  background: var(--green-tint);
+  box-shadow: inset 0 0 0 1px rgba(44, 138, 88, 0.32);
+}
+
+.ssc-chip.is-negative {
+  color: var(--red-dark);
+  background: var(--red-tint);
+  box-shadow: inset 0 0 0 1px rgba(180, 35, 24, 0.28);
+}
+
+.chip-icon {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+}
+
+.chip-note {
+  color: var(--date-ink);
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Trace trigger and drawer
+   ------------------------------------------------------------------------------------------- */
+
+.ssc-trace-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--blue-dark);
+  background: var(--paper);
+  border: 1px solid rgba(48, 113, 169, 0.32);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    color var(--settle) ease,
+    background var(--settle) ease,
+    border-color var(--settle) ease;
+}
+
+.ssc-trace-button:hover,
+.ssc-trace-button[aria-expanded='true'],
+.ssc-trace-button[data-loading='true'] {
+  color: #ffffff;
+  background: var(--blue);
+  border-color: var(--blue-dark);
+}
+
+.ssc-trace-button:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* The glyph and the spinner share the button and cross-fade while the evidence is fetched. */
+.ssc-trace-button-icon {
+  width: 18px;
+  height: 18px;
+  transition: opacity var(--settle) ease;
+}
+
+.ssc-trace-button-spinner {
+  position: absolute;
+  inset: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity var(--settle) ease;
+  animation: lookup-spin 0.8s linear infinite;
+}
+
+.ssc-trace-button[data-loading='true'] .ssc-trace-button-icon {
+  opacity: 0;
+}
+
+.ssc-trace-button[data-loading='true'] .ssc-trace-button-spinner {
+  opacity: 1;
+}
+
+/* The drawer's row carries the open row's tint down around the evidence, so row and evidence
+   read as one highlighted block; the tint fades with the drawer rather than switching off while
+   it is still shutting. */
+.ssc-trace-row {
+  grid-column: 1 / -1;
+  transition: background var(--settle) ease;
+}
+
+.ssc-trace-row[data-open='true'] {
+  background: var(--blue-tint);
+}
+
+/* The evidence is a panel inset inside that block — its own paper, a rim in the row's blue and a
+   rail on the reading edge — so it cannot be mistaken for the next campaign's row. The margin sits
+   inside the sliding region and slides with it. */
+.ssc-trace {
+  margin: 0 12px 14px;
+  padding: 12px 18px 16px 22px;
+  background: var(--paper);
+  border: 1px solid var(--blue-rim);
+  border-radius: 10px;
+  box-shadow:
+    inset 4px 0 0 var(--blue),
+    0 6px 18px rgba(27, 45, 61, 0.08);
+}
+
+[dir='rtl'] .ssc-trace {
+  padding: 12px 22px 16px 18px;
+  box-shadow:
+    inset -4px 0 0 var(--blue),
+    0 6px 18px rgba(27, 45, 61, 0.08);
+}
+
+.trace-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.trace-head-code {
+  color: var(--blue-dark);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 760;
+  letter-spacing: 0.01em;
+}
+
+.ssc-trace-status {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.ssc-trace-status.is-error {
+  color: var(--red-dark);
+}
+
+.trace-verdict {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: center;
+  font-size: 14px;
+}
+
+.trace-verdict.is-positive {
+  color: var(--green-dark);
+}
+
+.trace-verdict.is-negative {
+  color: var(--red-dark);
+}
+
+.trace-verdict-icon {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+
+.trace-verdict-date {
+  color: var(--date-ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.trace-order {
+  margin: 6px 0 12px;
+  color: var(--muted);
+}
+
+.trace-codes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.trace-codes .ssc-chips {
+  max-width: none;
+}
+
+.trace-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.trace-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trace-step {
+  background: var(--paper-soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.trace-step[data-decided='true'] {
+  border-color: rgba(44, 138, 88, 0.55);
+  box-shadow: inset 4px 0 0 var(--green);
+}
+
+[dir='rtl'] .trace-step[data-decided='true'] {
+  box-shadow: inset -4px 0 0 var(--green);
+}
+
+.trace-step-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.trace-step-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: var(--paper);
+  background: var(--ink);
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.trace-step-title {
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.trace-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.trace-step-decided {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  margin-inline-start: auto;
+  color: var(--green-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trace-step-decided-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.trace-step-body {
+  padding: 10px 14px 12px;
+}
+
+.trace-kv {
+  display: inline-flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.trace-kv > span {
+  color: var(--muted);
+}
+
+.trace-kv > strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.trace-muted {
+  color: var(--muted);
+}
+
+.trace-evidence {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trace-item {
+  padding: 8px 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.trace-item.is-selected {
+  background: var(--green-tint);
+  border-color: rgba(44, 138, 88, 0.45);
+}
+
+.trace-item.is-dim {
+  opacity: 0.72;
+}
+
+.trace-item-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+}
+
+.trace-item-title {
+  font-weight: 760;
+}
+
+.trace-date {
+  color: var(--date-ink);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.trace-decided {
+  margin-inline-start: auto;
+  padding: 2px 8px;
+  color: var(--paper);
+  background: var(--green);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.evidence-pill {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.evidence-pill.is-positive {
+  color: var(--green-dark);
+  background: var(--green-tint);
+  box-shadow: inset 0 0 0 1px rgba(44, 138, 88, 0.32);
+}
+
+.evidence-pill.is-negative {
+  color: var(--red-dark);
+  background: var(--red-tint);
+  box-shadow: inset 0 0 0 1px rgba(180, 35, 24, 0.28);
+}
+
+.evidence-pill-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.trace-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trace-facts li {
+  position: relative;
+  padding-inline-start: 16px;
+  font-size: 12px;
+}
+
+.trace-facts li::before {
+  position: absolute;
+  inset-inline-start: 2px;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  content: '';
+}
+
+.trace-facts li.is-hit::before {
+  background: var(--green);
+}
+
+.trace-facts li.is-miss {
+  color: var(--muted);
+}
+
+.trace-facts li.is-miss::before {
+  background: var(--line);
+}
+
+.trace-code {
+  padding: 1px 5px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Body: the reCAPTCHA-gated manufacturer check for an unauthorized vehicle
+   ------------------------------------------------------------------------------------------- */
+
+/* The widget the owner renders, then the spinner sliding in under it while the manufacturer is
+   asked. The strip above carries the prompt, and later the answer; this block is the whole body,
+   so it can never sit beside a list. */
+.ssc-check {
+  display: flex;
+  flex-direction: column;
+  grid-column: 1 / -1;
+  align-items: stretch;
+  padding: 16px 20px 18px;
+}
+
+.ssc-check-widget {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.recaptcha-container {
+  display: flex;
+  overflow: hidden;
+  justify-content: center;
+}
+
+.ssc-checking {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 0 2px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.ssc-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--line);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: lookup-spin 0.8s linear infinite;
+}
+
+/* The spinner stays rendered inside its shut slot; no point spinning where nobody can see it. */
+.collapsible[data-open='false'] .ssc-spinner {
+  animation-play-state: paused;
+}
+
+.dev-recaptcha {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 302px;
+  height: 76px;
+  padding: 0 12px;
+  color: #000000;
+  background: #f9f9f9;
+  border: 1px solid #d3d3d3;
+  border-radius: 3px;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.dev-recaptcha-disabled {
+  cursor: default;
+}
+
+.dev-recaptcha-checkbox {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #ffffff;
+  border: 2px solid #c1c1c1;
+  border-radius: 2px;
+  transition:
+    background var(--settle) ease,
+    border-color var(--settle) ease;
+}
+
+.dev-recaptcha-checkbox.checked {
+  background: #4caf50;
+  border-color: #4caf50;
+}
+
+.dev-recaptcha-checkmark {
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.dev-recaptcha-label {
+  flex: 1;
+}
+
+.dev-recaptcha-brand {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-items: center;
+  color: #555555;
+  font-size: 10px;
+}
+
+.dev-recaptcha-brand-name {
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.dev-recaptcha-brand-mock {
+  color: #888888;
+  font-size: 9px;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Body: the check was skipped for this vehicle
+   ------------------------------------------------------------------------------------------- */
+
+.ssc-run {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: center;
+  padding: 16px 20px 18px;
+}
+
+/* The claim button's family — the fill deepens on hover, the glyph lifts on press — but filled at
+   rest rather than outlined: an outline reads as optional, and this is not. A halo pulses out of it
+   until the check is run. */
+.ssc-run-button {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 18px 0 14px;
+  color: #ffffff;
+  background: var(--violet);
+  border: 1px solid var(--violet-dark);
+  border-radius: 6px;
+  box-shadow: 0 0 0 0 var(--violet-halo);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  animation: ssc-attention-ring 1.8s ease-out infinite;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.ssc-run-button:hover {
+  background: var(--violet-dark);
+}
+
+.ssc-run-button:active {
+  background: #4d3a70;
+  border-color: #4d3a70;
+}
+
+.ssc-run-button:focus-visible {
+  outline: 2px solid var(--violet-dark);
+  outline-offset: 3px;
+}
+
+@keyframes ssc-attention-bar {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes ssc-attention-ring {
+  0% {
+    box-shadow: 0 0 0 0 var(--violet-halo);
+  }
+
+  70% {
+    box-shadow: 0 0 0 11px rgba(117, 90, 165, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(117, 90, 165, 0);
+  }
+}
+
+.ssc-run-icon {
+  width: 22px;
+  height: 22px;
+  transition: transform 0.2s ease;
+}
+
+.ssc-run-button:active .ssc-run-icon {
+  transform: scale(1.2);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Mid-width panels (a tablet, a narrow host column): the description moves under its campaign
+   code, so five columns fit where six would spill past the card
+   ------------------------------------------------------------------------------------------- */
+
+@container ssc-panel (width > 720px) and (width <= 960px) {
+  /* The first column carries code and description and takes the slack, with a floor so the chip
+     columns cannot push the description into a sliver; the rest fit their content. */
+  .ssc-grid {
+    grid-template-columns: minmax(160px, 1fr) minmax(auto, max-content) minmax(auto, max-content) minmax(auto, max-content);
+  }
+
+  .ssc-grid.has-trace {
+    grid-template-columns: minmax(160px, 1fr) minmax(auto, max-content) minmax(auto, max-content) minmax(auto, max-content) max-content;
+  }
+
+  .ssc-lead-columns > .ssc-description {
+    display: none;
+  }
+
+  .ssc-code {
+    grid-column: 1;
+  }
+
+  .ssc-status {
+    grid-column: 2;
+  }
+
+  .ssc-labors {
+    grid-column: 3;
+  }
+
+  .ssc-parts {
+    grid-column: 4;
+  }
+
+  .ssc-trace-cell {
+    grid-column: 5;
+  }
+
+  .ssc-row {
+    grid-template-rows: auto auto;
+  }
+
+  .ssc-row > .ssc-code {
+    grid-row: 1;
+    padding-bottom: 2px;
+  }
+
+  .ssc-row > .ssc-description {
+    grid-column: 1;
+    grid-row: 2;
+    padding-top: 0;
+  }
+
+  .ssc-row > .ssc-status,
+  .ssc-row > .ssc-labors,
+  .ssc-row > .ssc-parts,
+  .ssc-row > .ssc-trace-cell {
+    grid-row: 1 / span 2;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Narrow panels: each row becomes a labelled card
+   ------------------------------------------------------------------------------------------- */
+
+@container ssc-panel (max-width: 720px) {
+  .ssc-panel {
+    padding: 12px;
+  }
+
+  .ssc-head {
+    padding: 14px 14px 10px;
+  }
+
+  /* One track: the strip and the body still share it, and each row lays itself out inside. */
+  .ssc-grid,
+  .ssc-grid.has-trace {
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+  }
+
+  .ssc-lead-columns > .ssc-cell {
+    display: none;
+  }
+
+  .ssc-columns-label {
+    display: flex;
+    align-items: center;
+    padding: 6px 14px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .ssc-lead-notice {
+    padding: 6px 14px;
+  }
+
+  .ssc-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 12px;
+    padding: 12px 14px;
+  }
+
+  .ssc-row > .ssc-cell {
+    padding: 0;
+  }
+
+  .ssc-row > .ssc-cell::before {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    content: attr(data-label);
+  }
+
+  .ssc-row > .ssc-code::before,
+  .ssc-row > .ssc-status::before,
+  .ssc-row > .ssc-trace-cell::before {
+    display: none;
+  }
+
+  .ssc-code {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+    font-size: 15px;
+  }
+
+  .ssc-trace-cell {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .ssc-status {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    white-space: normal;
+  }
+
+  .ssc-description {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .ssc-labors {
+    grid-column: 1 / -1;
+    grid-row: 4;
+  }
+
+  .ssc-parts {
+    grid-column: 1 / -1;
+    grid-row: 5;
+  }
+
+  .ssc-chips {
+    max-width: none;
+  }
+
+  .ssc-check,
+  .ssc-run {
+    padding: 14px 14px 16px;
+  }
+
+  .trace-step-head,
+  .trace-item-head {
+    gap: 6px 8px;
+  }
+
+  .trace-decided,
+  .trace-step-decided {
+    margin-inline-start: 0;
+  }
+}
+
+@container ssc-panel (max-width: 430px) {
+  .ssc-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Full width in every state, so there is no width to animate here. */
+  .ssc-summary .status-badge,
+  .ssc-summary .status-badge.is-idle,
+  .ssc-card[data-phase='busy'] .ssc-summary .status-badge {
+    width: 100%;
+    max-width: none;
+    justify-content: center;
+  }
+
+  .ssc-summary .status-badge > span {
+    flex: 1 1 auto;
+    text-align: center;
+    white-space: normal;
+  }
+}

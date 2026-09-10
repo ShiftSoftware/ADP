@@ -159,7 +159,9 @@ const PROFILES = {
     select: (subject, key, harness) => {
       const mock = harness.mode === 'dev' && harness.data?.[key];
 
-      return mock ? subject.handleLoadData(mock, null) : subject.fetchVin(key, { headers: 'headers-value' });
+      // A page that sets ssc-query-string is showing the SSC tab's own lookup and what the other
+      // tabs' searches leave it with, so its searches go through fetchVin the way a host's do.
+      return mock && !subject.sscQueryString ? subject.handleLoadData(mock, null) : subject.fetchVin(key, { headers: 'headers-value' });
     },
     events: {
       loadingStateChanged: track,

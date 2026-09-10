@@ -229,6 +229,7 @@
           }
         ],
         "repaired": false,
+        "repairSource": "None",
         "parts": [
           {
             "partNumber": "89170-0K010",
@@ -238,7 +239,28 @@
             "partNumber": "04007-07212",
             "isAvailable": false
           }
-        ]
+        ],
+        "trace": {
+          "campaignLaborCodes": [
+            "LAB-AIR-01"
+          ],
+          "interchangeableLaborCodes": [],
+          "warrantyClaims": [
+            {
+              "claimStatus": "Accepted",
+              "repairCompletionDate": "2024-03-20",
+              "statusQualifies": true,
+              "campaignCodeInComment": false,
+              "distributorComment": "Fuel pump relay replaced under campaign",
+              "matchedLaborCodes": [],
+              "matches": false,
+              "selected": false
+            }
+          ],
+          "serviceHistoryLaborLinesExamined": 3,
+          "serviceHistoryLaborLines": [],
+          "repairSource": "None"
+        }
       },
       {
         "sscCode": "SSC-2023-005",
@@ -249,11 +271,48 @@
           }
         ],
         "repaired": true,
+        "repairDate": "2024-03-20",
+        "repairSource": "WarrantyClaim",
         "parts": [
           {
             "partNumber": "90987-02027"
           }
-        ]
+        ],
+        "trace": {
+          "campaignLaborCodes": [
+            "LAB-FP-01"
+          ],
+          "interchangeableLaborCodes": [
+            {
+              "laborCode": "LAB-FP-010",
+              "campaignLaborCode": "LAB-FP-01"
+            },
+            {
+              "laborCode": "LAB-FP-01A",
+              "campaignLaborCode": "LAB-FP-01"
+            }
+          ],
+          "warrantyClaims": [
+            {
+              "claimStatus": "Accepted",
+              "repairCompletionDate": "2024-03-20",
+              "statusQualifies": true,
+              "campaignCodeInComment": false,
+              "distributorComment": "Fuel pump relay replaced under campaign",
+              "matchedLaborCodes": [
+                {
+                  "laborCode": "LAB-FP-01A",
+                  "campaignLaborCode": "LAB-FP-01"
+                }
+              ],
+              "matches": true,
+              "selected": true
+            }
+          ],
+          "serviceHistoryLaborLinesExamined": 3,
+          "serviceHistoryLaborLines": [],
+          "repairSource": "WarrantyClaim"
+        }
       }
     ],
     "vehicleSpecification": {

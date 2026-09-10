@@ -34,6 +34,10 @@ Do not mix this per-component module with the general `shift-components` bundle 
 | `fetchVin(vin)`             | Looks up and renders service history for a VIN. |
 | `setErrorMessage(errorKey)` | Shows a component-supported error state.        |
 
+## Expanding a visit
+
+Clicking a visit opens its labor and part lines beneath it. The line is brought to the top of the page with the browser's own kind of scroll, eased and timed by the distance, and held there while the details slide open, so what was opened is in view once it has settled rather than below the fold. A host whose fixed header covers the top of the page sets `scroll-padding-top` on its scroll container, as it would for `scrollIntoView`, and the component keeps that room; under `prefers-reduced-motion` the page lands at once, and a wheel, touch or key from the reader cancels the scroll.
+
 ## Development fixtures
 
 The source development template includes mocks and debugging controls. It is for package development only. Do not copy it into a production host. Use the published production template and integration manifest instead.

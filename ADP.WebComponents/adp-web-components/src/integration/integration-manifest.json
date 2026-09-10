@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "adp-web-components",
-  "packageVersion": "0.3.21",
+  "packageVersion": "0.4.0",
   "outputFamily": "per-component",
   "components": [
     {
@@ -10,7 +10,7 @@
       "wireContract": "adp.vehicle-lookup.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["activeElement", "baseUrl", "childrenProps", "disableVinValidation", "hiddenTabs", "language", "queryString", "separateSsc"],
+        "properties": ["activeElement", "baseUrl", "childrenProps", "disableVinValidation", "hiddenTabs", "language", "queryString", "sscQueryString"],
         "methods": ["fetchVin"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["vehicle lookup request", "response distribution to child components", "active child rendering"]
@@ -20,7 +20,7 @@
           {
             "name": "activeElement",
             "attribute": "active-element",
-            "type": "\"\" | \"vehicle-accessories\" | \"vehicle-claimable-items\" | \"vehicle-paint-thickness\" | \"vehicle-sale-information\" | \"vehicle-service-history\" | \"vehicle-specification\" | \"vehicle-ssc\" | \"vehicle-warranty-details\" | \"vehicle-warranty-timeline\"",
+            "type": "\"\" | \"vehicle-accessories\" | \"vehicle-claimable-items\" | \"vehicle-paint-thickness\" | \"vehicle-sale-information\" | \"vehicle-service-history\" | \"vehicle-specification\" | \"vehicle-ssc\" | \"vehicle-warranty-timeline\"",
             "default": null,
             "mutable": false,
             "required": false
@@ -29,25 +29,19 @@
           { "name": "blazorDynamicClaimActivate", "attribute": "blazor-dynamic-claim-activate", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "blazorErrorStateListener", "attribute": "blazor-error-state-listener", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "blazorOnLoadingStateChange", "attribute": "blazor-on-loading-state-change", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "blazorRequestHeadersProvider", "attribute": "blazor-request-headers-provider", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "childrenProps", "attribute": "children-props", "type": "object | string", "default": null, "mutable": false, "required": false },
           { "name": "disableVinValidation", "attribute": "disable-vin-validation", "type": "boolean", "default": null, "mutable": false, "required": false },
-          {
-            "name": "dynamicClaimActivate",
-            "attribute": "dynamic-claim-activate",
-            "type": "(vehicleInformation: VehicleLookupDTO) => void",
-            "default": null,
-            "mutable": false,
-            "required": false
-          },
-          { "name": "errorStateListener", "attribute": "error-state-listener", "type": "(newError: string) => void", "default": null, "mutable": false, "required": false },
+          { "name": "dynamicClaimActivate", "type": "(vehicleInformation: VehicleLookupDTO) => void", "default": null, "mutable": false, "required": false },
+          { "name": "errorStateListener", "type": "(newError: string) => void", "default": null, "mutable": false, "required": false },
           { "name": "hiddenTabs", "attribute": "hidden-tabs", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
-          { "name": "loadingStateChanged", "attribute": "loading-state-changed", "type": "(isLoading: boolean) => void", "default": null, "mutable": false, "required": false },
+          { "name": "loadingStateChanged", "type": "(isLoading: boolean) => void", "default": null, "mutable": false, "required": false },
           { "name": "mockRecaptcha", "attribute": "mock-recaptcha", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "mockUrl", "attribute": "mock-url", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "queryString", "attribute": "query-string", "type": "string", "default": null, "mutable": false, "required": false },
-          { "name": "separateSsc", "attribute": "separate-ssc", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "requestHeadersProvider", "type": "() => object | Promise<object>", "default": null, "mutable": false, "required": false },
           { "name": "sscQueryString", "attribute": "ssc-query-string", "type": "string", "default": null, "mutable": false, "required": false }
         ],
         "methods": [
@@ -60,15 +54,21 @@
           "vehicle-specification",
           "vehicle-accessories",
           "vehicle-sale-information",
-          "vehicle-warranty-details",
           "vehicle-warranty-timeline",
+          "vehicle-ssc",
           "vehicle-service-history",
           "vehicle-paint-thickness",
           "vehicle-claimable-items",
           "shift-tab-content"
         ]
       },
-      "runtimeAssets": { "locales": "dist/locales", "notes": ["The host owns tab navigation and selects the activeElement."] }
+      "runtimeAssets": {
+        "locales": "dist/locales",
+        "notes": [
+          "The host owns tab navigation and selects the activeElement.",
+          "With sscQueryString set, only a search made from the SSC tab counts as a campaign check; a search from another tab leaves the SSC tab saying the check was not run, with a control to run it. It reaches vehicle-ssc as lookupQueryString, so it never joins a trace request."
+        ]
+      }
     },
     {
       "tag": "vehicle-specification",
@@ -94,7 +94,7 @@
             "mutable": false,
             "required": false
           },
-          { "name": "headers", "attribute": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
@@ -150,7 +150,7 @@
             "mutable": false,
             "required": false
           },
-          { "name": "headers", "attribute": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
           { "name": "hiddenFields", "attribute": "hidden-fields", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
@@ -207,7 +207,7 @@
             "mutable": false,
             "required": false
           },
-          { "name": "headers", "attribute": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
@@ -263,7 +263,7 @@
             "mutable": false,
             "required": false
           },
-          { "name": "headers", "attribute": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
@@ -319,7 +319,7 @@
             "mutable": false,
             "required": false
           },
-          { "name": "headers", "attribute": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
@@ -353,19 +353,20 @@
       "runtimeAssets": { "locales": "dist/locales", "notes": [] }
     },
     {
-      "tag": "vehicle-warranty-details",
-      "modulePath": "dist/components/vehicle-warranty-details.js",
-      "wireContract": "adp.vehicle-warranty-details.v1",
+      "tag": "vehicle-ssc",
+      "modulePath": "dist/components/vehicle-ssc.js",
+      "wireContract": "adp.vehicle-ssc.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString", "showSsc", "showWarranty"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString", "lookupQueryString", "showTrace"],
         "methods": ["fetchVin"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
-        "owns": ["lookup request", "response handling", "loading and error state", "warranty and campaign rendering"]
+        "owns": ["lookup request", "response handling", "loading and error state", "campaign rendering", "repair-status trace fetch"]
       },
       "api": {
         "props": [
           { "name": "baseUrl", "attribute": "base-url", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "blazorRequestHeadersProvider", "attribute": "blazor-request-headers-provider", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "brandIntegrationId", "attribute": "brand-integration-id", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "cityId", "attribute": "city-id", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "cityIntegrationId", "attribute": "city-integration-id", "type": "string", "default": null, "mutable": false, "required": false },
@@ -386,7 +387,7 @@
             "mutable": false,
             "required": false
           },
-          { "name": "headers", "attribute": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
@@ -405,11 +406,12 @@
             "mutable": false,
             "required": false
           },
+          { "name": "lookupQueryString", "attribute": "lookup-query-string", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "mockRecaptcha", "attribute": "mock-recaptcha", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "queryString", "attribute": "query-string", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "recaptchaKey", "attribute": "recaptcha-key", "type": "string", "default": null, "mutable": false, "required": false },
-          { "name": "showSsc", "attribute": "show-ssc", "type": "boolean", "default": null, "mutable": false, "required": false },
-          { "name": "showWarranty", "attribute": "show-warranty", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "requestHeadersProvider", "type": "() => object | Promise<object>", "default": null, "mutable": false, "required": false },
+          { "name": "showTrace", "attribute": "show-trace", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "unauthorizedSscLookupBaseUrl", "attribute": "unauthorized-ssc-lookup-base-url", "type": "string", "default": null, "mutable": false, "required": false },
           {
             "name": "unauthorizedSscLookupQueryString",
@@ -434,12 +436,22 @@
           { "name": "fetchVin", "parameters": "(newData: VehicleLookupDTO | string, headers?: any) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setBlazorRef", "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
-          { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
+          { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "skipLookup", "parameters": "(vin: string) => Promise<void>", "returns": "Promise<void>" }
         ],
         "events": [],
-        "dependencies": ["flexible-container", "loading-spinner", "information-table"]
+        "dependencies": []
       },
-      "runtimeAssets": { "locales": "dist/locales", "notes": ["Unauthorized campaign lookup and reCAPTCHA configuration are host policy and remain optional raw API properties."] }
+      "runtimeAssets": {
+        "locales": "dist/locales",
+        "notes": [
+          "Replaces the campaign half of the retired vehicle-warranty-details; warranty coverage is vehicle-warranty-timeline.",
+          "Unauthorized campaign lookup and reCAPTCHA configuration are host policy and remain optional raw API properties.",
+          "showTrace exposes claim and invoice details per campaign; the host gates it on its own permission check and its endpoint must honour ?trace=ssc.",
+          "A lookup-logging flag belongs in lookupQueryString, which joins the lookup request only: the trace request re-reads a lookup already logged and never carries it. The host endpoint must refuse to log traced requests as well (the ADP lookup service does).",
+          "Opening a campaign's evidence brings its row to the top of the page and follows the page while the drawer opens; a host whose fixed header covers the top of the page sets scroll-padding-top on its scroll container."
+        ]
+      }
     },
     {
       "tag": "vehicle-warranty-timeline",
@@ -465,7 +477,7 @@
             "mutable": false,
             "required": false
           },
-          { "name": "headers", "attribute": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
@@ -496,13 +508,7 @@
         "events": [],
         "dependencies": []
       },
-      "runtimeAssets": {
-        "locales": "dist/locales",
-        "notes": [
-          "Warranty coverage only. Campaign rendering, reCAPTCHA and unauthorized campaign lookup are not part of this component; hosts that need them keep vehicle-warranty-details.",
-          "Adopted by pointing a host tab at this tag instead of vehicle-warranty-details. The two can coexist in one deployment."
-        ]
-      }
+      "runtimeAssets": { "locales": "dist/locales", "notes": ["Warranty coverage only. Campaign rendering, reCAPTCHA and unauthorized campaign lookup belong to vehicle-ssc."] }
     },
     {
       "tag": "vehicle-claimable-items",
@@ -517,8 +523,9 @@
       },
       "api": {
         "props": [
-          { "name": "activate", "attribute": "activate", "type": "(vehicleInformation: VehicleLookupDTO) => void", "default": null, "mutable": false, "required": false },
+          { "name": "activate", "type": "(vehicleInformation: VehicleLookupDTO) => void", "default": null, "mutable": false, "required": false },
           { "name": "baseUrl", "attribute": "base-url", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "blazorRequestHeadersProvider", "attribute": "blazor-request-headers-provider", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "claimEndPoint", "attribute": "claim-end-point", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "coreOnly", "attribute": "core-only", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "disableVinValidation", "attribute": "disable-vin-validation", "type": "boolean", "default": null, "mutable": false, "required": false },
@@ -530,7 +537,7 @@
             "mutable": false,
             "required": false
           },
-          { "name": "headers", "attribute": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
@@ -550,8 +557,9 @@
             "required": false
           },
           { "name": "maximumDocumentFileSizeInMb", "attribute": "maximum-document-file-size-in-mb", "type": "number", "default": null, "mutable": false, "required": false },
-          { "name": "print", "attribute": "print", "type": "(claimResponse: any) => void", "default": null, "mutable": false, "required": false },
+          { "name": "print", "type": "(claimResponse: any) => void", "default": null, "mutable": false, "required": false },
           { "name": "queryString", "attribute": "query-string", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "requestHeadersProvider", "type": "() => object | Promise<object>", "default": null, "mutable": false, "required": false },
           { "name": "showTrace", "attribute": "show-trace", "type": "boolean", "default": null, "mutable": false, "required": false },
           {
             "name": "uploadMultipleDocumentsAtTheForm",

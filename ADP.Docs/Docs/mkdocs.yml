@@ -203,6 +203,10 @@ nav:
               - SSC (Safety Recall): generated/LookupServices/DTOsAndModels/VehicleLookup/SscDTO.md
               - SSC Labor: generated/LookupServices/DTOsAndModels/VehicleLookup/SSCLaborDTO.md
               - SSC Part: generated/LookupServices/DTOsAndModels/VehicleLookup/SSCPartDTO.md
+              - SSC Repair Trace: generated/LookupServices/DTOsAndModels/VehicleLookup/SscRepairTraceDTO.md
+              - SSC Repair Trace Warranty Claim: generated/LookupServices/DTOsAndModels/VehicleLookup/SscRepairTraceWarrantyClaimDTO.md
+              - SSC Repair Trace Labor Line: generated/LookupServices/DTOsAndModels/VehicleLookup/SscRepairTraceLaborLineDTO.md
+              - SSC Repair Trace Labor Code: generated/LookupServices/DTOsAndModels/VehicleLookup/SscRepairTraceLaborCodeDTO.md
               - Paint Thickness Inspection: generated/LookupServices/DTOsAndModels/VehicleLookup/PaintThicknessInspectionDTO.md
               - Paint Thickness Panel: generated/LookupServices/DTOsAndModels/VehicleLookup/PaintThicknessInspectionPanelDTO.md
               - Accessory: generated/LookupServices/DTOsAndModels/VehicleLookup/AccessoryDTO.md
@@ -247,6 +251,7 @@ nav:
               - Quantity Lookup Results: generated/LookupServices/Enums/QuantityLookUpResults.md
               - Service Item Statuses: generated/LookupServices/Enums/VehcileServiceItemStatuses.md
               - Service Item Types: generated/LookupServices/Enums/VehcileServiceItemTypes.md
+              - SSC Repair Source: generated/LookupServices/Enums/SscRepairSource.md
               - Lookup Sources: generated/LookupServices/DTOsAndModels/Shared/LookupSources.md
 
   - BDD Specifications:
@@ -255,6 +260,7 @@ nav:
           - Vehicle Authorization: generated/Features/VehicleAuthorization.md
           - Vehicle Identifiers: generated/Features/VehicleIdentifiers.md
           - Vehicle SSC: generated/Features/VehicleSSC.md
+          - Vehicle Lookup Logging: generated/Features/VehicleLookupLogging.md
           - Vehicle Specification: generated/Features/VehicleSpecification.md
           - Vehicle Accessories: generated/Features/VehicleAccessories.md
           - Vehicle Paint Thickness: generated/Features/VehiclePaintThickness.md
@@ -297,7 +303,7 @@ nav:
           - Vehicle Lookup (Wrapper): web-components/components/vehicle-lookup.md
           - Vehicle Specification: web-components/components/vehicle-specification.md
           - Vehicle Accessories: web-components/components/vehicle-accessories.md
-          - Warranty Details: web-components/components/warranty-details.md
+          - Special Service Campaigns: web-components/components/ssc.md
           - Service History: web-components/components/service-history.md
           - Paint Thickness: web-components/components/paint-thickness.md
           - Swift Claim: web-components/components/swift-claim.md

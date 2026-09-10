@@ -5,16 +5,17 @@ import { getMockFile } from '~features/mocks';
 
 import vehicleLookupWrapperSchema from '~locales/vehicleLookup/wrapper-type';
 
+import { VehicleSsc } from './vehicle-ssc';
 import { VehicleAccessories } from './vehicle-accessories';
 import { VehicleSpecification } from './vehicle-specification';
 import { VehicleClaimableItems } from './vehicle-claimable-items';
 import { VehiclePaintThickness } from './vehicle-paint-thickness';
 import { VehicleServiceHistory } from './vehicle-service-history';
-import { VehicleWarrantyDetails } from './vehicle-warranty-details';
 import { VehicleWarrantyTimeline } from './vehicle-warranty-timeline';
 import { VehicleSaleInformation } from './vehicle-sale-information';
 
 import { DotNetObjectReference } from '~features/blazor-ref';
+import { RequestHeadersProvider, VehicleLookupComponent } from '~features/vehicle-lookup-component';
 import { VehicleInfoLayout } from '~features/vehicle-info-layout/vehicle-info-layout';
 import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
@@ -25,7 +26,6 @@ const componentTags = {
   vehicleServiceHistory: 'vehicle-service-history',
   vehicleClaimableItems: 'vehicle-claimable-items',
   vehicleSaleInformation: 'vehicle-sale-information',
-  vehicleWarrantyDetails: 'vehicle-warranty-details',
   vehicleWarrantyTimeline: 'vehicle-warranty-timeline',
   vehicleSsc: 'vehicle-ssc',
 } as const;
@@ -37,12 +37,13 @@ export type ComponentMap = {
   [componentTags.vehiclePaintThickness]: VehiclePaintThickness;
   [componentTags.vehicleClaimableItems]: VehicleClaimableItems;
   [componentTags.vehicleSaleInformation]: VehicleSaleInformation;
-  [componentTags.vehicleWarrantyDetails]: VehicleWarrantyDetails;
   [componentTags.vehicleWarrantyTimeline]: VehicleWarrantyTimeline;
-  [componentTags.vehicleSsc]?: VehicleWarrantyDetails;
+  [componentTags.vehicleSsc]: VehicleSsc;
 };
 
 export type ActiveElement = (typeof componentTags)[keyof typeof componentTags] | '';
+
+const hasEntries = (value?: object | null) => !!value && typeof value === 'object' && Object.keys(value).length > 0;
 
 @Component({
   shadow: true,
@@ -78,10 +79,24 @@ export class VehicleLookup implements MultiLingual {
   @Prop() mockRecaptcha: boolean = false;
   @Prop() disableVinValidation: boolean = false;
   @Prop() queryString: string = '';
+  /**
+   * Appended to the SSC tab's own lookup request only — e.g. a logging flag — so that only a search
+   * made from the SSC tab counts as a campaign check. A search from any other tab leaves the SSC tab
+   * in its "check required" state, which names the VIN and offers to run the check itself. Never
+   * joins the panel's trace request: a trace re-reads a lookup that was already logged.
+   */
   @Prop() sscQueryString: string = '';
-  @Prop() separateSsc: boolean = false;
   @Prop() hiddenTabs: string = '';
   @Prop() childrenProps?: string | object;
+
+  /**
+   * Asked for the current request headers before every request a child makes on its own — a
+   * trace, a claim, the unauthorized campaign lookup — so a host can refresh its token on demand
+   * instead of the children reusing the headers captured at the last search.
+   */
+  @Prop() requestHeadersProvider?: RequestHeadersProvider;
+  /** Name of a [JSInvokable] method on the Blazor reference that answers with the current request headers. */
+  @Prop() blazorRequestHeadersProvider = '';
 
   @Prop() blazorErrorStateListener = '';
   @Prop() errorStateListener?: (newError: string) => void;
@@ -99,6 +114,9 @@ export class VehicleLookup implements MultiLingual {
 
   private searchGeneration = 0;
 
+  /** The headers the host passed with the most recent search; the fallback when it supplies no provider. */
+  private lastRequestHeaders?: object;
+
   @State() blazorRef?: DotNetObjectReference;
 
   @Element() el: HTMLElement;
@@ -109,27 +127,22 @@ export class VehicleLookup implements MultiLingual {
     const vehicleAccessories = this.el.shadowRoot.getElementById('vehicle-accessories') as unknown as VehicleAccessories;
     const vehicleClaim = this.el.shadowRoot.getElementById('vehicle-claimable-items') as unknown as VehicleClaimableItems;
     const vehicleHistory = this.el.shadowRoot.getElementById('vehicle-service-history') as unknown as VehicleServiceHistory;
-    const vehicleDetails = this.el.shadowRoot.getElementById('vehicle-warranty-details') as unknown as VehicleWarrantyDetails;
     const vehicleTimeline = this.el.shadowRoot.getElementById('vehicle-warranty-timeline') as unknown as VehicleWarrantyTimeline;
     const vehicleThickness = this.el.shadowRoot.getElementById('vehicle-paint-thickness') as unknown as VehiclePaintThickness;
     const vehicleSpecification = this.el.shadowRoot.getElementById('vehicle-specification') as unknown as VehicleSpecification;
     const vehicleSaleInformation = this.el.shadowRoot.getElementById('vehicle-sale-information') as unknown as VehicleSaleInformation;
-    const vehicleSsc = this.separateSsc ? (this.el.shadowRoot.getElementById('vehicle-ssc') as unknown as VehicleWarrantyDetails) : null;
+    const vehicleSsc = this.el.shadowRoot.getElementById('vehicle-ssc') as unknown as VehicleSsc;
 
     this.componentsList = {
       [componentTags.vehicleClaimableItems]: vehicleClaim,
       [componentTags.vehicleServiceHistory]: vehicleHistory,
-      [componentTags.vehicleWarrantyDetails]: vehicleDetails,
       [componentTags.vehicleWarrantyTimeline]: vehicleTimeline,
       [componentTags.vehicleAccessories]: vehicleAccessories,
       [componentTags.vehiclePaintThickness]: vehicleThickness,
       [componentTags.vehicleSpecification]: vehicleSpecification,
       [componentTags.vehicleSaleInformation]: vehicleSaleInformation,
+      [componentTags.vehicleSsc]: vehicleSsc,
     };
-
-    if (vehicleSsc) {
-      this.componentsList[componentTags.vehicleSsc] = vehicleSsc;
-    }
 
     Object.values(this.componentsList).forEach(element => {
       if (!element) return;
@@ -137,6 +150,10 @@ export class VehicleLookup implements MultiLingual {
       element.errorCallback = this.syncErrorAcrossComponents;
       element.loadingStateChange = this.loadingStateChangingMiddleware;
       element.loadedResponse = newResponse => this.handleLoadData(newResponse, element);
+      // Every child asks the wrapper, and the wrapper asks the host, so a token refreshed for one
+      // request is refreshed for all of them. Only the children that make follow-up requests of
+      // their own declare the prop; on the others this is an inert expando.
+      (element as unknown as VehicleLookupComponent).requestHeadersProvider = this.resolveRequestHeaders;
     });
 
     if (vehicleClaim && this.dynamicClaimActivate) {
@@ -176,10 +193,16 @@ export class VehicleLookup implements MultiLingual {
     });
   };
 
-  private getSscElement(): VehicleWarrantyDetails | null {
-    if (this.separateSsc) return this.componentsList[componentTags.vehicleSsc] || null;
-    return this.componentsList[componentTags.vehicleWarrantyDetails] || null;
-  }
+  /**
+   * The current headers for a request made on the host's behalf. The host's own provider wins —
+   * it can refresh a token before answering — and the headers it passed with the last search are
+   * the fallback for hosts that only ever push headers at search time.
+   */
+  private resolveRequestHeaders: RequestHeadersProvider = async () => {
+    if (this.requestHeadersProvider) return await this.requestHeadersProvider();
+    if (this.blazorRef && this.blazorRequestHeadersProvider) return await this.blazorRef.invokeMethodAsync(this.blazorRequestHeadersProvider);
+    return this.lastRequestHeaders;
+  };
 
   @Method()
   async handleLoadData(newResponse: VehicleLookupDTO, activeElement) {
@@ -191,24 +214,19 @@ export class VehicleLookup implements MultiLingual {
     // Skip distributing to non-active components if a new search has started
     if (generation !== this.searchGeneration) return;
 
-    const sscElement = this.sscQueryString ? this.getSscElement() : null;
-    // Only clear SSC when we know the search came from a specific non-SSC tab.
+    const sscElement = this.sscQueryString ? this.componentsList[componentTags.vehicleSsc] || null : null;
+    // Only skip SSC when we know the search came from a specific non-SSC tab.
     // When activeElement is null (programmatic data injection), distribute to all components.
-    const shouldClearSsc = sscElement && activeElement !== null && activeElement !== sscElement;
+    const shouldSkipSsc = sscElement && activeElement !== null && activeElement !== sscElement;
 
     Object.values(this.componentsList).forEach(element => {
       if (element === null || element === activeElement || !newResponse) return;
 
-      // When sscQueryString is set, clear SSC data on the SSC-showing component
-      // if the search was triggered from a non-SSC tab (prevents viewing SSC without logging)
-      if (shouldClearSsc && element === sscElement) {
-        if (this.separateSsc) {
-          // SSC-only component: reset to empty state
-          (element as VehicleWarrantyDetails).clearData();
-        } else {
-          // Combined warranty+SSC: distribute data with SSC stripped
-          element.fetchVin({ ...newResponse, ssc: [], sscLogId: null });
-        }
+      // When sscQueryString is set, the SSC tab's own request is the logged one. A search from any
+      // other tab must not show campaigns that were never logged as looked up — but a blank SSC tab
+      // would read as "no campaigns", so the tab is told the check was skipped and offers to run it.
+      if (shouldSkipSsc && element === sscElement) {
+        void (element as VehicleSsc).skipLookup(newResponse.vin || '');
         return;
       }
 
@@ -237,13 +255,17 @@ export class VehicleLookup implements MultiLingual {
   async fetchVin(vin: string, headers: any = {}) {
     const activeElement = this.componentsList[this.activeElement] || null;
 
-    this.componentsList[componentTags.vehicleClaimableItems].headers = headers;
+    // A host that supplies a provider may search without passing headers at all; the child still
+    // receives explicit headers, so every panel behaves the same whichever way the host works.
+    const resolvedHeaders = hasEntries(headers) ? headers : await this.resolveRequestHeaders();
+
+    if (hasEntries(resolvedHeaders)) this.lastRequestHeaders = resolvedHeaders;
 
     if (!activeElement) return;
 
     this.searchGeneration++;
 
-    activeElement.fetchVin(vin, headers);
+    activeElement.fetchVin(vin, resolvedHeaders || {});
   }
   // #endregion
   render() {
@@ -253,7 +275,6 @@ export class VehicleLookup implements MultiLingual {
       [componentTags.vehicleClaimableItems]: {},
       [componentTags.vehiclePaintThickness]: {},
       [componentTags.vehicleServiceHistory]: {},
-      [componentTags.vehicleWarrantyDetails]: {},
       [componentTags.vehicleWarrantyTimeline]: {},
       [componentTags.vehicleSaleInformation]: {},
       [componentTags.vehicleSsc]: {},
@@ -320,21 +341,6 @@ export class VehicleLookup implements MultiLingual {
           {...props[componentTags.vehicleSaleInformation]}
         />
       ),
-      'vehicle-warranty-details': (
-        <vehicle-warranty-details
-          coreOnly
-          show-ssc={!this.separateSsc}
-          isDev={this.isDev}
-          mockRecaptcha={this.mockRecaptcha}
-          disableVinValidation={this.disableVinValidation}
-          show-warranty="true"
-          base-url={this.baseUrl}
-          language={this.language}
-          query-string={!this.separateSsc && this.sscQueryString ? [this.queryString, this.sscQueryString].filter(Boolean).join('&') : this.queryString}
-          id={componentTags.vehicleWarrantyDetails}
-          {...props[componentTags.vehicleWarrantyDetails]}
-        ></vehicle-warranty-details>
-      ),
       'vehicle-warranty-timeline': (
         <vehicle-warranty-timeline
           coreOnly
@@ -347,25 +353,20 @@ export class VehicleLookup implements MultiLingual {
           {...props[componentTags.vehicleWarrantyTimeline]}
         />
       ),
-      ...(this.separateSsc
-        ? {
-            'vehicle-ssc': (
-              <vehicle-warranty-details
-                coreOnly
-                show-ssc="true"
-                isDev={this.isDev}
-                mockRecaptcha={this.mockRecaptcha}
-                disableVinValidation={this.disableVinValidation}
-                show-warranty="false"
-                base-url={this.baseUrl}
-                language={this.language}
-                query-string={[this.queryString, this.sscQueryString].filter(Boolean).join('&')}
-                id={componentTags.vehicleSsc}
-                {...props[componentTags.vehicleSsc]}
-              />
-            ),
-          }
-        : {}),
+      'vehicle-ssc': (
+        <vehicle-ssc
+          coreOnly
+          isDev={this.isDev}
+          mockRecaptcha={this.mockRecaptcha}
+          disableVinValidation={this.disableVinValidation}
+          base-url={this.baseUrl}
+          language={this.language}
+          query-string={this.queryString}
+          lookup-query-string={this.sscQueryString}
+          id={componentTags.vehicleSsc}
+          {...props[componentTags.vehicleSsc]}
+        />
+      ),
       'vehicle-service-history': (
         <vehicle-service-history
           coreOnly

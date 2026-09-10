@@ -14,11 +14,19 @@ public class VehicleLookupRequestOptions
     public string LanguageCode { get; set; } = "en";
     /// <summary>Whether to skip broker stock lookup for this request.</summary>
     public bool IgnoreBrokerStock { get; set; }
-    /// <summary>Whether to insert an SSC lookup audit log entry.</summary>
+    /// <summary>
+    /// Whether to insert an SSC lookup audit log entry. The log is a KPI entry — distributors count SSC lookups
+    /// from it — so it is written once per lookup and never for a diagnostic re-read: when
+    /// <see cref="TraceSSCEvaluation"/> or <see cref="TraceServiceItemEvaluation"/> is set the flag is ignored,
+    /// because a trace request re-reads a lookup that was already logged.
+    /// </summary>
     public bool InsertSSCLog { get; set; }
     /// <summary>The SSC log info to record if InsertSSCLog is true.</summary>
     public SSCLogInfo SSCLogInfo { get; set; }
-    /// <summary>Whether to insert a customer vehicle lookup audit log entry.</summary>
+    /// <summary>
+    /// Whether to insert a customer vehicle lookup audit log entry. Ignored, like <see cref="InsertSSCLog"/>,
+    /// when the request asks for an evaluation trace.
+    /// </summary>
     public bool InsertCustomerVehcileLookupLog { get; set; }
     /// <summary>The customer vehicle lookup log info to record.</summary>
     public CustomerVehicleLookupLogInfo CustomerVehicleLookupLogInfo { get; set; }
@@ -46,6 +54,16 @@ public class VehicleLookupRequestOptions
     /// per-item allocations; do not leave on in production hot paths.
     /// </summary>
     public bool TraceServiceItemEvaluation { get; set; }
+
+    /// <summary>
+    /// When true, every <see cref="SscDTO"/> in the response carries a <see cref="SscDTO.Trace"/> explaining
+    /// how its repair status was decided: the campaign's labor codes and their configured interchangeable
+    /// codes, every warranty claim on the vehicle with how it was judged, and the service-history labor lines
+    /// that matched. Off by default. The trace lists claim and invoice details, so the endpoint should turn it
+    /// on only for callers permitted to see them — typically behind the same gate as
+    /// <see cref="TraceServiceItemEvaluation"/>.
+    /// </summary>
+    public bool TraceSSCEvaluation { get; set; }
 
     /// <summary>
     /// The model's service menu — whether to include it

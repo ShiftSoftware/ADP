@@ -9,7 +9,7 @@ This section provided all the components **Full Documentation**, **Demo**, **Com
     - [Vehicle Lookup (Wrapper)](vehicle-lookup.md)
     - [Vehicle Specification](vehicle-specification.md)
     - [Vehicle Accessories](vehicle-accessories.md)
-    - [Warranty Details](warranty-details.md)
+    - [Special Service Campaigns](ssc.md)
     - [Service History](service-history.md)
     - [Paint Thickness](paint-thickness.md)
     - [Swift Claim](swift-claim.md)

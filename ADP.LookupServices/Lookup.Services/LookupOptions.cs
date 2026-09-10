@@ -133,6 +133,19 @@ public class LookupOptions
     /// pure, deterministic function; ADP calls it once per distinct SSC part number.
     /// </summary>
     public Func<string, string>? PartNumberStorageKeyResolver { get; set; }
+    /// <summary>
+    /// Groups of labor operation codes that dealer systems use interchangeably for the same SSC (safety recall)
+    /// work. The SSC feed lists one operation code per campaign, but a dealer may book the same repair under a
+    /// sibling code (a revision suffix, a superseded number), and without this the repair goes unrecognised —
+    /// the recall shows as still open on a vehicle that was fixed. Each inner list is one set of equivalent
+    /// codes; the campaign may list any of them and a warranty claim or service-history line carrying any other
+    /// member of the same set counts as that campaign's repair. Groups that share a code are merged.
+    /// <para>Codes are matched trimmed and case-insensitively. The groups are deliberately not scoped to a
+    /// campaign: a code belongs to exactly one campaign family in practice, and the campaign codes themselves
+    /// are the least reliable key in hand-maintained data. Keep this list in the host's configuration; it is
+    /// deployment-specific data, not platform behaviour. Empty by default, which changes nothing.</para>
+    /// </summary>
+    public List<List<string>> SSCInterchangeableLaborCodeGroups { get; set; } = new();
     /// <summary>Whether to include free service items that have not yet been activated (e.g., awaiting warranty activation).</summary>
     public bool IncludeInactivatedFreeServiceItems { get; set; }
     /// <summary>

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Warranty details — adp-web-components</title>
+    <title>Special service campaigns — adp-web-components</title>
 
     <meta name="adp-publish" content="false" />
 
@@ -15,7 +15,7 @@
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
 
-    <script src="./warranty-mock-data.js"></script>
+    <script src="./mock-data.js"></script>
     <script src="./mock-loader.js"></script>
     <script type="module" src="/templates/harness.js"></script>
     <script defer src="/templates/vendor/alpine.js"></script>
@@ -28,10 +28,11 @@
     <div class="mx-auto flex max-w-[1180px] flex-col gap-8 px-4 py-10 sm:px-8">
       <header>
         <p class="eyebrow text-neutral">adp-web-components · vehicle lookup</p>
-        <h1 class="mt-1 text-2xl font-bold tracking-tight">Warranty details</h1>
+        <h1 class="mt-1 text-2xl font-bold tracking-tight">Special service campaigns</h1>
         <p class="lede text-base-content/70 mt-2">
-          Warranty status and SSC campaigns in one card. <code>show-ssc</code> and <code>show-warranty</code> select which halves render, and an unauthorized SSC lookup falls back
-          to its own endpoint behind reCAPTCHA.
+          Every safety recall on the vehicle with its repair status, labor codes and parts. With <code>show-trace</code> each row opens the evidence behind its status — the
+          campaign record, every warranty claim, the matching service-history lines. An unauthorized vehicle falls back to a reCAPTCHA-gated check with the manufacturer. Use
+          <code>?source=generated</code> for fixtures that carry a trace.
         </p>
       </header>
 
@@ -39,11 +40,11 @@
         class="flex flex-col gap-4"
         x-data="harness({
           mocks: 'vehicle-lookup',
-          // This card shows warranty and SSC campaigns, so either one is enough.
-          has: vehicle => Boolean(vehicle?.warranty || vehicle?.ssc?.length),
+          has: vehicle => Boolean(vehicle?.ssc?.length) || vehicle?.isAuthorized === false,
           labels: {
-            JTMABBBJ9P4099200: 'multiple warranties',
-            JTMABBBJ9P4099294: 'broker stock',
+            JTMHX01J8L4198293: 'open + repaired, traced',
+            JTMHF33P5D5012345: 'open campaign',
+            JTEBU5JR8L5234567: 'repaired campaign',
           },
           events: {
             unauthorizedSscLookupResponse: status => ['ssc lookup', status],
@@ -54,18 +55,17 @@
         <div data-harness-bar x-cloak></div>
 
         <div class="frame card bg-base-100 border-base-300 border p-5">
-          <vehicle-warranty-details
+          <vehicle-ssc
             id="subject"
             user-id="1"
             language="en"
-            show-ssc="true"
             query-string=""
-            show-warranty="true"
+            show-trace="true"
             brand-integration-id="TYT"
             recaptcha-key="6LetFoYqAAAAAE0fg-070Qtm3z-DG24sMJ8wzY1f"
             base-url="http://localhost:7204/api/secure-vehicle-lookup/"
             unauthorized-ssc-lookup-base-url="http://localhost:7174/api/secure-unauthorized-ssc-lookup/"
-          ></vehicle-warranty-details>
+          ></vehicle-ssc>
         </div>
 
         <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->

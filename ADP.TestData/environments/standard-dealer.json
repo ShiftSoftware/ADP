@@ -31,7 +31,14 @@
       "Key": "un-invoiced-broker-warning",
       "BodyContent": "This Vehicle is not yet invoiced by the following Trusted Business Partner: <strong>{BrokerName}</strong>",
       "ConfirmationText": "Confirm Claiming without Trusted Business Partner Invoice"
-    }
+    },
+    "SSCInterchangeableLaborCodeGroups": [
+      [
+        "LAB-FP-01",
+        "LAB-FP-01A",
+        "LAB-FP-010"
+      ]
+    ]
   },
   "Companies": [
     {
@@ -147,7 +154,7 @@
           "Description": "Fuel pump relay",
           "LaborCode1": "LAB-FP-01",
           "PartNumber1": "90987-02027",
-          "RepairDate": "2024-03-20"
+          "RepairDate": null
         }
       ],
       "WarrantyClaims": [
@@ -158,10 +165,12 @@
           "LaborOperationNumberMain": "LAB-FP-01",
           "LaborLines": [
             {
-              "LaborCode": "LAB-FP-01",
+              "LaborCode": "LAB-FP-01A",
               "InvoiceStatus": "C"
             }
-          ]
+          ],
+          "RepairCompletionDate": "2024-03-20",
+          "DistributorComment": "Fuel pump relay replaced under campaign"
         }
       ],
       "LaborLines": [

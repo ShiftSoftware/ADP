@@ -4,8 +4,9 @@ import { ErrorKeys } from '~features/multi-lingual';
 import { BlazorInvokableFunction } from '~features/blazor-ref';
 
 import { VehicleLookupMock, VehicleRequestHeaders } from './types';
+import { RequestHeadersSource } from './request-headers';
 
-export interface VehicleLookupComponent extends VehicleRequestHeaders {
+export interface VehicleLookupComponent extends VehicleRequestHeaders, RequestHeadersSource {
   isDev: boolean;
   disableVinValidation?: boolean;
   baseUrl: string;
@@ -13,6 +14,12 @@ export interface VehicleLookupComponent extends VehicleRequestHeaders {
   isError: boolean;
   isLoading: boolean;
   queryString: string;
+  /**
+   * Appended to the vehicle lookup request only — never to a component's follow-up requests such as
+   * a trace. Where a host puts a lookup-logging flag: a trace re-reads a lookup that was already
+   * logged and must not be counted again.
+   */
+  lookupQueryString?: string;
   errorMessage?: ErrorKeys;
   mockData: VehicleLookupMock;
   vehicleLookup?: VehicleLookupDTO;

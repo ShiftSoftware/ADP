@@ -78,6 +78,9 @@ public class GeneratorLookupOptions
     /// </summary>
     public List<ServiceCodeConvention> ServiceMilestoneConventions { get; set; } = new();
 
+    /// <summary>Groups of labor codes used interchangeably for SSC repairs, exactly as in production LookupOptions.</summary>
+    public List<List<string>> SSCInterchangeableLaborCodeGroups { get; set; } = new();
+
     public LookupOptions ToLookupOptions(
         Dictionary<long, string> companyNames,
         Dictionary<long, string> branchNames,
@@ -95,6 +98,7 @@ public class GeneratorLookupOptions
             DistributorStockPartLookupQuantityThreshold = DistributorStockPartLookupQuantityThreshold,
             ShowPartLookupStockQauntity = ShowPartLookupStockQauntity,
             EnableManufacturerLookup = EnableManufacturerLookup,
+            SSCInterchangeableLaborCodeGroups = SSCInterchangeableLaborCodeGroups,
         };
 
         options.ServiceMilestones.Conventions = ServiceMilestoneConventions;

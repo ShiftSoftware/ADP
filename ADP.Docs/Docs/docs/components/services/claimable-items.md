@@ -323,7 +323,7 @@ If a vehicle has a successful claim for an item that *no longer matches* the cur
 
 ## Claim Submission & Validation
 
-Claiming is performed via the **Vehicle Lookup** screen — in the dashboard, or via the embedded `<vehicle-warranty-details>` web component.
+Claiming is performed via the **Vehicle Lookup** screen — in the dashboard, or via the embedded `<vehicle-claimable-items>` web component.
 
 Each item declares:
 
@@ -366,7 +366,7 @@ The distributor's setup and operational dashboard typically exposes:
 
 - **Campaigns** — the umbrella entity carrying name, dates, brands / countries / companies, trigger, and repeat behaviour.
 - **Claimable Items** — the per-item catalog editor (name, printout fields, mileage cap, claiming method, attachment behaviour, validity, costing).
-- **Vehicle Lookup** — the per-VIN screen where dealers view and claim items, backed by the `<vehicle-warranty-details>` web component, with optional `<vin-extractor>` for camera-based VIN scanning.
+- **Vehicle Lookup** — the per-VIN screen where dealers view and claim items, backed by the `<vehicle-lookup>` web component and its `<vehicle-claimable-items>` panel, with optional `<vin-extractor>` for camera-based VIN scanning.
 - **Service Activation** — the form for pushing paid services (e.g. Extended Warranty) onto a VIN, capturing customer profile and invoice context.
 - **Item Claims** — claim list and detail, including the distributor-side status workflow (accept, reject, flag, certify).
 - **Reimbursement Certificates & Invoices** — the settlement workflow described above.

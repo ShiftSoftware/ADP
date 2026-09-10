@@ -151,7 +151,7 @@ public class VehicleLookupService
             Identifiers = new VehicleIdentifierEvaluator(companyDataAggregate).Evaluate(vehicle),
             VehicleSpecification = await new VehicleSpecificationEvaluator(vehicleLookupStorageService).Evaluate(vehicle, requestOptions),
             ServiceHistory = await new VehicleServiceHistoryEvaluator(companyDataAggregate, lookupOptions, this.serviceProvider).Evaluate(requestOptions.LanguageCode, requestOptions.VehicleServiceHistoryConsistencyLevel),
-            SSC = new VehicleSSCEvaluator(companyDataAggregate).Evaluate(),
+            SSC = new VehicleSSCEvaluator(companyDataAggregate, lookupOptions).Evaluate(requestOptions.TraceSSCEvaluation),
             NextServiceDate = companyDataAggregate.LaborLines?.Max(x => x.NextServiceDate),
             Accessories = await new VehicleAccessoriesEvaluator(companyDataAggregate, lookupOptions, serviceProvider).Evaluate(requestOptions.LanguageCode),
             SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, lookupOptions, serviceProvider, vehicleLookupStorageService).Evaluate(vehicle, ownership, requestOptions),
@@ -256,7 +256,17 @@ public class VehicleLookupService
                 .Evaluate(serviceItemsResult.activationRequired, requestOptions.RequestingCompanyID);
         }
 
-        if (!disableLogs && requestOptions.InsertSSCLog)
+        // KPI INTEGRITY — READ BEFORE CHANGING.
+        // A logged lookup is a KPI entry: distributors count SSC lookups from these rows. A request that asks
+        // for an evaluation trace is a diagnostic re-read of a lookup that was already made and logged — the
+        // web components send ?trace=… as a follow-up request, never as the lookup itself — and it must never
+        // be counted as a lookup, or every opened trace drawer adds a fake entry. The log flag *does* arrive
+        // on trace requests, because hosts put it on the tab's query string, so the flag alone cannot be
+        // trusted here. Hosts drop the flag on traced requests as well; this is the guarantee for every host,
+        // pinned by VehicleLookupLogging.feature. Do not weaken it to "log unless the host says otherwise".
+        var diagnosticRead = requestOptions.TraceSSCEvaluation || requestOptions.TraceServiceItemEvaluation;
+
+        if (!disableLogs && requestOptions.InsertSSCLog && !diagnosticRead)
         {
             //_ = Task.Run(async () =>
             //{
@@ -278,7 +288,8 @@ public class VehicleLookupService
             //});
         }
 
-        if (!disableLogs && requestOptions.InsertCustomerVehcileLookupLog)
+        // Same rule as the SSC log above: a traced request is a re-read, not a customer lookup.
+        if (!disableLogs && requestOptions.InsertCustomerVehcileLookupLog && !diagnosticRead)
         {
             //_ = Task.Run(async () =>
             //{

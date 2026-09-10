@@ -155,20 +155,20 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table544 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table564 = new global::Reqnroll.Table(new string[] {
                             "PartNumber",
                             "PartDescription",
                             "Image"});
-                table544.AddRow(new string[] {
+                table564.AddRow(new string[] {
                             "ACC-001",
                             "Floor mats",
                             "img001.jpg"});
-                table544.AddRow(new string[] {
+                table564.AddRow(new string[] {
                             "ACC-002",
                             "Roof rack",
                             "img002.jpg"});
 #line 6
-  await testRunner.GivenAsync("accessories:", ((string)(null)), table544, "Given ");
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table564, "Given ");
 #line hidden
 #line 10
   await testRunner.AndAsync("the accessory image resolver maps \"img001.jpg\" to \"https://cdn.example.com/img001" +
@@ -215,16 +215,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table545 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table565 = new global::Reqnroll.Table(new string[] {
                             "PartNumber",
                             "PartDescription",
                             "Image"});
-                table545.AddRow(new string[] {
+                table565.AddRow(new string[] {
                             "ACC-001",
                             "Floor mats",
                             "img001.jpg"});
 #line 18
-  await testRunner.GivenAsync("accessories:", ((string)(null)), table545, "Given ");
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table565, "Given ");
 #line hidden
 #line 21
   await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");

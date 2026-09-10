@@ -2,16 +2,19 @@
  * Coverage timeline — the stylesheet for <vehicle-warranty-timeline>, ported from
  * src/templates/vehicle-lookup/extended-warranty-prototype.html.
  *
- * This is a separate component tag, not a mode of <vehicle-warranty-details>; that
- * panel keeps its own stylesheet and is untouched by anything here.
+ * Campaigns live in <vehicle-ssc>, which shares this design language through
+ * lookup-tokens.css but keeps its own stylesheet.
  */
 
 /* The panel chrome and the load transition every other vehicle-lookup panel gets. Without these the
    component still renders the layout's markup but none of its styling, which is why switching VIN
    used to cut straight from one vehicle to the next with no fade. */
 @import '../style/shift-skeleton.css';
+@import '../style/lookup-tokens.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 
+/* The palette, shadow and --settle come from lookup-tokens.css, shared with the other panels in
+   this design language; only what is particular to the timeline is declared here. */
 :host {
   display: block;
   /* The panel is embedded at whatever width the host gives it — a tab, a sidebar, a narrow column —
@@ -19,30 +22,6 @@
      in a 380px column and the totals were clipped off the side of the card. */
   container-type: inline-size;
   container-name: warranty-panel;
-  --paper: #ffffff;
-  --ink: #1a2530;
-  --muted: #5f6c78;
-  --line: #d5dce2;
-  --line-soft: #e8ecef;
-  --blue: #3071a9;
-  --blue-dark: #275e8f;
-  --green: #2c8a58;
-  --green-dark: #216b44;
-  --red: #b42318;
-  --red-dark: #9b2c2c;
-  --red-tint: #fff1f0;
-  --green-tint: #e8f4ed;
-  --violet: #755aa5;
-  --violet-dark: #5f4887;
-  --paper-soft: #f7f9fa;
-  --blue-tint: #e8f1f8;
-  /* Dates sit a shade darker than --muted. At 13px they are read, not glanced at, and the
-     muted grey was thin against the rail's soft paper. */
-  --date-ink: #46535e;
-  --shadow: 0 18px 45px rgba(27, 45, 61, 0.1), 0 2px 7px rgba(27, 45, 61, 0.06);
-  /* One duration for everything that appears, disappears or resizes, so the card settles as a
-     single movement instead of a sequence of unrelated ones. */
-  --settle: 320ms;
   /* How far text swells as it leaves. The panel header's VIN uses 1.5, but it is one short string
      centred in an empty bar; the same figure on a line of body text reads as a lunge. */
   --leave-scale: 1.25;

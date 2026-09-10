@@ -3,8 +3,8 @@ import { BlazorInvokable, smartInvokable } from '~features/blazor-ref';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
-import { vehicleRequestHeaders } from './types';
 import { VehicleLookupComponent } from './interface';
+import { resolveRequestHeaders } from './request-headers';
 import validateVin from '~lib/validate-vin';
 
 export const setVehicleLookupData = async (
@@ -102,13 +102,16 @@ export const getVehicleLookup = async (context: VehicleLookupComponent, generalP
   } else {
     if (!context?.baseUrl) throw new Error('noBaseUrl');
 
-    const componentHeaders = { ...headers };
+    // Headers passed with this call win and are remembered for the follow-up requests (trace,
+    // claim, unauthorized campaign lookup); without them the host's provider is asked, so a host
+    // that refreshes its token on demand never has to push headers into the element at all.
+    const componentHeaders = await resolveRequestHeaders(context, headers);
 
-    Object.entries(vehicleRequestHeaders).forEach(([componentHeaderKey, headerField]) => {
-      if (context[componentHeaderKey]) componentHeaders[headerField] = context[componentHeaderKey];
-    });
+    // The lookup-only part joins here and nowhere else: a follow-up request (a trace) is built from
+    // queryString alone, so a logging flag placed in lookupQueryString never rides on a re-read.
+    const query = [context?.queryString, context?.lookupQueryString].filter(Boolean).join('&');
 
-    const response = await fetch(`${context?.baseUrl}${vin}?${context?.queryString}`, { signal: context?.abortController.signal, headers: componentHeaders });
+    const response = await fetch(`${context?.baseUrl}${vin}?${query}`, { signal: context?.abortController.signal, headers: componentHeaders });
 
     const newData = (await response.json()) as VehicleLookupDTO;
 
