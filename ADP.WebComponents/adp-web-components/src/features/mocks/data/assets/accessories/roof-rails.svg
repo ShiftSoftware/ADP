@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+<style>.bg{fill:#f4f4f5}.k{fill:#27272a}.k2{fill:#3f3f46}.k3{fill:#52525b}.al{fill:#a1a1aa}.al2{fill:#d4d4d8}.ol{fill:none;stroke:#18181b;stroke-width:2;stroke-linejoin:round}.hl{fill:#f59e0b}.cap{fill:#71717a;font-size:11px;letter-spacing:.1em}</style>
+<rect class="bg" width="400" height="300"/>
+<path class="al" d="M70 132Q200 96 330 132L330 142Q200 108 70 142Z"/>
+<path class="al2" d="M70 132Q200 96 330 132L330 136Q200 102 70 136Z"/>
+<path class="k" d="M64 132h20v18h-20z M170 108h20v18h-20z M316 132h20v18h-20z"/>
+<path class="al" d="M70 186Q200 150 330 186L330 196Q200 162 70 196Z"/>
+<path class="al2" d="M70 186Q200 150 330 186L330 190Q200 156 70 190Z"/>
+<path class="k" d="M64 186h20v18h-20z M170 162h20v18h-20z M316 186h20v18h-20z"/>
+<text class="cap" x="200" y="282" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">GENUINE ACCESSORY · ROOF RAILS</text>
+</svg>

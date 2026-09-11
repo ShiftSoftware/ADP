@@ -10,7 +10,7 @@
       {
         "Key": "scan-warning",
         "BodyContent": "Please ensure that you scan a valid Service Invoice.<br/>QR code can be found on the Service Invoice.<br/><br/><strong>Claims submitted without a valid Service Invoice may be rejected.</strong>",
-        "ImageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03&spr=https&st=2026-05-29T14%3A57%3A01Z&se=2999-05-30T14%3A57%3A00Z&sr=b&sp=r&sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+        "ImageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
         "ConfirmationText": null
       }
     ],
@@ -30,26 +30,26 @@
       "CompanyId": 1,
       "CompanyName": "Al-Rashid Motors",
       "Branches": [
-        { "BranchId": 10, "BranchName": "Erbil Showroom" },
-        { "BranchId": 20, "BranchName": "Sulaymaniyah Branch" }
+        { "BranchId": 10, "BranchName": "Northgate Showroom" },
+        { "BranchId": 20, "BranchName": "Eastbridge Branch" }
       ]
     },
     {
       "CompanyId": 2,
       "CompanyName": "Gulf Auto Services",
       "Branches": [
-        { "BranchId": 30, "BranchName": "Basra Center" }
+        { "BranchId": 30, "BranchName": "Southport Center" }
       ]
     }
   ],
   "Countries": [
-    { "CountryId": 1, "CountryName": "Iraq" },
-    { "CountryId": 2, "CountryName": "Kuwait" }
+    { "CountryId": 1, "CountryName": "Meridia" },
+    { "CountryId": 2, "CountryName": "Solmara" }
   ],
   "Regions": [
-    { "RegionId": 10, "RegionName": "Kurdistan" },
-    { "RegionId": 20, "RegionName": "Southern Iraq" },
-    { "RegionId": 30, "RegionName": "Kuwait City" }
+    { "RegionId": 10, "RegionName": "Northern Highlands" },
+    { "RegionId": 20, "RegionName": "Southern Meridia" },
+    { "RegionId": 30, "RegionName": "Solmara City" }
   ],
   "Vehicles": {
     "JTEHF21A0Y0123456": {
@@ -167,6 +167,7 @@
           "VIN": "JTMHF33P5D5012345",
           "PartNumber": "PZ49E-X2653-ZA",
           "PartDescription": "Side Steps",
+          "Image": "Uploads/accessories/JTMHF33P5D5012345/side-steps.jpg",
           "CompanyID": 1,
           "JobNumber": 1,
           "InvoiceNumber": 200001
@@ -345,6 +346,7 @@
           "VIN": "JTEBU5JR8L5234567",
           "PartNumber": "PZ323-X2651-ZA",
           "PartDescription": "Roof Rails",
+          "Image": "Uploads/accessories/JTEBU5JR8L5234567/roof-rails.jpg",
           "CompanyID": 2,
           "JobNumber": 1,
           "InvoiceNumber": 300001
@@ -444,7 +446,7 @@
         "Quantity": 1,
         "Broker": {
           "ID": 100,
-          "Name": "Hawler Auto Broker",
+          "Name": "Summit Auto Broker",
           "IsDeleted": false,
           "AccountNumbers": [
             { "AccountNumber": "BRK-ACC-001", "CompanyID": 1 }
@@ -473,7 +475,7 @@
         "Quantity": 1,
         "Broker": {
           "ID": 300,
-          "Name": "Duhok Vehicle Trader",
+          "Name": "Crossroads Vehicle Trader",
           "IsDeleted": false,
           "AccountNumbers": [
             { "AccountNumber": "BRK-ACC-003", "CompanyID": 1 }
@@ -502,7 +504,7 @@
         "Quantity": 0,
         "Broker": {
           "ID": 200,
-          "Name": "Suli Trade Broker",
+          "Name": "Harbor Trade Broker",
           "IsDeleted": false,
           "AccountNumbers": [
             { "AccountNumber": "BRK-ACC-002", "CompanyID": 1 }

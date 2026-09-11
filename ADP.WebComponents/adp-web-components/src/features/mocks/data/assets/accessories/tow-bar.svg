@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+<style>.bg{fill:#f4f4f5}.k{fill:#27272a}.k2{fill:#3f3f46}.k3{fill:#52525b}.al{fill:#a1a1aa}.al2{fill:#d4d4d8}.ol{fill:none;stroke:#18181b;stroke-width:2;stroke-linejoin:round}.hl{fill:#f59e0b}.cap{fill:#71717a;font-size:11px;letter-spacing:.1em}</style>
+<rect class="bg" width="400" height="300"/>
+<rect class="k2" x="60" y="128" width="280" height="22" rx="6"/>
+<rect class="k" x="180" y="150" width="40" height="46" rx="4"/>
+<path class="k" d="M170 196h60l10 22h-80z"/>
+<rect class="al" x="196" y="86" width="8" height="42"/>
+<circle class="al" cx="200" cy="74" r="18"/><circle cx="192" cy="66" r="6" fill="#fff" opacity=".6"/>
+<circle cx="92" cy="139" r="5" fill="#d4d4d8"/><circle cx="132" cy="139" r="5" fill="#d4d4d8"/><circle cx="268" cy="139" r="5" fill="#d4d4d8"/><circle cx="308" cy="139" r="5" fill="#d4d4d8"/>
+<rect class="al2" x="120" y="200" width="160" height="6" rx="3"/>
+<text class="cap" x="200" y="282" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">GENUINE ACCESSORY · TOW BAR</text>
+</svg>

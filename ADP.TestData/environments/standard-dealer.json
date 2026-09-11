@@ -19,7 +19,7 @@
       {
         "Key": "attachment-warning",
         "BodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.<br/>A picture of the required document type is indicated on the right hand side of this warning message.<br/><br/><strong>Claims submitted without the necessary document will not be accepted</strong>",
-        "ImageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03&st=2025-08-11T18%3A45%3A24Z&se=2999-08-12T18%3A45%3A00Z&sr=b&sp=r&sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+        "ImageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/signed-claim-document.svg",
         "ConfirmationText": null
       }
     ],
@@ -80,25 +80,25 @@
   "Countries": [
     {
       "CountryId": 1,
-      "CountryName": "Iraq"
+      "CountryName": "Meridia"
     },
     {
       "CountryId": 2,
-      "CountryName": "Kuwait"
+      "CountryName": "Solmara"
     }
   ],
   "Regions": [
     {
       "RegionId": 10,
-      "RegionName": "Kurdistan"
+      "RegionName": "Northern Highlands"
     },
     {
       "RegionId": 20,
-      "RegionName": "Central Iraq"
+      "RegionName": "Central Meridia"
     },
     {
       "RegionId": 30,
-      "RegionName": "Kuwait City"
+      "RegionName": "Solmara City"
     }
   ],
   "Vehicles": {
@@ -244,6 +244,7 @@
           "VIN": "JTMHX01J8L4198293",
           "PartNumber": "PZ49E-X2653-ZA",
           "PartDescription": "Side Steps",
+          "Image": "Uploads/accessories/JTMHX01J8L4198293/side-steps.jpg",
           "CompanyID": 1,
           "JobNumber": 1,
           "InvoiceNumber": 100001
@@ -252,6 +253,7 @@
           "VIN": "JTMHX01J8L4198293",
           "PartNumber": "PZ323-X2651-ZA",
           "PartDescription": "Roof Rails",
+          "Image": "Uploads/accessories/JTMHX01J8L4198293/roof-rails.jpg",
           "CompanyID": 1,
           "JobNumber": 2,
           "InvoiceNumber": 100001

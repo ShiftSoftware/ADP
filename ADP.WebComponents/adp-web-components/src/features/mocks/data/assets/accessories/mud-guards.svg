@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+<style>.bg{fill:#f4f4f5}.k{fill:#27272a}.k2{fill:#3f3f46}.k3{fill:#52525b}.al{fill:#a1a1aa}.al2{fill:#d4d4d8}.ol{fill:none;stroke:#18181b;stroke-width:2;stroke-linejoin:round}.hl{fill:#f59e0b}.cap{fill:#71717a;font-size:11px;letter-spacing:.1em}</style>
+<rect class="bg" width="400" height="300"/>
+<path class="k" d="M96 70Q70 130 92 210Q120 232 170 226Q160 160 196 100Q150 60 96 70Z"/>
+<path class="k3" d="M108 88Q88 140 104 200Q124 214 156 208Q152 160 176 108Q140 78 108 88Z"/>
+<circle cx="112" cy="100" r="4" fill="#d4d4d8"/><circle cx="104" cy="150" r="4" fill="#d4d4d8"/><circle cx="116" cy="198" r="4" fill="#d4d4d8"/><circle cx="156" cy="206" r="4" fill="#d4d4d8"/>
+<path class="k" d="M236 100Q224 154 240 218Q264 238 316 234Q306 174 322 114Q290 78 236 100Z"/>
+<path class="k3" d="M250 116Q240 154 250 208Q270 222 300 216Q294 174 306 128Q282 104 250 116Z"/>
+<circle cx="252" cy="124" r="4" fill="#d4d4d8"/><circle cx="246" cy="170" r="4" fill="#d4d4d8"/><circle cx="258" cy="212" r="4" fill="#d4d4d8"/><circle cx="298" cy="216" r="4" fill="#d4d4d8"/>
+<text class="cap" x="200" y="282" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">GENUINE ACCESSORY · MUD GUARDS</text>
+</svg>

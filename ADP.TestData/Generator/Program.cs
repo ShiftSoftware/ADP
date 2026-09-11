@@ -28,6 +28,8 @@ var environmentsDir = arguments.TryGetValue("--environments", out var environmen
 var webComponentsOutputDir = Path.Combine(repoRoot, "ADP.WebComponents", "adp-web-components", "src", "features", "mocks", "data", "generated");
 var webComponentsDevDir = Path.Combine(repoRoot, "ADP.WebComponents", "adp-web-components", "www", "mocks", "generated");
 var docsOutputDir = Path.Combine(repoRoot, "ADP.Docs", "Docs", "docs", "web-components", "demo-data");
+// The neutral demo images the fixtures' URLs point at (DemoAssets); copied to dist/mocks/assets by the build.
+var assetsDir = Path.Combine(repoRoot, "ADP.WebComponents", "adp-web-components", "src", "features", "mocks", "data", "assets");
 
 Console.WriteLine($"Repo root: {repoRoot}");
 Console.WriteLine($"Environments: {environmentsDir}");
@@ -221,18 +223,23 @@ foreach (var envFile in Directory.GetFiles(environmentsDir, "*.json").OrderBy(f 
     });
 
     // === Write Output Files ===
+    var vehicleJson = JsonSerializer.Serialize(vehicleLookupOutput, serializeOptions);
+    var partJson = JsonSerializer.Serialize(partLookupOutput, serializeOptions);
+    var certificateJson = JsonSerializer.Serialize(certificateOutput, serializeOptions);
+
+    // Every bundled-asset URL the fixtures carry must name a file that ships in the package — the
+    // resolvers only ever emit files from the known set, so this catches a hand-typed ImageUrl in an
+    // environment (the claim-document pictures) or a drawing deleted from under a fixture. Fail the
+    // build rather than publish a fixture with a broken picture.
+    VerifyBundledAssets(assetsDir, envName, vehicleJson, partJson, certificateJson);
+
     foreach (var baseDir in outputDirs)
     {
         var envOutputDir = Path.Combine(baseDir, envName);
         Directory.CreateDirectory(envOutputDir);
 
-        var vehicleJson = JsonSerializer.Serialize(vehicleLookupOutput, serializeOptions);
         File.WriteAllText(Path.Combine(envOutputDir, "vehicle-lookup.json"), vehicleJson);
-
-        var partJson = JsonSerializer.Serialize(partLookupOutput, serializeOptions);
         File.WriteAllText(Path.Combine(envOutputDir, "part-lookup.json"), partJson);
-
-        var certificateJson = JsonSerializer.Serialize(certificateOutput, serializeOptions);
         File.WriteAllText(Path.Combine(envOutputDir, "paint-thickness-certificate.json"), certificateJson);
 
         Console.WriteLine($"  Output written to: {envOutputDir}");
@@ -439,6 +446,23 @@ static async Task<PartLookupDTO?> GeneratePartLookup(
         StockParts = await new PartStockEvaluator(partAggregate, options, serviceProvider)
             .Evaluate(distributorStockLookupQuantity, language),
     };
+}
+
+static void VerifyBundledAssets(string assetsDir, string envName, params string[] serializedFixtures)
+{
+    var urlPattern = new System.Text.RegularExpressions.Regex(
+        System.Text.RegularExpressions.Regex.Escape(DemoAssets.CdnBaseUrl) + "([^\"\\\\]+)");
+
+    var missing = serializedFixtures
+        .SelectMany(json => urlPattern.Matches(json).Select(m => m.Groups[1].Value))
+        .Distinct(StringComparer.Ordinal)
+        .Where(relative => !File.Exists(Path.Combine(assetsDir, relative.Replace('/', Path.DirectorySeparatorChar))))
+        .ToList();
+
+    if (missing.Count > 0)
+        throw new InvalidOperationException(
+            $"Environment '{envName}' references bundled demo assets that do not exist under '{assetsDir}': "
+            + string.Join(", ", missing));
 }
 
 static string FindRepoRoot(string startDir)

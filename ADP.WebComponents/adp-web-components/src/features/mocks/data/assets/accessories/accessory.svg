@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+<style>.bg{fill:#f4f4f5}.k{fill:#27272a}.k2{fill:#3f3f46}.k3{fill:#52525b}.al{fill:#a1a1aa}.al2{fill:#d4d4d8}.ol{fill:none;stroke:#18181b;stroke-width:2;stroke-linejoin:round}.hl{fill:#f59e0b}.cap{fill:#71717a;font-size:11px;letter-spacing:.1em}</style>
+<rect class="bg" width="400" height="300"/>
+<path class="k3" d="M110 120L200 80L290 120L200 160Z"/>
+<path class="k" d="M110 120L200 160V240L110 200Z"/>
+<path class="k2" d="M290 120L200 160V240L290 200Z"/>
+<path d="M155 100L245 140" stroke="#a1a1aa" stroke-width="12"/>
+<path d="M200 160V240" stroke="#f59e0b" stroke-width="4"/>
+<text class="cap" x="200" y="282" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">GENUINE ACCESSORY · PART</text>
+</svg>

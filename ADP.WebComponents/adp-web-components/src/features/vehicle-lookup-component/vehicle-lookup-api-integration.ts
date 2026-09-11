@@ -1,5 +1,6 @@
 import { ErrorKeys } from '~features/multi-lingual';
 import { BlazorInvokable, smartInvokable } from '~features/blazor-ref';
+import { localizeMockAssets } from '~features/mocks';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
@@ -96,7 +97,8 @@ export const getVehicleLookup = async (context: VehicleLookupComponent, generalP
   };
 
   if (context?.isDev) {
-    const newData = context?.mockData[vin];
+    // Fixture pictures point at the CDN copy of the package; a dev build reads the dev server's.
+    const newData = localizeMockAssets(context?.mockData[vin]);
 
     return handleResult(newData);
   } else {

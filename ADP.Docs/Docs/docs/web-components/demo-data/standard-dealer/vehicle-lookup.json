@@ -11,7 +11,7 @@
     },
     "saleInformation": {
       "countryID": "1",
-      "countryName": "Iraq",
+      "countryName": "Meridia",
       "companyID": "1",
       "companyName": "Sample Motors",
       "branchID": "10",
@@ -37,8 +37,8 @@
             "measuredThickness": 125.5,
             "panelPosition": "Front",
             "images": [
-              "https://picsum.photos/seed/sJTMHX01J8L419829320240110083000Hood1jpg/640/480",
-              "https://picsum.photos/seed/sJTMHX01J8L419829320240110083000Hood2jpg/640/480"
+              "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/hood.svg",
+              "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/hood-detail.svg"
             ]
           },
           {
@@ -47,8 +47,8 @@
             "panelSide": "Left",
             "panelPosition": "Front",
             "images": [
-              "https://picsum.photos/seed/419829320240110083000LeftFrontFender1jpg/640/480",
-              "https://picsum.photos/seed/419829320240110083000LeftFrontFender2jpg/640/480"
+              "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-left.svg",
+              "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-left-detail.svg"
             ]
           },
           {
@@ -57,8 +57,8 @@
             "panelSide": "Right",
             "panelPosition": "Front",
             "images": [
-              "https://picsum.photos/seed/19829320240110083000RightFrontFender1jpg/640/480",
-              "https://picsum.photos/seed/19829320240110083000RightFrontFender2jpg/640/480"
+              "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-right.svg",
+              "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-right-detail.svg"
             ]
           },
           {
@@ -67,8 +67,8 @@
             "panelSide": "Left",
             "panelPosition": "Front",
             "images": [
-              "https://picsum.photos/seed/8L419829320240110083000LeftFrontDoor1jpg/640/480",
-              "https://picsum.photos/seed/8L419829320240110083000LeftFrontDoor2jpg/640/480"
+              "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-left.svg",
+              "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-left-detail.svg"
             ]
           },
           {
@@ -77,8 +77,8 @@
             "panelSide": "Right",
             "panelPosition": "Front",
             "images": [
-              "https://picsum.photos/seed/L419829320240110083000RightFrontDoor1jpg/640/480",
-              "https://picsum.photos/seed/L419829320240110083000RightFrontDoor2jpg/640/480"
+              "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-right.svg",
+              "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-right-detail.svg"
             ]
           },
           {
@@ -87,8 +87,8 @@
             "panelSide": "Left",
             "panelPosition": "Rear",
             "images": [
-              "https://picsum.photos/seed/J8L419829320240110083000LeftRearDoor1jpg/640/480",
-              "https://picsum.photos/seed/J8L419829320240110083000LeftRearDoor2jpg/640/480"
+              "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-left.svg",
+              "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-left-detail.svg"
             ]
           },
           {
@@ -97,8 +97,8 @@
             "panelSide": "Right",
             "panelPosition": "Rear",
             "images": [
-              "https://picsum.photos/seed/8L419829320240110083000RightRearDoor1jpg/640/480",
-              "https://picsum.photos/seed/8L419829320240110083000RightRearDoor2jpg/640/480"
+              "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-right.svg",
+              "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-right-detail.svg"
             ]
           },
           {
@@ -120,8 +120,8 @@
             "measuredThickness": 135.0,
             "panelPosition": "Rear",
             "images": [
-              "https://picsum.photos/seed/HX01J8L419829320240110083000TailGate1jpg/640/480",
-              "https://picsum.photos/seed/HX01J8L419829320240110083000TailGate2jpg/640/480"
+              "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/tail-gate.svg",
+              "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/tail-gate-detail.svg"
             ]
           },
           {
@@ -166,7 +166,7 @@
         {
           "id": "EW-JTMHX01J8L4198293-DISTRIBUTOR",
           "providerCompanyID": "100",
-          "providerCompanyLogo": "https://picsum.photos/seed/company-100/320/160",
+          "providerCompanyLogo": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/badges/badge-4.svg",
           "providerCompanyName": "Sample Distributor",
           "startDate": "2027-02-01",
           "endDate": "2028-02-01"
@@ -174,7 +174,7 @@
         {
           "id": "EW-JTMHX01J8L4198293-PROVIDER",
           "providerCompanyID": "2",
-          "providerCompanyLogo": "https://picsum.photos/seed/company-2/320/160",
+          "providerCompanyLogo": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/badges/badge-2.svg",
           "providerCompanyName": "City Auto",
           "startDate": "2028-02-01",
           "endDate": "2029-02-01"
@@ -330,7 +330,7 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/signed-claim-document.svg",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
@@ -361,7 +361,7 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/signed-claim-document.svg",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
@@ -392,7 +392,7 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/signed-claim-document.svg",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
@@ -422,7 +422,7 @@
           },
           {
             "key": "attachment-warning",
-            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/signed-claim-document.svg",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
@@ -452,7 +452,7 @@
           },
           {
             "key": "attachment-warning",
-            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/signed-claim-document.svg",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
@@ -477,7 +477,7 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/signed-claim-document.svg",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
@@ -517,7 +517,7 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/signed-claim-document.svg",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
@@ -541,11 +541,13 @@
     "accessories": [
       {
         "partNumber": "PZ49E-X2653-ZA",
-        "description": "Side Steps"
+        "description": "Side Steps",
+        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/side-steps.svg"
       },
       {
         "partNumber": "PZ323-X2651-ZA",
-        "description": "Roof Rails"
+        "description": "Roof Rails",
+        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/roof-rails.svg"
       }
     ],
     "basicModelCode": "MXAA52"
@@ -562,7 +564,7 @@
     },
     "saleInformation": {
       "countryID": "1",
-      "countryName": "Iraq",
+      "countryName": "Meridia",
       "companyID": "1",
       "companyName": "Sample Motors",
       "branchID": "20",
@@ -605,7 +607,7 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/signed-claim-document.svg",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
@@ -636,7 +638,7 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/signed-claim-document.svg",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
@@ -661,7 +663,7 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/signed-claim-document.svg",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
@@ -686,7 +688,7 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/signed-claim-document.svg",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
@@ -716,7 +718,7 @@
           },
           {
             "key": "attachment-warning",
-            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/signed-claim-document.svg",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
@@ -741,7 +743,7 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/signed-claim-document.svg",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],

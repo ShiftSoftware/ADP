@@ -23,9 +23,9 @@
     "prices": [
       {
         "countryID": "1",
-        "countryName": "Iraq",
+        "countryName": "Meridia",
         "regionID": "10",
-        "regionName": "Kurdistan",
+        "regionName": "Northern Highlands",
         "retailPrice": {
           "value": 8.50,
           "unitPrices": [
@@ -45,9 +45,9 @@
       },
       {
         "countryID": "1",
-        "countryName": "Iraq",
+        "countryName": "Meridia",
         "regionID": "20",
-        "regionName": "Southern Iraq",
+        "regionName": "Southern Meridia",
         "retailPrice": {
           "value": 8.00,
           "unitPrices": [
@@ -95,9 +95,9 @@
     "prices": [
       {
         "countryID": "1",
-        "countryName": "Iraq",
+        "countryName": "Meridia",
         "regionID": "10",
-        "regionName": "Kurdistan",
+        "regionName": "Northern Highlands",
         "retailPrice": {
           "value": 7.50,
           "unitPrices": [
@@ -117,9 +117,9 @@
       },
       {
         "countryID": "2",
-        "countryName": "Kuwait",
+        "countryName": "Solmara",
         "regionID": "30",
-        "regionName": "Kuwait City",
+        "regionName": "Solmara City",
         "retailPrice": {
           "value": 8.00,
           "unitPrices": [
@@ -145,7 +145,7 @@
         "branchDeadStock": [
           {
             "companyBranchHashID": "BH-30",
-            "companyBranchName": "Basra Center",
+            "companyBranchName": "Southport Center",
             "quantity": 15
           }
         ]

@@ -20,8 +20,8 @@
         "measuredThickness": 125.5,
         "panelLabel": "Hood (Front)",
         "images": [
-          "https://picsum.photos/seed/sJTMHX01J8L419829320240110083000Hood1jpg/640/480",
-          "https://picsum.photos/seed/sJTMHX01J8L419829320240110083000Hood2jpg/640/480"
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/hood.svg",
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/hood-detail.svg"
         ]
       },
       {
@@ -31,8 +31,8 @@
         "measuredThickness": 118.0,
         "panelLabel": "Fender (Front Left)",
         "images": [
-          "https://picsum.photos/seed/419829320240110083000LeftFrontFender1jpg/640/480",
-          "https://picsum.photos/seed/419829320240110083000LeftFrontFender2jpg/640/480"
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-left.svg",
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-left-detail.svg"
         ]
       },
       {
@@ -42,8 +42,8 @@
         "measuredThickness": 120.3,
         "panelLabel": "Fender (Front Right)",
         "images": [
-          "https://picsum.photos/seed/19829320240110083000RightFrontFender1jpg/640/480",
-          "https://picsum.photos/seed/19829320240110083000RightFrontFender2jpg/640/480"
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-right.svg",
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-right-detail.svg"
         ]
       },
       {
@@ -53,8 +53,8 @@
         "measuredThickness": 115.0,
         "panelLabel": "Door (Front Left)",
         "images": [
-          "https://picsum.photos/seed/8L419829320240110083000LeftFrontDoor1jpg/640/480",
-          "https://picsum.photos/seed/8L419829320240110083000LeftFrontDoor2jpg/640/480"
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-left.svg",
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-left-detail.svg"
         ]
       },
       {
@@ -64,8 +64,8 @@
         "measuredThickness": 116.2,
         "panelLabel": "Door (Front Right)",
         "images": [
-          "https://picsum.photos/seed/L419829320240110083000RightFrontDoor1jpg/640/480",
-          "https://picsum.photos/seed/L419829320240110083000RightFrontDoor2jpg/640/480"
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-right.svg",
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-right-detail.svg"
         ]
       },
       {
@@ -75,8 +75,8 @@
         "measuredThickness": 122.0,
         "panelLabel": "Door (Rear Left)",
         "images": [
-          "https://picsum.photos/seed/J8L419829320240110083000LeftRearDoor1jpg/640/480",
-          "https://picsum.photos/seed/J8L419829320240110083000LeftRearDoor2jpg/640/480"
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-left.svg",
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-left-detail.svg"
         ]
       },
       {
@@ -86,8 +86,8 @@
         "measuredThickness": 121.5,
         "panelLabel": "Door (Rear Right)",
         "images": [
-          "https://picsum.photos/seed/8L419829320240110083000RightRearDoor1jpg/640/480",
-          "https://picsum.photos/seed/8L419829320240110083000RightRearDoor2jpg/640/480"
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-right.svg",
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-right-detail.svg"
         ]
       },
       {
@@ -112,8 +112,8 @@
         "measuredThickness": 135.0,
         "panelLabel": "Tail Gate (Rear)",
         "images": [
-          "https://picsum.photos/seed/HX01J8L419829320240110083000TailGate1jpg/640/480",
-          "https://picsum.photos/seed/HX01J8L419829320240110083000TailGate2jpg/640/480"
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/tail-gate.svg",
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/tail-gate-detail.svg"
         ]
       },
       {
@@ -125,22 +125,22 @@
       }
     ],
     "panelImages": [
-      "https://picsum.photos/seed/sJTMHX01J8L419829320240110083000Hood1jpg/640/480",
-      "https://picsum.photos/seed/sJTMHX01J8L419829320240110083000Hood2jpg/640/480",
-      "https://picsum.photos/seed/419829320240110083000LeftFrontFender1jpg/640/480",
-      "https://picsum.photos/seed/419829320240110083000LeftFrontFender2jpg/640/480",
-      "https://picsum.photos/seed/19829320240110083000RightFrontFender1jpg/640/480",
-      "https://picsum.photos/seed/19829320240110083000RightFrontFender2jpg/640/480",
-      "https://picsum.photos/seed/8L419829320240110083000LeftFrontDoor1jpg/640/480",
-      "https://picsum.photos/seed/8L419829320240110083000LeftFrontDoor2jpg/640/480",
-      "https://picsum.photos/seed/L419829320240110083000RightFrontDoor1jpg/640/480",
-      "https://picsum.photos/seed/L419829320240110083000RightFrontDoor2jpg/640/480",
-      "https://picsum.photos/seed/J8L419829320240110083000LeftRearDoor1jpg/640/480",
-      "https://picsum.photos/seed/J8L419829320240110083000LeftRearDoor2jpg/640/480",
-      "https://picsum.photos/seed/8L419829320240110083000RightRearDoor1jpg/640/480",
-      "https://picsum.photos/seed/8L419829320240110083000RightRearDoor2jpg/640/480",
-      "https://picsum.photos/seed/HX01J8L419829320240110083000TailGate1jpg/640/480",
-      "https://picsum.photos/seed/HX01J8L419829320240110083000TailGate2jpg/640/480"
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/hood.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/hood-detail.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-left.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-left-detail.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-right.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-right-detail.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-left.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-left-detail.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-right.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-right-detail.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-left.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-left-detail.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-right.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-right-detail.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/tail-gate.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/tail-gate-detail.svg"
     ]
   }
 }

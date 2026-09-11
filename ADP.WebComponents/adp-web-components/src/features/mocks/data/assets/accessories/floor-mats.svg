@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+<style>.bg{fill:#f4f4f5}.k{fill:#27272a}.k2{fill:#3f3f46}.k3{fill:#52525b}.al{fill:#a1a1aa}.al2{fill:#d4d4d8}.ol{fill:none;stroke:#18181b;stroke-width:2;stroke-linejoin:round}.hl{fill:#f59e0b}.cap{fill:#71717a;font-size:11px;letter-spacing:.1em}</style>
+<rect class="bg" width="400" height="300"/>
+<path class="k2" d="M150 92L300 78L332 214L188 236Z"/>
+<path d="M168 112L314 98" stroke="#52525b" stroke-width="3" stroke-linecap="round"/><path d="M176 132L318 118" stroke="#52525b" stroke-width="3" stroke-linecap="round"/><path d="M184 152L322 138" stroke="#52525b" stroke-width="3" stroke-linecap="round"/><path d="M192 172L326 158" stroke="#52525b" stroke-width="3" stroke-linecap="round"/><path d="M200 192L330 178" stroke="#52525b" stroke-width="3" stroke-linecap="round"/><path d="M208 212L334 198" stroke="#52525b" stroke-width="3" stroke-linecap="round"/>
+<path class="k" d="M62 118L212 104L244 240L100 262Z"/>
+<path d="M80 138L226 124" stroke="#52525b" stroke-width="3" stroke-linecap="round"/><path d="M86 158L230 144" stroke="#52525b" stroke-width="3" stroke-linecap="round"/><path d="M92 178L234 164" stroke="#52525b" stroke-width="3" stroke-linecap="round"/><path d="M98 198L238 184" stroke="#52525b" stroke-width="3" stroke-linecap="round"/><path d="M104 218L242 204" stroke="#52525b" stroke-width="3" stroke-linecap="round"/><path d="M110 238L246 224" stroke="#52525b" stroke-width="3" stroke-linecap="round"/>
+<circle class="hl" cx="98" cy="128" r="7"/><circle cx="98" cy="128" r="3" fill="#7c2d12"/>
+<text class="cap" x="200" y="282" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">GENUINE ACCESSORY · FLOOR MATS</text>
+</svg>

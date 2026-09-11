@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+<style>.bg{fill:#f4f4f5}.k{fill:#27272a}.k2{fill:#3f3f46}.k3{fill:#52525b}.al{fill:#a1a1aa}.al2{fill:#d4d4d8}.ol{fill:none;stroke:#18181b;stroke-width:2;stroke-linejoin:round}.hl{fill:#f59e0b}.cap{fill:#71717a;font-size:11px;letter-spacing:.1em}</style>
+<rect class="bg" width="400" height="300"/>
+<path class="ol" d="M90 96L310 96L340 190L60 190Z"/>
+<path class="ol" d="M90 96L90 84L310 84L310 96 M60 190L60 176L340 176L340 190"/>
+<path class="ol" d="M96 96L68 190"/><path class="ol" d="M148 96L134 190"/><path class="ol" d="M200 96L200 190"/><path class="ol" d="M252 96L266 190"/><path class="ol" d="M304 96L332 190"/>
+<path class="k2" d="M84 84h232v6H84z M56 176h288v6H56z"/>
+<rect class="k" x="112" y="196" width="14" height="30" rx="3"/><rect class="k" x="274" y="196" width="14" height="30" rx="3"/>
+<rect class="k3" x="100" y="226" width="38" height="8" rx="3"/><rect class="k3" x="262" y="226" width="38" height="8" rx="3"/>
+<text class="cap" x="200" y="282" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">GENUINE ACCESSORY · ROOF RACK</text>
+</svg>

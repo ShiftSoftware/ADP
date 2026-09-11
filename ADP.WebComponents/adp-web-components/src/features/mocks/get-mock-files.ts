@@ -2,6 +2,7 @@ import { Build } from '@stencil/core';
 
 import { version } from '../../../package.json';
 import { MockFileName, MockFiles } from './types';
+import { localizeMockAssets } from './mock-assets';
 
 const cachedMocks = {};
 
@@ -25,10 +26,13 @@ async function requestMockFile(mockFile: string, externalUrl: string) {
     else if (Build.isDev) fetchUrl = 'http://localhost:3000/mocks/' + mockFile;
     else fetchUrl = `https://cdn.jsdelivr.net/npm/adp-web-components@${version}/dist/mocks/${mockFile}`;
 
-    const fetchPromise = fetch(fetchUrl).then(res => {
-      if (!res.ok) delete cachedMocks[mockFile];
-      return res.json();
-    });
+    const fetchPromise = fetch(fetchUrl)
+      .then(res => {
+        if (!res.ok) delete cachedMocks[mockFile];
+        return res.json();
+      })
+      // Fixture pictures point at the CDN copy of the package; a dev build reads the dev server's.
+      .then(localizeMockAssets);
 
     cachedMocks[mockFile] = fetchPromise;
 

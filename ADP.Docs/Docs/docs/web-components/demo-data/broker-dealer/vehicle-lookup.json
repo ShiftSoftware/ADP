@@ -11,16 +11,16 @@
     },
     "saleInformation": {
       "countryID": "1",
-      "countryName": "Iraq",
+      "countryName": "Meridia",
       "companyID": "1",
       "companyName": "Al-Rashid Motors",
       "branchID": "10",
-      "branchName": "Erbil Showroom",
+      "branchName": "Northgate Showroom",
       "customerAccountNumber": "BRK-ACC-001",
       "invoiceDate": "2024-03-10",
       "broker": {
         "brokerID": 100,
-        "brokerName": "Hawler Auto Broker"
+        "brokerName": "Summit Auto Broker"
       },
       "intermediaries": []
     },
@@ -61,16 +61,16 @@
     },
     "saleInformation": {
       "countryID": "1",
-      "countryName": "Iraq",
+      "countryName": "Meridia",
       "companyID": "1",
       "companyName": "Al-Rashid Motors",
       "branchID": "10",
-      "branchName": "Erbil Showroom",
+      "branchName": "Northgate Showroom",
       "customerAccountNumber": "BRK-ACC-002",
       "invoiceDate": "2023-11-20",
       "broker": {
         "brokerID": 200,
-        "brokerName": "Suli Trade Broker",
+        "brokerName": "Harbor Trade Broker",
         "invoiceNumber": 90001,
         "invoiceDate": "2024-02-10"
       },
@@ -84,7 +84,7 @@
       "warrantyStartDate": "2024-02-10",
       "warrantyEndDate": "2027-02-10",
       "startState": "Started",
-      "activatedByBrokerName": "Suli Trade Broker",
+      "activatedByBrokerName": "Harbor Trade Broker",
       "activationIsRequired": false,
       "activationStatus": "NotRequired",
       "hasExtendedWarranty": true,
@@ -94,7 +94,7 @@
         {
           "id": "EW-JTMHF33P5D5012345-1",
           "providerCompanyID": "1",
-          "providerCompanyLogo": "https://picsum.photos/seed/company-1/320/160",
+          "providerCompanyLogo": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/badges/badge-1.svg",
           "providerCompanyName": "Al-Rashid Motors",
           "startDate": "2027-02-10",
           "endDate": "2029-02-10"
@@ -152,7 +152,7 @@
         "warnings": [
           {
             "key": "scan-warning",
-            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
@@ -180,7 +180,7 @@
         "warnings": [
           {
             "key": "scan-warning",
-            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
@@ -213,7 +213,7 @@
           },
           {
             "key": "scan-warning",
-            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
@@ -246,7 +246,7 @@
           },
           {
             "key": "scan-warning",
-            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
@@ -273,7 +273,8 @@
     "accessories": [
       {
         "partNumber": "PZ49E-X2653-ZA",
-        "description": "Side Steps"
+        "description": "Side Steps",
+        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/side-steps.svg"
       }
     ],
     "basicModelCode": "MXAA52"
@@ -290,16 +291,16 @@
     },
     "saleInformation": {
       "countryID": "1",
-      "countryName": "Iraq",
+      "countryName": "Meridia",
       "companyID": "1",
       "companyName": "Al-Rashid Motors",
       "branchID": "10",
-      "branchName": "Erbil Showroom",
+      "branchName": "Northgate Showroom",
       "customerAccountNumber": "BRK-ACC-003",
       "invoiceDate": "2024-04-15",
       "broker": {
         "brokerID": 300,
-        "brokerName": "Duhok Vehicle Trader"
+        "brokerName": "Crossroads Vehicle Trader"
       },
       "intermediaries": []
     },
@@ -332,7 +333,7 @@
         "warnings": [
           {
             "key": "scan-warning",
-            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
@@ -365,7 +366,7 @@
         "warnings": [
           {
             "key": "scan-warning",
-            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
@@ -398,12 +399,12 @@
         "warnings": [
           {
             "key": "un-invoiced-broker-warning",
-            "bodyContent": "This Vehicle is not yet invoiced by the following Trusted Business Partner: \u003Cstrong\u003EDuhok Vehicle Trader\u003C/strong\u003E",
+            "bodyContent": "This Vehicle is not yet invoiced by the following Trusted Business Partner: \u003Cstrong\u003ECrossroads Vehicle Trader\u003C/strong\u003E",
             "confirmationText": "Confirm Claiming without Trusted Business Partner Invoice"
           },
           {
             "key": "scan-warning",
-            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
@@ -436,12 +437,12 @@
           },
           {
             "key": "un-invoiced-broker-warning",
-            "bodyContent": "This Vehicle is not yet invoiced by the following Trusted Business Partner: \u003Cstrong\u003EDuhok Vehicle Trader\u003C/strong\u003E",
+            "bodyContent": "This Vehicle is not yet invoiced by the following Trusted Business Partner: \u003Cstrong\u003ECrossroads Vehicle Trader\u003C/strong\u003E",
             "confirmationText": "Confirm Claiming without Trusted Business Partner Invoice"
           },
           {
             "key": "scan-warning",
-            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
@@ -480,11 +481,11 @@
     },
     "saleInformation": {
       "countryID": "1",
-      "countryName": "Iraq",
+      "countryName": "Meridia",
       "companyID": "2",
       "companyName": "Gulf Auto Services",
       "branchID": "30",
-      "branchName": "Basra Center",
+      "branchName": "Southport Center",
       "invoiceDate": "2024-06-01",
       "intermediaries": []
     },
@@ -590,7 +591,7 @@
         "serviceDate": "2025-03-25",
         "mileage": 10800,
         "companyName": "Gulf Auto Services",
-        "branchName": "Basra Center",
+        "branchName": "Southport Center",
         "invoiceNumber": "INV-DIR-002",
         "jobNumber": "WO-DIR-002",
         "laborLines": [
@@ -661,7 +662,7 @@
         "warnings": [
           {
             "key": "scan-warning",
-            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
@@ -689,7 +690,7 @@
         "warnings": [
           {
             "key": "scan-warning",
-            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
@@ -722,7 +723,7 @@
           },
           {
             "key": "scan-warning",
-            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
@@ -755,7 +756,7 @@
           },
           {
             "key": "scan-warning",
-            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
@@ -782,7 +783,8 @@
     "accessories": [
       {
         "partNumber": "PZ323-X2651-ZA",
-        "description": "Roof Rails"
+        "description": "Roof Rails",
+        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/roof-rails.svg"
       },
       {
         "partNumber": "PZ443-X2650-ZA",

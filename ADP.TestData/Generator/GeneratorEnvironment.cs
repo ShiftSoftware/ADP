@@ -383,19 +383,14 @@ public class GeneratorLookupOptions
                     .Replace("{Language}", Uri.EscapeDataString(model.Language ?? string.Empty)));
         }
 
-        // Resolve paint-thickness image keys to deterministic placeholder photos so the
-        // web-component mocks and docs demos render a working gallery (the keys are
-        // real-shaped blob paths that don't exist in any storage account).
+        // The three image resolvers point at the neutral drawings bundled with the package (see
+        // DemoAssets): the keys are real-shaped upload paths that exist in no storage account, and
+        // the mapping from key to drawing is deterministic so the fixtures stay byte-stable.
         options.PaintThickneesImageUrlResolver = (model) =>
-        {
-            if (string.IsNullOrWhiteSpace(model.Value))
-                return new ValueTask<string?>((string?)null);
+            new ValueTask<string?>(DemoAssets.PaintPanelImageUrl(model.Value));
 
-            var seed = new string(model.Value.Where(char.IsLetterOrDigit).ToArray());
-            seed = seed.Length > 40 ? seed[^40..] : seed;
-
-            return new ValueTask<string?>($"https://picsum.photos/seed/{seed}/640/480");
-        };
+        options.AccessoryImageUrlResolver = (model) =>
+            new ValueTask<string?>(DemoAssets.AccessoryImageUrl(model.Value));
 
         // Certificate serial numbers: mirrors the production wiring in LookUpFunctions —
         // Hashids (0-9A-F alphabet, min length 10) over the NUMERIC inspection id,
@@ -433,13 +428,7 @@ public class GeneratorLookupOptions
         };
 
         options.CompanyLogoResolver = (model) =>
-        {
-            if (model.Value is not { } companyId)
-                return new ValueTask<string?>((string?)null);
-
-            return new ValueTask<string?>(
-                $"https://picsum.photos/seed/company-{companyId}/320/160");
-        };
+            new ValueTask<string?>(DemoAssets.CompanyBadgeUrl(model.Value));
 
         options.CompanyBranchNameResolver = (model) =>
         {
