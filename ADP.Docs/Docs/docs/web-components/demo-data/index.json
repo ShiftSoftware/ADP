@@ -1,0 +1,51 @@
+{
+  "environments": [
+    {
+      "name": "broker-dealer",
+      "anchor": "2026-09-01",
+      "files": {
+        "vehicle-lookup": [
+          "JTEHF21A0Y0123456",
+          "JTMHF33P5D5012345",
+          "JTLBR3JR9N5345678",
+          "JTEBU5JR8L5234567"
+        ],
+        "part-lookup": [
+          "04152-YZZA1",
+          "90915-YZZD4"
+        ],
+        "paint-thickness-certificate": []
+      }
+    },
+    {
+      "name": "edge-cases",
+      "anchor": "2026-09-01",
+      "files": {
+        "vehicle-lookup": [
+          "JTMAB7BJ0T4224184",
+          "JTMAB7BJ0T4224900"
+        ],
+        "part-lookup": [],
+        "paint-thickness-certificate": []
+      }
+    },
+    {
+      "name": "standard-dealer",
+      "anchor": "2026-09-01",
+      "files": {
+        "vehicle-lookup": [
+          "JTMHX01J8L4198293",
+          "JTMW43FV10D123456",
+          "UNKNOWN_VIN_12345"
+        ],
+        "part-lookup": [
+          "SU00302474",
+          "04152-YZZA1"
+        ],
+        "paint-thickness-certificate": [
+          "JTMHX01J8L4198293"
+        ]
+      }
+    }
+  ]
+}

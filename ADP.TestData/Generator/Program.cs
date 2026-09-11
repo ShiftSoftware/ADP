@@ -7,12 +7,24 @@ using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Evaluators;
 using ShiftSoftware.ADP.Lookup.Services.Services;
+using ShiftSoftware.ADP.Models.Customer;
 using ShiftSoftware.ADP.Models.Part;
+using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
 
-// Resolve paths relative to the repo root
+// Resolve paths relative to the repo root. Two dev-time overrides exist so an environment can be
+// tried without touching the committed fixtures: --environments=<dir> reads the environment JSON
+// from there, --out=<dir> writes everything (fixtures and index.json) to that one directory instead
+// of the consumers' source trees. The post-build run passes neither.
+var arguments = args
+    .Select(a => a.Split('=', 2))
+    .Where(a => a.Length == 2 && a[0].StartsWith("--"))
+    .ToDictionary(a => a[0], a => a[1], StringComparer.Ordinal);
+
 var repoRoot = FindRepoRoot(AppContext.BaseDirectory);
-var environmentsDir = Path.Combine(repoRoot, "ADP.TestData", "environments");
+var environmentsDir = arguments.TryGetValue("--environments", out var environmentsOverride)
+    ? Path.GetFullPath(environmentsOverride)
+    : Path.Combine(repoRoot, "ADP.TestData", "environments");
 var webComponentsOutputDir = Path.Combine(repoRoot, "ADP.WebComponents", "adp-web-components", "src", "features", "mocks", "data", "generated");
 var webComponentsDevDir = Path.Combine(repoRoot, "ADP.WebComponents", "adp-web-components", "www", "mocks", "generated");
 var docsOutputDir = Path.Combine(repoRoot, "ADP.Docs", "Docs", "docs", "web-components", "demo-data");
@@ -32,7 +44,19 @@ var serializeOptions = new JsonSerializerOptions
 };
 serializeOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 
-foreach (var envFile in Directory.GetFiles(environmentsDir, "*.json"))
+// Output directories: always the two source trees; also the dev server's www/ cache when it exists.
+var outputDirs = new List<string> { webComponentsOutputDir, docsOutputDir };
+if (Directory.Exists(Path.Combine(repoRoot, "ADP.WebComponents", "adp-web-components", "www")))
+    outputDirs.Add(webComponentsDevDir);
+if (arguments.TryGetValue("--out", out var outputOverride))
+    outputDirs = new List<string> { Path.GetFullPath(outputOverride) };
+
+// index.json: the environment list, each environment's fixture keys per file and its clock anchor,
+// so the dev harness can list environments and fixtures without hand-listing either, and pin its
+// "today" to the date the statuses were computed against.
+var index = new GeneratedIndex();
+
+foreach (var envFile in Directory.GetFiles(environmentsDir, "*.json").OrderBy(f => f, StringComparer.Ordinal))
 {
     var envName = Path.GetFileNameWithoutExtension(envFile);
     Console.WriteLine($"\n=== Processing environment: {envName} ===");
@@ -49,12 +73,14 @@ foreach (var envFile in Directory.GetFiles(environmentsDir, "*.json"))
 
     var lookupOptions = env.LookupOptions.ToLookupOptions(companyNames, branchNames, countryNames, regionNames);
     lookupOptions.TimeProvider = FixedTimeProvider.Anchor;
+    var requestOptions = env.RequestOptions.ToVehicleLookupRequestOptions();
     IServiceProvider serviceProvider = Substitute.For<IServiceProvider>();
 
     // Mock IVehicleLookupStorageService
     var storageService = Substitute.For<IVehicleLookupStorageService>();
 
-    // Wire up vehicle model lookups
+    // Wire up vehicle model lookups — by variant + brand (the default) and by katashiki (the
+    // path VehicleSpecificationEvaluator takes when the request says UseKatashikiLookup).
     storageService.GetVehicleModelsAsync(Arg.Any<string>(), Arg.Any<long?>())
         .Returns(callInfo =>
         {
@@ -63,6 +89,58 @@ foreach (var envFile in Directory.GetFiles(environmentsDir, "*.json"))
             var match = env.VehicleModels.FirstOrDefault(m =>
                 m.VariantCode == variant && m.BrandID == brand);
             return Task.FromResult(match);
+        });
+
+    storageService.GetVehicleModelsByKatashikiAsync(Arg.Any<string>())
+        .Returns(callInfo =>
+        {
+            var katashiki = callInfo.ArgAt<string>(0);
+            return Task.FromResult(env.VehicleModels.Where(m => m.Katashiki == katashiki).AsEnumerable());
+        });
+
+    // Colour tables: a point-read on code + brand, as the storage service does; no code or no
+    // brand finds nothing. Read by the specification and by the paint-thickness certificate.
+    storageService.GetExteriorColorsAsync(Arg.Any<string>(), Arg.Any<long?>())
+        .Returns(callInfo => Task.FromResult(
+            FindColor(env.ExteriorColors, callInfo.ArgAt<string>(0), callInfo.ArgAt<long?>(1))));
+
+    storageService.GetInteriorColorsAsync(Arg.Any<string>(), Arg.Any<long?>())
+        .Returns(callInfo => Task.FromResult(
+            FindColor(env.InteriorColors, callInfo.ArgAt<string>(0), callInfo.ArgAt<long?>(1))));
+
+    // The end customer, matched on the dealer's customer id within the owning company — the same
+    // query the storage service runs. Only reached when the request asks to look the customer up.
+    storageService.GetCustomerAsync(Arg.Any<string>(), Arg.Any<long?>())
+        .Returns(callInfo =>
+        {
+            var customerID = callInfo.ArgAt<string>(0);
+            var companyID = callInfo.ArgAt<long?>(1);
+            var match = string.IsNullOrWhiteSpace(customerID)
+                ? null
+                : env.Customers.FirstOrDefault(c => c.CustomerID == customerID && c.CompanyID == companyID);
+            return Task.FromResult(match!);
+        });
+
+    // Brokers, both overloads, from the environment's Brokers table. No evaluator reads these today
+    // (the sale information names the broker from the stock row's embedded Broker), so this is here
+    // for the day one does, not because a fixture depends on it.
+    storageService.GetBrokerAsync(Arg.Any<string>(), Arg.Any<long?>())
+        .Returns(callInfo =>
+        {
+            var accountNumber = callInfo.ArgAt<string>(0);
+            var companyID = callInfo.ArgAt<long?>(1);
+            var match = env.Brokers.FirstOrDefault(b => !b.IsDeleted
+                && b.CompanyID == companyID
+                && (b.AccountNumbers?.Contains(accountNumber) ?? false));
+            return Task.FromResult(match!);
+        });
+
+    storageService.GetBrokerAsync(Arg.Any<long>())
+        .Returns(callInfo =>
+        {
+            var id = callInfo.ArgAt<long>(0);
+            var match = env.Brokers.FirstOrDefault(b => !b.IsDeleted && (b.ID == id || b.id == id.ToString()));
+            return Task.FromResult(match!);
         });
 
     // Wire up service items
@@ -90,7 +168,7 @@ foreach (var envFile in Directory.GetFiles(environmentsDir, "*.json"))
         aggregate.BrokerInvoices.AddRange(env.BrokerInvoices);
 
         var vehicleLookup = await GenerateVehicleLookup(
-            vin, aggregate, lookupOptions, storageService, serviceProvider);
+            vin, aggregate, env, lookupOptions, requestOptions, storageService, serviceProvider);
         vehicleLookupOutput[vin] = vehicleLookup;
     }
 
@@ -101,8 +179,8 @@ foreach (var envFile in Directory.GetFiles(environmentsDir, "*.json"))
 
     foreach (var (vin, aggregate) in env.Vehicles)
     {
-        var certificate = await new PaintThicknessCertificateEvaluator(aggregate, lookupOptions, serviceProvider)
-            .Evaluate("en");
+        var certificate = await new PaintThicknessCertificateEvaluator(aggregate, lookupOptions, serviceProvider, storageService)
+            .Evaluate(requestOptions.LanguageCode);
 
         if (certificate is not null)
         {
@@ -124,17 +202,25 @@ foreach (var envFile in Directory.GetFiles(environmentsDir, "*.json"))
         partAggregate.CompanyDeadStockParts ??= [];
 
         var partLookup = await GeneratePartLookup(
-            partNumber, partAggregate, lookupOptions, serviceProvider);
+            partNumber, partAggregate, lookupOptions, serviceProvider,
+            env.RequestOptions.DistributorStockLookupQuantityFor(partNumber), requestOptions.LanguageCode);
         if (partLookup is not null)
             partLookupOutput[partNumber] = partLookup;
     }
 
-    // === Write Output Files ===
-    // Always write to source dirs; also write to www/ if dev server is running
-    var outputDirs = new List<string> { webComponentsOutputDir, docsOutputDir };
-    if (Directory.Exists(Path.Combine(repoRoot, "ADP.WebComponents", "adp-web-components", "www")))
-        outputDirs.Add(webComponentsDevDir);
+    index.Environments.Add(new GeneratedIndexEnvironment
+    {
+        Name = envName,
+        Anchor = FixedTimeProvider.Anchor.GetUtcNow().ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+        Files = new Dictionary<string, List<string>>
+        {
+            ["vehicle-lookup"] = vehicleLookupOutput.Keys.ToList(),
+            ["part-lookup"] = partLookupOutput.Keys.ToList(),
+            ["paint-thickness-certificate"] = certificateOutput.Keys.ToList(),
+        },
+    });
 
+    // === Write Output Files ===
     foreach (var baseDir in outputDirs)
     {
         var envOutputDir = Path.Combine(baseDir, envName);
@@ -153,54 +239,143 @@ foreach (var envFile in Directory.GetFiles(environmentsDir, "*.json"))
     }
 }
 
+foreach (var baseDir in outputDirs)
+{
+    Directory.CreateDirectory(baseDir);
+    File.WriteAllText(Path.Combine(baseDir, "index.json"), JsonSerializer.Serialize(index, serializeOptions));
+    Console.WriteLine($"Index written to: {Path.Combine(baseDir, "index.json")}");
+}
+
 Console.WriteLine("\nDone.");
 
 // === Helper Methods ===
 
+// Mirrors VehicleLookupService.LookupFromAggregateAsync step for step, with the environment
+// standing in for storage and the host: keep the two in the same order when either changes.
 static async Task<VehicleLookupDTO> GenerateVehicleLookup(
     string vin,
     ShiftSoftware.ADP.Lookup.Services.Aggregate.CompanyDataAggregateModel aggregate,
+    GeneratorEnvironment env,
     LookupOptions options,
+    VehicleLookupRequestOptions requestOptions,
     IVehicleLookupStorageService storageService,
     IServiceProvider serviceProvider)
 {
+    var language = requestOptions.LanguageCode;
     var vehicle = new VehicleEntryEvaluator(aggregate, options).Evaluate();
     var ownership = new VehicleOwnershipEvaluator(aggregate).Evaluate(vehicle);
-
-    var requestOptions = new VehicleLookupRequestOptions
-    {
-        LanguageCode = "en",
-        LookupEndCustomer = false,
-        IgnoreBrokerStock = false,
-    };
 
     var data = new VehicleLookupDTO
     {
         VIN = vin,
         IsAuthorized = new VehicleAuthorizationEvaluator(aggregate).Evaluate(),
         PaintThicknessInspections = await new VehiclePaintThicknessEvaluator(aggregate, options, serviceProvider)
-            .Evaluate("en"),
-        PaintThicknessCertificateAvailable = new PaintThicknessCertificateEvaluator(aggregate, options, serviceProvider)
+            .Evaluate(language),
+        PaintThicknessCertificateAvailable = new PaintThicknessCertificateEvaluator(aggregate, options, serviceProvider, storageService)
             .EvaluateAvailability(),
         Identifiers = new VehicleIdentifierEvaluator(aggregate).Evaluate(vehicle),
-        VehicleSpecification = await new VehicleSpecificationEvaluator(storageService).Evaluate(vehicle),
+        VehicleSpecification = await new VehicleSpecificationEvaluator(storageService).Evaluate(vehicle, requestOptions),
         ServiceHistory = await new VehicleServiceHistoryEvaluator(aggregate, options, serviceProvider)
-            .Evaluate("en", ShiftSoftware.ADP.Lookup.Services.Enums.ConsistencyLevels.Strong),
-        // Traced so the generated mocks carry a repair trace for the web components' SSC demo pages.
-        SSC = new VehicleSSCEvaluator(aggregate, options).Evaluate(includeTrace: true),
+            .Evaluate(language, requestOptions.VehicleServiceHistoryConsistencyLevel),
+        SSC = new VehicleSSCEvaluator(aggregate, options).Evaluate(requestOptions.TraceSSCEvaluation),
         NextServiceDate = aggregate.LaborLines?.Max(x => x.NextServiceDate),
         Accessories = await new VehicleAccessoriesEvaluator(aggregate, options, serviceProvider)
-            .Evaluate("en"),
+            .Evaluate(language),
         SaleInformation = await new VehicleSaleInformationEvaluator(aggregate, options, serviceProvider, storageService)
             .Evaluate(vehicle, ownership, requestOptions),
     };
 
-    // Seed demonstrative SSC part availability so the generated mocks exercise all three UI states without a live
-    // stock lookup. In production SSCPartAvailabilityEnricher sets these for a scoped Hub request; the generator
-    // has no stock scope, so it alternates each open recall's parts between in-stock (true) and out-of-stock
-    // (false) and leaves repaired recalls "not checked" (null) — the same Repaired gate the enricher applies.
+    await ApplySscPartAvailability(data.SSC, vin, env, options, requestOptions, serviceProvider);
+
+    // The signed certificate URLs (one per print language) ride the lookup when the certificate is
+    // available, the request opted in and a resolver is wired — the same three-way gate as production.
+    if (data.PaintThicknessCertificateAvailable
+        && requestOptions.GeneratePaintThicknessCertificateUrls
+        && options.PaintThicknessCertificateUrlsResolver is not null)
+    {
+        var certificateUrls = await options.PaintThicknessCertificateUrlsResolver(
+            new LookupOptionResolverModel<string>(vin, language, serviceProvider));
+
+        if (certificateUrls is not null && certificateUrls.Count > 0)
+            data.PaintThicknessCertificateUrls = certificateUrls;
+    }
+
+    data.Warranty = await new WarrantyAndFreeServiceDateEvaluator(aggregate, options)
+        .EvaluateAsync(
+            vehicle,
+            data.SaleInformation,
+            requestOptions.IgnoreBrokerStock,
+            language,
+            serviceProvider);
+
+    var serviceItemsResult = await new VehicleServiceItemEvaluator(
+        storageService, aggregate, options, serviceProvider
+    ).Evaluate(
+        vehicle,
+        ownership,
+        data.Warranty?.FreeServiceStartDate,
+        language,
+        data.SaleInformation?.Broker
+    );
+
+    data.ServiceItems = serviceItemsResult.serviceItems;
+
+    if (data.Warranty is not null)
+    {
+        if (data.Warranty.WarrantyStartDate is not null)
+            data.Warranty.ActivationIsRequired = serviceItemsResult.activationRequired;
+
+        // Company-scoped: with the allocation guard off this is Required / NotRequired as before; with it
+        // on, the environment's RequestingCompanyID decides between Required and BlockedNotAllocated.
+        data.Warranty.ActivationStatus = new ActivationStatusEvaluator(aggregate, options)
+            .Evaluate(serviceItemsResult.activationRequired, requestOptions.RequestingCompanyID);
+    }
+
+    return data;
+}
+
+// SSC part availability, gated like production on LookupOptions.EnableSSCPartAvailability: off leaves every
+// part "not checked" (null). On, with a declared stock scope, the enricher's own rule runs against the
+// environment's Parts as the stock container (the production enricher differs only in reading Cosmos);
+// on without a scope, availability is seeded demonstratively — each open recall's parts alternate
+// in-stock / out-of-stock so the mocks show all three chips — repaired recalls staying null either way.
+static async Task ApplySscPartAvailability(
+    IEnumerable<SscDTO>? sscs,
+    string vin,
+    GeneratorEnvironment env,
+    LookupOptions options,
+    VehicleLookupRequestOptions requestOptions,
+    IServiceProvider serviceProvider)
+{
+    if (!options.EnableSSCPartAvailability || sscs is null)
+        return;
+
+    var openRecallParts = sscs
+        .Where(s => s is not null && !s.Repaired)
+        .SelectMany(s => s.Parts ?? [])
+        .Where(p => p is not null && !string.IsNullOrWhiteSpace(p.PartNumber))
+        .Select(p => p.PartNumber)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList();
+
+    if (openRecallParts.Count == 0)
+        return;
+
+    if (options.SSCPartStockScopeResolver is { } scopeResolver)
+    {
+        var scope = await scopeResolver(new LookupOptionResolverModel<SSCPartAvailabilityScopeRequest>(
+            new SSCPartAvailabilityScopeRequest(vin, openRecallParts), requestOptions.LanguageCode, serviceProvider));
+
+        if (scope is { Count: > 0 })
+        {
+            var stockRows = env.Parts.Values.SelectMany(p => p.StockParts ?? []).ToList();
+            SSCPartAvailabilityEnricher.ApplyAvailability(sscs, stockRows, scope, options.PartNumberStorageKeyResolver);
+            return;
+        }
+    }
+
     var sscInStock = true;
-    foreach (var sscRecall in data.SSC ?? [])
+    foreach (var sscRecall in sscs)
     {
         if (sscRecall is null || sscRecall.Repaired || sscRecall.Parts is null)
             continue;
@@ -214,57 +389,28 @@ static async Task<VehicleLookupDTO> GenerateVehicleLookup(
             sscInStock = !sscInStock;
         }
     }
+}
 
-    // Mirrors VehicleLookupService.LookupFromAggregateAsync: the signed certificate URLs
-    // (one per print language) ride the lookup when the certificate is available and a
-    // resolver is wired (the generator always opts in so mocks carry the print menu).
-    if (data.PaintThicknessCertificateAvailable && options.PaintThicknessCertificateUrlsResolver is not null)
-        data.PaintThicknessCertificateUrls = await options.PaintThicknessCertificateUrlsResolver(
-            new LookupOptionResolverModel<string>(vin, "en", serviceProvider));
+static ColorModel? FindColor(IEnumerable<ColorModel> colors, string? code, long? brand)
+{
+    if (string.IsNullOrWhiteSpace(code) || brand is null)
+        return null;
 
-    data.Warranty = await new WarrantyAndFreeServiceDateEvaluator(aggregate, options)
-        .EvaluateAsync(
-            vehicle,
-            data.SaleInformation,
-            requestOptions.IgnoreBrokerStock,
-            "en",
-            serviceProvider);
-
-    var serviceItemsResult = await new VehicleServiceItemEvaluator(
-        storageService, aggregate, options, serviceProvider
-    ).Evaluate(
-        vehicle,
-        ownership,
-        data.Warranty?.FreeServiceStartDate,
-        "en",
-        data.SaleInformation?.Broker
-    );
-
-    data.ServiceItems = serviceItemsResult.serviceItems;
-
-    if (data.Warranty is not null)
-    {
-        if (data.Warranty.WarrantyStartDate is not null)
-            data.Warranty.ActivationIsRequired = serviceItemsResult.activationRequired;
-
-        data.Warranty.ActivationStatus = serviceItemsResult.activationRequired
-            ? ShiftSoftware.ADP.Lookup.Services.Enums.WarrantyActivationStatus.Required
-            : ShiftSoftware.ADP.Lookup.Services.Enums.WarrantyActivationStatus.NotRequired;
-    }
-
-    return data;
+    return colors.FirstOrDefault(c => c.Code == code && c.BrandID == brand);
 }
 
 static async Task<PartLookupDTO?> GeneratePartLookup(
     string partNumber,
     PartAggregateCosmosModel partAggregate,
     LookupOptions options,
-    IServiceProvider serviceProvider)
+    IServiceProvider serviceProvider,
+    int? distributorStockLookupQuantity,
+    string language)
 {
     var cosmosPartCatalog = partAggregate.CatalogParts?.FirstOrDefault();
 
     var priceEvaluation = await new PartPriceEvaluator(partAggregate, options, serviceProvider)
-        .Evaluate(source: null, language: "en");
+        .Evaluate(source: null, language: language);
 
     return new PartLookupDTO
     {
@@ -289,9 +435,9 @@ static async Task<PartLookupDTO?> GeneratePartLookup(
         SupersededFrom = cosmosPartCatalog?.SupersededFrom?.Select(x => x.PartNumber),
         DistributorPurchasePrice = priceEvaluation.distributorPurchasePrice,
         Prices = priceEvaluation.prices,
-        DeadStock = await new PartDeadStockEvaluator(partAggregate, options, serviceProvider).Evaluate("en"),
+        DeadStock = await new PartDeadStockEvaluator(partAggregate, options, serviceProvider).Evaluate(language),
         StockParts = await new PartStockEvaluator(partAggregate, options, serviceProvider)
-            .Evaluate(distributorStockLookupQuantity: 1, language: "en"),
+            .Evaluate(distributorStockLookupQuantity, language),
     };
 }
 
@@ -314,11 +460,29 @@ static string FindRepoRoot(string startDir)
 /// </summary>
 sealed class FixedTimeProvider : TimeProvider
 {
-    public static readonly FixedTimeProvider Anchor = new(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+    public static readonly FixedTimeProvider Anchor = new(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
 
     private readonly DateTimeOffset _utcNow;
     public FixedTimeProvider(DateTimeOffset utcNow) => _utcNow = utcNow;
     public override DateTimeOffset GetUtcNow() => _utcNow;
+}
+
+/// <summary>
+/// Shape of <c>mocks/generated/index.json</c>: which environments exist, which fixture keys each file
+/// holds, and the calendar date (<c>yyyy-MM-dd</c>, UTC) every status in that environment was computed
+/// against — the value a consumer passes as <c>today</c> so its clock agrees with the fixture.
+/// </summary>
+sealed class GeneratedIndex
+{
+    public List<GeneratedIndexEnvironment> Environments { get; set; } = new();
+}
+
+sealed class GeneratedIndexEnvironment
+{
+    public string Name { get; set; } = "";
+    public string Anchor { get; set; } = "";
+    /// <summary>Fixture keys per file stem (<c>vehicle-lookup</c>, <c>part-lookup</c>, <c>paint-thickness-certificate</c>).</summary>
+    public Dictionary<string, List<string>> Files { get; set; } = new();
 }
 
 /// <summary>

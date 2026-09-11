@@ -3,6 +3,7 @@
     "WarrantyStartDateDefaultsToInvoiceDate": true,
     "BrandStandardWarrantyPeriodsInYears": { "1": 3 },
     "LookupBrokerStock": true,
+    "EnableSSCPartAvailability": true,
     "DistributorStockPartLookupQuantityThreshold": 100,
     "ShowPartLookupStockQauntity": true,
     "StandardItemClaimWarnings": [

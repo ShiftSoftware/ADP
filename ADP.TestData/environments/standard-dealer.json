@@ -12,6 +12,7 @@
       "1": 3
     },
     "LookupBrokerStock": false,
+    "EnableSSCPartAvailability": true,
     "DistributorStockPartLookupQuantityThreshold": 100,
     "ShowPartLookupStockQauntity": true,
     "StandardItemClaimWarnings": [

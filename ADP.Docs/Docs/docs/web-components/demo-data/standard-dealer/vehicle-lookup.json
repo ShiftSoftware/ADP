@@ -353,8 +353,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "HSLx0/0inwioPqiYz8YPClZl1CrQ7Z69cxq5/Aj859Q=",
-        "signatureExpiry": "2026-01-01T00:00:00Z"
+        "signature": "Sv\u002BWYzKWf3C6T3IMQqu62OY/CZDYRPZJ54p7oLPNKIY=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
         "showDocumentUploader": false,
@@ -384,8 +384,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "85ONZt9PWL55fa\u002B/sKpRyQ\u002BQTvsoAf0tx0Wp3N05DHg=",
-        "signatureExpiry": "2026-01-01T00:00:00Z"
+        "signature": "sz54goQiwx\u002BL/wMmzWJFxcZyrwGVwhgOVgYt\u002BkZSgbU=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
         "showDocumentUploader": true,
@@ -409,8 +409,8 @@
         "claimable": true,
         "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
         "vehicleInspectionTypeID": "",
-        "signature": "8B/vv5qXLexgRG\u002BL3rhNgUFvB/8NFROiwttD0jMLcgY=",
-        "signatureExpiry": "2026-01-01T00:00:00Z"
+        "signature": "9Bg9FhW6UHOF1\u002BnKwPgvky8chIQuPs3kiv\u002BWReqDWzA=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
         "showDocumentUploader": false,
@@ -439,8 +439,8 @@
         "claimable": true,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "laYpHTnuqvjaLi4OCCk5oSr4uxWRhkSfiC8k4WcUPIk=",
-        "signatureExpiry": "2026-01-01T00:00:00Z"
+        "signature": "ByAXaIUsiSHhY/Vt\u002BJu5egcKB9vFMMmCmjHWYkFgV4E=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
         "showDocumentUploader": false,
@@ -469,8 +469,8 @@
         "claimable": true,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "9sUlY1q5xgHrM\u002Bs0L\u002BifmKXebe0L0XOnPbSaOfPzimE=",
-        "signatureExpiry": "2026-01-01T00:00:00Z"
+        "signature": "oE6CTekZt5Ak6TuStWNCo2if860iU87Dyu05d0s3Gbw=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
         "showDocumentUploader": false,
@@ -509,8 +509,8 @@
         },
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "245/IKCM11IjI7z\u002B38vOC8BjfRz3ytgnAc5YLlsoiBI=",
-        "signatureExpiry": "2026-01-01T00:00:00Z"
+        "signature": "fzJ0nwwy8BrWffJgRqTCtTVRfGnKI603EgvlY2iK5fo=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
         "showDocumentUploader": false,
@@ -534,8 +534,8 @@
         "maximumMileage": 16000,
         "claimable": true,
         "claimingMethodEnum": 0,
-        "signature": "wXIeSDcLWcyTytl50arDAA0IBUzezuk2kD6YYRi//us=",
-        "signatureExpiry": "2026-01-01T00:00:00Z"
+        "signature": "ozxjGLBtMUJEAOX1h5rExCch8SvByfAsjMYlr/W4VAU=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
       }
     ],
     "accessories": [
@@ -578,7 +578,7 @@
     "paintThicknessCertificateAvailable": false,
     "isAuthorized": true,
     "warranty": {
-      "hasActiveWarranty": true,
+      "hasActiveWarranty": false,
       "warrantyStartDate": "2023-06-20",
       "warrantyEndDate": "2026-06-20",
       "startState": "Started",
@@ -628,8 +628,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "OFcZKV5AhjGzj08NKbKct8Lo/7ts11jZ5LFbt5WgPp8=",
-        "signatureExpiry": "2026-01-01T00:00:00Z"
+        "signature": "d9E4/2hcDa6Nya7Y3Wx1DQ41CGx8lwdZTXJ3J62WgFA=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
         "showDocumentUploader": false,
@@ -653,8 +653,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "GjBgd3yU/D10Z9GAY3/kiZyx/A4/2pwnl9xZ7gVthxk=",
-        "signatureExpiry": "2026-01-01T00:00:00Z"
+        "signature": "in1NJh7U78fffHPH4RH7x8zYqEHbvMTV2coNP303iuY=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
         "showDocumentUploader": true,
@@ -671,24 +671,19 @@
         "typeEnum": "Free",
         "activatedAt": "2024-12-20",
         "expiresAt": "2026-06-20",
-        "status": "pending",
-        "statusEnum": "Pending",
+        "status": "expired",
+        "statusEnum": "Expired",
         "serviceItemID": "SI-003",
         "maximumMileage": 12000,
-        "claimable": true,
+        "claimable": false,
         "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
         "vehicleInspectionTypeID": "",
-        "signature": "P1o8S4Rn\u002BnCAztps9KA79c0PEm\u002BM2EXtei/7/NV4vFs=",
-        "signatureExpiry": "2026-01-01T00:00:00Z"
+        "signature": "BiQ1I9JkflFqN7m4yalYoq6pDpu7t7ay0omOvY0yg3w=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
         "showDocumentUploader": false,
         "warnings": [
-          {
-            "key": "skipped-items-warning",
-            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002720,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
-            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
-          },
           {
             "key": "attachment-warning",
             "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
@@ -708,15 +703,15 @@
         "claimable": true,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "1loGdRCQnXNjoCOMDKq9cwn4VWtpOLwwEOkxHJOqCY4=",
-        "signatureExpiry": "2026-01-01T00:00:00Z"
+        "signature": "61VWTV8ey31UV4r0gClJzFqv6ca\u002BkNQ/t\u002BVBfY/mWIE=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
         "showDocumentUploader": false,
         "warnings": [
           {
             "key": "skipped-items-warning",
-            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002730,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Service\u003C/li\u003E\u003Cli\u003E20,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002730,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E20,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
             "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
           },
           {
@@ -738,8 +733,8 @@
         "claimable": true,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "loP1YM4sVOgXz8Kz7odIKF879HnrkukC6F\u002BuwbTwuzA=",
-        "signatureExpiry": "2026-01-01T00:00:00Z"
+        "signature": "hh0pC8ozVPxlGN17ok7FuFRjYCy6G1JEgP9hIVEBhcY=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
         "showDocumentUploader": false,
@@ -777,8 +772,8 @@
         },
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "GRfJpxCR58Ck/30HZqFUGmIpuizLKcUJvSK7eCcx6Oc=",
-        "signatureExpiry": "2026-01-01T00:00:00Z"
+        "signature": "muNGHl39WmJZa2LJdHWF6jnzymmjrVEMdqtUVhln4Xk=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
       }
     ],
     "accessories": [],
