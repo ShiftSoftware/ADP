@@ -1,0 +1,146 @@
+{
+  "JTMHX01J8L4198293": {
+    "serialNumber": "3E2B6-9DBA5",
+    "vin": "JTMHX01J8L4198293",
+    "modelDescription": "RAV4 2.5 AWD",
+    "modelCode": "42605",
+    "modelYear": "2024",
+    "exteriorColorCode": "1G3",
+    "interiorColorCode": "LA20",
+    "katashiki": "MXAA52L-ANXGP",
+    "variantCode": "VAR001",
+    "invoiceDate": "2024-01-12",
+    "invoiceNumber": "DIST-2024-0042",
+    "source": "PDI",
+    "inspectionDate": "2024-01-10",
+    "readings": [
+      {
+        "panelType": "Hood",
+        "panelPosition": "Front",
+        "measuredThickness": 125.5,
+        "panelLabel": "Hood (Front)",
+        "images": [
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/hood.svg",
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/hood-detail.svg"
+        ]
+      },
+      {
+        "panelType": "Fender",
+        "panelSide": "Left",
+        "panelPosition": "Front",
+        "measuredThickness": 118.0,
+        "panelLabel": "Fender (Front Left)",
+        "images": [
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-left.svg",
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-left-detail.svg"
+        ]
+      },
+      {
+        "panelType": "Fender",
+        "panelSide": "Right",
+        "panelPosition": "Front",
+        "measuredThickness": 120.3,
+        "panelLabel": "Fender (Front Right)",
+        "images": [
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-right.svg",
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-right-detail.svg"
+        ]
+      },
+      {
+        "panelType": "Door",
+        "panelSide": "Left",
+        "panelPosition": "Front",
+        "measuredThickness": 115.0,
+        "panelLabel": "Door (Front Left)",
+        "images": [
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-left.svg",
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-left-detail.svg"
+        ]
+      },
+      {
+        "panelType": "Door",
+        "panelSide": "Right",
+        "panelPosition": "Front",
+        "measuredThickness": 116.2,
+        "panelLabel": "Door (Front Right)",
+        "images": [
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-right.svg",
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-right-detail.svg"
+        ]
+      },
+      {
+        "panelType": "Door",
+        "panelSide": "Left",
+        "panelPosition": "Rear",
+        "measuredThickness": 122.0,
+        "panelLabel": "Door (Rear Left)",
+        "images": [
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-left.svg",
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-left-detail.svg"
+        ]
+      },
+      {
+        "panelType": "Door",
+        "panelSide": "Right",
+        "panelPosition": "Rear",
+        "measuredThickness": 121.5,
+        "panelLabel": "Door (Rear Right)",
+        "images": [
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-right.svg",
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-right-detail.svg"
+        ]
+      },
+      {
+        "panelType": "Fender",
+        "panelSide": "Left",
+        "panelPosition": "Rear",
+        "measuredThickness": 130.0,
+        "panelLabel": "Fender (Rear Left)",
+        "images": []
+      },
+      {
+        "panelType": "Fender",
+        "panelSide": "Right",
+        "panelPosition": "Rear",
+        "measuredThickness": 128.5,
+        "panelLabel": "Fender (Rear Right)",
+        "images": []
+      },
+      {
+        "panelType": "TailGate",
+        "panelPosition": "Rear",
+        "measuredThickness": 135.0,
+        "panelLabel": "Tail Gate (Rear)",
+        "images": [
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/tail-gate.svg",
+          "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/tail-gate-detail.svg"
+        ]
+      },
+      {
+        "panelType": "Roof",
+        "panelPosition": "Middle",
+        "measuredThickness": 110.0,
+        "panelLabel": "Roof (Middle)",
+        "images": []
+      }
+    ],
+    "panelImages": [
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/hood.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/hood-detail.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-left.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-left-detail.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-right.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/fender-front-right-detail.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-left.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-left-detail.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-right.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-front-right-detail.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-left.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-left-detail.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-right.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/door-rear-right-detail.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/tail-gate.svg",
+      "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/paint-panels/tail-gate-detail.svg"
+    ]
+  }
+}
