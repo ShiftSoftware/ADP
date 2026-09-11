@@ -45,7 +45,7 @@ steps:
     displayName: 'Read the package version'
     workingDirectory: ADP.WebComponents/adp-web-components
 
-  - script: npm run release -- --version=$(PACKAGE_VERSION) --wait=600
+  - script: npm run release -- --version=$(PACKAGE_VERSION) --wait=600 --site-url=https://adp.shift.software
     displayName: 'Build the site against the published package'
     workingDirectory: ADP.WebComponents/adp-web-components
 

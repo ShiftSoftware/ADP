@@ -174,11 +174,16 @@ The `WebComponentModelGenerator` (C# console app) uses Roslyn to scan C# models 
 ## CI/CD
 - **NuGet pipeline** (`azure-pipeline.yml`): Triggered by `release-nuget-*` tags. Builds, runs BDD tests, packs and publishes NuGet packages.
 - **Web components pipeline** (`ADP.WebComponents/adp-web-components/azure-pipelines.yml`): Triggered by `release-web-components-*` tags. Publishes to NPM, then waits for registry propagation and runs `npm run purge` to flush the `@latest` jsDelivr URLs. The purge step is `continueOnError` — the publish is already irreversible by then, so a CDN hiccup warns instead of failing the release.
-- **Docs pipeline** (`.github/workflows/docs-gh-pages.yml`): Triggered by `release-docs-*` tags. Deploys mkdocs to GitHub Pages.
-- **Website pipeline** (`ADP.WebComponents/adp-web-components/azure-pipelines-website.yml`): Triggered by `release-website-*` tags. Builds the integration site against the `package.json` version and deploys it to Cloudflare — see below.
+- **Docs pipeline** (`.github/workflows/docs-gh-pages.yml`): Triggered by `release-docs-*` tags. Deploys mkdocs to GitHub Pages at `https://adp-docs.shift.software` — the custom domain comes from `ADP.Docs/Docs/docs/CNAME`, which every deploy copies over (GitHub's own Pages setting is overwritten by it).
+- **Website pipeline** (`ADP.WebComponents/adp-web-components/azure-pipelines-website.yml`): Triggered by `release-website-*` tags. Builds the integration site against the `package.json` version and deploys it to Cloudflare at `https://adp.shift.software` — see below.
 
 
 ### Cloudflare deploy
+The site lives at **`https://adp.shift.software`** — a custom domain bound to the Worker in the
+Cloudflare dashboard (Worker → Settings → Domains & Routes), which is also why the Worker has to
+sit in the account that owns the `shift.software` zone. The pipeline passes `--site-url` so the
+canonical tag, `robots.txt` and the sitemap name that address rather than the `workers.dev` one.
+
 The site is an **assets-only Worker** — `wrangler.jsonc` has no `main`, so Cloudflare serves
 `website/` straight from the edge without invoking JavaScript. `not_found_handling` is
 `404-page`, which is what makes `src/404.html` answer unmatched paths with a real 404.

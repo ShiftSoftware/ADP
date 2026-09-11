@@ -371,7 +371,7 @@ const MARKUP = /* html */ `
               </div>
             </div>
 
-            <a class="btn btn-sm btn-ghost" href="https://adp.shift.software/" target="_blank" rel="noreferrer" x-text="t('nav.docs')"></a>
+            <a class="btn btn-sm btn-ghost" href="https://adp-docs.shift.software/" target="_blank" rel="noreferrer" x-text="t('nav.docs')"></a>
 
             <span class="bg-base-300 mx-1 h-6 w-px" aria-hidden="true"></span>
 
@@ -569,7 +569,7 @@ const MARKUP = /* html */ `
             </template>
 
             <div class="border-base-300 mt-4 border-t pt-4">
-              <a class="btn btn-sm btn-ghost w-full justify-start" href="https://adp.shift.software/" target="_blank" rel="noreferrer" x-text="t('nav.docs')"></a>
+              <a class="btn btn-sm btn-ghost w-full justify-start" href="https://adp-docs.shift.software/" target="_blank" rel="noreferrer" x-text="t('nav.docs')"></a>
             </div>
 
             <p class="eyebrow text-base-content/65 mt-6 mb-2" x-text="t('nav.language')"></p>
