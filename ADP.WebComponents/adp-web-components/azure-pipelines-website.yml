@@ -1,0 +1,57 @@
+# Deploys the integration site — the dev showcase assembled by `npm run release` —
+# to the Cloudflare Worker named in wrangler.jsonc.
+#
+# A tag is the only trigger. The site pins the package version in package.json,
+# and that version has to be on npm and on the CDN before the pages can load
+# anything, so the order of a release is:
+#
+#   1. tag release-web-components-x.y.z   (azure-pipelines.yml publishes to npm)
+#   2. tag release-website-<n>            (this file; <n> is the site's own counter)
+#
+# The build waits up to ten minutes for the registry and the CDN to have the
+# version, then fails rather than pin an older one. Page-only changes can be
+# released on their own with step 2 alone.
+#
+# Cloudflare's own git integration is disconnected on purpose: it could only
+# build on push, and a push lands before the package it needs is published.
+#
+# Secrets, in the Deployment variable group:
+#   CLOUDFLARE_API_TOKEN    an API token with "Workers Scripts: Edit" on the account
+#   CLOUDFLARE_ACCOUNT_ID   the account the Worker lives in
+trigger:
+  tags:
+    include:
+      - release-website-*
+
+variables:
+  - group: Deployment
+
+steps:
+  - task: UseNode@1
+    inputs:
+      version: '22.x'
+      checkLatest: false
+    displayName: 'Set up Node.js'
+
+  - task: Npm@1
+    displayName: 'Install dependencies'
+    inputs:
+      command: 'custom'
+      workingDir: 'ADP.WebComponents/adp-web-components'
+      customCommand: 'install --ignore-scripts'
+
+  - script: |
+      node -e "console.log('##vso[task.setvariable variable=PACKAGE_VERSION]' + require('./package.json').version)"
+    displayName: 'Read the package version'
+    workingDirectory: ADP.WebComponents/adp-web-components
+
+  - script: npm run release -- --version=$(PACKAGE_VERSION) --wait=600
+    displayName: 'Build the site against the published package'
+    workingDirectory: ADP.WebComponents/adp-web-components
+
+  - script: npx --yes wrangler@4 deploy
+    displayName: 'Deploy to Cloudflare'
+    workingDirectory: ADP.WebComponents/adp-web-components
+    env:
+      CLOUDFLARE_API_TOKEN: $(CLOUDFLARE_API_TOKEN)
+      CLOUDFLARE_ACCOUNT_ID: $(CLOUDFLARE_ACCOUNT_ID)

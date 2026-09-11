@@ -26,6 +26,10 @@
  *
  *   npm run release                     against the current published version
  *   npm run release -- --version=0.3.18  pin one
+ *   npm run release -- --wait=600        keep checking for up to N seconds that the
+ *                                        version is on the registry and the CDN
+ *                                        before giving up (a release pipeline that
+ *                                        runs right after `npm publish` needs this)
  *   npm run release -- --local           the working-tree version, no network
  *   npm run release -- --out=dist-site   somewhere other than ./website
  *   npm run release -- --base-url=…      fill the host template's placeholder
@@ -155,6 +159,7 @@ const locales = await (async () => {
  */
 const pinned = option('version');
 const local = flag('local');
+const waitSeconds = Number(option('wait') ?? 0);
 
 let componentVersion;
 
@@ -162,7 +167,7 @@ try {
   componentVersion = pinned ?? (local ? workingTreeVersion : await publishedVersion());
 
   if (local) console.warn(`! --local: building against the working-tree version ${componentVersion}, which may not be published`);
-  else await assertBundlePublished(componentVersion);
+  else await assertBundlePublished(componentVersion, waitSeconds);
 } catch (error) {
   fatal(error.message);
 }
@@ -437,7 +442,47 @@ async function publishedVersion() {
   return version;
 }
 
-async function assertBundlePublished(version) {
+/*
+ * A pinned version has to exist in two places: on the registry, and on the CDN
+ * the pages load from. Right after `npm publish` neither is guaranteed — the
+ * registry takes a moment, and the CDN is asked for the file only once the
+ * registry has it, so that a too-early request does not leave a cached 404 in
+ * the CDN's way. With `--wait` the check is repeated every 30 seconds until the
+ * deadline; without it, one failed check is fatal.
+ */
+async function assertBundlePublished(version, waitSeconds = 0) {
+  const deadline = Date.now() + waitSeconds * 1000;
+
+  for (;;) {
+    try {
+      await assertOnRegistry(version);
+      await assertOnCdn(version);
+
+      return;
+    } catch (error) {
+      if (Date.now() >= deadline) throw error;
+
+      console.log(`release: ${error.message} — checking again in 30 s`);
+      await new Promise(resolve => setTimeout(resolve, 30_000));
+    }
+  }
+}
+
+async function assertOnRegistry(version) {
+  const url = `https://registry.npmjs.org/${PACKAGE_NAME}/${version}`;
+
+  let response;
+
+  try {
+    response = await fetch(url, { method: 'HEAD' });
+  } catch (error) {
+    throw new Error(`could not reach the npm registry to check ${url} (${error.message})`);
+  }
+
+  if (!response.ok) throw new Error(`the npm registry answered ${response.status} for ${PACKAGE_NAME}@${version} — not published yet?`);
+}
+
+async function assertOnCdn(version) {
   const url = `${cdn(version)}/shift-components/shift-components.esm.js`;
 
   let response;

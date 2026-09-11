@@ -22,34 +22,20 @@
  * `npm run preview` already reproduces locally.
  *
  * ── Deploying ─────────────────────────────────────────────────────────────────
- * Cloudflare Workers Builds runs this from the repository. Dashboard settings:
+ * `azure-pipelines-website.yml` deploys it, on a `release-website-*` tag: it builds
+ * the site against the package.json version (waiting for npm and the CDN to have
+ * it) and runs `wrangler deploy` with CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
+ * from the Deployment variable group. `name` below is the Worker it deploys to.
  *
- *   Repository        ShiftSoftware/ADP
- *   Root directory    ADP.WebComponents/adp-web-components
- *   Build command     npm run release
- *   Deploy command    npx wrangler deploy          (the default)
- *   Production branch master                       (the default)
- *   Non-prod builds   unchecked
+ * Cloudflare's own Workers Builds git integration is NOT connected. It can only
+ * build on push, and a push reaches master before the package version it names is
+ * published, so it pinned the previous version every time. If it is ever
+ * reconnected, keep in mind: the build image ships Yarn 4, which migrates the
+ * committed Yarn 1 lockfile and then rejects it under its own immutable-install
+ * rule — `packageManager` in package.json pins yarn@1.22.22 for that reason.
  *
- * It deploys on every push to master. Workers Builds cannot see tags and offers no
- * way to stop the production branch building on push, so pushing IS the trigger.
- *
- * The build image ships Yarn 4 and this repo commits a Yarn 1 lockfile, which Yarn 4
- * migrates and then rejects under its own immutable-install rule. package.json pins
- * packageManager to yarn@1.22.22 to stop that; a YARN_VERSION build variable is the
- * fallback if the field is ever ignored.
- *
- * The Worker name in the dashboard MUST match `name` below or the build fails.
- * Non-production branches deploy with `npx wrangler versions upload` instead,
- * giving a preview version without promoting it.
- *
- * ── One operational caveat ────────────────────────────────────────────────────
- * `automation/build-website.mjs` resolves the version from the npm registry, not
- * from package.json — so the site pins whatever is PUBLISHED at build time. A git
- * push is therefore not the only event that should rebuild it: publishing a new
- * package version changes what this site should say, without changing the repo.
- * Fire a Workers Builds deploy hook from the release pipeline after the npm
- * publish step to keep the two in step.
+ * A preview without promoting: `npx wrangler versions upload` (`npm run
+ * deploy:preview`) after a local `npm run release`.
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",

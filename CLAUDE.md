@@ -88,7 +88,6 @@ Built with **Stencil.js** (namespace: `shift-components`), Tailwind CSS, and SCS
 - `vin-extractor/` — VIN extraction utilities
 - `features/` — Complex features (form hooks, mocks, multi-lingual, image viewer)
 - `global/lib/` — Utilities (validation, DOM, API calls, formatting)
-- `global/api/` — API endpoint configurations
 - `global/types/` — TypeScript types (`generated/` subdir is auto-generated from C# models)
 - `locales/` — Multi-language support files
 - `templates/` — Dev-only showcase pages (see below)
@@ -162,7 +161,7 @@ and the review checklist: `.shift/repos/adp/web-components/motion.md`. Read it b
 state to a component or changing what a state renders.
 
 **Path aliases** (configured in `stencil.config.ts`):
-`~api`, `~lib`, `~locales`, `~features`, `~types`, `~assets`
+`~lib`, `~locales`, `~features`, `~types`, `~assets`
 
 ### Code Generation Pipeline
 The `WebComponentModelGenerator` (C# console app) uses Roslyn to scan C# models with `[TypeScriptModel]` attribute and generates TypeScript types into `src/global/types/generated/`. Models with `[TypeScriptIgnore]` are excluded. This runs automatically post-build.
@@ -176,6 +175,7 @@ The `WebComponentModelGenerator` (C# console app) uses Roslyn to scan C# models 
 - **NuGet pipeline** (`azure-pipeline.yml`): Triggered by `release-nuget-*` tags. Builds, runs BDD tests, packs and publishes NuGet packages.
 - **Web components pipeline** (`ADP.WebComponents/adp-web-components/azure-pipelines.yml`): Triggered by `release-web-components-*` tags. Publishes to NPM, then waits for registry propagation and runs `npm run purge` to flush the `@latest` jsDelivr URLs. The purge step is `continueOnError` — the publish is already irreversible by then, so a CDN hiccup warns instead of failing the release.
 - **Docs pipeline** (`.github/workflows/docs-gh-pages.yml`): Triggered by `release-docs-*` tags. Deploys mkdocs to GitHub Pages.
+- **Website pipeline** (`ADP.WebComponents/adp-web-components/azure-pipelines-website.yml`): Triggered by `release-website-*` tags. Builds the integration site against the `package.json` version and deploys it to Cloudflare — see below.
 
 
 ### Cloudflare deploy
@@ -183,56 +183,27 @@ The site is an **assets-only Worker** — `wrangler.jsonc` has no `main`, so Clo
 `website/` straight from the edge without invoking JavaScript. `not_found_handling` is
 `404-page`, which is what makes `src/404.html` answer unmatched paths with a real 404.
 
-**It deploys on every push to `master`.** Nothing in Azure is involved. Workers Builds cannot
-see tags, and there is no setting to stop the production branch building on push, so pushing is
-the trigger.
+**It deploys on a `release-website-*` tag**, from the third Azure pipeline
+(`ADP.WebComponents/adp-web-components/azure-pipelines-website.yml`). Nothing deploys on push.
+The pipeline reads the version from `package.json`, runs `npm run release -- --version=<it>
+--wait=600` — which keeps checking for up to ten minutes that the version is on npm and on the
+CDN, then fails rather than pin an older one — and runs `wrangler deploy` with
+`CLOUDFLARE_API_TOKEN` (an API token with *Workers Scripts: Edit*) and `CLOUDFLARE_ACCOUNT_ID`
+from the `Deployment` variable group.
 
-Workers Builds settings — the Worker name **must** match `name` in `wrangler.jsonc`:
+Release order: tag `release-web-components-x.y.z`, let it publish, then tag
+`release-website-<n>`. The site has its own counter, so page-only changes ship with the second
+tag alone.
 
-| Field | Value |
-|---|---|
-| Root directory | `ADP.WebComponents/adp-web-components` |
-| Build command | `yarn run release` |
-| Deploy command | `npx wrangler deploy` (default) |
-| Production branch | `master` |
-| Builds for non-production branches | unchecked |
+Cloudflare's own Workers Builds git integration is **disconnected**. It could only build on
+push, and the version-bump commit reaches `master` before the package is published, so every
+push-build pinned the previous version. If it is ever reconnected: the Worker name in the
+dashboard must match `name` in `wrangler.jsonc`, and the build image ships Yarn 4, which
+migrates the committed Yarn 1 lockfile and then rejects it (`YN0028`) — `"packageManager":
+"yarn@1.22.22"` in `package.json` exists for that reason.
 
-#### The package manager has to be pinned
-The repo commits a **Yarn 1** lockfile. Cloudflare’s build image ships Yarn 4, which migrates a
-v1 lockfile on sight — and then its own immutable-install rule rejects the file it just
-rewrote (`YN0028: The lockfile would have been modified by this install, which is explicitly
-forbidden`). The build fails before it reaches the build command.
-
-`"packageManager": "yarn@1.22.22"` in `package.json` pins it. If the build image ever ignores
-that field, set a build variable `YARN_VERSION=1.22.22` in the dashboard, which is documented
-and authoritative.
-
-#### One consequence worth knowing
-`build-website.mjs` resolves the version from the **npm registry**, and the version-bump commit
-reaches `master` before `release-web-components-*` publishes the package. So the build
-triggered by that push pins the *previous* version, and the site catches up on the next push.
-
-The snippets stay correct either way — they default to `@latest` — so what lags is the version
-badge and the pinned-version option, not anything an integrator would copy. If that ever
-matters, add a Workers Builds deploy hook and POST to it from the release pipeline after the
-npm publish step.
-
-#### Where each piece of the addressing lives
-
-| Question | Answered by | Where it lives |
-|---|---|---|
-| Which repo, which sub-directory? | the Git connection + root directory | Cloudflare → Settings → Build |
-| What command builds it? | build command | Cloudflare → Settings → Build |
-| Which branch deploys? | production branch | Cloudflare → Settings → Build → Branch control |
-| Which Worker does it deploy to? | `name` in `wrangler.jsonc` | this repo |
-| Which files get uploaded? | `assets.directory` | this repo (`./website`) |
-| Which domain serves it? | custom domain | Cloudflare → Settings → Domains & Routes |
-
-The one place the two sides must agree is the Worker name: the dashboard name has to match
-`name` in `wrangler.jsonc` or the build fails. Nothing else is duplicated.
-
-Non-production branches deploy with `npx wrangler versions upload` instead, giving a preview
-version without promoting it.
+A preview without promoting: `npm run release` locally, then `npm run deploy:preview`
+(`wrangler versions upload`).
 
 `website/_headers` and `robots.txt` are **written by the build**, not committed — the output
 directory is wiped on every run. `_headers` deliberately sets no `Cache-Control` (assets are

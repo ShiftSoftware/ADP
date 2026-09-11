@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "paths": {
-      "~api/*": ["./src/global/api/*"],
       "~lib/*": ["./src/global/lib/*"],
       "~locales/*": ["./src/locales/*"],
       "~features/*": ["./src/features/*"],

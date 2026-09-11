@@ -28,7 +28,6 @@ export const config: Config = {
     tailwindHMR(),
     alias({
       entries: [
-        { find: '~api', replacement: path.resolve('src/global/api') },
         { find: '~lib', replacement: path.resolve('src/global/lib') },
         { find: '~locales', replacement: path.resolve('src/locales') },
         { find: '~features', replacement: path.resolve('src/features') },
