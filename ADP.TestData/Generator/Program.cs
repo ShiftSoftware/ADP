@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ADP.TestData.Generator;
+using ADP.TestData.Generator.Anonymisation;
 using NSubstitute;
 using ShiftSoftware.ADP.Lookup.Services;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
@@ -16,6 +17,12 @@ using ShiftSoftware.ADP.Models.Vehicle;
 // tried without touching the committed fixtures: --environments=<dir> reads the environment JSON
 // from there, --out=<dir> writes everything (fixtures and index.json) to that one directory instead
 // of the consumers' source trees. The post-build run passes neither.
+//
+// Two further modes share the argument parsing and run instead of the generation:
+//   --anonymise=<raw environment> --seed=<text>|--seed-file=<path> --keys=<path> [--vocabulary=<path>]
+//                [--name=<env>] [--to=<dir>]   — a real estate's environment → a public one (AnonymiserCommand)
+//   --verify=<forbidden list> [--scan=<path>;<path>…]   — fail on any listed string in environment / fixture
+//                JSON; scans the environments and the fixture output trees when --scan is omitted.
 var arguments = args
     .Select(a => a.Split('=', 2))
     .Where(a => a.Length == 2 && a[0].StartsWith("--"))
@@ -30,6 +37,16 @@ var webComponentsDevDir = Path.Combine(repoRoot, "ADP.WebComponents", "adp-web-c
 var docsOutputDir = Path.Combine(repoRoot, "ADP.Docs", "Docs", "docs", "web-components", "demo-data");
 // The neutral demo images the fixtures' URLs point at (DemoAssets); copied to dist/mocks/assets by the build.
 var assetsDir = Path.Combine(repoRoot, "ADP.WebComponents", "adp-web-components", "src", "features", "mocks", "data", "assets");
+
+if (arguments.ContainsKey("--anonymise") || arguments.ContainsKey("--anonymize"))
+    return AnonymiserCommand.Run(arguments, repoRoot);
+
+if (arguments.TryGetValue("--verify", out var forbiddenList))
+    return ForbiddenListVerifier.Run(
+        Path.GetFullPath(forbiddenList),
+        arguments.TryGetValue("--scan", out var scan)
+            ? scan.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(Path.GetFullPath)
+            : new[] { environmentsDir, webComponentsOutputDir, docsOutputDir });
 
 Console.WriteLine($"Repo root: {repoRoot}");
 Console.WriteLine($"Environments: {environmentsDir}");
@@ -254,6 +271,7 @@ foreach (var baseDir in outputDirs)
 }
 
 Console.WriteLine("\nDone.");
+return 0;
 
 // === Helper Methods ===
 
