@@ -182,6 +182,11 @@ await run(process.execPath, [path.join(root, 'automation', 'build-templates.mjs'
 await rm(outDir, { recursive: true, force: true });
 await mkdir(outDir, { recursive: true });
 
+// The site owns the generated fixtures from the commit it was built from. A
+// component without mockUrl falls back to the npm package, which intentionally
+// no longer ships these files and can also lag the site commit.
+await cp(path.join(root, 'src', 'features', 'mocks', 'data', 'generated'), path.join(outDir, 'mocks', 'generated'), { recursive: true });
+
 // A `*.local.*` file is a developer's private override — gitignored, so it never
 // reaches CI, but it DOES sit in the working tree of the machine that runs this.
 // Copying one would publish whatever it holds, which is the opposite of why it is

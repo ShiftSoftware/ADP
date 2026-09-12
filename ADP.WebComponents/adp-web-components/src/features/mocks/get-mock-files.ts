@@ -17,24 +17,26 @@ export async function getMockFile<T>(mockFileName: MockFileName, externalUrl: st
 }
 
 async function requestMockFile(mockFile: string, externalUrl: string) {
-  if (cachedMocks[mockFile]) return await cachedMocks[mockFile];
+  let fetchUrl = externalUrl?.trim();
 
   try {
-    let fetchUrl;
+    if (!fetchUrl && Build.isDev) fetchUrl = 'http://localhost:3000/mocks/' + mockFile;
+    else if (!fetchUrl) fetchUrl = `https://cdn.jsdelivr.net/npm/adp-web-components@${version}/dist/mocks/${mockFile}`;
 
-    if (!!externalUrl && !!externalUrl.trim().length) fetchUrl = externalUrl;
-    else if (Build.isDev) fetchUrl = 'http://localhost:3000/mocks/' + mockFile;
-    else fetchUrl = `https://cdn.jsdelivr.net/npm/adp-web-components@${version}/dist/mocks/${mockFile}`;
+    // The same file kind exists in every generated environment. Caching by the
+    // old logical filename made an environment change resurrect the first file
+    // after toggling back into development mode.
+    if (cachedMocks[fetchUrl]) return await cachedMocks[fetchUrl];
 
     const fetchPromise = fetch(fetchUrl)
       .then(res => {
-        if (!res.ok) delete cachedMocks[mockFile];
+        if (!res.ok) delete cachedMocks[fetchUrl];
         return res.json();
       })
       // Fixture pictures point at the CDN copy of the package; a dev build reads the dev server's.
       .then(localizeMockAssets);
 
-    cachedMocks[mockFile] = fetchPromise;
+    cachedMocks[fetchUrl] = fetchPromise;
 
     const result = await fetchPromise;
 
@@ -47,11 +49,11 @@ async function requestMockFile(mockFile: string, externalUrl: string) {
       })),
     );
 
-    cachedMocks[mockFile] = result;
+    cachedMocks[fetchUrl] = result;
 
     return result;
-  } catch (error) {
-    delete cachedMocks[mockFile];
+  } catch {
+    delete cachedMocks[fetchUrl];
     return {};
   }
 }

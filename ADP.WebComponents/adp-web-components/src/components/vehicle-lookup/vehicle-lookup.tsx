@@ -15,7 +15,7 @@ import { VehicleWarrantyTimeline } from './vehicle-warranty-timeline';
 import { VehicleSaleInformation } from './vehicle-sale-information';
 
 import { DotNetObjectReference } from '~features/blazor-ref';
-import { RequestHeadersProvider, VehicleLookupComponent } from '~features/vehicle-lookup-component';
+import { RequestHeadersProvider, VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
 import { VehicleInfoLayout } from '~features/vehicle-info-layout/vehicle-info-layout';
 import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
@@ -181,9 +181,15 @@ export class VehicleLookup implements MultiLingual {
   private async loadMockData() {
     if (!this.componentsList) return;
     const mockData = await getMockFile<VehicleLookupDTO>('vehicle-lookup', this.mockUrl);
-    Object.values(this.componentsList).forEach(element => {
-      if (element) element.setMockData(mockData);
-    });
+    await this.setMockData(mockData);
+  }
+
+  /** Replace every panel's mock map as one operation when a host changes environment. */
+  @Method()
+  async setMockData(newMockData: VehicleLookupMock) {
+    if (!this.componentsList) return;
+
+    await Promise.all(Object.values(this.componentsList).map(element => element?.setMockData(newMockData)));
   }
 
   private syncErrorAcrossComponents = (newErrorMessage: ErrorKeys) => {

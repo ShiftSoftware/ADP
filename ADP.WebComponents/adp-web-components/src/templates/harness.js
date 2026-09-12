@@ -3,7 +3,7 @@
  *
  * Provides the `harness()` Alpine data factory and stamps the shared chrome into
  * the placeholder elements below, so a page describes what it is testing instead
- * of re-implementing navigation and the same six controls:
+ * of re-implementing navigation and the shared controls:
  *
  *   <div data-harness-nav x-cloak></div>
  *
@@ -23,9 +23,9 @@
  *
  *   [data-harness-bar]   Mode and Fixtures, inline above the component. Reached
  *                        in one click, because that is every interaction.
- *   [data-harness-rail]  Language, theme, platform width and the event log, in a
- *                        drawer behind a tab on the right edge (a button on a
- *                        phone). Set once, then forgotten.
+ *   [data-harness-rail]  Environment, Today, language, theme, platform width and
+ *                        the event log, in a drawer behind a tab on the right
+ *                        edge (a button on a phone). Set once, then forgotten.
  *
  * The rail used to be a 300px aside, which cost the component under test a third
  * of the page on every demo. Its stamped markup is all `position: fixed`, so the
@@ -46,6 +46,8 @@
  * .shift/repos/adp/web-components/templates-design-language.md.
  */
 
+import { chooseEnvironment, environmentFileUrl, environmentLabel, environmentsFrom } from './harness-environment.js';
+
 /*
  * Every path this file emits or compares is resolved against the directory this
  * module was loaded from, never against the server root. Root-absolute paths
@@ -58,6 +60,8 @@
  * tags; the fix has to be here, where `import.meta.url` knows the real depth.
  */
 const SITE_ROOT = new URL('../', import.meta.url);
+const ENVIRONMENT_STORAGE_KEY = 'adp-harness-environment';
+const ENVIRONMENT_SETTLE_MS = 320;
 const TODAY_STORAGE_KEY = 'adp-harness-today';
 const TODAY_MODE_STORAGE_KEY = 'adp-harness-today-mode';
 const ISO_CALENDAR_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -81,6 +85,16 @@ const readStoredToday = () => {
     return { mode: null, value: null };
   }
 };
+
+const readStoredEnvironment = () => {
+  try {
+    return sessionStorage.getItem(ENVIRONMENT_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const afterEnvironmentSettles = () => new Promise(resolve => setTimeout(resolve, ENVIRONMENT_SETTLE_MS));
 
 /** A catalog path (`/templates/…`) as a URL path valid from wherever this page sits. */
 const site = value => new URL(String(value).replace(/^\//, ''), SITE_ROOT).pathname;
@@ -116,6 +130,7 @@ const PROFILES = {
   lookup: {
     apply: (subject, data) => subject.setMockData(data),
     select: (subject, key) => subject.fetchVin(key),
+    clear: subject => (subject.clearData ? subject.clearData() : subject.fetchVin({ vin: '' })),
     endpoint: subject => subject.baseUrl,
     events: {
       loadingStateChange: track,
@@ -124,11 +139,17 @@ const PROFILES = {
     },
   },
 
-  // part-lookup family: a part number goes in, and the component loads its own
-  // mock file when `isDev` flips rather than being handed one.
+  // part-lookup family: the harness owns the generated file, while the single
+  // panels still receive it through their public mock API. The wrapper has no
+  // setMockData method, so a selected DTO is distributed to all three tabs.
   part: {
-    apply: null,
-    select: (subject, key) => subject.fetchData(key),
+    apply: (subject, data) => subject.setMockData?.(data),
+    select: (subject, key, harness) => {
+      const mock = harness.mode === 'dev' && harness.data?.[key];
+
+      return mock && subject.localName === 'part-lookup' ? subject.handleLoadData(mock, null) : subject.fetchData(key);
+    },
+    clear: subject => (subject.localName === 'part-lookup' ? subject.handleLoadData({ partNumber: '' }, null) : subject.fetchData('')),
     endpoint: subject => subject.endpoint?.url,
     events: {
       loadingStateChange: track,
@@ -173,7 +194,8 @@ const PROFILES = {
   // vehicle-lookup: the shell that holds the eight single-vehicle components and
   // shows one at a time. It reports its own state rather than the children's.
   composite: {
-    apply: null,
+    apply: (subject, data) => subject.setMockData(data),
+    clear: subject => subject.handleLoadData({ vin: '' }, null),
     endpoint: subject => subject.baseUrl,
     // In development, push the fixture into every tab at once instead of only the
     // active one, which is what `fetchVin` does — otherwise switching tabs shows
@@ -219,6 +241,7 @@ const DEFAULTS = {
     { label: 'Full', value: '100%' },
   ],
   language: true,
+  environment: true,
   today: true,
   theme: true,
   mode: true,
@@ -233,6 +256,7 @@ const DEFAULTS = {
   apply: undefined,
   select: undefined,
   endpoint: undefined,
+  clear: undefined,
 };
 
 window.harness = function harness(options = {}) {
@@ -242,6 +266,7 @@ window.harness = function harness(options = {}) {
   const apply = config.apply === undefined ? profile.apply : config.apply;
   const select = config.select === undefined ? profile.select : config.select;
   const endpoint = config.endpoint === undefined ? profile.endpoint : config.endpoint;
+  const clear = config.clear === undefined ? profile.clear : config.clear;
   // `false` wires nothing: a page demonstrating the Blazor bridge needs those
   // same callback props left as the attribute strings the component dispatches
   // through the .NET ref, and it feeds the log with `harness:log` instead.
@@ -255,6 +280,7 @@ window.harness = function harness(options = {}) {
     platforms: config.platforms,
     show: {
       language: config.language,
+      environment: config.environment && Boolean(config.mocks),
       today: config.today && config.subject !== false,
       theme: config.theme,
       mode: config.mode,
@@ -268,6 +294,11 @@ window.harness = function harness(options = {}) {
     },
 
     language: config.languages[0],
+    environments: [],
+    environment: '',
+    environmentChanging: false,
+    environmentError: '',
+    environmentRequest: 0,
     today: '',
     todayMode: 'live',
     todayAnchor: '',
@@ -302,6 +333,10 @@ window.harness = function harness(options = {}) {
       return this.todayMode === 'live' ? wallToday() : this.today;
     },
 
+    get environmentLabel() {
+      return environmentLabel(this.environment);
+    },
+
     /** Empty and Error are always offered; the rest is generated, never listed (R7). */
     get fixtures() {
       const keys = this.mode === 'dev' ? this.keys : config.samples;
@@ -312,6 +347,14 @@ window.harness = function harness(options = {}) {
     async init() {
       // Any script on the page can write to the log without an Alpine scope.
       window.addEventListener('harness:log', event => this.write(event.detail?.label, event.detail?.detail));
+
+      // `source` was the temporary bridge to generated fixtures. The picker is
+      // now the only source selector, so retire the parameter wherever it appears.
+      const initialUrl = new URL(window.location.href);
+      if (initialUrl.searchParams.has('source')) {
+        initialUrl.searchParams.delete('source');
+        window.history.replaceState({}, '', initialUrl);
+      }
 
       // A gallery page drives several elements itself and has no single subject.
       if (config.subject === false) return;
@@ -328,6 +371,7 @@ window.harness = function harness(options = {}) {
       await config.setup?.(this.subject, this);
 
       if (config.language) this.setLanguage(this.subject.language || this.language);
+      if (config.mocks) await this.initEnvironment();
       if (config.today) await this.initToday();
 
       // Before isDev, not after: flipping it makes some components load their own
@@ -335,8 +379,7 @@ window.harness = function harness(options = {}) {
       this.observe();
       this.subject.isDev = true;
 
-      if (config.mocks) await this.loadFixtures();
-      if (config.start) this.run(config.start);
+      if (config.start && this.keys.includes(config.start)) this.run(config.start);
     },
 
     /* ---------- controls ---------- */
@@ -358,24 +401,109 @@ window.harness = function harness(options = {}) {
       this.write('language', `${language} · ${this.dir}`);
     },
 
-    async initToday() {
+    async initEnvironment() {
+      try {
+        const response = await fetch(new URL('mocks/generated/index.json', SITE_ROOT));
+        if (!response.ok) throw new Error(`${response.status}`);
+
+        this.environments = environmentsFrom(await response.json());
+        if (!this.environments.length) throw new Error('the generated index contains no environments');
+
+        const url = new URL(window.location.href);
+        const selected = chooseEnvironment(this.environments, url.searchParams.get('env'), readStoredEnvironment());
+
+        await this.loadEnvironment(selected.name, true);
+      } catch (error) {
+        this.environmentError = `Failed to load generated environments — ${error.message}`;
+        this.write('environment', this.environmentError);
+      }
+    },
+
+    async setEnvironment(name) {
+      if (!name || name === this.environment || this.environmentChanging) return;
+
+      await this.loadEnvironment(name, false);
+    },
+
+    async loadEnvironment(name, initial) {
+      const selected = this.environments.find(environment => environment.name === name);
+      if (!selected) return;
+
+      const request = ++this.environmentRequest;
+      const mockUrl = environmentFileUrl(SITE_ROOT, selected.name, config.mocks);
+
+      this.environment = selected.name;
+      this.environmentError = '';
+      this.fixture = '';
+      this.data = null;
+      this.keys = [];
+      this.hidden = 0;
+      this.todayAnchor = isCalendarDate(selected.anchor) ? selected.anchor : '';
+      this.subject.mockUrl = mockUrl.href;
+
       const url = new URL(window.location.href);
-      const environment = url.searchParams.get('env') || 'standard-dealer';
+      url.searchParams.delete('source');
+      url.searchParams.set('env', selected.name);
+      if (!initial) {
+        url.searchParams.delete('vin');
+        url.searchParams.delete('claim');
+      }
+      window.history.replaceState({}, '', url);
 
-      if (url.searchParams.get('source') === 'generated') {
-        try {
-          const response = await fetch(new URL('mocks/generated/index.json', SITE_ROOT));
+      try {
+        sessionStorage.setItem(ENVIRONMENT_STORAGE_KEY, selected.name);
+      } catch {
+        // Storage can be unavailable in privacy modes; the URL remains authoritative.
+      }
 
-          if (response.ok) {
-            const index = await response.json();
-            const anchor = index.environments?.find(item => item.name === environment)?.anchor;
-            if (isCalendarDate(anchor)) this.todayAnchor = anchor;
-          }
-        } catch {
-          // The fixture load reports its own failure. A missing index only means
-          // this temporary, pre-picker route falls back to the wall clock.
+      // Anchor follows the environment; Live and Custom deliberately do not.
+      if (!initial && this.todayMode === 'anchor') this.setToday('anchor');
+
+      if (!initial) {
+        this.environmentChanging = true;
+        this.setEnvironmentTransition(true);
+      }
+
+      try {
+        if (!initial) {
+          await afterEnvironmentSettles();
+          await clear?.(this.subject, this);
+        }
+
+        const response = await fetch(mockUrl);
+        if (!response.ok) throw new Error(`${response.status}`);
+
+        const data = (await response.json()) ?? {};
+        if (request !== this.environmentRequest) return;
+
+        this.data = data;
+        await apply?.(this.subject, data);
+        this.setFixtures(Object.keys(data), data);
+        this.write('environment', `${selected.name} · ${this.keys.length} shown`);
+      } catch (error) {
+        if (request !== this.environmentRequest) return;
+
+        this.data = {};
+        this.setFixtures([], {});
+        this.environmentError = `Failed to load ${selected.name} — ${error.message}`;
+        this.write('environment', this.environmentError);
+      } finally {
+        if (!initial && request === this.environmentRequest) {
+          this.environmentChanging = false;
+          this.setEnvironmentTransition(false);
         }
       }
+    },
+
+    setEnvironmentTransition(changing) {
+      this.subject
+        .closest('section')
+        ?.querySelectorAll('.frame')
+        .forEach(frame => frame.setAttribute('data-environment-changing', String(changing)));
+    },
+
+    async initToday() {
+      const url = new URL(window.location.href);
 
       const requested = url.searchParams.get('today');
 
@@ -477,23 +605,6 @@ window.harness = function harness(options = {}) {
 
     /* ---------- fixtures ---------- */
 
-    async loadFixtures() {
-      let data = {};
-
-      try {
-        data = (await window.loadMockData(config.mocks)) ?? {};
-        this.data = data;
-
-        await apply?.(this.subject, data);
-      } catch (error) {
-        this.write('fixtures', `failed to load — ${error.message}`);
-      }
-
-      // Generated from the mock keys, never hand-listed: a hardcoded list drifts
-      // the moment someone adds a scenario (R7). Labels only annotate.
-      this.setFixtures(Object.keys(data), data);
-    },
-
     /** Public, so a component that pushes its own mock set can feed the rail. */
     setFixtures(keys, data) {
       if (data) this.data = data;
@@ -508,6 +619,8 @@ window.harness = function harness(options = {}) {
     },
 
     run(key) {
+      if (this.environmentChanging) return;
+
       this.fixture = key;
       this.write('fetch', key === '' ? '(empty)' : key);
 
@@ -726,7 +839,7 @@ const BAR = /* html */ `
 
             <div class="flex flex-wrap gap-1.5" role="group" aria-label="Fixtures">
               <template x-for="item in fixtures" :key="item.value">
-                <button type="button" class="btn btn-xs font-mono font-normal" :class="fixture === item.value ? 'btn-primary' : 'btn-outline'"
+                <button type="button" class="btn btn-xs font-mono font-normal" :class="fixture === item.value ? 'btn-primary' : 'btn-outline'" :disabled="environmentChanging"
                         :aria-pressed="fixture === item.value" @click="run(item.value)" :title="item.note || item.label">
                   <span x-text="item.label"></span>
                   <span class="font-sans opacity-70" x-show="item.note" x-text="item.note"></span>
@@ -834,6 +947,28 @@ const RAIL = /* html */ `
                       :aria-pressed="language === item" @click="setLanguage(item)" x-text="item.toUpperCase()"></button>
             </template>
           </div>
+        </div>
+      </template>
+
+      <template x-if="show.environment">
+        <div class="flex flex-col gap-1.5">
+          <span class="eyebrow text-neutral" x-text="'Environment · ' + (environmentLabel || 'Unavailable')"></span>
+          <label>
+            <span class="sr-only">Environment</span>
+            <select
+              class="select select-sm select-bordered w-full font-mono"
+              aria-label="Environment"
+              :value="environment"
+              :disabled="environmentChanging || !environments.length"
+              @change="setEnvironment($event.target.value)"
+            >
+              <template x-for="item in environments" :key="item.name">
+                <option :value="item.name" x-text="item.label"></option>
+              </template>
+            </select>
+          </label>
+          <p class="text-base-content/60 text-xs" x-show="environmentChanging">Loading generated fixtures…</p>
+          <p class="text-error text-xs" x-show="environmentError" x-text="environmentError"></p>
         </div>
       </template>
 

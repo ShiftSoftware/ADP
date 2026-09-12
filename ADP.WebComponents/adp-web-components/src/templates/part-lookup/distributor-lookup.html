@@ -37,7 +37,7 @@
         class="flex flex-col gap-4"
         x-data="harness({
           profile: 'part',
-          samples: ['T110715002102', 'T1118850010/1', 'T1112375020/11'],
+          mocks: 'part-lookup',
           setup: subject => (subject.endpoint = { url: 'https://tiq-part-lookup.azurewebsites.net/api/secure-part-lookup', query: { code: '' } }),
         })"
       >

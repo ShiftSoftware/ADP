@@ -48,7 +48,8 @@
         "methods": [
           { "name": "fetchVin", "parameters": "(vin: string, headers?: any) => Promise<void>", "returns": "Promise<void>" },
           { "name": "handleLoadData", "parameters": "(newResponse: VehicleLookupDTO, activeElement: any) => Promise<void>", "returns": "Promise<void>" },
-          { "name": "setBlazorRef", "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>", "returns": "Promise<void>" }
+          { "name": "setBlazorRef", "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
         ],
         "events": [],
         "dependencies": [

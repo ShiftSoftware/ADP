@@ -49,6 +49,15 @@ const newWrapper = async (attributes = '') => {
 };
 
 describe('vehicle-lookup', () => {
+  it('replaces the mock map on every panel when the environment changes', async () => {
+    const { wrapper, panels } = await newWrapper();
+    const nextEnvironment = { SYNTHETIC: response };
+
+    await wrapper.setMockData(nextEnvironment);
+
+    for (const panel of Object.values(panels)) expect(panel.setMockData).toHaveBeenCalledWith(nextEnvironment);
+  });
+
   it('hydrates every other panel from a search, the SSC panel included when nothing sets it apart', async () => {
     const { wrapper, panels } = await newWrapper();
 
