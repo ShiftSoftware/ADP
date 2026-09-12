@@ -2,8 +2,8 @@
   "data": {
     "theme": "vehicle-quotation-tiq",
     "brandId": "kWrKw",
-    "recaptchaKey": "6Lehq6IpAAAAAETTDS2Zh60nHIT1a8oVkRtJ2WsA",
-    "requestUrl": "https://example.invalid/demo-only-submit-is-disabled",
+    "recaptchaKey": "",
+    "requestUrl": "https://example.invalid/api/test-drives",
     "truncatedFields": {
       "testDriveDate": ["date", " ", "time"],
       "parse date: testDriveDate": "yyyy-MM-dd HH:mm"
@@ -48,7 +48,7 @@
           "name": "vehicle",
           "useNamedValue": true,
           "vehicleIdQueryParam": "cId",
-          "vehicleApi": "https://tiq-publications-functions.azurewebsites.net/api/models",
+          "vehicleApi": "https://example.invalid/api/vehicles",
           "localization": {
             "ku": {
               "label": "ئۆتۆمبێل",
@@ -135,7 +135,7 @@
         },
         {
           "name": "companyBranchId",
-          "branchApi": "https://tiq-identity-server.azurewebsites.net/api/public/company-branch?brands=TYT",
+          "branchApi": "https://example.invalid/api/branches",
           "localization": {
             "ku": {
               "label": "بریکار",
@@ -176,7 +176,7 @@
         },
         {
           "name": "bookingSlot",
-          "calendarApi": "https://tiq-identity-server.azurewebsites.net/api/public/calendar",
+          "calendarApi": "https://example.invalid/api/calendar",
           "departmentPreference": ["showroom", "quick-service-center", "service-center"],
           "daysAhead": 30,
           "disabledWeekdays": [5, 6],
@@ -197,7 +197,7 @@
         },
         {
           "name": "bookingDate",
-          "calendarApi": "https://tiq-identity-server.azurewebsites.net/api/public/calendar",
+          "calendarApi": "https://example.invalid/api/calendar",
           "departmentPreference": ["showroom", "quick-service-center", "service-center"],
           "daysAhead": 30,
           "disabledWeekdays": [5, 6],

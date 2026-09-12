@@ -21,11 +21,11 @@
  *
  * …and the controls, split by how often you touch them:
  *
- *   [data-harness-bar]   Mode and Fixtures, inline above the component. Reached
- *                        in one click, because that is every interaction.
- *   [data-harness-rail]  Environment, Today, language, theme, platform width and
- *                        the event log, in a drawer behind a tab on the right
- *                        edge (a button on a phone). Set once, then forgotten.
+ *   [data-harness-bar]   Fixtures, inline above the component. Reached in one
+ *                        click, because that is every interaction.
+ *   [data-harness-rail]  Connection, Environment, Today, language, theme,
+ *                        platform width and the event log, in a drawer behind a
+ *                        tab on the right edge (a button on a phone).
  *
  * The rail used to be a 300px aside, which cost the component under test a third
  * of the page on every demo. Its stamped markup is all `position: fixed`, so the
@@ -47,6 +47,21 @@
  */
 
 import { chooseEnvironment, environmentFileUrl, environmentLabel, environmentsFrom } from './harness-environment.js';
+import {
+  captureConnectionState,
+  clearConnection,
+  connectProfile,
+  connectionFields,
+  connectionLog,
+  connectionOptions,
+  connectionStorageKey,
+  disconnectProfile,
+  emptyConnectionDraft,
+  loadConnection,
+  saveConnection,
+  todayChoiceAvailable,
+  validateConnection,
+} from './harness-connection.js';
 
 /*
  * Every path this file emits or compares is resolved against the directory this
@@ -118,7 +133,7 @@ function fail(message) {
 }
 
 /**
- * The four component shapes these demos drive. A profile is only a bundle of
+ * The five component shapes these demos drive. A profile is only a bundle of
  * defaults — every field it sets can still be overridden per page.
  *
  * `events` maps a component callback property to a log line. Handlers run with
@@ -127,11 +142,10 @@ function fail(message) {
  */
 const PROFILES = {
   // vehicle-lookup family: a VIN goes in, one response comes back.
-  lookup: {
+  'lookup': {
     apply: (subject, data) => subject.setMockData(data),
     select: (subject, key) => subject.fetchVin(key),
     clear: subject => (subject.clearData ? subject.clearData() : subject.fetchVin({ vin: '' })),
-    endpoint: subject => subject.baseUrl,
     events: {
       loadingStateChange: track,
       errorCallback: fail,
@@ -142,15 +156,14 @@ const PROFILES = {
   // part-lookup family: the harness owns the generated file, while the single
   // panels still receive it through their public mock API. The wrapper has no
   // setMockData method, so a selected DTO is distributed to all three tabs.
-  part: {
+  'part': {
     apply: (subject, data) => subject.setMockData?.(data),
     select: (subject, key, harness) => {
-      const mock = harness.mode === 'dev' && harness.data?.[key];
+      const mock = !harness.connected && harness.data?.[key];
 
       return mock && subject.localName === 'part-lookup' ? subject.handleLoadData(mock, null) : subject.fetchData(key);
     },
     clear: subject => (subject.localName === 'part-lookup' ? subject.handleLoadData({ partNumber: '' }, null) : subject.fetchData('')),
-    endpoint: subject => subject.endpoint?.url,
     events: {
       loadingStateChange: track,
       errorCallback: fail,
@@ -167,10 +180,9 @@ const PROFILES = {
 
   // forms: no fixture list — the structure JSON is the input, and what matters
   // is the submit lifecycle.
-  form: {
+  'form': {
     apply: null,
     select: null,
-    endpoint: subject => subject.structureUrl || subject.getAttribute('structure-url'),
     events: {
       formReadyCallback() {
         this.ready = true;
@@ -193,26 +205,32 @@ const PROFILES = {
 
   // vehicle-lookup: the shell that holds the eight single-vehicle components and
   // shows one at a time. It reports its own state rather than the children's.
-  composite: {
+  'composite': {
     apply: (subject, data) => subject.setMockData(data),
     clear: subject => subject.handleLoadData({ vin: '' }, null),
-    endpoint: subject => subject.baseUrl,
     // In development, push the fixture into every tab at once instead of only the
     // active one, which is what `fetchVin` does — otherwise switching tabs shows
     // whatever the previous search left behind. Empty and Error have no fixture,
     // so they go the normal route and let each child render its own state.
     select: (subject, key, harness) => {
-      const mock = harness.mode === 'dev' && harness.data?.[key];
+      const mock = !harness.connected && harness.data?.[key];
 
       // A page that sets ssc-query-string is showing the SSC tab's own lookup and what the other
       // tabs' searches leave it with, so its searches go through fetchVin the way a host's do.
-      return mock && !subject.sscQueryString ? subject.handleLoadData(mock, null) : subject.fetchVin(key, { headers: 'headers-value' });
+      return mock && !subject.sscQueryString ? subject.handleLoadData(mock, null) : subject.fetchVin(key);
     },
     events: {
       loadingStateChanged: track,
       errorStateListener: fail,
       dynamicClaimActivate: information => ['claim activate', information?.vin ?? '(no vin)'],
     },
+  },
+
+  // Gallery page: one Connection value is applied to every OCR-enabled case.
+  'vin-extractor': {
+    apply: null,
+    select: null,
+    events: {},
   },
 };
 
@@ -221,9 +239,6 @@ const DEFAULTS = {
   profile: 'lookup',
   mocks: null,
   labels: {},
-  // Fixture keys to offer in production mode, where there is no mock file to
-  // generate them from. Development mode always uses the generated list (R7).
-  samples: [],
   // Fixture to run as soon as the subject is ready, so a page can deep-link a
   // scenario (`?vin=…`) instead of asking whoever opened the link to click.
   start: null,
@@ -244,7 +259,7 @@ const DEFAULTS = {
   environment: true,
   today: true,
   theme: true,
-  mode: true,
+  connection: {},
   platform: true,
   log: true,
   fixtures: null,
@@ -255,7 +270,6 @@ const DEFAULTS = {
   // `undefined` means "take the profile's"; `null` means "this page has none".
   apply: undefined,
   select: undefined,
-  endpoint: undefined,
   clear: undefined,
 };
 
@@ -265,8 +279,11 @@ window.harness = function harness(options = {}) {
 
   const apply = config.apply === undefined ? profile.apply : config.apply;
   const select = config.select === undefined ? profile.select : config.select;
-  const endpoint = config.endpoint === undefined ? profile.endpoint : config.endpoint;
   const clear = config.clear === undefined ? profile.clear : config.clear;
+  const profileName = PROFILES[config.profile] ? config.profile : 'lookup';
+  const configuredConnection = connectionOptions(profileName, config.connection);
+  const fields = connectionFields(profileName, configuredConnection);
+  const storageKey = connectionStorageKey(profileName, window.location.pathname);
   // `false` wires nothing: a page demonstrating the Blazor bridge needs those
   // same callback props left as the attribute strings the component dispatches
   // through the .NET ref, and it feeds the log with `harness:log` instead.
@@ -283,13 +300,13 @@ window.harness = function harness(options = {}) {
       environment: config.environment && Boolean(config.mocks),
       today: config.today && config.subject !== false,
       theme: config.theme,
-      mode: config.mode,
+      connection: config.connection !== false && config.subject !== false,
       platform: config.platform,
       log: config.log,
-      fixtures: (config.fixtures ?? Boolean(config.mocks || config.samples.length)) && Boolean(select),
+      fixtures: (config.fixtures ?? Boolean(config.mocks)) && Boolean(select),
       // The bar only earns its space when it has something in it.
       get bar() {
-        return this.mode || this.fixtures;
+        return this.fixtures;
       },
     },
 
@@ -303,10 +320,15 @@ window.harness = function harness(options = {}) {
     todayMode: 'live',
     todayAnchor: '',
     customToday: wallToday(),
+    generatedTodayChoice: null,
     theme: window.harnessTheme?.current() ?? 'system',
-    // Development is the default: it is the only mode that works without a local
-    // API running, which is how these pages are opened most of the time.
-    mode: 'dev',
+    connected: false,
+    connectionBusy: false,
+    connectionError: '',
+    connectionErrors: {},
+    connectionFields: fields,
+    connectionDraft: emptyConnectionDraft(profileName, configuredConnection),
+    connectionBaseline: null,
     // The rail is a drawer, not a column: it would otherwise take a third of the
     // width away from the thing under test on every page.
     open: false,
@@ -321,6 +343,7 @@ window.harness = function harness(options = {}) {
     // How many fixtures `has` filtered out. Shown, never silently dropped.
     hidden: 0,
     fixture: null,
+    generatedFixture: null,
     // Forms flip this from formReadyCallback; an external submit button waits on it.
     ready: false,
     lines: [],
@@ -337,11 +360,17 @@ window.harness = function harness(options = {}) {
       return environmentLabel(this.environment);
     },
 
+    get connectionLabel() {
+      return this.connected ? 'Live' : 'Generated';
+    },
+
+    get liveTodayExplanation() {
+      return 'Live API responses use the server’s current time. Disconnect to use the generated Anchor or Custom choices.';
+    },
+
     /** Empty and Error are always offered; the rest is generated, never listed (R7). */
     get fixtures() {
-      const keys = this.mode === 'dev' ? this.keys : config.samples;
-
-      return [{ value: '', label: 'Empty' }, { value: 'error', label: 'Error' }, ...keys.map(key => ({ value: key, label: key, note: config.labels[key] }))];
+      return [{ value: '', label: 'Empty' }, { value: 'error', label: 'Error' }, ...this.keys.map(key => ({ value: key, label: key, note: config.labels[key] }))];
     },
 
     async init() {
@@ -370,6 +399,10 @@ window.harness = function harness(options = {}) {
 
       await config.setup?.(this.subject, this);
 
+      if (typeof configuredConnection.targets === 'string') configuredConnection.targets = [...document.querySelectorAll(configuredConnection.targets)];
+
+      this.connectionBaseline = captureConnectionState(profileName, this.subject, configuredConnection);
+
       if (config.language) this.setLanguage(this.subject.language || this.language);
       if (config.mocks) await this.initEnvironment();
       if (config.today) await this.initToday();
@@ -377,9 +410,11 @@ window.harness = function harness(options = {}) {
       // Before isDev, not after: flipping it makes some components load their own
       // mock file and call straight back, so the listeners have to be in place.
       this.observe();
-      this.subject.isDev = true;
+      if (profileName !== 'vin-extractor') this.subject.isDev = true;
 
-      if (config.start && this.keys.includes(config.start)) this.run(config.start);
+      await this.restoreConnection();
+
+      if (!this.connected && config.start && this.keys.includes(config.start)) this.run(config.start);
     },
 
     /* ---------- controls ---------- */
@@ -420,7 +455,7 @@ window.harness = function harness(options = {}) {
     },
 
     async setEnvironment(name) {
-      if (!name || name === this.environment || this.environmentChanging) return;
+      if (this.connected || !name || name === this.environment || this.environmentChanging) return;
 
       await this.loadEnvironment(name, false);
     },
@@ -535,6 +570,7 @@ window.harness = function harness(options = {}) {
     },
 
     setToday(mode, customDate = this.customToday, persist = true) {
+      if (this.connected && mode !== 'live') return;
       if (mode === 'anchor' && !this.todayAnchor) return;
       if (mode === 'custom' && !isCalendarDate(customDate)) return;
 
@@ -563,6 +599,158 @@ window.harness = function harness(options = {}) {
       this.write('today', mode === 'live' ? `${wallToday()} · live` : `${value} · ${mode}`);
     },
 
+    canUseToday(mode) {
+      return todayChoiceAvailable(mode, this.connected, Boolean(this.todayAnchor));
+    },
+
+    clearConnectionError(name) {
+      if (!this.connectionErrors[name] && !this.connectionError) return;
+
+      this.connectionErrors = { ...this.connectionErrors, [name]: '' };
+      this.connectionError = '';
+    },
+
+    async restoreConnection() {
+      let settings;
+
+      try {
+        settings = loadConnection(sessionStorage, storageKey, profileName, configuredConnection);
+      } catch {
+        settings = null;
+      }
+
+      if (!settings) return;
+
+      this.generatedTodayChoice = { mode: this.todayMode, customDate: this.customToday };
+      this.generatedFixture = this.fixture;
+      this.connectionBusy = true;
+
+      try {
+        if (profileName === 'form') await this.replaceFormSubject(settings.structureUrl, false);
+
+        connectProfile(profileName, this.subject, settings, configuredConnection);
+        this.connected = true;
+        this.fixture = null;
+        if (config.today) this.setToday('live', this.customToday, false);
+        this.write('connection', connectionLog('connect', profileName));
+      } catch {
+        try {
+          clearConnection(sessionStorage, storageKey);
+        } catch {
+          // A blocked session store also means there is nothing useful to clear.
+        }
+        this.connectionError = 'The saved connection could not be applied. Generated data remains active.';
+        this.write('connection', 'saved live settings rejected · generated data kept');
+      } finally {
+        this.connectionBusy = false;
+      }
+    },
+
+    async connect() {
+      if (this.connectionBusy || this.connected) return;
+
+      const validated = validateConnection(profileName, this.connectionDraft, configuredConnection);
+      this.connectionErrors = validated.errors;
+
+      if (!validated.ok) {
+        this.connectionError = 'Fix the highlighted connection fields before connecting.';
+        this.write('connection', 'validation failed · no values logged');
+        return;
+      }
+
+      this.connectionError = '';
+      this.connectionBusy = true;
+      this.generatedTodayChoice = { mode: this.todayMode, customDate: this.customToday };
+      this.generatedFixture = this.fixture;
+
+      try {
+        if (profileName === 'form') await this.replaceFormSubject(validated.settings.structureUrl, false);
+        else if (profileName !== 'vin-extractor') await clear?.(this.subject, this);
+
+        connectProfile(profileName, this.subject, validated.settings, configuredConnection);
+
+        try {
+          saveConnection(sessionStorage, storageKey, validated.settings);
+        } catch {
+          // The connection still works for this page view when storage is blocked.
+        }
+
+        this.connected = true;
+        this.fixture = null;
+        if (config.today) this.setToday('live', this.customToday, false);
+        this.write('connection', connectionLog('connect', profileName));
+      } catch {
+        disconnectProfile(profileName, this.subject, this.connectionBaseline, configuredConnection);
+        this.connectionError = 'The connection could not be applied. Generated data remains active.';
+        this.write('connection', 'connect failed · no values logged');
+      } finally {
+        this.connectionBusy = false;
+      }
+    },
+
+    async disconnect() {
+      if (this.connectionBusy || !this.connected) return;
+
+      this.connectionBusy = true;
+
+      try {
+        try {
+          clearConnection(sessionStorage, storageKey);
+        } catch {
+          // The in-memory state is still cleared below.
+        }
+
+        if (profileName === 'form') await this.replaceFormSubject(this.connectionBaseline.structureUrl, true);
+
+        disconnectProfile(profileName, this.subject, this.connectionBaseline, configuredConnection);
+        this.connected = false;
+        this.connectionDraft = emptyConnectionDraft(profileName, configuredConnection);
+        this.connectionErrors = {};
+        this.connectionError = '';
+
+        if (config.mocks) {
+          await apply?.(this.subject, this.data ?? {});
+
+          const previous = this.generatedFixture;
+          this.fixture = null;
+          if (previous === '' || previous === 'error' || this.keys.includes(previous)) await this.run(previous);
+          else await clear?.(this.subject, this);
+        }
+
+        if (config.today) {
+          const choice = this.generatedTodayChoice;
+          const mode = choice?.mode === 'custom' || choice?.mode === 'live' || choice?.mode === 'anchor' ? choice.mode : this.todayAnchor ? 'anchor' : 'live';
+          this.customToday = choice?.customDate || this.customToday;
+          this.setToday(mode, this.customToday, false);
+        }
+
+        this.write('connection', connectionLog('disconnect', profileName));
+      } finally {
+        this.connectionBusy = false;
+      }
+    },
+
+    async replaceFormSubject(structureUrl, isDev) {
+      const current = this.subject;
+      const replacement = current.cloneNode(false);
+
+      replacement.removeAttribute('structure-url');
+      if (structureUrl) replacement.setAttribute('structure-url', structureUrl);
+      replacement.structureUrl = structureUrl;
+      replacement.isDev = isDev;
+      if (config.language) replacement.language = this.language;
+      if (config.today) replacement.today = this.today;
+      if (this.connectionBaseline?.fields) replacement.fields = this.connectionBaseline.fields;
+
+      current.replaceWith(replacement);
+      this.subject = replacement;
+
+      await customElements.whenDefined(replacement.localName);
+      await replacement.componentOnReady?.();
+      await config.setup?.(replacement, this);
+      this.observe();
+    },
+
     setOpen(open) {
       this.open = open;
 
@@ -584,13 +772,6 @@ window.harness = function harness(options = {}) {
       else document.documentElement.dataset.theme = theme === 'dark' ? 'harness-dark' : 'harness';
 
       this.write('theme', theme);
-    },
-
-    setMode(mode) {
-      this.mode = mode;
-      this.subject.isDev = mode === 'dev';
-
-      this.write('mode', mode === 'dev' ? 'development · mock data' : `production · ${endpoint?.(this.subject) || 'no endpoint set'}`);
     },
 
     setWidth(width) {
@@ -624,7 +805,7 @@ window.harness = function harness(options = {}) {
       this.fixture = key;
       this.write('fetch', key === '' ? '(empty)' : key);
 
-      select?.(this.subject, key, this);
+      return key === '' ? clear?.(this.subject, this) : select?.(this.subject, key, this);
     },
 
     reload() {
@@ -811,40 +992,33 @@ const NAV = /* html */ `
 `;
 
 /*
- * Mode and Fixtures sit ABOVE the component, not in the drawer. They are the two
- * controls that get touched on every single interaction, and making someone open
- * a panel to pick a VIN was the worst thing about the first pass. Everything
- * you set once and forget — language, theme, width, the log — stays in the drawer.
+ * Fixtures sit ABOVE the component because they are touched on every interaction.
+ * Connection and the other set-once controls stay in the drawer.
  */
 const BAR = /* html */ `
   <template x-if="show.bar">
     <div class="card border-base-300 bg-base-100 flex flex-col gap-2 border border-dashed p-3">
       <div class="flex flex-wrap items-start gap-x-5 gap-y-3">
-        <template x-if="show.mode">
-          <div class="flex shrink-0 items-center gap-2">
-            <span class="eyebrow text-neutral">Mode</span>
-            <div class="flex gap-1.5" role="group" aria-label="Mode">
-              <template x-for="item in [{ value: 'dev', label: 'Development' }, { value: 'prod', label: 'Production' }]" :key="item.value">
-                <button type="button" class="btn btn-xs" :class="mode === item.value ? 'btn-primary' : 'btn-outline'"
-                        :aria-pressed="mode === item.value" @click="setMode(item.value)" x-text="item.label"></button>
-              </template>
-            </div>
-          </div>
-        </template>
-
         <template x-if="show.fixtures">
           <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
             <span class="eyebrow text-neutral">Fixtures</span>
-            <button type="button" class="btn btn-xs btn-outline" @click="reload()">Reload</button>
+            <button type="button" class="btn btn-xs btn-outline" :disabled="connected || environmentChanging" @click="reload()">Reload</button>
 
             <div class="flex flex-wrap gap-1.5" role="group" aria-label="Fixtures">
               <template x-for="item in fixtures" :key="item.value">
-                <button type="button" class="btn btn-xs font-mono font-normal" :class="fixture === item.value ? 'btn-primary' : 'btn-outline'" :disabled="environmentChanging"
+                <button type="button" class="btn btn-xs font-mono font-normal" :class="fixture === item.value ? 'btn-primary' : 'btn-outline'" :disabled="connected || environmentChanging"
                         :aria-pressed="fixture === item.value" @click="run(item.value)" :title="item.note || item.label">
                   <span x-text="item.label"></span>
                   <span class="font-sans opacity-70" x-show="item.note" x-text="item.note"></span>
                 </button>
               </template>
+            </div>
+
+            <div
+              class="grid overflow-hidden transition-[grid-template-rows,opacity] duration-[320ms]"
+              :class="connected ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
+            >
+              <p class="text-base-content/60 min-h-0 text-xs">Generated fixtures are available again after Disconnect.</p>
             </div>
           </div>
         </template>
@@ -938,6 +1112,70 @@ const RAIL = /* html */ `
     </div>
 
     <div class="border-base-300 flex flex-col gap-4 border-t pt-4">
+      <template x-if="show.connection">
+        <div class="flex flex-col gap-2">
+          <span class="eyebrow text-neutral" x-text="'Connection · ' + connectionLabel"></span>
+
+          <div
+            class="grid overflow-hidden transition-[grid-template-rows,opacity] duration-[320ms]"
+            :class="connected ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'"
+            :aria-hidden="connected ? 'true' : 'false'"
+            :inert="connected"
+          >
+            <div class="min-h-0">
+              <div class="flex flex-col gap-2">
+                <template x-for="field in connectionFields" :key="field.name">
+                  <label class="flex flex-col gap-1">
+                    <span class="text-base-content/70 text-xs font-medium" x-text="field.label"></span>
+                    <input
+                      class="input input-sm input-bordered w-full font-mono text-xs"
+                      :type="field.inputType"
+                      :name="'connection-' + field.name"
+                      :placeholder="field.placeholder"
+                      :autocomplete="field.secret ? 'new-password' : 'off'"
+                      spellcheck="false"
+                      x-model="connectionDraft[field.name]"
+                      :disabled="connected || connectionBusy"
+                      @input="clearConnectionError(field.name)"
+                    />
+                    <div
+                      class="grid overflow-hidden transition-[grid-template-rows,opacity] duration-[320ms]"
+                      :class="connectionErrors[field.name] ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
+                    >
+                      <p class="text-error min-h-0 text-xs" x-text="connectionErrors[field.name]"></p>
+                    </div>
+                  </label>
+                </template>
+
+                <div
+                  class="grid overflow-hidden transition-[grid-template-rows,opacity] duration-[320ms]"
+                  :class="connectionError ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
+                >
+                  <p class="text-error min-h-0 text-xs" x-text="connectionError"></p>
+                </div>
+
+                <p class="text-base-content/60 text-xs">Kept only in this tab’s session storage. Nothing is added to the page URL or event log.</p>
+                <button type="button" class="btn btn-sm btn-primary" :disabled="connectionBusy" @click="connect()">Connect to live API</button>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="grid overflow-hidden transition-[grid-template-rows,opacity] duration-[320ms]"
+            :class="connected ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
+            :aria-hidden="connected ? 'false' : 'true'"
+            :inert="!connected"
+          >
+            <div class="min-h-0">
+              <div class="flex flex-col gap-2">
+                <p class="text-base-content/70 text-xs">Live settings are active. Their values stay masked and are never logged.</p>
+                <button type="button" class="btn btn-sm btn-outline" :disabled="connectionBusy" @click="disconnect()">Disconnect</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
       <template x-if="show.language">
         <div class="flex flex-col gap-1.5">
           <span class="eyebrow text-neutral" x-text="'Language · ' + dir.toUpperCase()"></span>
@@ -959,7 +1197,8 @@ const RAIL = /* html */ `
               class="select select-sm select-bordered w-full font-mono"
               aria-label="Environment"
               :value="environment"
-              :disabled="environmentChanging || !environments.length"
+              :disabled="connected || environmentChanging || !environments.length"
+              :title="connected ? 'Disconnect to switch generated environments.' : ''"
               @change="setEnvironment($event.target.value)"
             >
               <template x-for="item in environments" :key="item.name">
@@ -968,6 +1207,12 @@ const RAIL = /* html */ `
             </select>
           </label>
           <p class="text-base-content/60 text-xs" x-show="environmentChanging">Loading generated fixtures…</p>
+          <div
+            class="grid overflow-hidden transition-[grid-template-rows,opacity] duration-[320ms]"
+            :class="connected ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
+          >
+            <p class="text-base-content/60 min-h-0 text-xs">Disconnect to switch generated environments.</p>
+          </div>
           <p class="text-error text-xs" x-show="environmentError" x-text="environmentError"></p>
         </div>
       </template>
@@ -977,23 +1222,30 @@ const RAIL = /* html */ `
           <span class="eyebrow text-neutral" x-text="'Today · ' + todayLabel"></span>
           <div class="flex flex-wrap gap-1.5" role="group" aria-label="Today">
             <button type="button" class="btn btn-sm" :class="todayMode === 'anchor' ? 'btn-primary' : 'btn-outline'"
-                    :aria-pressed="todayMode === 'anchor'" :disabled="!todayAnchor" :title="todayAnchor ? 'Fixture anchor · ' + todayAnchor : 'No generated environment selected'"
+                    :aria-pressed="todayMode === 'anchor'" :disabled="!canUseToday('anchor')" :title="connected ? liveTodayExplanation : (todayAnchor ? 'Fixture anchor · ' + todayAnchor : 'No generated environment selected')"
                     @click="setToday('anchor')">Anchor</button>
             <button type="button" class="btn btn-sm" :class="todayMode === 'live' ? 'btn-primary' : 'btn-outline'"
                     :aria-pressed="todayMode === 'live'" @click="setToday('live')">Live</button>
             <button type="button" class="btn btn-sm" :class="todayMode === 'custom' ? 'btn-primary' : 'btn-outline'"
-                    :aria-pressed="todayMode === 'custom'" @click="setToday('custom')">Custom</button>
+                    :aria-pressed="todayMode === 'custom'" :disabled="!canUseToday('custom')" :title="connected ? liveTodayExplanation : ''" @click="setToday('custom')">Custom</button>
           </div>
 
           <div
             class="grid overflow-hidden transition-[grid-template-rows,opacity] duration-200"
-            :class="todayMode === 'custom' ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
-            :aria-hidden="todayMode === 'custom' ? 'false' : 'true'"
+            :class="connected ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
+          >
+            <p class="text-base-content/60 min-h-0 text-xs" x-text="liveTodayExplanation"></p>
+          </div>
+
+          <div
+            class="grid overflow-hidden transition-[grid-template-rows,opacity] duration-200"
+            :class="todayMode === 'custom' && !connected ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
+            :aria-hidden="todayMode === 'custom' && !connected ? 'false' : 'true'"
           >
             <div class="min-h-0">
               <label class="mt-1 flex flex-col gap-1">
                 <span class="sr-only">Custom today</span>
-                <input class="input input-sm input-bordered w-full" type="date" x-model="customToday" :disabled="todayMode !== 'custom'" @change="setToday('custom', customToday)" />
+                <input class="input input-sm input-bordered w-full" type="date" x-model="customToday" :disabled="connected || todayMode !== 'custom'" @change="setToday('custom', customToday)" />
               </label>
               <p class="text-base-content/60 mt-1 text-xs" x-text="todayAnchor ? 'Display only — statuses were computed at ' + todayAnchor : 'Display only — fixture statuses are not recomputed'"></p>
             </div>

@@ -220,7 +220,7 @@
           <span class="text-base-content/60 text-xs">Applied to both fields at once, through <code>disabledWeekdays</code> / <code>disabledDates</code>.</span>
         </div>
 
-        <!-- Mode + fixtures, right where they are used. -->
+        <!-- This form has no fixture buttons; its generated structure is the disconnected default. -->
         <div data-harness-bar x-cloak></div>
 
         <div class="frame card bg-base-100 border-base-300 border p-5 sm:p-8">
@@ -237,9 +237,8 @@
       const report = (label, detail) => window.dispatchEvent(new CustomEvent('harness:log', { detail: { label, detail } }));
 
       /*
-       * Surface every calendar request, so the demo proves it is hitting the real
-       * endpoint rather than a fixture — and so the duplicate slots the API returns
-       * for some branches are visible as a number rather than as a hunch.
+       * Surface every calendar request without printing the configured endpoint or
+       * any query credentials. Duplicate slots remain visible as a count.
        *
        * Expect two of these per branch change: one field each.
        */
@@ -250,7 +249,7 @@
         const started = performance.now();
         const watched = url && url.includes('/calendar');
 
-        if (watched) report('→ GET', url);
+        if (watched) report('→ GET', 'calendar request · endpoint withheld');
 
         return nativeFetch.apply(this, arguments).then(response => {
           if (!watched) return response;

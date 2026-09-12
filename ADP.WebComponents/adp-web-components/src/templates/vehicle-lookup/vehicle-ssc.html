@@ -38,6 +38,7 @@
         class="flex flex-col gap-4"
         x-data="harness({
           mocks: 'vehicle-lookup',
+          connection: { recaptcha: true, unauthorizedSsc: true },
           has: vehicle => Boolean(vehicle?.ssc?.length) || vehicle?.isAuthorized === false,
           labels: {
             ZT8P9NAL1LG988010: 'open + repaired, traced',
@@ -49,21 +50,11 @@
           },
         })"
       >
-        <!-- Mode + fixtures, right where they are used. -->
+        <!-- Generated fixtures, right where they are used. -->
         <div data-harness-bar x-cloak></div>
 
         <div class="frame card bg-base-100 border-base-300 border p-5">
-          <vehicle-ssc
-            id="subject"
-            user-id="1"
-            language="en"
-            query-string=""
-            show-trace="true"
-            brand-integration-id="TYT"
-            recaptcha-key="6LetFoYqAAAAAE0fg-070Qtm3z-DG24sMJ8wzY1f"
-            base-url="http://localhost:7204/api/secure-vehicle-lookup/"
-            unauthorized-ssc-lookup-base-url="http://localhost:7174/api/secure-unauthorized-ssc-lookup/"
-          ></vehicle-ssc>
+          <vehicle-ssc id="subject" user-id="1" language="en" query-string="" show-trace="true" brand-integration-id="TYT"></vehicle-ssc>
         </div>
 
         <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->

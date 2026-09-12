@@ -35,10 +35,9 @@
         x-data="harness({
           profile: 'part',
           mocks: 'part-lookup',
-          setup: subject => (subject.endpoint = { url: 'https://tiq-part-lookup.azurewebsites.net/api/secure-part-lookup', query: { code: '' } }),
         })"
       >
-        <!-- Mode + fixtures, right where they are used. -->
+        <!-- Generated fixtures, right where they are used. -->
         <div data-harness-bar x-cloak></div>
 
         <div class="frame card bg-base-100 border-base-300 border p-5">

@@ -42,17 +42,11 @@
           has: vehicle => vehicle?.paintThicknessInspections?.length > 0,
         })"
       >
-        <!-- Mode + fixtures, right where they are used. -->
+        <!-- Generated fixtures, right where they are used. -->
         <div data-harness-bar x-cloak></div>
 
         <div class="frame card bg-base-100 border-base-300 border p-5">
-          <vehicle-paint-thickness
-            id="subject"
-            language="en"
-            query-string=""
-            show-certificate-button="true"
-            base-url="http://localhost:7174/api/secure-vehicle-lookup-test/"
-          ></vehicle-paint-thickness>
+          <vehicle-paint-thickness id="subject" language="en" query-string="" show-certificate-button="true"></vehicle-paint-thickness>
         </div>
 
         <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->

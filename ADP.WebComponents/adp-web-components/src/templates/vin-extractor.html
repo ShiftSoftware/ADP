@@ -34,11 +34,14 @@
       </header>
 
       <!--
-        No single subject here — this page drives nine elements itself — so the
-        rail keeps only the controls that apply to the page as a whole, and the
-        cases feed the log through `harness:log`.
+        The first OCR case is the harness subject; its profile applies the same
+        connected endpoint to every OCR-enabled case. The cases feed their own
+        lifecycle lines to the shared log through `harness:log`.
       -->
-      <section class="flex flex-col gap-4" x-data="harness({ subject: false, language: false, mode: false, platform: false })">
+      <section
+        class="flex flex-col gap-4"
+        x-data="harness({ profile: 'vin-extractor', subject: '#case-1-element', language: false, environment: false, today: false, platform: false, fixtures: false, connection: { targets: 'vin-extractor[use-ocr]' } })"
+      >
         <div class="flex min-w-0 flex-col gap-5">
           <div class="card bg-base-100 border-base-300 flex flex-row flex-wrap items-center gap-3 border p-4">
             <span class="eyebrow text-neutral">Last extracted VIN</span>
@@ -52,7 +55,7 @@
               <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
                 <div>
                   <p class="font-semibold">OCR</p>
-                  <p class="text-base-content/60 font-mono text-sm">use-ocr · live endpoint</p>
+                  <p class="text-base-content/60 font-mono text-sm">use-ocr · endpoint from Connection</p>
                 </div>
 
                 <button id="case-1-button" type="button" class="btn btn-sm btn-outline" onclick="openExtractor('case-1')">Open</button>
@@ -65,7 +68,6 @@
                   on-extract="onExtract"
                   on-processing="onProcessing"
                   on-open-change="onOpenChange"
-                  ocr-endpoint="https://tiq-vehicles-functions-staging.azurewebsites.net/api/vehicle-lookup/ocr"
                 ></vin-extractor>
               </li>
 
