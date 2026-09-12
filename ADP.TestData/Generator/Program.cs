@@ -458,6 +458,11 @@ static async Task<PartLookupDTO?> GeneratePartLookup(
         PNC = cosmosPartCatalog?.PNC,
         SupersededTo = cosmosPartCatalog?.SupersededTo?.Select(x => x.PartNumber),
         SupersededFrom = cosmosPartCatalog?.SupersededFrom?.Select(x => x.PartNumber),
+        ShowManufacturerPartLookup = options.EnableManufacturerLookup
+            && PartLookupService.CalculateShowManufacturerPartLookup(
+                distributorStockLookupQuantity,
+                partAggregate.StockParts?.Sum(x => x.AvailableQuantity) ?? 0,
+                options),
         DistributorPurchasePrice = priceEvaluation.distributorPurchasePrice,
         Prices = priceEvaluation.prices,
         DeadStock = await new PartDeadStockEvaluator(partAggregate, options, serviceProvider).Evaluate(language),

@@ -1,0 +1,950 @@
+{
+  "5447575488": {
+    "partNumber": "5447575488",
+    "partDescription": "INJECTOR ASSY",
+    "localDescription": "\u0424\u041E\u0420\u0421\u0423\u041D\u041A\u0410 \u0412 \u0421\u0411\u041E\u0420\u0415",
+    "productGroup": "I",
+    "pnc": "23670",
+    "binType": "B3",
+    "showManufacturerPartLookup": false,
+    "distributorPurchasePrice": 194.50714285714287,
+    "length": 235,
+    "width": 80,
+    "height": 30,
+    "netWeight": 5860,
+    "cubicMeasure": 5640,
+    "origin": "BE",
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "OE-EN-JK"
+      },
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "TB-YZ-DNB"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "4",
+        "countryName": "Solmara",
+        "regionID": "6",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 405.65,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 405.65,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 307.3
+        },
+        "warrantyPrice": {
+          "value": 379.3
+        }
+      },
+      {
+        "countryID": "5",
+        "countryName": "Kaldera",
+        "regionID": "7",
+        "regionName": "Kaldera",
+        "retailPrice": {
+          "value": 405.65,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 405.65,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 307.3
+        },
+        "warrantyPrice": {
+          "value": 379.3
+        }
+      },
+      {
+        "countryID": "3",
+        "countryName": "Vessandria",
+        "regionID": "4",
+        "regionName": "Vessandria",
+        "retailPrice": {
+          "value": 5845089.2857142845,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 5845089.2857142845,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 4329700
+        },
+        "warrantyPrice": {
+          "value": 379.3
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "8707382737": {
+    "partNumber": "8707382737",
+    "partDescription": "DISC, FR",
+    "localDescription": "\u0414\u0418\u0421\u041A,\u041F\u0415\u0420\u0415\u0414.",
+    "productGroup": "E",
+    "pnc": "43512",
+    "binType": "E2",
+    "showManufacturerPartLookup": false,
+    "distributorPurchasePrice": 64.00714285714285,
+    "length": 380,
+    "width": 380,
+    "height": 125,
+    "netWeight": 123000,
+    "cubicMeasure": 180500,
+    "origin": "BE",
+    "supersededTo": [
+      "3694061192"
+    ],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "QuantityNotWithinLookupThreshold",
+        "locationID": "OE-EN-JK"
+      },
+      {
+        "quantityLookUpResult": "QuantityNotWithinLookupThreshold",
+        "locationID": "TB-YZ-DNB"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "4",
+        "countryName": "Solmara",
+        "regionID": "6",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 149.95000000000002,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 149.95000000000002,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 105.6
+        },
+        "warrantyPrice": {
+          "value": 124.8
+        }
+      },
+      {
+        "countryID": "5",
+        "countryName": "Kaldera",
+        "regionID": "7",
+        "regionName": "Kaldera",
+        "retailPrice": {
+          "value": 149.95000000000002,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 149.95000000000002,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 105.6
+        },
+        "warrantyPrice": {
+          "value": 124.8
+        }
+      },
+      {
+        "countryID": "3",
+        "countryName": "Vessandria",
+        "regionID": "4",
+        "regionName": "Vessandria",
+        "retailPrice": {
+          "value": 2113482.1428571427,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 2113482.1428571427,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 1509600
+        },
+        "warrantyPrice": {
+          "value": 124.8
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "818436O668": {
+    "partNumber": "818436O668",
+    "partDescription": "GLASS SUB-ASSY,",
+    "localDescription": "\u0421\u0422\u0415\u041A\u041B\u041E, \u0412\u0415\u0422\u0420\u041E\u0412\u041E\u0415",
+    "productGroup": "C",
+    "showManufacturerPartLookup": false,
+    "distributorPurchasePrice": 224.8142857142857,
+    "length": 1580,
+    "width": 95,
+    "height": 811,
+    "netWeight": 142280,
+    "cubicMeasure": 1217311,
+    "origin": "BE",
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "OE-EN-JK"
+      },
+      {
+        "quantityLookUpResult": "NotAvailable",
+        "locationID": "TB-YZ-DNB"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "4",
+        "countryName": "Solmara",
+        "regionID": "6",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 503.6,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 503.6,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 359.70000000000005
+        },
+        "warrantyPrice": {
+          "value": 438.4
+        }
+      },
+      {
+        "countryID": "5",
+        "countryName": "Kaldera",
+        "regionID": "7",
+        "regionName": "Kaldera",
+        "retailPrice": {
+          "value": 503.6,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 503.6,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 359.70000000000005
+        },
+        "warrantyPrice": {
+          "value": 438.4
+        }
+      },
+      {
+        "countryID": "3",
+        "countryName": "Vessandria",
+        "regionID": "4",
+        "regionName": "Vessandria",
+        "retailPrice": {
+          "value": 7214642.857142856,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 7214642.857142856,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 5153300
+        },
+        "warrantyPrice": {
+          "value": 438.4
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "8036108775": {
+    "partNumber": "8036108775",
+    "partDescription": "ENGINE ASSY,",
+    "localDescription": "\u0414\u0412\u0418\u0413\u0410\u0422\u0415\u041B\u042C \u0412 \u0421\u0411\u041E\u0420\u0415, \u041D\u0415\u041A\u041E\u041C\u041F\u041B.\u041D\u042B\u0419",
+    "productGroup": "G",
+    "binType": "Z2",
+    "showManufacturerPartLookup": false,
+    "distributorPurchasePrice": 4224.557142857143,
+    "length": 940,
+    "width": 880,
+    "height": 1001,
+    "netWeight": 2518000,
+    "cubicMeasure": 8280280,
+    "origin": "BE",
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "NotAvailable",
+        "locationID": "OE-EN-JK"
+      },
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "TB-YZ-DNB"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "4",
+        "countryName": "Solmara",
+        "regionID": "6",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 8237.9,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 8237.9,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 6336.85
+        },
+        "warrantyPrice": {
+          "value": 7208
+        }
+      },
+      {
+        "countryID": "5",
+        "countryName": "Kaldera",
+        "regionID": "7",
+        "regionName": "Kaldera",
+        "retailPrice": {
+          "value": 8237.9,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 8237.9,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 6336.85
+        },
+        "warrantyPrice": {
+          "value": 7208
+        }
+      },
+      {
+        "countryID": "3",
+        "countryName": "Vessandria",
+        "regionID": "4",
+        "regionName": "Vessandria",
+        "retailPrice": {
+          "value": 118611875,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 118611875,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 91239900
+        },
+        "warrantyPrice": {
+          "value": 7208
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "3327325W91": {
+    "partNumber": "3327325W91",
+    "partDescription": "WIRE, ENGINE ROOM",
+    "localDescription": "\u041F\u0420\u041E\u0412\u041E\u0414, \u0413\u041B\u0410\u0412\u041D\u042B\u0419, \u041C\u041E\u0422\u041E\u0420\u041D\u042B\u0419 \u041E\u0422\u0421\u0415\u041A",
+    "productGroup": "D",
+    "pnc": "82111",
+    "binType": "08",
+    "showManufacturerPartLookup": false,
+    "distributorPurchasePrice": 1255.2857142857142,
+    "length": 1060,
+    "width": 425,
+    "height": 270,
+    "netWeight": 144000,
+    "cubicMeasure": 1216350,
+    "origin": "KI",
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "PartiallyAvailable",
+        "locationID": "OE-EN-JK"
+      },
+      {
+        "quantityLookUpResult": "PartiallyAvailable",
+        "locationID": "TB-YZ-DNB"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "4",
+        "countryName": "Solmara",
+        "regionID": "6",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 2626.7000000000003,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 2626.7000000000003,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 1945.7
+        },
+        "warrantyPrice": {
+          "value": 2447.8
+        }
+      },
+      {
+        "countryID": "5",
+        "countryName": "Kaldera",
+        "regionID": "7",
+        "regionName": "Kaldera",
+        "retailPrice": {
+          "value": 2626.7000000000003,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 2626.7000000000003,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 1945.7
+        },
+        "warrantyPrice": {
+          "value": 2447.8
+        }
+      },
+      {
+        "countryID": "3",
+        "countryName": "Vessandria",
+        "regionID": "4",
+        "regionName": "Vessandria",
+        "retailPrice": {
+          "value": 37722678.57142857,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 37722678.57142857,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 27942700
+        },
+        "warrantyPrice": {
+          "value": 2447.8
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "1679581741": {
+    "partNumber": "1679581741",
+    "partDescription": "SENSOR, FLOOR SIDE",
+    "localDescription": "SENSOR, FRONT FLOOR SIDE AIRBAG",
+    "productGroup": "D",
+    "pnc": "89837",
+    "showManufacturerPartLookup": false,
+    "distributorPurchasePrice": 34.614285714285714,
+    "netWeight": 0,
+    "cubicMeasure": 0,
+    "origin": "BE",
+    "supersededTo": [
+      "7498743881"
+    ],
+    "supersededFrom": [],
+    "stockParts": [],
+    "prices": [
+      {
+        "countryID": "4",
+        "countryName": "Solmara",
+        "regionID": "6",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 86.35000000000002,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 86.35000000000002,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 59.55
+        },
+        "warrantyPrice": {
+          "value": 67.5
+        }
+      },
+      {
+        "countryID": "5",
+        "countryName": "Kaldera",
+        "regionID": "7",
+        "regionName": "Kaldera",
+        "retailPrice": {
+          "value": 86.35000000000002,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 86.35000000000002,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 59.55
+        },
+        "warrantyPrice": {
+          "value": 67.5
+        }
+      },
+      {
+        "countryID": "3",
+        "countryName": "Vessandria",
+        "regionID": "4",
+        "regionName": "Vessandria",
+        "retailPrice": {
+          "value": 1216964.2857142857,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 1216964.2857142857,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 839300
+        },
+        "warrantyPrice": {
+          "value": 67.5
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "7838506197": {
+    "partNumber": "7838506197",
+    "partDescription": "WINDOW ASSY,",
+    "localDescription": "\u041E\u041A\u041D\u041E \u0412 \u0421\u0411\u041E\u0420\u0415, \u0417\u0410\u0414\u041D.\u0411\u041E\u041A.\u0427\u0410\u0421\u0422.\u041A\u0423\u0417\u041E\u0412\u0410,\u041F\u0420\u0410\u0412.",
+    "productGroup": "C",
+    "pnc": "62710A",
+    "showManufacturerPartLookup": false,
+    "distributorPurchasePrice": 88.09285714285714,
+    "length": 670,
+    "width": 55,
+    "height": 513,
+    "netWeight": 27490,
+    "cubicMeasure": 189041,
+    "origin": "BE",
+    "supersededTo": [
+      "1504508011"
+    ],
+    "supersededFrom": [],
+    "stockParts": [],
+    "prices": [
+      {
+        "countryID": "4",
+        "countryName": "Solmara",
+        "regionID": "6",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 219.7,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 219.7,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 151.5
+        },
+        "warrantyPrice": {
+          "value": 171.8
+        }
+      },
+      {
+        "countryID": "5",
+        "countryName": "Kaldera",
+        "regionID": "7",
+        "regionName": "Kaldera",
+        "retailPrice": {
+          "value": 219.7,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 219.7,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 151.5
+        },
+        "warrantyPrice": {
+          "value": 171.8
+        }
+      },
+      {
+        "countryID": "3",
+        "countryName": "Vessandria",
+        "regionID": "4",
+        "regionName": "Vessandria",
+        "retailPrice": {
+          "value": 3097232.1428571427,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 3097232.1428571427,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 2136000
+        },
+        "warrantyPrice": {
+          "value": 171.8
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "2977527996": {
+    "partNumber": "2977527996",
+    "partDescription": "DQYE SN Plus 0W-20 (208L)",
+    "localDescription": "\u041E\u0440\u0438\u0433\u0438\u043D\u0430\u043B\u044C\u043D\u043E\u0435 \u043C\u043E\u0442\u043E\u0440\u043D\u043E\u0435 \u043C\u0430\u0441\u043B\u043E Perron SN Plus 0W-20 (208 \u043B)",
+    "productGroup": "O",
+    "showManufacturerPartLookup": false,
+    "distributorPurchasePrice": 3.68,
+    "hsCode": "27101912",
+    "origin": "TDK",
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "NotAvailable",
+        "locationID": "OE-EN-JK"
+      },
+      {
+        "quantityLookUpResult": "NotAvailable",
+        "locationID": "TB-YZ-DNB"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "4",
+        "countryName": "Solmara",
+        "regionID": "6",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 1333.75,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 1333.75,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 1111.45
+        },
+        "warrantyPrice": {
+          "value": 1494.7
+        }
+      },
+      {
+        "countryID": "5",
+        "countryName": "Kaldera",
+        "regionID": "7",
+        "regionName": "Kaldera",
+        "retailPrice": {
+          "value": 25543.9,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 25543.9,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 1111.45
+        },
+        "warrantyPrice": {
+          "value": 1494.7
+        }
+      },
+      {
+        "countryID": "3",
+        "countryName": "Vessandria",
+        "regionID": "4",
+        "regionName": "Vessandria",
+        "retailPrice": {
+          "value": 20718700,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 20718700,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 17265600
+        },
+        "warrantyPrice": {
+          "value": 1494.7
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "2350736618": {
+    "partNumber": "2350736618",
+    "partDescription": "GRILLE SUB-ASSY,",
+    "localDescription": "\u0420\u0415\u0428\u0415\u0422\u041A\u0410 \u0412 \u0421\u0411\u041E\u0420\u0415, \u0420\u0410\u0414\u0418\u0410\u0422\u041E\u0420",
+    "productGroup": "C",
+    "pnc": "53101",
+    "binType": "04",
+    "showManufacturerPartLookup": false,
+    "distributorPurchasePrice": 115.72857142857144,
+    "length": 1170,
+    "width": 420,
+    "height": 210,
+    "netWeight": 11300,
+    "cubicMeasure": 1031940,
+    "origin": "BE",
+    "supersededTo": [
+      "6368888541",
+      "5675449203",
+      "4830083730"
+    ],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "LookupIsSkipped",
+        "locationID": "OE-EN-JK"
+      },
+      {
+        "quantityLookUpResult": "LookupIsSkipped",
+        "locationID": "TB-YZ-DNB"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "4",
+        "countryName": "Solmara",
+        "regionID": "6",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 288.6,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 288.6,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 199.05
+        },
+        "warrantyPrice": {
+          "value": 225.65
+        }
+      },
+      {
+        "countryID": "5",
+        "countryName": "Kaldera",
+        "regionID": "7",
+        "regionName": "Kaldera",
+        "retailPrice": {
+          "value": 288.6,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 288.6,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 199.05
+        },
+        "warrantyPrice": {
+          "value": 225.65
+        }
+      },
+      {
+        "countryID": "3",
+        "countryName": "Vessandria",
+        "regionID": "4",
+        "regionName": "Vessandria",
+        "retailPrice": {
+          "value": 4068839.285714285,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 4068839.285714285,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 2806100
+        },
+        "warrantyPrice": {
+          "value": 225.65
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "8579612709P9": {
+    "partNumber": "8579612709P9",
+    "partDescription": "COVER, RR LAMP, RH",
+    "localDescription": "\u041A\u0420\u042B\u0428\u041A\u0410, \u0417\u0410\u0414\u041D\u0418\u0419 \u041A\u041E\u041C\u0411\u0418\u041D\u0418\u0420\u041E\u0412\u0410\u041D\u041D\u042B\u0419 \u0424\u041E\u041D\u0410\u0420\u042C, \u041F\u0420\u0410\u0412.",
+    "productGroup": "J",
+    "pnc": "81557C",
+    "binType": "B4",
+    "showManufacturerPartLookup": false,
+    "distributorPurchasePrice": 10.814285714285717,
+    "length": 420,
+    "width": 200,
+    "height": 75,
+    "netWeight": 1860,
+    "cubicMeasure": 63000,
+    "origin": "BE",
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "NotAvailable",
+        "locationID": "OE-EN-JK"
+      },
+      {
+        "quantityLookUpResult": "NotAvailable",
+        "locationID": "TB-YZ-DNB"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "4",
+        "countryName": "Solmara",
+        "regionID": "6",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 26.700000000000003,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 26.700000000000003,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 18.4
+        },
+        "warrantyPrice": {
+          "value": 21.1
+        }
+      },
+      {
+        "countryID": "5",
+        "countryName": "Kaldera",
+        "regionID": "7",
+        "regionName": "Kaldera",
+        "retailPrice": {
+          "value": 26.700000000000003,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 26.700000000000003,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 18.4
+        },
+        "warrantyPrice": {
+          "value": 21.1
+        }
+      },
+      {
+        "countryID": "3",
+        "countryName": "Vessandria",
+        "regionID": "4",
+        "regionName": "Vessandria",
+        "retailPrice": {
+          "value": 380178.57142857136,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 380178.57142857136,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {
+          "value": 262200
+        },
+        "warrantyPrice": {
+          "value": 21.1
+        }
+      }
+    ],
+    "deadStock": []
+  }
+}

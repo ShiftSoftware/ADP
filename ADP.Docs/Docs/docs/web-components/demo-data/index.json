@@ -1,6 +1,48 @@
 {
   "environments": [
     {
+      "name": "allocation-market",
+      "anchor": "2026-09-01",
+      "files": {
+        "vehicle-lookup": [
+          "ZT8LY7CZ0S2959088",
+          "ZS8WJEXK506960999",
+          "ZS8EU8AK406452424",
+          "ZT8STYDZ301325162",
+          "ZS8WJEXK106589744",
+          "ZS88F5CL70J121622",
+          "ZS88F5CL80J407317",
+          "ZS8EU8AK206842177",
+          "ZU8GGTUK902057683",
+          "ZT8STYDZ00B925664",
+          "ZT8STYDZ501002487",
+          "ZT8LY7CZ3S2547425",
+          "ZS8MZ6VL7T7749626",
+          "ZT8STYDZ40B819962",
+          "ZS8EU8AK606178045",
+          "ZS8EU8AK806376481",
+          "ZS8WJEXK206451985",
+          "ZS8WJEXK706239972",
+          "ZW9KBUWL2T1319799",
+          "ZT8F9VVT502643013",
+          "ZV9LMW6D75T151181"
+        ],
+        "part-lookup": [
+          "5447575488",
+          "8707382737",
+          "818436O668",
+          "8036108775",
+          "3327325W91",
+          "1679581741",
+          "7838506197",
+          "2977527996",
+          "2350736618",
+          "8579612709P9"
+        ],
+        "paint-thickness-certificate": []
+      }
+    },
+    {
       "name": "broker-dealer",
       "anchor": "2026-09-01",
       "files": {
@@ -15,6 +57,84 @@
           "90915-YZZD4"
         ],
         "paint-thickness-certificate": []
+      }
+    },
+    {
+      "name": "broker-market",
+      "anchor": "2026-09-01",
+      "files": {
+        "vehicle-lookup": [
+          "ZS8SV9KXXST918958",
+          "ZS8AJAYC9P6174790",
+          "ZT8AWXSJ0R4973290",
+          "ZS8S63PG5RJ137144",
+          "ZS8EU2ZF6ST814892",
+          "ZU9LG6DGXS6464981",
+          "ZS8AJAYC7N6060123",
+          "ZT8APGED9RB475247",
+          "ZT8XF5LS8PB587909",
+          "ZU9TC6CF0R6959074",
+          "ZU9TC6CF8S6255694",
+          "ZU9TC6CF4P6130196",
+          "ZT9YY7VD6PK416712",
+          "ZU9CSVHF2R6447242",
+          "ZS8MFGFV5R6595902",
+          "ZS8AJAYC6N6601694",
+          "ZU9CSVHF0P6318008",
+          "ZU8ZL7VAXG2426255",
+          "ZS8AJAYCXR6471313",
+          "ZS8ER94V2F6455165",
+          "ZS8WF1XB4P6220672",
+          "ZS8EU2ZF5RT696831",
+          "ZS8MZ6VL1S7604466",
+          "ZW8VF6CB1S6673392",
+          "ZS8EU2ZF2RT413124",
+          "ZS8MFGFV7R6554235",
+          "ZU9XJD4GXPB336861",
+          "ZS8AJAYC9R6971589",
+          "ZT9YY7VD1RK779860",
+          "ZS8AJAYC8S6433665",
+          "ZV8GHHHP37P214642"
+        ],
+        "part-lookup": [
+          "T5555142561",
+          "T7015360653",
+          "T3239505E10",
+          "T5397631992",
+          "T4400128905",
+          "T8398256479",
+          "T7555892856",
+          "T2922483854",
+          "T8036108775",
+          "T8795582533",
+          "T501608J910",
+          "T7399964420"
+        ],
+        "paint-thickness-certificate": [
+          "ZS8SV9KXXST918958",
+          "ZS8AJAYC9P6174790",
+          "ZT8AWXSJ0R4973290",
+          "ZS8S63PG5RJ137144",
+          "ZS8EU2ZF6ST814892",
+          "ZU9LG6DGXS6464981",
+          "ZS8AJAYC7N6060123",
+          "ZT8APGED9RB475247",
+          "ZT8XF5LS8PB587909",
+          "ZU9TC6CF0R6959074",
+          "ZU9TC6CF8S6255694",
+          "ZU9TC6CF4P6130196",
+          "ZU9CSVHF2R6447242",
+          "ZS8MFGFV5R6595902",
+          "ZS8AJAYC6N6601694",
+          "ZU9CSVHF0P6318008",
+          "ZS8WF1XB4P6220672",
+          "ZS8EU2ZF5RT696831",
+          "ZS8MZ6VL1S7604466",
+          "ZS8EU2ZF2RT413124",
+          "ZS8AJAYC9R6971589",
+          "ZT9YY7VD1RK779860",
+          "ZS8AJAYC8S6433665"
+        ]
       }
     },
     {

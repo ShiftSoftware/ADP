@@ -165,7 +165,10 @@ public enum PartNumberStorageKeyMode
     AsIs,
     /// <summary>Hyphens removed (<c>0400707212</c>) — some deployments store parts this way with no prefix.</summary>
     DashStripped,
-    /// <summary>A <c>T</c> prefix and hyphens removed (<c>T0400707212</c>) — other deployments store parts T-prefixed.</summary>
+    /// <summary>
+    /// A <c>T</c> prefix and hyphens removed (<c>T0400707212</c>) — other deployments store parts T-prefixed.
+    /// Nine-digit manufacturer values recover the leading zero that spreadsheet imports can drop.
+    /// </summary>
     TPrefixedDashStripped,
 }
 
@@ -346,7 +349,7 @@ public class GeneratorLookupOptions
         {
             Generator.PartNumberStorageKeyMode.AsIs => partNumber => partNumber?.Trim() ?? string.Empty,
             Generator.PartNumberStorageKeyMode.DashStripped => partNumber => StripDashes(partNumber),
-            Generator.PartNumberStorageKeyMode.TPrefixedDashStripped => partNumber => "T" + StripDashes(partNumber),
+            Generator.PartNumberStorageKeyMode.TPrefixedDashStripped => partNumber => ToTPrefixedDashStripped(partNumber),
             _ => null,
         };
 
@@ -497,6 +500,12 @@ public class GeneratorLookupOptions
 
     private static string StripDashes(string? partNumber) =>
         partNumber?.Trim().Replace("-", string.Empty) ?? string.Empty;
+
+    private static string ToTPrefixedDashStripped(string? partNumber)
+    {
+        var stripped = StripDashes(partNumber);
+        return "T" + (stripped.Length == 9 ? "0" : string.Empty) + stripped;
+    }
 }
 
 public class GeneratorCompany

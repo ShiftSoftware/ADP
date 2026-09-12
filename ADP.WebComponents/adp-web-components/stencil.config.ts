@@ -49,7 +49,7 @@ export const config: Config = {
       type: 'dist-custom-elements',
       copy: [
         { src: 'locales', dest: 'dist/locales' },
-        { src: 'features/mocks/data', dest: 'dist/mocks' },
+        { src: 'features/mocks/data/assets', dest: 'dist/mocks/assets' },
         { src: 'integration/integration-manifest.json', dest: 'dist/integration-manifest.json' },
         { src: 'integration/host-loader.js', dest: 'dist/host-loader.js' },
         { src: 'templates/production-host', dest: 'dist/templates/production-host' },

@@ -1,0 +1,661 @@
+{
+  "T5555142561": {
+    "partNumber": "T5555142561",
+    "partDescription": "PUMP SUB-ASSY, FUEL",
+    "localDescription": "PUMP SUB-ASSY, FUEL",
+    "productGroup": "I",
+    "showManufacturerPartLookup": false,
+    "supersededTo": [],
+    "supersededFrom": [
+      "T4540303492"
+    ],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "jVxQF"
+      },
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "3z4bV"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "1",
+        "countryName": "Solmara",
+        "regionID": "3",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 632.83,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 632.83,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {},
+        "warrantyPrice": {
+          "value": 503.02
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "T7015360653": {
+    "partNumber": "T7015360653",
+    "partDescription": "ACTUATOR ASSY, BRAKE",
+    "localDescription": "ACTUATOR ASSY, BRAKE",
+    "productGroup": "E",
+    "showManufacturerPartLookup": false,
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "jVxQF"
+      },
+      {
+        "quantityLookUpResult": "NotAvailable",
+        "locationID": "3z4bV"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "1",
+        "countryName": "Solmara",
+        "regionID": "3",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 2206.28,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 2206.28,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {},
+        "warrantyPrice": {
+          "value": 1807.67
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "T3239505E10": {
+    "partNumber": "T3239505E10",
+    "partDescription": "RADIATOR ASSY, AIR",
+    "localDescription": "RADIATOR ASSY, AIR",
+    "productGroup": "F",
+    "showManufacturerPartLookup": false,
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "NotAvailable",
+        "locationID": "jVxQF"
+      },
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "3z4bV"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "1",
+        "countryName": "Solmara",
+        "regionID": "3",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 1907.69,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 1907.69,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {},
+        "warrantyPrice": {
+          "value": 1563.02
+        }
+      }
+    ],
+    "deadStock": [
+      {
+        "companyHashID": "vT6K6",
+        "companyName": "Ashford Auto Group",
+        "branchDeadStock": [
+          {
+            "companyBranchHashID": "xYCqO",
+            "companyBranchName": "Station Road",
+            "quantity": 1
+          }
+        ]
+      }
+    ]
+  },
+  "T5397631992": {
+    "partNumber": "T5397631992",
+    "partDescription": "TRANSAXLE ASSY,",
+    "localDescription": "TRANSAXLE ASSY,",
+    "productGroup": "J",
+    "showManufacturerPartLookup": false,
+    "supersededTo": [],
+    "supersededFrom": [
+      "T7155189683"
+    ],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "PartiallyAvailable",
+        "locationID": "jVxQF"
+      },
+      {
+        "quantityLookUpResult": "PartiallyAvailable",
+        "locationID": "3z4bV"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "1",
+        "countryName": "Solmara",
+        "regionID": "3",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 7691.53,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 7691.53,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {},
+        "warrantyPrice": {
+          "value": 6197.72
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "T4400128905": {
+    "partNumber": "T4400128905",
+    "partDescription": "BOOT KIT, FR DRIVE",
+    "localDescription": "BOOT KIT, FR DRIVE",
+    "productGroup": "M",
+    "showManufacturerPartLookup": true,
+    "supersededTo": [
+      "T4912408190"
+    ],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "NotAvailable",
+        "locationID": "jVxQF"
+      },
+      {
+        "quantityLookUpResult": "NotAvailable",
+        "locationID": "3z4bV"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "1",
+        "countryName": "Solmara",
+        "regionID": "3",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 115.92,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 115.92,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {},
+        "warrantyPrice": {
+          "value": 92.02
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "T8398256479": {
+    "partNumber": "T8398256479",
+    "partDescription": "PAD KIT, DISC BRAKE",
+    "localDescription": "PAD KIT, DISC BRAKE",
+    "productGroup": "S",
+    "showManufacturerPartLookup": false,
+    "supersededTo": [
+      "T3778853192"
+    ],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "QuantityNotWithinLookupThreshold",
+        "locationID": "jVxQF"
+      },
+      {
+        "quantityLookUpResult": "QuantityNotWithinLookupThreshold",
+        "locationID": "3z4bV"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "1",
+        "countryName": "Solmara",
+        "regionID": "3",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 60.57,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 60.57,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {},
+        "warrantyPrice": {
+          "value": 44.73
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "T7555892856": {
+    "partNumber": "T7555892856",
+    "partDescription": "WIRE ASSY KIT,",
+    "localDescription": "WIRE ASSY KIT,",
+    "productGroup": "S",
+    "showManufacturerPartLookup": false,
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "NotAvailable",
+        "locationID": "jVxQF"
+      },
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "3z4bV"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "1",
+        "countryName": "Solmara",
+        "regionID": "3",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 12.83,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 12.83,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {},
+        "warrantyPrice": {
+          "value": 12.22
+        }
+      }
+    ],
+    "deadStock": [
+      {
+        "companyHashID": "vT6K6",
+        "companyName": "Ashford Auto Group",
+        "branchDeadStock": [
+          {
+            "companyBranchHashID": "ONU3O",
+            "companyBranchName": "Ironbridge",
+            "quantity": 49
+          },
+          {
+            "companyBranchHashID": "BuTMB",
+            "companyBranchName": "Fairmont",
+            "quantity": 20
+          },
+          {
+            "companyBranchHashID": "MO7fJ",
+            "companyBranchName": "Quarry Lane",
+            "quantity": 19
+          },
+          {
+            "companyBranchHashID": "nhy6I",
+            "companyBranchName": "Thornbury",
+            "quantity": 6
+          },
+          {
+            "companyBranchHashID": "LX1xi",
+            "companyBranchName": "Hazelmere",
+            "quantity": 3
+          },
+          {
+            "companyBranchHashID": "AOWCv",
+            "companyBranchName": "Newhaven",
+            "quantity": 5
+          }
+        ]
+      },
+      {
+        "companyHashID": "o5NnZ",
+        "companyName": "Riverside Motors",
+        "branchDeadStock": [
+          {
+            "companyBranchHashID": "EkRCE",
+            "companyBranchName": "Riverside",
+            "quantity": 5
+          }
+        ]
+      },
+      {
+        "companyHashID": "BZvR1",
+        "companyName": "Eastbridge Cars",
+        "branchDeadStock": [
+          {
+            "companyBranchHashID": "zrwCB",
+            "companyBranchName": "Foxhollow",
+            "quantity": 5
+          }
+        ]
+      },
+      {
+        "companyHashID": "Q9Hv7",
+        "companyName": "Harbor Auto",
+        "branchDeadStock": [
+          {
+            "companyBranchHashID": "8PvEb",
+            "companyBranchName": "Stonebridge",
+            "quantity": 1
+          },
+          {
+            "companyBranchHashID": "shgUD",
+            "companyBranchName": "Glenmore",
+            "quantity": 4
+          },
+          {
+            "companyBranchHashID": "gYYNF",
+            "companyBranchName": "Juniper Falls",
+            "quantity": 3
+          }
+        ]
+      }
+    ]
+  },
+  "T2922483854": {
+    "partNumber": "T2922483854",
+    "partDescription": "CLIP KIT",
+    "localDescription": "CLIP KIT",
+    "productGroup": "S",
+    "showManufacturerPartLookup": false,
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "LookupIsSkipped",
+        "locationID": "jVxQF"
+      },
+      {
+        "quantityLookUpResult": "LookupIsSkipped",
+        "locationID": "3z4bV"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "1",
+        "countryName": "Solmara",
+        "regionID": "3",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 0.24,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 0.24,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {},
+        "warrantyPrice": {
+          "value": 0.23
+        }
+      }
+    ],
+    "deadStock": [
+      {
+        "companyHashID": "vT6K6",
+        "companyName": "Ashford Auto Group",
+        "branchDeadStock": [
+          {
+            "companyBranchHashID": "MO7fJ",
+            "companyBranchName": "Quarry Lane",
+            "quantity": 17
+          },
+          {
+            "companyBranchHashID": "LX1xi",
+            "companyBranchName": "Hazelmere",
+            "quantity": 1
+          },
+          {
+            "companyBranchHashID": "AOWCv",
+            "companyBranchName": "Newhaven",
+            "quantity": 2
+          }
+        ]
+      },
+      {
+        "companyHashID": "o5NnZ",
+        "companyName": "Riverside Motors",
+        "branchDeadStock": [
+          {
+            "companyBranchHashID": "EkRCE",
+            "companyBranchName": "Riverside",
+            "quantity": 5
+          }
+        ]
+      },
+      {
+        "companyHashID": "BZvR1",
+        "companyName": "Eastbridge Cars",
+        "branchDeadStock": [
+          {
+            "companyBranchHashID": "zrwCB",
+            "companyBranchName": "Foxhollow",
+            "quantity": 5
+          }
+        ]
+      },
+      {
+        "companyHashID": "Q9Hv7",
+        "companyName": "Harbor Auto",
+        "branchDeadStock": [
+          {
+            "companyBranchHashID": "8PvEb",
+            "companyBranchName": "Stonebridge",
+            "quantity": 4
+          }
+        ]
+      }
+    ]
+  },
+  "T8036108775": {
+    "partNumber": "T8036108775",
+    "partDescription": "ENGINE ASSY,",
+    "localDescription": "ENGINE ASSY,",
+    "productGroup": "S",
+    "showManufacturerPartLookup": false,
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "jVxQF"
+      },
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "3z4bV"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "1",
+        "countryName": "Solmara",
+        "regionID": "3",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 5224.64,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 5224.64,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {},
+        "warrantyPrice": {
+          "value": 5871.65
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "T8795582533": {
+    "partNumber": "T8795582533",
+    "partDescription": "GASKET KIT",
+    "localDescription": "GASKET KIT",
+    "productGroup": "S",
+    "showManufacturerPartLookup": false,
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "jVxQF"
+      },
+      {
+        "quantityLookUpResult": "NotAvailable",
+        "locationID": "3z4bV"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "1",
+        "countryName": "Solmara",
+        "regionID": "3",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 23.62,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 23.62,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {},
+        "warrantyPrice": {
+          "value": 22.5
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "T501608J910": {
+    "partNumber": "T501608J910",
+    "partDescription": "GASKET, TURBINE",
+    "localDescription": "GASKET, TURBINE",
+    "productGroup": "G",
+    "showManufacturerPartLookup": false,
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "jVxQF"
+      },
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "3z4bV"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "1",
+        "countryName": "Solmara",
+        "regionID": "3",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 18.07,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 18.07,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {},
+        "warrantyPrice": {
+          "value": 13.55
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "T7399964420": {
+    "partNumber": "T7399964420",
+    "partDescription": "TRANSMITTER",
+    "localDescription": "TRANSMITTER",
+    "productGroup": "S",
+    "showManufacturerPartLookup": false,
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "jVxQF"
+      },
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "3z4bV"
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "1",
+        "countryName": "Solmara",
+        "regionID": "3",
+        "regionName": "Solmara",
+        "retailPrice": {
+          "value": 25.87,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 25.87,
+              "isDefault": true
+            }
+          ]
+        },
+        "purchasePrice": {},
+        "warrantyPrice": {
+          "value": 24.64
+        }
+      }
+    ],
+    "deadStock": []
+  }
+}
