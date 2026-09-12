@@ -2,6 +2,7 @@ import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 import { getNestedValue } from '~lib/get-nested-value';
+import { today as clockToday } from '~lib/clock';
 
 import { FormInputMeta } from '~features/form-hook';
 import { FormHook } from '~features/form-hook/form-hook';
@@ -32,6 +33,8 @@ export class FormDatePicker implements FormElement {
   @Prop() staticValue?: string;
   @Prop({ mutable: true }) defaultValue?: string;
   @Prop() language?: string = 'en';
+  /** ISO calendar date, read as UTC. Omit it to use the wall clock. */
+  @Prop() today?: string;
   @Prop() minDate?: string; // YYYY-MM-DD
   @Prop() maxDate?: string; // YYYY-MM-DD
   @Prop() disabledDates?: (date: Date) => boolean;
@@ -51,18 +54,19 @@ export class FormDatePicker implements FormElement {
     if (this.staticValue) this.defaultValue = this.staticValue;
     if (this.defaultValue) this.selectedValue = this.defaultValue;
 
-    const initDate = this.selectedValue ? new Date(this.selectedValue + 'T00:00:00') : new Date();
-    this.viewYear = initDate.getFullYear();
-    this.viewMonth = initDate.getMonth();
+    this.setViewDate(this.selectedValue || clockToday(this.today));
+  }
+
+  @Watch('today')
+  onTodayChange(newToday?: string) {
+    if (!this.selectedValue) this.setViewDate(clockToday(newToday));
   }
 
   @Watch('staticValue')
   async onStaticValueChange(newStaticValue?: string) {
     if (newStaticValue) {
       this.selectedValue = newStaticValue;
-      const date = new Date(newStaticValue + 'T00:00:00');
-      this.viewYear = date.getFullYear();
-      this.viewMonth = date.getMonth();
+      this.setViewDate(newStaticValue);
     }
   }
 
@@ -81,9 +85,7 @@ export class FormDatePicker implements FormElement {
     this.selectedValue = (newValue as string) || this.defaultValue || '';
 
     if (this.selectedValue) {
-      const date = new Date(this.selectedValue + 'T00:00:00');
-      this.viewYear = date.getFullYear();
-      this.viewMonth = date.getMonth();
+      this.setViewDate(this.selectedValue);
     }
   }
 
@@ -123,6 +125,12 @@ export class FormDatePicker implements FormElement {
 
   private toDateString(year: number, month: number, day: number): string {
     return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+
+  private setViewDate(value: string) {
+    const [year, month] = value.split('-').map(Number);
+    this.viewYear = year;
+    this.viewMonth = month - 1;
   }
 
   private isDateDisabled(year: number, month: number, day: number): boolean {
@@ -242,8 +250,7 @@ export class FormDatePicker implements FormElement {
     const weekDays = this.getWeekDayNames();
     const days = this.getCalendarDays();
     const monthTitle = this.getMonthYearTitle();
-    const now = new Date();
-    const todayStr = this.toDateString(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStr = clockToday(this.today);
 
     return (
       <Host translate="no">

@@ -538,6 +538,9 @@
   line-height: 1;
   white-space: nowrap;
   transform: translateX(-50%);
+  transition:
+    left var(--settle) ease,
+    transform var(--settle) ease;
 }
 
 /* Set by thinAxis() on the dates that would have overlapped a neighbour. The boundary dot on the
@@ -613,6 +616,9 @@
   letter-spacing: 0.01em;
   white-space: nowrap;
   transform: translateX(-50%);
+  transition:
+    left var(--settle) ease,
+    transform var(--settle) ease;
 }
 
 .today-head.is-near-end .today-pill {
@@ -631,6 +637,7 @@
   left: var(--at);
   width: 0;
   pointer-events: none;
+  transition: left var(--settle) ease;
 }
 
 .today-marker::before {
@@ -655,6 +662,7 @@
   left: var(--at);
   width: 0;
   pointer-events: none;
+  transition: left var(--settle) ease;
 }
 
 .today-tail::before {
@@ -687,6 +695,8 @@
   width: var(--span);
   min-width: 0;
   transition:
+    left var(--settle) ease,
+    width var(--settle) ease,
     opacity 160ms ease,
     filter 160ms ease;
 }
@@ -782,6 +792,7 @@
   box-shadow: 0 0 0 1px var(--tone-border, rgba(48, 113, 169, 0.46));
   transform: translate(-50%, -50%);
   pointer-events: none;
+  transition: left var(--settle) ease;
 }
 
 /* Past wash: one shade over everything before today, so the elapsed slice of the
@@ -798,6 +809,7 @@
   backdrop-filter: grayscale(0.92);
   -webkit-backdrop-filter: grayscale(0.92);
   pointer-events: none;
+  transition: width var(--settle) ease;
 }
 
 .boundary-layer {
@@ -914,4 +926,3 @@
     animation-iteration-count: 1 !important;
   }
 }
-

@@ -58,6 +58,29 @@
  * tags; the fix has to be here, where `import.meta.url` knows the real depth.
  */
 const SITE_ROOT = new URL('../', import.meta.url);
+const TODAY_STORAGE_KEY = 'adp-harness-today';
+const TODAY_MODE_STORAGE_KEY = 'adp-harness-today-mode';
+const ISO_CALENDAR_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+const wallToday = () => new Date().toISOString().slice(0, 10);
+
+const isCalendarDate = value => {
+  if (!ISO_CALENDAR_DATE.test(value || '')) return false;
+
+  const resolved = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(resolved.getTime()) && resolved.toISOString().slice(0, 10) === value;
+};
+
+const readStoredToday = () => {
+  try {
+    return {
+      mode: localStorage.getItem(TODAY_MODE_STORAGE_KEY),
+      value: localStorage.getItem(TODAY_STORAGE_KEY),
+    };
+  } catch {
+    return { mode: null, value: null };
+  }
+};
 
 /** A catalog path (`/templates/…`) as a URL path valid from wherever this page sits. */
 const site = value => new URL(String(value).replace(/^\//, ''), SITE_ROOT).pathname;
@@ -196,6 +219,7 @@ const DEFAULTS = {
     { label: 'Full', value: '100%' },
   ],
   language: true,
+  today: true,
   theme: true,
   mode: true,
   platform: true,
@@ -231,6 +255,7 @@ window.harness = function harness(options = {}) {
     platforms: config.platforms,
     show: {
       language: config.language,
+      today: config.today && config.subject !== false,
       theme: config.theme,
       mode: config.mode,
       platform: config.platform,
@@ -243,6 +268,10 @@ window.harness = function harness(options = {}) {
     },
 
     language: config.languages[0],
+    today: '',
+    todayMode: 'live',
+    todayAnchor: '',
+    customToday: wallToday(),
     theme: window.harnessTheme?.current() ?? 'system',
     // Development is the default: it is the only mode that works without a local
     // API running, which is how these pages are opened most of the time.
@@ -267,6 +296,10 @@ window.harness = function harness(options = {}) {
 
     get dir() {
       return config.rtl.includes(this.language) ? 'rtl' : 'ltr';
+    },
+
+    get todayLabel() {
+      return this.todayMode === 'live' ? wallToday() : this.today;
     },
 
     /** Empty and Error are always offered; the rest is generated, never listed (R7). */
@@ -295,6 +328,7 @@ window.harness = function harness(options = {}) {
       await config.setup?.(this.subject, this);
 
       if (config.language) this.setLanguage(this.subject.language || this.language);
+      if (config.today) await this.initToday();
 
       // Before isDev, not after: flipping it makes some components load their own
       // mock file and call straight back, so the listeners have to be in place.
@@ -322,6 +356,83 @@ window.harness = function harness(options = {}) {
       window.history.replaceState({}, '', url);
 
       this.write('language', `${language} · ${this.dir}`);
+    },
+
+    async initToday() {
+      const url = new URL(window.location.href);
+      const environment = url.searchParams.get('env') || 'standard-dealer';
+
+      if (url.searchParams.get('source') === 'generated') {
+        try {
+          const response = await fetch(new URL('mocks/generated/index.json', SITE_ROOT));
+
+          if (response.ok) {
+            const index = await response.json();
+            const anchor = index.environments?.find(item => item.name === environment)?.anchor;
+            if (isCalendarDate(anchor)) this.todayAnchor = anchor;
+          }
+        } catch {
+          // The fixture load reports its own failure. A missing index only means
+          // this temporary, pre-picker route falls back to the wall clock.
+        }
+      }
+
+      const requested = url.searchParams.get('today');
+
+      if (isCalendarDate(requested)) {
+        this.customToday = requested;
+        this.setToday(requested === this.todayAnchor ? 'anchor' : 'custom', requested);
+        return;
+      }
+
+      const stored = readStoredToday();
+
+      if (stored.mode === 'live') {
+        this.setToday('live');
+        return;
+      }
+
+      if (stored.mode === 'custom' && isCalendarDate(stored.value)) {
+        this.customToday = stored.value;
+        this.setToday('custom', stored.value);
+        return;
+      }
+
+      if (this.todayAnchor) {
+        this.setToday('anchor');
+        return;
+      }
+
+      this.setToday('live', this.customToday, false);
+    },
+
+    setToday(mode, customDate = this.customToday, persist = true) {
+      if (mode === 'anchor' && !this.todayAnchor) return;
+      if (mode === 'custom' && !isCalendarDate(customDate)) return;
+
+      const value = mode === 'anchor' ? this.todayAnchor : mode === 'custom' ? customDate : '';
+
+      this.todayMode = mode;
+      this.today = value;
+      if (mode === 'custom') this.customToday = customDate;
+      this.subject.today = value;
+
+      const url = new URL(window.location.href);
+      if (value) url.searchParams.set('today', value);
+      else url.searchParams.delete('today');
+      window.history.replaceState({}, '', url);
+
+      if (persist) {
+        try {
+          localStorage.setItem(TODAY_MODE_STORAGE_KEY, mode);
+          if (value) localStorage.setItem(TODAY_STORAGE_KEY, value);
+          else localStorage.removeItem(TODAY_STORAGE_KEY);
+        } catch {
+          // Storage can be unavailable in privacy modes; the prop and URL still work.
+        }
+      }
+
+      this.write('today', mode === 'live' ? `${wallToday()} · live` : `${value} · ${mode}`);
     },
 
     setOpen(open) {
@@ -722,6 +833,35 @@ const RAIL = /* html */ `
               <button type="button" class="btn btn-sm" :class="language === item ? 'btn-primary' : 'btn-outline'"
                       :aria-pressed="language === item" @click="setLanguage(item)" x-text="item.toUpperCase()"></button>
             </template>
+          </div>
+        </div>
+      </template>
+
+      <template x-if="show.today">
+        <div class="flex flex-col gap-1.5">
+          <span class="eyebrow text-neutral" x-text="'Today · ' + todayLabel"></span>
+          <div class="flex flex-wrap gap-1.5" role="group" aria-label="Today">
+            <button type="button" class="btn btn-sm" :class="todayMode === 'anchor' ? 'btn-primary' : 'btn-outline'"
+                    :aria-pressed="todayMode === 'anchor'" :disabled="!todayAnchor" :title="todayAnchor ? 'Fixture anchor · ' + todayAnchor : 'No generated environment selected'"
+                    @click="setToday('anchor')">Anchor</button>
+            <button type="button" class="btn btn-sm" :class="todayMode === 'live' ? 'btn-primary' : 'btn-outline'"
+                    :aria-pressed="todayMode === 'live'" @click="setToday('live')">Live</button>
+            <button type="button" class="btn btn-sm" :class="todayMode === 'custom' ? 'btn-primary' : 'btn-outline'"
+                    :aria-pressed="todayMode === 'custom'" @click="setToday('custom')">Custom</button>
+          </div>
+
+          <div
+            class="grid overflow-hidden transition-[grid-template-rows,opacity] duration-200"
+            :class="todayMode === 'custom' ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
+            :aria-hidden="todayMode === 'custom' ? 'false' : 'true'"
+          >
+            <div class="min-h-0">
+              <label class="mt-1 flex flex-col gap-1">
+                <span class="sr-only">Custom today</span>
+                <input class="input input-sm input-bordered w-full" type="date" x-model="customToday" :disabled="todayMode !== 'custom'" @change="setToday('custom', customToday)" />
+              </label>
+              <p class="text-base-content/60 mt-1 text-xs" x-text="todayAnchor ? 'Display only — statuses were computed at ' + todayAnchor : 'Display only — fixture statuses are not recomputed'"></p>
+            </div>
           </div>
         </div>
       </template>

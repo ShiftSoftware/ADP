@@ -5,6 +5,7 @@ import cn from '~lib/cn';
 import { ArrowUpIcon } from '~assets/arrow-up-icon';
 import getCustomClassesForPortal from '~lib/get-custom-classes-for-portal';
 import { isDayBlocked, parseDateList, parseWeekdayList } from '~lib/slot-day-rules';
+import { now } from '~lib/clock';
 
 import { FormHook } from '~features/form-hook/form-hook';
 import { FormElement, FormInputLocalization, FormInputMeta, getInputLocalization } from '~features/form-hook';
@@ -116,6 +117,9 @@ export class BranchSlotPicker implements FormElement {
 
   /** How far ahead to ask. The endpoint caps its own response at 15 days. */
   @Prop() daysAhead: number = 30;
+
+  /** ISO calendar date, read as UTC. Omit it to use the wall clock. */
+  @Prop() today?: string;
 
   /**
    * Weekdays the branch never books on, `0` Sunday … `6` Saturday. Accepts an
@@ -259,6 +263,7 @@ export class BranchSlotPicker implements FormElement {
   @Watch('departmentId')
   @Watch('brandId')
   @Watch('companyId')
+  @Watch('today')
   onTargetChange() {
     // A different branch invalidates the whole selection, not just the times.
     this.selectedDate = '';
@@ -354,11 +359,11 @@ export class BranchSlotPicker implements FormElement {
   private queryUrl(): string | null {
     if (!this.calendarApi || !this.companyId || !this.branchId || !this.departmentId || !this.brandId) return null;
 
-    const from = new Date();
-    const to = new Date();
-    to.setDate(to.getDate() + this.daysAhead);
+    const from = now(this.today);
+    const to = new Date(from);
+    to.setUTCDate(to.getUTCDate() + this.daysAhead);
 
-    const iso = (d: Date) => `${d.getFullYear()}-${this.pad(d.getMonth() + 1)}-${this.pad(d.getDate())}`;
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
 
     const qs = new URLSearchParams({
       from: iso(from),

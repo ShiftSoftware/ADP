@@ -1,4 +1,5 @@
 import { FunctionalComponent, h } from '@stencil/core';
+import { today as clockToday } from '~lib/clock';
 import { InferType } from 'yup';
 
 import warrantyTimelineSchema from '~locales/vehicleLookup/warrantyTimeline/type';
@@ -55,8 +56,6 @@ const toTimestamp = (isoDate: string) => Date.parse(`${isoDate}T00:00:00Z`);
 
 /** DTO dates are serialized as yyyy-MM-dd, but tolerate a full timestamp. */
 const asDate = (value?: string) => (value || '').slice(0, 10);
-
-const todayInUtc = () => new Date().toISOString().slice(0, 10);
 
 const clampPercentage = (value: number) => Math.min(100, Math.max(0, value));
 
@@ -327,7 +326,7 @@ const StatusBadge = ({ state, text }: { state: BadgeState; text: string }) => {
 };
 
 export default function CoverageTimeline({ vehicleInformation, locale, isAuthorized, today }: Props) {
-  const snapshot = today || todayInUtc();
+  const snapshot = clockToday(today);
   const coverages = buildCoverages(vehicleInformation, locale);
   const hasCoverage = coverages.length > 0;
 

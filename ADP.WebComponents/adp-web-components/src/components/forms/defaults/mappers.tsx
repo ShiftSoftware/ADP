@@ -5,6 +5,7 @@ import { CalendarDaysIcon } from '~assets/calendar-days-icon';
 import { format, isBefore, isEqual } from 'date-fns';
 import { decodeTimeOffset } from '~lib/decode-time-offset';
 import { populateItems } from '~lib/populate-items';
+import { now } from '~lib/clock';
 
 /**
  * Resolves the four ids the calendar endpoint needs from the branch the
@@ -209,8 +210,8 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
       const options: FormSelectItem[] = [];
 
       if (Array.isArray(props.span) && Array.isArray(props.min) && Array.isArray(props.max) && props.format) {
-        let tempDate = decodeTimeOffset({ offsets: props.min }) as Date;
-        const maxDate = decodeTimeOffset({ offsets: props.max }) as Date;
+        let tempDate = decodeTimeOffset({ offsets: props.min, today: props.today }) as Date;
+        const maxDate = decodeTimeOffset({ offsets: props.max, today: props.today }) as Date;
 
         while (isBefore(tempDate, maxDate) || isEqual(tempDate, maxDate)) {
           options.push({
@@ -229,8 +230,9 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
   },
 
   year: ({ language, props }) => {
-    const minYear = props?.min || new Date().getFullYear() - 20;
-    const maxYear = props?.max || new Date().getFullYear();
+    const currentYear = now(props?.today).getUTCFullYear();
+    const minYear = props?.min || currentYear - 20;
+    const maxYear = props?.max || currentYear;
 
     const options: FormSelectItem[] = [];
 

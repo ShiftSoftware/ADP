@@ -56,6 +56,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
   // #region Vehicle Lookup Component Shared Logic
 
   @Prop() isDev: boolean;
+  @Prop() today?: string;
   @Prop() disableVinValidation: boolean = false;
   @Prop() baseUrl: string;
   @Prop() headers: object = {};

@@ -104,6 +104,8 @@ export class SSCLookupForm implements FormHookInterface<any>, MultiLingual {
   @Prop() theme?: string;
   @Prop() formId?: string;
   @Prop() isDev?: boolean = false;
+  /** ISO calendar date, read as UTC. Omit it to use the wall clock. */
+  @Prop() today?: string;
   @Prop() disableScrollToTop?: boolean;
   @Prop() isMobileForm: boolean = false;
   @Prop() getMobileToken?: () => string;
@@ -128,6 +130,7 @@ export class SSCLookupForm implements FormHookInterface<any>, MultiLingual {
               {!!this.form && (
                 <form-structure
                   form={this.form}
+                  today={this.today}
                   fields={this.fields}
                   formId={this.formId}
                   formLocale={this.locale}

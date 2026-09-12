@@ -6,6 +6,7 @@ import { fetchJson } from '~lib/fetch-json';
 import { AnyObjectSchema } from 'yup';
 import { Grecaptcha } from '~lib/recaptcha';
 import { formatISO, parse } from 'date-fns';
+import { now } from '~lib/clock';
 
 /**
  * `data` is optional on the structure type, and `Object.hasOwn(undefined, ...)`
@@ -227,7 +228,7 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
         } else if (typeof truncateValue === 'string' && truncateValue) {
           if (oldKey.startsWith('parse date: ')) {
             const tempKey = oldKey.replaceAll('parse date: ', '');
-            payload[tempKey] = parse(payload[tempKey], truncateValue, new Date());
+            payload[tempKey] = parse(payload[tempKey], truncateValue, now(context.today));
           } else if (oldKey.startsWith('format date: ')) {
             const tempKey = oldKey.replaceAll('format date: ', '');
             const parsed = payload[tempKey];

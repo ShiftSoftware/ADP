@@ -66,6 +66,8 @@ export class VehicleWarrantyTimeline implements MultiLingual, VehicleInfoLayoutI
   // #region Vehicle Lookup Component Shared Logic
 
   @Prop() isDev: boolean;
+  /** ISO calendar date, read as UTC. Omit it to use the wall clock. */
+  @Prop() today?: string;
   @Prop() disableVinValidation: boolean = false;
   @Prop() baseUrl: string;
   @Prop() headers: object = {};
@@ -126,7 +128,7 @@ export class VehicleWarrantyTimeline implements MultiLingual, VehicleInfoLayoutI
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
           <div class="p-[16px]">
-            <CoverageTimeline vehicleInformation={this.vehicleLookup} locale={this.locale} isAuthorized={this.vehicleLookup?.isAuthorized} />
+            <CoverageTimeline vehicleInformation={this.vehicleLookup} locale={this.locale} isAuthorized={this.vehicleLookup?.isAuthorized} today={this.today} />
           </div>
         </VehicleInfoLayout>
       </Host>

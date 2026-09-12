@@ -214,6 +214,8 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
   @Prop() formId?: string;
   @Prop() isDev?: boolean = false;
+  /** ISO calendar date, read as UTC. Omit it to use the wall clock. */
+  @Prop() today?: string;
   @Prop() disableScrollToTop?: boolean;
   @Prop() isMobileForm: boolean = false;
   @Prop() getMobileToken?: () => string;
@@ -238,6 +240,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
               {!!this.form && (
                 <form-structure
                   form={this.form}
+                  today={this.today}
                   fields={this.fields}
                   formId={this.formId}
                   formLocale={this.locale}

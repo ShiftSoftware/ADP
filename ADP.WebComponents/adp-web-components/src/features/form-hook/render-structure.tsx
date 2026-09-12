@@ -43,6 +43,7 @@ export function renderStructure(
     const newProps = {
       ...generaProps,
       props: {
+        today: generaProps.props.today,
         ...props,
         ...(fields && fields[name] ? fields[name] : {}),
         name,

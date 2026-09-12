@@ -85,6 +85,26 @@ describe('vehicle-lookup', () => {
     expect(page.root.shadowRoot.getElementById('vehicle-specification')?.getAttribute('query-string')).toBe('lang=en');
   });
 
+  it('forwards today to every panel', async () => {
+    const page = await newSpecPage({
+      components: [VehicleLookup, ShiftTabContent],
+      html: '<vehicle-lookup active-element="vehicle-warranty-timeline" today="2026-09-01"></vehicle-lookup>',
+    });
+
+    for (const tag of [
+      'vehicle-accessories',
+      'vehicle-specification',
+      'vehicle-paint-thickness',
+      'vehicle-service-history',
+      'vehicle-claimable-items',
+      'vehicle-sale-information',
+      'vehicle-warranty-timeline',
+      'vehicle-ssc',
+    ]) {
+      expect(page.root.shadowRoot.getElementById(tag)?.getAttribute('today')).toBe('2026-09-01');
+    }
+  });
+
   it('hydrates the other panels from the SSC panel’s own search without skipping anything', async () => {
     const { wrapper, panels } = await newWrapper('ssc-query-string="logCampaignCheck=true"');
 

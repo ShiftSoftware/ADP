@@ -34,6 +34,7 @@ export class FormStructure {
   // #endregion
 
   @Prop() formId?: string;
+  @Prop() today?: string;
   @Prop() isLoading: boolean = false;
   @Prop() form!: FormHook<any>;
   @Prop() errorMessage: string = '';
@@ -62,7 +63,7 @@ export class FormStructure {
       isLoading: this.isLoading,
       language: this.language,
       locale: this.formLocale,
-      props: { isLoading: this.isLoading, form: this.form },
+      props: { isLoading: this.isLoading, form: this.form, today: this.today },
     };
 
     if (!this.structure) return <form-structure-error language={this.language} />;

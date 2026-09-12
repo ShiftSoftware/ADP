@@ -1,7 +1,16 @@
 import { addDays, addHours, addMinutes, addMonths, addSeconds, addYears, format, startOfDay } from 'date-fns';
+import { now } from './clock';
 
 export type DateTypes = 'date' | 'time' | 'datetime-local';
-export function decodeTimeOffset({ offsets, type, date = startOfDay(new Date()) }: { date?: Date; offsets: number[]; type?: DateTypes }) {
+export function decodeTimeOffset({ offsets, type, date, today }: { date?: Date; offsets: number[]; type?: DateTypes; today?: string }) {
+  if (!date) {
+    const clock = now(today);
+    // date-fns performs calendar arithmetic in local time. Mirror an explicit
+    // UTC calendar date into local time first so a negative offset cannot roll
+    // the anchor back to the previous day.
+    date = today ? new Date(clock.getUTCFullYear(), clock.getUTCMonth(), clock.getUTCDate()) : startOfDay(clock);
+  }
+
   if (offsets.length > 0) date = addYears(date, offsets[0]);
   if (offsets.length > 1) date = addMonths(date, offsets[1]);
   if (offsets.length > 2) date = addDays(date, offsets[2]);

@@ -10,6 +10,7 @@ import { FormInputLabel } from './components/form-input-label';
 import { FormInputPrefix } from './components/form-input-prefix';
 import { FormErrorMessage } from './components/form-error-message';
 import { DateTypes, decodeTimeOffset } from '~lib/decode-time-offset';
+import { now } from '~lib/clock';
 import { format, parse } from 'date-fns';
 import { AnyObjectSchema } from 'yup';
 
@@ -34,6 +35,8 @@ export class FormPickerInput implements FormElement {
   @Prop() max?: string | number[];
   @Prop() min?: string | number[];
   @Prop() type?: DateTypes = 'datetime-local';
+  /** ISO calendar date, read as UTC. Omit it to use the wall clock. */
+  @Prop() today?: string;
   @Prop({ mutable: true }) defaultValue: string;
   @Prop() formatter?: (value: string) => string;
   @Prop() localization?: FormInputLocalization = {};
@@ -140,7 +143,7 @@ export class FormPickerInput implements FormElement {
     if (typeof v !== 'string') return v;
 
     if (this.format) {
-      return parse(v, this.format, new Date());
+      return parse(v, this.format, now(this.today));
     }
 
     return new Date(v);
@@ -153,8 +156,8 @@ export class FormPickerInput implements FormElement {
   };
 
   withSlots = (template?: any) => {
-    const resolvedMin = Array.isArray(this.min) ? (decodeTimeOffset({ offsets: this.min, type: this.type }) as string) : this.min;
-    const resolvedMax = Array.isArray(this.max) ? (decodeTimeOffset({ offsets: this.max, type: this.type }) as string) : this.max;
+    const resolvedMin = Array.isArray(this.min) ? (decodeTimeOffset({ offsets: this.min, type: this.type, today: this.today }) as string) : this.min;
+    const resolvedMax = Array.isArray(this.max) ? (decodeTimeOffset({ offsets: this.max, type: this.type, today: this.today }) as string) : this.max;
 
     const minDate = this.parseToDate(resolvedMin);
     const maxDate = this.parseToDate(resolvedMax);
@@ -168,8 +171,8 @@ export class FormPickerInput implements FormElement {
   };
 
   partialValidation = (v: AnyObjectSchema) => {
-    const resolvedMin = Array.isArray(this.min) ? (decodeTimeOffset({ offsets: this.min, type: this.type }) as string) : this.min;
-    const resolvedMax = Array.isArray(this.max) ? (decodeTimeOffset({ offsets: this.max, type: this.type }) as string) : this.max;
+    const resolvedMin = Array.isArray(this.min) ? (decodeTimeOffset({ offsets: this.min, type: this.type, today: this.today }) as string) : this.min;
+    const resolvedMax = Array.isArray(this.max) ? (decodeTimeOffset({ offsets: this.max, type: this.type, today: this.today }) as string) : this.max;
 
     const minDate = this.parseToDate(resolvedMin);
     const maxDate = this.parseToDate(resolvedMax);
@@ -277,8 +280,8 @@ export class FormPickerInput implements FormElement {
               onInput={this.onInputChange}
               part={`${this.name}-input ${part}`}
               class={cn('shadow-input size-full absolute top-0 left-0 opacity-0 cursor-pointer', part)}
-              min={Array.isArray(this.min) ? decodeTimeOffset({ offsets: this.min, type: this.type }) : this.min}
-              max={Array.isArray(this.max) ? decodeTimeOffset({ offsets: this.max, type: this.type }) : this.max}
+              min={Array.isArray(this.min) ? decodeTimeOffset({ offsets: this.min, type: this.type, today: this.today }) : this.min}
+              max={Array.isArray(this.max) ? decodeTimeOffset({ offsets: this.max, type: this.type, today: this.today }) : this.max}
             />
             {this.icon && renderIcon()}
           </div>

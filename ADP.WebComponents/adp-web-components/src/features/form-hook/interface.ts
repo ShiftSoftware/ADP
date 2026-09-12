@@ -44,6 +44,7 @@ export interface FormHookInterface<T> {
   gistId?: string;
   el: HTMLElement;
   isDev?: boolean;
+  today?: string;
   isLoading: boolean;
   extraHeader?: object;
   errorMessage?: string;

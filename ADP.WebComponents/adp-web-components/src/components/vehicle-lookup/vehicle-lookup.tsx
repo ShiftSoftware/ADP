@@ -75,6 +75,8 @@ export class VehicleLookup implements MultiLingual {
 
   @Prop() baseUrl: string = '';
   @Prop() isDev: boolean = false;
+  /** ISO calendar date forwarded to every panel. Omit it to use the wall clock. */
+  @Prop() today?: string;
   @Prop() mockUrl: string = '';
   @Prop() mockRecaptcha: boolean = false;
   @Prop() disableVinValidation: boolean = false;
@@ -311,6 +313,7 @@ export class VehicleLookup implements MultiLingual {
           isDev={this.isDev}
           disableVinValidation={this.disableVinValidation}
           base-url={this.baseUrl}
+          today={this.today}
           language={this.language}
           query-string={this.queryString}
           id={componentTags.vehicleSpecification}
@@ -323,6 +326,7 @@ export class VehicleLookup implements MultiLingual {
           isDev={this.isDev}
           disableVinValidation={this.disableVinValidation}
           base-url={this.baseUrl}
+          today={this.today}
           language={this.language}
           query-string={this.queryString}
           id={componentTags.vehicleAccessories}
@@ -335,6 +339,7 @@ export class VehicleLookup implements MultiLingual {
           isDev={this.isDev}
           disableVinValidation={this.disableVinValidation}
           base-url={this.baseUrl}
+          today={this.today}
           language={this.language}
           query-string={this.queryString}
           id={componentTags.vehicleSaleInformation}
@@ -347,6 +352,7 @@ export class VehicleLookup implements MultiLingual {
           isDev={this.isDev}
           disableVinValidation={this.disableVinValidation}
           base-url={this.baseUrl}
+          today={this.today}
           language={this.language}
           query-string={this.queryString}
           id={componentTags.vehicleWarrantyTimeline}
@@ -360,6 +366,7 @@ export class VehicleLookup implements MultiLingual {
           mockRecaptcha={this.mockRecaptcha}
           disableVinValidation={this.disableVinValidation}
           base-url={this.baseUrl}
+          today={this.today}
           language={this.language}
           query-string={this.queryString}
           lookup-query-string={this.sscQueryString}
@@ -373,6 +380,7 @@ export class VehicleLookup implements MultiLingual {
           isDev={this.isDev}
           disableVinValidation={this.disableVinValidation}
           base-url={this.baseUrl}
+          today={this.today}
           language={this.language}
           query-string={this.queryString}
           id={componentTags.vehicleServiceHistory}
@@ -385,6 +393,7 @@ export class VehicleLookup implements MultiLingual {
           isDev={this.isDev}
           disableVinValidation={this.disableVinValidation}
           base-url={this.baseUrl}
+          today={this.today}
           language={this.language}
           query-string={this.queryString}
           id={componentTags.vehiclePaintThickness}
@@ -397,6 +406,7 @@ export class VehicleLookup implements MultiLingual {
           isDev={this.isDev}
           disableVinValidation={this.disableVinValidation}
           base-url={this.baseUrl}
+          today={this.today}
           language={this.language}
           query-string={this.queryString}
           id={componentTags.vehicleClaimableItems}

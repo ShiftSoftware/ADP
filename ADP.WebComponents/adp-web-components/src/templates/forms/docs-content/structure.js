@@ -248,7 +248,7 @@ export const dataKeys = [
     summary:
       'A tiny rewrite language applied to the payload just before it is sent, in object-key order. Four behaviours, chosen by the shape of each entry:\n' +
       '1. value is an ARRAY — join. Each item is looked up in the payload; if there is no such key the item is used as a literal. The result is assigned to the entry key. Source fields are NOT removed.\n' +
-      '2. key starts with `parse date: ` — `payload[rest] = parse(payload[rest], <value>, new Date())` using the date-fns format in the value. Produces a Date object.\n' +
+      '2. key starts with `parse date: ` — `payload[rest] = parse(payload[rest], <value>, now(today))` using the date-fns format in the value and the form’s optional `today` clock. Produces a Date object.\n' +
       '3. key starts with `format date: ` — `payload[rest] = formatISO(payload[rest])`. The value is ignored; any non-empty string works, so write something self-documenting.\n' +
       '4. anything else — RENAME AND MOVE: `additionalData[<value>] = payload[<key>]`, then `delete payload[<key>]`.\n' +
       'Whenever this key is present and non-empty, `payload.additionalData` is set, even if it ends up `{}`.',

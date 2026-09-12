@@ -8,6 +8,7 @@ import { RequestHeadersSource } from './request-headers';
 
 export interface VehicleLookupComponent extends VehicleRequestHeaders, RequestHeadersSource {
   isDev: boolean;
+  today?: string;
   disableVinValidation?: boolean;
   baseUrl: string;
   headers: object;
