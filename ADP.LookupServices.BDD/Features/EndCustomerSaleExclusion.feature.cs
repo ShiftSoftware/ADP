@@ -176,23 +176,23 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "CompanyID",
                             "InvoiceNumber"});
                 table1.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2026-05-25",
                             "5",
-                            "30018218"});
+                            "95912921"});
                 table1.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2026-05-25",
                             "10",
-                            "11000191"});
+                            "72232475"});
 #line 21
   await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table1, "And ");
 #line hidden
 #line 25
-  await testRunner.WhenAsync("Checking \"JTMAB7BJ0T4224184\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.WhenAsync("Checking \"ZW8UWF8J4TJ368365\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 26
-  await testRunner.ThenAsync("the selected vehicle has invoice number \"11000191\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+  await testRunner.ThenAsync("the selected vehicle has invoice number \"72232475\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -225,23 +225,23 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "CompanyID",
                             "InvoiceNumber"});
                 table2.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2026-05-30",
                             "5",
-                            "30018218"});
+                            "95912921"});
                 table2.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2026-05-25",
                             "10",
-                            "11000191"});
+                            "72232475"});
 #line 29
   await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table2, "Given ");
 #line hidden
 #line 33
-  await testRunner.WhenAsync("Checking \"JTMAB7BJ0T4224184\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.WhenAsync("Checking \"ZW8UWF8J4TJ368365\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 34
-  await testRunner.ThenAsync("the selected vehicle has invoice number \"30018218\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+  await testRunner.ThenAsync("the selected vehicle has invoice number \"95912921\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -283,20 +283,20 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "CompanyID",
                             "InvoiceNumber"});
                 table3.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2026-05-30",
                             "5",
-                            "30018218"});
+                            "95912921"});
                 table3.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2026-05-25",
                             "10",
-                            "11000191"});
+                            "72232475"});
 #line 41
   await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table3, "And ");
 #line hidden
 #line 45
-  await testRunner.WhenAsync("evaluating warranty dates for \"JTMAB7BJ0T4224184\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.WhenAsync("evaluating warranty dates for \"ZW8UWF8J4TJ368365\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 46
   await testRunner.ThenAsync("the warranty start date is \"2026-05-25\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -344,15 +344,15 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "CompanyID",
                             "InvoiceNumber"});
                 table4.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2026-05-25",
                             "5",
-                            "30018218"});
+                            "95912921"});
 #line 52
   await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table4, "And ");
 #line hidden
 #line 55
-  await testRunner.WhenAsync("evaluating warranty dates for \"JTMAB7BJ0T4224184\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.WhenAsync("evaluating warranty dates for \"ZW8UWF8J4TJ368365\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 56
   await testRunner.ThenAsync("the warranty start date is empty", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -394,18 +394,18 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "CompanyID",
                             "InvoiceNumber"});
                 table5.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2026-05-25",
                             "5",
-                            "30018218"});
+                            "95912921"});
 #line 61
   await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table5, "And ");
 #line hidden
 #line 64
-  await testRunner.WhenAsync("Checking \"JTMAB7BJ0T4224184\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.WhenAsync("Checking \"ZW8UWF8J4TJ368365\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 65
-  await testRunner.ThenAsync("the selected vehicle has invoice number \"30018218\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+  await testRunner.ThenAsync("the selected vehicle has invoice number \"95912921\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -447,26 +447,26 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "CompanyID",
                             "InvoiceNumber"});
                 table6.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2026-05-30",
                             "7",
-                            "70000001"});
+                            "21109132"});
                 table6.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2026-05-25",
                             "10",
-                            "11000191"});
+                            "72232475"});
 #line 73
   await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table6, "And ");
 #line hidden
 #line 77
-  await testRunner.WhenAsync("evaluating warranty dates for \"JTMAB7BJ0T4224184\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.WhenAsync("evaluating warranty dates for \"ZW8UWF8J4TJ368365\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 78
   await testRunner.ThenAsync("the warranty start date is \"2026-05-25\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 79
-  await testRunner.AndAsync("the selected vehicle has invoice number \"11000191\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+  await testRunner.AndAsync("the selected vehicle has invoice number \"72232475\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -508,12 +508,12 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "CompanyID",
                             "InvoiceNumber"});
                 table7.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2026-05-20",
                             "7",
-                            "70000001"});
+                            "21109132"});
                 table7.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2026-05-28",
                             "8",
                             "80000002"});
@@ -521,7 +521,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
   await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table7, "And ");
 #line hidden
 #line 89
-  await testRunner.WhenAsync("evaluating warranty dates for \"JTMAB7BJ0T4224184\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.WhenAsync("evaluating warranty dates for \"ZW8UWF8J4TJ368365\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 90
   await testRunner.ThenAsync("the warranty start date is empty", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -567,16 +567,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "InvoiceNumber",
                             "AccountNumber"});
                 table8.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2024-11-01",
                             "5",
-                            "20024815",
+                            "54345067",
                             "DIST-DIRECT-01"});
 #line 102
   await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table8, "And ");
 #line hidden
 #line 105
-  await testRunner.WhenAsync("evaluating warranty dates for \"JTMAB7BJ0T4224184\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.WhenAsync("evaluating warranty dates for \"ZW8UWF8J4TJ368365\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 106
   await testRunner.ThenAsync("the warranty start date is \"2024-11-01\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -585,7 +585,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
   await testRunner.AndAsync("the free service start date is \"2024-11-01\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 108
-  await testRunner.AndAsync("the selected vehicle has invoice number \"20024815\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+  await testRunner.AndAsync("the selected vehicle has invoice number \"54345067\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -628,16 +628,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "InvoiceNumber",
                             "AccountNumber"});
                 table9.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2024-11-01",
                             "5",
-                            "20024815",
+                            "54345067",
                             "DEALER-SHIP-9"});
 #line 114
   await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table9, "And ");
 #line hidden
 #line 117
-  await testRunner.WhenAsync("evaluating warranty dates for \"JTMAB7BJ0T4224184\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.WhenAsync("evaluating warranty dates for \"ZW8UWF8J4TJ368365\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 118
   await testRunner.ThenAsync("the warranty start date is empty", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -683,16 +683,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "InvoiceNumber",
                             "AccountNumber"});
                 table10.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2024-11-01",
                             "5",
-                            "20024815",
+                            "54345067",
                             "DIST-DIRECT-01"});
 #line 123
   await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table10, "And ");
 #line hidden
 #line 126
-  await testRunner.WhenAsync("evaluating warranty dates for \"JTMAB7BJ0T4224184\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.WhenAsync("evaluating warranty dates for \"ZW8UWF8J4TJ368365\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 127
   await testRunner.ThenAsync("the warranty start date is empty", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -738,28 +738,28 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "InvoiceNumber",
                             "AccountNumber"});
                 table11.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2024-11-01",
                             "5",
-                            "20024815",
+                            "54345067",
                             "DIST-DIRECT-01"});
                 table11.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2024-11-10",
                             "10",
-                            "11000191",
+                            "72232475",
                             ""});
 #line 133
   await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table11, "And ");
 #line hidden
 #line 137
-  await testRunner.WhenAsync("evaluating warranty dates for \"JTMAB7BJ0T4224184\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.WhenAsync("evaluating warranty dates for \"ZW8UWF8J4TJ368365\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 138
   await testRunner.ThenAsync("the warranty start date is \"2024-11-10\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 139
-  await testRunner.AndAsync("the selected vehicle has invoice number \"11000191\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+  await testRunner.AndAsync("the selected vehicle has invoice number \"72232475\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -808,16 +808,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "InvoiceNumber",
                             "AccountNumber"});
                 table12.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2024-11-01",
                             "7",
-                            "70000001",
+                            "21109132",
                             "SHARED-ACC"});
 #line 149
   await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table12, "And ");
 #line hidden
 #line 152
-  await testRunner.WhenAsync("evaluating warranty dates for \"JTMAB7BJ0T4224184\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.WhenAsync("evaluating warranty dates for \"ZW8UWF8J4TJ368365\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 153
   await testRunner.ThenAsync("the warranty start date is empty", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -866,22 +866,22 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "InvoiceNumber",
                             "AccountNumber"});
                 table13.AddRow(new string[] {
-                            "JTMAB7BJ0T4224184",
+                            "ZW8UWF8J4TJ368365",
                             "2024-11-01",
                             "7",
-                            "70000001",
+                            "21109132",
                             "DIRECT-ACC-07"});
 #line 163
   await testRunner.AndAsync("vehicles in dealer stock:", ((string)(null)), table13, "And ");
 #line hidden
 #line 166
-  await testRunner.WhenAsync("evaluating warranty dates for \"JTMAB7BJ0T4224184\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.WhenAsync("evaluating warranty dates for \"ZW8UWF8J4TJ368365\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 167
   await testRunner.ThenAsync("the warranty start date is \"2024-11-01\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 168
-  await testRunner.AndAsync("the selected vehicle has invoice number \"70000001\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+  await testRunner.AndAsync("the selected vehicle has invoice number \"21109132\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

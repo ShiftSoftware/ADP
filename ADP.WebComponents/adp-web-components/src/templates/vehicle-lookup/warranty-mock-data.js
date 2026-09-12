@@ -1,8 +1,8 @@
 const mockData = {
-  JTMHX01J8L4198295: {
-    vin: 'JTMHX01J8L4198295',
+  ZT9EYK5P7L5227866: {
+    vin: 'ZT9EYK5P7L5227866',
     identifiers: {
-      vin: 'JTMHX01J8L4198295',
+      vin: 'ZT9EYK5P7L5227866',
       variant: null,
       katashiki: null,
       color: null,
@@ -25,7 +25,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: 51456604,
+        invoiceNumber: 69671969,
         jobNumber: 13681,
         laborLines: [
           {
@@ -84,7 +84,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: 51447340,
+        invoiceNumber: 24377840,
         jobNumber: 52446,
         laborLines: [
           {
@@ -137,7 +137,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: 51441539,
+        invoiceNumber: 82854891,
         jobNumber: 41940,
         laborLines: [
           {
@@ -190,7 +190,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: 51431492,
+        invoiceNumber: 96276714,
         jobNumber: 22296,
         laborLines: [
           {
@@ -228,10 +228,10 @@ const mockData = {
     serviceItems: null,
     basicModelCode: null,
   },
-  JTMHX01J8L4198296: {
-    vin: 'JTMHX01J8L4198296',
+  ZV9B0L5K3L5694258: {
+    vin: 'ZV9B0L5K3L5694258',
     identifiers: {
-      vin: 'JTMHX01J8L4198295',
+      vin: 'ZT9EYK5P7L5227866',
       variant: null,
       katashiki: null,
       color: null,
@@ -261,7 +261,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: 51456604,
+        invoiceNumber: 69671969,
         jobNumber: 13681,
         laborLines: [
           {
@@ -320,7 +320,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: 51447340,
+        invoiceNumber: 24377840,
         jobNumber: 52446,
         laborLines: [
           {
@@ -373,7 +373,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: 51441539,
+        invoiceNumber: 82854891,
         jobNumber: 41940,
         laborLines: [
           {
@@ -426,7 +426,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: 51431492,
+        invoiceNumber: 96276714,
         jobNumber: 22296,
         laborLines: [
           {
@@ -464,10 +464,10 @@ const mockData = {
     serviceItems: null,
     basicModelCode: null,
   },
-  MR0BX8CD3P2791075: {
-    vin: 'MR0BX8CD3P2791075',
+  ZV8GW0HX5PC678126: {
+    vin: 'ZV8GW0HX5PC678126',
     identifiers: {
-      vin: 'MR0BX8CD3P2791075',
+      vin: 'ZV8GW0HX5PC678126',
       variant: '13461HN202301',
       katashiki: 'TGN126L-DTTHKV',
       color: '040',
@@ -484,7 +484,7 @@ const mockData = {
       customerAccount: 'R01447',
       customerID: '89437',
       invoiceDate: '2023-05-11',
-      invoiceNumber: 11155049,
+      invoiceNumber: 66296711,
       broker: {
         brokerId: 628,
         brokerName: 'Modren Cars',
@@ -961,7 +961,7 @@ const mockData = {
             serviceDescription: 'Consumables',
           },
           {
-            laborCode: '473301',
+            laborCode: '269760',
             packageCode: ' ',
             serviceCode: 'PMS',
             serviceDescription: 'FRONT DISC BRAKE PAD AND/OR DI',
@@ -1224,10 +1224,10 @@ const mockData = {
     ],
     basicModelCode: 'TGN126',
   },
-  JTMHX01J8L4198299: {
-    vin: 'JTMHX01J8L4198299',
+  ZV9RUTHD5L3395673: {
+    vin: 'ZV9RUTHD5L3395673',
     identifiers: {
-      vin: 'JTMHX01J8L4198295',
+      vin: 'ZT9EYK5P7L5227866',
       variant: null,
       katashiki: null,
       color: null,
@@ -1257,7 +1257,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: 51456604,
+        invoiceNumber: 69671969,
         jobNumber: 13681,
         laborLines: [
           {
@@ -1316,7 +1316,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: 51447340,
+        invoiceNumber: 24377840,
         jobNumber: 52446,
         laborLines: [
           {
@@ -1369,7 +1369,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: 51441539,
+        invoiceNumber: 82854891,
         jobNumber: 41940,
         laborLines: [
           {
@@ -1422,7 +1422,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: 51431492,
+        invoiceNumber: 96276714,
         jobNumber: 22296,
         laborLines: [
           {
@@ -1460,10 +1460,10 @@ const mockData = {
     serviceItems: null,
     basicModelCode: null,
   },
-  JTMABBBJ9P4099243: {
-    vin: 'JTMABBBJ9P4099243',
+  ZW9DZP8E9PY836065: {
+    vin: 'ZW9DZP8E9PY836065',
     identifiers: {
-      vin: 'JTMABBBJ9P4099243',
+      vin: 'ZW9DZP8E9PY836065',
       variant: '53311S3202301',
       katashiki: 'VJA300L-GNUAZV',
       color: '070',
@@ -1480,7 +1480,7 @@ const mockData = {
       customerAccount: 'R01954',
       customerID: '97120',
       invoiceDate: '2023-09-18',
-      invoiceNumber: 11160168,
+      invoiceNumber: 12444434,
       broker: {
         brokerId: 539,
         brokerName: 'Al-Burchman',
@@ -1927,10 +1927,10 @@ const mockData = {
     ],
     basicModelCode: 'VJA300',
   },
-  JTMHU09J6E4100543: {
-    vin: 'JTMHU09J6E4100543',
+  ZS9G938H6E1899098: {
+    vin: 'ZS9G938H6E1899098',
     identifiers: {
-      vin: 'JTMHU09J6E4100543',
+      vin: 'ZS9G938H6E1899098',
       variant: null,
       katashiki: null,
       color: null,
@@ -2150,10 +2150,10 @@ const mockData = {
     serviceItems: null,
     basicModelCode: null,
   },
-  JTMABBBJ9P4099200: {
-    vin: 'JTMABBBJ9P4099200',
+  ZU8PC1Z95PP935130: {
+    vin: 'ZU8PC1Z95PP935130',
     identifiers: {
-      vin: 'JTMABBBJ9P4099243',
+      vin: 'ZW9DZP8E9PY836065',
       variant: '53311S3202301',
       katashiki: 'VJA300L-GNUAZV',
       color: '070',
@@ -2170,7 +2170,7 @@ const mockData = {
       customerAccount: 'R01954',
       customerID: '97120',
       invoiceDate: '2023-09-18',
-      invoiceNumber: 11160168,
+      invoiceNumber: 12444434,
       broker: {
         brokerId: 539,
         brokerName: 'Al-Burchman',
@@ -2194,7 +2194,7 @@ const mockData = {
       extendedWarranties: [
         // A configured definition: it carries its own display name.
         {
-          id: 'EW-JTMABBBJ9P4099200-DISTRIBUTOR',
+          id: 'EW-ZU8PC1Z95PP935130-DISTRIBUTOR',
           name: 'Distributor Service Reward',
           providerCompanyID: '5',
           providerCompanyName: 'Sample Distributor',
@@ -2205,7 +2205,7 @@ const mockData = {
         // A persisted entry: no name, so the rail uses its generic label and the
         // provider is told apart by the logo.
         {
-          id: 'EW-JTMABBBJ9P4099200-PROVIDER',
+          id: 'EW-ZU8PC1Z95PP935130-PROVIDER',
           providerCompanyID: '9',
           providerCompanyName: 'Coverage Partner',
           providerCompanyLogo: '/templates/vehicle-lookup/prototype-assets/extended-warranty/adp-logo.svg',
@@ -2640,10 +2640,10 @@ const mockData = {
   },
   // Only the distributor's entry has synced. Its invoice exists but is a supply-chain
   // movement, so the warranty has not started and the vehicle has no rail.
-  JTMABBBJ9P4099280: {
-    vin: 'JTMABBBJ9P4099280',
+  ZU99J61K7PZ167712: {
+    vin: 'ZU99J61K7PZ167712',
     identifiers: {
-      vin: 'JTMABBBJ9P4099280',
+      vin: 'ZU99J61K7PZ167712',
       variant: '53311S3202301',
       katashiki: 'VJA300L-GNUAZV',
       color: '070',
@@ -2656,7 +2656,7 @@ const mockData = {
       countryName: 'Iraq',
       companyName: 'Sample Distributor',
       invoiceDate: '2026-05-20',
-      invoiceNumber: 30018300,
+      invoiceNumber: 12610565,
     },
     isAuthorized: true,
     warranty: {
@@ -2672,10 +2672,10 @@ const mockData = {
 
   // A real dealer sale, but nothing has dated the warranty: no activation, and this
   // deployment does not default the start to the invoice date.
-  JTMABBBJ9P4099270: {
-    vin: 'JTMABBBJ9P4099270',
+  ZU95VW7N9PL234530: {
+    vin: 'ZU95VW7N9PL234530',
     identifiers: {
-      vin: 'JTMABBBJ9P4099270',
+      vin: 'ZU95VW7N9PL234530',
       variant: '53311S3202301',
       katashiki: 'VJA300L-GNUAZV',
       color: '070',
@@ -2690,7 +2690,7 @@ const mockData = {
       branchIntegrationID: '44',
       branchName: 'SAS - Showroom | Basra',
       invoiceDate: '2024-01-15',
-      invoiceNumber: 11160199,
+      invoiceNumber: 77239303,
     },
     isAuthorized: true,
     warranty: {
@@ -2704,12 +2704,12 @@ const mockData = {
     serviceHistory: [],
   },
 
-  // Same standing as JTMABBBJ9P4099270 but the requesting dealer is not authorized for it, so the
+  // Same standing as ZU95VW7N9PL234530 but the requesting dealer is not authorized for it, so the
   // activation the state implies is never coming. The panel must not say it is pending.
-  JTMABBBJ9P4099271: {
-    vin: 'JTMABBBJ9P4099271',
+  ZT9T1XG12PT901120: {
+    vin: 'ZT9T1XG12PT901120',
     identifiers: {
-      vin: 'JTMABBBJ9P4099271',
+      vin: 'ZT9T1XG12PT901120',
       variant: '53311S3202301',
       katashiki: 'VJA300L-GNUAZV',
       color: '070',
@@ -2724,7 +2724,7 @@ const mockData = {
       branchIntegrationID: '44',
       branchName: 'SAS - Showroom | Basra',
       invoiceDate: '2024-01-15',
-      invoiceNumber: 11160204,
+      invoiceNumber: 48634151,
     },
     isAuthorized: false,
     warranty: {
@@ -2738,10 +2738,10 @@ const mockData = {
     serviceHistory: [],
   },
 
-  JTMABBBJ9P4099294: {
-    vin: 'JTMABBBJ9P4099294',
+  ZW9V34J06PY398057: {
+    vin: 'ZW9V34J06PY398057',
     identifiers: {
-      vin: 'JTMABBBJ9P4099294',
+      vin: 'ZW9V34J06PY398057',
       variant: '53311S3202301',
       katashiki: 'VJA300L-GNUAZV',
       color: '070',
@@ -2758,7 +2758,7 @@ const mockData = {
       customerAccount: 'R01954',
       customerID: '97120',
       invoiceDate: '2023-09-18',
-      invoiceNumber: 11160168,
+      invoiceNumber: 12444434,
       broker: {
         brokerId: 539,
         brokerName: 'Al-Burchman',

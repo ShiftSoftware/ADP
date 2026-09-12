@@ -1,8 +1,8 @@
 {
-  "JTMAB7BJ0T4224184": {
-    "vin": "JTMAB7BJ0T4224184",
+  "ZW8UWF8J4TJ368365": {
+    "vin": "ZW8UWF8J4TJ368365",
     "identifiers": {
-      "vin": "JTMAB7BJ0T4224184",
+      "vin": "ZW8UWF8J4TJ368365",
       "variant": "VAR001",
       "katashiki": "MXAA52L-ANXGP",
       "color": "1G3",
@@ -17,13 +17,13 @@
       "branchID": "100",
       "branchName": "Main Showroom",
       "invoiceDate": "2026-05-25",
-      "invoiceNumber": "11000191",
+      "invoiceNumber": "72232475",
       "distributor": {
         "companyID": "5",
         "companyName": "Sample Distributor",
         "branchID": "500",
         "branchName": "Distributor HQ",
-        "invoiceNumber": "30018218",
+        "invoiceNumber": "95912921",
         "invoiceDate": "2026-05-20"
       },
       "intermediaries": [
@@ -32,7 +32,7 @@
           "companyName": "Regional Importer",
           "branchID": "700",
           "branchName": "Importer Hub",
-          "invoiceNumber": "70000001",
+          "invoiceNumber": "21109132",
           "invoiceDate": "2026-05-22"
         }
       ],
@@ -66,10 +66,10 @@
     "accessories": [],
     "basicModelCode": "MXAA52"
   },
-  "JTMAB7BJ0T4224900": {
-    "vin": "JTMAB7BJ0T4224900",
+  "ZS8Z4RNS9TC073619": {
+    "vin": "ZS8Z4RNS9TC073619",
     "identifiers": {
-      "vin": "JTMAB7BJ0T4224900",
+      "vin": "ZS8Z4RNS9TC073619",
       "variant": "VAR001",
       "katashiki": "MXAA52L-ANXGP",
       "color": "1G3",
@@ -84,13 +84,13 @@
       "branchID": "500",
       "branchName": "Distributor HQ",
       "invoiceDate": "2026-05-20",
-      "invoiceNumber": "30018300",
+      "invoiceNumber": "12610565",
       "distributor": {
         "companyID": "5",
         "companyName": "Sample Distributor",
         "branchID": "500",
         "branchName": "Distributor HQ",
-        "invoiceNumber": "30018300",
+        "invoiceNumber": "12610565",
         "invoiceDate": "2026-05-20"
       },
       "intermediaries": []

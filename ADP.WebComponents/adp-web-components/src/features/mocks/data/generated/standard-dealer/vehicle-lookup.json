@@ -1,8 +1,8 @@
 {
-  "JTMHX01J8L4198293": {
-    "vin": "JTMHX01J8L4198293",
+  "ZT8P9NAL1LG988010": {
+    "vin": "ZT8P9NAL1LG988010",
     "identifiers": {
-      "vin": "JTMHX01J8L4198293",
+      "vin": "ZT8P9NAL1LG988010",
       "variant": "VAR001",
       "katashiki": "MXAA52L-ANXGP",
       "color": "1G3",
@@ -138,17 +138,17 @@
       {
         "language": "en",
         "name": "English",
-        "url": "https://lookup.example/paint-thickness-certificate/JTMHX01J8L4198293?expires=9999-12-31.23-59-59-9999\u0026token=mock-token\u0026lang=en"
+        "url": "https://lookup.example/paint-thickness-certificate/ZT8P9NAL1LG988010?expires=9999-12-31.23-59-59-9999\u0026token=mock-token\u0026lang=en"
       },
       {
         "language": "ar",
         "name": "\u0627\u0644\u0639\u0631\u0628\u064A\u0629",
-        "url": "https://lookup.example/paint-thickness-certificate/JTMHX01J8L4198293?expires=9999-12-31.23-59-59-9999\u0026token=mock-token\u0026lang=ar"
+        "url": "https://lookup.example/paint-thickness-certificate/ZT8P9NAL1LG988010?expires=9999-12-31.23-59-59-9999\u0026token=mock-token\u0026lang=ar"
       },
       {
         "language": "ku",
         "name": "\u06A9\u0648\u0631\u062F\u06CC",
-        "url": "https://lookup.example/paint-thickness-certificate/JTMHX01J8L4198293?expires=9999-12-31.23-59-59-9999\u0026token=mock-token\u0026lang=ku"
+        "url": "https://lookup.example/paint-thickness-certificate/ZT8P9NAL1LG988010?expires=9999-12-31.23-59-59-9999\u0026token=mock-token\u0026lang=ku"
       }
     ],
     "isAuthorized": true,
@@ -164,7 +164,7 @@
       "extendedWarrantyEndDate": "2029-02-01",
       "extendedWarranties": [
         {
-          "id": "EW-JTMHX01J8L4198293-DISTRIBUTOR",
+          "id": "EW-ZT8P9NAL1LG988010-DISTRIBUTOR",
           "providerCompanyID": "100",
           "providerCompanyLogo": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/badges/badge-4.svg",
           "providerCompanyName": "Sample Distributor",
@@ -172,7 +172,7 @@
           "endDate": "2028-02-01"
         },
         {
-          "id": "EW-JTMHX01J8L4198293-PROVIDER",
+          "id": "EW-ZT8P9NAL1LG988010-PROVIDER",
           "providerCompanyID": "2",
           "providerCompanyLogo": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/badges/badge-2.svg",
           "providerCompanyName": "City Auto",
@@ -353,7 +353,7 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "Sv\u002BWYzKWf3C6T3IMQqu62OY/CZDYRPZJ54p7oLPNKIY=",
+        "signature": "9lfcduX9FGIa0Ak9xjff5ORV\u002BHZWU2\u002BSXPcq1CQLAhA=",
         "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
@@ -384,7 +384,7 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "sz54goQiwx\u002BL/wMmzWJFxcZyrwGVwhgOVgYt\u002BkZSgbU=",
+        "signature": "I3U6t48oQcs2TKv2hc8N3SYBd5VLBButBZr/J/zqWaA=",
         "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
@@ -409,7 +409,7 @@
         "claimable": true,
         "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
         "vehicleInspectionTypeID": "",
-        "signature": "9Bg9FhW6UHOF1\u002BnKwPgvky8chIQuPs3kiv\u002BWReqDWzA=",
+        "signature": "TRxlM\u002B\u002BCah1NKvBgaIDQE\u002BjbsSo6XlUyjgkKNl\u002BaxJw=",
         "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
@@ -439,7 +439,7 @@
         "claimable": true,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "ByAXaIUsiSHhY/Vt\u002BJu5egcKB9vFMMmCmjHWYkFgV4E=",
+        "signature": "WqCDws4TILe7ES/ft\u002BUFo/lygYnQfMbZvOiGP0UWExk=",
         "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
@@ -469,7 +469,7 @@
         "claimable": true,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "oE6CTekZt5Ak6TuStWNCo2if860iU87Dyu05d0s3Gbw=",
+        "signature": "QBeEr7UjqBhiRGNX/JhG01E3CCpJgyj1uwPpYdhXcDA=",
         "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
@@ -509,7 +509,7 @@
         },
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "fzJ0nwwy8BrWffJgRqTCtTVRfGnKI603EgvlY2iK5fo=",
+        "signature": "5E2CdzdxoARNW2Wp7ThFUBo6Kk32Ab7Sz4D/jlj4MjQ=",
         "signatureExpiry": "2026-09-01T00:00:00Z"
       },
       {
@@ -534,7 +534,7 @@
         "maximumMileage": 16000,
         "claimable": true,
         "claimingMethodEnum": 0,
-        "signature": "ozxjGLBtMUJEAOX1h5rExCch8SvByfAsjMYlr/W4VAU=",
+        "signature": "YlSewKeLyVnyAQIks6jkNIUwaJWEhtebZnh/7fvFN50=",
         "signatureExpiry": "2026-09-01T00:00:00Z"
       }
     ],

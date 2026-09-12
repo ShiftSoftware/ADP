@@ -726,8 +726,8 @@ Scenario: Supply-chain possession is reported as awaiting an end-customer sale
   And the distributor company id is 5
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber |
-    | JTMAB7BJ0T4224184 | 2026-05-25  | 5         | 30018218      |
-  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+    | ZW8UWF8J4TJ368365 | 2026-05-25  | 5         | 95912921      |
+  When evaluating warranty dates for "ZW8UWF8J4TJ368365"
   Then the warranty start date is empty
   And the warranty start state is "AwaitingEndCustomerSale"
   And the warranty has no activating broker

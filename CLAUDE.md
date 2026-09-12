@@ -29,7 +29,7 @@ dotnet test ADP.Models/Models.Tests             # NO-OP today - see the note abo
 dotnet test ADP.LookupServices/Lookup.Services.Tests  # Run lookup service unit tests
 dotnet pack ADP.Models/Models --configuration Release  # Pack Models NuGet
 # The generator's two other modes (private inputs live outside this repo; see ADP.TestData/Generator/Anonymisation/):
-dotnet ADP.TestData/Generator/bin/Debug/net10.0/Generator.dll --anonymise=<raw env> --seed-file=<path> --keys=<path> [--vocabulary=<path>] [--to=<dir>]
+dotnet ADP.TestData/Generator/bin/Debug/net10.0/Generator.dll --anonymise=<raw env> --seed-file=<path> --keys=<path> [--vocabulary=<path>] [--to=<dir>] [--mint-panel-images]
 dotnet ADP.TestData/Generator/bin/Debug/net10.0/Generator.dll --verify=<forbidden list> [--scan=<path>;<path>]   # exit 1 on a hit
 ```
 

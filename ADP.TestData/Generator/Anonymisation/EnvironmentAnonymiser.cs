@@ -48,6 +48,15 @@ public sealed class EnvironmentAnonymiser
     private long? distributorCompanyId;
     private HashSet<long> intermediaryCompanyIds = new();
     private string? mintedVin;
+    private int mintedPanelImages;
+
+    /// <summary>
+    /// When set, a paint-thickness panel that stores no images gets two minted image keys in the shape the
+    /// stored keys have (<c>Uploads/paintThickness/&lt;VIN&gt;#&lt;date&gt;/[Side_][Position_]Type_N.jpg</c>),
+    /// so the generator resolves them to the panel's bundled drawing (plan view and close-up). A demo choice:
+    /// a host whose inspections carry no photos would otherwise show a certificate without pictures.
+    /// </summary>
+    public bool MintPanelImages { get; init; }
 
     public EnvironmentAnonymiser(Keyed keyed, string environmentName, Vocabulary vocabulary)
     {
@@ -136,7 +145,8 @@ public sealed class EnvironmentAnonymiser
             families.ToDictionary(f => f.Key, f => f.Value.Count),
             pureMap.Count,
             defaultedFields.OrderBy(f => f.Key, StringComparer.Ordinal).ToList(),
-            mintedVin!);
+            mintedVin!,
+            mintedPanelImages);
     }
 
     private void ReadOptions(JsonObject root)
@@ -633,6 +643,8 @@ public sealed class EnvironmentAnonymiser
                 // An image key names the VIN in its path; the panel it names is what the drawing follows.
                 if (panel["Images"] is JsonArray images)
                     ApplyArrayWith(images, key => rewriting && realVin is not null ? key.Replace(realVin, vin.Get(realVin), StringComparison.OrdinalIgnoreCase) : key);
+                if (MintPanelImages && rewriting && realVin is not null && (panel["Images"] is not JsonArray { Count: > 0 }))
+                    panel["Images"] = MintedPanelImages(vin.Get(realVin), Str(p, "InspectionDate"), panel);
                 Defaults(panel, "Vehicles.*.PaintThicknessInspections[].Panels[]");
             }
 
@@ -641,6 +653,27 @@ public sealed class EnvironmentAnonymiser
         Touch("id");
         Text(p, "Source");
         Defaults(p, "Vehicles.*.PaintThicknessInspections[]");
+    }
+
+    /// <summary>
+    /// Two keys per panel — the odd index is the plan view, the even one the close-up (see
+    /// <see cref="DemoAssets.PaintPanelImageUrl"/>) — under the synthetic VIN and the inspection's date, the way
+    /// inspection tools name their uploads (<c>Left_Front_Fender_1.jpg</c>, <c>Hood_2.jpg</c>). Deterministic:
+    /// a function of the row alone, so regenerated environments stay byte-identical.
+    /// </summary>
+    private JsonArray MintedPanelImages(string syntheticVin, string? inspectionDate, JsonObject panel)
+    {
+        var stamp = DateTime.TryParse(inspectionDate, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var date)
+            ? date.ToString("yyyy-MM-dd HH-mm-ss", CultureInfo.InvariantCulture)
+            : "undated";
+        var stem = string.Join("_", new[] { Str(panel, "PanelSide"), Str(panel, "PanelPosition"), Str(panel, "PanelType") }
+            .Where(t => !string.IsNullOrWhiteSpace(t))
+            .Select(t => Regex.Replace(t!, "(?<=[a-z])(?=[A-Z])", "_")));   // TailGate → Tail_Gate
+        mintedPanelImages += 2;
+
+        return new JsonArray(
+            JsonValue.Create($"Uploads/paintThickness/{syntheticVin}#{stamp}/{stem}_1.jpg"),
+            JsonValue.Create($"Uploads/paintThickness/{syntheticVin}#{stamp}/{stem}_2.jpg"));
     }
 
     private void Accessory(JsonObject a)
@@ -1856,4 +1889,5 @@ public sealed record AnonymisationResult(
     IReadOnlyDictionary<string, int> FamilyCounts,
     int DerivedCount,
     IReadOnlyList<KeyValuePair<string, int>> DefaultedFields,
-    string MintedVin);
+    string MintedVin,
+    int MintedPanelImages);

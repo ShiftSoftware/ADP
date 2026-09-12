@@ -9,7 +9,7 @@ The `<vehicle-paint-thickness>` component displays paint thickness inspection da
 
   <p style="margin-bottom:8px">
     <strong>Try a VIN:</strong>
-    <button onclick="document.getElementById('demo-paint-thickness').fetchVin('JTMHX01J8L4198293')" style="cursor:pointer;padding:4px 12px;margin:4px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5">JTMHX01J8L4198293</button>
+    <button onclick="document.getElementById('demo-paint-thickness').fetchVin('ZT8P9NAL1LG988010')" style="cursor:pointer;padding:4px 12px;margin:4px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5">ZT8P9NAL1LG988010</button>
   </p>
 
   <vehicle-paint-thickness id="demo-paint-thickness" language="en"></vehicle-paint-thickness>

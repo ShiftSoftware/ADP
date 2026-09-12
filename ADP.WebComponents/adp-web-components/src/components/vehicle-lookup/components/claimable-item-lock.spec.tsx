@@ -11,7 +11,7 @@ import { ClaimableItemPopover } from './claimable-item-popover';
 
 const locale = { ...claimableItemsLocale, sharedLocales: sharedLocale } as any;
 
-const serviceItems = (standardDealerVehicleLookup as any)['JTMHX01J8L4198293'].serviceItems as VehicleServiceItemDTO[];
+const serviceItems = (standardDealerVehicleLookup as any)['ZT8P9NAL1LG988010'].serviceItems as VehicleServiceItemDTO[];
 
 /**
  * The locked reward the generator produces: one prerequisite performed, one outstanding. Read from

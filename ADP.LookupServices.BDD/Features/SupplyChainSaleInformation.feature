@@ -11,12 +11,12 @@ Scenario: Distributor leg is surfaced beside the dealer sale (multi-entry)
   And company 10 is named "Sample Dealer"
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber |
-    | JTMAB7BJ0T4224184 | 2026-05-20  | 5         | 30018218      |
-    | JTMAB7BJ0T4224184 | 2026-05-25  | 10        | 11000191      |
-  When evaluating sale information for "JTMAB7BJ0T4224184" with language "en"
+    | ZW8UWF8J4TJ368365 | 2026-05-20  | 5         | 95912921      |
+    | ZW8UWF8J4TJ368365 | 2026-05-25  | 10        | 72232475      |
+  When evaluating sale information for "ZW8UWF8J4TJ368365" with language "en"
   Then the sale company is "Sample Dealer"
   And the distributor is "Sample Distributor"
-  And the distributor invoice number is "30018218"
+  And the distributor invoice number is "95912921"
   And the distributor invoice date is "2026-05-20"
   And there are no intermediaries
 
@@ -29,16 +29,16 @@ Scenario: Distributor and two intermediaries are surfaced earliest-first (multi-
   And company 10 is named "Sample Dealer"
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber |
-    | JTMAB7BJ0T4224184 | 2026-05-10  | 5         | 30018218      |
-    | JTMAB7BJ0T4224184 | 2026-05-15  | 8         | 80000002      |
-    | JTMAB7BJ0T4224184 | 2026-05-12  | 7         | 70000001      |
-    | JTMAB7BJ0T4224184 | 2026-05-25  | 10        | 11000191      |
-  When evaluating sale information for "JTMAB7BJ0T4224184" with language "en"
+    | ZW8UWF8J4TJ368365 | 2026-05-10  | 5         | 95912921      |
+    | ZW8UWF8J4TJ368365 | 2026-05-15  | 8         | 80000002      |
+    | ZW8UWF8J4TJ368365 | 2026-05-12  | 7         | 21109132      |
+    | ZW8UWF8J4TJ368365 | 2026-05-25  | 10        | 72232475      |
+  When evaluating sale information for "ZW8UWF8J4TJ368365" with language "en"
   Then the sale company is "Sample Dealer"
   And the distributor is "Sample Distributor"
   And the intermediaries count is 2
   And intermediary 1 is "First Importer"
-  And intermediary 1 invoice number is "70000001"
+  And intermediary 1 invoice number is "21109132"
   And intermediary 2 is "Second Importer"
   And intermediary 2 invoice number is "80000002"
 
@@ -50,10 +50,10 @@ Scenario: A company configured as both distributor and intermediary is surfaced 
   And company 10 is named "Selling Dealer"
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber |
-    | JTMAB7BJ0T4224184 | 2026-05-10  | 5         | DIST-1        |
-    | JTMAB7BJ0T4224184 | 2026-05-12  | 7         | INT-1         |
-    | JTMAB7BJ0T4224184 | 2026-05-25  | 10        | DEALER-1      |
-  When evaluating sale information for "JTMAB7BJ0T4224184" with language "en"
+    | ZW8UWF8J4TJ368365 | 2026-05-10  | 5         | DIST-1        |
+    | ZW8UWF8J4TJ368365 | 2026-05-12  | 7         | INT-1         |
+    | ZW8UWF8J4TJ368365 | 2026-05-25  | 10        | DEALER-1      |
+  When evaluating sale information for "ZW8UWF8J4TJ368365" with language "en"
   Then the sale company is "Selling Dealer"
   And the distributor is "Dual Role Co"
   And the intermediaries count is 1
@@ -126,10 +126,10 @@ Scenario: A distributor that sold straight to a customer is still reported as th
   And company 5 is named "Sample Distributor"
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber | AccountNumber  |
-    | JTMAB7BJ0T4224184 | 2024-11-01  | 5         | 20024815      | DIST-DIRECT-01 |
-  When evaluating sale information for "JTMAB7BJ0T4224184" with language "en"
+    | ZW8UWF8J4TJ368365 | 2024-11-01  | 5         | 54345067      | DIST-DIRECT-01 |
+  When evaluating sale information for "ZW8UWF8J4TJ368365" with language "en"
   Then the sale company is "Sample Distributor"
   And the distributor is "Sample Distributor"
-  And the distributor invoice number is "20024815"
+  And the distributor invoice number is "54345067"
   And the distributor invoice date is "2024-11-01"
   And there are no intermediaries

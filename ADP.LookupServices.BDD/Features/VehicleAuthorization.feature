@@ -7,8 +7,8 @@ Feature: Vehicle Authorization
 
 Scenario: Authorized from dealer stock (environment)
 	Given the "standard-dealer" environment is loaded
-	And loading vehicle "JTMHX01J8L4198293" from the environment
-	When Checking "JTMHX01J8L4198293"
+	And loading vehicle "ZT8P9NAL1LG988010" from the environment
+	When Checking "ZT8P9NAL1LG988010"
 	Then The Vehicle is considered Authorized
 
 Scenario: Unauthorized vehicle not in any source (environment)

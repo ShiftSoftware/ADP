@@ -10,7 +10,7 @@ Alongside the VIN, there are other information that identify a group of vehicles
 
 #### Overview
 
-VIN (Vehicle Identifiction Number) is a 17 digit string that's used to uniquely identify a vehicle (Example: **MR0AX8CDXP4446478**).  
+VIN (Vehicle Identifiction Number) is a 17 digit string that's used to uniquely identify a vehicle (Example: **ZV9ZYGN11PN811492**).  
 VINs consists of 3 main components:   
 
 1. **WMI** (3 Characters) which is the World manufacturer identifier. (Example: **MR0**)

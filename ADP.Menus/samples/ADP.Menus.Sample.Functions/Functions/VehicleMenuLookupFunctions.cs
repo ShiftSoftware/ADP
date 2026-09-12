@@ -44,8 +44,8 @@ public class VehicleMenuLookupFunctions
     /// A vehicle lookup with the model's service menu attached.
     ///
     /// <code>
-    /// GET api/vehicle/JTMHX01J8L4198293
-    /// GET api/vehicle/JTMHX01J8L4198293?language=ar&amp;countryId=2
+    /// GET api/vehicle/ZT8P9NAL1LG988010
+    /// GET api/vehicle/ZT8P9NAL1LG988010?language=ar&amp;countryId=2
     /// </code>
     ///
     /// <para>The response is trimmed to the join and the menu — a real host returns the whole

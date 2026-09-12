@@ -20,13 +20,13 @@ using ShiftSoftware.ADP.Models.Vehicle;
 //
 // Two further modes share the argument parsing and run instead of the generation:
 //   --anonymise=<raw environment> --seed=<text>|--seed-file=<path> --keys=<path> [--vocabulary=<path>]
-//                [--name=<env>] [--to=<dir>]   — a real estate's environment → a public one (AnonymiserCommand)
+//                [--name=<env>] [--to=<dir>] [--mint-panel-images]   — a real estate's environment → a public one (AnonymiserCommand)
 //   --verify=<forbidden list> [--scan=<path>;<path>…]   — fail on any listed string in environment / fixture
 //                JSON; scans the environments and the fixture output trees when --scan is omitted.
 var arguments = args
     .Select(a => a.Split('=', 2))
-    .Where(a => a.Length == 2 && a[0].StartsWith("--"))
-    .ToDictionary(a => a[0], a => a[1], StringComparer.Ordinal);
+    .Where(a => a[0].StartsWith("--"))
+    .ToDictionary(a => a[0], a => a.Length == 2 ? a[1] : string.Empty, StringComparer.Ordinal);   // a bare --flag is present with an empty value
 
 var repoRoot = FindRepoRoot(AppContext.BaseDirectory);
 var environmentsDir = arguments.TryGetValue("--environments", out var environmentsOverride)

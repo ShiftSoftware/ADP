@@ -9,6 +9,8 @@ namespace ADP.TestData.Generator.Anonymisation;
 /// <item><c>--vocabulary=&lt;path&gt;</c> — optional; the private free-text word list (<see cref="Vocabulary"/>).</item>
 /// <item><c>--name=&lt;environment&gt;</c> — optional; the output name, default the input's file stem without a <c>.raw</c> suffix.</item>
 /// <item><c>--to=&lt;dir&gt;</c> — optional; the output directory, default <c>ADP.TestData/environments</c>.</item>
+/// <item><c>--mint-panel-images</c> — optional; give every paint-thickness panel that stores no images two minted keys, so the
+/// generator resolves them to the bundled panel drawings (a demo choice for a host whose inspections carry no photos).</item>
 /// </list>
 /// The console reports counts and paths only — never a real value.
 /// </summary>
@@ -37,11 +39,14 @@ public static class AnonymiserCommand
 
         Console.WriteLine($"Anonymising '{Path.GetFileName(rawPath)}' as environment '{name}' (seed {keyed.Fingerprint}, {vocabulary.Terms.Count} vocabulary terms)");
 
-        var result = new EnvironmentAnonymiser(keyed, name, vocabulary).Anonymise(rawPath, outputPath, Path.GetFullPath(keysPath));
+        var result = new EnvironmentAnonymiser(keyed, name, vocabulary) { MintPanelImages = arguments.ContainsKey("--mint-panel-images") }
+            .Anonymise(rawPath, outputPath, Path.GetFullPath(keysPath));
 
         Console.WriteLine($"  families: " + string.Join(", ", result.FamilyCounts.Where(f => f.Value > 0).Select(f => $"{f.Key} {f.Value}")));
         Console.WriteLine($"  derived values (names, phones, model codes, ids): {result.DerivedCount}");
         Console.WriteLine($"  minted unauthorized VIN: {result.MintedVin}");
+        if (result.MintedPanelImages > 0)
+            Console.WriteLine($"  minted paint-panel image keys: {result.MintedPanelImages}");
 
         if (result.DefaultedFields.Count > 0)
         {

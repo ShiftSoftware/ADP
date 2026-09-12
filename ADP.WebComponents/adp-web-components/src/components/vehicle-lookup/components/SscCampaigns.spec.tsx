@@ -77,7 +77,7 @@ const fixtures = standardDealerVehicleLookup as unknown as Record<string, { isAu
 const unknownVehicle = fixtures['UNKNOWN_VIN_12345'];
 
 /** The generated fixture of an authorized vehicle with one open and one repaired campaign. */
-const authorizedVehicle = fixtures['JTMHX01J8L4198293'];
+const authorizedVehicle = fixtures['ZT8P9NAL1LG988010'];
 
 const state = (overrides: Partial<Parameters<typeof panelVerdict>[0]>) => ({
   locale: sscLocale,

@@ -158,7 +158,7 @@ Scenario: The certificate resolves exterior and interior color descriptions thro
 
 Scenario: Certificate produced end-to-end from the standard-dealer environment
   Given the "standard-dealer" environment is loaded
-  And loading vehicle "JTMHX01J8L4198293" from the environment
+  And loading vehicle "ZT8P9NAL1LG988010" from the environment
   When evaluating the paint thickness certificate with language "en"
   Then a paint thickness certificate is produced
   And the certificate is based on the inspection on "2024-01-10"
@@ -169,7 +169,7 @@ Scenario: Certificate produced end-to-end from the standard-dealer environment
 
 Scenario: The availability flag is true when the environment vehicle qualifies
   Given the "standard-dealer" environment is loaded
-  And loading vehicle "JTMHX01J8L4198293" from the environment
+  And loading vehicle "ZT8P9NAL1LG988010" from the environment
   When checking paint thickness certificate availability
   Then the paint thickness certificate is reported as available
 

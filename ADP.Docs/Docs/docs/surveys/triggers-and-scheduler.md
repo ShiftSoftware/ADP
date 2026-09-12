@@ -104,7 +104,7 @@ Authorization: Bearer …
       "wip": "40956",
       "dealerId": "1",
       "jobType": "GR",
-      "VIN": "JTMABBBJ2N4024400",
+      "VIN": "ZW8P8DSL2NL418855",
       "CustomerName": "Kadhem Owaid"
     },
     "recipient": {
@@ -166,7 +166,7 @@ For the filter to evaluate against an event payload, the service flattens the ca
 | `candidate.wip` | `"40956"` |
 | `candidate.dealerId` | `"1"` |
 | `candidate.jobType` | `"GR"` |
-| `candidate.VIN` | `"JTMABBBJ2N4024400"` |
+| `candidate.VIN` | `"ZW8P8DSL2NL418855"` |
 | `candidate.CustomerName` | `"Kadhem Owaid"` |
 
 The same `LogicEvaluator` that drives navigation rules then runs the filter against this dict. The filter `candidate.jobType == "GR"` returns `true`. (If `jobType` had been `"PM"`, the filter would have returned `false` and the loop would `continue` — no instance created.)

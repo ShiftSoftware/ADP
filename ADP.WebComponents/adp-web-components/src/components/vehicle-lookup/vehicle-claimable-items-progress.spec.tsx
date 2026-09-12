@@ -18,7 +18,7 @@ import vehicleLookupMocks from '../../features/mocks/data/generated/standard-dea
  */
 
 /** The mock the generator produces: two claimed items, then the next one waiting to be claimed. */
-const lookup = (vehicleLookupMocks as any)['JTMHX01J8L4198293'];
+const lookup = (vehicleLookupMocks as any)['ZT8P9NAL1LG988010'];
 
 /** SI-003 — the first item that is pending and not locked, so the lane should stop at it. */
 const FIRST_AWAITING_INDEX = 2;

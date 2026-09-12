@@ -27,7 +27,7 @@ const UNKNOWN_VIN = 'UNKNOWN_VIN_12345';
 /** Authorized, in the records, and clear: no campaign affects it. */
 const CLEAR_VIN = 'JTMW43FV10D123456';
 /** Authorized with one open and one repaired campaign. */
-const CAMPAIGN_VIN = 'JTMHX01J8L4198293';
+const CAMPAIGN_VIN = 'ZT8P9NAL1LG988010';
 
 const MANUFACTURER_ANSWERS = [sscLocale.recallExists, sscLocale.noRecall, sscLocale.noApplicableVehicleFound];
 

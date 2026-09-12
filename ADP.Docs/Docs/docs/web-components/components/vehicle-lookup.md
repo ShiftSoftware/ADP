@@ -98,7 +98,7 @@ other children, so switching tabs is instant and does not re-fetch.
 
   <div class="vl-demo-vins" id="vl-demo-vins">
     <span class="vl-demo-vins-label">Try a VIN:</span>
-    <button class="vl-demo-chip" data-vin="JTMHX01J8L4198293" disabled>JTMHX01J8L4198293</button>
+    <button class="vl-demo-chip" data-vin="ZT8P9NAL1LG988010" disabled>ZT8P9NAL1LG988010</button>
     <button class="vl-demo-chip" data-vin="JTMW43FV10D123456" disabled>JTMW43FV10D123456</button>
     <span class="vl-demo-status" id="vl-demo-status">Loading components&hellip;</span>
   </div>
@@ -116,7 +116,7 @@ other children, so switching tabs is instant and does not re-fetch.
       var tabs = document.querySelectorAll('#vl-demo-tabs .vl-demo-tab');
       var chips = document.querySelectorAll('#vl-demo-vins .vl-demo-chip');
       var status = document.getElementById('vl-demo-status');
-      var defaultVin = 'JTMHX01J8L4198293';
+      var defaultVin = 'ZT8P9NAL1LG988010';
       var mockData = null;
 
       function setActive(tag) {
@@ -237,7 +237,7 @@ updates `activeElement` on click. A single VIN search populates all children.
 
 <script>
   const lookup = document.getElementById('lookup');
-  lookup.fetchVin('JTMHX01J8L4198293');
+  lookup.fetchVin('ZT8P9NAL1LG988010');
 </script>
 ```
 

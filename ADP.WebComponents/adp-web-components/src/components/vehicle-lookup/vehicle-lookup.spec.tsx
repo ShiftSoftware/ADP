@@ -15,7 +15,7 @@ import vehicleLookupMocks from '../../features/mocks/data/generated/standard-dea
  * skipped, with the VIN, so it can say so and offer to run the check.
  */
 
-const CAMPAIGN_VIN = 'JTMHX01J8L4198293';
+const CAMPAIGN_VIN = 'ZT8P9NAL1LG988010';
 
 const response = (vehicleLookupMocks as Record<string, any>)[CAMPAIGN_VIN];
 

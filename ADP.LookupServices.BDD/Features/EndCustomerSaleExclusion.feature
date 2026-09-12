@@ -20,18 +20,18 @@ Scenario: The dealer entry is selected over the distributor entry on the same in
   Given the distributor company id is 5
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber |
-    | JTMAB7BJ0T4224184 | 2026-05-25  | 5         | 30018218      |
-    | JTMAB7BJ0T4224184 | 2026-05-25  | 10        | 11000191      |
-  When Checking "JTMAB7BJ0T4224184"
-  Then the selected vehicle has invoice number "11000191"
+    | ZW8UWF8J4TJ368365 | 2026-05-25  | 5         | 95912921      |
+    | ZW8UWF8J4TJ368365 | 2026-05-25  | 10        | 72232475      |
+  When Checking "ZW8UWF8J4TJ368365"
+  Then the selected vehicle has invoice number "72232475"
 
 Scenario: With no distributor configured the latest-invoiced entry still wins
   Given vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber |
-    | JTMAB7BJ0T4224184 | 2026-05-30  | 5         | 30018218      |
-    | JTMAB7BJ0T4224184 | 2026-05-25  | 10        | 11000191      |
-  When Checking "JTMAB7BJ0T4224184"
-  Then the selected vehicle has invoice number "30018218"
+    | ZW8UWF8J4TJ368365 | 2026-05-30  | 5         | 95912921      |
+    | ZW8UWF8J4TJ368365 | 2026-05-25  | 10        | 72232475      |
+  When Checking "ZW8UWF8J4TJ368365"
+  Then the selected vehicle has invoice number "95912921"
 
 # --- Warranty / free-service start: never seeded by a distributor/intermediary invoice ---
 
@@ -40,9 +40,9 @@ Scenario: Distributor invoiced later than the dealer still anchors warranty on t
   And the distributor company id is 5
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber |
-    | JTMAB7BJ0T4224184 | 2026-05-30  | 5         | 30018218      |
-    | JTMAB7BJ0T4224184 | 2026-05-25  | 10        | 11000191      |
-  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+    | ZW8UWF8J4TJ368365 | 2026-05-30  | 5         | 95912921      |
+    | ZW8UWF8J4TJ368365 | 2026-05-25  | 10        | 72232475      |
+  When evaluating warranty dates for "ZW8UWF8J4TJ368365"
   Then the warranty start date is "2026-05-25"
   And the free service start date is "2026-05-25"
 
@@ -51,8 +51,8 @@ Scenario: Sync delay leaves the warranty start empty while only the distributor 
   And the distributor company id is 5
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber |
-    | JTMAB7BJ0T4224184 | 2026-05-25  | 5         | 30018218      |
-  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+    | ZW8UWF8J4TJ368365 | 2026-05-25  | 5         | 95912921      |
+  When evaluating warranty dates for "ZW8UWF8J4TJ368365"
   Then the warranty start date is empty
   And the free service start date is empty
 
@@ -60,9 +60,9 @@ Scenario: The vehicle is still found during sync delay (distributor entry anchor
   Given the distributor company id is 5
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber |
-    | JTMAB7BJ0T4224184 | 2026-05-25  | 5         | 30018218      |
-  When Checking "JTMAB7BJ0T4224184"
-  Then the selected vehicle has invoice number "30018218"
+    | ZW8UWF8J4TJ368365 | 2026-05-25  | 5         | 95912921      |
+  When Checking "ZW8UWF8J4TJ368365"
+  Then the selected vehicle has invoice number "95912921"
 
 # --- Intermediary companies follow the same rule (and there can be more than one) ---
 
@@ -72,11 +72,11 @@ Scenario: An intermediary entry is excluded just like the distributor
   And intermediary companies are "7"
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber |
-    | JTMAB7BJ0T4224184 | 2026-05-30  | 7         | 70000001      |
-    | JTMAB7BJ0T4224184 | 2026-05-25  | 10        | 11000191      |
-  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+    | ZW8UWF8J4TJ368365 | 2026-05-30  | 7         | 21109132      |
+    | ZW8UWF8J4TJ368365 | 2026-05-25  | 10        | 72232475      |
+  When evaluating warranty dates for "ZW8UWF8J4TJ368365"
   Then the warranty start date is "2026-05-25"
-  And the selected vehicle has invoice number "11000191"
+  And the selected vehicle has invoice number "72232475"
 
 Scenario: With only distributor and intermediary entries the warranty start stays empty
   Given warranty start date defaults to invoice date
@@ -84,9 +84,9 @@ Scenario: With only distributor and intermediary entries the warranty start stay
   And intermediary companies are "7, 8"
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber |
-    | JTMAB7BJ0T4224184 | 2026-05-20  | 7         | 70000001      |
-    | JTMAB7BJ0T4224184 | 2026-05-28  | 8         | 80000002      |
-  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+    | ZW8UWF8J4TJ368365 | 2026-05-20  | 7         | 21109132      |
+    | ZW8UWF8J4TJ368365 | 2026-05-28  | 8         | 80000002      |
+  When evaluating warranty dates for "ZW8UWF8J4TJ368365"
   Then the warranty start date is empty
 
 # --- Direct sale to an end customer: the entry-level marker that overrides the company layer ---
@@ -101,11 +101,11 @@ Scenario: A direct distributor-to-customer sale anchors warranty like a dealer s
   And company 5 has direct end-customer sale account numbers "DIST-DIRECT-01"
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber | AccountNumber  |
-    | JTMAB7BJ0T4224184 | 2024-11-01  | 5         | 20024815      | DIST-DIRECT-01 |
-  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+    | ZW8UWF8J4TJ368365 | 2024-11-01  | 5         | 54345067      | DIST-DIRECT-01 |
+  When evaluating warranty dates for "ZW8UWF8J4TJ368365"
   Then the warranty start date is "2024-11-01"
   And the free service start date is "2024-11-01"
-  And the selected vehicle has invoice number "20024815"
+  And the selected vehicle has invoice number "54345067"
 
 Scenario: A distributor entry on any other account stays excluded
   Given warranty start date defaults to invoice date
@@ -113,8 +113,8 @@ Scenario: A distributor entry on any other account stays excluded
   And company 5 has direct end-customer sale account numbers "DIST-DIRECT-01"
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber | AccountNumber |
-    | JTMAB7BJ0T4224184 | 2024-11-01  | 5         | 20024815      | DEALER-SHIP-9 |
-  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+    | ZW8UWF8J4TJ368365 | 2024-11-01  | 5         | 54345067      | DEALER-SHIP-9 |
+  When evaluating warranty dates for "ZW8UWF8J4TJ368365"
   Then the warranty start date is empty
 
 Scenario: With no direct-sale accounts configured the distributor direct sale stays excluded
@@ -122,8 +122,8 @@ Scenario: With no direct-sale accounts configured the distributor direct sale st
   And the distributor company id is 5
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber | AccountNumber  |
-    | JTMAB7BJ0T4224184 | 2024-11-01  | 5         | 20024815      | DIST-DIRECT-01 |
-  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+    | ZW8UWF8J4TJ368365 | 2024-11-01  | 5         | 54345067      | DIST-DIRECT-01 |
+  When evaluating warranty dates for "ZW8UWF8J4TJ368365"
   Then the warranty start date is empty
 
 Scenario: A real dealer sale still wins over a direct distributor sale on a later invoice
@@ -132,11 +132,11 @@ Scenario: A real dealer sale still wins over a direct distributor sale on a late
   And company 5 has direct end-customer sale account numbers "DIST-DIRECT-01"
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber | AccountNumber  |
-    | JTMAB7BJ0T4224184 | 2024-11-01  | 5         | 20024815      | DIST-DIRECT-01 |
-    | JTMAB7BJ0T4224184 | 2024-11-10  | 10        | 11000191      |                |
-  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+    | ZW8UWF8J4TJ368365 | 2024-11-01  | 5         | 54345067      | DIST-DIRECT-01 |
+    | ZW8UWF8J4TJ368365 | 2024-11-10  | 10        | 72232475      |                |
+  When evaluating warranty dates for "ZW8UWF8J4TJ368365"
   Then the warranty start date is "2024-11-10"
-  And the selected vehicle has invoice number "11000191"
+  And the selected vehicle has invoice number "72232475"
 
 # An account number only means something within the company that issued it, so the accounts are scoped per
 # company: the same number can be in use elsewhere for an unrelated purpose and must not mark a sale there.
@@ -148,8 +148,8 @@ Scenario: The same account number configured for one company does not mark anoth
   And company 5 has direct end-customer sale account numbers "SHARED-ACC"
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber | AccountNumber |
-    | JTMAB7BJ0T4224184 | 2024-11-01  | 7         | 70000001      | SHARED-ACC    |
-  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+    | ZW8UWF8J4TJ368365 | 2024-11-01  | 7         | 21109132      | SHARED-ACC    |
+  When evaluating warranty dates for "ZW8UWF8J4TJ368365"
   Then the warranty start date is empty
 
 # The marker overrides the company layer, so it is not distributor-specific: an intermediary selling
@@ -162,7 +162,7 @@ Scenario: An intermediary selling straight to a customer is an end-customer sale
   And company 7 has direct end-customer sale account numbers "DIRECT-ACC-07"
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | InvoiceNumber | AccountNumber |
-    | JTMAB7BJ0T4224184 | 2024-11-01  | 7         | 70000001      | DIRECT-ACC-07 |
-  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+    | ZW8UWF8J4TJ368365 | 2024-11-01  | 7         | 21109132      | DIRECT-ACC-07 |
+  When evaluating warranty dates for "ZW8UWF8J4TJ368365"
   Then the warranty start date is "2024-11-01"
-  And the selected vehicle has invoice number "70000001"
+  And the selected vehicle has invoice number "21109132"

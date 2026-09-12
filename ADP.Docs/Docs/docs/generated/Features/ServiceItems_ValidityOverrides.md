@@ -272,7 +272,7 @@ Scenario: A configured override for another VIN leaves this vehicle alone
     | SI-001        | Oil change | 1       | 6               | 10000          |
   And LookupOptions has free service item validity overrides:
     | VIN               | ServiceItemID | ExpiresAt  |
-    | JTDBR42E20J023689 | SI-001        | 2027-06-30 |
+    | ZT8YKFNP60E550764 | SI-001        | 2027-06-30 |
   And the free service start date is "2026-01-15"
   When evaluating service items for "1FDKF37GXVEB34368" with language "en"
   Then service item "SI-001" has expiration "2026-07-15"

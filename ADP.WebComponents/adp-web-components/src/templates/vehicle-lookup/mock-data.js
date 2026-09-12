@@ -37,9 +37,9 @@ const sampleInspections = [
         panelSide: 'Left',
         panelPosition: 'Front',
         images: [
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Left_Front_Fender_1.jpg',
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Left_Front_Fender_2.jpg',
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Left_Front_Fender_3.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Left_Front_Fender_1.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Left_Front_Fender_2.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Left_Front_Fender_3.jpg',
         ],
       },
       {
@@ -48,9 +48,9 @@ const sampleInspections = [
         panelSide: 'Right',
         panelPosition: 'Front',
         images: [
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Right_Front_Fender_1.jpg',
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Right_Front_Fender_2.jpg',
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Right_Front_Fender_3.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Right_Front_Fender_1.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Right_Front_Fender_2.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Right_Front_Fender_3.jpg',
         ],
       },
       {
@@ -59,8 +59,8 @@ const sampleInspections = [
         panelSide: 'Left',
         panelPosition: 'Front',
         images: [
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Left_Front_Door_1.jpg',
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Left_Front_Door_2.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Left_Front_Door_1.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Left_Front_Door_2.jpg',
         ],
       },
       {
@@ -69,8 +69,8 @@ const sampleInspections = [
         panelSide: 'Right',
         panelPosition: 'Front',
         images: [
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Right_Front_Door_1.jpg',
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Right_Front_Door_2.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Right_Front_Door_1.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Right_Front_Door_2.jpg',
         ],
       },
       {
@@ -79,8 +79,8 @@ const sampleInspections = [
         panelSide: 'Left',
         panelPosition: 'Rear',
         images: [
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Left_Rear_Door_1.jpg',
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Left_Rear_Door_2.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Left_Rear_Door_1.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Left_Rear_Door_2.jpg',
         ],
       },
       {
@@ -89,8 +89,8 @@ const sampleInspections = [
         panelSide: 'Right',
         panelPosition: 'Rear',
         images: [
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Right_Rear_Door_1.jpg',
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Right_Rear_Door_2.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Right_Rear_Door_1.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Right_Rear_Door_2.jpg',
         ],
       },
       {
@@ -113,10 +113,10 @@ const sampleInspections = [
         panelSide: null,
         panelPosition: 'Rear',
         images: [
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Tail_Gate_1.jpg',
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Tail_Gate_2.jpg',
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Tail_Gate_3.jpg',
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Tail_Gate_4.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Tail_Gate_1.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Tail_Gate_2.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Tail_Gate_3.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Tail_Gate_4.jpg',
         ],
       },
       {
@@ -132,8 +132,8 @@ const sampleInspections = [
         panelSide: null,
         panelPosition: 'Front',
         images: [
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Hood_1.jpg',
-          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Hood_2.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Hood_1.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZV82G02V1SF881097%864588-10-12%2304-01-18/Hood_2.jpg',
         ],
       },
     ],
@@ -168,7 +168,7 @@ const singleInspection = [
 ];
 
 const mockData = {
-  'JTMHX01J8L4198293': {
+  'ZT8P9NAL1LG988010': {
     saleInformation: {
       countryID: null,
       countryName: null,
@@ -177,10 +177,10 @@ const mockData = {
       branchID: null,
       branchName: 'SAS | Erbil - Showroom',
       customerAccountNumber: 'R02599',
-      customerID: '129345',
+      customerID: '232452',
       invoiceDate: '2025-09-30',
       warrantyActivationDate: null,
-      invoiceNumber: '70003949',
+      invoiceNumber: '63684083',
       broker: {
         brokerID: 825,
         brokerName: 'Nwekar Auto',
@@ -197,9 +197,9 @@ const mockData = {
         description: '',
       },
     ],
-    vin: 'JTMHX01J8L4198293',
+    vin: 'ZT8P9NAL1LG988010',
     identifiers: {
-      vin: 'JTMHX01J8L4198293',
+      vin: 'ZT8P9NAL1LG988010',
       variant: null,
       katashiki: null,
       color: null,
@@ -221,7 +221,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51456604',
+        invoiceNumber: '69671969',
         jobNumber: 13681,
         laborLines: [
           {
@@ -279,7 +279,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51447340',
+        invoiceNumber: '24377840',
         jobNumber: 52446,
         laborLines: [
           {
@@ -331,7 +331,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51441539',
+        invoiceNumber: '82854891',
         jobNumber: 41940,
         laborLines: [
           {
@@ -383,7 +383,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51431492',
+        invoiceNumber: '96276714',
         jobNumber: 22296,
         laborLines: [
           {
@@ -421,7 +421,7 @@ const mockData = {
     serviceItems: null,
     basicModelCode: null,
   },
-  'JTMHX01J8L4198294': {
+  'ZT919TCX9L8082249': {
     saleInformation: {
       countryID: null,
       countryName: null,
@@ -433,7 +433,7 @@ const mockData = {
       customerID: '1180',
       invoiceDate: '2013-03-06',
       warrantyActivationDate: null,
-      invoiceNumber: '11100040',
+      invoiceNumber: '20111416',
       broker: null,
       regionID: null,
       endCustomer: {
@@ -446,9 +446,9 @@ const mockData = {
     accessories: [],
     paintThickness: {},
     paintThicknessInspections: [],
-    vin: 'JTMHX01J8L4198294',
+    vin: 'ZT919TCX9L8082249',
     identifiers: {
-      vin: 'JTMHX01J8L4198294',
+      vin: 'ZT919TCX9L8082249',
       variant: null,
       katashiki: null,
       color: null,
@@ -470,7 +470,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51456604',
+        invoiceNumber: '69671969',
         jobNumber: 13681,
         laborLines: [
           {
@@ -528,7 +528,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51447340',
+        invoiceNumber: '24377840',
         jobNumber: 52446,
         laborLines: [
           {
@@ -580,7 +580,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51441539',
+        invoiceNumber: '82854891',
         jobNumber: 41940,
         laborLines: [
           {
@@ -632,7 +632,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51431492',
+        invoiceNumber: '96276714',
         jobNumber: 22296,
         laborLines: [
           {
@@ -670,7 +670,7 @@ const mockData = {
     serviceItems: [],
     basicModelCode: null,
   },
-  'JTMHX01J8L4198295': {
+  'ZT9EYK5P7L5227866': {
     saleInformation: {
       countryID: null,
       countryName: null,
@@ -679,10 +679,10 @@ const mockData = {
       branchID: null,
       branchName: 'SAS | Erbil - Showroom',
       customerAccountNumber: 'R02599',
-      customerID: '129345',
+      customerID: '232452',
       invoiceDate: '2025-09-30',
       warrantyActivationDate: null,
-      invoiceNumber: '70003949',
+      invoiceNumber: '63684083',
       broker: {
         brokerID: 825,
         brokerName: 'Nwekar Auto',
@@ -697,9 +697,9 @@ const mockData = {
       parts: [],
     },
     paintThicknessInspections: [],
-    vin: 'JTMHX01J8L4198295',
+    vin: 'ZT9EYK5P7L5227866',
     identifiers: {
-      vin: 'JTMHX01J8L4198295',
+      vin: 'ZT9EYK5P7L5227866',
       variant: null,
       katashiki: null,
       color: null,
@@ -721,7 +721,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51456604',
+        invoiceNumber: '69671969',
         jobNumber: 13681,
         laborLines: [
           {
@@ -779,7 +779,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51447340',
+        invoiceNumber: '24377840',
         jobNumber: 52446,
         laborLines: [
           {
@@ -831,7 +831,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51441539',
+        invoiceNumber: '82854891',
         jobNumber: 41940,
         laborLines: [
           {
@@ -883,7 +883,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51431492',
+        invoiceNumber: '96276714',
         jobNumber: 22296,
         laborLines: [
           {
@@ -973,7 +973,7 @@ const mockData = {
     ],
     basicModelCode: null,
   },
-  'JTMHX01J8L4198296': {
+  'ZV9B0L5K3L5694258': {
     saleInformation: {
       countryID: null,
       countryName: null,
@@ -985,7 +985,7 @@ const mockData = {
       customerID: '1180',
       invoiceDate: '2013-03-06',
       warrantyActivationDate: null,
-      invoiceNumber: '11100040',
+      invoiceNumber: '20111416',
       broker: null,
       regionID: null,
       endCustomer: {
@@ -1007,9 +1007,9 @@ const mockData = {
       imageGroups: [],
     },
     paintThicknessInspections: [],
-    vin: 'JTMHX01J8L4198296',
+    vin: 'ZV9B0L5K3L5694258',
     identifiers: {
-      vin: 'JTMHX01J8L4198295',
+      vin: 'ZT9EYK5P7L5227866',
       variant: null,
       katashiki: null,
       color: null,
@@ -1038,7 +1038,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51456604',
+        invoiceNumber: '69671969',
         jobNumber: 13681,
         laborLines: [
           {
@@ -1096,7 +1096,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51447340',
+        invoiceNumber: '24377840',
         jobNumber: 52446,
         laborLines: [
           {
@@ -1148,7 +1148,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51441539',
+        invoiceNumber: '82854891',
         jobNumber: 41940,
         laborLines: [
           {
@@ -1200,7 +1200,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51431492',
+        invoiceNumber: '96276714',
         jobNumber: 22296,
         laborLines: [
           {
@@ -1285,7 +1285,7 @@ const mockData = {
     ],
     basicModelCode: null,
   },
-  'MR0BX8CD3P2791075': {
+  'ZV8GW0HX5PC678126': {
     saleInformation: {
       countryID: null,
       countryName: null,
@@ -1294,10 +1294,10 @@ const mockData = {
       branchID: null,
       branchName: 'SAS | Erbil - Showroom',
       customerAccountNumber: 'R02599',
-      customerID: '129345',
+      customerID: '232452',
       invoiceDate: '2025-09-30',
       warrantyActivationDate: null,
-      invoiceNumber: '70003949',
+      invoiceNumber: '63684083',
       broker: {
         brokerID: 825,
         brokerName: 'Nwekar Auto',
@@ -1365,36 +1365,36 @@ const mockData = {
       imageGroups: [
         {
           name: 'zero',
-          images: ['https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Hood_1.jpg'],
+          images: ['https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Hood_1.jpg'],
         },
         {
           name: 'second',
           images: [
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_1.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_2.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_1.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_2.jpg',
           ],
         },
         {
           name: 'second',
           images: [
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_1.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_2.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_1.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_2.jpg',
           ],
         },
         {
           name: 'third',
           images: [
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Right_Front_Fender_3.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Right_Rear_Door_1.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Right_Rear_Door_2.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Right_Front_Fender_3.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Right_Rear_Door_1.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Right_Rear_Door_2.jpg',
           ],
         },
       ],
     },
     paintThicknessInspections: sampleInspections,
-    vin: 'MR0BX8CD3P2791075',
+    vin: 'ZV8GW0HX5PC678126',
     identifiers: {
-      vin: 'MR0BX8CD3P2791075',
+      vin: 'ZV8GW0HX5PC678126',
       variant: '13461HN202301',
       katashiki: 'TGN126L-DTTHKV',
       color: '040',
@@ -1410,7 +1410,7 @@ const mockData = {
       customerAccountNumber: 'R01447',
       customerID: '89437',
       invoiceDate: '2023-05-11',
-      invoiceNumber: '11155049',
+      invoiceNumber: '66296711',
       broker: {
         brokerId: 628,
         brokerName: 'Modren Cars',
@@ -1879,7 +1879,7 @@ const mockData = {
             serviceDescription: 'Consumables',
           },
           {
-            laborCode: '473301',
+            laborCode: '269760',
             packageCode: ' ',
             serviceCode: 'PMS',
             serviceDescription: 'FRONT DISC BRAKE PAD AND/OR DI',
@@ -2049,7 +2049,7 @@ const mockData = {
     ],
     basicModelCode: 'TGN126',
   },
-  'JTMHX01J8L4198299': {
+  'ZV9RUTHD5L3395673': {
     saleInformation: {
       countryID: null,
       countryName: null,
@@ -2061,7 +2061,7 @@ const mockData = {
       customerID: '1180',
       invoiceDate: '2013-03-06',
       warrantyActivationDate: null,
-      invoiceNumber: '11100040',
+      invoiceNumber: '20111416',
       broker: null,
       regionID: null,
       endCustomer: {
@@ -2119,36 +2119,36 @@ const mockData = {
       imageGroups: [
         {
           name: 'zero',
-          images: ['https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Hood_1.jpg'],
+          images: ['https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Hood_1.jpg'],
         },
         {
           name: 'second',
           images: [
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_1.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_2.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_1.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_2.jpg',
           ],
         },
         {
           name: 'second',
           images: [
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_1.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_2.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_1.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_2.jpg',
           ],
         },
         {
           name: 'third',
           images: [
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Right_Front_Fender_3.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Right_Rear_Door_1.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Right_Rear_Door_2.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Right_Front_Fender_3.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Right_Rear_Door_1.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Right_Rear_Door_2.jpg',
           ],
         },
       ],
     },
     paintThicknessInspections: sampleInspections,
-    vin: 'JTMHX01J8L4198299',
+    vin: 'ZV9RUTHD5L3395673',
     identifiers: {
-      vin: 'JTMHX01J8L4198295',
+      vin: 'ZT9EYK5P7L5227866',
       variant: null,
       katashiki: null,
       color: null,
@@ -2177,7 +2177,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51456604',
+        invoiceNumber: '69671969',
         jobNumber: 13681,
         laborLines: [
           {
@@ -2235,7 +2235,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51447340',
+        invoiceNumber: '24377840',
         jobNumber: 52446,
         laborLines: [
           {
@@ -2287,7 +2287,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51441539',
+        invoiceNumber: '82854891',
         jobNumber: 41940,
         laborLines: [
           {
@@ -2339,7 +2339,7 @@ const mockData = {
         companyId: 2,
         branchId: 14,
         account: 'CS00022',
-        invoiceNumber: '51431492',
+        invoiceNumber: '96276714',
         jobNumber: 22296,
         laborLines: [
           {
@@ -2397,7 +2397,7 @@ const mockData = {
     ],
     basicModelCode: null,
   },
-  'JTMABBBJ9P4099243': {
+  'ZW9DZP8E9PY836065': {
     saleInformation: {
       countryID: null,
       countryName: null,
@@ -2406,10 +2406,10 @@ const mockData = {
       branchID: null,
       branchName: 'SAS | Erbil - Showroom',
       customerAccountNumber: 'R02599',
-      customerID: '129345',
+      customerID: '232452',
       invoiceDate: '2025-09-30',
       warrantyActivationDate: null,
-      invoiceNumber: '70003949',
+      invoiceNumber: '63684083',
       broker: {
         brokerID: 825,
         brokerName: 'Nwekar Auto',
@@ -2452,36 +2452,36 @@ const mockData = {
       imageGroups: [
         {
           name: 'zero',
-          images: ['https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Hood_1.jpg'],
+          images: ['https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Hood_1.jpg'],
         },
         {
           name: 'second',
           images: [
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_1.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_2.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_1.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_2.jpg',
           ],
         },
         {
           name: 'second',
           images: [
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_1.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_2.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_1.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_2.jpg',
           ],
         },
         {
           name: 'third',
           images: [
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Right_Front_Fender_3.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Right_Rear_Door_1.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Right_Rear_Door_2.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Right_Front_Fender_3.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Right_Rear_Door_1.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Right_Rear_Door_2.jpg',
           ],
         },
       ],
     },
     paintThicknessInspections: sampleInspections,
-    vin: 'JTMABBBJ9P4099243',
+    vin: 'ZW9DZP8E9PY836065',
     identifiers: {
-      vin: 'JTMABBBJ9P4099243',
+      vin: 'ZW9DZP8E9PY836065',
       variant: '53311S3202301',
       katashiki: 'VJA300L-GNUAZV',
       color: '070',
@@ -2497,7 +2497,7 @@ const mockData = {
       customerAccountNumber: 'R01954',
       customerID: '97120',
       invoiceDate: '2023-09-18',
-      invoiceNumber: '11160168',
+      invoiceNumber: '12444434',
       broker: {
         brokerId: 539,
         brokerName: 'Al-Burchman',
@@ -3049,7 +3049,7 @@ const mockData = {
             title: 'Warning 2',
             key: 'signableItems2',
             confirmationText: 'Iconfirm that the signed document is uploaded.',
-            imageUrl: 'https://images.pexels.com/photos/206359/pexels-photo-206359.jpeg?cs=srgb&dl=pexels-pixabay-206359.jpg&fm=jpg',
+            imageUrl: 'https://images.pexels.com/photos/241060/pexels-photo-241060.jpeg?cs=srgb&dl=pexels-pixabay-241060.jpg&fm=jpg',
             bodyContent: 'Please insure this printed <b>document</b> is signed and uploaded to submit the claim correctly.',
           },
           {
@@ -3114,7 +3114,7 @@ const mockData = {
     ],
     basicModelCode: 'VJA300',
   },
-  'JTMHU09J6E4100543': {
+  'ZS9G938H6E1899098': {
     koso: 99,
     saleInformation: {
       countryID: null,
@@ -3127,7 +3127,7 @@ const mockData = {
       customerID: '1180',
       invoiceDate: '2013-03-06',
       warrantyActivationDate: null,
-      invoiceNumber: '11100040',
+      invoiceNumber: '20111416',
       broker: null,
       regionID: null,
       endCustomer: {
@@ -3163,36 +3163,36 @@ const mockData = {
       imageGroups: [
         {
           name: 'zero',
-          images: ['https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Hood_1.jpg'],
+          images: ['https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Hood_1.jpg'],
         },
         {
           name: 'second',
           images: [
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_1.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_2.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_1.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_2.jpg',
           ],
         },
         {
           name: 'second',
           images: [
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_1.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_2.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_1.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_2.jpg',
           ],
         },
         {
           name: 'third',
           images: [
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Right_Front_Fender_3.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Right_Rear_Door_1.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Right_Rear_Door_2.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Right_Front_Fender_3.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Right_Rear_Door_1.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Right_Rear_Door_2.jpg',
           ],
         },
       ],
     },
     paintThicknessInspections: sampleInspections,
-    vin: 'JTMHU09J6E4100543',
+    vin: 'ZS9G938H6E1899098',
     identifiers: {
-      vin: 'JTMHU09J6E4100543',
+      vin: 'ZS9G938H6E1899098',
       variant: null,
       katashiki: null,
       color: null,
@@ -3624,7 +3624,7 @@ const mockData = {
     ],
     basicModelCode: null,
   },
-  'JTMABBBJ9P4099200': {
+  'ZU8PC1Z95PP935130': {
     saleInformation: {
       countryID: null,
       countryName: null,
@@ -3633,10 +3633,10 @@ const mockData = {
       branchID: null,
       branchName: 'SAS | Erbil - Showroom',
       customerAccountNumber: 'R02599',
-      customerID: '129345',
+      customerID: '232452',
       invoiceDate: '2025-09-30',
       warrantyActivationDate: null,
-      invoiceNumber: '70003949',
+      invoiceNumber: '63684083',
       broker: {
         brokerID: 825,
         brokerName: 'Nwekar Auto',
@@ -3672,9 +3672,9 @@ const mockData = {
       imageGroups: [],
     },
     paintThicknessInspections: singleInspection,
-    vin: 'JTMABBBJ9P4099200',
+    vin: 'ZU8PC1Z95PP935130',
     identifiers: {
-      vin: 'JTMABBBJ9P4099243',
+      vin: 'ZW9DZP8E9PY836065',
       variant: '53311S3202301',
       katashiki: 'VJA300L-GNUAZV',
       color: '070',
@@ -3690,7 +3690,7 @@ const mockData = {
       customerAccountNumber: 'R01954',
       customerID: '97120',
       invoiceDate: '2023-09-18',
-      invoiceNumber: '11160168',
+      invoiceNumber: '12444434',
       broker: {
         brokerId: 539,
         brokerName: 'Al-Burchman',
@@ -4092,7 +4092,7 @@ const mockData = {
         claimDate: '2024-07-29',
         claimingCompany: 'Cihan - Erbil Makhmoor',
         invoiceNumber: '492824',
-        jobNumber: '198274',
+        jobNumber: '953941',
         packageCode: 'NABDSERCMAS 10KS3',
       },
       {
@@ -4164,7 +4164,7 @@ const mockData = {
     ],
     basicModelCode: 'VJA300',
   },
-  'JTMABBBJ9P4099201': {
+  'ZV8DK3F90PP174225': {
     saleInformation: {
       countryID: null,
       countryName: null,
@@ -4176,7 +4176,7 @@ const mockData = {
       customerID: '1180',
       invoiceDate: '2013-03-06',
       warrantyActivationDate: null,
-      invoiceNumber: '11100040',
+      invoiceNumber: '20111416',
       broker: null,
       regionID: null,
       endCustomer: {
@@ -4234,36 +4234,36 @@ const mockData = {
       imageGroups: [
         {
           name: 'zero',
-          images: ['https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Hood_1.jpg'],
+          images: ['https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Hood_1.jpg'],
         },
         {
           name: 'second',
           images: [
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_1.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_2.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_1.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_2.jpg',
           ],
         },
         {
           name: 'second',
           images: [
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_1.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Left_Front_Door_2.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_1.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Left_Front_Door_2.jpg',
           ],
         },
         {
           name: 'third',
           images: [
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Right_Front_Fender_3.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Right_Rear_Door_1.jpg',
-            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/5TDLB3CH1NS095585%232022-10-06%2303-33-17/Right_Rear_Door_2.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Right_Front_Fender_3.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Right_Rear_Door_1.jpg',
+            'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/ZT9FNS0M5NW558209%220602-10-06%2303-33-17/Right_Rear_Door_2.jpg',
           ],
         },
       ],
     },
     paintThicknessInspections: sampleInspections,
-    vin: 'JTMABBBJ9P4099201',
+    vin: 'ZV8DK3F90PP174225',
     identifiers: {
-      vin: 'JTMABBBJ9P4099201',
+      vin: 'ZV8DK3F90PP174225',
       variant: '53311S3202301',
       katashiki: 'VJA300L-GNUAZV',
       color: '070',
@@ -4279,7 +4279,7 @@ const mockData = {
       customerAccountNumber: 'R01954',
       customerID: '97120',
       invoiceDate: '2023-09-18',
-      invoiceNumber: 11160168,
+      invoiceNumber: 12444434,
       broker: {
         brokerId: 539,
         brokerName: 'Al-Burchman',
@@ -4681,7 +4681,7 @@ const mockData = {
         claimDate: '2024-07-29',
         claimingCompany: 'Cihan - Erbil Makhmoor',
         invoiceNumber: '492824',
-        jobNumber: '198274',
+        jobNumber: '953941',
         packageCode: 'NABDSERCMAS 10KS3',
       },
       {
@@ -4756,10 +4756,10 @@ const mockData = {
       branchID: null,
       branchName: 'SAS | Erbil - Showroom',
       customerAccountNumber: 'R02599',
-      customerID: '129345',
+      customerID: '232452',
       invoiceDate: '2025-09-30',
       warrantyActivationDate: null,
-      invoiceNumber: '70003949',
+      invoiceNumber: '63684083',
       broker: {
         brokerID: 825,
         brokerName: 'Nwekar Auto',
@@ -4857,10 +4857,10 @@ const mockData = {
       branchID: null,
       branchName: 'SAS | Erbil - Showroom',
       customerAccountNumber: 'R02599',
-      customerID: '129345',
+      customerID: '232452',
       invoiceDate: '2025-09-30',
       warrantyActivationDate: null,
-      invoiceNumber: '70003949',
+      invoiceNumber: '63684083',
       broker: {
         brokerID: 825,
         brokerName: 'Nwekar Auto',

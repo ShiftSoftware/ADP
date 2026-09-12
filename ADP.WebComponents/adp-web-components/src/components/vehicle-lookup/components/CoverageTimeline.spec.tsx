@@ -197,14 +197,14 @@ describe('CoverageTimeline', () => {
         warrantyStartDate: '2024-02-01',
         warrantyEndDate: '2027-02-01',
         // A persisted entry: an identifier and a provider, but no display name.
-        extendedWarranties: [{ id: 'EW-JTMHX01J8L4198293-PROVIDER', providerCompanyID: '2', startDate: '2027-02-01', endDate: '2028-02-01' }],
+        extendedWarranties: [{ id: 'EW-ZT8P9NAL1LG988010-PROVIDER', providerCompanyID: '2', startDate: '2027-02-01', endDate: '2028-02-01' }],
       },
     } as Partial<VehicleLookupDTO>);
 
     const bands = bandsOf(page);
 
     expect(bands[1].querySelector('.coverage-label')?.textContent).toBe(timelineLocale.extendedWarranty);
-    expect(page.body.textContent).not.toContain('EW-JTMHX01J8L4198293-PROVIDER');
+    expect(page.body.textContent).not.toContain('EW-ZT8P9NAL1LG988010-PROVIDER');
   });
 
   it('declares that an un-invoiced broker is why the warranty has not started', async () => {
@@ -389,7 +389,7 @@ describe('CoverageTimeline', () => {
   });
 
   it('renders the checked-in multiple-warranty sample', async () => {
-    const page = await renderTimeline(standardDealerVehicleLookup.JTMHX01J8L4198293 as unknown as Partial<VehicleLookupDTO>);
+    const page = await renderTimeline(standardDealerVehicleLookup.ZT8P9NAL1LG988010 as unknown as Partial<VehicleLookupDTO>);
 
     const bands = bandsOf(page);
 
@@ -403,7 +403,7 @@ describe('CoverageTimeline', () => {
     // The resolved provider names reach the accessible description.
     expect(bands[1].getAttribute('aria-label')).toContain('Sample Distributor');
     expect(bands[2].getAttribute('aria-label')).toContain('City Auto');
-    expect(page.body.textContent).not.toContain('EW-JTMHX01J8L4198293');
+    expect(page.body.textContent).not.toContain('EW-ZT8P9NAL1LG988010');
     expect(page.body.querySelector('.total-coverage strong')?.textContent).toBe('5 years');
   });
 });

@@ -9,7 +9,7 @@ The `<vehicle-claimable-items>` component displays service items that can be cla
 
   <p style="margin-bottom:8px">
     <strong>Try a VIN:</strong>
-    <button onclick="document.getElementById('demo-swift-claim').fetchVin('JTMHX01J8L4198293')" style="cursor:pointer;padding:4px 12px;margin:4px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5">JTMHX01J8L4198293</button>
+    <button onclick="document.getElementById('demo-swift-claim').fetchVin('ZT8P9NAL1LG988010')" style="cursor:pointer;padding:4px 12px;margin:4px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5">ZT8P9NAL1LG988010</button>
     <button onclick="document.getElementById('demo-swift-claim').fetchVin('JTMW43FV10D123456')" style="cursor:pointer;padding:4px 12px;margin:4px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5">JTMW43FV10D123456</button>
   </p>
 

@@ -66,7 +66,7 @@ function buildCandidate(overrides: Partial<{ wip: string; dealerId: string; jobT
       wip: overrides.wip ?? '40956',
       dealerId: overrides.dealerId ?? '1',
       jobType: overrides.jobType ?? 'GR',
-      VIN: 'JTMABBBJ2N4024400',
+      VIN: 'ZW8P8DSL2NL418855',
       CustomerName: 'Kadhem Owaid',
     },
     recipient: {
