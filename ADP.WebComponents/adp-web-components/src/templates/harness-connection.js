@@ -32,12 +32,12 @@ const urlField = (name, label, required = true) => ({
   placeholder: 'https://api.example.invalid/',
 });
 
-const secretField = (name, label, kind, placeholder) => ({
+const secretField = (name, label, kind, placeholder, required = true) => ({
   name,
   label,
   kind,
   inputType: 'password',
-  required: true,
+  required,
   placeholder,
   secret: true,
 });
@@ -50,11 +50,15 @@ export function connectionFields(profile, options = {}) {
   if (profile === 'form') return [urlField('structureUrl', 'Structure URL')];
   if (profile === 'vin-extractor') return [urlField('ocrEndpoint', 'OCR endpoint')];
 
-  const fields = [urlField('baseUrl', 'Base URL'), secretField('headersJson', 'Request headers JSON', 'headers', '{}')];
+  const fields = [
+    urlField('baseUrl', 'Base URL'),
+    secretField('headersJson', 'Request headers JSON', 'headers', '{}', false),
+    secretField('queryString', 'Request query string', 'query-string', 'name=value', false),
+  ];
 
-  if (options.recaptcha) fields.push(secretField('recaptchaSiteKey', 'reCAPTCHA site key', 'text', 'Site key'));
-  if (options.claim) fields.push(urlField('claimEndpoint', 'Claim endpoint'));
-  if (options.unauthorizedSsc) fields.push(urlField('unauthorizedSscEndpoint', 'Manufacturer-check endpoint'));
+  if (options.recaptcha) fields.push(secretField('recaptchaSiteKey', 'reCAPTCHA site key', 'text', 'Site key', false));
+  if (options.claim) fields.push(urlField('claimEndpoint', 'Claim endpoint', false));
+  if (options.unauthorizedSsc) fields.push(urlField('unauthorizedSscEndpoint', 'Manufacturer-check endpoint', false));
 
   return fields;
 }
@@ -123,6 +127,14 @@ export function validateConnection(profile, draft, options = {}) {
       continue;
     }
 
+    if (field.kind === 'query-string') {
+      const queryString = value.startsWith('?') ? value.slice(1) : value;
+
+      if (!queryString || queryString.includes('#')) errors[field.name] = 'Enter a query string without a fragment.';
+      else settings.queryString = queryString;
+      continue;
+    }
+
     settings[field.name] = value;
   }
 
@@ -178,6 +190,7 @@ export function captureConnectionState(profile, subject, options = {}) {
 
   return {
     baseUrl: subject.baseUrl ?? '',
+    queryString: subject.queryString ?? '',
     headers: clone(subject.headers ?? {}),
     requestHeadersProvider: subject.requestHeadersProvider,
     recaptchaKey: subject.recaptchaKey ?? '',
@@ -193,15 +206,15 @@ const applyCompositeSettings = (subject, settings, options) => {
   if (options.recaptcha || options.unauthorizedSsc) {
     props['vehicle-ssc'] = {
       ...(props['vehicle-ssc'] ?? {}),
-      ...(options.recaptcha ? { recaptchaKey: settings.recaptchaSiteKey } : {}),
-      ...(options.unauthorizedSsc ? { unauthorizedSscLookupBaseUrl: settings.unauthorizedSscEndpoint } : {}),
+      ...(options.recaptcha ? { recaptchaKey: settings.recaptchaSiteKey ?? '' } : {}),
+      ...(options.unauthorizedSsc ? { unauthorizedSscLookupBaseUrl: settings.unauthorizedSscEndpoint ?? '' } : {}),
     };
   }
 
   if (options.claim) {
     props['vehicle-claimable-items'] = {
       ...(props['vehicle-claimable-items'] ?? {}),
-      claimEndPoint: settings.claimEndpoint,
+      claimEndPoint: settings.claimEndpoint ?? '',
     };
   }
 
@@ -227,14 +240,15 @@ export function connectProfile(profile, subject, settings, options = {}) {
   }
 
   subject.baseUrl = settings.baseUrl;
-  subject.headers = clone(settings.headers);
-  subject.requestHeadersProvider = () => clone(settings.headers);
+  subject.queryString = settings.queryString ?? '';
+  subject.headers = clone(settings.headers ?? {});
+  subject.requestHeadersProvider = () => clone(settings.headers ?? {});
 
   if (profile === 'composite') applyCompositeSettings(subject, settings, options);
   else {
-    if (options.recaptcha) subject.recaptchaKey = settings.recaptchaSiteKey;
-    if (options.claim) subject.claimEndPoint = settings.claimEndpoint;
-    if (options.unauthorizedSsc) subject.unauthorizedSscLookupBaseUrl = settings.unauthorizedSscEndpoint;
+    if (options.recaptcha) subject.recaptchaKey = settings.recaptchaSiteKey ?? '';
+    if (options.claim) subject.claimEndPoint = settings.claimEndpoint ?? '';
+    if (options.unauthorizedSsc) subject.unauthorizedSscLookupBaseUrl = settings.unauthorizedSscEndpoint ?? '';
   }
 
   subject.isDev = false;
@@ -262,6 +276,7 @@ export function disconnectProfile(profile, subject, baseline, options = {}) {
   }
 
   subject.baseUrl = baseline.baseUrl;
+  subject.queryString = baseline.queryString;
   subject.headers = clone(baseline.headers);
   subject.requestHeadersProvider = baseline.requestHeadersProvider;
   subject.recaptchaKey = baseline.recaptchaKey;

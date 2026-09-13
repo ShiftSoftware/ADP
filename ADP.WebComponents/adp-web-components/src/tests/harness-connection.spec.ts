@@ -45,6 +45,7 @@ const memoryStorage = (): StorageLike & { values: Map<string, string> } => {
 const liveSettings = {
   baseUrl: 'https://api.example.invalid/vehicle/',
   headers: { Authorization: 'Bearer synthetic-test-token' },
+  queryString: 'code=synthetic-function-key',
   recaptchaSiteKey: 'synthetic-site-key',
   claimEndpoint: 'https://api.example.invalid/claim',
   unauthorizedSscEndpoint: 'https://api.example.invalid/campaign/',
@@ -56,6 +57,7 @@ describe('public-demo Connection panel', () => {
     const draft = {
       baseUrl: liveSettings.baseUrl,
       headersJson: JSON.stringify(liveSettings.headers),
+      queryString: liveSettings.queryString,
       recaptchaSiteKey: liveSettings.recaptchaSiteKey,
       claimEndpoint: liveSettings.claimEndpoint,
       unauthorizedSscEndpoint: liveSettings.unauthorizedSscEndpoint,
@@ -76,8 +78,27 @@ describe('public-demo Connection panel', () => {
     const part = connection.connectionFields('part');
 
     expect(lookup.find(field => field.name === 'headersJson').inputType).toBe('password');
+    expect(lookup.find(field => field.name === 'queryString').inputType).toBe('password');
     expect(lookup.find(field => field.name === 'recaptchaSiteKey').inputType).toBe('password');
     expect(part.find(field => field.name === 'queryJson').inputType).toBe('password');
+  });
+
+  it('requires only the vehicle base URL and accepts headers or a shared secret query string independently', () => {
+    const options = connection.connectionOptions('composite');
+    const draft = {
+      ...connection.emptyConnectionDraft('composite', options),
+      baseUrl: liveSettings.baseUrl,
+      queryString: `?${liveSettings.queryString}`,
+    };
+
+    const validated = connection.validateConnection('composite', draft, options);
+
+    expect(validated).toEqual({
+      ok: true,
+      errors: {},
+      settings: { baseUrl: liveSettings.baseUrl, headers: {}, queryString: liveSettings.queryString },
+    });
+    expect(connection.connectionFields('composite', options).filter(field => field.required).map(field => field.name)).toEqual(['baseUrl']);
   });
 
   it('persists only in the supplied per-tab session store and clears on disconnect', () => {
@@ -85,9 +106,9 @@ describe('public-demo Connection panel', () => {
     const secondTab = memoryStorage();
     const key = connection.connectionStorageKey('lookup', '/templates/vehicle-lookup/vehicle-accessories.html');
 
-    connection.saveConnection(firstTab, key, { baseUrl: liveSettings.baseUrl, headers: liveSettings.headers });
+    connection.saveConnection(firstTab, key, { baseUrl: liveSettings.baseUrl, headers: liveSettings.headers, queryString: liveSettings.queryString });
 
-    expect(connection.loadConnection(firstTab, key, 'lookup')).toEqual({ baseUrl: liveSettings.baseUrl, headers: liveSettings.headers });
+    expect(connection.loadConnection(firstTab, key, 'lookup')).toEqual({ baseUrl: liveSettings.baseUrl, headers: liveSettings.headers, queryString: liveSettings.queryString });
     expect(connection.loadConnection(secondTab, key, 'lookup')).toBeNull();
 
     connection.clearConnection(firstTab, key);
@@ -97,18 +118,19 @@ describe('public-demo Connection panel', () => {
   });
 
   it('connects and disconnects a single vehicle panel without losing its generated setup', () => {
-    const subject = { baseUrl: '', headers: {}, isDev: true, requestHeadersProvider: undefined };
+    const subject = { baseUrl: '', queryString: 'generated=true', headers: {}, isDev: true, requestHeadersProvider: undefined };
     const baseline = connection.captureConnectionState('lookup', subject);
 
-    connection.connectProfile('lookup', subject, { baseUrl: liveSettings.baseUrl, headers: liveSettings.headers });
+    connection.connectProfile('lookup', subject, liveSettings);
 
     expect(subject.isDev).toBe(false);
     expect(subject.baseUrl).toBe(liveSettings.baseUrl);
+    expect(subject.queryString).toBe(liveSettings.queryString);
     expect(subject.requestHeadersProvider()).toEqual(liveSettings.headers);
 
     connection.disconnectProfile('lookup', subject, baseline);
 
-    expect(subject).toMatchObject({ baseUrl: '', headers: {}, isDev: true });
+    expect(subject).toMatchObject({ baseUrl: '', queryString: 'generated=true', headers: {}, isDev: true });
     expect(subject.requestHeadersProvider).toBeUndefined();
   });
 
@@ -116,6 +138,7 @@ describe('public-demo Connection panel', () => {
     const options = connection.connectionOptions('composite');
     const subject = {
       baseUrl: '',
+      queryString: '',
       headers: {},
       isDev: true,
       childrenProps: {
@@ -129,6 +152,7 @@ describe('public-demo Connection panel', () => {
     connection.connectProfile('composite', subject, liveSettings, options);
 
     expect(subject.isDev).toBe(false);
+    expect(subject.queryString).toBe(liveSettings.queryString);
     expect(subject.childrenProps['vehicle-claimable-items']).toEqual({ showTrace: true, claimEndPoint: liveSettings.claimEndpoint });
     expect(subject.childrenProps['vehicle-ssc']).toEqual({
       showTrace: true,
@@ -141,6 +165,30 @@ describe('public-demo Connection panel', () => {
     connection.disconnectProfile('composite', subject, baseline, options);
     expect(subject.isDev).toBe(true);
     expect(subject.childrenProps).toEqual(baseline.childrenProps);
+  });
+
+  it('clears omitted write and unauthorized capabilities in connected lookup-only mode', () => {
+    const options = connection.connectionOptions('composite');
+    const subject = {
+      baseUrl: '',
+      queryString: '',
+      headers: {},
+      isDev: true,
+      childrenProps: {
+        'vehicle-claimable-items': { showTrace: true },
+        'vehicle-ssc': { showTrace: true },
+      },
+    };
+
+    connection.connectProfile(
+      'composite',
+      subject,
+      { baseUrl: liveSettings.baseUrl, headers: {}, queryString: liveSettings.queryString },
+      options,
+    );
+
+    expect(subject.childrenProps['vehicle-claimable-items']).toEqual({ showTrace: true, claimEndPoint: '' });
+    expect(subject.childrenProps['vehicle-ssc']).toEqual({ showTrace: true, recaptchaKey: '', unauthorizedSscLookupBaseUrl: '' });
   });
 
   it('applies part, form, and VIN-extractor profiles and restores their baselines', () => {
