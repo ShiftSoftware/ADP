@@ -59,6 +59,7 @@ import {
   emptyConnectionDraft,
   loadConnection,
   saveConnection,
+  settingsToDraft,
   todayChoiceAvailable,
   validateConnection,
 } from './harness-connection.js';
@@ -629,6 +630,7 @@ window.harness = function harness(options = {}) {
         if (profileName === 'form') await this.replaceFormSubject(settings.structureUrl, false);
 
         connectProfile(profileName, this.subject, settings, configuredConnection);
+        this.connectionDraft = settingsToDraft(profileName, settings, configuredConnection);
         this.connected = true;
         this.fixture = null;
         if (config.today) this.setToday('live', this.customToday, false);
@@ -647,7 +649,7 @@ window.harness = function harness(options = {}) {
     },
 
     async connect() {
-      if (this.connectionBusy || this.connected) return;
+      if (this.connectionBusy) return;
 
       const validated = validateConnection(profileName, this.connectionDraft, configuredConnection);
       this.connectionErrors = validated.errors;
@@ -660,14 +662,20 @@ window.harness = function harness(options = {}) {
 
       this.connectionError = '';
       this.connectionBusy = true;
-      this.generatedTodayChoice = { mode: this.todayMode, customDate: this.customToday };
-      this.generatedFixture = this.fixture;
+      const wasConnected = this.connected;
+      const previousState = wasConnected ? captureConnectionState(profileName, this.subject, configuredConnection) : null;
+
+      if (!wasConnected) {
+        this.generatedTodayChoice = { mode: this.todayMode, customDate: this.customToday };
+        this.generatedFixture = this.fixture;
+      }
 
       try {
         if (profileName === 'form') await this.replaceFormSubject(validated.settings.structureUrl, false);
         else if (profileName !== 'vin-extractor') await clear?.(this.subject, this);
 
         connectProfile(profileName, this.subject, validated.settings, configuredConnection);
+        this.connectionDraft = settingsToDraft(profileName, validated.settings, configuredConnection);
 
         try {
           saveConnection(sessionStorage, storageKey, validated.settings);
@@ -678,11 +686,13 @@ window.harness = function harness(options = {}) {
         this.connected = true;
         this.fixture = null;
         if (config.today) this.setToday('live', this.customToday, false);
-        this.write('connection', connectionLog('connect', profileName));
+        this.write('connection', connectionLog(wasConnected ? 'update' : 'connect', profileName));
       } catch {
-        disconnectProfile(profileName, this.subject, this.connectionBaseline, configuredConnection);
-        this.connectionError = 'The connection could not be applied. Generated data remains active.';
-        this.write('connection', 'connect failed · no values logged');
+        disconnectProfile(profileName, this.subject, previousState ?? this.connectionBaseline, configuredConnection);
+        if (wasConnected && profileName !== 'vin-extractor') this.subject.isDev = false;
+        this.connected = wasConnected;
+        this.connectionError = wasConnected ? 'The update could not be applied. The previous live settings remain active.' : 'The connection could not be applied. Generated data remains active.';
+        this.write('connection', `${wasConnected ? 'update' : 'connect'} failed · no values logged`);
       } finally {
         this.connectionBusy = false;
       }
@@ -704,7 +714,6 @@ window.harness = function harness(options = {}) {
 
         disconnectProfile(profileName, this.subject, this.connectionBaseline, configuredConnection);
         this.connected = false;
-        this.connectionDraft = emptyConnectionDraft(profileName, configuredConnection);
         this.connectionErrors = {};
         this.connectionError = '';
 
@@ -1116,12 +1125,7 @@ const RAIL = /* html */ `
         <div class="flex flex-col gap-2">
           <span class="eyebrow text-neutral" x-text="'Connection · ' + connectionLabel"></span>
 
-          <div
-            class="grid overflow-hidden transition-[grid-template-rows,opacity] duration-[320ms]"
-            :class="connected ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'"
-            :aria-hidden="connected ? 'true' : 'false'"
-            :inert="connected"
-          >
+          <div class="grid grid-rows-[1fr] overflow-hidden opacity-100">
             <div class="min-h-0">
               <div class="flex flex-col gap-2">
                 <template x-for="field in connectionFields" :key="field.name">
@@ -1132,10 +1136,10 @@ const RAIL = /* html */ `
                       :type="field.inputType"
                       :name="'connection-' + field.name"
                       :placeholder="field.placeholder"
-                      :autocomplete="field.secret ? 'new-password' : 'off'"
+                      :autocomplete="field.inputType === 'password' ? 'new-password' : 'off'"
                       spellcheck="false"
                       x-model="connectionDraft[field.name]"
-                      :disabled="connected || connectionBusy"
+                      :disabled="connectionBusy"
                       @input="clearConnectionError(field.name)"
                     />
                     <div
@@ -1155,7 +1159,13 @@ const RAIL = /* html */ `
                 </div>
 
                 <p class="text-base-content/60 text-xs">Kept only in this tab’s session storage. Nothing is added to the page URL or event log.</p>
-                <button type="button" class="btn btn-sm btn-primary" :disabled="connectionBusy" @click="connect()">Connect to live API</button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-primary"
+                  :disabled="connectionBusy"
+                  @click="connect()"
+                  x-text="connected ? 'Update live API' : 'Connect to live API'"
+                ></button>
               </div>
             </div>
           </div>
@@ -1168,7 +1178,7 @@ const RAIL = /* html */ `
           >
             <div class="min-h-0">
               <div class="flex flex-col gap-2">
-                <p class="text-base-content/70 text-xs">Live settings are active. Their values stay masked and are never logged.</p>
+                <p class="text-base-content/70 text-xs">Live settings are active. Edit the fields above and update to apply corrections. Values are never logged.</p>
                 <button type="button" class="btn btn-sm btn-outline" :disabled="connectionBusy" @click="disconnect()">Disconnect</button>
               </div>
             </div>

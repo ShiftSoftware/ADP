@@ -32,11 +32,11 @@ const urlField = (name, label, required = true) => ({
   placeholder: 'https://api.example.invalid/',
 });
 
-const secretField = (name, label, kind, placeholder, required = true) => ({
+const secretField = (name, label, kind, placeholder, required = true, inputType = 'password') => ({
   name,
   label,
   kind,
-  inputType: 'password',
+  inputType,
   required,
   placeholder,
   secret: true,
@@ -44,7 +44,7 @@ const secretField = (name, label, kind, placeholder, required = true) => ({
 
 export function connectionFields(profile, options = {}) {
   if (profile === 'part') {
-    return [urlField('endpointUrl', 'Endpoint URL'), secretField('queryJson', 'Query JSON', 'query', '{"code":""}')];
+    return [urlField('endpointUrl', 'Endpoint URL'), secretField('queryJson', 'Query JSON', 'query', '{"code":""}', true, 'text')];
   }
 
   if (profile === 'form') return [urlField('structureUrl', 'Structure URL')];
@@ -52,8 +52,8 @@ export function connectionFields(profile, options = {}) {
 
   const fields = [
     urlField('baseUrl', 'Base URL'),
-    secretField('headersJson', 'Request headers JSON', 'headers', '{}', false),
-    secretField('queryString', 'Request query string', 'query-string', 'name=value', false),
+    secretField('headersJson', 'Request headers JSON', 'headers', '{}', false, 'text'),
+    secretField('queryString', 'Request query string', 'query-string', 'name=value', false, 'text'),
   ];
 
   if (options.recaptcha) fields.push(secretField('recaptchaSiteKey', 'reCAPTCHA site key', 'text', 'Site key', false));
@@ -104,7 +104,7 @@ export function validateConnection(profile, draft, options = {}) {
 
     if (field.kind === 'url') {
       if (!validateUrl(value)) errors[field.name] = 'Enter an absolute HTTP or HTTPS URL without embedded credentials.';
-      else settings[field.name] = value;
+      else settings[field.name] = field.name === 'baseUrl' && !value.endsWith('/') ? `${value}/` : value;
       continue;
     }
 
@@ -141,7 +141,7 @@ export function validateConnection(profile, draft, options = {}) {
   return { ok: Object.keys(errors).length === 0, errors, settings };
 }
 
-const settingsToDraft = (profile, settings, options) => ({
+export const settingsToDraft = (profile, settings, options) => ({
   ...emptyConnectionDraft(profile, options),
   ...settings,
   headersJson: JSON.stringify(settings?.headers ?? {}),
@@ -293,5 +293,7 @@ export function todayChoiceAvailable(mode, connected, hasAnchor) {
 
 export function connectionLog(action, profile) {
   const label = profile === 'vin-extractor' ? 'VIN extractor' : profile === 'form' ? 'form' : profile === 'part' ? 'part lookup' : 'vehicle lookup';
-  return action === 'connect' ? `${label} · live settings applied · credentials withheld` : `${label} · generated settings restored`;
+  if (action === 'connect') return `${label} · live settings applied · credentials withheld`;
+  if (action === 'update') return `${label} · live settings updated · credentials withheld`;
+  return `${label} · generated settings restored`;
 }

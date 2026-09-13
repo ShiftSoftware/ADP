@@ -9,13 +9,14 @@ type ConnectionModule = {
   clearConnection: (storage: StorageLike, key: string) => void;
   connectProfile: (profile: string, subject: any, settings: any, options?: any) => void;
   connectionFields: (profile: string, options?: any) => any[];
-  connectionLog: (action: 'connect' | 'disconnect', profile: string) => string;
+  connectionLog: (action: 'connect' | 'update' | 'disconnect', profile: string) => string;
   connectionOptions: (profile: string, configured?: any) => any;
   connectionStorageKey: (profile: string, pathname: string) => string;
   disconnectProfile: (profile: string, subject: any, baseline: any, options?: any) => void;
   emptyConnectionDraft: (profile: string, options?: any) => Record<string, string>;
   loadConnection: (storage: StorageLike, key: string, profile: string, options?: any) => any;
   saveConnection: (storage: StorageLike, key: string, settings: any) => void;
+  settingsToDraft: (profile: string, settings: any, options?: any) => Record<string, string>;
   todayChoiceAvailable: (mode: string, connected: boolean, hasAnchor: boolean) => boolean;
   validateConnection: (profile: string, draft: Record<string, string>, options?: any) => { ok: boolean; errors: Record<string, string>; settings: any };
 };
@@ -26,7 +27,7 @@ const connection = new Function(
   return {
     captureConnectionState, clearConnection, connectProfile, connectionFields,
     connectionLog, connectionOptions, connectionStorageKey, disconnectProfile,
-    emptyConnectionDraft, loadConnection, saveConnection, todayChoiceAvailable,
+    emptyConnectionDraft, loadConnection, saveConnection, settingsToDraft, todayChoiceAvailable,
     validateConnection
   };`,
 )() as ConnectionModule;
@@ -73,21 +74,21 @@ describe('public-demo Connection panel', () => {
     expect(JSON.stringify(invalid.errors)).not.toContain(sentinel);
   });
 
-  it('masks every credential-bearing field', () => {
+  it('keeps editable request configuration readable while masking standalone credentials', () => {
     const lookup = connection.connectionFields('composite', connection.connectionOptions('composite'));
     const part = connection.connectionFields('part');
 
-    expect(lookup.find(field => field.name === 'headersJson').inputType).toBe('password');
-    expect(lookup.find(field => field.name === 'queryString').inputType).toBe('password');
+    expect(lookup.find(field => field.name === 'headersJson').inputType).toBe('text');
+    expect(lookup.find(field => field.name === 'queryString').inputType).toBe('text');
     expect(lookup.find(field => field.name === 'recaptchaSiteKey').inputType).toBe('password');
-    expect(part.find(field => field.name === 'queryJson').inputType).toBe('password');
+    expect(part.find(field => field.name === 'queryJson').inputType).toBe('text');
   });
 
   it('requires only the vehicle base URL and accepts headers or a shared secret query string independently', () => {
     const options = connection.connectionOptions('composite');
     const draft = {
       ...connection.emptyConnectionDraft('composite', options),
-      baseUrl: liveSettings.baseUrl,
+      baseUrl: liveSettings.baseUrl.slice(0, -1),
       queryString: `?${liveSettings.queryString}`,
     };
 
@@ -99,6 +100,11 @@ describe('public-demo Connection panel', () => {
       settings: { baseUrl: liveSettings.baseUrl, headers: {}, queryString: liveSettings.queryString },
     });
     expect(connection.connectionFields('composite', options).filter(field => field.required).map(field => field.name)).toEqual(['baseUrl']);
+    expect(connection.settingsToDraft('composite', validated.settings, options)).toMatchObject({
+      baseUrl: liveSettings.baseUrl,
+      headersJson: '{}',
+      queryString: liveSettings.queryString,
+    });
   });
 
   it('persists only in the supplied per-tab session store and clears on disconnect', () => {
@@ -223,12 +229,13 @@ describe('public-demo Connection panel', () => {
   });
 
   it('never includes connection values in connect or disconnect log details', () => {
-    const rendered = ['connect', 'disconnect'].map(action => connection.connectionLog(action as 'connect' | 'disconnect', 'composite')).join(' ');
+    const rendered = ['connect', 'update', 'disconnect'].map(action => connection.connectionLog(action as 'connect' | 'update' | 'disconnect', 'composite')).join(' ');
 
     for (const value of Object.values(liveSettings).flatMap(setting => (typeof setting === 'object' ? Object.values(setting) : setting))) {
       expect(rendered).not.toContain(value);
     }
     expect(rendered).toContain('credentials withheld');
+    expect(connection.connectionLog('update', 'composite')).toContain('updated');
   });
 
   it('removes the mode switch and client wiring from ordinary templates while preserving the host placeholders', () => {
@@ -246,6 +253,8 @@ describe('public-demo Connection panel', () => {
     const productionHost = readFileSync(path.join(templates, 'production-host', 'vehicle-service-history.html'), 'utf8');
 
     expect(harness).not.toMatch(/setMode|show\.mode|>Mode</);
+    expect(harness).toContain("x-text=\"connected ? 'Update live API' : 'Connect to live API'\"");
+    expect(harness).not.toContain('this.connectionDraft = emptyConnectionDraft(');
     expect(harness).toContain("key === '' ? clear?.(this.subject, this) : select?.(this.subject, key, this)");
     expect(ordinary).not.toMatch(/azurewebsites\.net|6Le[A-Za-z0-9_-]{10,}/);
     expect(ordinary).not.toMatch(/(?:base-url|ocr-endpoint|claim-end-point)="https?:\/\//);
