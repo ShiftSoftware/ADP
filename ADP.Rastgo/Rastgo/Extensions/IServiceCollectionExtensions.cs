@@ -30,6 +30,7 @@ public static class IServiceCollectionExtensions
         services.AddSingleton<ICheckSource>(_ => new FileShareCheckSource(options.FileShareBase, options.ConflictCopyMarker));
         services.AddSingleton(sp => new SourceRegistry(sp.GetServices<ICheckSource>()));
         services.AddSingleton<CheckRunner>();
+        services.AddSingleton<AuthoringCatalogService>();
         services.AddSingleton(_ => new JsonlResultSink(options.ResultsRoot));
         return services;
     }

@@ -19,7 +19,17 @@ namespace ShiftSoftware.ADP.Rastgo;
 /// </summary>
 public static partial class DashboardRenderer
 {
-    public static string Render(IReadOnlyList<CheckResult> all, DateTimeOffset generatedAtUtc, DashboardOptions? options = null)
+    public static string Render(
+        IReadOnlyList<CheckResult> all,
+        DateTimeOffset generatedAtUtc,
+        DashboardOptions? options = null) =>
+        Render(all, generatedAtUtc, options, links: null);
+
+    public static string Render(
+        IReadOnlyList<CheckResult> all,
+        DateTimeOffset generatedAtUtc,
+        DashboardOptions? options,
+        RastgoPageLinks? links)
     {
         var model = CheckModel.Build(all, options ?? DashboardOptions.Default);
         var L = model.Labels;
@@ -37,6 +47,8 @@ public static partial class DashboardRenderer
           .Append("<p class=\"text-base-content/50 mt-1.5 text-[10px] leading-relaxed\" data-meta>")
           .Append($"{generatedAtUtc.UtcDateTime:yyyy-MM-dd HH:mm} UTC · {model.Checks.Count} checks · {model.Domains.Count} domains")
           .Append("</p></div>");
+
+        sb.Append(PageChrome.Navigation("dashboard", links));
 
         sb.Append("<div class=\"grid grid-cols-4 gap-1 px-3 py-2.5\" data-kpis>");
         foreach (var status in PageChrome.KpiOrder)

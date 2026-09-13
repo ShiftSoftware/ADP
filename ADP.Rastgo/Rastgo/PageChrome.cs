@@ -3,12 +3,12 @@ using System.Net;
 namespace ShiftSoftware.ADP.Rastgo;
 
 /// <summary>
-/// The chrome <see cref="DashboardRenderer"/> and <see cref="TrendsRenderer"/> share: the compiled
+/// The chrome shared by the dashboard, trends, and authoring pages: the compiled
 /// stylesheet, the <c>&lt;head&gt;</c> that inlines it, the brand lockup, and the JavaScript that is
-/// identical on both pages (floating tooltips, the theme toggle, the fold primitive). The two renderers
-/// share no markup — only this.
+/// identical across pages (floating tooltips, the theme toggle, the fold primitive). The renderers
+/// share no content markup — only this.
 /// <para>
-/// Both pages ship as ONE self-contained HTML file with no external assets, because they have to work
+/// Every page ships as ONE self-contained HTML file with no external assets, because it has to work
 /// opened straight off a file share. So the stylesheet is inlined rather than linked, and there is no
 /// charting library, no icon font and no CDN anywhere on either page.
 /// </para>
@@ -38,12 +38,33 @@ internal static class PageChrome
     /// <summary>
     /// The document head, including the theme bootstrap and the inlined stylesheet.
     /// </summary>
-    public static string Head(string title) =>
+    public static string Head(string title, string? additionalCss = null) =>
         "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
         + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
         + $"<title>{WebUtility.HtmlEncode(title)}</title>"
         + ThemeScript
-        + "<style>" + Css + "</style></head>";
+        + "<style>" + Css + additionalCss + "</style></head>";
+
+    public static string Navigation(string current, RastgoPageLinks? links = null)
+    {
+        links ??= RastgoPageLinks.Default;
+        var pages = new[]
+        {
+            (Key: "dashboard", Label: "Current", Href: links.Dashboard),
+            (Key: "trends", Label: "Trends", Href: links.Trends),
+            (Key: "authoring", Label: "Authoring", Href: links.Authoring),
+        };
+        var html = new System.Text.StringBuilder(
+            "<div class=\"px-3 pt-2.5\"><div class=\"border-base-300 rounded-field grid gap-0.5 border p-0.5\" style=\"grid-template-columns:repeat(3,minmax(0,1fr))\">");
+        foreach (var page in pages)
+        {
+            if (page.Key == current)
+                html.Append($"<span class=\"bg-primary text-primary-content rounded-[4px] py-1 text-center text-[11px] font-semibold\">{page.Label}</span>");
+            else
+                html.Append($"<a data-rastgo-link href=\"{WebUtility.HtmlEncode(page.Href)}\" class=\"hover:bg-base-200 rounded-[4px] py-1 text-center text-[11px] font-medium transition-colors\">{page.Label}</a>");
+        }
+        return html.Append("</div></div>").ToString();
+    }
 
     /// <summary>
     /// Applies the stored theme before anything paints. Blocking, and ahead of the stylesheet, on
@@ -228,6 +249,18 @@ internal static class PageChrome
     });
 
     paintThemeButton();
+
+    /* Function-level authorization commonly arrives as ?code=. Keep it while
+       moving between sibling Rastgo pages without exposing it anywhere in the
+       generated HTML. */
+    const functionKey = new URLSearchParams(location.search).get('code');
+    if (functionKey) document.querySelectorAll('a[data-rastgo-link]').forEach(link => {
+      const url = new URL(link.getAttribute('href'), location.href);
+      if (url.origin === location.origin) {
+        url.searchParams.set('code', functionKey);
+        link.href = url.href;
+      }
+    });
 
     /* ---- folding ----------------------------------------------------------
        One primitive for every level on both pages. Heights animate through

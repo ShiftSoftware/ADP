@@ -64,7 +64,19 @@ public static class TrendsRenderer
     /// <summary>The grid the ruler, the hero and every check row share, so the columns line up down the page.</summary>
     private const string Cols = "grid-cols-[3.5rem_minmax(0,20rem)_minmax(0,1fr)]";
 
-    public static string Render(IReadOnlyList<CheckResult> all, DateTimeOffset nowUtc, TimeSpan window, DashboardOptions? options = null)
+    public static string Render(
+        IReadOnlyList<CheckResult> all,
+        DateTimeOffset nowUtc,
+        TimeSpan window,
+        DashboardOptions? options = null) =>
+        Render(all, nowUtc, window, options, links: null);
+
+    public static string Render(
+        IReadOnlyList<CheckResult> all,
+        DateTimeOffset nowUtc,
+        TimeSpan window,
+        DashboardOptions? options,
+        RastgoPageLinks? links)
     {
         var opt = options ?? DashboardOptions.Default;
         var model = CheckModel.Build(all, opt);
@@ -166,12 +178,8 @@ public static class TrendsRenderer
           .Append($"{windowDays}d window · {runDays} run-days · latest {(asOf is { } a ? $"{a.UtcDateTime:yyyy-MM-dd HH:mm} UTC" : "no runs yet")}")
           .Append("</p></div>");
 
-        // As a segmented control at the top of the rail this reads as what it is — two views of one
-        // dataset — rather than a hyperlink to somewhere else.
-        sb.Append("<div class=\"px-3 pt-2.5\"><div class=\"border-base-300 rounded-field grid grid-cols-2 gap-0.5 border p-0.5\">")
-          .Append("<a href=\"dashboard\" class=\"hover:bg-base-200 rounded-[4px] py-1 text-center text-[11px] font-medium transition-colors\">Current</a>")
-          .Append("<span class=\"bg-primary text-primary-content rounded-[4px] py-1 text-center text-[11px] font-semibold\">Trends</span>")
-          .Append("</div></div>");
+        // The segmented control keeps the current, trends, and authoring views together as one tool.
+        sb.Append(PageChrome.Navigation("trends", links));
 
         sb.Append("<div class=\"grid grid-cols-4 gap-1 px-3 pt-2.5\" data-kpis>");
         foreach (var status in PageChrome.KpiOrder)

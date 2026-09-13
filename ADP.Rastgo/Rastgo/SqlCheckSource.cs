@@ -25,7 +25,7 @@ namespace ShiftSoftware.ADP.Rastgo;
 /// is missing the read-only connection string does not abort every other check in the pack.
 /// </para>
 /// </summary>
-public sealed class SqlCheckSource : ICheckSource
+public sealed class SqlCheckSource : ICheckSource, ICheckSourceCatalog
 {
     private readonly string? connectionString;
     private readonly int commandTimeoutSeconds;
@@ -110,6 +110,68 @@ public sealed class SqlCheckSource : ICheckSource
         {
             return new MeasureOutcome { Error = ex.Message };
         }
+    }
+
+    public async Task<SourceCatalogSnapshot> DiscoverAsync(SourceCatalogRequest request, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            return new(Name, "SQL Server", [], DateTimeOffset.UtcNow, Error: "SQL metadata is unavailable because this source is not configured.");
+
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync(ct);
+        await using var command = connection.CreateCommand();
+        command.CommandTimeout = commandTimeoutSeconds;
+        command.CommandText = """
+            WITH objects AS
+            (
+                SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE,
+                       ROW_NUMBER() OVER (ORDER BY TABLE_SCHEMA, TABLE_NAME) AS dataset_rank
+                FROM INFORMATION_SCHEMA.TABLES
+            ), fields AS
+            (
+                SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, IS_NULLABLE, ORDINAL_POSITION,
+                       ROW_NUMBER() OVER (PARTITION BY TABLE_SCHEMA, TABLE_NAME ORDER BY ORDINAL_POSITION) AS field_rank
+                FROM INFORMATION_SCHEMA.COLUMNS
+            )
+            SELECT o.TABLE_SCHEMA, o.TABLE_NAME, o.TABLE_TYPE,
+                   f.COLUMN_NAME, f.DATA_TYPE, f.IS_NULLABLE
+            FROM objects o
+            LEFT JOIN fields f ON f.TABLE_SCHEMA = o.TABLE_SCHEMA AND f.TABLE_NAME = o.TABLE_NAME
+                              AND f.field_rank <= @maxFields
+            WHERE o.dataset_rank <= @maxDatasets
+            ORDER BY o.dataset_rank, f.field_rank
+            """;
+        command.Parameters.AddWithValue("@maxDatasets", request.MaxDatasets);
+        command.Parameters.AddWithValue("@maxFields", request.MaxFieldsPerDataset);
+
+        var datasets = new List<CatalogDataset>();
+        await using var reader = await command.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            var schema = reader.GetString(0);
+            var name = reader.GetString(1);
+            var current = datasets.LastOrDefault();
+            if (current is null || current.Name != name || current.Namespace != schema)
+            {
+                current = new(name, reader.GetString(2).Replace(' ', '_').ToLowerInvariant(), schema, new List<CatalogField>());
+                datasets.Add(current);
+            }
+
+            if (!await reader.IsDBNullAsync(3, ct))
+            {
+                var list = (List<CatalogField>)current.Fields;
+                list.Add(new(reader.GetString(3), reader.GetString(4),
+                    string.Equals(reader.GetString(5), "YES", StringComparison.OrdinalIgnoreCase)));
+            }
+        }
+
+        return new(
+            Name,
+            "SQL Server",
+            datasets,
+            DateTimeOffset.UtcNow,
+            Truncated: datasets.Count >= request.MaxDatasets || datasets.Any(d => d.Fields.Count >= request.MaxFieldsPerDataset),
+            Note: "Schemas, tables/views, and columns only. Row counts and record values are not queried.");
     }
 
     /// <summary>

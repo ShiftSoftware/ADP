@@ -21,4 +21,7 @@ public sealed class RastgoOptions
 
     /// <summary>Presentation customization for the dashboard (friendly labels for domain-specific names). Generic by default.</summary>
     public DashboardOptions Dashboard { get; set; } = DashboardOptions.Default;
+
+    /// <summary>Bounded metadata discovery and cache settings for the authoring catalog.</summary>
+    public AuthoringCatalogOptions Authoring { get; set; } = new();
 }

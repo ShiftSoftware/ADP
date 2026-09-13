@@ -84,4 +84,7 @@ public sealed class SourceRegistry
 
     /// <summary>Every registered name, for startup logging and diagnostics.</summary>
     public IReadOnlyCollection<string> Names => _sources.Keys;
+
+    /// <summary>Every registered source, for host-aware metadata discovery.</summary>
+    public IReadOnlyCollection<ICheckSource> Sources => _sources.Values;
 }

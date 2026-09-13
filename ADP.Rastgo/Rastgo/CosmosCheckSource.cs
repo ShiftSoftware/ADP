@@ -8,7 +8,7 @@ namespace ShiftSoftware.ADP.Rastgo;
 /// should select <c>... AS k, ... AS v</c>. Null client => measures return Skipped-style errors so
 /// a missing Cosmos connection string does not abort the whole run.
 /// </summary>
-public sealed class CosmosCheckSource(CosmosClient? client) : ICheckSource
+public sealed class CosmosCheckSource(CosmosClient? client) : ICheckSource, ICheckSourceCatalog
 {
     public string Name => "cosmos";
 
@@ -44,5 +44,47 @@ public sealed class CosmosCheckSource(CosmosClient? client) : ICheckSource
         {
             return new MeasureOutcome { Error = ex.Message };
         }
+    }
+
+    public async Task<SourceCatalogSnapshot> DiscoverAsync(SourceCatalogRequest request, CancellationToken ct)
+    {
+        if (client is null)
+            return new(Name, "Cosmos DB", [], DateTimeOffset.UtcNow, Error: "Cosmos metadata is unavailable because this source is not configured.");
+
+        var datasets = new List<CatalogDataset>();
+        using var databases = client.GetDatabaseQueryIterator<DatabaseProperties>();
+        while (databases.HasMoreResults && datasets.Count < request.MaxDatasets)
+        {
+            var databasePage = await databases.ReadNextAsync(ct);
+            foreach (var database in databasePage)
+            {
+                datasets.Add(new(database.Id, "database", null, []));
+                if (datasets.Count >= request.MaxDatasets) break;
+                using var containers = client.GetDatabase(database.Id).GetContainerQueryIterator<ContainerProperties>();
+                while (containers.HasMoreResults && datasets.Count < request.MaxDatasets)
+                {
+                    var containerPage = await containers.ReadNextAsync(ct);
+                    foreach (var container in containerPage)
+                    {
+                        datasets.Add(new(
+                            container.Id,
+                            "container",
+                            database.Id,
+                            [],
+                            "Schema-less container; fields are intentionally not inferred from documents."));
+                        if (datasets.Count >= request.MaxDatasets) break;
+                    }
+                }
+                if (datasets.Count >= request.MaxDatasets) break;
+            }
+        }
+
+        return new(
+            Name,
+            "Cosmos DB",
+            datasets,
+            DateTimeOffset.UtcNow,
+            Truncated: datasets.Count >= request.MaxDatasets,
+            Note: "Databases and containers only. No documents, field values, or sample records are read.");
     }
 }
