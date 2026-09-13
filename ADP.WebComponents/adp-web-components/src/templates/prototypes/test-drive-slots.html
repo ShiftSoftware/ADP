@@ -2,7 +2,7 @@
 <!--
   Test drive booking — day strip vs date picker (LIVE).
 
-  Run with `npm start`, then open http://localhost:3000/templates/prototypes/tiq-test-drive-slots.html
+  Run with `npm start`, then open http://localhost:3000/templates/prototypes/test-drive-slots.html
 
   A prototype, not a demo: it exists to settle which of the two pickers ships.
   Unlike the frozen mocks beside it this one is live — the components, the branch
@@ -68,8 +68,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@100..900&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet" />
 
-    <link rel="stylesheet" href="https://tiqappstorage.blob.core.windows.net/template-files/vehicle-quotation-tiq.css" />
-
     <style>
       /*
        * The host theme, reaching into the component through `::part()`. Raw pixel
@@ -82,18 +80,17 @@
       }
 
       /*
-       * The part name comes from `data.theme` in the structure. The linked host
-       * stylesheet declares the same rules against `vehicle-quotation-form`, so
-       * none of them reach this element — they are restated here for
-       * `test-drive-form`, which is what makes this form look like the host's.
+       * The part name comes from `data.theme` in the structure. These local
+       * rules demonstrate how a host can style `test-drive-form` without
+       * depending on a production site's stylesheet.
        */
-      test-drive-form::part(vehicle-quotation-tiq) {
+      test-drive-form::part(vehicle-quotation-demo) {
         user-select: none;
         font-family: 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif !important;
       }
 
-      .vehicle-quotation-tiq,
-      .vehicle-quotation-tiq::part(form-dialog-modal) {
+      .vehicle-quotation-demo,
+      .vehicle-quotation-demo::part(form-dialog-modal) {
         font-family: 'Droid Arabic Kufi', Roboto, Arial, sans-serif;
       }
 
@@ -225,7 +222,7 @@
 
         <div class="frame card bg-base-100 border-base-300 border p-5 sm:p-8">
           <!-- No `language` attribute: unset, the form resolves it from `?lang=`, which the rail keeps in sync. -->
-          <test-drive-form id="subject" disable-scroll-to-top="true" structure-url="/templates/prototypes/structures/tiq-test-drive-slots.json"></test-drive-form>
+          <test-drive-form id="subject" disable-scroll-to-top="true" structure-url="/templates/prototypes/structures/test-drive-slots.json"></test-drive-form>
         </div>
 
         <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->

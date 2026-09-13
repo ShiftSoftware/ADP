@@ -1,7 +1,7 @@
 {
   "data": {
-    "theme": "vehicle-quotation-tiq",
-    "brandId": "kWrKw",
+    "theme": "vehicle-quotation-demo",
+    "brandId": "demo-brand",
     "recaptchaKey": "",
     "requestUrl": "https://example.invalid/api/test-drives",
     "truncatedFields": {

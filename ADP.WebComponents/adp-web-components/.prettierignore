@@ -15,10 +15,10 @@ src/templates/harness.css
 src/templates/vendor
 
 # Frozen prototypes — they record what a design looked like when a decision was
-# taken, so reformatting them churns the record for nothing. tiq-test-drive-slots
+# taken, so reformatting them churns the record for nothing. test-drive-slots
 # lives in that folder but is a live harness page, not a record, so it formats.
 src/templates/prototypes
-!src/templates/prototypes/tiq-test-drive-slots.html
+!src/templates/prototypes/test-drive-slots.html
 
 # JSONC with comments — prettier reformats it as JSON and adds trailing commas.
 wrangler.jsonc

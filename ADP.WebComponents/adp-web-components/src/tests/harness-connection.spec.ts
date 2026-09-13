@@ -43,6 +43,12 @@ const memoryStorage = (): StorageLike & { values: Map<string, string> } => {
   };
 };
 
+const filesUnder = (root: string): string[] =>
+  readdirSync(root, { withFileTypes: true }).flatMap(entry => {
+    const target = path.join(root, entry.name);
+    return entry.isDirectory() ? filesUnder(target) : [target];
+  });
+
 const liveSettings = {
   baseUrl: 'https://api.example.invalid/vehicle/',
   headers: { Authorization: 'Bearer synthetic-test-token' },
@@ -249,7 +255,7 @@ describe('public-demo Connection panel', () => {
 
     const ordinary = ordinaryPages.join('\n');
     const harness = readFileSync(path.join(templates, 'harness.js'), 'utf8');
-    const structure = readFileSync(path.join(templates, 'prototypes', 'structures', 'tiq-test-drive-slots.json'), 'utf8');
+    const structure = readFileSync(path.join(templates, 'prototypes', 'structures', 'test-drive-slots.json'), 'utf8');
     const productionHost = readFileSync(path.join(templates, 'production-host', 'vehicle-service-history.html'), 'utf8');
 
     expect(harness).not.toMatch(/setMode|show\.mode|>Mode</);
@@ -261,5 +267,46 @@ describe('public-demo Connection panel', () => {
     expect(structure).not.toMatch(/azurewebsites\.net|6Le[A-Za-z0-9_-]{10,}/);
     expect(productionHost).toContain('{{VEHICLE_LOOKUP_BASE_URL}}');
     expect(productionHost).toContain('{{ADP_WEB_COMPONENTS_VERSION}}');
+  });
+
+  it('keeps the complete template catalog on reviewed neutral paths and remote hosts', () => {
+    const templates = path.resolve(process.cwd(), 'src', 'templates');
+    const relativePaths = filesUnder(templates).map(file => path.relative(templates, file).replaceAll('\\', '/'));
+    const prototypePages = relativePaths.filter(file => /^prototypes\/[^/]+\.html$/.test(file)).sort();
+
+    expect(prototypePages).toEqual([
+      'prototypes/branch-slot-picker-demo.html',
+      'prototypes/extended-warranty-prototype-candidate.html',
+      'prototypes/extended-warranty-prototype-original-rich.html',
+      'prototypes/extended-warranty-prototype-prior-axis-above.html',
+      'prototypes/extended-warranty-prototype-prior-minimal.html',
+      'prototypes/extended-warranty-prototype.html',
+      'prototypes/test-drive-slots.html',
+    ]);
+    expect(relativePaths).toContain('prototypes/structures/test-drive-slots.json');
+
+    const allowedHosts = new Set([
+      'adp-docs.shift.software',
+      'api.example.invalid',
+      'cdn.example.invalid',
+      'cdn.jsdelivr.net',
+      'example.invalid',
+      'fonts.googleapis.com',
+      'fonts.gstatic.com',
+      'localhost',
+      'tailwindcss.com',
+      'www.google.com',
+      'www.w3.org',
+    ]);
+    const unknownHosts = new Set<string>();
+
+    for (const file of filesUnder(templates).filter(file => !file.includes(`${path.sep}vendor${path.sep}`))) {
+      const source = readFileSync(file, 'utf8');
+      for (const match of source.matchAll(/https?:\/\/([A-Za-z0-9.-]+)/g)) {
+        if (!allowedHosts.has(match[1])) unknownHosts.add(match[1]);
+      }
+    }
+
+    expect([...unknownHosts]).toEqual([]);
   });
 });
