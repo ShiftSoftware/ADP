@@ -160,6 +160,12 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
             await input.SyncProgressIndicators.LogInformation("Resetting any in-flight rows from a previous crashed run.");
             ResetInFlightRows();
 
+            var revived = RequeueExpiredDeadRows();
+            if (revived > 0)
+                await input.SyncProgressIndicators.LogWarning(
+                    "Re-queued {0} Dead change(s) that had rested longer than DeadRetryAfter ({1}); they get a fresh set of attempts this run.",
+                    revived, config.DeadRetryAfter);
+
             await input.SyncProgressIndicators.LogInformation($"Loading CSV '{config.CsvFilePath}' into DuckDB staging table.");
             CreateStagingTable();
             CopyCsvIntoStaging();
@@ -472,6 +478,20 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
                    WHERE s.{pk} = {changes}.{pk}
                  ))
               )");
+
+        // A Dead row is kept only while it still describes the source: an Add/Update whose key has
+        // left the file, or a Delete whose key is back, would otherwise sit in the queue forever. (A Dead
+        // Add/Update whose row CHANGED is replaced by the diff below — INSERT OR REPLACE on the key.)
+        ExecuteNonQuery($@"
+            DELETE FROM {changes}
+            WHERE {status} = {(int)SyncChangeStatus.Dead}
+              AND (
+                ({changeType} IN ({(int)SyncActionType.Add}, {(int)SyncActionType.Update})
+                 AND NOT EXISTS (SELECT 1 FROM {staging} s WHERE s.{pk} = {changes}.{pk}))
+                OR
+                ({changeType} = {(int)SyncActionType.Delete}
+                 AND EXISTS (SELECT 1 FROM {staging} s WHERE s.{pk} = {changes}.{pk}))
+              )");
     }
 
     private void InsertAdds()
@@ -692,10 +712,10 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
         return items;
     }
 
-    public ValueTask<bool> BatchCompleted(SyncFunctionInput<SyncBatchCompleteRetryInput<TCsv, TDestination>> input)
+    public async ValueTask<bool> BatchCompleted(SyncFunctionInput<SyncBatchCompleteRetryInput<TCsv, TDestination>> input)
     {
         if (currentBatchId is null)
-            return new(true);
+            return true;
 
         var batchId = currentBatchId.Value;
         var actionType = currentBatchActionType ?? input.Input.Status.ActionType;
@@ -713,10 +733,15 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
                 DeleteFromChanges(batchId);
             });
             ClearCurrentBatch();
-            return new(true);
+            return true;
         }
 
-        var error = input.Input.Exception?.Message ?? storeResult?.RetryException?.ToString();
+        // A bumped row must always carry a reason: a store that reports failed items without an
+        // exception still says which — and a row that goes Dead with an empty last error is exactly
+        // the invisible failure this queue exists to make visible.
+        var error = input.Input.Exception?.Message
+            ?? storeResult?.RetryException?.Message
+            ?? $"Store reported {resultType}: {storeResult?.FailedItems?.Count() ?? 0} failed, {storeResult?.SucceededItems?.Count() ?? 0} succeeded, {storeResult?.SkippedItems?.Count() ?? 0} skipped, without an exception.";
 
         // Partial batch + a DestinationKey → split it: promote the succeeded subset (one query) and
         // leave only the unsucceeded rows under this batch id for BumpAttempts to retry. Without a
@@ -730,6 +755,7 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
                 ChangesAlias);
 
             // Promote-succeeded + delete-succeeded + bump-the-rest commit together in one transaction.
+            long partialDead = 0;
             InTransaction(() =>
             {
                 if (matchPredicate is not null)
@@ -739,16 +765,24 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
                 }
 
                 // Whatever is still tagged with this batch id is exactly the failed/skipped rows.
-                BumpAttempts(batchId, error);
+                partialDead = BumpAttempts(batchId, error);
             });
             ClearCurrentBatch();
-            return new(true);
+            await ReportDeadRows(input.SyncProgressIndicators, partialDead, error);
+            return true;
         }
 
         // Failed / Skipped, or Partial without a DestinationKey → bump the whole batch and (maybe) Dead.
-        BumpAttempts(batchId, error);
+        var dead = BumpAttempts(batchId, error);
         ClearCurrentBatch();
-        return new(true);
+        await ReportDeadRows(input.SyncProgressIndicators, dead, error);
+        return true;
+    }
+
+    private static async Task ReportDeadRows(IEnumerable<ISyncEngineLogger>? loggers, long dead, string? error)
+    {
+        if (dead > 0 && loggers is not null)
+            await loggers.LogError("{0} change(s) reached MaxAttempts and are now Dead; they will not be retried until they rest for DeadRetryAfter, their CSV row changes, or RequeueDeadChangesAsync is called. Last error: {1}", dead, error);
     }
 
     // Stable alias for the changes table in promote/delete queries; the partial-promotion
@@ -974,7 +1008,7 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
         currentBatchActionType = null;
     }
 
-    private void BumpAttempts(Guid batchId, string? error)
+    private long BumpAttempts(Guid batchId, string? error)
     {
         var maxAttempts = RequireConfig().MaxAttempts;
         var changes = DuckDbSchemaHelpers.QuoteIdentifier(GetChangesTableName());
@@ -983,6 +1017,14 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
         var lastAttemptAt = DuckDbSchemaHelpers.QuoteIdentifier(LastAttemptAtColumn);
         var lastError = DuckDbSchemaHelpers.QuoteIdentifier(LastErrorColumn);
         var batchIdCol = DuckDbSchemaHelpers.QuoteIdentifier(BatchIdColumn);
+
+        long goingDead;
+        using (var countCmd = connection!.CreateCommand())
+        {
+            countCmd.CommandText =
+                $"SELECT count(*) FROM {changes} WHERE {batchIdCol} = '{batchId}' AND {attemptCount} + 1 >= {maxAttempts}";
+            goingDead = Convert.ToInt64(countCmd.ExecuteScalar(), CultureInfo.InvariantCulture);
+        }
 
         using var cmd = connection!.CreateCommand();
         cmd.CommandText =
@@ -1000,6 +1042,71 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
         cmd.Parameters.Add(p);
 
         cmd.ExecuteNonQuery();
+        return goingDead;
+    }
+
+    /// <summary>
+    /// Gives every Dead row a fresh set of attempts, now. For a host that knows the cause is gone —
+    /// typically wired to <c>DuckDBSyncDataDestinationConfigurations.SchemaChanged</c>, so rows that
+    /// died while the destination table was behind on its schema are re-sent as soon as it is fixed.
+    /// Works before, during (from Preparing on) and after a run; outside a run it opens the diff
+    /// database itself.
+    /// </summary>
+    public async ValueTask<long> RequeueDeadChangesAsync(string reason)
+    {
+        var ownsConnection = connection is null;
+        if (ownsConnection)
+            OpenConnection();
+
+        try
+        {
+            if (!TableExists(GetChangesTableName()))
+                return 0;
+
+            var revived = RequeueDeadRows(olderThan: null);
+            lastRequeueReason = revived > 0 ? reason : lastRequeueReason;
+            return revived;
+        }
+        finally
+        {
+            if (ownsConnection)
+                CloseConnection();
+        }
+    }
+
+    private string? lastRequeueReason;
+
+    private long RequeueExpiredDeadRows()
+    {
+        var retryAfter = RequireConfig().DeadRetryAfter;
+        return retryAfter is null ? 0 : RequeueDeadRows(olderThan: retryAfter.Value);
+    }
+
+    private long RequeueDeadRows(TimeSpan? olderThan)
+    {
+        var changes = DuckDbSchemaHelpers.QuoteIdentifier(GetChangesTableName());
+        var status = DuckDbSchemaHelpers.QuoteIdentifier(StatusColumn);
+        var attemptCount = DuckDbSchemaHelpers.QuoteIdentifier(AttemptCountColumn);
+        var lastAttemptAt = DuckDbSchemaHelpers.QuoteIdentifier(LastAttemptAtColumn);
+        var batchIdCol = DuckDbSchemaHelpers.QuoteIdentifier(BatchIdColumn);
+
+        var age = olderThan is null
+            ? string.Empty
+            : $" AND ({lastAttemptAt} IS NULL OR {lastAttemptAt} < now() - INTERVAL '{(long)olderThan.Value.TotalSeconds}' SECOND)";
+
+        using var cmd = connection!.CreateCommand();
+        cmd.CommandText =
+            $"UPDATE {changes} SET {status} = {(int)SyncChangeStatus.Pending}, {attemptCount} = 0, {batchIdCol} = NULL " +
+            $"WHERE {status} = {(int)SyncChangeStatus.Dead}{age}";
+        return cmd.ExecuteNonQuery();
+    }
+
+    private bool TableExists(string tableName)
+    {
+        using var cmd = connection!.CreateCommand();
+        cmd.CommandText =
+            $"SELECT count(*) FROM duckdb_tables() WHERE database_name = current_database() AND schema_name = 'main' AND table_name = {DuckDbSchemaHelpers.QuoteString(tableName)}";
+        return Convert.ToInt64(cmd.ExecuteScalar(), CultureInfo.InvariantCulture) > 0;
     }
 
     public ValueTask<bool> ActionCompleted(SyncFunctionInput<SyncActionCompletedInput> input)
@@ -1013,7 +1120,42 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
 
     public ValueTask Succeeded(SyncFunctionInput input) => default;
 
-    public ValueTask Finished(SyncFunctionInput input) => default;
+    /// <summary>The queue as it stood at the end of the last run: what is still waiting, and what has been given up on.</summary>
+    public DuckDbCsvSyncQueueStats? LastRunQueueStats { get; private set; }
+
+    public async ValueTask Finished(SyncFunctionInput input)
+    {
+        if (connection is null || !TableExists(GetChangesTableName()))
+            return;
+
+        var changes = DuckDbSchemaHelpers.QuoteIdentifier(GetChangesTableName());
+        var status = DuckDbSchemaHelpers.QuoteIdentifier(StatusColumn);
+
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText =
+            $"SELECT " +
+            $"  count(*) FILTER (WHERE {status} = {(int)SyncChangeStatus.Pending}), " +
+            $"  count(*) FILTER (WHERE {status} = {(int)SyncChangeStatus.InFlight}), " +
+            $"  count(*) FILTER (WHERE {status} = {(int)SyncChangeStatus.Dead}) " +
+            $"FROM {changes}";
+
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read())
+            return;
+
+        var stats = new DuckDbCsvSyncQueueStats(
+            Convert.ToInt64(reader.GetValue(0), CultureInfo.InvariantCulture),
+            Convert.ToInt64(reader.GetValue(1), CultureInfo.InvariantCulture),
+            Convert.ToInt64(reader.GetValue(2), CultureInfo.InvariantCulture),
+            lastRequeueReason);
+        LastRunQueueStats = stats;
+        lastRequeueReason = null;
+
+        if (stats.Dead > 0)
+            await input.SyncProgressIndicators.LogWarning("Queue after run: {0} pending, {1} in flight, {2} Dead (given up on; see the _LastError column).", stats.Pending, stats.InFlight, stats.Dead);
+        else
+            await input.SyncProgressIndicators.LogInformation("Queue after run: {0} pending, {1} in flight, 0 Dead.", stats.Pending, stats.InFlight);
+    }
 
     public ValueTask Reset()
     {
@@ -1219,3 +1361,7 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
 
     #endregion
 }
+
+/// <summary>Row counts of a CSV diff queue, by status.</summary>
+/// <param name="RequeueReason">Why Dead rows were re-queued during the run, when <c>RequeueDeadChangesAsync</c> was called.</param>
+public sealed record DuckDbCsvSyncQueueStats(long Pending, long InFlight, long Dead, string? RequeueReason);

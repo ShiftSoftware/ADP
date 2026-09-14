@@ -151,6 +151,15 @@ public class DuckDbCsvSyncDataSourceConfigurations<TCsv, TDestination>
     public int MaxAttempts { get; set; } = 5;
 
     /// <summary>
+    /// How long a Dead row rests before it is given a fresh set of attempts. Default 24 hours;
+    /// null never retries a Dead row on its own (only <c>RequeueDeadChangesAsync</c> or a change
+    /// to its CSV row brings it back). The rest keeps a genuinely bad row from being retried on
+    /// every run, while a row that died to a transient fault — a destination behind on its schema,
+    /// a file lock, a timeout — is not lost for good.
+    /// </summary>
+    public TimeSpan? DeadRetryAfter { get; set; } = TimeSpan.FromHours(24);
+
+    /// <summary>
     /// Override the source table name. Default: <c>{TCsv.Name}_source</c>.
     /// </summary>
     public string? SourceTableName { get; set; }

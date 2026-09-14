@@ -18,6 +18,12 @@ steps:
  - script: dotnet build --configuration release
    displayName: 'Build All Projects'
 
+# The DuckDB sync destination and CSV diff queue are exercised against a real DuckDB here. A release
+# that regresses them (a torn row, a table left behind its model, a failed batch reported as success)
+# reaches every sync agent that consumes the package, so nothing is packed until they pass.
+ - script: dotnet test ADP.SyncAgent/SyncAgent.Tests --configuration release --no-build
+   displayName: 'test ADP.SyncAgent'
+
  - script: dotnet pack ADP.Models/Models --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
    condition: and(succeeded(), or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget')))
    displayName: 'pack ADP.Models'

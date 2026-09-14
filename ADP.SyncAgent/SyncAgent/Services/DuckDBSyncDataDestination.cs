@@ -1,14 +1,33 @@
 using System.Globalization;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
-using System.Text.Json;
 using DuckDB.NET.Data;
 using ShiftSoftware.ADP.SyncAgent.Configurations;
+using ShiftSoftware.ADP.SyncAgent.Extensions;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
+/// <summary>
+/// Writes mapped rows into a DuckDB table whose columns follow <typeparamref name="TDestination"/>.
+/// <para>
+/// The table is created from the model the first time it is met and, on every run after that,
+/// reconciled with the model BY NAME before anything is written: a property the model gained is added
+/// to the table as a new column (wherever it sits in the model), a column the model no longer has is
+/// kept and left alone, and a type or primary-key difference — which no automatic rewrite can settle
+/// without losing something — fails the run loudly with the exact columns named. Rows are then staged
+/// in a table built from the model, appended one row at a time so a value the engine rejects never
+/// leaves a torn row behind, and merged into the live table by column name. A batch that cannot be
+/// stored is reported as a failure with its cause, never as success.
+/// </para>
+/// <para>
+/// This replaced a positional write into a clone of the live table. That older shape silently lost
+/// every row after the first of a batch whenever a model gained a property the table did not have,
+/// and wrote values into the wrong columns when the property was added mid-model; the runs reported
+/// success throughout. See <see cref="DuckDBSchemaChange"/> for the signal hosts use to re-queue
+/// rows lost that way.
+/// </para>
+/// </summary>
 public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
     : ISyncDataAdapter<TSource, TDestination, DuckDBSyncDataDestinationConfigurations<TSource, TDestination>, DuckDBSyncDataDestination<TSource, TDestination, DuckDB>>
     where TSource : class
@@ -17,9 +36,19 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
 {
     private readonly DuckDB db;
 
+    // One property walk per adapter: the same list feeds the DDL, the staging table and the appender,
+    // so a column can never be written in a different order than it was declared.
+    private static readonly PropertyInfo[] Properties = DuckDbSchemaHelpers.GetPropertiesWithChildPriority<TDestination>();
+
     public virtual DuckDBSyncDataDestinationConfigurations<TSource, TDestination>? Configurations { get; private set; }
 
     public ISyncEngine<TSource, TDestination> SyncService { get; private set; }
+
+    /// <summary>
+    /// What the last <see cref="Preparing"/> changed on the live table — null when it already matched
+    /// the model. Also delivered to <see cref="DuckDBSyncDataDestinationConfigurations{TSource, TDestination}.SchemaChanged"/>.
+    /// </summary>
+    public DuckDBSchemaChange? LastSchemaChange { get; private set; }
 
     public DuckDBSyncDataDestination(DuckDB db)
     {
@@ -47,41 +76,226 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
             SyncService
                 .SetupPreparing(async x =>
                 {
-                    if (previousPreparing is not null)
-                        await previousPreparing(x);
+                    // The source prepares first (it computes what there is to sync). Its verdict is
+                    // kept: a source that failed stays failed, and a source with nothing to do stays
+                    // skipped — this destination only ever downgrades the outcome, never masks it.
+                    var sourceResult = previousPreparing is null
+                        ? SyncPreparingResponseAction.Succeeded
+                        : await previousPreparing(x);
 
-                    return await Preparing(x);
+                    if (sourceResult == SyncPreparingResponseAction.Failed)
+                        return SyncPreparingResponseAction.Failed;
+
+                    // Prepared even on a skipped run: reconciling the table (and telling the host
+                    // about it) must not wait for the next change to arrive.
+                    var destinationResult = await Preparing(x);
+
+                    if (destinationResult == SyncPreparingResponseAction.Failed)
+                        return SyncPreparingResponseAction.Failed;
+
+                    // A source with nothing to do decided that BEFORE the table was reconciled. When the
+                    // reconciliation changed something, a SchemaChanged handler may just have re-queued
+                    // rows — so the actions run this time and pick them up rather than waiting a cycle.
+                    return LastSchemaChange is not null
+                        ? SyncPreparingResponseAction.Succeeded
+                        : sourceResult;
                 })
                 .SetupStoreBatchData(async x => await StoreBatchData(x));
 
         return SyncService;
     }
 
-    public ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input)
+    /// <summary>
+    /// Creates the table when missing, then reconciles it with the model (see the class remarks) and
+    /// creates the configured indexes. <paramref name="input"/> may be null for a bare probe call; it
+    /// is only used for logging.
+    /// </summary>
+    public async ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input)
     {
+        var loggers = input?.SyncProgressIndicators;
+        LastSchemaChange = null;
+
         try
         {
             var tableName = GetTableName();
             var primaryKeyNames = GetPrimaryKeyPropertyNames();
-            var createTableSql = GenerateCreateTableSql(tableName, primaryKeyNames);
 
-            using var createTableCmd = db.CreateCommand();
-            createTableCmd.CommandText = createTableSql;
-            createTableCmd.ExecuteNonQuery();
+            ExecuteNonQuery(BuildCreateTableSql(tableName, primaryKeyNames));
+
+            var change = await ReconcileSchemaAsync(tableName, primaryKeyNames, loggers);
+
+            if (change is null)
+                return SyncPreparingResponseAction.Failed;
 
             CreateIndexes(tableName);
 
-            return ValueTask.FromResult(SyncPreparingResponseAction.Succeeded);
+            if (change.AddedColumns.Count > 0)
+            {
+                LastSchemaChange = change;
+
+                if (Configurations?.SchemaChanged is not null)
+                    await Configurations.SchemaChanged(change);
+            }
+
+            return SyncPreparingResponseAction.Succeeded;
         }
         catch (IOException)
         {
             throw;
         }
-        catch
+        catch (Exception exception)
         {
-            return ValueTask.FromResult(SyncPreparingResponseAction.Failed);
+            if (loggers is not null)
+                await loggers.LogError(exception, "Preparing DuckDB table {0} for {1} failed.", GetTableName(), typeof(TDestination).Name);
+
+            return SyncPreparingResponseAction.Failed;
         }
     }
+
+    #region Schema reconciliation
+
+    private async Task<DuckDBSchemaChange?> ReconcileSchemaAsync(string tableName, IReadOnlyList<string> primaryKeyNames, IEnumerable<ISyncEngineLogger>? loggers)
+    {
+        var live = ReadLiveColumns(tableName);
+        var expected = ReadModelColumns(tableName);
+
+        var liveByName = live.ToDictionary(x => x.Name, StringComparer.OrdinalIgnoreCase);
+        var expectedByName = expected.ToDictionary(x => x.Name, StringComparer.OrdinalIgnoreCase);
+
+        var typeMismatches = live
+            .Where(x => expectedByName.TryGetValue(x.Name, out var e) && !string.Equals(e.Type, x.Type, StringComparison.OrdinalIgnoreCase))
+            .Select(x => $"{x.Name}: table {x.Type}, model {expectedByName[x.Name].Type}")
+            .ToList();
+
+        var livePrimaryKey = ReadPrimaryKeyColumns(tableName);
+        var expectedPrimaryKey = Properties
+            .Where(p => primaryKeyNames.Contains(p.Name, StringComparer.OrdinalIgnoreCase))
+            .Select(p => p.Name)
+            .ToList();
+        var primaryKeyDiffers = !livePrimaryKey.ToHashSet(StringComparer.OrdinalIgnoreCase)
+            .SetEquals(expectedPrimaryKey);
+
+        if (typeMismatches.Count > 0 || primaryKeyDiffers)
+        {
+            // Nothing here can be fixed without a decision: converting a column may lose values, and a
+            // different key changes what "the same row" means. Refuse, and name everything.
+            if (loggers is not null)
+                await loggers.LogError(
+                    "DuckDB table {0} does not match {1} and cannot be reconciled automatically. " +
+                    "Type mismatches: [{2}]. Table primary key: [{3}]; model primary key: [{4}]. " +
+                    "Table columns: [{5}]. Model columns: [{6}].",
+                    tableName, typeof(TDestination).Name,
+                    string.Join(", ", typeMismatches),
+                    string.Join(", ", livePrimaryKey), string.Join(", ", expectedPrimaryKey),
+                    string.Join(", ", live.Select(x => x.ToString())), string.Join(", ", expected.Select(x => x.ToString())));
+
+            return null;
+        }
+
+        var missing = expected.Where(x => !liveByName.ContainsKey(x.Name)).ToList();
+        var extra = live.Where(x => !expectedByName.ContainsKey(x.Name)).Select(x => x.Name).ToList();
+
+        foreach (var column in missing)
+        {
+            ExecuteNonQuery($"ALTER TABLE {tableName} ADD COLUMN IF NOT EXISTS {DuckDbSchemaHelpers.QuoteIdentifier(column.Name)} {column.Type}");
+
+            if (loggers is not null)
+                await loggers.LogWarning("DuckDB table {0} was missing model column {1} {2}; added it. Existing rows hold NULL there until they are re-sent.", tableName, column.Name, column.Type);
+        }
+
+        if (extra.Count > 0 && loggers is not null)
+            await loggers.LogWarning("DuckDB table {0} has columns the model {1} no longer declares: [{2}]. They are kept and not written.", tableName, typeof(TDestination).Name, string.Join(", ", extra));
+
+        return new DuckDBSchemaChange(tableName, missing.Select(x => x.Name).ToList(), extra);
+    }
+
+    private IReadOnlyList<DuckDBColumn> ReadLiveColumns(string tableName)
+    {
+        var (databaseFilter, schemaName, bareName) = ResolveTableIdentity(tableName);
+
+        using var cmd = db.CreateCommand();
+        cmd.CommandText =
+            "SELECT column_name, data_type FROM duckdb_columns() " +
+            $"WHERE {databaseFilter} AND schema_name = {DuckDbSchemaHelpers.QuoteString(schemaName)} AND table_name = {DuckDbSchemaHelpers.QuoteString(bareName)} " +
+            "ORDER BY column_index";
+
+        return ReadColumns(cmd);
+    }
+
+    // The model's columns with the types DuckDB itself reports for them — not the mapping's spelling
+    // ("DECIMAL(38, 10)" vs "DECIMAL(38,10)") — so they compare exactly against the live table's.
+    // A TEMP table is connection-local, so a concurrent run on another connection never sees it.
+    private IReadOnlyList<DuckDBColumn> ReadModelColumns(string tableName)
+    {
+        var probeTable = $"__adp_model_probe_{SanitizeForIdentifier(tableName)}";
+
+        ExecuteNonQuery($"CREATE OR REPLACE TEMP TABLE {DuckDbSchemaHelpers.QuoteIdentifier(probeTable)} ({BuildColumnDefinitions()})");
+
+        try
+        {
+            using var cmd = db.CreateCommand();
+            cmd.CommandText =
+                "SELECT column_name, data_type FROM duckdb_columns() " +
+                $"WHERE database_name = 'temp' AND table_name = {DuckDbSchemaHelpers.QuoteString(probeTable)} " +
+                "ORDER BY column_index";
+
+            return ReadColumns(cmd);
+        }
+        finally
+        {
+            ExecuteNonQuery($"DROP TABLE IF EXISTS {DuckDbSchemaHelpers.QuoteIdentifier(probeTable)}");
+        }
+    }
+
+    private IReadOnlyList<string> ReadPrimaryKeyColumns(string tableName)
+    {
+        var (databaseFilter, schemaName, bareName) = ResolveTableIdentity(tableName);
+
+        using var cmd = db.CreateCommand();
+        cmd.CommandText =
+            "SELECT unnest(constraint_column_names) FROM duckdb_constraints() " +
+            $"WHERE {databaseFilter} AND schema_name = {DuckDbSchemaHelpers.QuoteString(schemaName)} AND table_name = {DuckDbSchemaHelpers.QuoteString(bareName)} " +
+            "AND constraint_type = 'PRIMARY KEY'";
+
+        var columns = new List<string>();
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+            columns.Add(reader.GetString(0));
+
+        return columns;
+    }
+
+    private static IReadOnlyList<DuckDBColumn> ReadColumns(DuckDBCommand cmd)
+    {
+        var columns = new List<DuckDBColumn>();
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+            columns.Add(new DuckDBColumn(reader.GetString(0), reader.GetString(1)));
+        return columns;
+    }
+
+    // A configured table name is usually bare; "schema.table" and "catalog.schema.table" are honoured
+    // so the catalog lookups land on the same table the DDL and DML address.
+    private static (string DatabaseFilter, string SchemaName, string TableName) ResolveTableIdentity(string tableName)
+    {
+        var parts = tableName.Split('.');
+
+        return parts.Length switch
+        {
+            3 => ($"database_name = {DuckDbSchemaHelpers.QuoteString(parts[0])}", parts[1], parts[2]),
+            2 => ("database_name = current_database()", parts[0], parts[1]),
+            _ => ("database_name = current_database()", "main", tableName),
+        };
+    }
+
+    private sealed record DuckDBColumn(string Name, string Type)
+    {
+        public override string ToString() => $"{Name} {Type}";
+    }
+
+    #endregion
+
+    #region DDL
 
     private string GetTableName()
     {
@@ -93,102 +307,26 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
         if (Configurations?.PrimaryKey is null)
             return [];
 
-        return GetPropertyNamesFromExpression(Configurations.PrimaryKey);
+        return DuckDbSchemaHelpers.GetPropertyNamesFromExpression(Configurations.PrimaryKey);
     }
 
-    private static IReadOnlyList<string> GetPropertyNamesFromExpression(Expression<Func<TDestination, object>> expression)
+    private string BuildCreateTableSql(string tableName, IReadOnlyList<string> primaryKeyNames)
     {
-        var members = new List<string>();
-        CollectMemberNames(expression.Body, members);
-        return members;
+        var keyColumns = Properties
+            .Where(p => primaryKeyNames.Contains(p.Name, StringComparer.OrdinalIgnoreCase))
+            .Select(p => DuckDbSchemaHelpers.QuoteIdentifier(p.Name))
+            .ToList();
+
+        var definitions = BuildColumnDefinitions();
+
+        if (keyColumns.Count > 0)
+            definitions += $",\n    PRIMARY KEY ({string.Join(", ", keyColumns)})";
+
+        return $"CREATE TABLE IF NOT EXISTS {tableName} (\n{definitions}\n)";
     }
 
-    private static void CollectMemberNames(Expression expression, ICollection<string> members)
-    {
-        switch (expression)
-        {
-            case MemberExpression memberExpression:
-                members.Add(memberExpression.Member.Name);
-                return;
-
-            case UnaryExpression { Operand: var unaryOperand }:
-                CollectMemberNames(unaryOperand, members);
-                return;
-
-            case NewExpression newExpression:
-                foreach (var argument in newExpression.Arguments)
-                    CollectMemberNames(argument, members);
-                return;
-
-            case NewArrayExpression newArrayExpression:
-                foreach (var arrayExpression in newArrayExpression.Expressions)
-                    CollectMemberNames(arrayExpression, members);
-                return;
-        }
-    }
-
-    /// <summary>
-    /// Gets properties from TDestination with child class properties taking priority over parent class properties.
-    /// When both parent and child have a property with the same name, only the child's property is included.
-    /// </summary>
-    private static PropertyInfo[] GetPropertiesWithChildPriority()
-    {
-        var allProperties = typeof(TDestination).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-        return allProperties
-            .GroupBy(p => p.Name)
-            .Select(g => g.OrderByDescending(p => GetInheritanceDepth(p.DeclaringType)).First())
-            .ToArray();
-    }
-
-    private static int GetInheritanceDepth(Type? type)
-    {
-        var depth = 0;
-        while (type is not null)
-        {
-            depth++;
-            type = type.BaseType;
-        }
-        return depth;
-    }
-
-    private string GenerateCreateTableSql(string tableName, IReadOnlyList<string> primaryKeyNames)
-    {
-        var properties = GetPropertiesWithChildPriority();
-        var keySet = primaryKeyNames
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        var sb = new StringBuilder();
-
-        sb.AppendLine($"CREATE TABLE IF NOT EXISTS {tableName} (");
-
-        var columnDefinitions = new List<string>();
-
-        foreach (var property in properties)
-        {
-            var columnName = property.Name;
-            var duckDbType = MapCSharpTypeToDuckDB(property.PropertyType);
-            var columnDef = $"    {columnName} {duckDbType}";
-            columnDefinitions.Add(columnDef);
-        }
-
-        if (keySet.Count > 0)
-        {
-            var keyColumns = properties
-                .Where(p => keySet.Contains(p.Name))
-                .Select(p => p.Name)
-                .ToList();
-
-            if (keyColumns.Count > 0)
-                columnDefinitions.Add($"    PRIMARY KEY ({string.Join(", ", keyColumns)})");
-        }
-
-        sb.AppendLine(string.Join(",\n", columnDefinitions));
-        sb.Append(')');
-
-        return sb.ToString();
-    }
+    private static string BuildColumnDefinitions()
+        => string.Join(",\n", Properties.Select(p => $"    {DuckDbSchemaHelpers.QuoteIdentifier(p.Name)} {DuckDbSchemaHelpers.MapCSharpTypeToDuckDB(p.PropertyType)}"));
 
     /// <summary>
     /// Creates every configured secondary index, after the table exists. <c>IF NOT EXISTS</c> makes
@@ -204,11 +342,9 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
     {
         foreach (var index in ResolveIndexes())
         {
-            using var createIndexCmd = db.CreateCommand();
-            createIndexCmd.CommandText =
+            ExecuteNonQuery(
                 $"CREATE INDEX IF NOT EXISTS {DuckDbSchemaHelpers.QuoteIdentifier(index.Name)} " +
-                $"ON {tableName} ({string.Join(", ", index.Expressions)})";
-            createIndexCmd.ExecuteNonQuery();
+                $"ON {tableName} ({string.Join(", ", index.Expressions)})");
         }
     }
 
@@ -226,7 +362,6 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
             return [];
 
         var tableName = GetTableName();
-        var properties = GetPropertiesWithChildPriority();
         var resolved = new List<ResolvedIndex>(definitions.Count);
         var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -240,7 +375,7 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
 
             if (definition.Columns is not null)
             {
-                var memberNames = GetPropertyNamesFromExpression(definition.Columns);
+                var memberNames = DuckDbSchemaHelpers.GetPropertyNamesFromExpression(definition.Columns);
 
                 if (memberNames.Count == 0)
                     throw new InvalidOperationException(
@@ -248,7 +383,7 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
 
                 foreach (var memberName in memberNames)
                 {
-                    var property = properties.FirstOrDefault(x => string.Equals(x.Name, memberName, StringComparison.OrdinalIgnoreCase))
+                    var property = Properties.FirstOrDefault(x => string.Equals(x.Name, memberName, StringComparison.OrdinalIgnoreCase))
                         ?? throw new InvalidOperationException(
                             $"An index on DuckDB table '{tableName}' names '{memberName}', which is not a column of {typeof(TDestination).Name}.");
 
@@ -325,49 +460,21 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
         }
     }
 
+    private static string SanitizeForIdentifier(string value)
+    {
+        var sb = new StringBuilder(value.Length);
+        foreach (var c in value)
+            sb.Append(char.IsLetterOrDigit(c) || c == '_' ? c : '_');
+        return sb.ToString();
+    }
+
     private sealed record ResolvedIndex(string Name, IReadOnlyList<string> Expressions);
 
-    private static string MapCSharpTypeToDuckDB(Type type)
-    {
-        var underlyingType = Nullable.GetUnderlyingType(type) ?? type;
+    #endregion
 
-        return underlyingType switch
-        {
-            _ when underlyingType == typeof(bool) => "BOOLEAN",
-            _ when underlyingType == typeof(byte) => "UTINYINT",
-            _ when underlyingType == typeof(sbyte) => "TINYINT",
-            _ when underlyingType == typeof(short) => "SMALLINT",
-            _ when underlyingType == typeof(ushort) => "USMALLINT",
-            _ when underlyingType == typeof(int) => "INTEGER",
-            _ when underlyingType == typeof(uint) => "UINTEGER",
-            _ when underlyingType == typeof(long) => "BIGINT",
-            _ when underlyingType == typeof(ulong) => "UBIGINT",
-            _ when underlyingType == typeof(float) => "FLOAT",
-            _ when underlyingType == typeof(double) => "DOUBLE",
-            _ when underlyingType == typeof(decimal) => "DECIMAL(38, 10)",
-            _ when underlyingType == typeof(string) => "VARCHAR",
-            _ when underlyingType == typeof(char) => "VARCHAR",
-            _ when underlyingType == typeof(DateTime) => "TIMESTAMP",
-            _ when underlyingType == typeof(DateTimeOffset) => "TIMESTAMPTZ",
-            _ when underlyingType == typeof(DateOnly) => "DATE",
-            _ when underlyingType == typeof(TimeOnly) => "TIME",
-            _ when underlyingType == typeof(TimeSpan) => "INTERVAL",
-            _ when underlyingType == typeof(Guid) => "UUID",
-            _ when underlyingType == typeof(byte[]) => "BLOB",
-            _ when underlyingType.IsEnum => "INTEGER",
-            _ when IsComplexType(underlyingType) => "JSON",
-            _ => "VARCHAR"
-        };
-    }
+    #region Store
 
-    private static bool IsComplexType(Type type)
-    {
-        return type.IsClass && type != typeof(string) && type != typeof(byte[])
-            || type.IsInterface
-            || (type.IsValueType && !type.IsPrimitive && !type.IsEnum && type.Namespace != "System");
-    }
-
-    public ValueTask<SyncStoreDataResult<TDestination>> StoreBatchData(SyncFunctionInput<SyncStoreDataInput<TDestination>> input)
+    public async ValueTask<SyncStoreDataResult<TDestination>> StoreBatchData(SyncFunctionInput<SyncStoreDataInput<TDestination>> input)
     {
         var result = new SyncStoreDataResult<TDestination>();
         var succeededItems = new List<TDestination?>();
@@ -383,112 +490,161 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
             result.SucceededItems = succeededItems;
             result.FailedItems = failedItems;
             result.SkippedItems = skippedItems;
-            return ValueTask.FromResult(result);
+            return result;
         }
 
         var tableName = GetTableName();
         var continueAfterFail = Configurations?.ContinueAfterFail ?? false;
 
-        if (input.Input.Status.ActionType == SyncActionType.Delete)
+        if (input!.Input.Status.ActionType == SyncActionType.Delete)
         {
-            ProcessDeleteBatch(
-                tableName,
-                items,
-                succeededItems,
-                failedItems,
-                skippedItems,
-                continueAfterFail);
+            ProcessDeleteBatch(tableName, items, succeededItems, failedItems, skippedItems, continueAfterFail);
         }
         else
         {
-            var stagingTableName = GenerateStagingTableName(tableName);
-            var properties = GetPropertiesWithChildPriority();
+            var stagingTableName = GenerateScratchTableName(tableName, "staging");
 
             try
             {
-                CreateStagingTable(tableName, stagingTableName);
+                // Built from the model, not cloned from the live table: exactly as wide as the appender
+                // writes, whatever the live table looks like today.
+                ExecuteNonQuery($"CREATE OR REPLACE TEMP TABLE {DuckDbSchemaHelpers.QuoteIdentifier(stagingTableName)} ({BuildColumnDefinitions()})");
 
-                BulkLoadToStagingTable(
-                    stagingTableName,
-                    properties,
-                    items,
-                    succeededItems,
-                    failedItems,
-                    continueAfterFail);
+                var abort = BulkLoadToStagingTable(stagingTableName, items, succeededItems, failedItems, continueAfterFail);
 
-                UpsertFromStagingTable(tableName, stagingTableName);
+                if (abort is not null)
+                {
+                    // A batch that stops part-way is not stored at all: nothing reaches the live table,
+                    // every row is reported failed, and the cause travels with the result so the engine
+                    // logs it and the queue records it — the opposite of a quiet partial write.
+                    var (failedIndex, exception) = abort.Value;
+                    failedItems.Clear();
+                    failedItems.AddRange(items);
+                    succeededItems.Clear();
+
+                    var message =
+                        $"Batch into DuckDB table {tableName} aborted at item {failedIndex + 1} of {items.Count()}: {exception.Message} " +
+                        "(nothing from this batch was written; set ContinueAfterFail to skip bad rows instead).";
+
+                    if (input.SyncProgressIndicators is not null)
+                        await input.SyncProgressIndicators.LogError(exception, message);
+
+                    result.RetryException = new RetryException(new InvalidOperationException(message, exception));
+                }
+                else if (succeededItems.Count > 0)
+                {
+                    UpsertFromStagingTable(tableName, stagingTableName);
+                }
             }
             finally
             {
-                DropStagingTable(stagingTableName);
+                DropScratchTable(stagingTableName);
             }
         }
 
         result.SucceededItems = succeededItems;
         result.FailedItems = failedItems;
         result.SkippedItems = skippedItems;
-        return ValueTask.FromResult(result);
+        return result;
     }
 
-    private static string GenerateStagingTableName(string tableName)
-    {
-        var uniqueId = Guid.NewGuid().ToString("N")[..8];
-        return $"{tableName}_staging_{uniqueId}";
-    }
-
-    private static string GenerateDeleteKeysTableName(string tableName)
-    {
-        var uniqueId = Guid.NewGuid().ToString("N")[..8];
-        return $"{tableName}_delete_keys_{uniqueId}";
-    }
-
-    private void CreateStagingTable(string tableName, string stagingTableName)
-    {
-        using var cmd = db.CreateCommand();
-        cmd.CommandText = $"CREATE OR REPLACE TEMP TABLE {stagingTableName} AS SELECT * FROM {tableName} WHERE 1=0";
-        cmd.ExecuteNonQuery();
-    }
-
-    private void BulkLoadToStagingTable(
+    /// <summary>
+    /// Appends every item to the staging table, one atomic row at a time. Returns null when the batch
+    /// may be stored, or the index and cause of the failure that aborted it (only with
+    /// <c>ContinueAfterFail</c> off; with it on, bad rows go to <paramref name="failedItems"/> and the
+    /// rest continue).
+    /// </summary>
+    private (int Index, Exception Exception)? BulkLoadToStagingTable(
         string stagingTableName,
-        PropertyInfo[] properties,
         IEnumerable<TDestination?> items,
         List<TDestination?> succeededItems,
         List<TDestination?> failedItems,
         bool continueAfterFail)
     {
-        using var appender = db.CreateAppender(stagingTableName);
+        DuckDBAppender? appender = null;
+        var index = -1;
 
-        foreach (var item in items)
+        try
         {
-            if (item is null)
-            {
-                failedItems.Add(item);
-                continue;
-            }
+            appender = db.CreateAppender(stagingTableName);
 
-            try
+            foreach (var item in items)
             {
-                var row = appender.CreateRow();
+                index++;
 
-                foreach (var property in properties)
+                if (item is null)
                 {
-                    var value = property.GetValue(item);
-                    AppendValue(row, value, property.PropertyType);
+                    failedItems.Add(item);
+                    if (!continueAfterFail)
+                        return (index, new InvalidOperationException("The batch contains a null item."));
+                    continue;
                 }
 
-                row.EndRow();
-                succeededItems.Add(item);
-            }
-            catch
-            {
-                failedItems.Add(item);
+                // Every conversion happens before the appender is touched, so a value that cannot be
+                // represented fails the item and nothing else.
+                object?[] values;
+                try
+                {
+                    values = Materialize(item);
+                }
+                catch (Exception exception)
+                {
+                    failedItems.Add(item);
+                    if (!continueAfterFail)
+                        return (index, exception);
+                    continue;
+                }
 
-                if (!continueAfterFail)
-                    return;
+                try
+                {
+                    // AppendRow commits the row only once every column is in; a failure inside leaves
+                    // no half-row in the staging table.
+                    appender.AppendRow(row =>
+                    {
+                        for (var i = 0; i < Properties.Length; i++)
+                            DuckDbSchemaHelpers.AppendValue(row, values[i], Properties[i].PropertyType);
+                    });
+
+                    succeededItems.Add(item);
+                }
+                catch (Exception exception)
+                {
+                    failedItems.Add(item);
+                    if (!continueAfterFail)
+                        return (index, exception);
+
+                    // The appender does not accept further rows after a failed one; carry on with a fresh one.
+                    appender.Dispose();
+                    appender = db.CreateAppender(stagingTableName);
+                }
             }
+
+            return null;
+        }
+        finally
+        {
+            appender?.Dispose();
         }
     }
+
+    private static object?[] Materialize(TDestination item)
+    {
+        var values = new object?[Properties.Length];
+        for (var i = 0; i < Properties.Length; i++)
+            values[i] = Properties[i].GetValue(item);
+        return values;
+    }
+
+    // Merged by column NAME: the live table may carry columns the model no longer has (kept as they
+    // are), and its columns may sit in any order.
+    private void UpsertFromStagingTable(string tableName, string stagingTableName)
+    {
+        ExecuteNonQuery($"INSERT OR REPLACE INTO {tableName} BY NAME SELECT * FROM {DuckDbSchemaHelpers.QuoteIdentifier(stagingTableName)}");
+    }
+
+    #endregion
+
+    #region Delete
 
     private void ProcessDeleteBatch(
         string tableName,
@@ -502,34 +658,26 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
         if (keyProperties.Length == 0)
             throw new InvalidOperationException("DuckDB delete action requires PrimaryKey configuration.");
 
-        var deleteKeysTableName = GenerateDeleteKeysTableName(tableName);
-        var hasAnyDeleteKey = false;
+        var deleteKeysTableName = GenerateScratchTableName(tableName, "delete_keys");
 
         try
         {
-            CreateDeleteKeysTable(tableName, deleteKeysTableName, keyProperties);
+            var keyDefinitions = string.Join(", ", keyProperties.Select(p => $"{DuckDbSchemaHelpers.QuoteIdentifier(p.Name)} {DuckDbSchemaHelpers.MapCSharpTypeToDuckDB(p.PropertyType)}"));
+            ExecuteNonQuery($"CREATE OR REPLACE TEMP TABLE {DuckDbSchemaHelpers.QuoteIdentifier(deleteKeysTableName)} ({keyDefinitions})");
 
-            hasAnyDeleteKey = BulkLoadDeleteKeys(
-                deleteKeysTableName,
-                keyProperties,
-                items,
-                succeededItems,
-                failedItems,
-                skippedItems,
-                continueAfterFail);
+            var hasAnyDeleteKey = BulkLoadDeleteKeys(deleteKeysTableName, keyProperties, items, succeededItems, failedItems, skippedItems, continueAfterFail);
 
             if (hasAnyDeleteKey)
                 DeleteFromDeleteKeysTable(tableName, deleteKeysTableName, keyProperties);
         }
         finally
         {
-            DropStagingTable(deleteKeysTableName);
+            DropScratchTable(deleteKeysTableName);
         }
     }
 
     private PropertyInfo[] GetPrimaryKeyProperties()
     {
-        var properties = GetPropertiesWithChildPriority();
         var keyNames = GetPrimaryKeyPropertyNames()
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .ToList();
@@ -540,20 +688,12 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
         var resolved = new List<PropertyInfo>();
         foreach (var keyName in keyNames)
         {
-            var property = properties.FirstOrDefault(p => string.Equals(p.Name, keyName, StringComparison.OrdinalIgnoreCase));
+            var property = Properties.FirstOrDefault(p => string.Equals(p.Name, keyName, StringComparison.OrdinalIgnoreCase));
             if (property is not null)
                 resolved.Add(property);
         }
 
         return resolved.ToArray();
-    }
-
-    private void CreateDeleteKeysTable(string tableName, string deleteKeysTableName, IReadOnlyList<PropertyInfo> keyProperties)
-    {
-        using var cmd = db.CreateCommand();
-        var keyColumns = string.Join(", ", keyProperties.Select(x => x.Name));
-        cmd.CommandText = $"CREATE OR REPLACE TEMP TABLE {deleteKeysTableName} AS SELECT {keyColumns} FROM {tableName} WHERE 1=0";
-        cmd.ExecuteNonQuery();
     }
 
     private bool BulkLoadDeleteKeys(
@@ -593,11 +733,12 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
                     continue;
                 }
 
-                var row = appender.CreateRow();
-                for (var i = 0; i < keyProperties.Count; i++)
-                    AppendValue(row, keyValues[i], keyProperties[i].PropertyType);
+                appender.AppendRow(row =>
+                {
+                    for (var i = 0; i < keyProperties.Count; i++)
+                        DuckDbSchemaHelpers.AppendValue(row, keyValues[i], keyProperties[i].PropertyType);
+                });
 
-                row.EndRow();
                 succeededItems.Add(item);
                 hasAnyDeleteKey = true;
             }
@@ -615,7 +756,7 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
 
     private static string BuildDeleteDedupeKey(object?[] keyValues)
     {
-        return string.Join("\u001F", keyValues.Select(ToInvariantKeyPart));
+        return string.Join("", keyValues.Select(ToInvariantKeyPart));
     }
 
     private static string ToInvariantKeyPart(object? value)
@@ -638,130 +779,41 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
         return value.ToString() ?? string.Empty;
     }
 
-    private static void AppendValue(IDuckDBAppenderRow row, object? value, Type propertyType)
-    {
-        if (value is null)
-        {
-            row.AppendNullValue();
-            return;
-        }
-
-        var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
-
-        if (underlyingType.IsEnum)
-        {
-            row.AppendValue(Convert.ToInt32(value));
-            return;
-        }
-
-        if (IsComplexType(underlyingType))
-        {
-            row.AppendValue(JsonSerializer.Serialize(value, underlyingType));
-            return;
-        }
-
-        switch (value)
-        {
-            case bool b:
-                row.AppendValue(b);
-                break;
-            case byte by:
-                row.AppendValue(by);
-                break;
-            case sbyte sb:
-                row.AppendValue(sb);
-                break;
-            case short s:
-                row.AppendValue(s);
-                break;
-            case ushort us:
-                row.AppendValue(us);
-                break;
-            case int i:
-                row.AppendValue(i);
-                break;
-            case uint ui:
-                row.AppendValue(ui);
-                break;
-            case long l:
-                row.AppendValue(l);
-                break;
-            case ulong ul:
-                row.AppendValue(ul);
-                break;
-            case float f:
-                row.AppendValue(f);
-                break;
-            case double d:
-                row.AppendValue(d);
-                break;
-            case decimal dec:
-                row.AppendValue(dec);
-                break;
-            case string str:
-                row.AppendValue(str);
-                break;
-            case char c:
-                row.AppendValue(c.ToString());
-                break;
-            case DateTime dt:
-                row.AppendValue(dt);
-                break;
-            case DateTimeOffset dto:
-                row.AppendValue(dto);
-                break;
-            case DateOnly dateOnly:
-                row.AppendValue((DateOnly?)dateOnly);
-                break;
-            case TimeOnly timeOnly:
-                row.AppendValue((TimeOnly?)timeOnly);
-                break;
-            case TimeSpan ts:
-                row.AppendValue(ts);
-                break;
-            case Guid g:
-                row.AppendValue(g);
-                break;
-            case byte[] bytes:
-                row.AppendValue(bytes);
-                break;
-            default:
-                row.AppendValue(value.ToString());
-                break;
-        }
-    }
-
     private void DeleteFromDeleteKeysTable(string tableName, string deleteKeysTableName, IReadOnlyList<PropertyInfo> keyProperties)
     {
-        using var cmd = db.CreateCommand();
-
         var joinPredicate = string.Join(
             " AND ",
-            keyProperties.Select(x => $"t.{x.Name} IS NOT DISTINCT FROM k.{x.Name}"));
+            keyProperties.Select(x => $"t.{DuckDbSchemaHelpers.QuoteIdentifier(x.Name)} IS NOT DISTINCT FROM k.{DuckDbSchemaHelpers.QuoteIdentifier(x.Name)}"));
 
-        cmd.CommandText = $@"
+        ExecuteNonQuery($@"
             DELETE FROM {tableName} AS t
-            USING {deleteKeysTableName} AS k
-            WHERE {joinPredicate}";
-
-        cmd.ExecuteNonQuery();
+            USING {DuckDbSchemaHelpers.QuoteIdentifier(deleteKeysTableName)} AS k
+            WHERE {joinPredicate}");
     }
 
-    private void UpsertFromStagingTable(string tableName, string stagingTableName)
+    #endregion
+
+    #region SQL helpers
+
+    // Scratch tables are TEMP (connection-local) and uniquely named, so two batches on two connections
+    // to the same file never collide; the table part is sanitised because a configured name may be
+    // catalog-qualified.
+    private static string GenerateScratchTableName(string tableName, string purpose)
+        => $"{SanitizeForIdentifier(tableName)}_{purpose}_{Guid.NewGuid():N}";
+
+    private void DropScratchTable(string scratchTableName)
+    {
+        ExecuteNonQuery($"DROP TABLE IF EXISTS {DuckDbSchemaHelpers.QuoteIdentifier(scratchTableName)}");
+    }
+
+    private void ExecuteNonQuery(string sql)
     {
         using var cmd = db.CreateCommand();
-        cmd.CommandText = $@"
-            INSERT OR REPLACE INTO {tableName}
-            SELECT * FROM {stagingTableName}";
+        cmd.CommandText = sql;
         cmd.ExecuteNonQuery();
     }
 
-    private void DropStagingTable(string stagingTableName)
-    {
-        using var cmd = db.CreateCommand();
-        cmd.CommandText = $"DROP TABLE IF EXISTS {stagingTableName}";
-        cmd.ExecuteNonQuery();
-    }
+    #endregion
 
     #region Not Implemented
 

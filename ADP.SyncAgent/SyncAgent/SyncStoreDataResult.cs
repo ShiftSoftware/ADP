@@ -1,6 +1,11 @@
 ﻿namespace ShiftSoftware.ADP.SyncAgent;
 
-public class RetryException(Exception ex) : Exception
+/// <summary>
+/// Returned on a <see cref="SyncStoreDataResult{T}"/> to make the engine retry the batch and, once
+/// retries are exhausted, hand the cause to <c>BatchCompleted</c>. Carries the inner exception's message
+/// as its own so whatever records it (logs, a queue's last-error column) sees the real reason.
+/// </summary>
+public class RetryException(Exception ex) : Exception(ex.Message, ex)
 {
     public override string ToString()
     {
