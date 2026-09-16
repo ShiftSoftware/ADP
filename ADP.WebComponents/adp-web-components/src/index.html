@@ -340,10 +340,137 @@
         </section>
 
         <!-- ═══════════════════════════ 4 · where it sits ═══════════════════════════ -->
-        <section class="bg-base-100 border-base-300 border-b">
+        <section id="stack" class="bg-base-100 border-base-300 scroll-mt-20 border-b">
           <div class="mx-auto max-w-[1240px] px-5 py-20 sm:px-8">
             <h2 class="text-2xl leading-[var(--leading-heading)] font-bold tracking-tight" x-text="t('stack.title')"></h2>
             <p class="lede text-base-content/70 mt-3" x-text="t('stack.lede')"></p>
+
+            <!--
+              The whole chain as native markup, not an image: the strings go through
+              t() like every other line on the page, the direction follows the
+              document, the colours are the theme's, and on a phone the layers stack
+              instead of scrolling sideways. The mkdocs site shows the same chart as a
+              static SVG (English only). Product names stay as they are in every
+              language; everything else is translated.
+            -->
+            <div class="mt-10 flex flex-col">
+              <!-- 1 · the systems the data comes from -->
+              <div class="card bg-base-100 border-base-300 border p-5 sm:p-6">
+                <div class="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                  <div class="min-w-0">
+                    <p class="text-lg font-bold" x-text="t('chart.sources').title"></p>
+                    <p class="text-base-content/70 mt-1 text-sm leading-relaxed" x-text="t('chart.sources').body"></p>
+                  </div>
+                  <ul class="flex flex-wrap gap-2">
+                    <template x-for="chip in t('chart.sources').chips" :key="chip">
+                      <li class="badge badge-outline badge-sm" x-text="chip"></li>
+                    </template>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 py-1.5 ps-5">
+                <svg viewBox="0 0 12 36" class="text-base-content/40 h-9 w-3 shrink-0" fill="none" aria-hidden="true">
+                  <path d="M6 0v27" stroke="currentColor" stroke-width="1.5" />
+                  <path d="M1 26l5 9 5-9z" fill="currentColor" />
+                </svg>
+                <p class="text-sm">
+                  <span class="eyebrow text-accent font-bold" x-text="t('chart.sync').label"></span>
+                  <span class="text-base-content/70 ms-1" x-text="t('chart.sync').note"></span>
+                </p>
+              </div>
+
+              <!-- 2 · the platform, standing on the framework -->
+              <div class="bg-base-200 border-base-300 rounded-3xl border p-4 sm:p-5">
+                <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+                  <span class="badge badge-primary badge-lg font-bold" x-text="t('chart.adp').title"></span>
+                  <span class="text-base-content/60 text-xs" x-text="t('chart.adp').note"></span>
+                </div>
+
+                <div class="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-2">
+                  <template x-for="(stage, index) in t('chart.pipeline')" :key="stage.name">
+                    <div class="contents">
+                      <div class="card bg-base-100 border-base-300 border p-5">
+                        <p class="text-base font-bold" x-text="stage.name"></p>
+                        <span class="badge badge-outline badge-sm mt-2 w-fit" x-text="stage.chip"></span>
+                        <ul class="mt-4 flex flex-col gap-1 text-sm font-medium">
+                          <template x-for="fact in stage.facts" :key="fact">
+                            <li x-text="fact"></li>
+                          </template>
+                        </ul>
+                        <p class="text-base-content/70 mt-2 text-sm leading-relaxed" x-text="stage.body"></p>
+                      </div>
+                      <!-- between stages: across on wide screens, down on narrow ones -->
+                      <div x-show="index < t('chart.pipeline').length - 1" class="flex items-center justify-center gap-2 md:flex-col md:px-1" aria-hidden="true">
+                        <svg viewBox="0 0 36 12" class="text-base-content/40 h-3 w-9 rotate-90 md:rotate-0 rtl:md:-scale-x-100" fill="none">
+                          <path d="M0 6h27" stroke="currentColor" stroke-width="1.5" />
+                          <path d="M26 1l9 5-9 5z" fill="currentColor" />
+                        </svg>
+                        <span class="eyebrow text-accent font-bold" x-text="t('chart.pipelineArrows')[index]"></span>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+
+                <div class="bg-base-100 border-primary mt-4 rounded-2xl border border-s-4 p-4 sm:p-5">
+                  <div class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+                    <p class="text-base font-bold" x-text="t('chart.framework').title"></p>
+                    <span class="text-base-content/60 text-xs" x-text="t('chart.framework').note"></span>
+                  </div>
+                  <p class="text-base-content/70 mt-1 text-sm leading-relaxed" x-text="t('chart.framework').body"></p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 py-1.5 ps-5">
+                <svg viewBox="0 0 12 36" class="text-base-content/40 h-9 w-3 shrink-0" fill="none" aria-hidden="true">
+                  <path d="M6 0v27" stroke="currentColor" stroke-width="1.5" />
+                  <path d="M1 26l5 9 5-9z" fill="currentColor" />
+                </svg>
+                <p class="text-sm">
+                  <span class="eyebrow text-accent font-bold" x-text="t('chart.https').label"></span>
+                  <span class="text-base-content/70 ms-1" x-text="t('chart.https').note"></span>
+                </p>
+              </div>
+
+              <!-- 3 · this package -->
+              <div class="card bg-base-100 border-primary relative overflow-hidden border-2 p-5 sm:p-6">
+                <span class="bg-primary absolute inset-x-0 top-0 h-1.5" aria-hidden="true"></span>
+                <div class="flex flex-wrap items-center gap-3">
+                  <p class="text-lg font-bold" x-text="t('chart.elements').title"></p>
+                  <span class="badge badge-outline badge-sm" x-text="t('chart.elements').chip"></span>
+                </div>
+                <p class="text-base-content/70 mt-2 text-sm leading-relaxed" x-text="t('chart.elements').body"></p>
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+                  <ul class="flex flex-wrap gap-2">
+                    <template x-for="family in t('chart.elements').families" :key="family">
+                      <li class="badge badge-ghost font-semibold" x-text="family"></li>
+                    </template>
+                  </ul>
+                  <p class="text-base-content/60 text-xs" x-text="t('chart.elements').note"></p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 py-1.5 ps-5">
+                <svg viewBox="0 0 12 36" class="text-base-content/40 h-9 w-3 shrink-0" fill="none" aria-hidden="true">
+                  <path d="M6 0v27" stroke="currentColor" stroke-width="1.5" />
+                  <path d="M1 26l5 9 5-9z" fill="currentColor" />
+                </svg>
+                <p class="text-sm">
+                  <span class="eyebrow text-accent font-bold" x-text="t('chart.embed').label"></span>
+                  <span class="text-base-content/70 ms-1" x-text="t('chart.embed').note"></span>
+                </p>
+              </div>
+
+              <!-- 4 · the pages it lands on: four, because "anywhere" is shown, not claimed -->
+              <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <template x-for="host in t('chart.hosts')" :key="host.name">
+                  <li class="card bg-base-100 border-base-300 border p-4">
+                    <p class="font-bold" x-text="host.name"></p>
+                    <p class="text-base-content/70 mt-1 text-sm" x-text="host.body"></p>
+                  </li>
+                </template>
+              </ul>
+            </div>
 
             <div class="mt-12 grid gap-12 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-center">
               <ol class="border-accent/50 ms-4 flex flex-col border-s-2">

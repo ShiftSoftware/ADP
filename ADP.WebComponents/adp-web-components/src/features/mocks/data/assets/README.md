@@ -43,10 +43,9 @@ One family per use, so no generic picture is reused across unrelated things.
 
 ## Source and licence
 
-Every file is an original vector drawing made for this repository, written deterministically by
-`automation/draw-demo-assets.mjs` (`npm run draw:demo-assets`; re-run it after editing the script
-rather than hand-editing an SVG). No photographs, no third-party artwork, no embedded fonts — text
-uses the viewer's system font. Licensed with the package (MIT, `package.json`). No file may
+Every file is an original vector drawing made for this repository and kept as a static SVG (the
+script that first drew them was removed as cleanup; edit the files directly). No photographs, no
+third-party artwork, no embedded fonts — text uses the viewer's system font. Licensed with the package (MIT, `package.json`). No file may
 reference a real brand, client, storage account or place; a CC0 photograph added later must be
 listed here with its source and licence.
 

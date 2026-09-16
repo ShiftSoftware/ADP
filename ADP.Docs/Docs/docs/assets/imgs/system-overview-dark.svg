@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 816" width="960" height="816" role="img" aria-labelledby="t d" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
+<title id="t">How the Shift Framework, ADP and adp-web-components fit together</title>
+<desc id="d">Data flows from dealer and distributor systems through the ADP Sync Agent into the core platform, which is built on the Shift Framework. Lookup Services serve it over HTTPS to adp-web-components, which render it on any page: a dealer website, a distributor portal, a showroom kiosk, or a page you already have.</desc>
+<defs>
+  <marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+    <path d="M0 0L10 5 0 10z" fill="#8d99a6"/>
+  </marker>
+</defs>
+<rect x="4" y="4" width="952" height="92" rx="16" fill="#151b23" stroke="#262f3a"/>
+<text x="22" y="38" font-size="17" font-weight="700" fill="#e8eef4" text-anchor="start">Dealer &amp; distributor systems</text>
+<text x="22" y="62" font-size="12.5" font-weight="400" fill="#a7b4c1" text-anchor="start">The systems dealers already run — met where they are, read-only.</text>
+<rect x="503" y="38" width="171" height="20" rx="10" fill="none" stroke="#262f3a"/>
+<text x="588.5" y="52" font-size="10.5" font-weight="500" fill="#8d99a6" text-anchor="middle" letter-spacing="0.2">Dealer management system</text>
+<rect x="682" y="38" width="115" height="20" rx="10" fill="none" stroke="#262f3a"/>
+<text x="739.5" y="52" font-size="10.5" font-weight="500" fill="#8d99a6" text-anchor="middle" letter-spacing="0.2">Distributor ERP</text>
+<rect x="805" y="38" width="133" height="20" rx="10" fill="none" stroke="#262f3a"/>
+<text x="871.5" y="52" font-size="10.5" font-weight="500" fill="#8d99a6" text-anchor="middle" letter-spacing="0.2">Manufacturer feeds</text>
+<line x1="44" y1="99" x2="44" y2="132" stroke="#8d99a6" stroke-width="1.5" marker-end="url(#head)"/>
+<text x="58" y="123" font-size="10.5" font-weight="700" fill="#f9cb4b" text-anchor="start" letter-spacing="0.3">sync</text>
+<text x="94.8" y="123" font-size="11.5" font-weight="400" fill="#a7b4c1" text-anchor="start">direct database · REST, pushed or pulled · files (CSV, Parquet, JSON)</text>
+<rect x="4" y="142" width="952" height="324" rx="20" fill="#0c1016" stroke="#262f3a"/>
+<rect x="22" y="156" width="297" height="26" rx="13" fill="#f9cb4b"/>
+<text x="36" y="174" font-size="13.5" font-weight="700" fill="#2a2000" text-anchor="start">ADP — Automotive Dealer Platform</text>
+<text x="938" y="174" font-size="12" font-weight="400" fill="#8d99a6" text-anchor="end">One repository · NuGet ShiftSoftware.ADP.*</text>
+<rect x="22" y="192" width="278.6666666666667" height="178" rx="14" fill="#151b23" stroke="#262f3a"/>
+<text x="38" y="226" font-size="16" font-weight="700" fill="#e8eef4" text-anchor="start">Sync Agent</text>
+<rect x="38" y="238" width="102" height="20" rx="10" fill="none" stroke="#262f3a"/>
+<text x="89" y="252" font-size="10.5" font-weight="500" fill="#8d99a6" text-anchor="middle" letter-spacing="0.2">ADP.SyncAgent</text>
+<text x="38" y="284" font-size="12" font-weight="400" fill="#a7b4c1" text-anchor="start">Pipelines that move data in. A run</text>
+<text x="38" y="302" font-size="12" font-weight="400" fill="#a7b4c1" text-anchor="start">counts only when every step completed.</text>
+<text x="38" y="328" font-size="12" font-weight="500" fill="#e8eef4" text-anchor="start">CSV · EF Core · Cosmos DB · DuckDB</text>
+<text x="38" y="346" font-size="12" font-weight="400" fill="#a7b4c1" text-anchor="start">Retries, batch-level errors, logging</text>
+<line x1="304.6666666666667" y1="281" x2="330.6666666666667" y2="281" stroke="#8d99a6" stroke-width="1.5" marker-end="url(#head)"/>
+<text x="320.6666666666667" y="272" font-size="10" font-weight="700" fill="#f9cb4b" text-anchor="middle" letter-spacing="0.2">ingest</text>
+<rect x="340.6666666666667" y="192" width="278.6666666666667" height="178" rx="14" fill="#151b23" stroke="#262f3a"/>
+<text x="356.6666666666667" y="226" font-size="16" font-weight="700" fill="#e8eef4" text-anchor="start">Core platform</text>
+<rect x="356.6666666666667" y="238" width="159" height="20" rx="10" fill="none" stroke="#262f3a"/>
+<text x="436.1666666666667" y="252" font-size="10.5" font-weight="500" fill="#8d99a6" text-anchor="middle" letter-spacing="0.2">microservices on Azure</text>
+<text x="356.6666666666667" y="284" font-size="12" font-weight="500" fill="#e8eef4" text-anchor="start">Identity · Vehicles · Parts · Services</text>
+<text x="356.6666666666667" y="302" font-size="12" font-weight="500" fill="#e8eef4" text-anchor="start">Tickets · Customers · Menus · Surveys</text>
+<text x="356.6666666666667" y="328" font-size="12" font-weight="400" fill="#a7b4c1" text-anchor="start">SQL per service; Cosmos DB and DuckDB /</text>
+<text x="356.6666666666667" y="346" font-size="12" font-weight="400" fill="#a7b4c1" text-anchor="start">Parquet as the shared read layer.</text>
+<text x="356.6666666666667" y="364" font-size="12" font-weight="400" fill="#a7b4c1" text-anchor="start">Rastgo watches freshness and correctness.</text>
+<line x1="623.3333333333334" y1="281" x2="649.3333333333334" y2="281" stroke="#8d99a6" stroke-width="1.5" marker-end="url(#head)"/>
+<text x="639.3333333333334" y="272" font-size="10" font-weight="700" fill="#f9cb4b" text-anchor="middle" letter-spacing="0.2">serve</text>
+<rect x="659.3333333333334" y="192" width="278.6666666666667" height="178" rx="14" fill="#151b23" stroke="#262f3a"/>
+<text x="675.3333333333334" y="226" font-size="16" font-weight="700" fill="#e8eef4" text-anchor="start">Lookup Services</text>
+<rect x="675.3333333333334" y="238" width="140" height="20" rx="10" fill="none" stroke="#262f3a"/>
+<text x="745.3333333333334" y="252" font-size="10.5" font-weight="500" fill="#8d99a6" text-anchor="middle" letter-spacing="0.2">ADP.Lookup.Services</text>
+<text x="675.3333333333334" y="284" font-size="12" font-weight="400" fill="#a7b4c1" text-anchor="start">Read-only lookups with the platform’s</text>
+<text x="675.3333333333334" y="302" font-size="12" font-weight="400" fill="#a7b4c1" text-anchor="start">rules applied — eligibility, warranty,</text>
+<text x="675.3333333333334" y="320" font-size="12" font-weight="400" fill="#a7b4c1" text-anchor="start">recalls.</text>
+<text x="675.3333333333334" y="346" font-size="12" font-weight="500" fill="#e8eef4" text-anchor="start">Vehicle · Part · Service menu · SSC</text>
+<text x="675.3333333333334" y="364" font-size="12" font-weight="400" fill="#a7b4c1" text-anchor="start">Serverless HTTPS APIs</text>
+<rect x="22" y="386" width="916" height="62" rx="12" fill="#151b23" stroke="#f9cb4b" stroke-width="1.5"/>
+<rect x="22" y="386" width="6" height="62" rx="3" fill="#f9cb4b"/>
+<text x="44" y="412" font-size="15" font-weight="700" fill="#e8eef4" text-anchor="start">Built on the Shift Framework</text>
+<text x="44" y="432" font-size="12" font-weight="400" fill="#a7b4c1" text-anchor="start">Entities · Identity · Authorization · Dashboards · Mapping — one set of rules for data, users and access, shared by every Shift product.</text>
+<text x="924" y="412" font-size="11.5" font-weight="400" fill="#8d99a6" text-anchor="end">NuGet ShiftSoftware.*</text>
+<line x1="44" y1="469" x2="44" y2="502" stroke="#8d99a6" stroke-width="1.5" marker-end="url(#head)"/>
+<text x="58" y="493" font-size="10.5" font-weight="700" fill="#f9cb4b" text-anchor="start" letter-spacing="0.3">HTTPS · JSON</text>
+<text x="152.4" y="493" font-size="11.5" font-weight="400" fill="#a7b4c1" text-anchor="start">behind a base URL the platform operator issues</text>
+<rect x="4" y="512" width="952" height="128" rx="16" fill="#151b23" stroke="#f9cb4b" stroke-width="2"/>
+<rect x="4" y="512" width="952" height="6" rx="3" fill="#f9cb4b"/>
+<text x="22" y="550" font-size="17" font-weight="700" fill="#e8eef4" text-anchor="start">adp-web-components</text>
+<rect x="212" y="534" width="89" height="20" rx="10" fill="none" stroke="#262f3a"/>
+<text x="256.5" y="548" font-size="10.5" font-weight="500" fill="#8d99a6" text-anchor="middle" letter-spacing="0.2">npm package</text>
+<text x="22" y="576" font-size="12.5" font-weight="400" fill="#a7b4c1" text-anchor="start">Custom elements that call the lookups and render the result — request, states, layout and languages included.</text>
+<rect x="22" y="596" width="117" height="20" rx="10" fill="#0c1016" stroke="#262f3a"/>
+<text x="80.5" y="610" font-size="11.5" font-weight="600" fill="#e8eef4" text-anchor="middle" letter-spacing="0.2">Vehicle lookup</text>
+<rect x="147" y="596" width="96" height="20" rx="10" fill="#0c1016" stroke="#262f3a"/>
+<text x="195" y="610" font-size="11.5" font-weight="600" fill="#e8eef4" text-anchor="middle" letter-spacing="0.2">Part lookup</text>
+<rect x="251" y="596" width="103" height="20" rx="10" fill="#0c1016" stroke="#262f3a"/>
+<text x="302.5" y="610" font-size="11.5" font-weight="600" fill="#e8eef4" text-anchor="middle" letter-spacing="0.2">Ticket forms</text>
+<rect x="362" y="596" width="110" height="20" rx="10" fill="#0c1016" stroke="#262f3a"/>
+<text x="417" y="610" font-size="11.5" font-weight="600" fill="#e8eef4" text-anchor="middle" letter-spacing="0.2">VIN extractor</text>
+<text x="938" y="612" font-size="11.5" font-weight="400" fill="#8d99a6" text-anchor="end">Style-isolated · en ar ku ru · RTL · pinned version, one module per element</text>
+<path d="M480 643 C480 692 117 692 117 734" fill="none" stroke="#8d99a6" stroke-width="1.5" marker-end="url(#head)"/>
+<rect x="4" y="744" width="226" height="68" rx="12" fill="#151b23" stroke="#262f3a"/>
+<text x="18" y="772" font-size="13.5" font-weight="700" fill="#e8eef4" text-anchor="start">Dealer website</text>
+<text x="18" y="792" font-size="11.5" font-weight="400" fill="#a7b4c1" text-anchor="start">service booking, part search</text>
+<path d="M480 643 C480 692 359 692 359 734" fill="none" stroke="#8d99a6" stroke-width="1.5" marker-end="url(#head)"/>
+<rect x="246" y="744" width="226" height="68" rx="12" fill="#151b23" stroke="#262f3a"/>
+<text x="260" y="772" font-size="13.5" font-weight="700" fill="#e8eef4" text-anchor="start">Distributor portal</text>
+<text x="260" y="792" font-size="11.5" font-weight="400" fill="#a7b4c1" text-anchor="start">warranty desk, dealer network</text>
+<path d="M480 643 C480 692 601 692 601 734" fill="none" stroke="#8d99a6" stroke-width="1.5" marker-end="url(#head)"/>
+<rect x="488" y="744" width="226" height="68" rx="12" fill="#151b23" stroke="#262f3a"/>
+<text x="502" y="772" font-size="13.5" font-weight="700" fill="#e8eef4" text-anchor="start">Showroom &amp; service kiosk</text>
+<text x="502" y="792" font-size="11.5" font-weight="400" fill="#a7b4c1" text-anchor="start">a plate, a screen, a result</text>
+<path d="M480 643 C480 692 843 692 843 734" fill="none" stroke="#8d99a6" stroke-width="1.5" marker-end="url(#head)"/>
+<rect x="730" y="744" width="226" height="68" rx="12" fill="#151b23" stroke="#262f3a"/>
+<text x="744" y="772" font-size="13.5" font-weight="700" fill="#e8eef4" text-anchor="start">Any page you already have</text>
+<text x="744" y="792" font-size="11.5" font-weight="400" fill="#a7b4c1" text-anchor="start">no build step, no framework</text>
+<text x="496" y="658" font-size="10.5" font-weight="700" fill="#f9cb4b" text-anchor="start" letter-spacing="0.3">embed</text>
+<text x="542" y="658" font-size="11.5" font-weight="400" fill="#a7b4c1" text-anchor="start">one tag, one element, one method call</text>
+</svg>

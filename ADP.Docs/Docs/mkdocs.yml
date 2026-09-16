@@ -30,6 +30,25 @@ theme:
 extra_css:
   - overrides/css/extra.css
 
+plugins:
+  - search
+  - redirects:
+      redirect_maps:
+        web-components/introduction.md: web-components/index.md
+        web-components/installation.md: https://adp.shift.software/#install
+        web-components/theming.md: https://adp.shift.software/#features
+        web-components/components/components-list.md: https://adp.shift.software/#components
+        web-components/components/vehicle-lookup.md: https://adp.shift.software/templates/vehicle-lookup/vehicle-lookup
+        web-components/components/vehicle-specification.md: https://adp.shift.software/templates/vehicle-lookup/vehicle-specification
+        web-components/components/vehicle-accessories.md: https://adp.shift.software/templates/vehicle-lookup/vehicle-accessories
+        web-components/components/ssc.md: https://adp.shift.software/templates/vehicle-lookup/vehicle-ssc
+        web-components/components/service-history.md: https://adp.shift.software/templates/vehicle-lookup/vehicle-service-history
+        web-components/components/paint-thickness.md: https://adp.shift.software/templates/vehicle-lookup/vehicle-paint-thickness
+        web-components/components/swift-claim.md: https://adp.shift.software/templates/vehicle-lookup/vehicle-claimable-items
+        web-components/components/dead-stock-lookup.md: https://adp.shift.software/templates/part-lookup/dead-stock-lookup
+        web-components/components/distributor-lookup.md: https://adp.shift.software/templates/part-lookup/distributor-lookup
+        web-components/components/manufacturer-lookup.md: https://adp.shift.software/templates/part-lookup/manufacturer-lookup
+
 nav:
   - Introduction: index.md
   - Components:
@@ -293,26 +312,13 @@ nav:
       - Warranty:
           - Warranty Dates: generated/Features/WarrantyDates.md
 
-  - Web Components:
-      - Introduction: web-components/introduction.md
-      - Installation: web-components/installation.md
-      - Theming: web-components/theming.md
-
-      - Components:
-          - Components List: web-components/components/components-list.md
-          - Vehicle Lookup (Wrapper): web-components/components/vehicle-lookup.md
-          - Vehicle Specification: web-components/components/vehicle-specification.md
-          - Vehicle Accessories: web-components/components/vehicle-accessories.md
-          - Special Service Campaigns: web-components/components/ssc.md
-          - Service History: web-components/components/service-history.md
-          - Paint Thickness: web-components/components/paint-thickness.md
-          - Swift Claim: web-components/components/swift-claim.md
-          - Dead Stock Lookup: web-components/components/dead-stock-lookup.md
-          - Distributor Lookup: web-components/components/distributor-lookup.md
-          - Manufacturer Lookup: web-components/components/manufacturer-lookup.md
+  - Web Components: web-components/index.md
 
 markdown_extensions:
   - pymdownx.snippets
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - attr_list
   - md_in_html
   - admonition

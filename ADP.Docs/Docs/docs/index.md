@@ -12,6 +12,11 @@ There is a strong need for a centralized platform that provides seamless integra
 
 The ADP is a set of seamlessly integrated software tools designed to streamline the operations of the distributor and its dealers.
 
+<figure markdown>
+  <img src="assets/imgs/system-overview.svg#only-light" alt="How the Shift Framework, ADP and adp-web-components fit together" />
+  <img src="assets/imgs/system-overview-dark.svg#only-dark" alt="How the Shift Framework, ADP and adp-web-components fit together" />
+</figure>
+
 ## ADP Hub (Portal)
 The ADP Hub is a web-based portal that provides a single point of access to the various tools and services offered by the ADP.  
 In addition to links to the Core ADP Components, the Hub provides the following features:
