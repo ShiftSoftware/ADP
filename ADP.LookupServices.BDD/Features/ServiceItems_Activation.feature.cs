@@ -161,35 +161,35 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table53 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table104 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "BranchID",
                             "BrandID"});
-                table53.AddRow(new string[] {
+                table104.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2026-01-15",
                             "1",
                             "10",
                             "1"});
 #line 9
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table53, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table104, "Given ");
 #line hidden
-                global::Reqnroll.Table table54 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table105 = new global::Reqnroll.Table(new string[] {
                             "ServiceItemID",
                             "Name",
                             "BrandID",
                             "ActiveForMonths",
                             "MaximumMileage"});
-                table54.AddRow(new string[] {
+                table105.AddRow(new string[] {
                             "SI-001",
                             "Oil Change",
                             "1",
                             "24",
                             "10000"});
 #line 12
-  await testRunner.AndAsync("service items:", ((string)(null)), table54, "And ");
+  await testRunner.AndAsync("service items:", ((string)(null)), table105, "And ");
 #line hidden
 #line 15
   await testRunner.AndAsync("LookupOptions has include-inactivated-free-service-items enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -225,35 +225,35 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table55 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table106 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "BranchID",
                             "BrandID"});
-                table55.AddRow(new string[] {
+                table106.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2026-01-15",
                             "1",
                             "10",
                             "1"});
 #line 20
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table55, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table106, "Given ");
 #line hidden
-                global::Reqnroll.Table table56 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table107 = new global::Reqnroll.Table(new string[] {
                             "ServiceItemID",
                             "Name",
                             "BrandID",
                             "ActiveForMonths",
                             "MaximumMileage"});
-                table56.AddRow(new string[] {
+                table107.AddRow(new string[] {
                             "SI-001",
                             "Oil Change",
                             "1",
                             "24",
                             "10000"});
 #line 23
-  await testRunner.AndAsync("service items:", ((string)(null)), table56, "And ");
+  await testRunner.AndAsync("service items:", ((string)(null)), table107, "And ");
 #line hidden
 #line 26
   await testRunner.AndAsync("LookupOptions has include-inactivated-free-service-items enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -292,35 +292,35 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table57 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table108 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "BranchID",
                             "BrandID"});
-                table57.AddRow(new string[] {
+                table108.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2026-01-15",
                             "1",
                             "10",
                             "1"});
 #line 31
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table57, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table108, "Given ");
 #line hidden
-                global::Reqnroll.Table table58 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table109 = new global::Reqnroll.Table(new string[] {
                             "ServiceItemID",
                             "Name",
                             "BrandID",
                             "ActiveForMonths",
                             "MaximumMileage"});
-                table58.AddRow(new string[] {
+                table109.AddRow(new string[] {
                             "SI-001",
                             "Oil Change",
                             "1",
                             "24",
                             "10000"});
 #line 34
-  await testRunner.AndAsync("service items:", ((string)(null)), table58, "And ");
+  await testRunner.AndAsync("service items:", ((string)(null)), table109, "And ");
 #line hidden
 #line 37
   await testRunner.AndAsync("LookupOptions has include-inactivated-free-service-items enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

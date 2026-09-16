@@ -60,7 +60,7 @@ public class VehicleServiceItemStepDefinitions
         };
 
         var warranty = new WarrantyAndFreeServiceDateEvaluator(_context.Aggregate, _context.Options)
-            .Evaluate(vehicle!, saleInfo, ignoreBrokerStock: false);
+            .Evaluate(vehicle!, saleInfo, ignoreBrokerStock: false, freeServiceProvisioning: false);
 
         var evaluator = new VehicleServiceItemEvaluator(
             _context.StorageService, _context.Aggregate, _context.Options, _context.ServiceProvider);
@@ -69,6 +69,20 @@ public class VehicleServiceItemStepDefinitions
             vehicle, ownership, warranty.FreeServiceStartDate, language, saleInfo?.Broker);
         _result = serviceItems;
         _activationRequired = activationRequired;
+    }
+
+    /// <summary>
+    /// The full lookup with the request options the table names (see
+    /// <see cref="Support.TestContext.ReadRequestOptions"/>): the service items come out of the same
+    /// pipeline a host runs, with the free-service start the warranty evaluator produced for those
+    /// options rather than one the scenario supplied.
+    /// </summary>
+    [When("looking up service items for {string} with request options:")]
+    public async Task WhenLookingUpServiceItemsForWithRequestOptions(string vin, DataTable dataTable)
+    {
+        var lookup = await _context.LookupAsync(vin, Support.TestContext.ReadRequestOptions(dataTable));
+        _result = lookup.ServiceItems;
+        _activationRequired = lookup.Warranty?.ActivationIsRequired ?? false;
     }
 
     [Then("service item {string} has status {string}")]

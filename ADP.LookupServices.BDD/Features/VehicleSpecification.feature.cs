@@ -155,29 +155,29 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table670 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table721 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "VariantCode",
                             "BrandID"});
-                table670.AddRow(new string[] {
+                table721.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "VAR-001",
                             "1"});
 #line 6
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table670, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table721, "Given ");
 #line hidden
-                global::Reqnroll.Table table671 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table722 = new global::Reqnroll.Table(new string[] {
                             "ModelDescription",
                             "BodyType",
                             "Engine",
                             "Transmission"});
-                table671.AddRow(new string[] {
+                table722.AddRow(new string[] {
                             "Camry 2024",
                             "Sedan",
                             "2.5L",
                             "Automatic"});
 #line 9
-  await testRunner.AndAsync("vehicle model for variant \"VAR-001\" brand 1:", ((string)(null)), table671, "And ");
+  await testRunner.AndAsync("vehicle model for variant \"VAR-001\" brand 1:", ((string)(null)), table722, "And ");
 #line hidden
 #line 12
   await testRunner.WhenAsync("evaluating specification for \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -219,16 +219,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table672 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table723 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "VariantCode",
                             "BrandID"});
-                table672.AddRow(new string[] {
+                table723.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "VAR-999",
                             "1"});
 #line 19
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table672, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table723, "Given ");
 #line hidden
 #line 22
   await testRunner.WhenAsync("evaluating specification for \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");

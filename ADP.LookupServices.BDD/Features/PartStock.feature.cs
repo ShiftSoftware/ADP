@@ -162,20 +162,20 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 9
   await testRunner.AndAsync("LookupOptions show stock quantity is enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table20 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table71 = new global::Reqnroll.Table(new string[] {
                             "Location",
                             "AvailableQuantity",
                             "CompanyID"});
-                table20.AddRow(new string[] {
+                table71.AddRow(new string[] {
                             "LOC-001",
                             "50",
                             "1"});
-                table20.AddRow(new string[] {
+                table71.AddRow(new string[] {
                             "LOC-002",
                             "10",
                             "1"});
 #line 10
-  await testRunner.AndAsync("stock for part \"PRT-001\":", ((string)(null)), table20, "And ");
+  await testRunner.AndAsync("stock for part \"PRT-001\":", ((string)(null)), table71, "And ");
 #line hidden
 #line 14
   await testRunner.WhenAsync("evaluating stock for part \"PRT-001\" with quantity 5", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -223,16 +223,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 22
   await testRunner.AndAsync("LookupOptions show stock quantity is enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table21 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table72 = new global::Reqnroll.Table(new string[] {
                             "Location",
                             "AvailableQuantity",
                             "CompanyID"});
-                table21.AddRow(new string[] {
+                table72.AddRow(new string[] {
                             "LOC-001",
                             "3",
                             "1"});
 #line 23
-  await testRunner.AndAsync("stock for part \"PRT-001\":", ((string)(null)), table21, "And ");
+  await testRunner.AndAsync("stock for part \"PRT-001\":", ((string)(null)), table72, "And ");
 #line hidden
 #line 26
   await testRunner.WhenAsync("evaluating stock for part \"PRT-001\" with quantity 5", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -274,16 +274,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 32
   await testRunner.GivenAsync("LookupOptions distributor stock threshold is 100", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table22 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table73 = new global::Reqnroll.Table(new string[] {
                             "Location",
                             "AvailableQuantity",
                             "CompanyID"});
-                table22.AddRow(new string[] {
+                table73.AddRow(new string[] {
                             "LOC-001",
                             "0",
                             "1"});
 #line 33
-  await testRunner.AndAsync("stock for part \"PRT-001\":", ((string)(null)), table22, "And ");
+  await testRunner.AndAsync("stock for part \"PRT-001\":", ((string)(null)), table73, "And ");
 #line hidden
 #line 36
   await testRunner.WhenAsync("evaluating stock for part \"PRT-001\" with quantity 5", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -319,16 +319,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 40
   await testRunner.GivenAsync("LookupOptions distributor stock threshold is 5", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table23 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table74 = new global::Reqnroll.Table(new string[] {
                             "Location",
                             "AvailableQuantity",
                             "CompanyID"});
-                table23.AddRow(new string[] {
+                table74.AddRow(new string[] {
                             "LOC-001",
                             "50",
                             "1"});
 #line 41
-  await testRunner.AndAsync("stock for part \"PRT-001\":", ((string)(null)), table23, "And ");
+  await testRunner.AndAsync("stock for part \"PRT-001\":", ((string)(null)), table74, "And ");
 #line hidden
 #line 44
   await testRunner.WhenAsync("evaluating stock for part \"PRT-001\" with quantity 10", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -361,16 +361,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table24 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table75 = new global::Reqnroll.Table(new string[] {
                             "Location",
                             "AvailableQuantity",
                             "CompanyID"});
-                table24.AddRow(new string[] {
+                table75.AddRow(new string[] {
                             "LOC-001",
                             "50",
                             "1"});
 #line 48
-  await testRunner.GivenAsync("stock for part \"PRT-001\":", ((string)(null)), table24, "Given ");
+  await testRunner.GivenAsync("stock for part \"PRT-001\":", ((string)(null)), table75, "Given ");
 #line hidden
 #line 51
   await testRunner.WhenAsync("evaluating stock for part \"PRT-001\" without quantity", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -406,16 +406,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 55
   await testRunner.GivenAsync("LookupOptions distributor stock threshold is 100", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table25 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table76 = new global::Reqnroll.Table(new string[] {
                             "Location",
                             "AvailableQuantity",
                             "CompanyID"});
-                table25.AddRow(new string[] {
+                table76.AddRow(new string[] {
                             "LOC-001",
                             "50",
                             "1"});
 #line 56
-  await testRunner.AndAsync("stock for part \"PRT-001\":", ((string)(null)), table25, "And ");
+  await testRunner.AndAsync("stock for part \"PRT-001\":", ((string)(null)), table76, "And ");
 #line hidden
 #line 59
   await testRunner.WhenAsync("evaluating stock for part \"PRT-001\" with quantity 5", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -457,16 +457,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 65
   await testRunner.AndAsync("location \"LOC-001\" is named \"Main Warehouse\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table26 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table77 = new global::Reqnroll.Table(new string[] {
                             "Location",
                             "AvailableQuantity",
                             "CompanyID"});
-                table26.AddRow(new string[] {
+                table77.AddRow(new string[] {
                             "LOC-001",
                             "50",
                             "1"});
 #line 66
-  await testRunner.AndAsync("stock for part \"PRT-001\":", ((string)(null)), table26, "And ");
+  await testRunner.AndAsync("stock for part \"PRT-001\":", ((string)(null)), table77, "And ");
 #line hidden
 #line 69
   await testRunner.WhenAsync("evaluating stock for part \"PRT-001\" with quantity 5", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");

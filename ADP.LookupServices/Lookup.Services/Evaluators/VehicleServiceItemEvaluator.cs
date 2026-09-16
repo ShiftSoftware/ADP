@@ -28,6 +28,15 @@ public partial class VehicleServiceItemEvaluator
     /// </summary>
     public ServiceItemTraceCollector Trace { get; set; } = ServiceItemTraceCollector.Disabled;
 
+    /// <summary>
+    /// Whether the vehicle's free-service date shift (<see cref="CompanyDataAggregateModel.FreeServiceItemDateShifts"/>)
+    /// replaces the start date the items are evaluated from. On by default, as the dealer's lookup wants. The
+    /// provisioning view (<see cref="VehicleLookupRequestOptions.FreeServiceProvisioning"/>) turns it off: that
+    /// view is anchored on the distributor's invoice and nothing moves it. Set via object initializer, like
+    /// <see cref="Trace"/>.
+    /// </summary>
+    public bool ApplyFreeServiceDateShift { get; set; } = true;
+
     public VehicleServiceItemEvaluator(IVehicleLookupStorageService lookupCosmosService, CompanyDataAggregateModel companyDataAggregate, LookupOptions options, IServiceProvider services)
     {
         this.lookupCosmosService = lookupCosmosService;
@@ -113,14 +122,17 @@ public partial class VehicleServiceItemEvaluator
     }
 
     /// <summary>
-    /// Applies the per-VIN date shift (if any) and the "show inactivated" fallback
-    /// (when a date is required for warranty-activated items but the caller didn't provide one).
+    /// Applies the per-VIN date shift (if any, and unless <see cref="ApplyFreeServiceDateShift"/> is off)
+    /// and the "show inactivated" fallback (when a date is required for warranty-activated items but the
+    /// caller didn't provide one).
     /// </summary>
     private (DateTime? freeServiceStartDate, bool showingInactivatedItems) ResolveActivationMode(
         VehicleEntryModel vehicle,
         DateTime? freeServiceStartDate)
     {
-        var shiftDay = companyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault(x => x.VIN == vehicle?.VIN);
+        var shiftDay = ApplyFreeServiceDateShift
+            ? companyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault(x => x.VIN == vehicle?.VIN)
+            : null;
         if (shiftDay is not null)
             freeServiceStartDate = shiftDay.NewDate;
 

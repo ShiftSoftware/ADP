@@ -330,6 +330,7 @@ static async Task<VehicleLookupDTO> GenerateVehicleLookup(
             vehicle,
             data.SaleInformation,
             requestOptions.IgnoreBrokerStock,
+            requestOptions.FreeServiceProvisioning,
             language,
             serviceProvider);
 

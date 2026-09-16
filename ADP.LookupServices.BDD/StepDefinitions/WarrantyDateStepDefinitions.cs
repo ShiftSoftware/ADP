@@ -70,6 +70,7 @@ public class WarrantyDateStepDefinitions
                 vehicle!,
                 saleInfo,
                 ignoreBrokerStock: false,
+                freeServiceProvisioning: false,
                 languageCode: "en",
                 serviceProvider: _context.ServiceProvider);
     }
@@ -90,6 +91,18 @@ public class WarrantyDateStepDefinitions
         {
             LanguageCode = "en",
         });
+        _result = _lookupResult.Warranty;
+    }
+
+    /// <summary>
+    /// The full lookup with the request options the table names (see
+    /// <see cref="Support.TestContext.ReadRequestOptions"/>), so a scenario can pin how a per-request
+    /// option — IgnoreBrokerStock, the provisioning view — moves the warranty and free-service dates.
+    /// </summary>
+    [When("looking up warranty details for {string} with request options:")]
+    public async Task WhenLookingUpWarrantyDetailsForWithRequestOptions(string vin, DataTable dataTable)
+    {
+        _lookupResult = await _context.LookupAsync(vin, Support.TestContext.ReadRequestOptions(dataTable));
         _result = _lookupResult.Warranty;
     }
 
