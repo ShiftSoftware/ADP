@@ -90,17 +90,31 @@ export function prerender(html, locales, language = 'en') {
 }
 
 /**
+ * The site's own pages — the ones at the root that are neither a demo nor the
+ * not-found page — and the `x-for` lists each one renders, keyed by the path the
+ * page is served at. Both `noscriptFallback` and `seoTags` read this: a page
+ * listed here is indexable, sits in the sitemap, and gets its lists emitted for
+ * clients without JavaScript. A page that is not listed gets neither.
+ */
+export const SITE_PAGES = {
+  'index.html': ['overview.elementItems', 'overview.youItems', 'quickstart.steps', 'features.items', 'versions.items', 'stack.items', 'support.items'],
+  'architecture.html': ['chart.pipeline', 'chart.hosts', 'stack.items', 'architecture.links'],
+};
+
+/**
  * The repeated lists — features, the stack, the quickstart steps, next steps —
  * are ~19 name/body pairs of real prose that `prerender` cannot reach, because
  * they live inside `x-for` templates. This emits them once into a `<noscript>`,
  * built from the same table, so the content a crawler sees is identical to the
  * content Alpine renders. Inert the moment JavaScript runs, so there is no
  * duplication and no flash.
+ *
+ * `keys` is the page's own list from SITE_PAGES. It used to be the landing
+ * page's list for every page, which put the landing copy into the 404 page and
+ * into any demo with a <main> — a crawler reading those saw the wrong page.
  */
-export function noscriptFallback(html, locales, language = 'en') {
-  const lists = ['overview.elementItems', 'overview.youItems', 'quickstart.steps', 'features.items', 'versions.items', 'stack.items', 'support.items'];
-
-  const blocks = lists.flatMap(key => {
+export function noscriptFallback(html, locales, keys, language = 'en') {
+  const blocks = (keys ?? []).flatMap(key => {
     const items = locales.t(language, key);
 
     // Some lists are plain strings (the overview split), others are name/body pairs.
@@ -121,17 +135,30 @@ export function noscriptFallback(html, locales, language = 'en') {
  * near-duplicate harnesses full of mock data, and one of them outranking the
  * landing page is a worse outcome than not being indexed at all.
  *
+ * `location` is the page's path under the site root as the host canonicalises
+ * it — '' for the landing page, 'architecture' for architecture.html, because
+ * the Worker's `auto-trailing-slash` handling redirects the `.html` form there.
+ * The JSON-LD describes the package and belongs to the landing page only.
+ *
  * A page that declares its own robots meta (404.html does) is left alone.
  */
-export function seoTags(html, { isLanding, noindex, siteUrl, packageName, version, description }) {
+export function seoTags(html, { isLanding, isSitePage = isLanding, location = '', noindex, siteUrl, packageName, version, description }) {
   if (/<meta[^>]+name=["']robots["']/i.test(html)) return html;
 
-  const indexable = isLanding && !noindex;
+  const indexable = isSitePage && !noindex;
   const tags = [`<meta name="robots" content="${indexable ? 'index, follow' : 'noindex, follow'}" />`];
 
   if (indexable && siteUrl) {
-    tags.push(`<link rel="canonical" href="${siteUrl}/" />`, `<meta property="og:url" content="${siteUrl}/" />`, `<meta property="og:site_name" content="ADP web components" />`);
+    const url = `${siteUrl}/${location}`;
 
+    tags.push(`<link rel="canonical" href="${url}" />`, `<meta property="og:url" content="${url}" />`, `<meta property="og:site_name" content="ADP web components" />`);
+
+    // og:image has to be absolute — a scraper resolves nothing — and the source
+    // page cannot know its own origin, so it is written relative and fixed here.
+    html = html.replace(/(<meta property="og:image" content=")(?!https?:)\.?\/?([^"]*)/i, `$1${siteUrl}/$2`);
+  }
+
+  if (indexable && siteUrl && isLanding) {
     const graph = {
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',

@@ -371,6 +371,16 @@ const MARKUP = /* html */ `
               </div>
             </div>
 
+            <!-- The one site page besides this one. Resolved through site() like a
+                 catalog path, so it is right at any depth and any mount. -->
+            <a
+              class="btn btn-sm btn-ghost"
+              :class="isCurrentPage('/architecture.html') && 'bg-primary/15'"
+              :href="site('/architecture.html')"
+              :aria-current="isCurrentPage('/architecture.html') ? 'page' : null"
+              x-text="t('nav.architecture')"
+            ></a>
+
             <a class="btn btn-sm btn-ghost" href="https://adp-docs.shift.software/" target="_blank" rel="noreferrer" x-text="t('nav.docs')"></a>
 
             <span class="bg-base-300 mx-1 h-6 w-px" aria-hidden="true"></span>
@@ -569,6 +579,13 @@ const MARKUP = /* html */ `
             </template>
 
             <div class="border-base-300 mt-4 border-t pt-4">
+              <a
+                class="btn btn-sm btn-ghost w-full justify-start"
+                :class="isCurrentPage('/architecture.html') && 'bg-primary/15'"
+                :href="site('/architecture.html')"
+                :aria-current="isCurrentPage('/architecture.html') ? 'page' : null"
+                x-text="t('nav.architecture')"
+              ></a>
               <a class="btn btn-sm btn-ghost w-full justify-start" href="https://adp-docs.shift.software/" target="_blank" rel="noreferrer" x-text="t('nav.docs')"></a>
             </div>
 

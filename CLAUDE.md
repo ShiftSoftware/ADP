@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ADP (Automotive Dealer Platform) by ShiftSoftware. A multi-project .NET solution with a Stencil.js web components frontend. Published as NuGet packages (`ShiftSoftware.ADP.Models`, `ShiftSoftware.ADP.Lookup.Services`, `ShiftSoftware.ADP.SyncAgent`) and an NPM package (`adp-web-components`).
+ADP (Auto Distributor Platform) by ShiftSoftware. A multi-project .NET solution with a Stencil.js web components frontend. Published as NuGet packages (`ShiftSoftware.ADP.Models`, `ShiftSoftware.ADP.Lookup.Services`, `ShiftSoftware.ADP.SyncAgent`) and an NPM package (`adp-web-components`).
 
 > **This is a public, generic, multi-tenant repo — keep it client-agnostic.** Never name a specific client
 > (or its URLs, hostnames, internal system/repo names, warehouse/branch codes, or action-tree namespaces) in

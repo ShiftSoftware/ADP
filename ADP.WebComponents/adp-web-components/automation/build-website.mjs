@@ -51,7 +51,7 @@ import { spawn } from 'node:child_process';
 import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
-import { headersFile, noscriptFallback, prerender, robotsAndSitemap, seoTags } from './prerender.mjs';
+import { SITE_PAGES, headersFile, noscriptFallback, prerender, robotsAndSitemap, seoTags } from './prerender.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -200,7 +200,10 @@ await cp(path.join(root, 'src', 'templates'), path.join(outDir, 'templates'), {
   filter: source => path.basename(source) !== 'harness.src.css' && path.extname(source) !== '.md' && !isLocalOverride(source),
 });
 
-await cp(path.join(root, 'src', 'index.html'), path.join(outDir, 'index.html'));
+// The site's own pages, at the root beside the demos: the landing page and the
+// architecture page. SITE_PAGES is also what makes them indexable and listed in
+// the sitemap, so a page added here without an entry there ships noindex.
+for (const page of Object.keys(SITE_PAGES)) await cp(path.join(root, 'src', page), path.join(outDir, page));
 
 // Cloudflare Pages serves /404.html for any unmatched path, which on this site
 // is mostly a demo that exists but is not published yet.
@@ -233,10 +236,13 @@ for (const page of pages) {
    */
   let rewritten = rewrite(original, isNotFound(page) ? mount : relativePrefix(page));
 
-  const landing = path.relative(outDir, page).split(path.sep).join('/') === 'index.html';
+  const relative = path.relative(outDir, page).split(path.sep).join('/');
+  const landing = relative === 'index.html';
 
   rewritten = seoTags(rewritten, {
     isLanding: landing,
+    isSitePage: relative in SITE_PAGES,
+    location: landing ? '' : relative.replace(/\.html$/, ''),
     noindex,
     siteUrl,
     packageName: PACKAGE_NAME,
@@ -250,14 +256,12 @@ for (const page of pages) {
    */
   const filled = prerender(rewritten, locales);
 
-  rewritten = noscriptFallback(filled.output, locales);
+  rewritten = noscriptFallback(filled.output, locales, SITE_PAGES[relative]);
   prerendered += filled.filled;
 
   if (rewritten !== original) repointed += 1;
 
   await writeFile(page, rewritten);
-
-  const relative = path.relative(outDir, page).split(path.sep).join('/');
 
   // .match rather than .test: a /g regex carries lastIndex across calls.
   if (!isNotFound(page) && rewritten.match(ROOT_ABSOLUTE)) leftovers.rooted.push(relative);
@@ -330,8 +334,13 @@ for (const file of pages) {
 
 if (prerendered < 30) fatal(`pre-render resolved only ${prerendered} strings — the x-text pattern has drifted`);
 
-const landingUrls = pages.filter(page => path.relative(outDir, page).split(path.sep).join('/') === 'index.html').map(() => '');
-const { robots, sitemap } = robotsAndSitemap({ noindex, siteUrl, landingPages: landingUrls });
+// The site pages, as the host canonicalises them: '' for the landing page,
+// 'architecture' for architecture.html (see `location` in seoTags).
+const siteUrls = pages
+  .map(page => path.relative(outDir, page).split(path.sep).join('/'))
+  .filter(relative => relative in SITE_PAGES)
+  .map(relative => (relative === 'index.html' ? '' : relative.replace(/\.html$/, '')));
+const { robots, sitemap } = robotsAndSitemap({ noindex, siteUrl, landingPages: siteUrls });
 
 await writeFile(path.join(outDir, 'robots.txt'), robots);
 await writeFile(path.join(outDir, '_headers'), headersFile({ noindex }));
@@ -346,7 +355,9 @@ console.log(`\nsite      ${path.relative(root, outDir)}`);
 console.log(`pages     ${pages.length} copied, ${repointed} repointed${dropped.length ? `, ${dropped.length} unpublished dropped` : ''}`);
 console.log(`loads     ${cdn(componentVersion)}/shift-components/shift-components.esm.js`);
 console.log(`copy      ${prerendered} strings pre-rendered into the HTML`);
-console.log(`robots    ${noindex ? 'noindex (whole site)' : 'index the landing page, noindex everything else'}${siteUrl ? '' : '  — pass --site-url= for canonical + sitemap'}`);
+console.log(
+  `robots    ${noindex ? 'noindex (whole site)' : `index ${siteUrls.length} site page${siteUrls.length === 1 ? '' : 's'}, noindex everything else`}${siteUrl ? '' : '  — pass --site-url= for canonical + sitemap'}`,
+);
 if (mount !== '/') console.log(`mount     404.html built for ${mount}`);
 
 // A page shipped with an unfilled slot renders but does not work, so say so

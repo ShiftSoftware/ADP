@@ -65,6 +65,7 @@ export const config: Config = {
       serviceWorker: null,
       copy: [
         { src: 'index.html' },
+        { src: 'architecture.html', dest: 'architecture.html' },
         { src: '404.html', dest: '404.html' },
         { src: 'templates' },
         { src: 'locales', dest: 'locales' },

@@ -10,6 +10,9 @@ API are always the ones that ship.
   <img src="../assets/imgs/system-overview-dark.svg#only-dark" alt="How the Shift Framework, ADP and adp-web-components fit together" />
 </figure>
 
+The same picture, layer by layer and in the components' four languages:
+[How it fits together ↗](https://adp.shift.software/architecture).
+
 <div class="grid cards" markdown>
 
 -   :material-rocket-launch-outline:{ .lg .middle } __Quickstart & installation__
