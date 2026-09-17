@@ -15,13 +15,18 @@ steps:
    submodules: true
    persistCredentials: true
 
- - script: dotnet build --configuration release
+# Configuration is spelled "Release" everywhere below on purpose. The solution maps whatever casing it
+# is given onto its own "Release" entries, so every project builds into bin/Release/ — but a step that
+# names a PROJECT (like the --no-build test below) takes the casing literally, and on this Linux agent
+# bin/release/ is a different, non-existent directory. vstest then reads the missing rooted path as a
+# switch and fails with "The argument /home/.../ADP.SyncAgent.Tests.dll is invalid".
+ - script: dotnet build --configuration Release
    displayName: 'Build All Projects'
 
 # The DuckDB sync destination and CSV diff queue are exercised against a real DuckDB here. A release
 # that regresses them (a torn row, a table left behind its model, a failed batch reported as success)
 # reaches every sync agent that consumes the package, so nothing is packed until they pass.
- - script: dotnet test ADP.SyncAgent/SyncAgent.Tests --configuration release --no-build
+ - script: dotnet test ADP.SyncAgent/SyncAgent.Tests --configuration Release --no-build
    displayName: 'test ADP.SyncAgent'
 
  - script: dotnet pack ADP.Models/Models --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
