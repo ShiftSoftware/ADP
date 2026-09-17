@@ -11,5 +11,8 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: 3.12.4
-      - run: pip install mkdocs-material=="9.6.11" mkdocs-redirects=="1.2.3"
+      # mkdocs-redirects is held at 1.2.2. From 1.2.3 it ships from the ProperDocs fork of MkDocs
+      # and pulls in `properdocs` (a second copy of MkDocs 1.x) only to print a migrate-to-ProperDocs
+      # banner on every build; the redirect behaviour itself is unchanged.
+      - run: pip install mkdocs-material=="9.6.11" mkdocs-redirects=="1.2.2"
       - run: mkdocs gh-deploy --force --config-file ADP.Docs/Docs/mkdocs.yml
