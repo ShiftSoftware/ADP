@@ -15,8 +15,10 @@ export interface NavigationListOptionSelectedDetail {
 }
 
 export function NavigationListQuestion({ question }: QuestionProps) {
-  const { locale, schema } = useSurveyContext();
+  const { locale, schema, answers } = useSurveyContext();
   const id = question['id'] as string;
+  // Set when the respondent came Back to this screen: the row they tapped before.
+  const picked = answers[id];
   const title = question['title'] as LocalizedString | undefined;
   const help = question['help'] as LocalizedString | undefined;
   const options = (question['options'] as Array<Record<string, unknown>> | undefined) ?? [];
@@ -54,11 +56,13 @@ export function NavigationListQuestion({ question }: QuestionProps) {
         {options.map((option) => {
           const optionId = option['id'] as string;
           const label = option['label'] as LocalizedString | undefined;
+          const selected = picked === optionId;
           return (
             <li key={optionId} className="survey-navlist__row">
               <button
                 type="button"
-                className="survey-navlist__button"
+                className={selected ? 'survey-navlist__button survey-navlist__button--selected' : 'survey-navlist__button'}
+                aria-pressed={selected}
                 onClick={(e) => dispatchSelection(e, option)}
               >
                 <span className="survey-navlist__label">

@@ -62,7 +62,12 @@
                 var label = EntryLabel(entry, idx);
                 var typeBadge = EntryTypeBadge(entry);
 
-                <MudExpansionPanel Expanded="@(idx == expandedIndex)"
+                @* Keyed on the entry so reorder / remove moves each panel's inspector
+                   with its question instead of rebinding position N's editors to
+                   whatever question now sits at N (stale localized fields, stale
+                   key/value rows). *@
+                <MudExpansionPanel @key="entry"
+                                   Expanded="@(idx == expandedIndex)"
                                    ExpandedChanged="@(b => OnExpandedChanged(idx, b))">
                     <TitleContent>
                         <div class="ql__row @(dragIndex == idx ? "ql__row--dragging" : "") @(dragOverIndex == idx && dragIndex != idx ? "ql__row--dragover" : "")"

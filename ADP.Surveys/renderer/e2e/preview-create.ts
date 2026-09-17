@@ -24,7 +24,7 @@ const require = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const puppeteer = require('C:/tmp/screenshot-tool/node_modules/puppeteer-core');
 
-const BUILDER_BASE = 'http://localhost:5134';
+const BUILDER_BASE = process.env['SURVEYS_API'] ?? 'http://localhost:5134';
 const SHOT_DIR = 'C:/tmp/survey-renderer-shots/builder';
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 
@@ -262,10 +262,8 @@ async function main() {
     // -------- Step 5: switch to Visual tab + add a screen --------
     console.log('\n[5] click Visual toggle + Add screen');
     await page.evaluate(() => {
-      // Match the toggle button by visible text.
-      const items = Array.from(document.querySelectorAll('button, [role="button"]')) as HTMLElement[];
-      const visual = items.find((b) => /^\s*visual\s*$/i.test(b.textContent?.replace(/\s+/g, ' ').trim() ?? ''));
-      visual?.click();
+      // The header's view switch is icon-only; the accessible name is the handle.
+      (document.querySelector('button[aria-label="Visual editor"]') as HTMLElement | null)?.click();
     });
     await new Promise((r) => setTimeout(r, 800));
     await shot('03-visual-tab');

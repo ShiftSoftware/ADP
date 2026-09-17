@@ -1,11 +1,13 @@
 using ShiftSoftware.ADP.Surveys.Shared.DTOs;
+using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens;
+using ShiftSoftware.ADP.Surveys.Shared.Enums;
 using ShiftSoftware.ADP.Surveys.Shared.Personalization;
 
 namespace ShiftSoftware.ADP.Surveys.Web.Components;
 
 /// <summary>
-/// The personalization vocabulary offered to every localized text field on the
-/// current survey form, handed down as a cascading value.
+/// The personalization vocabulary offered to every localized text field and every
+/// request field on the current survey form, handed down as a cascading value.
 /// </summary>
 /// <remarks>
 /// Cascading rather than a parameter because <c>LocalizedStringField</c> is reached
@@ -28,7 +30,7 @@ public sealed class PersonalizationScope
         "recipient.locale",
     };
 
-    /// <summary>Token names to offer, in the order they should be listed.</summary>
+    /// <summary>Token names to offer, in the order they should be listed. Never includes answer tokens — see <see cref="Answers"/>.</summary>
     public IReadOnlyList<string> Names { get; init; } = Array.Empty<string>();
 
     /// <summary>
@@ -39,13 +41,40 @@ public sealed class PersonalizationScope
     /// </summary>
     public IReadOnlySet<string> WithoutFallback { get; init; } = new HashSet<string>(StringComparer.Ordinal);
 
-    public bool IsEmpty => Names.Count == 0;
+    /// <summary>
+    /// The survey's own questions, in screen order, as <c>{{answers.&lt;id&gt;}}</c>
+    /// candidates. These resolve in the respondent's browser as they answer, so they
+    /// need no example and no declared fallback to be safe — an inline
+    /// <c>|fallback</c> covers the "not answered yet" case where it matters.
+    /// </summary>
+    public IReadOnlyList<AnswerToken> Answers { get; init; } = Array.Empty<AnswerToken>();
+
+    public bool IsEmpty => Names.Count == 0 && Answers.Count == 0;
+
+    /// <summary>One question the author can reference by answer.</summary>
+    /// <param name="QuestionId">The question id — the <c>x</c> in <c>{{answers.x}}</c>.</param>
+    /// <param name="Display">Menu text: screen number and id, question id, type.</param>
+    /// <param name="HasLabel">
+    /// Whether the answer has a display form distinct from its stored value (a choice's
+    /// option label, a yes/no word, a formatted date). The copy menu inserts
+    /// <c>{{answers.x.label}}</c> for these; request fields always take the raw value.
+    /// </param>
+    public sealed record AnswerToken(string QuestionId, string Display, bool HasLabel)
+    {
+        /// <summary>The token to write into display copy.</summary>
+        public string CopyToken => HasLabel
+            ? $"{PersonalizationTokens.AnswerTokenPrefix}{QuestionId}{PersonalizationTokens.AnswerLabelSuffix}"
+            : $"{PersonalizationTokens.AnswerTokenPrefix}{QuestionId}";
+
+        /// <summary>The token to write into a URL, parameter, header or body.</summary>
+        public string ValueToken => $"{PersonalizationTokens.AnswerTokenPrefix}{QuestionId}";
+    }
 
     /// <summary>
     /// Builds the vocabulary for a draft: the standing recipient fields, everything
-    /// the author has declared, and every token already written somewhere in the
-    /// survey's copy. That last group is what makes a token typed by hand into one
-    /// screen show up as a suggestion on the next.
+    /// the author has declared, every token already written somewhere in the
+    /// survey's copy, and every question as an answer token. That third group is what
+    /// makes a token typed by hand into one screen show up as a suggestion on the next.
     /// </summary>
     public static PersonalizationScope FromDraft(SurveyDto? draft)
     {
@@ -57,6 +86,7 @@ public sealed class PersonalizationScope
             {
                 if (string.IsNullOrWhiteSpace(variable.Name)) continue;
                 var name = variable.Name.Trim();
+                if (PersonalizationTokens.IsAnswerToken(name)) continue;
                 declared.Add(name);
                 if (variable.Fallback is { Count: > 0 }) withFallback.Add(name);
             }
@@ -73,7 +103,11 @@ public sealed class PersonalizationScope
         foreach (var name in RecipientTokens)
             if (seen.Add(name)) names.Add(name);
 
-        foreach (var name in PersonalizationTokens.CollectTokenNames(draft).OrderBy(x => x, StringComparer.Ordinal))
+        // Answer tokens have their own list; here they would only read as
+        // "undeclared" variables that need a fallback, which they don't.
+        foreach (var name in PersonalizationTokens.CollectTokenNames(draft)
+                     .Where(n => !PersonalizationTokens.IsAnswerToken(n))
+                     .OrderBy(x => x, StringComparer.Ordinal))
             if (seen.Add(name)) names.Add(name);
 
         // recipient.* always resolve from the instance itself, so they never need a
@@ -83,6 +117,56 @@ public sealed class PersonalizationScope
             .Where(n => !RecipientTokens.Contains(n, StringComparer.Ordinal))
             .ToHashSet(StringComparer.Ordinal);
 
-        return new PersonalizationScope { Names = names, WithoutFallback = withoutFallback };
+        return new PersonalizationScope
+        {
+            Names = names,
+            WithoutFallback = withoutFallback,
+            Answers = CollectAnswers(draft),
+        };
     }
+
+    /// <summary>
+    /// Every question an answer token can name: inline questions with their type, and
+    /// banked references by key (the key IS the resolved question id — the bank's
+    /// stable anchor). Screen-template references are skipped: their questions live
+    /// in the template, and the author can still type the token by hand.
+    /// </summary>
+    private static List<AnswerToken> CollectAnswers(SurveyDto? draft)
+    {
+        var answers = new List<AnswerToken>();
+        if (draft is null) return answers;
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        for (var i = 0; i < draft.Screens.Count; i++)
+        {
+            if (draft.Screens[i] is not InlineScreenDto screen) continue;
+            var screenLabel = string.IsNullOrWhiteSpace(screen.Id) ? $"{i + 1}." : $"{i + 1}.{screen.Id}";
+
+            foreach (var entry in screen.Questions)
+            {
+                if (entry.Inline is { } question)
+                {
+                    if (string.IsNullOrWhiteSpace(question.Id) || !seen.Add(question.Id)) continue;
+                    var type = question.QuestionType;
+                    answers.Add(new AnswerToken(
+                        question.Id,
+                        $"{screenLabel} / {question.Id} — {type.ToString().ToLowerInvariant()}",
+                        HasDisplayForm(type)));
+                }
+                else if (entry.Ref is { BankRef.Length: > 0 } reference)
+                {
+                    if (!seen.Add(reference.BankRef)) continue;
+                    // The banked question's type isn't known here; offering the label
+                    // form is harmless — for a type without one it reads as the value.
+                    answers.Add(new AnswerToken(reference.BankRef, $"{screenLabel} / {reference.BankRef} — banked", HasLabel: true));
+                }
+            }
+        }
+        return answers;
+    }
+
+    private static bool HasDisplayForm(QuestionType type) => type is
+        QuestionType.SingleChoice or QuestionType.MultiChoice or QuestionType.Dropdown
+        or QuestionType.NavigationList or QuestionType.YesNo
+        or QuestionType.Date or QuestionType.DateTime;
 }

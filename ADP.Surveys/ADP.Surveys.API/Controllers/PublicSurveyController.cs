@@ -75,9 +75,12 @@ public class PublicSurveyController : ControllerBase
         //   - Deployment branding: a rebrand reaches in-flight instances
         //     immediately; the survey's own branding wins field-by-field.
         //   - Personalization tokens: {{recipient.*}} / {{candidate.*}} in
-        //     LocalizedString values filled from this instance's snapshot,
-        //     then the token's own |fallback, then the survey's declared
-        //     variables; a token none of those can fill stays verbatim.
+        //     LocalizedString values and in optionsSource request fields, filled
+        //     from this instance's snapshot, then the token's own |fallback, then
+        //     the survey's declared variables; a token none of those can fill
+        //     stays verbatim in copy and goes out empty in a request field.
+        //     {{answers.*}} tokens pass through untouched — the renderer fills
+        //     them from the respondent's own answers.
         var resolved = JsonSerializer.Deserialize<SurveyDto>(rawJson, SurveySchemaSerializer.Options)!;
         if (applyBranding)
             resolved.Branding = BrandingDto.Merge(options.DefaultBranding, resolved.Branding);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeNext, resolveNavigationListTarget } from '../src/navigation.js';
+import { computeNext, replayPathTo, resolveNavigationListTarget } from '../src/navigation.js';
 import type { AnswerMap, Survey } from '../src/schema.js';
 
 const noAnswers: AnswerMap = {};
@@ -171,5 +171,78 @@ describe('resolveNavigationListTarget', () => {
       noAnswers,
     );
     expect(step).toEqual({ kind: 'screen', screenId: 'thanks-toyota' });
+  });
+});
+
+describe('replayPathTo', () => {
+  // The renderer's fallback for resume state that predates persisted histories:
+  // rebuild the screens walked from the answers, the way the server replays them.
+  const branching = (): Survey => ({
+    id: 's',
+    screens: [
+      { id: 'welcome', questions: [{ type: 'text', id: 'name' }] },
+      {
+        id: 'menu',
+        questions: [
+          {
+            type: 'navigationList',
+            id: 'intent',
+            options: [
+              { id: 'a', nextScreen: 'branch-a' },
+              { id: 'b', nextScreen: 'branch-b' },
+            ],
+          },
+        ],
+      },
+      { id: 'branch-a', questions: [{ type: 'text', id: 'a-note' }], nextScreen: 'city' },
+      { id: 'branch-b', questions: [{ type: 'text', id: 'b-note' }], nextScreen: 'city' },
+      { id: 'city', questions: [{ type: 'text', id: 'city' }] },
+      { id: 'done' },
+    ],
+    logic: [{ if: { questionId: 'a-note', op: '==', value: 'vip' }, then: { goto: 'done' } }],
+  });
+
+  it('is empty for the first screen', () => {
+    expect(replayPathTo(branching(), {}, 'welcome')).toEqual([]);
+  });
+
+  it('follows sequential order, then an answered navigationList option', () => {
+    expect(replayPathTo(branching(), { intent: 'b' }, 'city')).toEqual(['welcome', 'menu', 'branch-b']);
+  });
+
+  it('applies logic rules on the way, like computeNext — against the final answers, as the server does', () => {
+    // A global rule matches on every screen once the final answer map satisfies
+    // it, so the replay leaves `welcome` for `done` directly. That is the same
+    // approximation `AnswerValidator.ComputeVisitedScreens` makes.
+    expect(replayPathTo(branching(), { intent: 'a', 'a-note': 'vip' }, 'done')).toEqual(['welcome']);
+    expect(replayPathTo(branching(), { intent: 'a', 'a-note': 'vip' }, 'branch-a')).toBeNull();
+  });
+
+  it('routes a sourced navigationList on the source nextScreen', () => {
+    const schema = branching();
+    schema.screens[1] = {
+      id: 'menu',
+      questions: [{ type: 'navigationList', id: 'intent', options: [], optionsSource: { url: 'https://x.test', nextScreen: 'branch-b' } }],
+    };
+    expect(replayPathTo(schema, { intent: 'anything-fetched' }, 'city')).toEqual(['welcome', 'menu', 'branch-b']);
+  });
+
+  it('is null when the target is not reached: unanswered menu, past the end, or a loop', () => {
+    // An unanswered navigationList falls through to sequential order: menu → branch-a → city.
+    expect(replayPathTo(branching(), {}, 'branch-b')).toBeNull();
+    // The walk ends at `done` (zero-question terminal) before reaching a screen that comes after it.
+    const schema = branching();
+    schema.screens.push({ id: 'unreachable' });
+    expect(replayPathTo(schema, { intent: 'a', 'a-note': 'vip' }, 'unreachable')).toBeNull();
+    // A cycle stops on the first repeat.
+    const loop: Survey = {
+      id: 'l',
+      screens: [
+        { id: 'a', questions: [{ type: 'text', id: 'x' }], nextScreen: 'b' },
+        { id: 'b', questions: [{ type: 'text', id: 'y' }], nextScreen: 'a' },
+        { id: 'c', questions: [{ type: 'text', id: 'z' }] },
+      ],
+    };
+    expect(replayPathTo(loop, {}, 'c')).toBeNull();
   });
 });

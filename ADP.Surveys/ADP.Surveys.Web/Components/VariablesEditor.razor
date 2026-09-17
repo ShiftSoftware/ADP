@@ -19,11 +19,14 @@
 <div class="vars">
     <div class="vars__intro">
         Text anywhere in this survey can carry <code>@("{{variable}}")</code> placeholders —
-        screen titles and descriptions, question titles and help, option labels. They are
+        screen titles and descriptions, question titles and help, option labels, and the
+        URL, parameters, headers and body of a question's external-options request. They are
         filled in when the survey is served, from the event that triggered it. Each variable
         below declares two stand-ins for when it isn't: an <strong>example</strong> that only
         test runs and the preview use, and a <strong>fallback</strong> that a real recipient
-        may actually read.
+        may actually read. A respondent's own earlier answers are available the same way, as
+        <code>@("{{answers.question-id}}")</code> — those fill in as they answer, so they need
+        no declaration here.
     </div>
 
     <MudExpansionPanels Elevation="0" Dense="true" Class="vars__cheatsheet">
@@ -38,6 +41,19 @@
                     the pipe is used for that one sentence when the field is missing. It beats the
                     variable's fallback, so use it where a single screen needs different wording.
                 </li>
+                <li>
+                    <code>answers.&lt;question id&gt;</code> — what the respondent answered, as stored
+                    (an option's id, a number, <code>true</code>/<code>false</code>, the ISO date).
+                    Filled in their browser as they answer — reference a question from an earlier
+                    screen, or from the same screen for text that updates as they type. Use this form
+                    in a request URL, parameter, header or body.
+                </li>
+                <li>
+                    <code>answers.&lt;question id&gt;.label</code> — the same answer as the respondent
+                    saw it: the option's label, the Yes/No word, a formatted date. Use this form in
+                    copy. Add <code>|text</code> for the not-answered-yet case, e.g.
+                    <code>@("{{answers.brand.label|your car}}")</code>.
+                </li>
             </ul>
             <div class="vars__cheatsheet-note">
                 <div>
@@ -51,6 +67,8 @@
                     <code>@("{{like.this}}")</code> — so a typo shows itself instead of silently
                     blanking the sentence. Leaving an example blank is fine and sometimes useful:
                     the test run then shows exactly what a recipient with a missing field would get.
+                    Inside a request field the rule flips: an unfilled token is sent as empty text,
+                    never as raw braces.
                 </div>
             </div>
         </MudExpansionPanel>
@@ -87,7 +105,7 @@
         {
             var idx = index;
             var row = variable;
-            <MudPaper Class="vars__row" Elevation="0" Outlined="true">
+            <MudPaper @key="row" Class="vars__row" Elevation="0" Outlined="true">
                 <div class="vars__row-head">
                     <MudTextField T="string"
                                   Label="Variable"
@@ -297,6 +315,8 @@
             return PersonalizationTokens.CollectTokenNames(Draft)
                 .Where(name => !declared.Contains(name))
                 .Where(name => !PersonalizationScope.RecipientTokens.Contains(name, StringComparer.Ordinal))
+                // Answer tokens resolve from the respondent, not the event — nothing to declare.
+                .Where(name => !PersonalizationTokens.IsAnswerToken(name))
                 .OrderBy(name => name, StringComparer.Ordinal)
                 .ToList();
         }

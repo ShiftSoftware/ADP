@@ -32,7 +32,7 @@
         {
             var idx = i;
             var option = Options[idx];
-            <div class="ole__row">
+            <div class="ole__row" @key="option">
                 <span class="ole__row-number">@(idx + 1).</span>
                 <div class="ole__row-body">
                     <div class="ole__row-ids">

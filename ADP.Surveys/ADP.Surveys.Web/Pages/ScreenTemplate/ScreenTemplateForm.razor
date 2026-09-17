@@ -125,7 +125,7 @@
         {
             var index = i;
             var qref = TheItem.Template.Questions[index];
-            <div class="stf__qrow">
+            <div class="stf__qrow" @key="qref">
                 <span class="stf__qindex">@(index + 1).</span>
                 <code class="stf__qkey">@(string.IsNullOrWhiteSpace(qref.BankRef) ? "(unset)" : qref.BankRef)</code>
                 <MudSpacer />

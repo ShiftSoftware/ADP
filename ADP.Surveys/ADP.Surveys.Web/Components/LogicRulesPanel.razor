@@ -64,7 +64,8 @@
                 var rule = Rules[idx];
                 var summary = BuildSummary(rule);
 
-                <MudExpansionPanel Expanded="@(idx == expandedIndex)"
+                <MudExpansionPanel @key="rule"
+                                   Expanded="@(idx == expandedIndex)"
                                    ExpandedChanged="@(b => OnExpandedChanged(idx, b))">
                     <TitleContent>
                         <div class="logic-panel__row">

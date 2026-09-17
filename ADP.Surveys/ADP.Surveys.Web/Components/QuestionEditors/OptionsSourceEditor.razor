@@ -1,18 +1,35 @@
 @namespace ShiftSoftware.ADP.Surveys.Web.Components.QuestionEditors
-@using ShiftSoftware.ADP.Surveys.Shared.DTOs
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Options
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens
-@using ShiftSoftware.ADP.Surveys.Web.Components
+@implements IAsyncDisposable
+@inject IJSRuntime JS
 
 @*
     Editor for a choice question's optionsSource — the "fetch options from a
     public API" alternative to authoring options inline. The fetch happens in
     the respondent's browser (Accept-Language = survey locale), so the endpoint
     must be public and CORS-open; this block ships in the public schema.
+
+    Every request field may carry personalization tokens: the URL, parameter and
+    header values, and the POST body. {{recipient.*}} / {{candidate.*}} are filled
+    when the survey is served, {{answers.<id>}} in the respondent's browser right
+    before the fetch — which is how one question's endpoint can depend on an
+    earlier answer. The insert menu in the section header writes a token at the
+    caret of whichever field was last focused (token-insert.js, tracked on the
+    whole section), the same mechanism the localized fields use.
 *@
 
-<div class="qte-section">
-    <div class="qte-section__title">External options (API)</div>
+<div class="qte-section" @ref="editorRoot">
+    <div class="qte-section__head">
+        <div class="qte-section__title">External options (API)</div>
+        @if (Value is not null && !ReadOnly)
+        {
+            <TokenInsertMenu Scope="@Scope"
+                             PreferLabels="false"
+                             Tooltip="Insert a variable or an earlier answer into the focused field (URL, parameter, header or body)"
+                             OnInsert="InsertToken" />
+        }
+    </div>
 
     <MudSwitch T="bool"
                Value="@(Value is not null)"
@@ -28,17 +45,30 @@
             Options are fetched in the respondent's browser when this screen is shown, with
             <code>Accept-Language</code> set to the active survey locale. The endpoint must be
             public and CORS-open — never put secrets here. Authored options above take
-            precedence when both are present.
+            precedence when both are present. The URL, parameters, headers and body can carry
+            <code>@("{{variables}}")</code> and <code>@("{{answers.question-id}}")</code> —
+            an unanswered or missing one is sent empty.
         </MudAlert>
 
-        <MudTextField T="string"
-                      Label="Endpoint URL"
-                      Value="@Value.Url"
-                      ValueChanged="@((string v) => OnFieldChanged(() => Value.Url = v ?? ""))"
-                      ReadOnly="@ReadOnly"
-                      Placeholder="https://…/api/public/company-branch"
-                      HelperText="Absolute http(s) URL returning a JSON array."
-                      Class="mb-2" />
+        <div class="ose-request">
+            <MudSelect T="string"
+                       Label="Method"
+                       Value="@EffectiveMethod"
+                       ValueChanged="@((string v) => OnMethodChanged(v))"
+                       ReadOnly="@ReadOnly"
+                       Class="ose-method">
+                <MudSelectItem T="string" Value="@("GET")">GET</MudSelectItem>
+                <MudSelectItem T="string" Value="@("POST")">POST</MudSelectItem>
+            </MudSelect>
+            <MudTextField T="string"
+                          Label="Endpoint URL"
+                          Value="@Value.Url"
+                          ValueChanged="@((string v) => OnFieldChanged(() => Value.Url = v ?? ""))"
+                          ReadOnly="@ReadOnly"
+                          Placeholder="https://…/api/public/company-branch"
+                          HelperText="Absolute http(s) URL returning a JSON array. Tokens in the path or query are URL-encoded when filled."
+                          Class="ose-url" />
+        </div>
 
         <KeyValueListEditor Title="Query parameters"
                             Value="@Value.QueryParams"
@@ -55,6 +85,27 @@
                             KeyPlaceholder="X-Public-Key"
                             ValuePlaceholder="value"
                             EmptyText="No extra headers (Accept-Language is sent automatically)." />
+
+        @if (Value.IsPost)
+        {
+            <MudTextField T="string"
+                          Label="Content type"
+                          Value="@Value.ContentType"
+                          ValueChanged="@((string v) => OnFieldChanged(() => Value.ContentType = Blank(v)))"
+                          ReadOnly="@ReadOnly"
+                          Placeholder="@OptionsSourceDto.DefaultBodyContentType"
+                          HelperText="Sent as Content-Type. Also decides how filled tokens are escaped: JSON-escaped for application/json, URL-encoded for a form body, as-is otherwise."
+                          Class="mt-1" />
+            <MudTextField T="string"
+                          Label="Body"
+                          Value="@Value.Body"
+                          ValueChanged="@((string v) => OnFieldChanged(() => Value.Body = Blank(v)))"
+                          ReadOnly="@ReadOnly"
+                          Lines="4"
+                          Placeholder="@BodyPlaceholder"
+                          HelperText="Sent verbatim after the tokens are filled. Write the quotes yourself — a filled token is escaped for the content type, never quoted."
+                          Class="ose-body mt-1" />
+        }
 
         <div class="ose-paths">
             <MudTextField T="string"
@@ -104,8 +155,32 @@
        too so the section styling holds when this editor renders without it. */
     .qte-section { margin-top: 14px; padding-top: 10px; border-top: 1px dashed #e0e5ec; }
     .qte-section__title { font-size: 0.8rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .qte-section__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+    .qte-section__head .qte-section__title { margin-bottom: 0; }
     .ose-hint {
         font-size: 0.8rem;
+    }
+    .ose-request {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        margin-bottom: 8px;
+    }
+    .ose-method {
+        flex: 0 0 96px;
+    }
+    .ose-url {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    .ose-body textarea {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.85rem;
     }
     .ose-paths {
         display: flex;
@@ -137,10 +212,49 @@
     [Parameter]
     public SurveyDto? Draft { get; set; }
 
+    /// <summary>
+    /// Personalization vocabulary, cascaded by the survey form. Absent on forms with
+    /// no instance to personalize from (question bank, screen templates) — the insert
+    /// menu simply doesn't render there; tokens typed by hand still work.
+    /// </summary>
+    [CascadingParameter]
+    public PersonalizationScope? Scope { get; set; }
+
+    ElementReference editorRoot;
+    TokenInsertInterop? tokenInsert;
+
+    string EffectiveMethod => Value?.IsPost == true ? "POST" : "GET";
+
+    const string BodyPlaceholder = """{"vin": "{{candidate.vin}}", "branch": "{{answers.branch}}"}""";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Value is null || ReadOnly || Scope is not { IsEmpty: false }) return;
+        tokenInsert ??= new TokenInsertInterop(JS);
+        await tokenInsert.TrackAsync(editorRoot);
+    }
+
+    Task InsertToken(string token) =>
+        tokenInsert?.InsertAsync(editorRoot, token) ?? Task.CompletedTask;
+
     async Task OnToggle(bool enabled)
     {
         if (enabled == (Value is not null)) return;
         await ValueChanged.InvokeAsync(enabled ? new OptionsSourceDto() : null);
+    }
+
+    async Task OnMethodChanged(string method)
+    {
+        if (Value is null) return;
+        var post = string.Equals(method, "POST", StringComparison.OrdinalIgnoreCase);
+        // GET is the default and stays implicit in the schema; a body cannot travel on it.
+        Value.Method = post ? "POST" : null;
+        if (!post)
+        {
+            Value.Body = null;
+            Value.ContentType = null;
+        }
+        await ValueChanged.InvokeAsync(Value);
     }
 
     async Task OnFieldChanged(Action mutation)
@@ -156,4 +270,11 @@
             .Select((s, i) => (s, i))
             .Where(t => t.s is InlineScreenDto inline && !string.IsNullOrWhiteSpace(inline.Id))
             .Select(t => (((InlineScreenDto)t.s).Id, t.i));
+
+    public async ValueTask DisposeAsync()
+    {
+        if (tokenInsert is null) return;
+        await tokenInsert.DisposeAsync();
+        tokenInsert = null;
+    }
 }

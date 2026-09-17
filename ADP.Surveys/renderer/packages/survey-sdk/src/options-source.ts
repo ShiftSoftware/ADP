@@ -10,6 +10,7 @@
  * pre-localized labels; an explicit `source.headers` entry wins over the automatic one.
  */
 
+import { effectiveContentType } from './personalization.js';
 import type { OptionsSource } from './schema.js';
 
 /** One fetched option, mapped via the source's value/label dot-paths. */
@@ -75,18 +76,58 @@ export interface FetchOptionsInit {
   signal?: AbortSignal;
 }
 
+/** `POST` when the source says so (any case); everything else is a GET. */
+function requestMethod(source: OptionsSource): 'GET' | 'POST' {
+  return source.method?.trim().toUpperCase() === 'POST' ? 'POST' : 'GET';
+}
+
+/** The headers a fetch will send: `Accept-Language` from the locale, the body's
+ *  content type, then the source's own headers, which win over both. */
+function requestHeaders(source: OptionsSource, locale?: string): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (locale) headers['Accept-Language'] = locale;
+  const contentType = requestMethod(source) === 'POST' && source.body != null ? effectiveContentType(source) : undefined;
+  if (contentType) headers['Content-Type'] = contentType;
+  for (const [key, value] of Object.entries(source.headers ?? {})) {
+    // A source header replaces the automatic one whatever its casing.
+    for (const existing of Object.keys(headers)) {
+      if (existing.toLowerCase() === key.toLowerCase()) delete headers[existing];
+    }
+    headers[key] = value;
+  }
+  return headers;
+}
+
+/**
+ * Everything that decides what a fetch sends — method, resolved URL, headers and
+ * body — as one string. Cache keys are built from it so two sources that differ
+ * only in a substituted header or body (an answer token, say) do not share a
+ * cached response.
+ */
+export function requestSignature(source: OptionsSource, locale?: string): string {
+  const headers = requestHeaders(source, locale);
+  const headerList = Object.keys(headers)
+    .sort()
+    .map((k) => `${k}=${headers[k]}`)
+    .join('\n');
+  const body = requestMethod(source) === 'POST' && source.body != null ? source.body : '';
+  return `${requestMethod(source)} ${buildOptionsUrl(source)}\n${headerList}\n${body}`;
+}
+
 /** Fetches and maps a source's options. Throws on HTTP errors, non-JSON bodies,
- *  and non-array shapes — callers render an inline retry affordance. */
+ *  and non-array shapes — callers render an inline retry affordance. Tokens in the
+ *  request fields are NOT substituted here — pass a source that already went
+ *  through `substituteRequestFields`. */
 export async function fetchOptions(
   source: OptionsSource,
   init?: FetchOptionsInit,
 ): Promise<FetchedOption[]> {
   const fetchImpl = init?.fetchImpl ?? fetch;
-  const headers: Record<string, string> = {};
-  if (init?.locale) headers['Accept-Language'] = init.locale;
-  Object.assign(headers, source.headers ?? {});
+  const method = requestMethod(source);
   const response = await fetchImpl(buildOptionsUrl(source), {
-    headers,
+    method,
+    headers: requestHeaders(source, init?.locale),
+    ...(method === 'POST' && source.body != null ? { body: source.body } : {}),
     ...(init?.signal ? { signal: init.signal } : {}),
   });
   if (!response.ok) throw new Error(`optionsSource fetch failed: HTTP ${response.status}.`);

@@ -83,6 +83,7 @@ describe('fetchOptions', () => {
       { locale: 'ar', fetchImpl },
     );
     expect(fetchImpl).toHaveBeenCalledWith('https://x.test/city', {
+      method: 'GET',
       headers: { 'Accept-Language': 'ar', 'X-Public-Key': 'demo' },
     });
 

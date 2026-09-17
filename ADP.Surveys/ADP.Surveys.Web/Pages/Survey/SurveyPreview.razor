@@ -106,14 +106,14 @@
         -webkit-overflow-scrolling: touch;
     }
 
-    /* Modal mode (see the .shift-scrollable-content-wrapper note in
-       SurveyForm.razor). A dialog starts 176px into the viewport's height
-       budget — MudBlazor's 64px appbar-height gutter on .mud-dialog, the
-       form's 48px dense header toolbar, its 64px footer toolbar — and the
-       rails only clear 8px there instead of 72px. Net 240px against the
-       page mode's 120px. */
-    .shift-scrollable-content-wrapper .survey-preview__device-screen {
-        height: clamp(280px, calc(100dvh - 240px), var(--device-height));
+    /* Modal mode. The phone's column is a cell of the dialog's own height
+       (100dvh minus MudBlazor's 64px gutter) — the form's header and footer
+       are in the other column, so they don't cost the phone anything. What
+       does: the screen's 40px top padding, the frame's 28px of vertical
+       padding and its 16px of margins, 84px in all; 156 leaves a little
+       air so the frame's bottom corners are never clipped by the dialog. */
+    .mud-dialog .survey-preview__device-screen {
+        height: clamp(280px, calc(100dvh - 156px), var(--device-height));
     }
 </style>
 

@@ -15,9 +15,19 @@
    ReadOnly falls back to a parallel-per-locale MudTextField grid so values
    remain visible but uneditable — LocalizedTextField has no ReadOnly of its own.
 
-   Personalization: when a PersonalizationScope cascades in, an "insert variable"
-   menu sits above the field. Insertion happens at the caret via token-insert.js
-   rather than by rewriting Value — see that file for why. *@
+   Personalization: when a PersonalizationScope cascades in, an insert menu sits
+   above the field (TokenInsertMenu — variables and earlier answers). Insertion
+   happens at the caret via token-insert.js rather than by rewriting Value — see
+   that file for why.
+
+   External changes: LocalizedTextField's inner LocalizedInput reads Value only in
+   OnInitialized, so a Value that changes underneath it — a different option bound
+   to this row after a reorder, another screen selected into the inspector, a Raw
+   JSON edit — never reaches the visible boxes, and the next keystroke commits the
+   stale text onto the new object. The field therefore remounts the inner component
+   whenever the incoming Value differs from what it last emitted itself; its own
+   edits round-trip through ValueChanged and come back equal, so typing never
+   remounts (a remount would lose the caret). *@
 
 @if (ReadOnly)
 {
@@ -40,36 +50,13 @@ else
     <div class="lsf" @ref="fieldRoot">
         @if (ShowTokenMenu)
         {
-            @* `title` is not a MudMenu parameter — it splats through as the plain HTML
-               attribute so the icon-only button gets a hover tooltip. Note stays out
-               here: a Razor comment placed INSIDE an attribute list is parsed as an
-               attribute name and throws at runtime, not at build. *@
             <div class="lsf__token-bar">
-                <MudMenu Dense="true"
-                         Icon="@Icons.Material.Filled.DataObject"
-                         Size="Size.Small"
-                         Color="Color.Default"
-                         AriaLabel="Insert a personalization variable"
-                         title="Insert a personalization variable"
-                         AnchorOrigin="Origin.BottomRight"
-                         TransformOrigin="Origin.TopRight">
-                    @foreach (var token in Scope!.Names)
-                    {
-                        var name = token;
-                        <MudMenuItem OnClick="@(() => InsertToken(name))">
-                            <span class="lsf__token-name">@($"{{{{{name}}}}}")</span>
-                            @if (Scope.WithoutFallback.Contains(name))
-                            {
-                                <span class="lsf__token-note"
-                                      title="No fallback declared — a real recipient sees the raw braces if the event omits this field. Add one under General → Personalization.">no fallback</span>
-                            }
-                        </MudMenuItem>
-                    }
-                </MudMenu>
+                <TokenInsertMenu Scope="@Scope" PreferLabels="true" OnInsert="InsertToken" />
             </div>
         }
 
-        <LocalizedTextField Value="@JsonValue"
+        <LocalizedTextField @key="remountKey"
+                            Value="@JsonValue"
                             ValueChanged="OnTextChanged"
                             Label="@Label"
                             Languages="languageInfos"
@@ -102,15 +89,6 @@ else
         margin-bottom: -10px;
         position: relative;
         z-index: 2;
-    }
-    .lsf__token-name {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        font-size: 0.8rem;
-    }
-    .lsf__token-note {
-        margin-inline-start: 8px;
-        font-size: 0.7rem;
-        color: #b45309;
     }
 </style>
 
@@ -165,48 +143,31 @@ else
     List<string> effectiveLocales = new();
     List<string> currentLocales = new();
 
-    ElementReference fieldRoot;
-    IJSObjectReference? tokenModule;
-    bool tokenTrackingInstalled;
+    // Identity of the inner LocalizedTextField. Bumped when Value changes from the
+    // outside (see the header note) so Blazor mounts a fresh instance that reads it.
+    int remountKey;
+    // Canonical form of the value the inner component currently holds: what it was
+    // last mounted with, or what it last emitted. Null until the first parameter set.
+    string? knownValue;
 
-    static readonly string TokenInsertPath =
-        $"./_content/ShiftSoftware.ADP.Surveys.Web/js/shift-survey/token-insert.js?v={typeof(LocalizedStringField).Assembly.GetName().Version}";
+    ElementReference fieldRoot;
+    TokenInsertInterop? tokenInsert;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!ShowTokenMenu || tokenTrackingInstalled) return;
-        try
-        {
-            tokenModule ??= await JS.InvokeAsync<IJSObjectReference>("import", TokenInsertPath);
-            await tokenModule.InvokeVoidAsync("trackTokenTargets", fieldRoot);
-            tokenTrackingInstalled = true;
-        }
-        catch (JSDisconnectedException) { /* navigated away mid-import */ }
-        catch (JSException)
-        {
-            // No caret tracking available — InsertToken still appends to the first
-            // box, so the menu keeps working, just less precisely.
-        }
+        if (!ShowTokenMenu) return;
+        tokenInsert ??= new TokenInsertInterop(JS);
+        await tokenInsert.TrackAsync(fieldRoot);
     }
 
-    async Task InsertToken(string name)
-    {
-        if (tokenModule is null) return;
-        try
-        {
-            await tokenModule.InvokeAsync<bool>("insertToken", fieldRoot, $"{{{{{name}}}}}");
-        }
-        catch (JSDisconnectedException) { }
-        catch (JSException) { }
-    }
+    Task InsertToken(string token) =>
+        tokenInsert?.InsertAsync(fieldRoot, token) ?? Task.CompletedTask;
 
     public async ValueTask DisposeAsync()
     {
-        if (tokenModule is null) return;
-        try { await tokenModule.DisposeAsync(); }
-        catch (JSDisconnectedException) { }
-        catch (ObjectDisposedException) { }
-        tokenModule = null;
+        if (tokenInsert is null) return;
+        await tokenInsert.DisposeAsync();
+        tokenInsert = null;
     }
 
     protected override void OnParametersSet()
@@ -223,6 +184,34 @@ else
         JsonValue = Value is null || Value.Count == 0
             ? ""
             : JsonSerializer.Serialize((Dictionary<string, string>)Value);
+
+        var incoming = Canonical(Value);
+        if (knownValue is null)
+        {
+            knownValue = incoming;
+        }
+        else if (!string.Equals(incoming, knownValue, StringComparison.Ordinal))
+        {
+            // Not our own edit coming back — the bound object changed. Remount so
+            // the boxes show it instead of the previous object's text.
+            knownValue = incoming;
+            remountKey++;
+        }
+    }
+
+    /// <summary>
+    /// Locale-ordered, empty-pruned rendering used to compare values. Pruning
+    /// matters: the field itself drops empty locales before emitting, so the
+    /// parent's copy of an edit differs from the inner component's raw state only
+    /// by those blanks — that must not read as an external change.
+    /// </summary>
+    static string Canonical(LocalizedString? value)
+    {
+        if (value is null || value.Count == 0) return "";
+        var pruned = new SortedDictionary<string, string>(StringComparer.Ordinal);
+        foreach (var kv in value)
+            if (!string.IsNullOrEmpty(kv.Value)) pruned[kv.Key] = kv.Value;
+        return pruned.Count == 0 ? "" : JsonSerializer.Serialize(pruned);
     }
 
     async Task OnTextChanged(string json)
@@ -247,6 +236,9 @@ else
                 // LocalizedTextField always emits valid JSON; swallow defensively.
             }
         }
+        // Remember what we emitted so the parent echoing it back is not mistaken
+        // for an external change.
+        knownValue = Canonical(next);
         await ValueChanged.InvokeAsync(next);
     }
 }

@@ -9,6 +9,10 @@
     }
     else if (Draft.Screens[SelectedIndex] is InlineScreenDto inline)
     {
+        @* Keyed on the screen so selecting another one mounts a fresh inspector
+           rather than rebinding this one's editors (and the question list's
+           expansion state) to a different screen. *@
+        <div @key="inline">
         <div class="screen-inspector__section-title">Screen properties</div>
 
         <MudTextField T="string"
@@ -74,11 +78,13 @@
                       ReadOnly="@ReadOnly"
                       SchemaVersion="@SchemaVersion"
                       Changed="OnQuestionsChanged" />
+        </div>
     }
     else if (Draft.Screens[SelectedIndex] is ScreenTemplateRefDto templateRef)
     {
         <div class="screen-inspector__section-title">Screen template reference</div>
-        <ScreenTemplateRefInspector TemplateRef="templateRef"
+        <ScreenTemplateRefInspector @key="templateRef"
+                                    TemplateRef="templateRef"
                                     Draft="@Draft"
                                     SelectedIndex="@SelectedIndex"
                                     ReadOnly="@ReadOnly"

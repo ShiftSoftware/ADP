@@ -47,7 +47,7 @@
                 var isRef = screen is ScreenTemplateRefDto;
                 var endKind = ScreenFlow.Classify(Draft, idx);
 
-                <div class="screen-list__row @(selected ? "screen-list__row--selected" : "") @(dragIndex == idx ? "screen-list__row--dragging" : "") @(dragOverIndex == idx && dragIndex != idx ? "screen-list__row--dragover" : "")"
+                <div @key="screen" class="screen-list__row @(selected ? "screen-list__row--selected" : "") @(dragIndex == idx ? "screen-list__row--dragging" : "") @(dragOverIndex == idx && dragIndex != idx ? "screen-list__row--dragover" : "")"
                      draggable="@(ReadOnly ? "false" : "true")"
                      @ondragstart="@(() => OnDragStart(idx))"
                      @ondragenter="@(() => OnDragEnter(idx))"

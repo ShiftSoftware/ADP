@@ -92,7 +92,12 @@ export interface NavigationOption {
  *  on the C# side. Fetched client-side at render time with `Accept-Language` set
  *  from the active locale; the endpoints must be public and CORS-open (this block
  *  ships verbatim in the public schema — no secrets). `nextScreen` applies to
- *  `navigationList` only: every fetched option shares it as its destination. */
+ *  `navigationList` only: every fetched option shares it as its destination.
+ *
+ *  `url`, `queryParams` values, `headers` values and `body` may carry
+ *  personalization tokens. `{{recipient.*}}` / `{{candidate.*}}` arrive already
+ *  filled by the server; `{{answers.<id>}}` is filled by the renderer right before
+ *  the fetch (see `substituteRequestFields`). */
 export interface OptionsSource {
   url: string;
   queryParams?: Record<string, string>;
@@ -104,6 +109,22 @@ export interface OptionsSource {
   /** Dot-path to each item's display label. Default: `Name`. */
   labelPath?: string;
   nextScreen?: string;
+  /** `GET` (default) or `POST`. */
+  method?: string;
+  /** Request body template, sent with POST. Tokens are escaped for `contentType`. */
+  body?: string;
+  /** Media type of `body`; `application/json` when omitted and a body is present. */
+  contentType?: string;
+}
+
+/** A declared personalization variable — matches `SurveyVariableDto`. The renderer
+ *  only reads `fallback`, as the survey-wide stand-in for an answer token that has
+ *  no answer; `example` is applied by the server on test instances and never here. */
+export interface SurveyVariable {
+  name: string;
+  example?: LocalizedString;
+  fallback?: LocalizedString;
+  description?: string;
 }
 
 /** Branding block served with the schema — per-survey authored branding merged
@@ -123,6 +144,7 @@ export interface Survey {
   defaultLocale?: string;
   locales?: string[];
   branding?: Branding;
+  variables?: SurveyVariable[];
   screens: Screen[];
   logic?: LogicRule[];
 }

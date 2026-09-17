@@ -2,6 +2,7 @@ using ShiftSoftware.ADP.Surveys.Shared.DTOs;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens;
+using ShiftSoftware.ADP.Surveys.Shared.Personalization;
 
 namespace ShiftSoftware.ADP.Surveys.Shared.Integrity;
 
@@ -16,6 +17,7 @@ namespace ShiftSoftware.ADP.Surveys.Shared.Integrity;
 ///   <item>Every <c>navigationList</c> option's <c>NextScreen</c> resolves.</item>
 ///   <item>Every logic-rule <c>Then.Goto</c> resolves.</item>
 ///   <item>Question ids are unique within each screen.</item>
+///   <item>Every <c>{{answers.&lt;id&gt;}}</c> token names a question that exists.</item>
 ///   <item>No ref forms survive (sanity check — the resolver should have caught this).</item>
 /// </list>
 ///
@@ -47,8 +49,31 @@ public static class SurveyIntegrityValidator
         }
 
         CheckLogicGotos(resolved, screenIds, errors);
+        CheckAnswerReferences(resolved, errors);
 
         return errors;
+    }
+
+    /// <summary>
+    /// A personalization token that refers to an answer must name a real question,
+    /// wherever it is written — copy or an options source's request fields. A typo
+    /// here would otherwise only show up as raw braces on a respondent's screen or as
+    /// an empty request parameter.
+    /// </summary>
+    private static void CheckAnswerReferences(SurveyDto survey, List<IntegrityError> errors)
+    {
+        var questionIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var screen in survey.Screens.OfType<InlineScreenDto>())
+            foreach (var entry in screen.Questions)
+                if (entry.Inline is { Id.Length: > 0 } question)
+                    questionIds.Add(question.Id);
+
+        foreach (var id in PersonalizationTokens.CollectAnswerReferences(survey).OrderBy(x => x, StringComparer.Ordinal))
+        {
+            if (questionIds.Contains(id)) continue;
+            errors.Add(new IntegrityError($"tokens.answers.{id}",
+                $"'{{{{answers.{id}}}}}' refers to question id '{id}', which does not exist in this survey."));
+        }
     }
 
     private static HashSet<string> CollectScreenIds(SurveyDto resolved, List<IntegrityError> errors)

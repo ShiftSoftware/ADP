@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
-  buildOptionsUrl,
   fetchOptions,
+  requestSignature,
+  substituteRequestFields,
   type FetchedOption,
   type LocalizedString,
   type OptionsSource,
@@ -17,9 +18,10 @@ import type { QuestionComponent } from './registry.js';
  * substituted in) once loaded. Fetches happen lazily — a sourced question on a
  * branch the respondent never visits is never fetched.
  *
- * The cache is session-scoped and keyed by locale + resolved URL, so revisiting
- * a screen doesn't refetch but switching locale does (endpoints localize via
- * the Accept-Language header the SDK sends).
+ * The cache is session-scoped and keyed by locale + the resolved request
+ * (method, URL, headers, body — after `{{answers.*}}` substitution), so
+ * revisiting a screen doesn't refetch, while switching locale or changing an
+ * answer the request depends on does.
  */
 
 const optionsCache = new Map<string, FetchedOption[]>();
@@ -41,9 +43,12 @@ export function SourcedOptionsGate({
   question: Record<string, unknown>;
   Component: QuestionComponent;
 }) {
-  const { locale, schema, ui } = useSurveyContext();
-  const source = question['optionsSource'] as OptionsSource;
-  const cacheKey = `${locale}|${buildOptionsUrl(source)}`;
+  const { locale, schema, ui, answerContext, registerSourcedOptions } = useSurveyContext();
+  // Answer tokens in the request fields are filled here, at fetch time, with
+  // request escaping — the screen's copy went through the same context already.
+  const source = substituteRequestFields(question['optionsSource'] as OptionsSource, answerContext, locale);
+  const questionId = question['id'] as string | undefined;
+  const cacheKey = `${locale}|${requestSignature(source, locale)}`;
   const [state, setState] = useState<GateState>(() => {
     const cached = optionsCache.get(cacheKey);
     return cached ? { status: 'ready', options: cached } : { status: 'loading' };
@@ -70,9 +75,15 @@ export function SourcedOptionsGate({
       cancelled = true;
     };
     // `source` is derived from the question object; cacheKey already encodes
-    // its request-relevant parts (url + params) plus the locale.
+    // everything the request depends on (method, url, headers, body) plus the locale.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cacheKey, attempt]);
+
+  // Once loaded, make the options known to the answer context so a later
+  // `{{answers.<id>.label}}` can show the picked label instead of its id.
+  useEffect(() => {
+    if (state.status === 'ready' && questionId) registerSourcedOptions(questionId, state.options);
+  }, [state, questionId, registerSourcedOptions]);
 
   const title = question['title'] as LocalizedString | undefined;
   const heading = title ? (

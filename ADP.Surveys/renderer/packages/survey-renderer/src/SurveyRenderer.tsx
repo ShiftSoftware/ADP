@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   AnswerMap,
+  LabelledOption,
   LocalizedString,
   NavigationOption,
   Survey,
@@ -9,6 +10,9 @@ import type {
 } from '@shiftsoftware/survey-sdk';
 import {
   computeNext,
+  replayPathTo,
+  createAnswerContext,
+  personalizeScreen,
   resolveNavigationListTarget,
   validateAnswerValue,
   validatePresentAnswers,
@@ -237,7 +241,13 @@ export function SurveyRenderer({
     // Guard against a saved screen id that's no longer in the schema.
     const screenStillExists =
       snap.currentScreenId === null || schema.screens.some((s) => s.id === snap.currentScreenId);
-    return screenStillExists ? snap : { ...snap, currentScreenId: schema.screens[0]?.id ?? null };
+    if (!screenStillExists) return { ...snap, currentScreenId: schema.screens[0]?.id ?? null, history: [] };
+    // State saved before histories were persisted: replay the walk from the
+    // answers so Back (and the on-path answer set) still work after the upgrade.
+    if (!snap.history && snap.currentScreenId) {
+      return { ...snap, history: replayPathTo(schema, snap.answers, snap.currentScreenId) ?? [] };
+    }
+    return snap;
     // Intentionally scoped to mount — we don't restore mid-session if the key
     // changes underneath us.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -250,6 +260,13 @@ export function SurveyRenderer({
   const [currentScreenId, setCurrentScreenId] = useState<string | null>(
     () => resumeSnapshot?.currentScreenId ?? schema.screens[0]?.id ?? null,
   );
+  // The screens the respondent came through to reach the current one, oldest
+  // first. Back pops it; forward navigation pushes the screen being left. It is
+  // also what defines the respondent's PATH: answers on screens that are neither
+  // in it nor current are parked — kept so the input is still filled if the
+  // respondent walks that way again, but invisible to routing, tokens and the
+  // submission (see `effectiveAnswers`).
+  const [history, setHistory] = useState<readonly string[]>(() => resumeSnapshot?.history ?? []);
 
   // Reconcile currentScreenId against the schema whenever the schema changes.
   // The lazy useState above seeds this once on mount; in the builder-preview
@@ -295,8 +312,17 @@ export function SurveyRenderer({
     if (activeScreenId === null || done) return;
     if (!schema.screens.some((s) => s.id === activeScreenId)) return;
     setRequiredFlags(new Set());
+    setConstraintFlags(new Set());
+    // A jump to a screen already walked is a rewind to it — the screens after
+    // it leave the path, exactly as if Back had been pressed that many times.
+    // Any other target is a forward hop from wherever the preview is sitting.
+    setHistory((prev) => {
+      const walked = prev.indexOf(activeScreenId);
+      if (walked >= 0) return prev.slice(0, walked);
+      return currentScreenId && currentScreenId !== activeScreenId ? [...prev, currentScreenId] : prev;
+    });
     setCurrentScreenId(activeScreenId);
-  }, [activeScreenId, activeScreenJumpToken, schema, done]);
+  }, [activeScreenId, activeScreenJumpToken, schema, done, currentScreenId]);
   const startedAtRef = useRef<string>(new Date().toISOString());
 
   // Host bridge — iframe embed protocol. Created once per mount; the
@@ -316,6 +342,70 @@ export function SurveyRenderer({
   const currentScreen = useMemo(
     () => (currentScreenId ? schema.screens.find((s) => s.id === currentScreenId) ?? null : null),
     [schema, currentScreenId],
+  );
+
+  // Which screen each question lives on, for the path filter below.
+  const screenOfQuestion = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const screen of schema.screens) {
+      for (const q of (screen.questions ?? []) as Array<Record<string, unknown>>) {
+        const id = q['id'];
+        if (typeof id === 'string') map.set(id, screen.id);
+      }
+    }
+    return map;
+  }, [schema]);
+
+  // The answers on the respondent's path: history plus the current screen. An
+  // answer given on a branch the respondent then backed out of is parked, not
+  // deleted — it must not route a logic rule, fill a token or reach the server,
+  // but it should still be in the input if they come back that way. Answers to
+  // ids no screen declares (host-seeded values) are never on a wrong path.
+  const effectiveAnswers = useMemo<AnswerMap>(() => {
+    const onPath = new Set(history);
+    if (currentScreenId) onPath.add(currentScreenId);
+    const kept: AnswerMap = {};
+    for (const [questionId, value] of Object.entries(answers)) {
+      const screenId = screenOfQuestion.get(questionId);
+      if (screenId === undefined || onPath.has(screenId)) kept[questionId] = value;
+    }
+    return kept;
+  }, [answers, history, currentScreenId, screenOfQuestion]);
+
+  // Options fetched by sourced questions, kept per renderer instance so
+  // `{{answers.<id>.label}}` can name a pick from an endpoint even after that
+  // question's screen has unmounted. A version counter turns a new registration
+  // into a re-render — the map itself is a ref so registering never loops.
+  const sourcedOptionsRef = useRef(new Map<string, readonly LabelledOption[]>());
+  const [sourcedVersion, setSourcedVersion] = useState(0);
+  const registerSourcedOptions = useCallback((questionId: string, options: readonly LabelledOption[]) => {
+    if (sourcedOptionsRef.current.get(questionId) === options) return;
+    sourcedOptionsRef.current.set(questionId, options);
+    setSourcedVersion((n) => n + 1);
+  }, []);
+
+  // `{{answers.*}}` resolution for the copy on screen and for sourced requests.
+  // Rebuilt whenever an answer changes, so a same-screen reference updates as the
+  // respondent types.
+  const answerContext = useMemo(
+    () =>
+      createAnswerContext({
+        schema,
+        answers: effectiveAnswers,
+        lookupOptions: (questionId) => sourcedOptionsRef.current.get(questionId),
+        yesNoLabels: { yes: localeConfig.strings.yes, no: localeConfig.strings.no },
+      }),
+    // sourcedVersion is the change signal for the ref-held map.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schema, effectiveAnswers, localeConfig.strings.yes, localeConfig.strings.no, sourcedVersion],
+  );
+
+  // What actually renders: the current screen with answer tokens filled into its
+  // copy. Navigation, validation and auto-submit keep using `currentScreen` — ids
+  // and structure are identical, only display text differs.
+  const shownScreen = useMemo(
+    () => (currentScreen ? personalizeScreen(currentScreen, answerContext) : null),
+    [currentScreen, answerContext],
   );
 
   // Emit screen-change events after every transition (both to the callback and
@@ -339,9 +429,10 @@ export function SurveyRenderer({
     saveResumeState(effectiveStorage, resumeKey, {
       answers,
       currentScreenId,
+      history: [...history],
       schemaVersion: schema.version,
     });
-  }, [answers, currentScreenId, resumeKey, effectiveStorage, done, schema.version]);
+  }, [answers, currentScreenId, history, resumeKey, effectiveStorage, done, schema.version]);
 
   useEffect(() => {
     if (done && resumeKey && effectiveStorage) {
@@ -363,10 +454,32 @@ export function SurveyRenderer({
       if (screenId === null) return;
       setRequiredFlags(new Set());
       setConstraintFlags(new Set());
+      // A self-target (an option pointing at its own screen) must not leave a
+      // Back that goes nowhere.
+      if (currentScreenId && currentScreenId !== screenId) {
+        setHistory((prev) => [...prev, currentScreenId]);
+      }
       setCurrentScreenId(screenId);
     },
-    [],
+    [currentScreenId],
   );
+
+  // Back returns to the most recent screen that still exists — a screen the
+  // builder deleted mid-preview is skipped rather than snapping to the start.
+  // Nothing is validated on the way out: the respondent is leaving to change
+  // something, and their answers on this screen stay parked for their return.
+  const goBack = useCallback(() => {
+    let at = history.length - 1;
+    while (at >= 0 && !schema.screens.some((s) => s.id === history[at])) at--;
+    if (at < 0) return;
+    const previous = history[at]!;
+    setRequiredFlags(new Set());
+    setConstraintFlags(new Set());
+    setSubmissionError(null);
+    setHistory(history.slice(0, at));
+    setCurrentScreenId(previous);
+  }, [history, schema]);
+  const canGoBack = history.some((id) => schema.screens.some((s) => s.id === id));
 
   /** A required question with no usable answer. Mirrors the server's presence
    *  check but is stricter on empties — '' and [] count as missing here. */
@@ -388,7 +501,7 @@ export function SurveyRenderer({
     try {
       await onSubmit({
         schemaVersion: schema.version ?? 0,
-        answers,
+        answers: effectiveAnswers,
         meta: {
           startedAt: submissionMeta?.startedAt ?? startedAtRef.current,
           completedAt: submissionMeta?.completedAt ?? new Date().toISOString(),
@@ -397,13 +510,13 @@ export function SurveyRenderer({
       });
       setDone(true);
       onCompleted?.(currentScreenId);
-      hostBridgeRef.current?.completed({ screenId: currentScreenId, answers });
+      hostBridgeRef.current?.completed({ screenId: currentScreenId, answers: effectiveAnswers });
     } catch (e) {
       setSubmissionError((e as Error).message ?? String(e));
     } finally {
       setSubmitting(false);
     }
-  }, [schema.version, answers, submissionMeta, onSubmit, onCompleted, currentScreenId]);
+  }, [schema.version, effectiveAnswers, submissionMeta, onSubmit, onCompleted, currentScreenId]);
 
   const advance = useCallback(() => {
     if (!currentScreenId) return;
@@ -424,13 +537,13 @@ export function SurveyRenderer({
       setConstraintFlags(new Set(constraintErrors.map((e) => e.questionId)));
       return;
     }
-    const step = computeNext(schema, currentScreenId, answers);
+    const step = computeNext(schema, currentScreenId, effectiveAnswers);
     if (step.kind === 'end') {
       void finishSurvey();
     } else {
       goTo(step.screenId);
     }
-  }, [schema, currentScreenId, answers, isAnswerMissing, goTo, finishSurvey]);
+  }, [schema, currentScreenId, answers, effectiveAnswers, isAnswerMissing, goTo, finishSurvey]);
 
   // Auto-submit on arrival at a zero-question terminal screen — authors design
   // multiple thank-you pages per branch, and forcing the user to press Next once
@@ -445,12 +558,12 @@ export function SurveyRenderer({
       !currentScreen.questions ||
       (currentScreen.questions as unknown[]).length === 0;
     if (!isZeroQ) return;
-    const step = computeNext(schema, currentScreenId, answers);
+    const step = computeNext(schema, currentScreenId, effectiveAnswers);
     if (step.kind === 'end') {
       autoSubmittedFor.current = currentScreenId;
       void finishSurvey();
     }
-  }, [currentScreenId, currentScreen, done, submitting, schema, answers, finishSurvey]);
+  }, [currentScreenId, currentScreen, done, submitting, schema, effectiveAnswers, finishSurvey]);
 
   // NavigationList bridge — listen for selections bubbling up from a navigationList
   // option and route using the SDK's resolver. Scoped to this renderer instance via
@@ -478,7 +591,7 @@ export function SurveyRenderer({
       if (!detail || !currentScreenId) return;
       setAnswer(detail.questionId, detail.option.id);
       // Compute using the updated answer map (functional) — setAnswer is async.
-      const nextAnswers = { ...answers, [detail.questionId]: detail.option.id };
+      const nextAnswers = { ...effectiveAnswers, [detail.questionId]: detail.option.id };
       const step = resolveNavigationListTarget(
         detail.option as NavigationOption,
         schema,
@@ -490,7 +603,7 @@ export function SurveyRenderer({
     };
     el.addEventListener('survey:navigationListSelect', handler as EventListener);
     return () => el.removeEventListener('survey:navigationListSelect', handler as EventListener);
-  }, [answers, currentScreenId, schema, setAnswer, goTo, finishSurvey]);
+  }, [effectiveAnswers, currentScreenId, schema, setAnswer, goTo, finishSurvey]);
 
   const contextValue = useMemo(
     () => ({
@@ -500,8 +613,10 @@ export function SurveyRenderer({
       ui: localeConfig.strings,
       answers,
       setAnswer,
+      answerContext,
+      registerSourcedOptions,
     }),
-    [schema, effectiveLocale, localeConfig, answers, setAnswer],
+    [schema, effectiveLocale, localeConfig, answers, setAnswer, answerContext, registerSourcedOptions],
   );
 
   // Branding → CSS variable overrides on the root + optional logo header.
@@ -525,17 +640,23 @@ export function SurveyRenderer({
   // the OS picker is the one control every respondent already knows, gets right at
   // any font size, and reads correctly to a screen reader without us reimplementing
   // it. Options list the schema's locales by endonym — a respondent finds their
-  // language by recognising it, never by decoding a code.
+  // language by recognising it, never by decoding a code. What SHOWS is compact —
+  // a globe and the current code — because the header row has to hold Back, the
+  // logo and this on a phone; the select sits transparent on top of that trigger,
+  // so a tap still opens the OS picker with the endonyms in it.
   const localeOptions = offeredLocales.includes(effectiveLocale)
     ? offeredLocales
     : [effectiveLocale, ...offeredLocales];
   const localePicker = localePickerVisible ? (
-    <div className="survey-locale">
+    <label className="survey-locale">
       <span className="survey-locale__icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8">
           <circle cx="12" cy="12" r="9" />
           <path d="M3 12h18M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18" />
         </svg>
+      </span>
+      <span className="survey-locale__code" aria-hidden="true">
+        {effectiveLocale.toUpperCase()}
       </span>
       <select
         className="survey-locale__select"
@@ -549,16 +670,59 @@ export function SurveyRenderer({
           </option>
         ))}
       </select>
-    </div>
+    </label>
   ) : null;
 
-  // One header for every branch below, so the picker can't go missing on the
-  // thank-you or empty-schema screens.
+  // Back: the chevron in the top-start corner, the way a phone's own screens do
+  // it. Offered wherever there is somewhere to go back to — including
+  // navigationList screens, which have no Next — but not while a submission is
+  // in flight, on a screen about to submit itself, or once the survey is done.
+  // The chevron stays mounted whenever the survey can ever show it and is
+  // toggled with a class, so it can fade and slide in and out — and the logo
+  // slide along with it — the way a phone's own header does, instead of popping.
+  // Hidden = aria-hidden + visibility:hidden after the fade, so it is out of the
+  // accessibility tree and the tab order, not just invisible.
+  const currentQuestions = (currentScreen?.questions as unknown[] | undefined) ?? [];
+  const isAutoSubmitScreen = currentScreen !== null && currentQuestions.length === 0 && !currentScreen.nextScreen;
+  const showBackButton = !done && canGoBack && !submitting && !isAutoSubmitScreen;
+  const backButton = schema.screens.length > 1 ? (
+    <button
+      type="button"
+      className={showBackButton ? 'survey-back' : 'survey-back survey-back--hidden'}
+      aria-label={localeConfig.strings.back}
+      aria-hidden={!showBackButton}
+      tabIndex={showBackButton ? undefined : -1}
+      onClick={goBack}
+    >
+      <svg
+        className="survey-back__icon"
+        viewBox="0 0 24 24"
+        width="24"
+        height="24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M15 5l-7 7 7 7" />
+      </svg>
+    </button>
+  ) : null;
+
+  // One header row for every branch below — Back at the start, then the logo
+  // (shrinking before anything else does), the picker at the end — so the picker
+  // can't go missing on the thank-you or empty-schema screens. The row is there on
+  // every screen of a survey that can ever show Back, so the title never moves
+  // between the first screen, which has none, and the rest; the `--back` modifier
+  // opens the Back slot, which is what slides the logo over.
   const chrome =
-    brandLogo || localePicker ? (
-      <div className="survey-chrome">
+    brandLogo || localePicker || backButton ? (
+      <div className={showBackButton ? 'survey-chrome survey-chrome--back' : 'survey-chrome'}>
+        <div className="survey-chrome__start">{backButton}</div>
         {brandLogo}
-        {localePicker}
+        <div className="survey-chrome__end">{localePicker}</div>
       </div>
     ) : null;
 
@@ -574,13 +738,13 @@ export function SurveyRenderer({
         {chrome}
         <div className="survey-screen">
           <h2 className="survey-screen__title">
-            {currentScreen?.title
-              ? localize(currentScreen.title as LocalizedString, effectiveLocale, schema.defaultLocale)
+            {shownScreen?.title
+              ? localize(shownScreen.title as LocalizedString, effectiveLocale, schema.defaultLocale)
               : localeConfig.strings.thankYou}
           </h2>
-          {currentScreen?.description && (
+          {shownScreen?.description && (
             <p className="survey-screen__description">
-              {localize(currentScreen.description as LocalizedString, effectiveLocale, schema.defaultLocale)}
+              {localize(shownScreen.description as LocalizedString, effectiveLocale, schema.defaultLocale)}
             </p>
           )}
         </div>
@@ -588,7 +752,7 @@ export function SurveyRenderer({
     );
   }
 
-  if (!currentScreen) {
+  if (!currentScreen || !shownScreen) {
     return (
       <div ref={rootRef} className="survey-root" dir={localeConfig.direction} lang={effectiveLocale} style={brandStyle}>
         {chrome}
@@ -597,7 +761,7 @@ export function SurveyRenderer({
     );
   }
 
-  const questions = (currentScreen.questions as Array<Record<string, unknown>> | undefined) ?? [];
+  const questions = (shownScreen.questions as Array<Record<string, unknown>> | undefined) ?? [];
   // The Next button is hidden when the terminal question of the screen is a
   // navigationList — per Phase 3 Part B.1 the tap IS the transition.
   const hasTerminalNavList =
@@ -606,7 +770,6 @@ export function SurveyRenderer({
   // Also hide it on zero-question screens that will auto-submit on arrival —
   // otherwise the user sees "Next" for the moment before the submission completes,
   // which is confusing UX.
-  const isAutoSubmitScreen = questions.length === 0 && !currentScreen.nextScreen;
   const showNextButton = !hasTerminalNavList && !isAutoSubmitScreen;
   // The press that ends the survey is labeled Submit, not Next — respondents
   // otherwise can't tell which press submits. Two shapes end it: computeNext
@@ -615,25 +778,25 @@ export function SurveyRenderer({
   // respondent's seat both are the committing press. Answer-aware via
   // computeNext so the label stays correct on branching flows.
   const nextStep =
-    showNextButton && currentScreenId !== null ? computeNext(schema, currentScreenId, answers) : null;
+    showNextButton && currentScreenId !== null ? computeNext(schema, currentScreenId, effectiveAnswers) : null;
   const nextWouldEnd =
     nextStep !== null &&
     (nextStep.kind === 'end' ||
-      (nextStep.kind === 'screen' && screenAutoSubmitsOnArrival(schema, nextStep.screenId, answers)));
+      (nextStep.kind === 'screen' && screenAutoSubmitsOnArrival(schema, nextStep.screenId, effectiveAnswers)));
 
   return (
     <SurveyContextProvider value={contextValue}>
       <div ref={rootRef} className="survey-root" dir={localeConfig.direction} lang={effectiveLocale} style={brandStyle}>
         {chrome}
         <div className="survey-screen">
-          {currentScreen.title && (
+          {shownScreen.title && (
             <h2 className="survey-screen__title">
-              {localize(currentScreen.title as LocalizedString, effectiveLocale, schema.defaultLocale)}
+              {localize(shownScreen.title as LocalizedString, effectiveLocale, schema.defaultLocale)}
             </h2>
           )}
-          {currentScreen.description && (
+          {shownScreen.description && (
             <p className="survey-screen__description">
-              {localize(currentScreen.description as LocalizedString, effectiveLocale, schema.defaultLocale)}
+              {localize(shownScreen.description as LocalizedString, effectiveLocale, schema.defaultLocale)}
             </p>
           )}
           <div className="survey-screen__questions">

@@ -21,6 +21,15 @@ namespace ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Options;
 /// sourced questions is shape-only (any string id is accepted); the option-membership
 /// check runs client-side in the SDK's answer-validator mirror.</item>
 /// </list>
+///
+/// Every request field — <see cref="Url"/>, <see cref="QueryParams"/> values,
+/// <see cref="Headers"/> values and <see cref="Body"/> — may carry personalization
+/// tokens. <c>{{recipient.*}}</c> / <c>{{candidate.*}}</c> are filled at serve time
+/// (<see cref="Personalization.PersonalizationTokens"/>); <c>{{answers.&lt;id&gt;}}</c>
+/// is filled by the renderer from the respondent's own answers just before the fetch,
+/// which is what lets one question's endpoint depend on an earlier answer. Values are
+/// escaped for where they land: percent-encoded in the URL and in a form body,
+/// JSON-string-escaped in a JSON body, raw elsewhere.
 /// </summary>
 public class OptionsSourceDto
 {
@@ -68,6 +77,49 @@ public class OptionsSourceDto
     public string? NextScreen { get; set; }
 
     /// <summary>
+    /// HTTP method — <c>GET</c> (the default when null) or <c>POST</c>. POST is what
+    /// lets the request carry a <see cref="Body"/>; the endpoint still has to be
+    /// public and CORS-open, and a JSON body makes the browser preflight it.
+    /// </summary>
+    [JsonPropertyName("method")]
+    public string? Method { get; set; }
+
+    /// <summary>
+    /// Request body template, sent with POST after token substitution. Write it in
+    /// the shape the endpoint expects — typically JSON such as
+    /// <c>{"vin": "{{candidate.vin}}", "branch": "{{answers.branch}}"}</c>. Substituted
+    /// values are escaped for the <see cref="ContentType"/>, so a quote or newline in an
+    /// answer cannot break the document.
+    /// </summary>
+    [JsonPropertyName("body")]
+    public string? Body { get; set; }
+
+    /// <summary>
+    /// Media type of <see cref="Body"/>, sent as <c>Content-Type</c>. Defaults to
+    /// <c>application/json</c> when a body is present; an explicit <c>Content-Type</c>
+    /// entry in <see cref="Headers"/> wins. Also selects the escaping applied to
+    /// substituted tokens inside the body.
+    /// </summary>
+    [JsonPropertyName("contentType")]
+    public string? ContentType { get; set; }
+
+    public const string DefaultBodyContentType = "application/json";
+
+    /// <summary>True when the request is a POST (case-insensitive; null means GET).</summary>
+    [JsonIgnore]
+    public bool IsPost => string.Equals(Method?.Trim(), "POST", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The media type the body is sent as: the explicit <see cref="ContentType"/>,
+    /// else <see cref="DefaultBodyContentType"/> when there is a body, else null.
+    /// </summary>
+    [JsonIgnore]
+    public string? EffectiveContentType =>
+        !string.IsNullOrWhiteSpace(ContentType) ? ContentType!.Trim()
+        : Body is not null ? DefaultBodyContentType
+        : null;
+
+    /// <summary>
     /// The options source of a question, for the four choice types that can carry one.
     /// Null for every other question type.
     /// </summary>
@@ -95,5 +147,14 @@ public class OptionsSourceDtoValidator : AbstractValidator<OptionsSourceDto>
         When(x => x.Headers is not null, () =>
             RuleForEach(x => x.Headers!).ChildRules(pair =>
                 pair.RuleFor(p => p.Key).NotEmpty().WithMessage("optionsSource.headers keys must be non-empty.")));
+        RuleFor(x => x.Method)
+            .Must(m => m is null || IsGet(m) || string.Equals(m.Trim(), "POST", StringComparison.OrdinalIgnoreCase))
+            .WithMessage("optionsSource.method must be GET or POST.");
+        RuleFor(x => x.Body)
+            .Must((source, body) => body is null || source.IsPost)
+            .WithMessage("optionsSource.body needs method POST — a GET request has no body.");
     }
+
+    private static bool IsGet(string method) =>
+        string.IsNullOrWhiteSpace(method) || string.Equals(method.Trim(), "GET", StringComparison.OrdinalIgnoreCase);
 }

@@ -78,3 +78,53 @@ export function resolveNavigationListTarget(
   }
   return computeNext(schema, currentScreenId, answers);
 }
+
+/**
+ * The screens a respondent passed through to reach `targetScreenId`, oldest
+ * first, replayed from the first screen against the answers they hold — the
+ * SDK twin of the server's `AnswerValidator.ComputeVisitedScreens` walk: an
+ * answered `navigationList` dispatches on its option (a sourced one on the
+ * source's shared `nextScreen`), everything else follows `computeNext`. Returns
+ * `null` when the walk ends or loops before reaching the target, so a caller
+ * can tell "no path" from "the target is the first screen".
+ *
+ * The renderer uses it to rebuild a navigation history for resume state saved
+ * before histories were persisted; a live walk keeps its own exact stack.
+ */
+export function replayPathTo(schema: Survey, answers: AnswerMap, targetScreenId: string): string[] | null {
+  const path: string[] = [];
+  const seen = new Set<string>();
+  let current: string | undefined = schema.screens[0]?.id;
+  while (current !== undefined && !seen.has(current)) {
+    if (current === targetScreenId) return path;
+    seen.add(current);
+    path.push(current);
+    const step = replayStep(schema, current, answers);
+    if (step.kind === 'end') return null;
+    current = step.screenId;
+  }
+  return null;
+}
+
+/** One replay hop: navigationList dispatch first, then the Next-button chain. */
+function replayStep(schema: Survey, screenId: string, answers: AnswerMap): NextStep {
+  const screenIds = new Set(schema.screens.map((s) => s.id));
+  const screen = schema.screens.find((s) => s.id === screenId);
+  for (const raw of (screen?.questions ?? []) as Array<Record<string, unknown>>) {
+    if (raw['type'] !== 'navigationList') continue;
+    const picked = answers[raw['id'] as string];
+    if (typeof picked !== 'string') continue;
+    const options = (raw['options'] as NavigationOption[] | undefined) ?? [];
+    const option = options.find((o) => o.id === picked);
+    if (option?.nextScreen && screenIds.has(option.nextScreen)) {
+      return { kind: 'screen', screenId: option.nextScreen };
+    }
+    // A sourced navigationList has no inline options — every fetched option
+    // shares the source's nextScreen, so any answer routes there.
+    const sourced = (raw['optionsSource'] as { nextScreen?: string } | undefined)?.nextScreen;
+    if (!option && sourced && screenIds.has(sourced)) {
+      return { kind: 'screen', screenId: sourced };
+    }
+  }
+  return computeNext(schema, screenId, answers);
+}

@@ -13,6 +13,10 @@
 export interface UiStrings {
   /** Primary button that advances to the next screen. */
   next: string;
+  /** Accessible name of the chevron in the top-start corner that returns to the
+   *  screen the respondent came from. Absent on the first screen and once the
+   *  survey is submitted. */
+  back: string;
   /** Primary button label when advancing would end the survey — the press that
    *  actually submits. Answer-aware: swaps in whenever `computeNext` resolves
    *  to `end` for the current answers, so it's branch-accurate. */
@@ -78,6 +82,7 @@ const en: LocaleConfig = {
   direction: 'ltr',
   strings: {
     next: 'Next',
+    back: 'Back',
     submit: 'Submit',
     submitting: 'Submitting…',
     loading: 'Loading survey…',
@@ -111,6 +116,7 @@ const ar: LocaleConfig = {
   direction: 'rtl',
   strings: {
     next: 'التالي',
+    back: 'رجوع',
     submit: 'إرسال',
     submitting: 'جاري الإرسال…',
     loading: 'جاري تحميل الاستبيان…',
@@ -149,6 +155,7 @@ const ku: LocaleConfig = {
   direction: 'rtl',
   strings: {
     next: 'دواتر',
+    back: 'گەڕانەوە',
     submit: 'ناردن',
     submitting: 'دەنێردرێت…',
     loading: 'ڕاپرسی باردەکرێت…',
@@ -183,6 +190,7 @@ const ru: LocaleConfig = {
   direction: 'ltr',
   strings: {
     next: 'Далее',
+    back: 'Назад',
     submit: 'Отправить',
     submitting: 'Отправка…',
     loading: 'Загрузка опроса…',

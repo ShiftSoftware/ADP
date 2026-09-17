@@ -14,39 +14,140 @@
   color: #111;
   max-width: 640px;
   margin: 0 auto;
-  padding: 32px 16px;
+  padding: 24px 16px 32px;
 }
 
-/* Brand logo header — start-aligned, mirrors naturally in RTL. */
-/* Header strip: logo on the leading edge, language picker on the trailing one.
-   Both are optional, and `justify-content: space-between` keeps the picker on the
-   trailing edge even when there is no logo beside it. Logical properties
-   throughout so the whole strip mirrors under dir="rtl". */
+/* Header row: Back | logo | language — a phone's nav bar. The logo sits on the
+ * leading edge and is what shrinks when the row gets tight; the picker keeps the
+ * trailing edge. The Back slot opens and closes with a transition, so the logo
+ * slides over as the chevron fades in rather than jumping (iOS-style). Logical
+ * properties throughout, so the whole row mirrors under dir="rtl". */
 .survey-chrome {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  min-height: 40px;
   margin-bottom: 20px;
+}
+
+.survey-chrome__start {
+  flex: none;
+  width: 0;
+  margin-inline-end: 0;
+  transition:
+    width 0.25s ease,
+    margin 0.25s ease;
+}
+
+.survey-chrome--back .survey-chrome__start {
+  /* 32px slot + 8px gap; the 40px button hangs 8px into the page margin so the
+   * chevron glyph itself sits flush with the content edge. */
+  width: 32px;
+  margin-inline-end: 8px;
+}
+
+.survey-chrome__end {
+  flex: none;
+  margin-inline-start: auto;
+  /* Keeps a gap from a logo that has shrunk right up against it. */
+  padding-inline-start: 8px;
 }
 
 .survey-brand {
   display: flex;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .survey-brand__logo {
   height: 28px;
   width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+/* Back: a chevron in the top-start corner, the way a phone's own screens do it.
+ * The icon is mirrored in RTL so it still points "back" in the reading direction.
+ * Hidden state fades and slides it toward the edge, then drops it out of the
+ * accessibility tree and tab order via visibility once the fade is over. */
+.survey-back {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #344054;
+  cursor: pointer;
+  margin-inline-start: -8px;
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease,
+    background-color 0.15s ease,
+    visibility 0s linear 0s;
+}
+
+.survey-back--hidden {
+  opacity: 0;
+  transform: translateX(-12px);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    visibility 0s linear 0.2s;
+}
+
+.survey-root[dir='rtl'] .survey-back--hidden {
+  transform: translateX(12px);
+}
+
+.survey-back:hover {
+  background: #f2f4f7;
+}
+
+.survey-back:focus-visible {
+  outline: 2px solid var(--survey-primary, #2563eb);
+  outline-offset: 1px;
+}
+
+.survey-root[dir='rtl'] .survey-back__icon {
+  transform: scaleX(-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .survey-chrome__start,
+  .survey-back {
+    transition: none;
+  }
 }
 
 /* The picker is chrome, not a question — quiet until touched, so it never
-   competes with the first thing the survey actually asks. */
+ * competes with the first thing the survey actually asks. What shows is the
+ * globe and the current code; the native select is laid transparent over them,
+ * so the tap target and the OS picker are the real control's. */
 .survey-locale {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-inline-start: auto;
+  min-height: 40px;
+  padding: 0 4px;
+  border-radius: 6px;
   color: #6b7280;
+  cursor: pointer;
+}
+
+.survey-locale:hover {
+  background: #f2f4f7;
+}
+
+.survey-locale:focus-within {
+  outline: 2px solid var(--survey-primary, #2563eb);
+  outline-offset: 1px;
 }
 
 .survey-locale__icon {
@@ -54,29 +155,26 @@
   flex: none;
 }
 
+.survey-locale__code {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
 .survey-locale__select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
   appearance: none;
   -webkit-appearance: none;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
+  border: 0;
+  margin: 0;
+  padding: 0;
   font: inherit;
-  font-size: 0.85rem;
-  line-height: 1.2;
-  /* Comfortable tap target on a phone without looking like a form control. */
-  padding: 6px 4px;
   cursor: pointer;
-  max-width: 10rem;
-}
-
-.survey-locale__select:hover {
-  border-color: #d1d5db;
-}
-
-.survey-locale__select:focus-visible {
-  outline: 2px solid var(--survey-primary, #2563eb);
-  outline-offset: 1px;
 }
 
 .survey-screen {
@@ -240,6 +338,13 @@
 .survey-navlist__button:hover {
   background: #f5f7fa;
   border-color: var(--survey-primary);
+}
+
+/* The row the respondent chose last time they were on this screen — shown when
+ * they come Back to it, so changing their mind starts from what they picked. */
+.survey-navlist__button--selected {
+  border-color: var(--survey-primary);
+  box-shadow: inset 0 0 0 1px var(--survey-primary);
 }
 
 .survey-navlist__chevron {

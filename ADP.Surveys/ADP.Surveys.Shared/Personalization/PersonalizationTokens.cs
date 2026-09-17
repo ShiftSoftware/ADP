@@ -1,9 +1,11 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Reflection;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs;
+using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Options;
 
 namespace ShiftSoftware.ADP.Surveys.Shared.Personalization;
 
@@ -28,13 +30,50 @@ namespace ShiftSoftware.ADP.Surveys.Shared.Personalization;
 /// preview only — an <see cref="SurveyVariableDto.Example"/>;
 /// <see cref="PersonalizationContext"/> documents the full precedence.
 ///
-/// A token that resolves to nothing at all is left verbatim (an author typo shows
-/// itself rather than silently vanishing). Substitution targets ONLY LocalizedString
-/// values — a typed tree-walk over the DTO graph, never a string-replace over raw
-/// JSON — so ids, expressions, and URLs can never be corrupted.
+/// A token that resolves to nothing at all is left verbatim in display copy (an
+/// author typo shows itself rather than silently vanishing) and becomes empty inside a
+/// request field (see <see cref="TokenSurface"/> — an endpoint must never be sent raw
+/// braces). Substitution is a typed tree-walk over the DTO graph, never a
+/// string-replace over raw JSON, and touches exactly two kinds of node: every
+/// <see cref="LocalizedString"/>, and the request fields of every
+/// <see cref="OptionsSourceDto"/>. Ids, expressions and everything else are never
+/// rewritten.
+///
+/// <b>Answer tokens.</b> <c>{{answers.&lt;questionId&gt;}}</c> (and
+/// <c>{{answers.&lt;questionId&gt;.label}}</c> for the option label the respondent saw)
+/// refer to the respondent's own answers, which only exist in the browser. The server
+/// therefore leaves them untouched — no example, no fallback, verbatim — and the
+/// renderer's mirror of this engine (<c>survey-sdk/personalization.ts</c>) resolves
+/// them at answer time, with the same grammar, the same fallback chain and the same
+/// per-surface escaping. Keep the two in lock-step.
 /// </summary>
 public static class PersonalizationTokens
 {
+    /// <summary>Token path prefix reserved for the respondent's answers.</summary>
+    public const string AnswerTokenPrefix = "answers.";
+
+    /// <summary>Suffix selecting the display label of a choice answer instead of its stored value.</summary>
+    public const string AnswerLabelSuffix = ".label";
+
+    /// <summary>True for <c>answers.&lt;questionId&gt;</c> and <c>answers.&lt;questionId&gt;.label</c>.</summary>
+    public static bool IsAnswerToken(string? name) =>
+        name is not null
+        && name.StartsWith(AnswerTokenPrefix, StringComparison.Ordinal)
+        && name.Length > AnswerTokenPrefix.Length;
+
+    /// <summary>
+    /// The question id an answer token refers to — <c>answers.nps</c> and
+    /// <c>answers.nps.label</c> both yield <c>nps</c>. Null for any other token.
+    /// </summary>
+    public static string? AnswerTokenQuestionId(string? name)
+    {
+        if (!IsAnswerToken(name)) return null;
+        var path = name!.Substring(AnswerTokenPrefix.Length);
+        if (path.EndsWith(AnswerLabelSuffix, StringComparison.Ordinal))
+            path = path.Substring(0, path.Length - AnswerLabelSuffix.Length);
+        return path.Length == 0 ? null : path;
+    }
+
     // Group 1 is the token path; group 2 is the optional inline fallback. The
     // fallback stops at '}' so a malformed token cannot swallow the rest of the
     // sentence — everything else, Arabic and Kurdish copy included, is fair game.
@@ -57,7 +96,7 @@ public static class PersonalizationTokens
     /// <summary>
     /// Cheap pre-check so the serve path can skip deserialization entirely for
     /// the (common) token-free surveys. Conservative — a match only means "worth
-    /// parsing", the walker still only rewrites LocalizedString values.
+    /// parsing", the walker still only rewrites copy and request fields.
     /// </summary>
     public static bool MightContainTokens(string? text) =>
         text?.Contains("{{", StringComparison.Ordinal) == true;
@@ -72,17 +111,44 @@ public static class PersonalizationTokens
         var names = new HashSet<string>(StringComparer.Ordinal);
         if (survey is null) return names;
 
-        Walk(survey, localized =>
+        void Collect(string? text)
         {
-            foreach (var value in localized.Values)
+            if (text is null) return;
+            foreach (Match match in TokenPattern.Matches(text))
+                names.Add(match.Groups[1].Value);
+        }
+
+        Walk(survey,
+            localized =>
             {
-                if (value is null) continue;
-                foreach (Match match in TokenPattern.Matches(value))
-                    names.Add(match.Groups[1].Value);
-            }
-        }, new HashSet<object>(ReferenceEqualityComparer.Instance), depth: 0);
+                foreach (var value in localized.Values) Collect(value);
+            },
+            source =>
+            {
+                Collect(source.Url);
+                Collect(source.Body);
+                if (source.QueryParams is not null) foreach (var v in source.QueryParams.Values) Collect(v);
+                if (source.Headers is not null) foreach (var v in source.Headers.Values) Collect(v);
+            },
+            new HashSet<object>(ReferenceEqualityComparer.Instance), depth: 0);
 
         return names;
+    }
+
+    /// <summary>
+    /// Every question id referenced by an <c>{{answers.*}}</c> token anywhere in
+    /// <paramref name="survey"/> — copy and request fields alike. The integrity
+    /// validator checks each against the questions that actually exist.
+    /// </summary>
+    public static IReadOnlyCollection<string> CollectAnswerReferences(SurveyDto? survey)
+    {
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var name in CollectTokenNames(survey))
+        {
+            var id = AnswerTokenQuestionId(name);
+            if (id is not null) ids.Add(id);
+        }
+        return ids;
     }
 
     /// <summary>
@@ -141,26 +207,95 @@ public static class PersonalizationTokens
         SubstituteString(input, new PersonalizationContext(context), locale: null);
 
     /// <summary>
-    /// Replaces tokens in one string, resolving each against <paramref name="context"/>
-    /// for <paramref name="locale"/>. A token that resolves to nothing — no value, no
-    /// inline fallback, no declared variable — is left verbatim.
+    /// Replaces tokens in one string of display copy, resolving each against
+    /// <paramref name="context"/> for <paramref name="locale"/>. A token that resolves
+    /// to nothing — no value, no inline fallback, no declared variable — is left verbatim.
     /// </summary>
-    public static string SubstituteString(string input, PersonalizationContext context, string? locale)
+    public static string SubstituteString(string input, PersonalizationContext context, string? locale) =>
+        SubstituteString(input, context, locale, TokenSurface.Copy);
+
+    /// <summary>
+    /// Replaces tokens in one string destined for <paramref name="surface"/>. The
+    /// resolved value is escaped for that surface; what happens to a token nothing can
+    /// fill also depends on it — verbatim in copy, empty in a request field. Answer
+    /// tokens are always left verbatim here: the renderer fills them.
+    /// </summary>
+    public static string SubstituteString(string input, PersonalizationContext context, string? locale, TokenSurface surface)
     {
         if (!MightContainTokens(input)) return input;
-        // An inline fallback resolves with nothing configured at all, so the
-        // empty-context shortcut must not skip a string that carries one.
-        if (context.IsEmpty && !input.Contains('|', StringComparison.Ordinal)) return input;
+        // An inline fallback resolves with nothing configured at all, and a request
+        // field blanks unresolvable tokens, so the empty-context shortcut only applies
+        // to copy with no fallback in it.
+        if (surface == TokenSurface.Copy && context.IsEmpty && !input.Contains('|', StringComparison.Ordinal)) return input;
 
         return TokenPattern.Replace(input, match =>
         {
             var name = match.Groups[1].Value;
+            if (IsAnswerToken(name)) return match.Value;
             var inline = match.Groups[2].Success ? match.Groups[2].Value.Trim() : null;
-            return Resolve(name, inline, context, locale) ?? match.Value;
+            var resolved = Resolve(name, inline, context, locale);
+            if (resolved is null)
+                return surface == TokenSurface.Copy ? match.Value : "";
+            return Encode(resolved, surface);
         });
     }
 
-    /// <summary>Null means "nothing to substitute" — the caller keeps the token verbatim.</summary>
+    /// <summary>
+    /// Escapes a resolved value for the surface it is being written into. Mirrored by
+    /// <c>encodeForSurface</c> in the SDK.
+    /// </summary>
+    public static string Encode(string value, TokenSurface surface) => surface switch
+    {
+        TokenSurface.Url or TokenSurface.FormBody => Uri.EscapeDataString(value),
+        TokenSurface.JsonBody => JsonEncodedText.Encode(value, JavaScriptEncoder.UnsafeRelaxedJsonEscaping).ToString(),
+        TokenSurface.HeaderValue => value.Replace("\r", "").Replace("\n", ""),
+        _ => value,
+    };
+
+    /// <summary>
+    /// Which escaping a request body wants, from its media type: JSON for
+    /// <c>application/json</c> and any <c>+json</c> type, form encoding for
+    /// <c>application/x-www-form-urlencoded</c>, raw otherwise.
+    /// </summary>
+    public static TokenSurface BodySurface(string? contentType)
+    {
+        var mediaType = (contentType ?? "").Split(';')[0].Trim();
+        if (mediaType.Equals("application/json", StringComparison.OrdinalIgnoreCase)
+            || mediaType.EndsWith("+json", StringComparison.OrdinalIgnoreCase))
+            return TokenSurface.JsonBody;
+        if (mediaType.Equals("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase))
+            return TokenSurface.FormBody;
+        return TokenSurface.RawBody;
+    }
+
+    /// <summary>
+    /// Substitutes tokens in every request field of an options source, in place: the
+    /// URL (percent-encoded), query-parameter values (raw — the renderer encodes them
+    /// when it builds the URL), header values (CR/LF stripped) and the body (escaped
+    /// for its content type). Declared fallbacks resolve for the survey's default
+    /// locale, since a request has no locale of its own.
+    /// </summary>
+    public static void SubstituteOptionsSource(OptionsSourceDto source, PersonalizationContext context)
+    {
+        var locale = context.DefaultLocale;
+        source.Url = SubstituteString(source.Url, context, locale, TokenSurface.Url);
+        if (source.Body is not null)
+            source.Body = SubstituteString(source.Body, context, locale, BodySurface(source.EffectiveContentType));
+        SubstituteValues(source.QueryParams, context, locale, TokenSurface.QueryValue);
+        SubstituteValues(source.Headers, context, locale, TokenSurface.HeaderValue);
+    }
+
+    private static void SubstituteValues(Dictionary<string, string>? map, PersonalizationContext context, string? locale, TokenSurface surface)
+    {
+        if (map is null) return;
+        foreach (var key in map.Keys.ToList())
+        {
+            var value = map[key];
+            if (value is not null) map[key] = SubstituteString(value, context, locale, surface);
+        }
+    }
+
+    /// <summary>Null means "nothing to substitute" — the caller decides what that means for its surface.</summary>
     private static string? Resolve(string name, string? inlineFallback, PersonalizationContext context, string? locale)
     {
         // Test runs and the preview only. The example stands in for the event that
@@ -243,15 +378,18 @@ public static class PersonalizationTokens
     /// </summary>
     public static SurveyDto Substitute(SurveyDto resolved, PersonalizationContext context)
     {
-        Walk(resolved, localized =>
-        {
-            foreach (var key in localized.Keys.ToList())
+        Walk(resolved,
+            localized =>
             {
-                var value = localized[key];
-                if (value is not null)
-                    localized[key] = SubstituteString(value, context, key);
-            }
-        }, new HashSet<object>(ReferenceEqualityComparer.Instance), depth: 0);
+                foreach (var key in localized.Keys.ToList())
+                {
+                    var value = localized[key];
+                    if (value is not null)
+                        localized[key] = SubstituteString(value, context, key);
+                }
+            },
+            source => SubstituteOptionsSource(source, context),
+            new HashSet<object>(ReferenceEqualityComparer.Instance), depth: 0);
 
         return resolved;
     }
@@ -263,9 +401,16 @@ public static class PersonalizationTokens
 
     /// <summary>
     /// Shared traversal for every operation that needs each <see cref="LocalizedString"/>
-    /// in the graph. <paramref name="visit"/> may mutate the map it is handed.
+    /// and each <see cref="OptionsSourceDto"/> in the graph. Both visitors may mutate
+    /// the node they are handed. The source visitor gets the whole DTO and the walk
+    /// does not descend into it: its string maps are request fields, not copy.
     /// </summary>
-    private static void Walk(object? node, Action<LocalizedString> visit, HashSet<object> seen, int depth)
+    private static void Walk(
+        object? node,
+        Action<LocalizedString> visit,
+        Action<OptionsSourceDto> visitSource,
+        HashSet<object> seen,
+        int depth)
     {
         if (node is null || depth > MaxDepth) return;
 
@@ -274,6 +419,12 @@ public static class PersonalizationTokens
         if (node is LocalizedString localized)
         {
             visit(localized);
+            return;
+        }
+
+        if (node is OptionsSourceDto source)
+        {
+            if (seen.Add(source)) visitSource(source);
             return;
         }
 
@@ -288,14 +439,14 @@ public static class PersonalizationTokens
         if (node is IDictionary dictionary)
         {
             foreach (var value in dictionary.Values)
-                Walk(value, visit, seen, depth + 1);
+                Walk(value, visit, visitSource, seen, depth + 1);
             return;
         }
 
         if (node is IEnumerable enumerable)
         {
             foreach (var item in enumerable)
-                Walk(item, visit, seen, depth + 1);
+                Walk(item, visit, visitSource, seen, depth + 1);
             return;
         }
 
@@ -315,7 +466,7 @@ public static class PersonalizationTokens
             {
                 continue; // a throwing getter must never break schema serving
             }
-            Walk(value, visit, seen, depth + 1);
+            Walk(value, visit, visitSource, seen, depth + 1);
         }
     }
 
@@ -330,4 +481,28 @@ public static class PersonalizationTokens
             // declaration site is the one localized value left alone.
             .Where(p => !(t == typeof(SurveyDto) && p.Name == nameof(SurveyDto.Variables)))
             .ToArray());
+}
+
+/// <summary>
+/// Where a substituted value is going, which decides both how it is escaped and what a
+/// token nothing can fill turns into. Display copy keeps such a token verbatim so an
+/// author's typo shows itself; a request field blanks it, because an endpoint must
+/// never receive raw braces. Mirrored one-to-one by <c>TokenSurface</c> in the SDK.
+/// </summary>
+public enum TokenSurface
+{
+    /// <summary>A <see cref="LocalizedString"/> value. Raw; unresolvable stays verbatim.</summary>
+    Copy,
+    /// <summary>Inside the URL string — path or query. Percent-encoded; unresolvable → empty.</summary>
+    Url,
+    /// <summary>A query-parameter value the renderer encodes when it builds the URL. Raw; unresolvable → empty.</summary>
+    QueryValue,
+    /// <summary>A header value. CR/LF stripped; unresolvable → empty.</summary>
+    HeaderValue,
+    /// <summary>Inside a JSON body. JSON-string-escaped, no quotes added; unresolvable → empty.</summary>
+    JsonBody,
+    /// <summary>Inside an <c>application/x-www-form-urlencoded</c> body. Percent-encoded; unresolvable → empty.</summary>
+    FormBody,
+    /// <summary>Inside a body of any other media type. Raw; unresolvable → empty.</summary>
+    RawBody,
 }

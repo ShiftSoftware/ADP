@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 
-export const API = 'http://localhost:5134';
+/** Override with SURVEYS_API to drive a second Sample.API instance (e.g. one built into a scratch folder on another port). */
+export const API = process.env['SURVEYS_API'] ?? 'http://localhost:5134';
 export const API_SURVEYS = `${API}/api/Surveys`;
 export const DB_SERVER = String.raw`localhost\sqlexpress`;
 export const DB_NAME = 'SurveysSample';

@@ -21,6 +21,11 @@ export interface ResumeStorage {
 export interface ResumeState {
   answers: AnswerMap;
   currentScreenId: string | null;
+  /** The screens walked to reach `currentScreenId`, oldest first — what the Back
+   *  button pops, and what decides which answers are on the respondent's path.
+   *  Absent in state saved before Back existed; the renderer then replays the
+   *  path from the answers (`replayPathTo`). */
+  history?: string[];
   /** Unix ms. Future slices may expire stale state; current slice keeps forever. */
   savedAt: number;
   /** Schema version the state was captured against — useful for future "schema

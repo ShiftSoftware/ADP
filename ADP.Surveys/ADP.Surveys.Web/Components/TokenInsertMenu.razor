@@ -1,0 +1,108 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+
+@*
+    The "insert a personalization token" menu, shared by the localized text fields
+    and the request-field editors (options-source URL, parameters, headers, body).
+    Two groups: the survey's variables (recipient fields, declared and already-used
+    tokens) and its questions as answer tokens. The menu only decides WHAT to insert;
+    the owner does the inserting, at the caret, through token-insert.js — see
+    LocalizedStringField for why that goes through the DOM.
+
+    `title` is not a MudMenu parameter — it splats through as the plain HTML attribute
+    so the icon-only button gets a hover tooltip.
+*@
+
+@if (Scope is { IsEmpty: false })
+{
+    <MudMenu Dense="true"
+             Icon="@Icons.Material.Filled.DataObject"
+             Size="Size.Small"
+             Color="Color.Default"
+             AriaLabel="@Tooltip"
+             title="@Tooltip"
+             AnchorOrigin="Origin.BottomRight"
+             TransformOrigin="Origin.TopRight"
+             MaxHeight="420">
+        @if (Scope.Names.Count > 0)
+        {
+            <div class="tim__group">Variables</div>
+            @foreach (var token in Scope.Names)
+            {
+                var name = token;
+                <MudMenuItem OnClick="@(() => OnInsert.InvokeAsync(Braces(name)))">
+                    <span class="tim__token">@Braces(name)</span>
+                    @if (Scope.WithoutFallback.Contains(name))
+                    {
+                        <span class="tim__note"
+                              title="No fallback declared — a real recipient sees the raw braces if the event omits this field. Add one under General → Personalization.">no fallback</span>
+                    }
+                </MudMenuItem>
+            }
+        }
+        @if (Scope.Answers.Count > 0)
+        {
+            @if (Scope.Names.Count > 0)
+            {
+                <MudDivider />
+            }
+            <div class="tim__group"
+                 title="Filled in the respondent's browser as they answer. Reference questions from earlier screens — or the same screen, where the text updates live.">
+                Answers
+            </div>
+            @foreach (var answer in Scope.Answers)
+            {
+                var token = PreferLabels ? answer.CopyToken : answer.ValueToken;
+                <MudMenuItem OnClick="@(() => OnInsert.InvokeAsync(Braces(token)))">
+                    <span class="tim__token">@Braces(token)</span>
+                    <span class="tim__note">@answer.Display</span>
+                </MudMenuItem>
+            }
+        }
+    </MudMenu>
+}
+
+<style>
+    .tim__group {
+        padding: 6px 16px 2px;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #6b7280;
+    }
+    .tim__token {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.8rem;
+    }
+    .tim__note {
+        margin-inline-start: 8px;
+        font-size: 0.7rem;
+        color: #b45309;
+    }
+    .tim__note:not([title]) {
+        color: #6b7280;
+    }
+</style>
+
+@code {
+    /// <summary>Vocabulary to list. Renders nothing when null or empty.</summary>
+    [Parameter]
+    public PersonalizationScope? Scope { get; set; }
+
+    /// <summary>Receives the full <c>{{token}}</c> text to insert.</summary>
+    [Parameter]
+    public EventCallback<string> OnInsert { get; set; }
+
+    /// <summary>
+    /// Copy wants the display form of an answer (<c>{{answers.x.label}}</c> — the
+    /// option's label, the yes/no word); a URL, parameter, header or body wants the
+    /// stored value (<c>{{answers.x}}</c>).
+    /// </summary>
+    [Parameter]
+    public bool PreferLabels { get; set; } = true;
+
+    [Parameter]
+    public string Tooltip { get; set; } = "Insert a personalization variable or an earlier answer";
+
+    static string Braces(string name) => "{{" + name + "}}";
+}

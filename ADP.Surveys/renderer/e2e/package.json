@@ -7,6 +7,7 @@
   "scripts": {
     "start": "tsx run.ts",
     "browser": "tsx browser.ts",
+    "builder-reorder": "tsx builder-reorder.ts",
     "resume": "tsx resume.ts",
     "trigger-ingest": "tsx trigger-ingest.ts",
     "personalization": "tsx personalization.ts",

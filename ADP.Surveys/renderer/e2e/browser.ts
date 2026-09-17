@@ -125,6 +125,37 @@ async function main() {
       await shot('04-brand');
     })();
 
+    await step('Back → feedback keeps the NPS pick; Next → brand again', async () => {
+      // Back is the chevron in the top-start corner, offered wherever there is a
+      // screen to return to — including navigationList screens, which have no
+      // Next — and never on the first screen.
+      await page.click('.survey-back');
+      await new Promise((r) => setTimeout(r, 300));
+      let heading = await page.$eval('h2', (el: Element) => el.textContent ?? '');
+      assertEq(heading, 'How was it?', 'Back returned to the feedback screen');
+      const picked = await page.$$eval(
+        '.survey-question__nps-step--selected',
+        (els: Element[]) => els.map((e) => e.textContent?.trim() ?? ''),
+      );
+      assertEq(picked.includes('10'), true, 'the NPS answer survived the round trip');
+      await shot('04b-back-to-feedback');
+
+      await page.click('.survey-back');
+      await new Promise((r) => setTimeout(r, 300));
+      heading = await page.$eval('h2', (el: Element) => el.textContent ?? '');
+      assertEq(heading, 'Welcome', 'Back again returned to the first screen');
+      // The chevron stays mounted for its exit transition; hidden = aria-hidden.
+      const backCount = await page.$$eval('.survey-back:not(.survey-back--hidden)', (els: Element[]) => els.length);
+      assertEq(backCount, 0, 'no Back button on the first screen');
+
+      await page.click('.survey-button--primary');
+      await new Promise((r) => setTimeout(r, 300));
+      await page.click('.survey-button--primary');
+      await new Promise((r) => setTimeout(r, 300));
+      heading = await page.$eval('h2', (el: Element) => el.textContent ?? '');
+      assertEq(heading, 'Which brand?', 'forward again to the brand screen');
+    })();
+
     await step('tap Toyota → thanks-toyota → auto-submit', async () => {
       await page.evaluate(() => {
         const rows = Array.from(document.querySelectorAll('.survey-navlist__button')) as HTMLElement[];

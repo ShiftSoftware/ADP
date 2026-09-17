@@ -17,10 +17,13 @@
     (ShiftEntityForm.@bind-Value populates it before the outer markup reads
     it).
 
-    The General/Visual/Logic/Triggers/Raw toggle lives in the form's toolbar
-    end slot; the whole header row is otherwise left to the framework's own
-    controls (edit / maximize / close), which is why Name is edited on the
-    General tab rather than inline in the header.
+    The General/Visual/Logic/Triggers/Raw switch lives in the form's toolbar
+    end slot as icon buttons with tooltips, next to Responses and Publish. The
+    framework's own title and icon are hidden (CSS below) so the row is only
+    the framework's controls (edit / maximize / close) plus ours — the header
+    collapses everything into an overflow menu the moment it doesn't fit, and
+    the text version did not fit in the popup. Name is edited on the General
+    tab rather than inline in the header for the same reason.
 *@
 
 <div class="survey-form-page">
@@ -36,79 +39,41 @@
                          OnValidSubmit="@OnValidSubmit"
                          @bind-Key="@Key">
 
-            <ToolbarStartTemplate>
-                <div class="survey-form__toolbar-start">
-                    @if (TheItem?.PublishedVersionNumber.HasValue == true)
-                    {
-                        <MudChip T="string"
-                                 Size="Size.Small"
-                                 Color="Color.Info"
-                                 Variant="Variant.Outlined"
-                                 Icon="@Icons.Material.Filled.Publish">
-                            v@(TheItem.PublishedVersionNumber)
-                        </MudChip>
-                    }
-                </div>
-            </ToolbarStartTemplate>
-
             <ToolbarEndTemplate>
                 <div class="survey-form__toolbar-end">
-                    <MudToggleGroup T="string"
-                                    SelectionMode="SelectionMode.SingleSelection"
-                                    @bind-Value="currentView"
-                                    Color="Color.Primary"
-                                    Size="Size.Small"
-                                    CheckMark="false">
-                        <MudToggleItem T="string" Value="@("general")">
-                            <MudIcon Icon="@Icons.Material.Filled.Settings" Size="Size.Small" Class="mr-1" />General
-                        </MudToggleItem>
-                        <MudToggleItem T="string" Value="@("visual")">
-                            <MudIcon Icon="@Icons.Material.Filled.ViewModule" Size="Size.Small" Class="mr-1" />Visual
-                        </MudToggleItem>
-                        <MudToggleItem T="string" Value="@("logic")">
-                            <MudIcon Icon="@Icons.Material.Filled.Bolt" Size="Size.Small" Class="mr-1" />Logic
-                            @if ((TheItem?.Draft?.Logic?.Count ?? 0) > 0)
-                            {
-                                <MudChip T="string"
-                                         Size="Size.Small"
-                                         Color="Color.Info"
-                                         Variant="Variant.Filled"
-                                         Class="ml-1">@TheItem!.Draft!.Logic.Count</MudChip>
-                            }
-                        </MudToggleItem>
-                        <MudToggleItem T="string" Value="@("triggers")">
-                            <MudIcon Icon="@Icons.Material.Filled.NotificationsActive" Size="Size.Small" Class="mr-1" />Triggers
-                            @if ((TheItem?.Draft?.Triggers?.Count ?? 0) > 0)
-                            {
-                                <MudChip T="string"
-                                         Size="Size.Small"
-                                         Color="Color.Info"
-                                         Variant="Variant.Filled"
-                                         Class="ml-1">@TheItem!.Draft!.Triggers.Count</MudChip>
-                            }
-                        </MudToggleItem>
-                        <MudToggleItem T="string" Value="@("raw")">
-                            <MudIcon Icon="@Icons.Material.Filled.Code" Size="Size.Small" Class="mr-1" />Raw JSON
-                        </MudToggleItem>
-                    </MudToggleGroup>
+                    @*
+                        Icon-only view switch. The framework header hides everything in an
+                        overflow menu when its contents don't fit the row, and the text
+                        version did not fit once the popup's preview column took its share —
+                        so every control here is a 40px icon with a tooltip, and the
+                        framework's title + icon are hidden by CSS to make room.
+                    *@
+                    <div class="survey-form__views" role="group" aria-label="Editor view">
+                        @ViewButton("general", Icons.Material.Filled.Settings, "General")
+                        @ViewButton("visual", Icons.Material.Filled.ViewModule, "Visual editor")
+                        @ViewButton("logic", Icons.Material.Filled.Bolt, "Logic rules", TheItem?.Draft?.Logic?.Count ?? 0)
+                        @ViewButton("triggers", Icons.Material.Filled.NotificationsActive, "Triggers", TheItem?.Draft?.Triggers?.Count ?? 0)
+                        @ViewButton("raw", Icons.Material.Filled.Code, "Raw JSON")
+                    </div>
 
                     @if (Mode != FormModes.Create && Key is not null)
                     {
-                        <MudButton StartIcon="@Icons.Material.Filled.Quiz"
-                                   Variant="Variant.Text"
-                                   Color="Color.Primary"
-                                   Size="Size.Small"
-                                   Href="@($"{SurveyRoutes.Prefix}/{nameof(SurveyResponses)}/{Key}")">
-                            Responses
-                        </MudButton>
-                        <MudButton StartIcon="@Icons.Material.Filled.Publish"
-                                   Variant="Variant.Text"
-                                   Color="Color.Primary"
-                                   Size="Size.Small"
-                                   Disabled="@publishing"
-                                   OnClick="OnPublish">
-                            @(publishing ? "Publishing…" : "Publish")
-                        </MudButton>
+                        <MudDivider Vertical="true" FlexItem="true" Class="survey-form__toolbar-divider" />
+                        <MudTooltip Text="Instances & responses">
+                            <MudIconButton Icon="@Icons.Material.Filled.Quiz"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           aria-label="Instances & responses"
+                                           Href="@($"{SurveyRoutes.Prefix}/{nameof(SurveyResponses)}/{Key}")" />
+                        </MudTooltip>
+                        <MudTooltip Text="@PublishTooltip">
+                            <MudIconButton Icon="@Icons.Material.Filled.Publish"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           aria-label="@PublishTooltip"
+                                           Disabled="@publishing"
+                                           OnClick="OnPublish" />
+                        </MudTooltip>
                     }
                 </div>
             </ToolbarEndTemplate>
@@ -329,36 +294,92 @@
     /*
         Modal mode. ShiftEntityForm marks its scroll container with
         .shift-scrollable-content-wrapper only when the form is hosted in a
-        dialog, which makes it a reliable "am I in a modal?" signal from CSS.
-        Inside a dialog the AppBar is not overhead — the dialog's own header
-        toolbar is, and it already sits ABOVE this scroller — so the 72px
-        clearance the page layout needs is just dead space at the top of both
-        pinned rails. 8px keeps them off the edge and hands the rest of the
-        column back to the phone.
+        dialog, which makes it a reliable "am I in a modal?" signal from CSS
+        for anything INSIDE the form body (the Screens rail). Inside a dialog
+        the AppBar is not overhead — the dialog's own header toolbar is, and
+        it already sits ABOVE this scroller — so the 72px clearance the page
+        layout needs is just dead space at the top of the rail. 8px keeps it
+        off the edge. The phone lives outside the form (see the aside below),
+        so its modal rules key off .mud-dialog instead.
     */
-    .shift-scrollable-content-wrapper .survey-form-page__preview-sticky,
     .shift-scrollable-content-wrapper .survey-form__visual-screens {
         top: 8px;
     }
+    /* The phone's cell is the dialog's height and does not scroll with the
+       form body (it sits outside the form), so there is nothing to stick to. */
+    .mud-dialog .survey-form-page__preview-sticky {
+        position: static;
+    }
 
     /*
-        Toolbar slots. Keep them compact so the form header stays small — the
-        end slot carries the tab toggle plus Responses/Publish, and it competes
-        with the framework's own header controls, so the start slot is kept to
-        the published-version chip only.
+        Header row. The framework renders its icon + title first; both are
+        hidden here — the end slot needs the width, and the row is recognisable
+        without them. The end slot is icon buttons only, so the framework's
+        overflow menu (it hides the whole slot the moment it doesn't fit) has no
+        reason to kick in at any width the editor is usable at.
     */
-    .survey-form__toolbar-start {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: nowrap;
-        min-width: 0;
+    .survey-form-page .shift-toolbar-header > svg.mud-icon-root:first-child,
+    .survey-form-page .shift-toolbar-header > p.mud-typography {
+        display: none;
+    }
+    /* The framework's dense toolbar is 48px; a count badge overhangs its
+       button by ~6px and was clipped against the top edge. 56px gives the
+       36px buttons 10px of air on both sides. */
+    .survey-form-page .shift-toolbar-header {
+        min-height: 56px;
     }
     .survey-form__toolbar-end {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 4px;
         flex-wrap: nowrap;
+    }
+    .survey-form__views {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    /* Small icons (20px) on 36px buttons — lighter than the framework's own
+       24-on-40 controls beside them, still a comfortable target. MudBlazor
+       pads a text icon button and a filled one differently; one size for the
+       row, so the selected view doesn't shrink. */
+    .survey-form__toolbar-end .mud-icon-button {
+        width: 36px;
+        height: 36px;
+        padding: 8px;
+    }
+    .survey-form__toolbar-divider {
+        margin: 0 4px;
+    }
+
+    /*
+        Popup (modal) mode. The dialog is a bounded flex column with
+        overflow: hidden, and the framework gives its own form pieces (article,
+        paper, form, .form-body) min-height: 0 + flex: 1 so the body scrolls
+        inside it. That chain used to break at this page's grid, which sat
+        between the dialog and the article with a content-sized minimum height:
+        the grid grew to the editor's full height, the dialog clipped it, and
+        nothing scrolled. Bounding the grid to the dialog and making the main
+        cell a flex column hands the constraint down to the article, so the
+        form body is the scroller again — with the Screens rail sticky inside
+        it and the phone pinned in its own cell, exactly as on the page.
+    */
+    .mud-dialog .survey-form-page {
+        flex: 1 1 auto;
+        min-height: 0;
+        grid-template-rows: minmax(0, 1fr);
+    }
+    .mud-dialog .survey-form-page__main {
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+    .mud-dialog .survey-form-page__main > * {
+        flex: 1 1 auto;
+    }
+    .mud-dialog .survey-form-page__preview {
+        min-height: 0;
+        overflow-y: auto;
     }
 
     /* Visual editor body: Screens rail + Inspector. No align-items: start
@@ -632,6 +653,29 @@
         // Clear any prior error summary once the form validates.
         if (validationErrors.Count > 0) validationErrors.Clear();
     }
+
+    /// <summary>
+    /// One icon button of the view switch: filled when it is the current view,
+    /// a small badge with the count when the view has content worth knowing
+    /// about (logic rules, triggers). Tooltip carries the name — the header is
+    /// icons only, see the markup comment.
+    /// </summary>
+    RenderFragment ViewButton(string view, string icon, string label, int count = 0) => @<MudTooltip Text="@label">
+        <MudBadge Content="@count" Visible="@(count > 0)" Color="Color.Info" Overlap="true" Bordered="true" Origin="Origin.TopRight">
+            <MudIconButton Icon="@icon"
+                           Size="Size.Small"
+                           Color="@(currentView == view ? Color.Primary : Color.Default)"
+                           Variant="@(currentView == view ? Variant.Filled : Variant.Text)"
+                           aria-label="@label"
+                           aria-pressed="@(currentView == view ? "true" : "false")"
+                           OnClick="@(() => currentView = view)" />
+        </MudBadge>
+    </MudTooltip>;
+
+    /// <summary>The Publish tooltip doubles as the place the published version is read now that the header chip is gone.</summary>
+    string PublishTooltip => publishing
+        ? "Publishing…"
+        : TheItem?.PublishedVersionNumber is { } v ? $"Publish (currently v{v})" : "Publish (not published yet)";
 
     async Task OnPublish()
     {
