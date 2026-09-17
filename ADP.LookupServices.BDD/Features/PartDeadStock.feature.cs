@@ -164,26 +164,26 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
   await testRunner.AndAsync("branch 20 is named \"Airport Branch\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table14 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table65 = new global::Reqnroll.Table(new string[] {
                             "CompanyID",
                             "CompanyHashID",
                             "BranchID",
                             "BranchHashID",
                             "AvailableQuantity"});
-                table14.AddRow(new string[] {
+                table65.AddRow(new string[] {
                             "1",
                             "C-HASH-1",
                             "10",
                             "B-HASH-10",
                             "5"});
-                table14.AddRow(new string[] {
+                table65.AddRow(new string[] {
                             "1",
                             "C-HASH-1",
                             "20",
                             "B-HASH-20",
                             "3"});
 #line 9
-  await testRunner.AndAsync("dead stock for part \"PRT-001\":", ((string)(null)), table14, "And ");
+  await testRunner.AndAsync("dead stock for part \"PRT-001\":", ((string)(null)), table65, "And ");
 #line hidden
 #line 13
   await testRunner.WhenAsync("evaluating dead stock for part \"PRT-001\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -225,26 +225,26 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table15 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table66 = new global::Reqnroll.Table(new string[] {
                             "CompanyID",
                             "CompanyHashID",
                             "BranchID",
                             "BranchHashID",
                             "AvailableQuantity"});
-                table15.AddRow(new string[] {
+                table66.AddRow(new string[] {
                             "1",
                             "C-HASH-1",
                             "10",
                             "B-HASH-10",
                             "5"});
-                table15.AddRow(new string[] {
+                table66.AddRow(new string[] {
                             "2",
                             "C-HASH-2",
                             "30",
                             "B-HASH-30",
                             "8"});
 #line 20
-  await testRunner.GivenAsync("dead stock for part \"PRT-001\":", ((string)(null)), table15, "Given ");
+  await testRunner.GivenAsync("dead stock for part \"PRT-001\":", ((string)(null)), table66, "Given ");
 #line hidden
 #line 24
   await testRunner.WhenAsync("evaluating dead stock for part \"PRT-001\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");

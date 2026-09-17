@@ -12,8 +12,31 @@ public class VehicleLookupRequestOptions
 {
     /// <summary>The language code for localized content (defaults to "en").</summary>
     public string LanguageCode { get; set; } = "en";
-    /// <summary>Whether to skip broker stock lookup for this request.</summary>
+    /// <summary>
+    /// Whether free service may start while a broker holds the vehicle without an invoice. The lookup a dealer
+    /// sees sets this, so a customer is not turned away because the broker has not entered the invoice yet: the
+    /// free-service start then comes from the service activation or from the sale that moved the vehicle to the
+    /// broker. The warranty still waits for the broker's invoice. Off by default, so a bulk projection leaves
+    /// such a vehicle without a free-service start (unless a claim supplies the de facto date).
+    /// </summary>
     public bool IgnoreBrokerStock { get; set; }
+    /// <summary>
+    /// Whether free service is evaluated for financial provisioning instead of for the dealer's lookup. Off by
+    /// default: the dealer's lookup starts free service on the end-customer sale only (with the de facto claim
+    /// date and an operator's date shift applied), so a vehicle still in dealer stock, a vehicle only a
+    /// supply-chain entry has synced for, or a vehicle an un-invoiced broker holds shows no items.
+    /// <para>The provisioning view is the distributor's: it books the free-service provision when it invoices a
+    /// vehicle. So <see cref="VehicleWarrantyDTO.FreeServiceStartDate"/> is the distributor's own invoice date
+    /// (<see cref="VehicleSaleInformation.Distributor"/>), whatever happens to the vehicle afterwards. A dealer's
+    /// sale, a broker's invoice, a service activation, a claim or a date shift does not move it. The items then
+    /// project from that day: pending while their validity still runs, expired once it has run out, processed
+    /// where a claim exists. A vehicle the distributor has not invoiced out projects nothing.</para>
+    /// <para>The two views are meant to be read together: the provision booked at the invoice (this view) and
+    /// the liability as it actually activated (the dealer's view). The de facto date is still exposed on
+    /// <see cref="VehicleWarrantyDTO.DeFactoServiceStartDate"/>. The warranty dates do not move in either view.
+    /// </para>
+    /// </summary>
+    public bool FreeServiceProvisioning { get; set; }
     /// <summary>
     /// Whether to insert an SSC lookup audit log entry. The log is a KPI entry — distributors count SSC lookups
     /// from it — so it is written once per lookup and never for a diagnostic re-read: when

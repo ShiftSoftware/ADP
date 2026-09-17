@@ -413,7 +413,7 @@ public class GeneratorLookupOptions
 
         // Certificate print URLs: deterministic, production-shaped landing links (one per
         // print language, mirroring the LookUpFunctions wiring) so the web-component mocks
-        // and docs demos render the print menu. The host is fake on purpose — mocks only
+        // and the demo site render the print menu. The host is fake on purpose — mocks only
         // need the menu to appear and carry plausible hrefs.
         options.PaintThicknessCertificateUrlsResolver = (model) =>
             new ValueTask<List<PaintThicknessCertificateUrlDTO>?>(

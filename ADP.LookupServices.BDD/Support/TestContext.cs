@@ -1,4 +1,6 @@
 using System.Reflection;
+using NSubstitute;
+using Reqnroll;
 using ShiftSoftware.ADP.Lookup.Services;
 using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Lookup.Services.Evaluators;
@@ -67,6 +69,47 @@ public class TestContext
         CurrentVehicle = vehicle;
         CurrentOwnership = ownership;
         return (vehicle, ownership);
+    }
+
+    /// <summary>
+    /// Runs the real <see cref="VehicleLookupService"/> over the mocked storage — entry selection,
+    /// ownership, sale information with its supply-chain legs and broker stock, warranty dates and
+    /// service items — so a scenario can pin how the request options steer the whole pipeline
+    /// rather than one evaluator. A scenario that declared a service item catalog keeps it; one that
+    /// did not gets an empty catalog.
+    /// </summary>
+    public async Task<VehicleLookupDTO> LookupAsync(string vin, VehicleLookupRequestOptions requestOptions)
+    {
+        Aggregate.VIN = vin;
+        StorageService.GetAggregatedCompanyData(vin).Returns(Aggregate);
+
+        if (await StorageService.GetServiceItemsAsync(true) is not List<ServiceItemModel>)
+            StorageService.GetServiceItemsAsync(Arg.Any<bool>()).Returns([]);
+
+        var service = new VehicleLookupService(StorageService, ServiceProvider, options: Options);
+
+        var result = await service.LookupAsync(vin, requestOptions);
+        SaleInformation = result.SaleInformation;
+        return result;
+    }
+
+    /// <summary>
+    /// Reads a one-row request options table. Every column is optional and names a boolean option:
+    /// <c>IgnoreBrokerStock</c>, <c>FreeServiceProvisioning</c>.
+    /// </summary>
+    public static VehicleLookupRequestOptions ReadRequestOptions(DataTable dataTable)
+    {
+        var row = dataTable.Rows.Single();
+
+        return new VehicleLookupRequestOptions
+        {
+            LanguageCode = "en",
+            IgnoreBrokerStock = ReadFlag(row, nameof(VehicleLookupRequestOptions.IgnoreBrokerStock)),
+            FreeServiceProvisioning = ReadFlag(row, nameof(VehicleLookupRequestOptions.FreeServiceProvisioning)),
+        };
+
+        static bool ReadFlag(DataTableRow row, string column) =>
+            row.ContainsKey(column) && !string.IsNullOrWhiteSpace(row[column]) && bool.Parse(row[column]);
     }
 
     // Loaded environment (populated by environment loading step)

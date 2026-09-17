@@ -112,16 +112,16 @@ namespace LookupServices.BDD.Features
         {
 #line 9
 #line hidden
-            global::Reqnroll.Table table611 = new global::Reqnroll.Table(new string[] {
+            global::Reqnroll.Table table662 = new global::Reqnroll.Table(new string[] {
                         "VIN",
                         "CampaignCode",
                         "Description"});
-            table611.AddRow(new string[] {
+            table662.AddRow(new string[] {
                         "1G1ZC5E17BF283048",
                         "SSC-001",
                         "Airbag recall"});
 #line 10
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table611, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table662, "Given ");
 #line hidden
         }
         

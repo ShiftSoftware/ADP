@@ -21,21 +21,30 @@ public class WarrantyAndFreeServiceDateEvaluator
         this.Options = options;
     }
 
-    public VehicleWarrantyDTO Evaluate(VehicleEntryModel vehicle, VehicleSaleInformation saleInformation, bool ignoreBrokerStock)
-        => EvaluateCore(vehicle, saleInformation, ignoreBrokerStock);
+    /// <param name="ignoreBrokerStock">See <see cref="VehicleLookupRequestOptions.IgnoreBrokerStock"/>.</param>
+    /// <param name="freeServiceProvisioning">See <see cref="VehicleLookupRequestOptions.FreeServiceProvisioning"/>.</param>
+    public VehicleWarrantyDTO Evaluate(
+        VehicleEntryModel vehicle,
+        VehicleSaleInformation saleInformation,
+        bool ignoreBrokerStock,
+        bool freeServiceProvisioning)
+        => EvaluateCore(vehicle, saleInformation, ignoreBrokerStock, freeServiceProvisioning);
 
     /// <summary>
     /// Evaluates warranty dates and resolves each extended-warranty provider's logo and display
     /// name through the host's existing company resolvers.
     /// </summary>
+    /// <param name="ignoreBrokerStock">See <see cref="VehicleLookupRequestOptions.IgnoreBrokerStock"/>.</param>
+    /// <param name="freeServiceProvisioning">See <see cref="VehicleLookupRequestOptions.FreeServiceProvisioning"/>.</param>
     public async Task<VehicleWarrantyDTO> EvaluateAsync(
         VehicleEntryModel vehicle,
         VehicleSaleInformation saleInformation,
         bool ignoreBrokerStock,
+        bool freeServiceProvisioning,
         string languageCode,
         IServiceProvider serviceProvider)
     {
-        var result = EvaluateCore(vehicle, saleInformation, ignoreBrokerStock);
+        var result = EvaluateCore(vehicle, saleInformation, ignoreBrokerStock, freeServiceProvisioning);
 
         await NameUnnamedExtendedWarrantiesAsync(result, languageCode, serviceProvider);
 
@@ -84,7 +93,8 @@ public class WarrantyAndFreeServiceDateEvaluator
     private VehicleWarrantyDTO EvaluateCore(
         VehicleEntryModel vehicle,
         VehicleSaleInformation saleInformation,
-        bool ignoreBrokerStock)
+        bool ignoreBrokerStock,
+        bool freeServiceProvisioning)
     {
         DateTime? warrantyStartDate = null;
         DateTime? freeServiceStartDate = null;
@@ -190,13 +200,31 @@ public class WarrantyAndFreeServiceDateEvaluator
 
         result.DeFactoServiceStartDate = deFactoServiceStartDate;
 
-        if (freeServiceStartDate is null && deFactoServiceStartDate is not null)
-            freeServiceStartDate = deFactoServiceStartDate;
+        if (freeServiceProvisioning)
+        {
+            // The provisioning view. The distributor books the free-service provision when it invoices
+            // the vehicle, so the free-service start is the distributor's own invoice date, whatever
+            // happens to the vehicle afterwards. A dealer's sale, a broker's invoice, a service
+            // activation, a claim or an operator's date shift does not move it: the chain above is
+            // ignored for free service, and the service item evaluator skips the date shift as well.
+            // A vehicle the distributor has not invoiced out has no start and projects nothing.
+            //
+            // The dealer's view (the default) is the other half of the picture: it starts free service
+            // on the end-customer sale, with the de facto and shift dates applied. A consumer that
+            // holds both views can provision at the invoice and true up against the activated
+            // liability. The warranty does not change in either view.
+            freeServiceStartDate = saleInformation?.Distributor?.InvoiceDate;
+        }
+        else
+        {
+            if (freeServiceStartDate is null && deFactoServiceStartDate is not null)
+                freeServiceStartDate = deFactoServiceStartDate;
 
-        var freeServiceShiftDate = CompanyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault();
+            var freeServiceShiftDate = CompanyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault();
 
-        if (freeServiceShiftDate is not null)
-            freeServiceStartDate = freeServiceShiftDate.NewDate;
+            if (freeServiceShiftDate is not null)
+                freeServiceStartDate = freeServiceShiftDate.NewDate;
+        }
 
         result.FreeServiceStartDate = freeServiceStartDate;
 

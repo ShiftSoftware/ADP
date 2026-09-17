@@ -16,13 +16,13 @@ using ShiftSoftware.ADP.Models.Vehicle;
 // Resolve paths relative to the repo root. Two dev-time overrides exist so an environment can be
 // tried without touching the committed fixtures: --environments=<dir> reads the environment JSON
 // from there, --out=<dir> writes everything (fixtures and index.json) to that one directory instead
-// of the consumers' source trees. The post-build run passes neither.
+// of the web components' source tree. The post-build run passes neither.
 //
 // Two further modes share the argument parsing and run instead of the generation:
 //   --anonymise=<raw environment> --seed=<text>|--seed-file=<path> --keys=<path> [--vocabulary=<path>]
 //                [--name=<env>] [--to=<dir>] [--mint-panel-images]   — a real estate's environment → a public one (AnonymiserCommand)
 //   --verify=<forbidden list> [--scan=<path>;<path>…]   — fail on any listed string in environment / fixture
-//                JSON; scans the environments and the fixture output trees when --scan is omitted.
+//                JSON; scans the environments and the fixture output tree when --scan is omitted.
 var arguments = args
     .Select(a => a.Split('=', 2))
     .Where(a => a[0].StartsWith("--"))
@@ -32,9 +32,10 @@ var repoRoot = FindRepoRoot(AppContext.BaseDirectory);
 var environmentsDir = arguments.TryGetValue("--environments", out var environmentsOverride)
     ? Path.GetFullPath(environmentsOverride)
     : Path.Combine(repoRoot, "ADP.TestData", "environments");
+// The fixtures have one home: the web components' mock tree. The public site build (npm run release)
+// copies it to mocks/generated, and the docs site links to that site instead of keeping its own copy.
 var webComponentsOutputDir = Path.Combine(repoRoot, "ADP.WebComponents", "adp-web-components", "src", "features", "mocks", "data", "generated");
 var webComponentsDevDir = Path.Combine(repoRoot, "ADP.WebComponents", "adp-web-components", "www", "mocks", "generated");
-var docsOutputDir = Path.Combine(repoRoot, "ADP.Docs", "Docs", "docs", "web-components", "demo-data");
 // The neutral demo images the fixtures' URLs point at (DemoAssets); copied to dist/mocks/assets by the build.
 var assetsDir = Path.Combine(repoRoot, "ADP.WebComponents", "adp-web-components", "src", "features", "mocks", "data", "assets");
 
@@ -46,7 +47,7 @@ if (arguments.TryGetValue("--verify", out var forbiddenList))
         Path.GetFullPath(forbiddenList),
         arguments.TryGetValue("--scan", out var scan)
             ? scan.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(Path.GetFullPath)
-            : new[] { environmentsDir, webComponentsOutputDir, docsOutputDir });
+            : new[] { environmentsDir, webComponentsOutputDir });
 
 Console.WriteLine($"Repo root: {repoRoot}");
 Console.WriteLine($"Environments: {environmentsDir}");
@@ -63,8 +64,8 @@ var serializeOptions = new JsonSerializerOptions
 };
 serializeOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 
-// Output directories: always the two source trees; also the dev server's www/ cache when it exists.
-var outputDirs = new List<string> { webComponentsOutputDir, docsOutputDir };
+// Output directories: always the web components' source tree; also the dev server's www/ cache when it exists.
+var outputDirs = new List<string> { webComponentsOutputDir };
 if (Directory.Exists(Path.Combine(repoRoot, "ADP.WebComponents", "adp-web-components", "www")))
     outputDirs.Add(webComponentsDevDir);
 if (arguments.TryGetValue("--out", out var outputOverride))
@@ -330,6 +331,7 @@ static async Task<VehicleLookupDTO> GenerateVehicleLookup(
             vehicle,
             data.SaleInformation,
             requestOptions.IgnoreBrokerStock,
+            requestOptions.FreeServiceProvisioning,
             language,
             serviceProvider);
 

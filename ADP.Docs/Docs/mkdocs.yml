@@ -311,6 +311,7 @@ nav:
               - Diagnostic Trace: generated/Features/ServiceItems_Trace.md
       - Warranty:
           - Warranty Dates: generated/Features/WarrantyDates.md
+          - Free Service Provisioning: generated/Features/FreeServiceProvisioning.md
 
   - Web Components: web-components/index.md
 

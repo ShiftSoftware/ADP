@@ -102,15 +102,60 @@ The **Free Service Start Date** anchors when free service items become eligible.
 It is normally derived in this priority order: service activation record →
 sale warranty activation date → sale invoice date → broker invoice date.
 
+Only an end-customer sale can seed it. A distributor's or intermediary's entry
+is a supply-chain movement, so a vehicle still in dealer stock, a vehicle only
+the distributor's entry has synced for, or a vehicle a broker holds without an
+invoice has no free-service start and projects no items. Two per-request
+options relax that for callers that need a different view:
+
+| Option | Who sets it | What it changes |
+|---|---|---|
+| `IgnoreBrokerStock` | The lookup a dealer sees | Free service may start while a broker holds the vehicle without an invoice, from the service activation or the sale that moved the vehicle to the broker. A customer is not turned away for a missing broker invoice. The warranty still waits for the broker's invoice. |
+| `FreeServiceProvisioning` | A financial-provisioning report | See [Provisioning view](#provisioning-view-the-provision-booked-at-the-distributors-invoice) below. |
+
+### Provisioning view: the provision booked at the distributor's invoice
+
+A distributor books the provision for free service when it invoices a vehicle,
+and the dealer's view above cannot serve that: it dates nothing until an end
+customer buys the vehicle, and when it does, it dates it from the sale, the
+claim or the shift — not from the invoice.
+
+`VehicleLookupRequestOptions.FreeServiceProvisioning` asks for the provisioning
+view. In it the `FreeServiceStartDate` is the distributor's own invoice date
+(`VehicleSaleInformation.Distributor.InvoiceDate`), whatever happens to the
+vehicle afterwards. A dealer's sale, a broker's invoice, a service activation,
+a claim or an operator's date shift does not move it. The items project from
+that day: pending while their validity still runs, expired once it has run out
+since the invoice, processed where a claim exists. A vehicle the distributor
+has not invoiced out projects nothing — even one that has been claimed against.
+
+The two views are meant to be read together, by vehicle:
+
+| The vehicle… | Dealer's view | Provisioning view |
+|---|---|---|
+| is in dealer, sub-dealer or un-invoiced broker stock | nothing | the items, from the distributor's invoice |
+| reached an end customer | the items, from the sale (or the claim, or the shift) | the items, from the distributor's invoice |
+| was never invoiced by the distributor | nothing, unless a claim dates it | nothing |
+
+So a consumer holding both files has the provision as booked at the invoice
+and the liability as it actually activated, and can true one up against the
+other: where the dealer's view has rows for a vehicle, that is the actual
+liability; where it has none, the provisioning view's rows are the provision
+still carried. The warranty does not move in either view: `WarrantyStartDate`
+still waits for the end-customer sale, and `StartState` still reports what it
+is waiting for. A bulk report host publishes the two views as two files; see
+[Free Service Provisioning](../../generated/Features/FreeServiceProvisioning.md)
+for the scenarios that pin the behaviour.
+
 ### De Facto Service Start Date
 
 Some vehicles reach the dealer through a broker who has not yet inserted an
 invoice. In the UI lookup (where `IgnoreBrokerStock=true`) the dealer can still
 claim against the vehicle — a customer can't be turned away for a missing
-broker invoice. In the bulk lookup (where `IgnoreBrokerStock=false`, used by
-the parquet export and other financial projections) that same vehicle would
-otherwise produce no service items at all, because there is no anchor date
-to evaluate eligibility against.
+broker invoice. In the bulk lookup's default view (`IgnoreBrokerStock=false`,
+the dealer's view of the parquet export) that same vehicle would otherwise
+produce no service items at all, because there is no anchor date to evaluate
+eligibility against.
 
 The **De Facto Service Start Date** closes that gap. It is the earliest
 non-deleted [Item Claim](#) date for the vehicle, exposed on
@@ -123,5 +168,6 @@ consumers can see "this vehicle has been claimed against starting YYYY-MM-DD"
 regardless of whether it ended up driving the effective start date.
 
 `FreeServiceItemDateShift` overrides still win — an operator-applied shift
-date takes precedence over the de facto fallback.
+date takes precedence over the de facto fallback. Neither applies in the
+provisioning view, which is anchored on the distributor's invoice.
 

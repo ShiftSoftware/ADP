@@ -232,11 +232,6 @@
     <Content Include="$(MSBuildThisFileDirectory)docs\overrides\assets\images\favicon.png" />
     <Content Include="$(MSBuildThisFileDirectory)docs\overrides\assets\images\logo.png" />
     <Content Include="$(MSBuildThisFileDirectory)docs\overrides\css\extra.css" />
-    <Content Include="$(MSBuildThisFileDirectory)docs\web-components\assets\part-exploring.png" />
-    <Content Include="$(MSBuildThisFileDirectory)docs\web-components\demo-data\broker-dealer\part-lookup.json" />
-    <Content Include="$(MSBuildThisFileDirectory)docs\web-components\demo-data\broker-dealer\vehicle-lookup.json" />
-    <Content Include="$(MSBuildThisFileDirectory)docs\web-components\demo-data\standard-dealer\part-lookup.json" />
-    <Content Include="$(MSBuildThisFileDirectory)docs\web-components\demo-data\standard-dealer\vehicle-lookup.json" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)docs\components\services\" />

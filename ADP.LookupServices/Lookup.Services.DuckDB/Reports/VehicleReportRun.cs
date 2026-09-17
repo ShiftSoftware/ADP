@@ -99,18 +99,26 @@ public static class VehicleReports
         "vehicle-service-items-report", "ServiceItem/vehicle-service-items-report.parquet",
         new VehicleLookupRequestOptions(), VehicleReportRows.ServiceItems);
 
-    public static readonly VehicleReport ServiceItemsIgnoringBrokerStock = new VehicleReport<VehicleServiceItemReportModel>(
-        "vehicle-service-items-report-ignore-broker-stock", "ServiceItem/vehicle-service-items-report-ignore-broker-stock.parquet",
-        new VehicleLookupRequestOptions { IgnoreBrokerStock = true }, VehicleReportRows.ServiceItems);
+    /// <summary>
+    /// The provisioning view of the service items: every vehicle the distributor has invoiced out, its items
+    /// projected from the distributor's invoice date whatever happened to the vehicle afterwards; see
+    /// <see cref="VehicleLookupRequestOptions.FreeServiceProvisioning"/>. Read beside <see cref="ServiceItems"/>,
+    /// the dealer's view, it gives a consumer the provision booked at the invoice and the liability as it
+    /// actually activated. (Published as "…-ignore-broker-stock" until 2026-09, when the view only ignored
+    /// broker stock.)
+    /// </summary>
+    public static readonly VehicleReport ServiceItemsProvisioning = new VehicleReport<VehicleServiceItemReportModel>(
+        "vehicle-service-items-provisioning-report", "ServiceItem/vehicle-service-items-provisioning-report.parquet",
+        new VehicleLookupRequestOptions { FreeServiceProvisioning = true }, VehicleReportRows.ServiceItems);
 
     public static readonly VehicleReport TopLevel = new VehicleReport<VehicleLookupTopLevelReportModel>(
         "vehicle-top-level-report", "Vehicle/vehicle-top-level-report.parquet",
         new VehicleLookupRequestOptions(), (vin, lookup) => new[] { VehicleReportRows.TopLevel(vin, lookup) });
 
-    /// <summary>The three files of a host with broker stock.</summary>
-    public static IReadOnlyList<VehicleReport> All { get; } = new[] { ServiceItems, ServiceItemsIgnoringBrokerStock, TopLevel };
+    /// <summary>The three files of a host that publishes the provisioning view beside the dealer's view.</summary>
+    public static IReadOnlyList<VehicleReport> All { get; } = new[] { ServiceItems, ServiceItemsProvisioning, TopLevel };
 
-    /// <summary>The set for a client without brokers, where the two service-item files would be the same file.</summary>
+    /// <summary>The set for a host that publishes only the dealer's view of the service items.</summary>
     public static IReadOnlyList<VehicleReport> WithoutBrokerStock { get; } = new[] { ServiceItems, TopLevel };
 }
 

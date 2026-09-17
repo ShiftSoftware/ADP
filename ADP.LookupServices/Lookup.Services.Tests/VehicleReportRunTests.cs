@@ -97,7 +97,7 @@ public sealed class VehicleReportRunTests : IDisposable
             Source = Source(),
             Lookup = Lookup,
             OutputDirectory = outputDirectory,
-            Reports = VehicleReports.All,                           // default, ignore-broker-stock, default
+            Reports = VehicleReports.All,                           // default, provisioning, default
             Degree = 1,
         });
 

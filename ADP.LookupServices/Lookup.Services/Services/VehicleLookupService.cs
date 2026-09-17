@@ -209,6 +209,7 @@ public class VehicleLookupService
                 vehicle,
                 data.SaleInformation,
                 requestOptions.IgnoreBrokerStock,
+                requestOptions.FreeServiceProvisioning,
                 requestOptions.LanguageCode,
                 serviceProvider);
 
@@ -219,7 +220,11 @@ public class VehicleLookupService
         var serviceItemEvaluator = new VehicleServiceItemEvaluator(
             this.vehicleLookupStorageService, companyDataAggregate, this.lookupOptions, this.serviceProvider
         )
-        { Trace = traceCollector };
+        {
+            Trace = traceCollector,
+            // The provisioning view is anchored on the distributor's invoice and nothing moves it; see the request option.
+            ApplyFreeServiceDateShift = !requestOptions.FreeServiceProvisioning,
+        };
 
         var serviceItemsResult = await serviceItemEvaluator.Evaluate(
             vehicle,
