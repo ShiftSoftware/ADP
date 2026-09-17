@@ -18,14 +18,18 @@
  * source. Keep them honest; an integrator finds a false claim within an hour and
  * then trusts nothing else on the page. In particular:
  *
- *   • Credentials are the HOST's job. Every lookup element takes a `headers`
- *     prop and `fetchVin(vin, headers)`; the element sends none of its own.
+ *   • Credentials are the HOST's job. The vehicle elements take a `headers`
+ *     prop and `fetchVin(vin, headers)`; the part elements take an `endpoint` —
+ *     a URL, or `{ url, headers, method, query }` — and `fetchData(partNumber)`.
+ *     The element sends none of its own.
  *   • There is NO retry. A failed request stays failed.
  *   • The lookup elements reset inherited styles and are not host-themeable.
  *   • The form elements portal their dropdowns and dialogs onto document.body,
  *     so those DO inherit host styles.
- *   • `base-url` is a path prefix the element concatenates onto — the trailing
- *     slash matters.
+ *   • `base-url` (vehicle elements) is a path prefix the element concatenates
+ *     the VIN onto — the trailing slash matters. The part elements append
+ *     `/<part number>` to `endpoint` themselves, so THAT one must not end in a
+ *     slash. The quickstart is a vehicle element, so its copy says the former.
  *   • `fetchVin` validates the ISO 3779 check digit, so an invented 17-character
  *     string is rejected.
  *   • A document can register a custom element tag once. Two versions, or the
@@ -49,6 +53,7 @@
       'skip': 'Skip to content',
       'nav.components': 'Components',
       'nav.docs': 'Documentation',
+      'nav.architecture': 'Architecture',
       'nav.home': 'Home',
       'nav.menu': 'Menu',
       'nav.close': 'Close',
@@ -60,10 +65,10 @@
       'theme.light': 'Light',
       'theme.dark': 'Dark',
 
-      'hero.eyebrow': 'Shift Framework · Automotive Dealer Platform',
+      'hero.eyebrow': 'Shift Framework · Auto Distributor Platform',
       'hero.title': 'Embed ADP lookups and forms in your site',
       'hero.lede':
-        'Custom elements that render Automotive Dealer Platform vehicle, part and service data on any page — no framework, no build step. Load one module, place the element, give it the base URL your platform operator issued, then call one method.',
+        'Custom elements that render Auto Distributor Platform vehicle, part and service data on any page — no framework, no build step. Load one module, place the element, give it the base URL your platform operator issued, then call one method.',
       'hero.primary': 'Quickstart',
       'hero.secondary': 'Installation',
       'hero.package': 'Package',
@@ -185,13 +190,15 @@
         { name: 'adp-web-components', body: 'This package. Custom elements that call those services and render what comes back.' },
         { name: 'Your site', body: 'A module tag and an element.' },
       ],
+      'stack.here': 'This package',
+      'stack.cta': 'See how it fits together',
       'chart.sources': {
         title: 'Dealer & distributor systems',
         body: 'The systems dealers already run — met where they are, read-only.',
         chips: ['Dealer management system', 'Distributor ERP', 'Manufacturer feeds'],
       },
       'chart.sync': { label: 'sync', note: 'direct database · REST, pushed or pulled · files (CSV, Parquet, JSON)' },
-      'chart.adp': { title: 'ADP — Automotive Dealer Platform', note: 'One repository · NuGet ShiftSoftware.ADP.*' },
+      'chart.adp': { title: 'ADP — Auto Distributor Platform', note: 'One repository · NuGet ShiftSoftware.ADP.*' },
       'chart.pipeline': [
         {
           name: 'Sync Agent',
@@ -234,6 +241,20 @@
         { name: 'Any page you already have', body: 'no build step, no framework' },
       ],
 
+      'architecture.eyebrow': 'Architecture',
+      'architecture.title': 'How it fits together',
+      'architecture.lede':
+        'One picture of the whole chain: the systems the data comes from, the platform that owns it, the services that serve it, and the package that puts it on your page. Read it top to bottom — the data flows the same way.',
+      'architecture.layers': 'Layer by layer',
+      'architecture.layersLede': 'The same chain as four layers, foundation first. You only ever touch the last two.',
+      'architecture.more': 'Go deeper',
+      'architecture.moreLede': 'The platform and the framework document themselves; these are the pages the elements lean on.',
+      'architecture.links': [
+        { name: 'ADP documentation', body: 'The platform behind the lookups — vehicles, parts, services, warranty, the Sync Agent and Rastgo.' },
+        { name: 'Shift Framework', body: 'The foundation ADP stands on: entities, identity and type-safe authorization.' },
+        { name: 'Vehicle lookup result', body: 'The response shape every vehicle element renders, field by field.' },
+        { name: 'Part lookup result', body: 'The response shape the part elements render.' },
+      ],
       'support.title': 'Next steps',
       'support.ecosystem': 'More from ShiftSoftware',
       'support.items': [
@@ -246,7 +267,7 @@
       ],
       'support.links': ['Open the documentation', 'View releases', null],
 
-      'footer.tagline': 'Part of the Automotive Dealer Platform by ShiftSoftware, built on the Shift Framework.',
+      'footer.tagline': 'Part of the Auto Distributor Platform by ShiftSoftware, built on the Shift Framework.',
       'footer.built': 'Built from',
 
       'notFound.title': 'This page is not published',
@@ -258,6 +279,7 @@
       'skip': 'تخطّي إلى المحتوى',
       'nav.components': 'المكوّنات',
       'nav.docs': 'التوثيق',
+      'nav.architecture': 'البنية',
       'nav.home': 'الرئيسية',
       'nav.menu': 'القائمة',
       'nav.close': 'إغلاق',
@@ -269,10 +291,10 @@
       'theme.light': 'فاتح',
       'theme.dark': 'داكن',
 
-      'hero.eyebrow': 'Shift Framework · Automotive Dealer Platform',
+      'hero.eyebrow': 'Shift Framework · Auto Distributor Platform',
       'hero.title': 'ضَع استعلامات ADP ونماذجها في موقعك',
       'hero.lede':
-        'عناصر مخصّصة تعرض بيانات المركبات وقطع الغيار والخدمة في Automotive Dealer Platform على أي صفحة — بلا إطار عمل وبلا خطوة بناء. حمّل وحدة واحدة، وضَع العنصر، وأعطه العنوان الأساسي الصادر لك من مشغّل المنصّة، ثم استدعِ دالة واحدة.',
+        'عناصر مخصّصة تعرض بيانات المركبات وقطع الغيار والخدمة في Auto Distributor Platform على أي صفحة — بلا إطار عمل وبلا خطوة بناء. حمّل وحدة واحدة، وضَع العنصر، وأعطه العنوان الأساسي الصادر لك من مشغّل المنصّة، ثم استدعِ دالة واحدة.',
       'hero.primary': 'البداية السريعة',
       'hero.secondary': 'التثبيت',
       'hero.package': 'الحزمة',
@@ -392,13 +414,15 @@
         { name: 'adp-web-components', body: 'هذه الحزمة. عناصر مخصّصة تستدعي تلك الخدمات وتعرض ما يعود منها.' },
         { name: 'موقعك', body: 'وسم وحدة وعنصر واحد.' },
       ],
+      'stack.here': 'هذه الحزمة',
+      'stack.cta': 'شاهد كيف تترابط الأجزاء',
       'chart.sources': {
         title: 'أنظمة الوكلاء والموزّع',
         body: 'الأنظمة التي يعمل بها الوكلاء أصلًا — نصل إليها حيث هي، للقراءة فقط.',
         chips: ['نظام إدارة الوكالة', 'نظام ERP للموزّع', 'بيانات الشركة المصنّعة'],
       },
       'chart.sync': { label: 'مزامنة', note: 'قاعدة بيانات مباشرة · REST دفعًا أو سحبًا · ملفات (CSV، Parquet، JSON)' },
-      'chart.adp': { title: 'ADP — منصّة وكلاء السيارات', note: 'مستودع واحد · NuGet ShiftSoftware.ADP.*' },
+      'chart.adp': { title: 'ADP — منصّة موزّعي السيارات', note: 'مستودع واحد · NuGet ShiftSoftware.ADP.*' },
       'chart.pipeline': [
         {
           name: 'Sync Agent',
@@ -441,6 +465,20 @@
         { name: 'أي صفحة لديك أصلًا', body: 'بلا خطوة بناء، بلا إطار عمل' },
       ],
 
+      'architecture.eyebrow': 'البنية',
+      'architecture.title': 'كيف تترابط الأجزاء',
+      'architecture.lede':
+        'صورة واحدة للسلسلة كاملة: الأنظمة التي تأتي منها البيانات، والمنصّة التي تملكها، والخدمات التي تقدّمها، والحزمة التي تضعها على صفحتك. اقرأها من الأعلى إلى الأسفل — فالبيانات تسير في الاتجاه نفسه.',
+      'architecture.layers': 'طبقة طبقة',
+      'architecture.layersLede': 'السلسلة نفسها في أربع طبقات، بدءًا من الأساس. أنت لا تلمس سوى الطبقتين الأخيرتين.',
+      'architecture.more': 'تعمّق أكثر',
+      'architecture.moreLede': 'المنصّة وإطار العمل يوثّقان نفسيهما؛ هذه هي الصفحات التي تعتمد عليها العناصر.',
+      'architecture.links': [
+        { name: 'توثيق ADP', body: 'المنصّة التي خلف الاستعلامات — المركبات وقطع الغيار والخدمات والضمان وSync Agent وRastgo.' },
+        { name: 'Shift Framework', body: 'الأساس الذي تقوم عليه ADP: الكيانات والهوية والتفويض الآمن نوعيًا.' },
+        { name: 'نتيجة استعلام المركبة', body: 'شكل الاستجابة الذي يعرضه كل عنصر من عناصر المركبات، حقلًا حقلًا.' },
+        { name: 'نتيجة استعلام القطعة', body: 'شكل الاستجابة الذي تعرضه عناصر قطع الغيار.' },
+      ],
       'support.title': 'الخطوات التالية',
       'support.ecosystem': 'المزيد من ShiftSoftware',
       'support.items': [
@@ -453,7 +491,7 @@
       ],
       'support.links': ['افتح التوثيق', 'عرض الإصدارات', null],
 
-      'footer.tagline': 'جزء من Automotive Dealer Platform من ShiftSoftware، مبنيّة على Shift Framework.',
+      'footer.tagline': 'جزء من Auto Distributor Platform من ShiftSoftware، مبنيّة على Shift Framework.',
       'footer.built': 'مبني من',
 
       'notFound.title': 'هذه الصفحة غير منشورة',
@@ -465,6 +503,7 @@
       'skip': 'بازدان بۆ ناوەڕۆک',
       'nav.components': 'پێکهاتەکان',
       'nav.docs': 'بەڵگەنامە',
+      'nav.architecture': 'پێکهاتە',
       'nav.home': 'سەرەتا',
       'nav.menu': 'پێڕست',
       'nav.close': 'داخستن',
@@ -476,10 +515,10 @@
       'theme.light': 'ڕووناک',
       'theme.dark': 'تاریک',
 
-      'hero.eyebrow': 'Shift Framework · Automotive Dealer Platform',
+      'hero.eyebrow': 'Shift Framework · Auto Distributor Platform',
       'hero.title': 'گەڕان و فۆرمەکانی ADP بخە ناو ماڵپەڕەکەت',
       'hero.lede':
-        'توخمی تایبەت کە داتای ئۆتۆمبێل و پارچە و خزمەتگوزاری Automotive Dealer Platform لە هەر لاپەڕەیەکدا پیشان دەدەن — بەبێ چوارچێوە، بەبێ هەنگاوی بنیاتنان. یەک مۆدیول باربکە، توخمەکە دابنێ، ئەو ناونیشانە بنەڕەتییەی بەڕێوەبەری پلاتفۆرم پێیداویت بیدەرێ، ئینجا یەک دەستەواژە بانگ بکە.',
+        'توخمی تایبەت کە داتای ئۆتۆمبێل و پارچە و خزمەتگوزاری Auto Distributor Platform لە هەر لاپەڕەیەکدا پیشان دەدەن — بەبێ چوارچێوە، بەبێ هەنگاوی بنیاتنان. یەک مۆدیول باربکە، توخمەکە دابنێ، ئەو ناونیشانە بنەڕەتییەی بەڕێوەبەری پلاتفۆرم پێیداویت بیدەرێ، ئینجا یەک دەستەواژە بانگ بکە.',
       'hero.primary': 'دەستپێکی خێرا',
       'hero.secondary': 'دامەزراندن',
       'hero.package': 'پاکێج',
@@ -606,13 +645,15 @@
         { name: 'adp-web-components', body: 'ئەم پاکێجە. توخمی تایبەت کە ئەو خزمەتگوزاریانە بانگ دەکەن و ئەنجامەکە پیشان دەدەن.' },
         { name: 'ماڵپەڕەکەت', body: 'تاگێکی مۆدیول و توخمێک.' },
       ],
+      'stack.here': 'ئەم پاکێجە',
+      'stack.cta': 'ببینە چۆن پێکەوە دەگونجێن',
       'chart.sources': {
         title: 'سیستەمەکانی دیلەر و دابەشکەر',
         body: 'ئەو سیستەمانەی دیلەرەکان پێشتر بەکاریان دەهێنن — لە شوێنی خۆیان دەگەینە پێیان، تەنها بۆ خوێندنەوە.',
         chips: ['سیستەمی بەڕێوەبردنی دیلەر', 'ERPی دابەشکەر', 'داتای بەرهەمهێنەر'],
       },
       'chart.sync': { label: 'هاوکاتکردن', note: 'بنکەدراوەی ڕاستەوخۆ · REST بە پاڵنان یان ڕاکێشان · فایل (CSV، Parquet، JSON)' },
-      'chart.adp': { title: 'ADP — پلاتفۆرمی دیلەری ئۆتۆمبێل', note: 'یەک کۆگا · NuGet ShiftSoftware.ADP.*' },
+      'chart.adp': { title: 'ADP — پلاتفۆرمی دابەشکەری ئۆتۆمبێل', note: 'یەک کۆگا · NuGet ShiftSoftware.ADP.*' },
       'chart.pipeline': [
         {
           name: 'Sync Agent',
@@ -655,6 +696,20 @@
         { name: 'هەر پەڕەیەک کە پێشتر هەتە', body: 'بەبێ هەنگاوی بیلد، بەبێ فرەیموۆرک' },
       ],
 
+      'architecture.eyebrow': 'پێکهاتە',
+      'architecture.title': 'چۆن پێکەوە دەگونجێن',
+      'architecture.lede':
+        'یەک وێنە بۆ هەموو زنجیرەکە: ئەو سیستەمانەی داتا لێیانەوە دێت، ئەو پلاتفۆرمەی خاوەنیەتی، ئەو خزمەتگوزاریانەی پێشکەشی دەکەن، و ئەو پاکێجەی دەیخاتە سەر لاپەڕەکەت. لە سەرەوە بۆ خوارەوە بیخوێنەرەوە — داتا هەمان ڕێگا دەگرێت.',
+      'architecture.layers': 'چین بە چین',
+      'architecture.layersLede': 'هەمان زنجیرە وەک چوار چین، بنەما لە پێشەوە. تۆ تەنها دەست لە دوو چینی کۆتایی دەدەیت.',
+      'architecture.more': 'قووڵتر بڕۆ',
+      'architecture.moreLede': 'پلاتفۆرم و چوارچێوەکە خۆیان بەڵگەنامەی خۆیان دەنووسن؛ ئەمانە ئەو لاپەڕانەن کە توخمەکان پشتیان پێ دەبەستن.',
+      'architecture.links': [
+        { name: 'بەڵگەنامەی ADP', body: 'ئەو پلاتفۆرمەی لە پشت گەڕانەکانەوەیە — ئۆتۆمبێل، پارچە، خزمەتگوزاری، گەرەنتی، Sync Agent و Rastgo.' },
+        { name: 'Shift Framework', body: 'ئەو بنەمایەی ADP لەسەری وەستاوە: ئێنتیتی، ناسنامە و مۆڵەتپێدانی جۆر-پارێزراو.' },
+        { name: 'ئەنجامی گەڕانی ئۆتۆمبێل', body: 'شێوەی وەڵامەکە کە هەموو توخمێکی ئۆتۆمبێل پیشانی دەدات، خانە بە خانە.' },
+        { name: 'ئەنجامی گەڕانی پارچە', body: 'شێوەی وەڵامەکە کە توخمەکانی پارچە پیشانی دەدەن.' },
+      ],
       'support.title': 'هەنگاوەکانی داهاتوو',
       'support.ecosystem': 'زیاتر لە ShiftSoftware',
       'support.items': [
@@ -667,7 +722,7 @@
       ],
       'support.links': ['بەڵگەنامەکە بکەرەوە', 'وەشانەکان ببینە', null],
 
-      'footer.tagline': 'بەشێکە لە Automotive Dealer Platform لەلایەن ShiftSoftware، بنیات نراوە لەسەر Shift Framework.',
+      'footer.tagline': 'بەشێکە لە Auto Distributor Platform لەلایەن ShiftSoftware، بنیات نراوە لەسەر Shift Framework.',
       'footer.built': 'بنیات نراوە لە',
 
       'notFound.title': 'ئەم لاپەڕەیە بڵاو نەکراوەتەوە',
@@ -679,6 +734,7 @@
       'skip': 'Перейти к содержимому',
       'nav.components': 'Компоненты',
       'nav.docs': 'Документация',
+      'nav.architecture': 'Архитектура',
       'nav.home': 'Главная',
       'nav.menu': 'Меню',
       'nav.close': 'Закрыть',
@@ -690,10 +746,10 @@
       'theme.light': 'Светлая',
       'theme.dark': 'Тёмная',
 
-      'hero.eyebrow': 'Shift Framework · Automotive Dealer Platform',
+      'hero.eyebrow': 'Shift Framework · Auto Distributor Platform',
       'hero.title': 'Встройте запросы и формы ADP в свой сайт',
       'hero.lede':
-        'Пользовательские элементы, которые выводят данные Automotive Dealer Platform по автомобилям, запчастям и сервису на любой странице — без фреймворка и без сборки. Подключите один модуль, поставьте элемент, задайте базовый URL, выданный оператором платформы, и вызовите один метод.',
+        'Пользовательские элементы, которые выводят данные Auto Distributor Platform по автомобилям, запчастям и сервису на любой странице — без фреймворка и без сборки. Подключите один модуль, поставьте элемент, задайте базовый URL, выданный оператором платформы, и вызовите один метод.',
       'hero.primary': 'Быстрый старт',
       'hero.secondary': 'Установка',
       'hero.package': 'Пакет',
@@ -816,13 +872,15 @@
         { name: 'adp-web-components', body: 'Этот пакет. Пользовательские элементы, которые вызывают эти сервисы и отображают ответ.' },
         { name: 'Ваш сайт', body: 'Тег модуля и элемент.' },
       ],
+      'stack.here': 'Этот пакет',
+      'stack.cta': 'Как всё связано',
       'chart.sources': {
         title: 'Системы дилеров и дистрибьютора',
         body: 'Системы, которыми дилеры уже пользуются, — подключаемся к ним как есть, только на чтение.',
         chips: ['Система управления дилером', 'ERP дистрибьютора', 'Данные производителя'],
       },
       'chart.sync': { label: 'синхронизация', note: 'прямая база данных · REST, push или pull · файлы (CSV, Parquet, JSON)' },
-      'chart.adp': { title: 'ADP — платформа автодилеров', note: 'Один репозиторий · NuGet ShiftSoftware.ADP.*' },
+      'chart.adp': { title: 'ADP — платформа автодистрибьютора', note: 'Один репозиторий · NuGet ShiftSoftware.ADP.*' },
       'chart.pipeline': [
         {
           name: 'Sync Agent',
@@ -865,6 +923,20 @@
         { name: 'Любая ваша страница', body: 'без сборки, без фреймворка' },
       ],
 
+      'architecture.eyebrow': 'Архитектура',
+      'architecture.title': 'Как всё связано',
+      'architecture.lede':
+        'Вся цепочка на одной картинке: системы, из которых приходят данные, платформа, которой они принадлежат, сервисы, которые их отдают, и пакет, который выводит их на вашу страницу. Читайте сверху вниз — данные идут в ту же сторону.',
+      'architecture.layers': 'Слой за слоем',
+      'architecture.layersLede': 'Та же цепочка в виде четырёх слоёв, начиная с основания. Вы касаетесь только двух последних.',
+      'architecture.more': 'Подробнее',
+      'architecture.moreLede': 'Платформа и фреймворк документируют себя сами; вот страницы, на которые опираются элементы.',
+      'architecture.links': [
+        { name: 'Документация ADP', body: 'Платформа за поисками — автомобили, запчасти, сервис, гарантия, Sync Agent и Rastgo.' },
+        { name: 'Shift Framework', body: 'Основание, на котором стоит ADP: сущности, идентификация и типобезопасная авторизация.' },
+        { name: 'Результат поиска автомобиля', body: 'Форма ответа, которую отображает каждый элемент по автомобилям, поле за полем.' },
+        { name: 'Результат поиска запчасти', body: 'Форма ответа, которую отображают элементы по запчастям.' },
+      ],
       'support.title': 'Что дальше',
       'support.ecosystem': 'Ещё от ShiftSoftware',
       'support.items': [
@@ -877,7 +949,7 @@
       ],
       'support.links': ['Открыть документацию', 'Смотреть релизы', null],
 
-      'footer.tagline': 'Часть Automotive Dealer Platform от ShiftSoftware, построено на Shift Framework.',
+      'footer.tagline': 'Часть Auto Distributor Platform от ShiftSoftware, построено на Shift Framework.',
       'footer.built': 'Собрано из',
 
       'notFound.title': 'Эта страница не опубликована',
