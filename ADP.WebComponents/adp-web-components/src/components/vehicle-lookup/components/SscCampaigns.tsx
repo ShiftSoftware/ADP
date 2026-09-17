@@ -54,7 +54,12 @@ export type PanelState = {
    * so the panel says so and offers to run the check — it must never look like "no campaigns".
    */
   skipped: boolean;
-  /** Whether the host configured the manufacturer check (a reCAPTCHA site key) for unauthorized vehicles. */
+  /**
+   * Whether the manufacturer check is offered for the loaded vehicle. Always, where the stand-in
+   * widget is in use (development, `mockRecaptcha`); in production only when the host configured
+   * a reCAPTCHA site key — without one the panel can do no more than say the vehicle is not in the
+   * records, and must not pretend otherwise.
+   */
   checkAvailable: boolean;
   /** The manufacturer's answer, once it arrived. */
   checkStatus?: ManufacturerCheckStatus | null;

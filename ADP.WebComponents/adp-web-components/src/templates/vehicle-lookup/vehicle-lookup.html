@@ -23,15 +23,10 @@
     <!-- Every area and page, read from catalog.json. -->
     <div data-harness-nav x-cloak></div>
 
-    <div class="mx-auto flex max-w-[1400px] flex-col gap-8 px-4 py-10 sm:px-8">
-      <header>
+    <div class="mx-auto flex max-w-[1400px] flex-col gap-6 px-4 pt-6 pb-10 sm:px-8">
+      <header class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h1 class="text-2xl font-bold tracking-tight">Vehicle lookup</h1>
         <p class="eyebrow text-neutral">adp-web-components · vehicle lookup</p>
-        <h1 class="mt-1 text-2xl font-bold tracking-tight">Vehicle lookup</h1>
-        <p class="lede text-base-content/70 mt-2">
-          The shell that holds all eight vehicle components and shows one at a time. The VIN field and the tab strip below belong to the host — a page embedding this component has
-          to build them, and they are what drive <code>fetchVin()</code> and <code>active-element</code>. This page sets <code>ssc-query-string</code>, so a search from any tab but
-          SSC leaves the SSC tab saying the campaign check was not run, with a button to run it — the way a host that only logs SSC lookups is wired.
-        </p>
       </header>
 
       <section
@@ -118,6 +113,16 @@
         <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
         <div data-harness-rail x-cloak></div>
       </section>
+
+      <!-- What the page demonstrates, after the demo rather than before it: the component is what the page is for. -->
+      <footer class="border-base-300 border-t border-dashed pt-6">
+        <p class="eyebrow text-neutral">About this page</p>
+        <p class="lede text-base-content/70 mt-2 text-sm">
+          The shell that holds all eight vehicle components and shows one at a time. The VIN field and the tab strip above belong to the host — a page embedding this component has
+          to build them, and they are what drive <code>fetchVin()</code> and <code>active-element</code>. This page sets <code>ssc-query-string</code>, so a search from any tab but
+          SSC leaves the SSC tab saying the campaign check was not run, with a button to run it — the way a host that only logs SSC lookups is wired.
+        </p>
+      </footer>
     </div>
   </body>
 </html>

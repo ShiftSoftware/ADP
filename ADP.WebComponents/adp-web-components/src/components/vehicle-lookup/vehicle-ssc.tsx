@@ -45,7 +45,9 @@ const isAbort = (error: unknown) => (error as DOMException)?.name === 'AbortErro
  *  - authorized (in the distributor's records): the campaign list is the verdict;
  *  - unauthorized: the distributor has no records, so the only verdict is the manufacturer's
  *    answer to the reCAPTCHA-gated check — a yes/no, no list. Until it arrives the panel says the
- *    vehicle is not in the records and asserts nothing else.
+ *    vehicle is not in the records and asserts nothing else. The check is always offered where
+ *    the stand-in widget is in use (development, `mockRecaptcha`); the real widget needs the
+ *    host's site key, and a production host that configured none gets the notice alone.
  *
  * A third state is neither: a wrapper that only counts the SSC tab's own request as a campaign
  * check (`sscQueryString`) tells this panel through `skipLookup` that a vehicle was looked up
@@ -321,6 +323,11 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
 
   /** Shows a per-campaign "why this status?" control. The host gates it on its own permission check; the trace lists claim and invoice details. */
   @Prop() showTrace: boolean = false;
+  /**
+   * The reCAPTCHA site key the real widget is rendered with. Production needs it to offer the
+   * manufacturer check for an unauthorized vehicle; the stand-in widget (`isDev`, `mockRecaptcha`)
+   * never talks to Google and needs no key.
+   */
   @Prop() recaptchaKey: string = '';
   /** Renders a click-to-pass stand-in for the reCAPTCHA widget. Implied by `isDev`; the real widget is only ever used in production mode. */
   @Prop() mockRecaptcha: boolean = false;
@@ -344,7 +351,7 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
 
   // #region Manufacturer check (unauthorized vehicles)
 
-  /** The check is offered: the vehicle is unauthorized and the host configured a site key. */
+  /** The check is offered: the vehicle is unauthorized and the check can be run (`manufacturerCheckAvailable`). */
   @State() showRecaptcha: boolean = false;
   @State() checkingUnauthorizedSSC: boolean = false;
   @State() devRecaptchaChecked: boolean = false;
@@ -366,6 +373,18 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
    */
   private get useMockRecaptchaWidget(): boolean {
     return this.isDev || this.mockRecaptcha;
+  }
+
+  /**
+   * Whether an unauthorized vehicle can be offered the manufacturer check at all. The stand-in
+   * needs nothing — it never talks to Google, and in development the answer is a stand-in too —
+   * so wherever it is in use the check is always offered; a vehicle the distributor has no record
+   * of is never left with the notice alone. The real widget needs the host's site key. A
+   * production host that configured none gets the notice alone: the one honest state left, since
+   * the panel must never fabricate a manufacturer's answer.
+   */
+  private get manufacturerCheckAvailable(): boolean {
+    return this.useMockRecaptchaWidget || this.recaptchaKey !== '';
   }
 
   private mockRecaptchaTrigger?: () => Promise<void>;
@@ -411,7 +430,7 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
    * checked against the lookup generation before it starts polling.
    */
   private prepareManufacturerCheck(newVehicleLookup: VehicleLookupDTO, scopedTimeoutRef: ReturnType<typeof setTimeout>) {
-    if (newVehicleLookup?.isAuthorized !== false || this.recaptchaKey === '') {
+    if (newVehicleLookup?.isAuthorized !== false || !this.manufacturerCheckAvailable) {
       this.showRecaptcha = false;
       return;
     }
@@ -791,7 +810,9 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
       authorized: this.vehicleLookup?.isAuthorized,
       campaigns: this.vehicleLookup?.ssc,
       skipped: !!this.skippedVin,
-      checkAvailable: this.recaptchaKey !== '',
+      // Decided when the vehicle landed (`prepareManufacturerCheck`), not read live: the body then
+      // always matches the widget rendered into it, whatever the mode is flipped to afterwards.
+      checkAvailable: this.showRecaptcha,
       checkStatus: this.recaptchaRes?.status,
     };
   }

@@ -90,6 +90,48 @@ describe('vehicle-ssc', () => {
     expect(realWidgetTouched(page)).toBe(false);
   });
 
+  /**
+   * The stand-in never talks to Google, so it needs no site key: a development page that
+   * configured nothing still offers the check. Left ungated, the public showcase — which sets no
+   * key — showed an unauthorized vehicle with the notice alone and no way to ask the manufacturer.
+   */
+  it('offers the stand-in check in development without a site key', async () => {
+    const page = await newSpecPage({
+      components: [VehicleSsc],
+      html: '<vehicle-ssc is-dev="true"></vehicle-ssc>',
+    });
+    await (page.rootInstance as VehicleSsc).setMockData(vehicleLookupMocks as any);
+
+    await lookup(page, UNKNOWN_VIN);
+
+    expect(badgeText(page)).toBe(sscLocale.notInRecords);
+    expect(noticeText(page)).toBe(sscLocale.unauthorizedCheck);
+    expect(shadow(page).textContent).not.toContain(sscLocale.unauthorizedNoCheck);
+    expect(bodyOpen(page)).toBe(true);
+    expect(shadow(page).querySelector('.ssc-check .dev-recaptcha')).not.toBeNull();
+    expect(realWidgetTouched(page)).toBe(false);
+  });
+
+  /**
+   * Production is the one place the key gates the check: the real widget cannot be rendered
+   * without it, and the panel must not fabricate the manufacturer's answer in its place.
+   */
+  it('offers no check in production without a site key, and says so', async () => {
+    const page = await newSpecPage({
+      components: [VehicleSsc],
+      html: '<vehicle-ssc disable-vin-validation="true"></vehicle-ssc>',
+    });
+
+    await (page.rootInstance as VehicleSsc).fetchVin(vehicleLookupMocks[UNKNOWN_VIN] as any);
+    await page.waitForChanges();
+
+    expect(badgeText(page)).toBe(sscLocale.notInRecords);
+    expect(noticeText(page)).toBe(sscLocale.unauthorizedNoCheck);
+    expect(bodyOpen(page)).toBe(false);
+    expect(shadow(page).querySelector('.dev-recaptcha')).toBeNull();
+    expect(realWidgetTouched(page)).toBe(false);
+  });
+
   it('asks the manufacturer when the stand-in is passed and shows only its answer', async () => {
     const page = await newPage();
     await lookup(page, UNKNOWN_VIN);
