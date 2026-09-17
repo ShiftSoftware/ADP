@@ -1,8 +1,6 @@
-import { Build } from '@stencil/core';
-
-import { version } from '../../../package.json';
 import { MockFileName, MockFiles } from './types';
 import { localizeMockAssets } from './mock-assets';
+import { fetchPackageFile } from '~lib/package-files';
 
 const cachedMocks = {};
 
@@ -17,18 +15,18 @@ export async function getMockFile<T>(mockFileName: MockFileName, externalUrl: st
 }
 
 async function requestMockFile(mockFile: string, externalUrl: string) {
-  let fetchUrl = externalUrl?.trim();
+  const external = externalUrl?.trim();
+  // The same file kind exists in every generated environment. Caching by the
+  // old logical filename made an environment change resurrect the first file
+  // after toggling back into development mode.
+  const fetchUrl = external || 'package:mocks/' + mockFile;
 
   try {
-    if (!fetchUrl && Build.isDev) fetchUrl = 'http://localhost:3000/mocks/' + mockFile;
-    else if (!fetchUrl) fetchUrl = `https://cdn.jsdelivr.net/npm/adp-web-components@${version}/dist/mocks/${mockFile}`;
-
-    // The same file kind exists in every generated environment. Caching by the
-    // old logical filename made an environment change resurrect the first file
-    // after toggling back into development mode.
     if (cachedMocks[fetchUrl]) return await cachedMocks[fetchUrl];
 
-    const fetchPromise = fetch(fetchUrl)
+    // A host's own URL as given; otherwise the package's copy — the dev server's,
+    // or this version's on the CDN (see ~lib/package-files).
+    const fetchPromise = (external ? fetch(external) : fetchPackageFile('mocks/' + mockFile))
       .then(res => {
         if (!res.ok) delete cachedMocks[fetchUrl];
         return res.json();

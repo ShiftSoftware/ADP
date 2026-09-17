@@ -10,8 +10,9 @@
 
     <link rel="stylesheet" href="/templates/harness.css" />
 
-    <!-- Blocking on purpose: a deferred module would let the page paint light first. -->
+    <!-- Both blocking on purpose: theme and text direction are decided before the first paint, or the page visibly jumps. -->
     <script src="/templates/harness-theme.js"></script>
+    <script src="/templates/site-locales.js"></script>
 
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
@@ -21,41 +22,47 @@
   </head>
 
   <body class="bg-base-200 text-base-content min-h-screen">
-    <!-- Every area and page, read from catalog.json. -->
-    <div data-harness-nav x-cloak></div>
+    <!-- The site header, the same one the home page has; harness.js mounts it at the shell's width. -->
+    <div data-site-header></div>
 
-    <div class="mx-auto flex max-w-[1400px] flex-col gap-6 px-4 pt-6 pb-10 sm:px-8">
-      <header class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h1 class="text-2xl font-bold tracking-tight">Manufacturer lookup</h1>
-        <p class="eyebrow text-neutral">adp-web-components · part lookup</p>
-      </header>
+    <!-- One shell for every demo: the component in the middle, the fixtures beside it and always in view. See harness.js. -->
+    <section
+      class="showcase"
+      dir="ltr"
+      x-data="harness({
+        profile: 'part',
+        mocks: 'part-lookup',
+      })"
+    >
+      <!-- The brief: title above the component, the about text below it — and one block floating beside it on a wide screen. -->
+      <div class="showcase-brief">
+        <header class="showcase-title flex flex-wrap items-baseline gap-x-3 gap-y-1 wide:flex-col wide:items-start">
+          <h1 class="text-2xl font-bold tracking-tight">Manufacturer lookup</h1>
+          <p class="eyebrow text-neutral">adp-web-components · part lookup</p>
+        </header>
 
-      <section
-        class="flex flex-col gap-4"
-        x-data="harness({
-          profile: 'part',
-          mocks: 'part-lookup',
-        })"
-      >
-        <!-- Generated fixtures, right where they are used. -->
-        <div data-harness-bar x-cloak></div>
+        <!-- What the page demonstrates, beside the demo rather than above it: the component is what the page is for. -->
+        <aside class="showcase-about border-base-300 border-t border-dashed pt-5 wide:mt-5 wide:border-t-0 wide:pt-0">
+          <p class="eyebrow text-neutral">About this page</p>
+          <p class="lede text-base-content/70 mt-2 text-sm">
+            The manufacturer's own record for a part number — dimensions, weight, supersession. <code>hidden-fields</code> is set to drop two of the columns, so the table here is
+            deliberately narrower than the data.
+          </p>
+        </aside>
+      </div>
 
+      <!-- Generated fixtures, beside the component and always in view. -->
+      <div data-harness-fixtures class="showcase-fixtures" x-cloak></div>
+
+      <!-- Only the stage follows the language control; the shell around it stays put. -->
+      <div class="showcase-stage" :dir="dir">
         <div class="frame card bg-base-100 border-base-300 border p-5">
           <manufacturer-lookup id="subject" language="en" localization-name="kurdish" hidden-fields="netWeight, width"></manufacturer-lookup>
         </div>
+      </div>
 
-        <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
-        <div data-harness-rail x-cloak></div>
-      </section>
-
-      <!-- What the page demonstrates, after the demo rather than before it: the component is what the page is for. -->
-      <footer class="border-base-300 border-t border-dashed pt-6">
-        <p class="eyebrow text-neutral">About this page</p>
-        <p class="lede text-base-content/70 mt-2 text-sm">
-          The manufacturer's own record for a part number — dimensions, weight, supersession. <code>hidden-fields</code> is set to drop two of the columns, so the table here is
-          deliberately narrower than the data.
-        </p>
-      </footer>
-    </div>
+      <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
+      <div data-harness-rail x-cloak></div>
+    </section>
   </body>
 </html>

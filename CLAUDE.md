@@ -80,7 +80,21 @@ npm run create:locale-mapper # Generate locale mapper
 - **ADP.LookupServices.BDD** — BDD tests using Reqnroll (formerly SpecFlow) with xUnit v3. Feature files in `Features/`.
 
 ### Web Components (`ADP.WebComponents/adp-web-components/`)
-Built with **Stencil.js** (namespace: `shift-components`), Tailwind CSS, and SCSS.
+Built with **Stencil.js** (namespace: `shift-components`). Components are styled with plain CSS, one
+stylesheet per component; Tailwind 3 is still wired into the build for the components that have not
+been migrated yet.
+
+**Styling rule (in force since 2026-09-17): no new Tailwind in any component, and the component you
+touch is the one you migrate.** No utility classes in TSX, no `@apply`, no `cn()` from `~lib/cn`. If
+your change lands in a component that still uses Tailwind, first move it to plain CSS in its own
+"no visual change" commit, then make your change. Conditional classes use Stencil's
+`class={{ name: cond }}`. Class names are semantic and component-prefixed, never a bare word that is
+also a Tailwind utility (`hidden`, `flex`, `shadow`, …) — sibling utilities are appended after a
+component's own CSS until the plugin is removed, and would win. The procedure, the recipe table
+(what `text-sm`, `border`, `transition`, `shadow` really set) and the checklist:
+`.shift/repos/adp/web-components/plain-css-migration/guide.md`. Plan and tracking are next to it.
+The dev showcase (`src/templates/`) is a separate Tailwind 4 + daisyUI stylesheet and is not part of
+this rule.
 
 **Source layout under `src/`:**
 - `components/` — Base UI components (cards, accordions, tabs, checkboxes, etc.)

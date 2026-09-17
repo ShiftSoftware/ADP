@@ -61,6 +61,7 @@
       'nav.empty': 'No demo pages published yet — the elements ship in the package.',
       'nav.language': 'Language',
       'nav.theme': 'Theme',
+      'nav.dev': 'Dev only',
       'theme.system': 'System',
       'theme.light': 'Light',
       'theme.dark': 'Dark',
@@ -287,6 +288,7 @@
       'nav.empty': 'لم تُنشر صفحات تجريبية بعد — والعناصر نفسها موجودة في الحزمة.',
       'nav.language': 'اللغة',
       'nav.theme': 'المظهر',
+      'nav.dev': 'للتطوير فقط',
       'theme.system': 'النظام',
       'theme.light': 'فاتح',
       'theme.dark': 'داكن',
@@ -511,6 +513,7 @@
       'nav.empty': 'هێشتا هیچ لاپەڕەیەکی نموونە بڵاو نەکراوەتەوە — بەڵام توخمەکان لە پاکێجەکەدان.',
       'nav.language': 'زمان',
       'nav.theme': 'ڕووکار',
+      'nav.dev': 'تەنها بۆ گەشەپێدان',
       'theme.system': 'سیستەم',
       'theme.light': 'ڕووناک',
       'theme.dark': 'تاریک',
@@ -742,6 +745,7 @@
       'nav.empty': 'Демо-страницы ещё не опубликованы — сами элементы есть в пакете.',
       'nav.language': 'Язык',
       'nav.theme': 'Тема',
+      'nav.dev': 'Только для разработки',
       'theme.system': 'Системная',
       'theme.light': 'Светлая',
       'theme.dark': 'Тёмная',
@@ -990,16 +994,34 @@
     return 'en';
   }
 
-  function apply(code) {
+  /**
+   * The language somebody CHOSE — a `?lang=` link or a picker — as opposed to the
+   * one the browser suggests. Null when nobody has. A demo page reads this to
+   * decide whether to open its component in the site's language.
+   */
+  function chosen() {
+    const requested = new URLSearchParams(window.location.search).get('lang');
+
+    if (codes.includes(requested)) return requested;
+    if (codes.includes(stored())) return stored();
+
+    return null;
+  }
+
+  function apply(code, { persist = true } = {}) {
     const language = codes.includes(code) ? code : 'en';
 
     document.documentElement.lang = language;
     document.documentElement.dir = directionOf(language);
 
-    try {
-      localStorage.setItem(KEY, language);
-    } catch {
-      // Not persisting is survivable; rendering in the wrong direction is not.
+    // A page setting its own default (a demo opening in English) passes
+    // persist: false, so it does not overwrite a choice made on another page.
+    if (persist) {
+      try {
+        localStorage.setItem(KEY, language);
+      } catch {
+        // Not persisting is survivable; rendering in the wrong direction is not.
+      }
     }
 
     // Kept in the URL so a reload holds and so links copied out carry the choice.
@@ -1008,12 +1030,17 @@
     url.searchParams.set('lang', language);
     window.history.replaceState({}, '', url);
 
+    // The header and a harness page's rail both offer the language; whichever
+    // is used, the other follows this.
+    window.dispatchEvent(new CustomEvent('site-locales:change', { detail: { language } }));
+
     return language;
   }
 
   window.siteLocales = {
     languages: LANGUAGES,
     current: initial,
+    chosen,
     direction: directionOf,
     apply,
 

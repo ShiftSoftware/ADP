@@ -33,7 +33,7 @@
   <body class="bg-base-200 text-base-content min-h-screen">
     <div class="flex min-h-screen flex-col" x-data="notFound()" x-cloak>
       <header class="bg-base-100/90 border-base-300 border-b">
-        <div class="mx-auto flex max-w-[1240px] items-center gap-3 px-5 py-3 sm:px-8">
+        <div class="mx-auto flex max-w-(--page-max) items-center gap-3 px-(--gutter) py-3">
           <a href="/" class="group flex items-center gap-3" :aria-label="t('nav.home')">
             <span class="adp-logo text-accent h-7 w-[68px] transition-opacity group-hover:opacity-70" aria-hidden="true"></span>
             <span class="bg-base-300 h-6 w-px" aria-hidden="true"></span>
@@ -45,7 +45,7 @@
         </div>
       </header>
 
-      <main class="mx-auto flex w-full max-w-[1240px] flex-1 items-center px-5 py-20 sm:px-8">
+      <main class="mx-auto flex w-full max-w-(--page-max) flex-1 items-center px-(--gutter) py-20">
         <div class="max-w-[46rem]">
           <p class="eyebrow text-accent font-bold">404</p>
           <h1 class="mt-4 text-3xl font-bold tracking-tight sm:text-4xl" x-text="t('notFound.title')"></h1>
@@ -74,7 +74,7 @@
       </main>
 
       <footer class="bg-base-100 border-base-300 border-t">
-        <div class="mx-auto flex max-w-[1240px] items-center px-5 py-8 sm:px-8">
+        <div class="mx-auto flex max-w-(--page-max) items-center px-(--gutter) py-8">
           <p class="text-base-content/55 text-sm" x-text="t('footer.tagline')"></p>
         </div>
       </footer>

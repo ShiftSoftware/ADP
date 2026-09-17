@@ -5,35 +5,59 @@
  * the placeholder elements below, so a page describes what it is testing instead
  * of re-implementing navigation and the shared controls:
  *
- *   <div data-harness-nav x-cloak></div>
+ *   <div data-site-header></div>
  *
- *   <section x-data="harness({ subject: '#subject', mocks: 'vehicle-lookup' })">
- *     <div data-harness-bar x-cloak></div>
- *     <div class="frame">…the component…</div>
+ *   <section class="showcase" dir="ltr" x-data="harness({ subject: '#subject', mocks: 'vehicle-lookup' })">
+ *     <div class="showcase-brief">
+ *       <header class="showcase-title">…h1 and eyebrow…</header>
+ *       <aside class="showcase-about">…what the page demonstrates…</aside>
+ *     </div>
+ *     <div data-harness-fixtures class="showcase-fixtures" x-cloak></div>
+ *     <div class="showcase-stage" :dir="dir">
+ *       <div class="frame">…the component…</div>
+ *     </div>
  *     <div data-harness-rail x-cloak></div>
  *   </section>
  *
+ * `.showcase` is the one layout every demo shares (harness.src.css): a centred
+ * content column the component gets in full, with the brief floating on one
+ * side and the fixtures on the other on a wide screen — the fixtures in a
+ * sticky column on a laptop, a sticky strip under the nav on a phone — so
+ * reading what the page is about or picking a fixture never means scrolling
+ * away from the component. Markup order is fixed (brief, fixtures, stage); the
+ * grid places the pieces per breakpoint.
+ *
  * There are three stamped pieces:
  *
- *   [data-harness-nav]   The sticky bar at the top of the page: one dropdown per
- *                        area, every page in it, read from catalog.json. It sits
- *                        outside the harness scope and carries its own x-data.
+ *   [data-site-header]       The site's own header — the same one the home page
+ *                            has, mounted from site-header.js. Its language picker and the rail's Language
+ *                            control are one control: both go through
+ *                            siteLocales.apply, and each follows the other. On
+ *                            the dev server it also carries the Dev-only menu of
+ *                            unpublished pages. The page must load
+ *                            harness-theme.js and site-locales.js (blocking, in
+ *                            <head>) before this module, as the home page does.
  *
  * …and the controls, split by how often you touch them:
  *
- *   [data-harness-bar]   Fixtures, inline above the component. Reached in one
- *                        click, because that is every interaction.
- *   [data-harness-rail]  Connection, Environment, Today, language, theme,
- *                        platform width and the event log, in a drawer behind a
- *                        tab on the right edge (a button on a phone).
+ *   [data-harness-fixtures]  Fixtures, beside the component and always in view.
+ *                            Reached in one click, because that is every
+ *                            interaction. A page with nothing to pick (a gallery,
+ *                            a form) leaves the element out and the stage takes
+ *                            its column.
+ *   [data-harness-rail]      Connection, Environment, Today, language, theme,
+ *                            platform width and the event log, in a drawer
+ *                            behind a tab on the right edge (a button on a phone).
  *
  * The rail used to be a 300px aside, which cost the component under test a third
  * of the page on every demo. Its stamped markup is all `position: fixed`, so the
  * placeholder div can go anywhere inside the harness scope.
  *
- * `x-data` goes on a wrapper around BOTH the frame and the rail, not on the rail
- * itself — that way a page-level control (an external submit button, a tab strip
- * driving `activeElement`) binds to the same state the rail does.
+ * `x-data` goes on the shell, around the frame, the fixtures AND the rail — that
+ * way a page-level control (an external submit button, a tab strip driving
+ * `activeElement`) binds to the same state the rail does. The shell is `dir="ltr"`
+ * and only the stage binds `:dir="dir"`: the language control mirrors the
+ * component under test, never the tooling around it (see the note by RAIL).
  *
  * A page that needs a different rail writes its own markup against the same
  * state — every method below is public. A page script with no Alpine scope at
@@ -47,6 +71,7 @@
  */
 
 import { chooseEnvironment, environmentFileUrl, environmentLabel, environmentsFrom } from './harness-environment.js';
+import { mountSiteHeader } from './site-header.js';
 import {
   captureConnectionState,
   clearConnection,
@@ -111,9 +136,6 @@ const readStoredEnvironment = () => {
 };
 
 const afterEnvironmentSettles = () => new Promise(resolve => setTimeout(resolve, ENVIRONMENT_SETTLE_MS));
-
-/** A catalog path (`/templates/…`) as a URL path valid from wherever this page sits. */
-const site = value => new URL(String(value).replace(/^\//, ''), SITE_ROOT).pathname;
 
 /** Mirrors a component's loading flag onto the harness, so page controls can disable. */
 function track(isLoading) {
@@ -305,10 +327,6 @@ window.harness = function harness(options = {}) {
       platform: config.platform,
       log: config.log,
       fixtures: (config.fixtures ?? Boolean(config.mocks)) && Boolean(select),
-      // The bar only earns its space when it has something in it.
-      get bar() {
-        return this.fixtures;
-      },
     },
 
     language: config.languages[0],
@@ -404,7 +422,21 @@ window.harness = function harness(options = {}) {
 
       this.connectionBaseline = captureConnectionState(profileName, this.subject, configuredConnection);
 
-      if (config.language) this.setLanguage(this.subject.language || this.language);
+      // A language somebody CHOSE for the site (a ?lang= link, the header's picker
+      // on another page) when this page offers it, so a demo opened from an Arabic
+      // home page comes up in Arabic. Not the browser's own preference: the demos
+      // are authored in English and open that way until someone picks otherwise.
+      if (config.language) {
+        const site = window.siteLocales?.chosen?.();
+
+        this.setLanguage(this.languages.includes(site) ? site : this.subject.language || this.language, { persist: false });
+
+        window.addEventListener('site-locales:change', event => {
+          const next = event.detail.language;
+
+          if (next !== this.language && this.languages.includes(next)) this.setLanguage(next);
+        });
+      }
       if (config.mocks) await this.initEnvironment();
       if (config.today) await this.initToday();
 
@@ -420,19 +452,26 @@ window.harness = function harness(options = {}) {
 
     /* ---------- controls ---------- */
 
-    setLanguage(language) {
+    setLanguage(language, { persist = true } = {}) {
       this.language = language;
       this.subject.language = language;
 
-      document.documentElement.lang = language;
-      document.documentElement.dir = this.dir;
+      // siteLocales owns <html lang/dir>, the stored choice and `?lang=` — kept in
+      // the URL so a reload lands in the same language, and because the form
+      // components read it themselves when no language prop is set. It also
+      // tells the header, which shows the current language. Without it (a page
+      // that does not load site-locales.js) the same three writes happen here.
+      // The page's own default is not a choice, so init passes persist: false.
+      if (window.siteLocales) window.siteLocales.apply(language, { persist });
+      else {
+        document.documentElement.lang = language;
+        document.documentElement.dir = this.dir;
 
-      // Kept in the URL so a reload lands in the same language — and because the
-      // form components read `?lang=` themselves when no language prop is set.
-      const url = new URL(window.location.href);
+        const url = new URL(window.location.href);
 
-      url.searchParams.set('lang', language);
-      window.history.replaceState({}, '', url);
+        url.searchParams.set('lang', language);
+        window.history.replaceState({}, '', url);
+      }
 
       this.write('language', `${language} · ${this.dir}`);
     },
@@ -691,7 +730,9 @@ window.harness = function harness(options = {}) {
         disconnectProfile(profileName, this.subject, previousState ?? this.connectionBaseline, configuredConnection);
         if (wasConnected && profileName !== 'vin-extractor') this.subject.isDev = false;
         this.connected = wasConnected;
-        this.connectionError = wasConnected ? 'The update could not be applied. The previous live settings remain active.' : 'The connection could not be applied. Generated data remains active.';
+        this.connectionError = wasConnected
+          ? 'The update could not be applied. The previous live settings remain active.'
+          : 'The connection could not be applied. Generated data remains active.';
         this.write('connection', `${wasConnected ? 'update' : 'connect'} failed · no values logged`);
       } finally {
         this.connectionBusy = false;
@@ -865,176 +906,58 @@ function summarise(response) {
 
 /* ---------- the standard rail ---------- */
 
-/**
- * The navigation, read from catalog.json — one dropdown per area, every page in
- * it. A hand-written nav on 26 pages is 26 places to forget a new demo, so the
- * same rule as fixtures applies: generated, never listed (R7).
+/*
+ * Fixtures sit BESIDE the component and stick, because they are touched on every
+ * interaction and must never need a scroll to reach. Connection and the other
+ * set-once controls stay in the drawer.
+ *
+ * One template, two shapes. The container (.showcase-fixtures, harness.src.css)
+ * is a strip under the nav on a phone and a column on the right from lg up, and
+ * the list inside follows it: chips in one row that scrolls sideways, or rows
+ * with the note under the key and the current one marked by a bar on its edge.
  */
-window.harnessNav = function harnessNav() {
-  return {
-    areas: [],
-    open: null,
-    path: window.location.pathname,
+const FIXTURES = /* html */ `
+  <template x-if="show.fixtures">
+    <div class="flex flex-col">
+      <div class="flex items-center gap-x-3 lg:flex-col lg:items-stretch lg:gap-y-2">
+        <div class="flex shrink-0 items-center gap-2">
+          <span class="eyebrow text-neutral">Fixtures</span>
+          <button type="button" class="btn btn-xs btn-outline" :disabled="connected || environmentChanging" @click="reload()">Reload</button>
+        </div>
 
-    // Exposed because the NAV markup below binds `:href="site(page.path)"`, and
-    // Alpine resolves that name on this object rather than in module scope.
-    site,
-
-    async init() {
-      try {
-        const response = await fetch(new URL('catalog.json', import.meta.url));
-
-        if (!response.ok) return;
-
-        const catalog = await response.json();
-
-        this.areas = catalog.areas.map(area => ({ ...area, pages: catalog.pages.filter(page => page.area === area.id) }));
-      } catch {
-        // No catalog: the bar collapses to the wordmark, which still goes home.
-      }
-    },
-
-    /** Which area the page being viewed belongs to, so the bar says where you are. */
-    get area() {
-      return this.areas.find(group => group.pages.some(page => site(page.path) === this.path))?.id ?? null;
-    },
-
-    isCurrent(page) {
-      return site(page.path) === this.path;
-    },
-
-    toggle(id) {
-      this.open = this.open === id ? null : id;
-    },
-  };
-};
-
-/** Chevron, shared by every navigation trigger. */
-const CHEVRON = /* html */ `
-  <svg class="h-3 w-3 opacity-60 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="m6 9 6 6 6-6" />
-  </svg>
-`;
-
-const NAV = /* html */ `
-  <div class="bg-base-100/90 border-base-300 sticky top-0 z-30 border-b border-dashed backdrop-blur">
-    <div class="mx-auto flex max-w-[1400px] items-center gap-2 px-4 py-2 sm:px-8" @click.outside="open = null" @keydown.escape.window="open = null">
-      <a :href="site('/')" class="btn btn-sm btn-ghost px-2" aria-label="Showcase home">
-        <span class="adp-logo text-accent h-4 w-[40px]" aria-hidden="true"></span>
-      </a>
-
-      <span class="bg-base-300 h-5 w-px" aria-hidden="true"></span>
-
-      <!-- Wide: one dropdown per area, so a group is one click away. -->
-      <nav class="hidden flex-wrap items-center gap-0.5 md:flex" aria-label="Demo pages">
-        <template x-for="group in areas" :key="group.id">
-          <div class="relative">
+        <!-- py-1 keeps the focus ring inside the strip's scroll box, which would otherwise clip it. -->
+        <div
+          class="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-1 [scrollbar-width:thin] lg:flex-col lg:items-stretch lg:gap-0.5 lg:overflow-visible lg:py-0"
+          role="group"
+          aria-label="Fixtures"
+        >
+          <template x-for="item in fixtures" :key="item.value">
             <button
               type="button"
-              class="btn btn-sm btn-ghost gap-1.5"
-              :class="group.id === area && 'text-accent'"
-              :aria-expanded="open === group.id"
-              @click="toggle(group.id)"
+              class="relative flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs whitespace-nowrap transition-colors lg:w-full lg:flex-col lg:items-start lg:gap-0 lg:rounded-lg lg:border-transparent lg:py-1.5 lg:text-start lg:whitespace-normal"
+              :class="fixture === item.value ? 'bg-primary/12 border-accent/50 text-base-content font-semibold lg:border-transparent' : 'bg-base-100 border-base-300 text-base-content/80 hover:bg-base-200 lg:bg-transparent'"
+              :disabled="connected || environmentChanging"
+              :aria-pressed="fixture === item.value"
+              :title="item.note || item.label"
+              @click="run(item.value)"
             >
-              <span x-text="group.label"></span>
-              <span class="badge badge-xs badge-ghost tabular-nums" x-text="group.count"></span>
-              <span :class="open === group.id && 'rotate-180'" class="transition-transform">${CHEVRON}</span>
+              <span class="bg-primary absolute inset-y-1.5 start-0 hidden w-[3px] rounded-full lg:block" x-show="fixture === item.value" aria-hidden="true"></span>
+              <span class="font-mono" x-text="item.label"></span>
+              <span class="font-sans text-[11px] opacity-70 lg:text-xs" x-show="item.note" x-text="item.note"></span>
             </button>
-
-            <ul
-              class="menu bg-base-100 border-base-300 rounded-box absolute start-0 top-full z-50 mt-1 w-72 flex-nowrap border p-1 shadow-xl"
-              x-show="open === group.id"
-              x-transition:enter="transition ease-out duration-150"
-              x-transition:enter-start="opacity-0 -translate-y-1"
-              x-transition:leave="transition ease-in duration-100"
-              x-transition:leave-end="opacity-0"
-            >
-              <template x-for="page in group.pages" :key="page.path">
-                <li>
-                  <a :href="site(page.path)" :class="isCurrent(page) && 'menu-active'" :aria-current="isCurrent(page) ? 'page' : null">
-                    <span class="truncate" x-text="page.title"></span>
-                    <span class="badge badge-xs badge-ghost ms-auto shrink-0" x-show="page.kind !== 'demo'" x-text="page.kind"></span>
-                  </a>
-                </li>
-              </template>
-            </ul>
-          </div>
-        </template>
-      </nav>
-
-      <!-- Narrow: the same tree, nested one level down, because six dropdowns do not fit. -->
-      <div class="relative md:hidden">
-        <button type="button" class="btn btn-sm btn-ghost gap-1.5" :aria-expanded="open === 'all'" @click="toggle('all')">
-          <span x-text="areas.find(group => group.id === area)?.label ?? 'Pages'"></span>
-          <span :class="open === 'all' && 'rotate-180'" class="transition-transform">${CHEVRON}</span>
-        </button>
-
-        <ul
-          class="menu bg-base-100 border-base-300 rounded-box absolute start-0 top-full z-50 mt-1 max-h-[70vh] w-[min(20rem,calc(100vw-2rem))] flex-nowrap overflow-y-auto border p-1 shadow-xl"
-          x-show="open === 'all'"
-          x-transition:enter="transition ease-out duration-150"
-          x-transition:enter-start="opacity-0 -translate-y-1"
-          x-transition:leave="transition ease-in duration-100"
-          x-transition:leave-end="opacity-0"
-        >
-          <template x-for="group in areas" :key="group.id">
-            <li>
-              <details :open="group.id === area">
-                <summary>
-                  <span x-text="group.label"></span>
-                  <span class="badge badge-xs badge-ghost tabular-nums" x-text="group.count"></span>
-                </summary>
-                <ul>
-                  <template x-for="page in group.pages" :key="page.path">
-                    <li>
-                      <a :href="site(page.path)" :class="isCurrent(page) && 'menu-active'" :aria-current="isCurrent(page) ? 'page' : null" x-text="page.title"></a>
-                    </li>
-                  </template>
-                </ul>
-              </details>
-            </li>
           </template>
-        </ul>
-      </div>
-    </div>
-  </div>
-`;
 
-/*
- * Fixtures sit ABOVE the component because they are touched on every interaction.
- * Connection and the other set-once controls stay in the drawer.
- */
-const BAR = /* html */ `
-  <template x-if="show.bar">
-    <div class="card border-base-300 bg-base-100 flex flex-col gap-2 border border-dashed p-3">
-      <div class="flex flex-wrap items-start gap-x-5 gap-y-3">
-        <template x-if="show.fixtures">
-          <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-            <span class="eyebrow text-neutral">Fixtures</span>
-            <button type="button" class="btn btn-xs btn-outline" :disabled="connected || environmentChanging" @click="reload()">Reload</button>
-
-            <div class="flex flex-wrap gap-1.5" role="group" aria-label="Fixtures">
-              <template x-for="item in fixtures" :key="item.value">
-                <button type="button" class="btn btn-xs font-mono font-normal" :class="fixture === item.value ? 'btn-primary' : 'btn-outline'" :disabled="connected || environmentChanging"
-                        :aria-pressed="fixture === item.value" @click="run(item.value)" :title="item.note || item.label">
-                  <span x-text="item.label"></span>
-                  <span class="font-sans opacity-70" x-show="item.note" x-text="item.note"></span>
-                </button>
-              </template>
-            </div>
-
-            <div
-              class="grid overflow-hidden transition-[grid-template-rows,opacity] duration-[320ms]"
-              :class="connected ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
-            >
-              <p class="text-base-content/60 min-h-0 text-xs">Generated fixtures are available again after Disconnect.</p>
-            </div>
-          </div>
-        </template>
+          <!-- Never a silent cut: a page that filters says how much it filtered. -->
+          <p class="text-base-content/50 shrink-0 text-xs whitespace-nowrap lg:mt-1.5 lg:whitespace-normal" x-show="hidden" x-text="hidden + ' fixture(s) hidden — no data for this component'"></p>
+        </div>
       </div>
 
-      <!-- Never a silent cut: a page that filters says how much it filtered. -->
-      <p class="text-base-content/50 text-xs" x-show="hidden" x-text="hidden + ' fixture(s) hidden — no data for this component'"></p>
+      <div
+        class="grid overflow-hidden transition-[grid-template-rows,opacity] duration-[320ms]"
+        :class="connected ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
+      >
+        <p class="text-base-content/60 min-h-0 pt-2 text-xs">Generated fixtures are available again after Disconnect.</p>
+      </div>
     </div>
   </template>
 `;
@@ -1298,17 +1221,36 @@ const RAIL = /* html */ `
   </aside>
 `;
 
-document.querySelectorAll('[data-harness-nav]').forEach(nav => {
-  // Set before Alpine walks the tree — this module runs first, which is the same
-  // ordering the bar and the rail already rely on.
-  nav.setAttribute('x-data', 'harnessNav()');
-  nav.innerHTML = NAV;
-});
+// Before Alpine walks the tree — this module runs first, which is the same
+// ordering the fixtures and the rail rely on. The header brings its own scope.
+if (document.querySelector('[data-site-header]')) mountSiteHeader();
 
-document.querySelectorAll('[data-harness-bar]').forEach(bar => {
-  bar.innerHTML = BAR;
+document.querySelectorAll('[data-harness-fixtures]').forEach(fixtures => {
+  fixtures.innerHTML = FIXTURES;
+  followStrip(fixtures);
 });
 
 document.querySelectorAll('[data-harness-rail]').forEach(rail => {
   rail.innerHTML = RAIL;
 });
+
+/*
+ * While the fixtures are a strip under the nav they cover the top of the page,
+ * and a component that scrolls a row into view (reveal-below) has to know by
+ * how much. The strip's height is not a constant — it grows a line when Live is
+ * connected — so it is measured and written to the stylesheet's --strip-h, which
+ * html's scroll-padding-top adds to the nav. Once the strip becomes the column
+ * (lg, the breakpoint harness.src.css uses) it covers nothing, and the value
+ * goes back to zero.
+ */
+function followStrip(element) {
+  if (typeof ResizeObserver === 'undefined') return;
+
+  const column = window.matchMedia('(min-width: 64rem)');
+  const root = document.documentElement;
+
+  const write = () => root.style.setProperty('--strip-h', column.matches ? '0px' : `${element.getBoundingClientRect().height}px`);
+
+  new ResizeObserver(write).observe(element);
+  column.addEventListener('change', write);
+}

@@ -1,8 +1,7 @@
-import { Build } from '@stencil/core';
 import { InferType, ObjectSchema } from 'yup';
 
-import { version } from '../../../package.json';
 import localeNetworkMapper from '../../locale-mapper';
+import { fetchPackageFile } from '~lib/package-files';
 
 import globalSchema from '~locales/type';
 import errorsSchema from '~locales/errors/type';
@@ -102,12 +101,11 @@ async function requestLocaleFile(localeFile: string) {
   if (cachedLocales[localeFile]) return await cachedLocales[localeFile];
 
   try {
-    const fetchPromise = (Build.isDev ? fetch('http://localhost:3000/' + localeFile) : fetch(`https://cdn.jsdelivr.net/npm/adp-web-components@${version}/dist/${localeFile}`)).then(
-      res => {
-        if (!res.ok) delete cachedLocales[localeFile];
-        return res.json();
-      },
-    );
+    // The dev server's copy, or this version's on the CDN — see ~lib/package-files.
+    const fetchPromise = fetchPackageFile(localeFile).then(res => {
+      if (!res.ok) delete cachedLocales[localeFile];
+      return res.json();
+    });
 
     cachedLocales[localeFile] = fetchPromise;
 

@@ -108,6 +108,10 @@ export function siteHeader(extra = {}) {
     filter: '',
 
     async init() {
+      // The language can be changed from outside the header — a harness page's
+      // rail goes through siteLocales.apply too — and the label has to follow.
+      window.addEventListener('site-locales:change', event => (this.language = event.detail.language));
+
       const [catalog, build] = await Promise.all([read(new URL('catalog.json', import.meta.url)), read(new URL('build-info.json', SITE_ROOT))]);
 
       if (catalog) this.catalog = catalog;
@@ -140,15 +144,39 @@ export function siteHeader(extra = {}) {
       return this.catalog.pages.length;
     },
 
-    get groups() {
+    matches(page) {
       const needle = this.filter.trim().toLowerCase();
 
+      return !needle || (page.title + ' ' + page.path).toLowerCase().includes(needle);
+    },
+
+    /* Public pages only. A released catalog holds nothing else; the dev
+       server's holds everything, and the rest goes under Dev only. */
+    get groups() {
       return COMPONENT_GROUPS.map(id => ({
         id,
         label: this.t('groups.' + id),
         blurb: this.t('blurb.' + id),
-        pages: this.catalog.pages.filter(page => page.area === id && (!needle || (page.title + ' ' + page.path).toLowerCase().includes(needle))),
+        pages: this.catalog.pages.filter(page => page.area === id && page.publish !== false && this.matches(page)),
       }));
+    },
+
+    /*
+     * Development only. No build stamp means the page is being served from the
+     * dev server or a plain copy of src, never from a released site — and only
+     * there does the catalog list pages that are not published: the frozen
+     * prototypes, the host-integration template, a demo not yet opted in. They
+     * get a menu of their own so the public one shows what the public gets.
+     * Grouped by the catalog's own areas, in its order.
+     */
+    get dev() {
+      return !this.build;
+    },
+
+    get devGroups() {
+      return this.catalog.areas
+        .map(area => ({ id: area.id, label: area.label, pages: this.catalog.pages.filter(page => page.area === area.id && page.publish === false && this.matches(page)) }))
+        .filter(group => group.pages.length);
     },
 
     /* ---------- controls ---------- */
@@ -233,7 +261,8 @@ window.siteHeader = siteHeader;
  */
 const MARKUP = /* html */ `
       <header class="bg-base-100/90 border-base-300 sticky top-0 z-30 border-b backdrop-blur">
-        <div class="mx-auto flex max-w-[1240px] items-center gap-3 px-5 py-2.5 sm:px-8">
+        <!-- The same width and gutters as every page's content column (--page-max, harness.src.css), so the bar's edges meet the content's wherever it is mounted. -->
+        <div class="mx-auto flex max-w-(--page-max) items-center gap-3 px-(--gutter) py-2.5">
           <!--
             The wordmark sits on a gold TILE rather than being painted gold.
             #F9CB4B measures 1.54:1 against white, so gold text is not a brand
@@ -366,6 +395,61 @@ const MARKUP = /* html */ `
                         </ul>
                       </div>
                     </template>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Dev only: dashed, like every piece of chrome that is not the product (R2). -->
+            <div class="relative" x-show="dev && devGroups.length" x-cloak>
+              <button
+                type="button"
+                class="btn btn-sm btn-ghost border-base-300 gap-1.5 border border-dashed"
+                :aria-expanded="open === 'dev'"
+                aria-controls="menu-dev"
+                @click="toggle('dev')"
+              >
+                <span x-text="t('nav.dev')"></span>
+                <svg
+                  class="h-3 w-3 opacity-60 transition-transform"
+                  :class="open === 'dev' && 'rotate-180'"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+
+              <div
+                id="menu-dev"
+                class="bg-base-100 border-base-300 rounded-box absolute end-0 top-full z-50 mt-1 max-h-[70vh] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto border border-dashed p-1 shadow-xl"
+                x-show="open === 'dev'"
+                x-cloak
+                x-transition:enter="transition ease-out duration-150"
+                x-transition:enter-start="opacity-0 -translate-y-1"
+                x-transition:leave="transition ease-in duration-100"
+                x-transition:leave-end="opacity-0"
+              >
+                <template x-for="group in devGroups" :key="group.id">
+                  <div>
+                    <p class="eyebrow text-base-content/65 px-3 pt-2 pb-1" x-text="group.label"></p>
+                    <ul class="menu menu-sm w-full p-0">
+                      <template x-for="page in group.pages" :key="page.path">
+                        <li>
+                          <a
+                            :href="site(page.path)"
+                            class="truncate"
+                            :class="isCurrentPage(page.path) && 'bg-primary/15 font-semibold'"
+                            :aria-current="isCurrentPage(page.path) ? 'page' : null"
+                            x-text="page.title"
+                          ></a>
+                        </li>
+                      </template>
+                    </ul>
                   </div>
                 </template>
               </div>
@@ -578,6 +662,30 @@ const MARKUP = /* html */ `
               </div>
             </template>
 
+            <template x-if="dev && devGroups.length">
+              <div class="border-base-300 mt-4 border-t border-dashed pt-4">
+                <p class="eyebrow text-base-content/65 mb-2" x-text="t('nav.dev')"></p>
+                <template x-for="group in devGroups" :key="group.id">
+                  <div class="mb-2">
+                    <p class="text-base-content/70 py-1 text-sm" x-text="group.label"></p>
+                    <ul class="menu menu-sm w-full p-0 ps-4">
+                      <template x-for="page in group.pages" :key="page.path">
+                        <li>
+                          <a
+                            :href="site(page.path)"
+                            class="truncate"
+                            :class="isCurrentPage(page.path) && 'bg-primary/15 font-semibold'"
+                            :aria-current="isCurrentPage(page.path) ? 'page' : null"
+                            x-text="page.title"
+                          ></a>
+                        </li>
+                      </template>
+                    </ul>
+                  </div>
+                </template>
+              </div>
+            </template>
+
             <div class="border-base-300 mt-4 border-t pt-4">
               <a
                 class="btn btn-sm btn-ghost w-full justify-start"
@@ -646,7 +754,10 @@ export function mountSiteHeader({ target = '[data-site-header]', alpineScope = t
   // comments and the whitespace text nodes exactly as written.
   const parsed = document.createElement('template');
 
-  parsed.innerHTML = alpineScope ? `<div x-data="siteHeader()" @keydown.escape.window="open = null; mobile = false">\n${MARKUP}\n</div>` : MARKUP;
+  // `contents`: the scope wrapper must not generate a box of its own. A sticky
+  // element only moves within its parent, and a wrapper exactly the bar's height
+  // would leave it nowhere to go — the bar would scroll away like anything else.
+  parsed.innerHTML = alpineScope ? `<div class="contents" x-data="siteHeader()" @keydown.escape.window="open = null; mobile = false">\n${MARKUP}\n</div>` : MARKUP;
 
   const nodes = [...parsed.content.childNodes];
 
@@ -655,5 +766,13 @@ export function mountSiteHeader({ target = '[data-site-header]', alpineScope = t
 
   mounted = true;
 
-  return document.querySelector('header');
+  const header = document.querySelector('header');
+
+  // Whatever sticks under this bar (harness.src.css reads --nav-h) needs its
+  // height, which is set by its content rather than declared — so measure it.
+  if (header && typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(() => document.documentElement.style.setProperty('--nav-h', `${header.getBoundingClientRect().height}px`)).observe(header);
+  }
+
+  return header;
 }

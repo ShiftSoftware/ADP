@@ -7,9 +7,12 @@
   they author — a structure JSON and a theme CSS — and an honest account of what
   those files can and cannot do.
 
-  Navigation is a left sidebar, not tabs. There are seven destinations and four of
-  them are sibling form types; a tab strip flattens that hierarchy and runs out of
-  room. The sidebar shows where you are and what else exists at the same time.
+  Navigation is a tree in the showcase shell's right-hand column (the "map"), not
+  tabs. There are seven destinations and four of them are sibling form types; a
+  tab strip flattens that hierarchy and runs out of room. The tree shows where you
+  are and what else exists at the same time — and on the Forms pages the examples
+  to pick from sit under it, the way the fixtures do on a component demo, so the
+  form itself has the middle of the screen (see harness.js for the shell).
 
   Panels are toggled with x-show, never x-if. The live form is mounted DOM holding
   state that cannot be rebuilt from markup, and x-if would destroy it on every
@@ -68,6 +71,20 @@
       // Replaces the [data-site-header] placeholder outright. Its own Alpine scope,
       // so it shares no state with this page.
       mountSiteHeader();
+
+      /*
+       * On a phone the map is a strip stuck under the header, and it covers the top
+       * of the page; scroll-padding-top (harness.src.css) adds its height so a jump
+       * to #main lands below it. harness.js does the same for the component demos.
+       */
+      const column = window.matchMedia('(min-width: 64rem)');
+      const strip = document.querySelector('.showcase-fixtures');
+      const followStrip = () => document.documentElement.style.setProperty('--strip-h', column.matches ? '0px' : `${strip.getBoundingClientRect().height}px`);
+
+      if (strip && typeof ResizeObserver !== 'undefined') {
+        new ResizeObserver(followStrip).observe(strip);
+        column.addEventListener('change', followStrip);
+      }
 
       /*
        * Mocked submit, installed the moment this module runs — before the component
@@ -850,14 +867,50 @@
 
       <div data-site-header></div>
 
-      <div class="mx-auto flex max-w-[1600px] gap-8 px-5 sm:px-8">
+      <!--
+        The showcase shell (harness.src.css): the brief on one side, the content in
+        the middle, the map on the other. The shell is LTR because this page's own
+        copy is English only — the header's language picker sets dir on <html> for
+        its own chrome, and without the pin English prose would right-align and bidi
+        would move each sentence's full stop to the left. The live form reads its
+        language from its own attribute and lays itself out.
+      -->
+      <section class="showcase" dir="ltr">
+        <div class="showcase-brief">
+          <header class="showcase-title flex flex-wrap items-baseline gap-x-3 gap-y-1 wide:flex-col wide:items-start">
+            <h1 class="text-2xl font-bold tracking-tight">Ticket forms</h1>
+            <p class="eyebrow text-neutral">adp-web-components · ticket forms</p>
+          </header>
+
+          <aside class="showcase-about border-base-300 border-t border-dashed pt-5 wide:mt-5 wide:border-t-0 wide:pt-0">
+            <p class="eyebrow text-neutral">About this page</p>
+            <p class="lede text-base-content/70 mt-2 text-sm">
+              Embed a ticket form on any page: one module tag, a structure JSON and a theme CSS. Live examples of every form type, the parameter reference and the theming surface —
+              pick a section from the map, and on a Forms page an example to look at.
+            </p>
+          </aside>
+        </div>
+
         <!--
-          One raised card, so the navigation reads as a distinct surface rather than
-          text floating on the page background. Each parent owns its children through
-          a real disclosure: aria-expanded on the button, aria-controls to the list.
+          The map. Each parent owns its children through a real disclosure:
+          aria-expanded on the button, aria-controls to the list. On a phone the same
+          destinations are one select, and the examples run beneath it as chips.
         -->
-        <nav class="sticky top-[57px] hidden h-fit w-64 shrink-0 py-8 lg:block" aria-label="Sections">
-          <div class="bg-base-100 border-base-300 rounded-box border p-2 shadow-sm">
+        <div class="showcase-fixtures" x-cloak>
+          <div class="flex items-center gap-2 lg:hidden">
+            <label class="sr-only" for="mobile-nav">Section</label>
+            <select id="mobile-nav" class="select select-sm select-bordered min-w-0 flex-1" @change="go(flatNav.find(n => n.id === $event.target.value))">
+              <template x-for="entry in flatNav" :key="entry.id">
+                <option :value="entry.id" :selected="isCurrent(entry)" x-text="entry.label"></option>
+              </template>
+            </select>
+            <button type="button" class="btn btn-sm btn-ghost border-base-300 shrink-0 border" x-show="section === 'forms'" @click="settings = true" :aria-expanded="settings">
+              Settings
+            </button>
+          </div>
+
+          <nav class="hidden lg:block" aria-label="Sections">
+            <p class="eyebrow text-neutral mb-2">Sections</p>
             <ul class="flex flex-col gap-0.5">
               <template x-for="entry in nav" :key="entry.id">
                 <li>
@@ -924,25 +977,43 @@
                 </li>
               </template>
             </ul>
-          </div>
-        </nav>
+          </nav>
 
-        <!-- Mobile: the same destinations, as one select. -->
-        <div class="bg-base-100 border-base-300 fixed inset-x-0 bottom-0 z-20 border-t p-3 lg:hidden">
-          <label class="sr-only" for="mobile-nav">Section</label>
-          <select id="mobile-nav" class="select select-bordered w-full" @change="go(flatNav.find(n => n.id === $event.target.value))">
-            <template x-for="entry in flatNav" :key="entry.id">
-              <option :value="entry.id" :selected="isCurrent(entry)" x-text="entry.label"></option>
-            </template>
-          </select>
+          <!--
+            The examples: this page's fixtures. Chips in the strip, rows in the
+            column, the current one marked the way the map marks the current section.
+            Settings opens the drawer with everything that changes the form's
+            behaviour — language, theme, which fields are required, the mocked submit.
+          -->
+          <div x-show="section === 'forms'" class="lg:border-base-300 mt-2 lg:mt-4 lg:border-t lg:border-dashed lg:pt-3">
+            <div class="hidden items-center gap-2 lg:flex">
+              <span class="eyebrow text-neutral">Examples</span>
+              <button type="button" class="btn btn-xs btn-outline ms-auto" @click="settings = true" :aria-expanded="settings">Settings</button>
+            </div>
+
+            <div
+              class="flex items-center gap-1.5 overflow-x-auto py-1 [scrollbar-width:thin] lg:mt-2 lg:flex-col lg:items-stretch lg:gap-0.5 lg:overflow-visible lg:py-0"
+              role="group"
+              aria-label="Examples"
+            >
+              <template x-for="p in groupPresets" :key="p.id">
+                <button
+                  type="button"
+                  class="relative flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs whitespace-nowrap transition-colors lg:w-full lg:rounded-lg lg:border-transparent lg:py-1.5 lg:text-start lg:whitespace-normal"
+                  :class="presetId === p.id ? 'bg-primary/12 border-accent/50 text-base-content font-semibold lg:border-transparent' : 'bg-base-100 border-base-300 text-base-content/80 hover:bg-base-200 lg:bg-transparent'"
+                  :aria-pressed="presetId === p.id"
+                  @click="pick(p.id)"
+                >
+                  <span class="bg-primary absolute inset-y-1.5 start-0 hidden w-[3px] rounded-full lg:block" x-show="presetId === p.id" aria-hidden="true"></span>
+                  <span x-text="p.label"></span>
+                  <span class="badge badge-xs badge-outline" x-show="p.live">live</span>
+                </button>
+              </template>
+            </div>
+          </div>
         </div>
 
-        <!--
-          dir is pinned because this page's own copy is English only. The header's
-          language picker sets dir on <html> for its own chrome; without this, English
-          prose right-aligns and bidi moves each sentence's full stop to the left.
-        -->
-        <main id="main" dir="ltr" class="min-w-0 flex-1 py-8 pb-24 lg:pb-8">
+        <main id="main" class="showcase-stage">
           <div class="bg-base-100 border-base-300 rounded-box border p-6 shadow-sm sm:p-8">
             <!--
             Three steps on a numbered rail. The previous version was three code
@@ -1055,23 +1126,10 @@
                 <h1 class="text-3xl font-bold tracking-tight" x-text="groups.find(g => g.id === group)?.label"></h1>
               </header>
 
-              <div class="flex flex-wrap items-center gap-2">
-                <template x-for="p in groupPresets" :key="p.id">
-                  <button type="button" class="btn btn-sm" :class="presetId === p.id ? 'btn-primary' : 'btn-ghost border-base-300 border'" @click="pick(p.id)">
-                    <span x-text="p.label"></span>
-                    <span class="badge badge-xs badge-outline ms-1.5" x-show="p.live">live</span>
-                  </button>
-                </template>
-
-                <!-- Below xl the rail cannot fit, so the same panel opens as a drawer. -->
-                <button type="button" class="btn btn-sm btn-ghost border-base-300 ms-auto border" @click="settings = true" :aria-expanded="settings">Settings</button>
-              </div>
-
               <!--
-                Below the chips, not above them. The blurbs run one to three lines, so any
-                reserved height was either wrong for most presets or far too tall; sitting
-                under the controls, a change in height cannot move the button that was just
-                clicked. The key makes the node new, which is what the fade animates.
+                The examples themselves are picked from the map, so nothing here moves
+                when the blurb's height changes. The key makes the node new, which is
+                what the fade animates.
               -->
               <div>
                 <template x-for="line in [preset?.blurb || '']" :key="line">
@@ -1080,7 +1138,7 @@
               </div>
 
               <p class="text-base-content/60 text-sm" x-show="!groupPresets.length">
-                No examples for this form type yet. Pick another form type in the sidebar, or see Structure JSON to write one.
+                No examples for this form type yet. Pick another form type from the map, or see Structure JSON to write one.
               </p>
 
               <div x-show="groupPresets.length" class="flex flex-col gap-4">
@@ -1374,104 +1432,100 @@
             </section>
           </div>
         </main>
+      </section>
 
-        <!--
-          A drawer at every width, sliding in from the inline end. It was a sticky
-          third column above xl for a while; one behaviour everywhere turned out to be
-          less surprising, and it gives the form the full content width.
-        -->
-        <aside class="settings-panel" :class="settings ? 'is-open' : ''" :inert="!settings" role="complementary" aria-label="Form settings" x-show="section === 'forms'">
-          <div class="bg-base-100 border-base-300 rounded-box flex h-full flex-col border shadow-sm">
-            <header class="border-base-300 flex items-center gap-2 border-b px-4 py-2.5">
-              <h2 class="text-sm font-semibold">Settings</h2>
-              <button type="button" class="btn btn-xs btn-ghost ms-auto" @click="settings = false" aria-label="Close settings">&#10005;</button>
-            </header>
+      <!--
+        A drawer at every width, sliding in from the inline end. It was a sticky
+        third column above xl for a while; one behaviour everywhere turned out to be
+        less surprising, and it gives the form the full content width. Outside the
+        shell: it is fixed, and it follows the header's direction rather than the
+        shell's pin.
+      -->
+      <aside class="settings-panel" :class="settings ? 'is-open' : ''" :inert="!settings" role="complementary" aria-label="Form settings" x-show="section === 'forms'">
+        <div class="bg-base-100 border-base-300 rounded-box flex h-full flex-col border shadow-sm">
+          <header class="border-base-300 flex items-center gap-2 border-b px-4 py-2.5">
+            <h2 class="text-sm font-semibold">Settings</h2>
+            <button type="button" class="btn btn-xs btn-ghost ms-auto" @click="settings = false" aria-label="Close settings">&#10005;</button>
+          </header>
 
-            <div class="flex-1 overflow-y-auto p-4">
-              <section>
-                <h3 class="text-base-content/55 text-[11px] font-semibold tracking-[0.06em] uppercase">Language</h3>
-                <div class="mt-2 flex flex-wrap gap-1.5">
-                  <template x-for="l in languages" :key="l">
-                    <button
-                      type="button"
-                      class="btn btn-xs"
-                      :class="language === l ? 'btn-primary' : 'btn-ghost border-base-300 border'"
-                      @click="setLanguage(l)"
-                      x-text="l"
-                    ></button>
-                  </template>
-                </div>
-                <p class="text-base-content/55 mt-1.5 text-[11px]">Changes language without rebuilding the form, so anything typed is kept.</p>
-              </section>
+          <div class="flex-1 overflow-y-auto p-4">
+            <section>
+              <h3 class="text-base-content/55 text-[11px] font-semibold tracking-[0.06em] uppercase">Language</h3>
+              <div class="mt-2 flex flex-wrap gap-1.5">
+                <template x-for="l in languages" :key="l">
+                  <button type="button" class="btn btn-xs" :class="language === l ? 'btn-primary' : 'btn-ghost border-base-300 border'" @click="setLanguage(l)" x-text="l"></button>
+                </template>
+              </div>
+              <p class="text-base-content/55 mt-1.5 text-[11px]">Changes language without rebuilding the form, so anything typed is kept.</p>
+            </section>
 
-              <section class="border-base-300 mt-5 border-t pt-4">
-                <h3 class="text-base-content/55 text-[11px] font-semibold tracking-[0.06em] uppercase">Theme</h3>
-                <p class="text-base-content/55 mt-1.5 text-[11px]" x-show="preset?.live">This example ships its own stylesheet, so the demo themes do not apply to it.</p>
-                <label class="sr-only" for="theme-pick">Theme</label>
-                <select id="theme-pick" class="select select-bordered select-sm mt-2 w-full" x-model="themeId" :disabled="preset?.live" @change="applyTheme()">
-                  <template x-for="t in themes" :key="t.id">
-                    <option :value="t.id" x-text="t.label"></option>
-                  </template>
-                </select>
-              </section>
+            <section class="border-base-300 mt-5 border-t pt-4">
+              <h3 class="text-base-content/55 text-[11px] font-semibold tracking-[0.06em] uppercase">Theme</h3>
+              <p class="text-base-content/55 mt-1.5 text-[11px]" x-show="preset?.live">This example ships its own stylesheet, so the demo themes do not apply to it.</p>
+              <label class="sr-only" for="theme-pick">Theme</label>
+              <select id="theme-pick" class="select select-bordered select-sm mt-2 w-full" x-model="themeId" :disabled="preset?.live" @change="applyTheme()">
+                <template x-for="t in themes" :key="t.id">
+                  <option :value="t.id" x-text="t.label"></option>
+                </template>
+              </select>
+            </section>
 
-              <section class="border-base-300 mt-5 border-t pt-4">
-                <div class="flex flex-wrap items-center gap-2">
-                  <h3 class="text-base-content/55 text-[11px] font-semibold tracking-[0.06em] uppercase">Fields</h3>
-                  <button type="button" class="btn btn-xs ms-auto" @click="setAll('required')">All required</button>
-                  <button type="button" class="btn btn-xs" @click="setAll('optional')">All optional</button>
-                </div>
-                <p class="text-base-content/55 mt-1.5 text-[11px]">Changing a field rebuilds the form: the structure is read once, at load.</p>
+            <section class="border-base-300 mt-5 border-t pt-4">
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="text-base-content/55 text-[11px] font-semibold tracking-[0.06em] uppercase">Fields</h3>
+                <button type="button" class="btn btn-xs ms-auto" @click="setAll('required')">All required</button>
+                <button type="button" class="btn btn-xs" @click="setAll('optional')">All optional</button>
+              </div>
+              <p class="text-base-content/55 mt-1.5 text-[11px]">Changing a field rebuilds the form: the structure is read once, at load.</p>
 
-                <ul class="mt-3 flex flex-col gap-2.5">
-                  <template x-for="fld in fields" :key="fld.name">
-                    <li>
-                      <code class="text-xs font-medium" x-text="fld.name"></code>
-                      <div class="seg mt-1 flex gap-1" x-show="!fld.locked">
-                        <template x-for="state in ['required', 'optional', 'omitted']" :key="state">
-                          <label class="flex-1 cursor-pointer">
-                            <input type="radio" class="sr-only" :name="'s-' + fld.name" :value="state" x-model="fld.state" @change="mount()" />
-                            <span class="border-base-300 bg-base-200 block rounded border py-1 text-center text-[11px] capitalize" x-text="state"></span>
-                          </label>
-                        </template>
-                      </div>
-                      <p class="text-base-content/60 mt-0.5 text-[11px]" x-show="fld.locked" x-text="fld.lockedReason"></p>
-                    </li>
-                  </template>
-                </ul>
-                <p class="text-base-content/60 text-xs" x-show="!fields.length">This example has no fields you can toggle. Open Files to see its structure.</p>
-              </section>
+              <ul class="mt-3 flex flex-col gap-2.5">
+                <template x-for="fld in fields" :key="fld.name">
+                  <li>
+                    <code class="text-xs font-medium" x-text="fld.name"></code>
+                    <div class="seg mt-1 flex gap-1" x-show="!fld.locked">
+                      <template x-for="state in ['required', 'optional', 'omitted']" :key="state">
+                        <label class="flex-1 cursor-pointer">
+                          <input type="radio" class="sr-only" :name="'s-' + fld.name" :value="state" x-model="fld.state" @change="mount()" />
+                          <span class="border-base-300 bg-base-200 block rounded border py-1 text-center text-[11px] capitalize" x-text="state"></span>
+                        </label>
+                      </template>
+                    </div>
+                    <p class="text-base-content/60 mt-0.5 text-[11px]" x-show="fld.locked" x-text="fld.lockedReason"></p>
+                  </li>
+                </template>
+              </ul>
+              <p class="text-base-content/60 text-xs" x-show="!fields.length">This example has no fields you can toggle. Open Files to see its structure.</p>
+            </section>
 
-              <section class="border-base-300 mt-5 border-t pt-4">
-                <h3 class="text-base-content/55 text-[11px] font-semibold tracking-[0.06em] uppercase">Submitting</h3>
-                <p class="text-base-content/55 mt-1.5 text-[11px]">
-                  Nothing leaves the page. The request is intercepted and answered after a short delay, so the loading, success and error states are the component's real ones.
-                </p>
-                <div class="seg mt-2 flex gap-1">
-                  <template x-for="mode in [{ id: 'success', label: 'Succeeds' }, { id: 'failure', label: 'Fails' }, { id: 'off', label: 'Off' }]" :key="mode.id">
-                    <label class="flex-1 cursor-pointer">
-                      <input type="radio" class="sr-only" name="mock-mode" :value="mode.id" x-model="mockMode" @change="setMockMode($event.target.value)" />
-                      <span class="border-base-300 bg-base-200 block rounded border py-1 text-center text-[11px]" x-text="mode.label"></span>
-                    </label>
-                  </template>
-                </div>
-              </section>
+            <section class="border-base-300 mt-5 border-t pt-4">
+              <h3 class="text-base-content/55 text-[11px] font-semibold tracking-[0.06em] uppercase">Submitting</h3>
+              <p class="text-base-content/55 mt-1.5 text-[11px]">
+                Nothing leaves the page. The request is intercepted and answered after a short delay, so the loading, success and error states are the component's real ones.
+              </p>
+              <div class="seg mt-2 flex gap-1">
+                <template x-for="mode in [{ id: 'success', label: 'Succeeds' }, { id: 'failure', label: 'Fails' }, { id: 'off', label: 'Off' }]" :key="mode.id">
+                  <label class="flex-1 cursor-pointer">
+                    <input type="radio" class="sr-only" name="mock-mode" :value="mode.id" x-model="mockMode" @change="setMockMode($event.target.value)" />
+                    <span class="border-base-300 bg-base-200 block rounded border py-1 text-center text-[11px]" x-text="mode.label"></span>
+                  </label>
+                </template>
+              </div>
+            </section>
 
-              <section class="border-base-300 mt-5 border-t pt-4">
-                <h3 class="text-base-content/55 text-[11px] font-semibold tracking-[0.06em] uppercase">Files</h3>
-                <p class="text-base-content/55 mt-1.5 text-[11px]">The two files this example is made of, with your current settings applied.</p>
-                <div class="mt-2 flex flex-col gap-2">
-                  <button type="button" class="btn btn-sm justify-start" @click="showArtifact('structure')">View structure JSON</button>
-                  <button type="button" class="btn btn-sm justify-start" @click="showArtifact('css')" :disabled="!themeCss">View theme CSS</button>
-                </div>
-              </section>
-            </div>
+            <section class="border-base-300 mt-5 border-t pt-4">
+              <h3 class="text-base-content/55 text-[11px] font-semibold tracking-[0.06em] uppercase">Files</h3>
+              <p class="text-base-content/55 mt-1.5 text-[11px]">The two files this example is made of, with your current settings applied.</p>
+              <div class="mt-2 flex flex-col gap-2">
+                <button type="button" class="btn btn-sm justify-start" @click="showArtifact('structure')">View structure JSON</button>
+                <button type="button" class="btn btn-sm justify-start" @click="showArtifact('css')" :disabled="!themeCss">View theme CSS</button>
+              </div>
+            </section>
           </div>
-        </aside>
+        </div>
+      </aside>
 
-        <!-- Drawer scrim. -->
-        <div class="fixed inset-0 z-30 bg-black/40" x-show="settings && section === 'forms'" x-cloak @click="settings = false"></div>
-      </div>
+      <!-- Drawer scrim. -->
+      <div class="fixed inset-0 z-30 bg-black/40" x-show="settings && section === 'forms'" x-cloak @click="settings = false"></div>
       <!-- ══════════════════════ artifact modal ══════════════════════ -->
       <dialog x-ref="artifact" class="bg-base-100 text-base-content m-auto max-h-[85vh] w-[min(900px,92vw)] flex-col rounded-xl p-0 shadow-2xl">
         <header class="border-base-300 flex items-center gap-3 border-b px-5 py-3">

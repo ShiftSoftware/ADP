@@ -55,8 +55,9 @@
 
     <link rel="stylesheet" href="/templates/harness.css" />
 
-    <!-- Blocking on purpose: a deferred module would let the page paint light first. -->
+    <!-- Both blocking on purpose: theme and text direction are decided before the first paint, or the page visibly jumps. -->
     <script src="/templates/harness-theme.js"></script>
+    <script src="/templates/site-locales.js"></script>
 
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
@@ -183,8 +184,8 @@
   </head>
 
   <body class="bg-base-200 text-base-content min-h-screen">
-    <!-- Every area and page, read from catalog.json. -->
-    <div data-harness-nav x-cloak></div>
+    <!-- The site header, the same one the home page has; harness.js mounts it at the shell's width. -->
+    <div data-site-header></div>
 
     <div class="mx-auto flex max-w-[1180px] flex-col gap-8 px-4 py-10 sm:px-8">
       <header>
@@ -217,9 +218,6 @@
 
           <span class="text-base-content/60 text-xs">Applied to both fields at once, through <code>disabledWeekdays</code> / <code>disabledDates</code>.</span>
         </div>
-
-        <!-- This form has no fixture buttons; its generated structure is the disconnected default. -->
-        <div data-harness-bar x-cloak></div>
 
         <div class="frame card bg-base-100 border-base-300 border p-5 sm:p-8">
           <!-- No `language` attribute: unset, the form resolves it from `?lang=`, which the rail keeps in sync. -->

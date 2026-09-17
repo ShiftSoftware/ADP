@@ -10,8 +10,9 @@
 
     <link rel="stylesheet" href="/templates/harness.css" />
 
-    <!-- Blocking on purpose: a deferred module would let the page paint light first. -->
+    <!-- Both blocking on purpose: theme and text direction are decided before the first paint, or the page visibly jumps. -->
     <script src="/templates/harness-theme.js"></script>
+    <script src="/templates/site-locales.js"></script>
 
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
@@ -21,109 +22,113 @@
   </head>
 
   <body class="bg-base-200 text-base-content min-h-screen">
-    <!-- Every area and page, read from catalog.json. -->
-    <div data-harness-nav x-cloak></div>
+    <!-- The site header, the same one the home page has; harness.js mounts it at the shell's width. -->
+    <div data-site-header></div>
 
-    <div class="mx-auto flex max-w-[1400px] flex-col gap-6 px-4 pt-6 pb-10 sm:px-8">
-      <header class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h1 class="text-2xl font-bold tracking-tight">Vehicle lookup</h1>
-        <p class="eyebrow text-neutral">adp-web-components · vehicle lookup</p>
-      </header>
+    <!-- One shell for every demo: the component in the middle, the fixtures beside it and always in view. See harness.js. -->
+    <section
+      class="showcase"
+      dir="ltr"
+      x-data="harness({
+        profile: 'composite',
+        mocks: 'vehicle-lookup',
+        labels: {
+          ZU8PC1Z95PP935130: 'realistic',
+          ZV8DK3F90PP174225: 'realistic, at distributor stock',
+          BLOCKEDNOTALLOC01: 'blocked, not allocated',
+        },
+      })"
+    >
+      <!-- The brief: title above the component, the about text below it — and one block floating beside it on a wide screen. -->
+      <div class="showcase-brief">
+        <header class="showcase-title flex flex-wrap items-baseline gap-x-3 gap-y-1 wide:flex-col wide:items-start">
+          <h1 class="text-2xl font-bold tracking-tight">Vehicle lookup</h1>
+          <p class="eyebrow text-neutral">adp-web-components · vehicle lookup</p>
+        </header>
 
-      <section
-        class="flex flex-col gap-4"
-        x-data="harness({
-          profile: 'composite',
-          mocks: 'vehicle-lookup',
-          labels: {
-            ZU8PC1Z95PP935130: 'realistic',
-            ZV8DK3F90PP174225: 'realistic, at distributor stock',
-            BLOCKEDNOTALLOC01: 'blocked, not allocated',
-          },
-        })"
-      >
-        <div class="flex min-w-0 flex-col gap-4">
-          <!--
-            Host-side chrome, not harness chrome: a real embedding page owns the
-            VIN field and the tab strip, so they stay in the page body rather than
-            moving into the rail.
-          -->
-          <div class="card bg-base-100 border-base-300 flex flex-col gap-2 border p-4" x-data="{ vin: 'ZV9ZYGN11PN811492' }">
-            <div class="flex flex-wrap items-center gap-3">
-              <label class="input min-w-60 flex-1">
-                <span class="eyebrow text-neutral">VIN</span>
-                <input x-model="vin" type="search" autocomplete="off" aria-label="VIN" :readonly="loading" @keydown.enter.prevent="run(vin)" />
-              </label>
+        <!-- What the page demonstrates, beside the demo rather than above it: the component is what the page is for. -->
+        <aside class="showcase-about border-base-300 border-t border-dashed pt-5 wide:mt-5 wide:border-t-0 wide:pt-0">
+          <p class="eyebrow text-neutral">About this page</p>
+          <p class="lede text-base-content/70 mt-2 text-sm">
+            The shell that holds all eight vehicle components and shows one at a time. The VIN field and the tab strip above belong to the host — a page embedding this component
+            has to build them, and they are what drive <code>fetchVin()</code> and <code>active-element</code>. This page sets <code>ssc-query-string</code>, so a search from any
+            tab but SSC leaves the SSC tab saying the campaign check was not run, with a button to run it — the way a host that only logs SSC lookups is wired.
+          </p>
+        </aside>
+      </div>
 
-              <button type="button" class="btn btn-primary" :disabled="loading" @click="run(vin)">
-                <span class="loading loading-spinner loading-xs" x-show="loading"></span>
-                Search
-              </button>
-            </div>
+      <!-- Generated fixtures, beside the component and always in view. -->
+      <div data-harness-fixtures class="showcase-fixtures" x-cloak></div>
 
-            <p class="text-error text-sm" x-show="error" x-text="error"></p>
+      <!-- Only the stage follows the language control; the shell around it stays put. -->
+      <div class="showcase-stage flex flex-col gap-4" :dir="dir">
+        <!--
+          Host-side chrome, not harness chrome: a real embedding page owns the
+          VIN field and the tab strip, so they stay in the page body rather than
+          moving into the rail.
+        -->
+        <div class="card bg-base-100 border-base-300 flex flex-col gap-2 border p-4" x-data="{ vin: 'ZV9ZYGN11PN811492' }">
+          <div class="flex flex-wrap items-center gap-3">
+            <label class="input min-w-60 flex-1">
+              <span class="eyebrow text-neutral">VIN</span>
+              <input x-model="vin" type="search" autocomplete="off" aria-label="VIN" :readonly="loading" @keydown.enter.prevent="run(vin)" />
+            </label>
+
+            <button type="button" class="btn btn-primary" :disabled="loading" @click="run(vin)">
+              <span class="loading loading-spinner loading-xs" x-show="loading"></span>
+              Search
+            </button>
           </div>
 
-          <!--
-            The old page disabled every inactive tab while a search was in flight —
-            that is the one piece of the jQuery wiring worth keeping, so it is here
-            as a binding instead.
-          -->
-          <div role="tablist" class="tabs tabs-box self-start" x-data="{ tab: 'vehicle-specification' }">
-            <template
-              x-for="item in [
-                { value: 'vehicle-specification', label: 'Specification' },
-                { value: 'vehicle-sale-information', label: 'Sale information' },
-                { value: 'vehicle-accessories', label: 'Accessories' },
-                { value: 'vehicle-warranty-timeline', label: 'Warranty' },
-                { value: 'vehicle-ssc', label: 'SSC' },
-                { value: 'vehicle-service-history', label: 'Service history' },
-                { value: 'vehicle-paint-thickness', label: 'Paint thickness' },
-                { value: 'vehicle-claimable-items', label: 'Claimable items' },
-              ]"
-              :key="item.value"
-            >
-              <button
-                type="button"
-                role="tab"
-                class="tab"
-                :class="tab === item.value && 'tab-active'"
-                :aria-selected="tab === item.value"
-                :disabled="loading && tab !== item.value"
-                @click="tab = item.value; subject.activeElement = item.value"
-                x-text="item.label"
-              ></button>
-            </template>
-          </div>
-
-          <!-- Generated fixtures, right where they are used. -->
-          <div data-harness-bar x-cloak></div>
-
-          <div class="frame card bg-base-100 border-base-300 border p-5">
-            <vehicle-lookup
-              id="subject"
-              language="en"
-              query-string=""
-              active-element="vehicle-specification"
-              ssc-query-string="logCampaignCheck=true"
-              children-props='{"vehicle-claimable-items":{"showTrace":true},"vehicle-ssc":{"showTrace":true},"vehicle-paint-thickness":{"showCertificateButton":true}}'
-            ></vehicle-lookup>
-          </div>
+          <p class="text-error text-sm" x-show="error" x-text="error"></p>
         </div>
 
-        <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
-        <div data-harness-rail x-cloak></div>
-      </section>
+        <!--
+          The old page disabled every inactive tab while a search was in flight —
+          that is the one piece of the jQuery wiring worth keeping, so it is here
+          as a binding instead.
+        -->
+        <div role="tablist" class="tabs tabs-box self-start" x-data="{ tab: 'vehicle-specification' }">
+          <template
+            x-for="item in [
+              { value: 'vehicle-specification', label: 'Specification' },
+              { value: 'vehicle-sale-information', label: 'Sale information' },
+              { value: 'vehicle-accessories', label: 'Accessories' },
+              { value: 'vehicle-warranty-timeline', label: 'Warranty' },
+              { value: 'vehicle-ssc', label: 'SSC' },
+              { value: 'vehicle-service-history', label: 'Service history' },
+              { value: 'vehicle-paint-thickness', label: 'Paint thickness' },
+              { value: 'vehicle-claimable-items', label: 'Claimable items' },
+            ]"
+            :key="item.value"
+          >
+            <button
+              type="button"
+              role="tab"
+              class="tab"
+              :class="tab === item.value && 'tab-active'"
+              :aria-selected="tab === item.value"
+              :disabled="loading && tab !== item.value"
+              @click="tab = item.value; subject.activeElement = item.value"
+              x-text="item.label"
+            ></button>
+          </template>
+        </div>
 
-      <!-- What the page demonstrates, after the demo rather than before it: the component is what the page is for. -->
-      <footer class="border-base-300 border-t border-dashed pt-6">
-        <p class="eyebrow text-neutral">About this page</p>
-        <p class="lede text-base-content/70 mt-2 text-sm">
-          The shell that holds all eight vehicle components and shows one at a time. The VIN field and the tab strip above belong to the host — a page embedding this component has
-          to build them, and they are what drive <code>fetchVin()</code> and <code>active-element</code>. This page sets <code>ssc-query-string</code>, so a search from any tab but
-          SSC leaves the SSC tab saying the campaign check was not run, with a button to run it — the way a host that only logs SSC lookups is wired.
-        </p>
-      </footer>
-    </div>
+        <div class="frame card bg-base-100 border-base-300 border p-5">
+          <vehicle-lookup
+            id="subject"
+            language="en"
+            query-string=""
+            active-element="vehicle-specification"
+            ssc-query-string="logCampaignCheck=true"
+            children-props='{"vehicle-claimable-items":{"showTrace":true},"vehicle-ssc":{"showTrace":true},"vehicle-paint-thickness":{"showCertificateButton":true}}'
+          ></vehicle-lookup>
+        </div>
+      </div>
+
+      <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
+      <div data-harness-rail x-cloak></div>
+    </section>
   </body>
 </html>

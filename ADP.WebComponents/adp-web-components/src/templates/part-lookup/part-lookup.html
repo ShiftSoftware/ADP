@@ -10,8 +10,9 @@
 
     <link rel="stylesheet" href="/templates/harness.css" />
 
-    <!-- Blocking on purpose: a deferred module would let the page paint light first. -->
+    <!-- Both blocking on purpose: theme and text direction are decided before the first paint, or the page visibly jumps. -->
     <script src="/templates/harness-theme.js"></script>
+    <script src="/templates/site-locales.js"></script>
 
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
@@ -21,81 +22,85 @@
   </head>
 
   <body class="bg-base-200 text-base-content min-h-screen">
-    <!-- Every area and page, read from catalog.json. -->
-    <div data-harness-nav x-cloak></div>
+    <!-- The site header, the same one the home page has; harness.js mounts it at the shell's width. -->
+    <div data-site-header></div>
 
-    <div class="mx-auto flex max-w-[1400px] flex-col gap-6 px-4 pt-6 pb-10 sm:px-8">
-      <header class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h1 class="text-2xl font-bold tracking-tight">Part lookup</h1>
-        <p class="eyebrow text-neutral">adp-web-components · part lookup</p>
-      </header>
+    <!-- One shell for every demo: the component in the middle, the fixtures beside it and always in view. See harness.js. -->
+    <section
+      class="showcase"
+      dir="ltr"
+      x-data="harness({
+        profile: 'part',
+        mocks: 'part-lookup',
+      })"
+    >
+      <!-- The brief: title above the component, the about text below it — and one block floating beside it on a wide screen. -->
+      <div class="showcase-brief">
+        <header class="showcase-title flex flex-wrap items-baseline gap-x-3 gap-y-1 wide:flex-col wide:items-start">
+          <h1 class="text-2xl font-bold tracking-tight">Part lookup</h1>
+          <p class="eyebrow text-neutral">adp-web-components · part lookup</p>
+        </header>
 
-      <section
-        class="flex flex-col gap-4"
-        x-data="harness({
-          profile: 'part',
-          mocks: 'part-lookup',
-        })"
-      >
-        <div class="flex min-w-0 flex-col gap-4">
-          <!--
-            Host-side chrome, not harness chrome: a real embedding page owns the
-            search field and the tab strip, so they stay in the page body rather
-            than moving into the rail.
-          -->
-          <div class="card bg-base-100 border-base-300 flex flex-wrap items-center gap-3 border p-4" x-data="{ code: 'SU00302474' }">
-            <label class="input min-w-60 flex-1">
-              <span class="eyebrow text-neutral">Part no.</span>
-              <input x-model="code" type="search" placeholder="e.g. SU00302474" aria-label="Part number" @keydown.enter.prevent="run(code)" />
-            </label>
+        <!-- What the page demonstrates, beside the demo rather than above it: the component is what the page is for. -->
+        <aside class="showcase-about border-base-300 border-t border-dashed pt-5 wide:mt-5 wide:border-t-0 wide:pt-0">
+          <p class="eyebrow text-neutral">About this page</p>
+          <p class="lede text-base-content/70 mt-2 text-sm">
+            The wrapper that holds all three part lookups and shows one at a time. The search field and tab strip above are the host's — they are what a page embedding this
+            component has to build, and they drive <code>fetchData()</code> and <code>active-element</code>.
+          </p>
+        </aside>
+      </div>
 
-            <button type="button" class="btn btn-primary" :disabled="loading" @click="run(code)">
-              <span class="loading loading-spinner loading-xs" x-show="loading"></span>
-              Search
-            </button>
-          </div>
+      <!-- Generated fixtures, beside the component and always in view. -->
+      <div data-harness-fixtures class="showcase-fixtures" x-cloak></div>
 
-          <div role="tablist" class="tabs tabs-box self-start" x-data="{ tab: 'distributor-lookup' }">
-            <template
-              x-for="item in [
-                { value: 'dead-stock-lookup', label: 'Dead stock' },
-                { value: 'distributor-lookup', label: 'Distributor' },
-                { value: 'manufacturer-lookup', label: 'Manufacturer' },
-              ]"
-              :key="item.value"
-            >
-              <button
-                type="button"
-                role="tab"
-                class="tab"
-                :class="tab === item.value && 'tab-active'"
-                :aria-selected="tab === item.value"
-                @click="tab = item.value; subject.activeElement = item.value"
-                x-text="item.label"
-              ></button>
-            </template>
-          </div>
+      <!-- Only the stage follows the language control; the shell around it stays put. -->
+      <div class="showcase-stage flex flex-col gap-4" :dir="dir">
+        <!--
+          Host-side chrome, not harness chrome: a real embedding page owns the
+          search field and the tab strip, so they stay in the page body rather
+          than moving into the rail.
+        -->
+        <div class="card bg-base-100 border-base-300 flex flex-row flex-wrap items-center gap-3 border p-4" x-data="{ code: 'SU00302474' }">
+          <label class="input min-w-60 flex-1">
+            <span class="eyebrow text-neutral">Part no.</span>
+            <input x-model="code" type="search" placeholder="e.g. SU00302474" aria-label="Part number" @keydown.enter.prevent="run(code)" />
+          </label>
 
-          <!-- Generated fixtures, right where they are used. -->
-          <div data-harness-bar x-cloak></div>
-
-          <div class="frame card bg-base-100 border-base-300 border p-5">
-            <part-lookup id="subject" language="en" active-element="distributor-lookup"></part-lookup>
-          </div>
+          <button type="button" class="btn btn-primary" :disabled="loading" @click="run(code)">
+            <span class="loading loading-spinner loading-xs" x-show="loading"></span>
+            Search
+          </button>
         </div>
 
-        <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
-        <div data-harness-rail x-cloak></div>
-      </section>
+        <div role="tablist" class="tabs tabs-box self-start" x-data="{ tab: 'distributor-lookup' }">
+          <template
+            x-for="item in [
+              { value: 'dead-stock-lookup', label: 'Dead stock' },
+              { value: 'distributor-lookup', label: 'Distributor' },
+              { value: 'manufacturer-lookup', label: 'Manufacturer' },
+            ]"
+            :key="item.value"
+          >
+            <button
+              type="button"
+              role="tab"
+              class="tab"
+              :class="tab === item.value && 'tab-active'"
+              :aria-selected="tab === item.value"
+              @click="tab = item.value; subject.activeElement = item.value"
+              x-text="item.label"
+            ></button>
+          </template>
+        </div>
 
-      <!-- What the page demonstrates, after the demo rather than before it: the component is what the page is for. -->
-      <footer class="border-base-300 border-t border-dashed pt-6">
-        <p class="eyebrow text-neutral">About this page</p>
-        <p class="lede text-base-content/70 mt-2 text-sm">
-          The wrapper that holds all three part lookups and shows one at a time. The search field and tab strip above are the host's — they are what a page embedding this component
-          has to build, and they drive <code>fetchData()</code> and <code>active-element</code>.
-        </p>
-      </footer>
-    </div>
+        <div class="frame card bg-base-100 border-base-300 border p-5">
+          <part-lookup id="subject" language="en" active-element="distributor-lookup"></part-lookup>
+        </div>
+      </div>
+
+      <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
+      <div data-harness-rail x-cloak></div>
+    </section>
   </body>
 </html>

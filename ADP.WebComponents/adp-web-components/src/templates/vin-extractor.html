@@ -10,8 +10,9 @@
 
     <link rel="stylesheet" href="/templates/harness.css" />
 
-    <!-- Blocking on purpose: a deferred module would let the page paint light first. -->
+    <!-- Both blocking on purpose: theme and text direction are decided before the first paint, or the page visibly jumps. -->
     <script src="/templates/harness-theme.js"></script>
+    <script src="/templates/site-locales.js"></script>
 
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
@@ -21,215 +22,220 @@
   </head>
 
   <body class="bg-base-200 text-base-content min-h-screen">
-    <!-- Every area and page, read from catalog.json. -->
-    <div data-harness-nav x-cloak></div>
+    <!-- The site header, the same one the home page has; harness.js mounts it at the shell's width. -->
+    <div data-site-header></div>
 
-    <div class="mx-auto flex max-w-[1400px] flex-col gap-6 px-4 pt-6 pb-10 sm:px-8">
-      <header class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h1 class="text-2xl font-bold tracking-tight">VIN extractor</h1>
-        <p class="eyebrow text-neutral">adp-web-components · standalone</p>
-      </header>
+    <!--
+      The first OCR case is the harness subject; its profile applies the same
+      connected endpoint to every OCR-enabled case. The cases feed their own
+      lifecycle lines to the shared log through `harness:log`.
 
-      <!--
-        The first OCR case is the harness subject; its profile applies the same
-        connected endpoint to every OCR-enabled case. The cases feed their own
-        lifecycle lines to the shared log through `harness:log`.
-      -->
-      <section
-        class="flex flex-col gap-4"
-        x-data="harness({ profile: 'vin-extractor', subject: '#case-1-element', language: false, environment: false, today: false, platform: false, fixtures: false, connection: { targets: 'vin-extractor[use-ocr]' } })"
-      >
-        <div class="flex min-w-0 flex-col gap-5">
-          <div class="card bg-base-100 border-base-300 flex flex-row flex-wrap items-center gap-3 border p-4">
-            <span class="eyebrow text-neutral">Last extracted VIN</span>
-            <code id="vin" class="text-accent font-mono text-lg font-bold">N/A</code>
-          </div>
+      One shell for every demo (see harness.js). This page has nothing to pick,
+      so it carries no fixtures element and the stage takes that column.
+    -->
+    <section
+      class="showcase"
+      dir="ltr"
+      x-data="harness({ profile: 'vin-extractor', subject: '#case-1-element', language: false, environment: false, today: false, platform: false, fixtures: false, connection: { targets: 'vin-extractor[use-ocr]' } })"
+    >
+      <!-- The brief: title above the component, the about text below it — and one block floating beside it on a wide screen. -->
+      <div class="showcase-brief">
+        <header class="showcase-title flex flex-wrap items-baseline gap-x-3 gap-y-1 wide:flex-col wide:items-start">
+          <h1 class="text-2xl font-bold tracking-tight">VIN extractor</h1>
+          <p class="eyebrow text-neutral">adp-web-components · standalone</p>
+        </header>
 
-          <section>
-            <h2 class="eyebrow text-neutral mb-3">Camera</h2>
+        <!-- What the page demonstrates, beside the demo rather than above it: the component is what the page is for. -->
+        <aside class="showcase-about border-base-300 border-t border-dashed pt-5 wide:mt-5 wide:border-t-0 wide:pt-0">
+          <p class="eyebrow text-neutral">About this page</p>
+          <p class="lede text-base-content/70 mt-2 text-sm">
+            Nine configurations of the same scanner side by side, because what it does depends almost entirely on which flags are set. The first five open a camera; the last four
+            take a file instead. A device camera is needed for the first group.
+          </p>
+        </aside>
+      </div>
 
-            <ol class="grid gap-4 sm:grid-cols-2">
-              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
-                <div>
-                  <p class="font-semibold">OCR</p>
-                  <p class="text-base-content/60 font-mono text-sm">use-ocr · endpoint from Connection</p>
-                </div>
-
-                <button id="case-1-button" type="button" class="btn btn-sm btn-outline" onclick="openExtractor('case-1')">Open</button>
-
-                <vin-extractor
-                  id="case-1-element"
-                  use-ocr="true"
-                  title="OCR-2000ms"
-                  on-error="onError"
-                  on-extract="onExtract"
-                  on-processing="onProcessing"
-                  on-open-change="onOpenChange"
-                ></vin-extractor>
-              </li>
-
-              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
-                <div>
-                  <p class="font-semibold">Sticker</p>
-                  <p class="text-base-content/60 font-mono text-sm">read-sticker</p>
-                </div>
-
-                <button id="case-2-button" type="button" class="btn btn-sm btn-outline" onclick="openExtractor('case-2')">Open</button>
-
-                <vin-extractor
-                  id="case-2-element"
-                  read-sticker="true"
-                  title="sticker-2000ms"
-                  on-error="onError"
-                  on-extract="onExtract"
-                  on-processing="onProcessing"
-                  on-open-change="onOpenChange"
-                ></vin-extractor>
-              </li>
-
-              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
-                <div>
-                  <p class="font-semibold">Both</p>
-                  <p class="text-base-content/60 font-mono text-sm">use-ocr · read-sticker · verbose="false"</p>
-                </div>
-
-                <button id="case-3-button" type="button" class="btn btn-sm btn-outline" onclick="openExtractor('case-3')">Open</button>
-
-                <vin-extractor
-                  id="case-3-element"
-                  use-ocr="true"
-                  read-sticker="true"
-                  verbose="false"
-                  title="both-2000ms"
-                  ocr-endpoint=""
-                  on-error="onError"
-                  on-extract="onExtract"
-                  on-processing="onProcessing"
-                  on-open-change="onOpenChange"
-                ></vin-extractor>
-              </li>
-
-              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
-                <div>
-                  <p class="font-semibold">Both, no validation</p>
-                  <p class="text-base-content/60 font-mono text-sm">skip-validation — accepts anything read</p>
-                </div>
-
-                <button id="case-4-button" type="button" class="btn btn-sm btn-outline" onclick="openExtractor('case-4')">Open</button>
-
-                <vin-extractor
-                  id="case-4-element"
-                  use-ocr="true"
-                  read-sticker="true"
-                  skip-validation="true"
-                  title="both skip validation"
-                  ocr-endpoint=""
-                  on-error="onError"
-                  on-extract="onExtract"
-                  on-processing="onProcessing"
-                  on-open-change="onOpenChange"
-                ></vin-extractor>
-              </li>
-
-              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
-                <div>
-                  <p class="font-semibold">Both, manual capture</p>
-                  <p class="text-base-content/60 font-mono text-sm">manual-capture — the reader waits to be told when</p>
-                </div>
-
-                <button id="case-5-button" type="button" class="btn btn-sm btn-outline" onclick="openExtractor('case-5')">Open</button>
-
-                <vin-extractor
-                  id="case-5-element"
-                  use-ocr="true"
-                  read-sticker="true"
-                  manual-capture="true"
-                  skip-validation="true"
-                  title="both manual-capture"
-                  ocr-endpoint=""
-                  on-error="onError"
-                  on-extract="onExtract"
-                  on-processing="onProcessing"
-                  on-open-change="onOpenChange"
-                ></vin-extractor>
-              </li>
-            </ol>
-          </section>
-
-          <section>
-            <h2 class="eyebrow text-neutral mb-3">File upload</h2>
-            <p class="text-base-content/60 mb-3 text-sm">
-              <code>uploader-button-id</code> points at a button the host supplies as a child, so the trigger below is the host's own markup, not the component's.
-            </p>
-
-            <ol class="grid gap-4 sm:grid-cols-2">
-              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
-                <div>
-                  <p class="font-semibold">Both</p>
-                  <p class="text-base-content/60 font-mono text-sm">use-ocr · read-sticker</p>
-                </div>
-
-                <vin-extractor id="case-6-element" use-ocr="true" read-sticker="true" file-upload="true" skip-validation="true" uploader-button-id="upload-both" ocr-endpoint="">
-                  <button id="upload-both" type="button" class="btn btn-sm btn-outline">Choose image</button>
-                </vin-extractor>
-              </li>
-
-              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
-                <div>
-                  <p class="font-semibold">OCR</p>
-                  <p class="text-base-content/60 font-mono text-sm">use-ocr</p>
-                </div>
-
-                <vin-extractor id="case-7-element" use-ocr="true" file-upload="true" skip-validation="true" uploader-button-id="upload-ocr" ocr-endpoint="">
-                  <button id="upload-ocr" type="button" class="btn btn-sm btn-outline">Choose image</button>
-                </vin-extractor>
-              </li>
-
-              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
-                <div>
-                  <p class="font-semibold">Sticker</p>
-                  <p class="text-base-content/60 font-mono text-sm">read-sticker</p>
-                </div>
-
-                <vin-extractor id="case-8-element" read-sticker="true" file-upload="true" skip-validation="true" uploader-button-id="upload-sticker">
-                  <button id="upload-sticker" type="button" class="btn btn-sm btn-outline">Choose image</button>
-                </vin-extractor>
-              </li>
-
-              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
-                <div>
-                  <p class="font-semibold">Sticker, rear camera</p>
-                  <p class="text-base-content/60 font-mono text-sm">capture-environment — opens the camera on a phone</p>
-                </div>
-
-                <vin-extractor
-                  id="case-9-element"
-                  read-sticker="true"
-                  file-upload="true"
-                  skip-validation="true"
-                  capture-environment="true"
-                  uploader-button-id="upload-sticker-camera"
-                >
-                  <button id="upload-sticker-camera" type="button" class="btn btn-sm btn-outline">Choose image</button>
-                </vin-extractor>
-              </li>
-            </ol>
-          </section>
+      <div class="showcase-stage flex flex-col gap-5" :dir="dir">
+        <div class="card bg-base-100 border-base-300 flex flex-row flex-wrap items-center gap-3 border p-4">
+          <span class="eyebrow text-neutral">Last extracted VIN</span>
+          <code id="vin" class="text-accent font-mono text-lg font-bold">N/A</code>
         </div>
 
-        <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
-        <div data-harness-rail x-cloak></div>
-      </section>
+        <section>
+          <h2 class="eyebrow text-neutral mb-3">Camera</h2>
 
-      <!-- What the page demonstrates, after the demo rather than before it: the component is what the page is for. -->
-      <footer class="border-base-300 border-t border-dashed pt-6">
-        <p class="eyebrow text-neutral">About this page</p>
-        <p class="lede text-base-content/70 mt-2 text-sm">
-          Nine configurations of the same scanner side by side, because what it does depends almost entirely on which flags are set. The first five open a camera; the last four
-          take a file instead. A device camera is needed for the first group.
-        </p>
-      </footer>
-    </div>
+          <ol class="grid gap-4 sm:grid-cols-2">
+            <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+              <div>
+                <p class="font-semibold">OCR</p>
+                <p class="text-base-content/60 font-mono text-sm">use-ocr · endpoint from Connection</p>
+              </div>
+
+              <button id="case-1-button" type="button" class="btn btn-sm btn-outline" onclick="openExtractor('case-1')">Open</button>
+
+              <vin-extractor
+                id="case-1-element"
+                use-ocr="true"
+                title="OCR-2000ms"
+                on-error="onError"
+                on-extract="onExtract"
+                on-processing="onProcessing"
+                on-open-change="onOpenChange"
+              ></vin-extractor>
+            </li>
+
+            <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+              <div>
+                <p class="font-semibold">Sticker</p>
+                <p class="text-base-content/60 font-mono text-sm">read-sticker</p>
+              </div>
+
+              <button id="case-2-button" type="button" class="btn btn-sm btn-outline" onclick="openExtractor('case-2')">Open</button>
+
+              <vin-extractor
+                id="case-2-element"
+                read-sticker="true"
+                title="sticker-2000ms"
+                on-error="onError"
+                on-extract="onExtract"
+                on-processing="onProcessing"
+                on-open-change="onOpenChange"
+              ></vin-extractor>
+            </li>
+
+            <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+              <div>
+                <p class="font-semibold">Both</p>
+                <p class="text-base-content/60 font-mono text-sm">use-ocr · read-sticker · verbose="false"</p>
+              </div>
+
+              <button id="case-3-button" type="button" class="btn btn-sm btn-outline" onclick="openExtractor('case-3')">Open</button>
+
+              <vin-extractor
+                id="case-3-element"
+                use-ocr="true"
+                read-sticker="true"
+                verbose="false"
+                title="both-2000ms"
+                ocr-endpoint=""
+                on-error="onError"
+                on-extract="onExtract"
+                on-processing="onProcessing"
+                on-open-change="onOpenChange"
+              ></vin-extractor>
+            </li>
+
+            <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+              <div>
+                <p class="font-semibold">Both, no validation</p>
+                <p class="text-base-content/60 font-mono text-sm">skip-validation — accepts anything read</p>
+              </div>
+
+              <button id="case-4-button" type="button" class="btn btn-sm btn-outline" onclick="openExtractor('case-4')">Open</button>
+
+              <vin-extractor
+                id="case-4-element"
+                use-ocr="true"
+                read-sticker="true"
+                skip-validation="true"
+                title="both skip validation"
+                ocr-endpoint=""
+                on-error="onError"
+                on-extract="onExtract"
+                on-processing="onProcessing"
+                on-open-change="onOpenChange"
+              ></vin-extractor>
+            </li>
+
+            <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+              <div>
+                <p class="font-semibold">Both, manual capture</p>
+                <p class="text-base-content/60 font-mono text-sm">manual-capture — the reader waits to be told when</p>
+              </div>
+
+              <button id="case-5-button" type="button" class="btn btn-sm btn-outline" onclick="openExtractor('case-5')">Open</button>
+
+              <vin-extractor
+                id="case-5-element"
+                use-ocr="true"
+                read-sticker="true"
+                manual-capture="true"
+                skip-validation="true"
+                title="both manual-capture"
+                ocr-endpoint=""
+                on-error="onError"
+                on-extract="onExtract"
+                on-processing="onProcessing"
+                on-open-change="onOpenChange"
+              ></vin-extractor>
+            </li>
+          </ol>
+        </section>
+
+        <section>
+          <h2 class="eyebrow text-neutral mb-3">File upload</h2>
+          <p class="text-base-content/60 mb-3 text-sm">
+            <code>uploader-button-id</code> points at a button the host supplies as a child, so the trigger below is the host's own markup, not the component's.
+          </p>
+
+          <ol class="grid gap-4 sm:grid-cols-2">
+            <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+              <div>
+                <p class="font-semibold">Both</p>
+                <p class="text-base-content/60 font-mono text-sm">use-ocr · read-sticker</p>
+              </div>
+
+              <vin-extractor id="case-6-element" use-ocr="true" read-sticker="true" file-upload="true" skip-validation="true" uploader-button-id="upload-both" ocr-endpoint="">
+                <button id="upload-both" type="button" class="btn btn-sm btn-outline">Choose image</button>
+              </vin-extractor>
+            </li>
+
+            <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+              <div>
+                <p class="font-semibold">OCR</p>
+                <p class="text-base-content/60 font-mono text-sm">use-ocr</p>
+              </div>
+
+              <vin-extractor id="case-7-element" use-ocr="true" file-upload="true" skip-validation="true" uploader-button-id="upload-ocr" ocr-endpoint="">
+                <button id="upload-ocr" type="button" class="btn btn-sm btn-outline">Choose image</button>
+              </vin-extractor>
+            </li>
+
+            <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+              <div>
+                <p class="font-semibold">Sticker</p>
+                <p class="text-base-content/60 font-mono text-sm">read-sticker</p>
+              </div>
+
+              <vin-extractor id="case-8-element" read-sticker="true" file-upload="true" skip-validation="true" uploader-button-id="upload-sticker">
+                <button id="upload-sticker" type="button" class="btn btn-sm btn-outline">Choose image</button>
+              </vin-extractor>
+            </li>
+
+            <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+              <div>
+                <p class="font-semibold">Sticker, rear camera</p>
+                <p class="text-base-content/60 font-mono text-sm">capture-environment — opens the camera on a phone</p>
+              </div>
+
+              <vin-extractor
+                id="case-9-element"
+                read-sticker="true"
+                file-upload="true"
+                skip-validation="true"
+                capture-environment="true"
+                uploader-button-id="upload-sticker-camera"
+              >
+                <button id="upload-sticker-camera" type="button" class="btn btn-sm btn-outline">Choose image</button>
+              </vin-extractor>
+            </li>
+          </ol>
+        </section>
+      </div>
+
+      <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
+      <div data-harness-rail x-cloak></div>
+    </section>
 
     <script>
       const report = (label, detail) => window.dispatchEvent(new CustomEvent('harness:log', { detail: { label, detail } }));

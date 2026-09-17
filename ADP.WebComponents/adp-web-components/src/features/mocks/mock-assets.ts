@@ -1,5 +1,7 @@
 import { Build } from '@stencil/core';
 
+import { devFileBase } from '~lib/package-files';
+
 /**
  * The generated fixtures point their pictures (paint panels, company badges, claim documents,
  * accessories) at the copy of `dist/mocks/assets/` on the CDN, so one URL works wherever a fixture
@@ -9,23 +11,23 @@ import { Build } from '@stencil/core';
  * (the component's own fetch or a harness pushing `setMockData`). Prod builds leave the data alone.
  */
 const CDN_MOCKS_PREFIX = /^https:\/\/cdn\.jsdelivr\.net\/npm\/adp-web-components@[^/]+\/dist\/mocks\//;
-const DEV_MOCKS_BASE = 'http://localhost:3000/mocks/';
 
 export function localizeMockAssets<T>(value: T): T {
   if (!Build.isDev) return value;
 
-  return rewrite(value) as T;
+  // Whichever server the bundle came from — not a fixed port (see ~lib/package-files).
+  return rewrite(value, devFileBase() + 'mocks/') as T;
 }
 
-function rewrite(value: unknown): unknown {
-  if (typeof value === 'string') return value.replace(CDN_MOCKS_PREFIX, DEV_MOCKS_BASE);
+function rewrite(value: unknown, base: string): unknown {
+  if (typeof value === 'string') return value.replace(CDN_MOCKS_PREFIX, base);
 
-  if (Array.isArray(value)) return value.map(rewrite);
+  if (Array.isArray(value)) return value.map(entry => rewrite(entry, base));
 
   if (value && typeof value === 'object') {
     const copy: Record<string, unknown> = {};
 
-    for (const [key, entry] of Object.entries(value)) copy[key] = rewrite(entry);
+    for (const [key, entry] of Object.entries(value)) copy[key] = rewrite(entry, base);
 
     return copy;
   }
