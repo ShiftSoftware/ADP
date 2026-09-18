@@ -11,8 +11,9 @@
   tabs. There are seven destinations and four of them are sibling form types; a
   tab strip flattens that hierarchy and runs out of room. The tree shows where you
   are and what else exists at the same time — and on the Forms pages the examples
-  to pick from sit under it, the way the fixtures do on a component demo, so the
-  form itself has the middle of the screen (see harness.js for the shell).
+  to pick from sit under it, so the form itself has the middle of the screen. This
+  is the one page with a side panel; a component demo keeps its fixtures above the
+  component instead (see harness.js for the shell).
 
   Panels are toggled with x-show, never x-if. The live form is mounted DOM holding
   state that cannot be rebuilt from markup, and x-if would destroy it on every
@@ -75,7 +76,8 @@
       /*
        * On a phone the map is a strip stuck under the header, and it covers the top
        * of the page; scroll-padding-top (harness.src.css) adds its height so a jump
-       * to #main lands below it. harness.js does the same for the component demos.
+       * to #main lands below it. This is the only page that writes --strip-h — a
+       * component demo has no strip.
        */
       const column = window.matchMedia('(min-width: 64rem)');
       const strip = document.querySelector('.showcase-fixtures');

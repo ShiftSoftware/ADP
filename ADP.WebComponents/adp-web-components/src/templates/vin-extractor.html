@@ -21,7 +21,7 @@
     <script defer src="/templates/vendor/alpine.js"></script>
   </head>
 
-  <body class="bg-base-200 text-base-content min-h-screen">
+  <body class="wide-column bg-base-200 text-base-content min-h-screen">
     <!-- The site header, the same one the home page has; harness.js mounts it at the shell's width. -->
     <div data-site-header></div>
 
@@ -31,22 +31,22 @@
       lifecycle lines to the shared log through `harness:log`.
 
       One shell for every demo (see harness.js). This page has nothing to pick,
-      so it carries no fixtures element and the stage takes that column.
+      so it carries no fixtures element.
     -->
     <section
       class="showcase"
       dir="ltr"
       x-data="harness({ profile: 'vin-extractor', subject: '#case-1-element', language: false, environment: false, today: false, platform: false, fixtures: false, connection: { targets: 'vin-extractor[use-ocr]' } })"
     >
-      <!-- The brief: title above the component, the about text below it — and one block floating beside it on a wide screen. -->
+      <!-- The brief: a one-line title above the component, the about text below it. -->
       <div class="showcase-brief">
-        <header class="showcase-title flex flex-wrap items-baseline gap-x-3 gap-y-1 wide:flex-col wide:items-start">
-          <h1 class="text-2xl font-bold tracking-tight">VIN extractor</h1>
+        <header class="showcase-title flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h1 class="text-lg font-bold tracking-tight">VIN extractor</h1>
           <p class="eyebrow text-neutral">adp-web-components · standalone</p>
         </header>
 
         <!-- What the page demonstrates, beside the demo rather than above it: the component is what the page is for. -->
-        <aside class="showcase-about border-base-300 border-t border-dashed pt-5 wide:mt-5 wide:border-t-0 wide:pt-0">
+        <aside class="showcase-about border-base-300 border-t border-dashed pt-5">
           <p class="eyebrow text-neutral">About this page</p>
           <p class="lede text-base-content/70 mt-2 text-sm">
             Nine configurations of the same scanner side by side, because what it does depends almost entirely on which flags are set. The first five open a camera; the last four

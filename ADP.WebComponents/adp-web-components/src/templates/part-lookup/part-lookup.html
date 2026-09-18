@@ -21,11 +21,11 @@
     <script defer src="/templates/vendor/alpine.js"></script>
   </head>
 
-  <body class="bg-base-200 text-base-content min-h-screen">
+  <body class="wide-column bg-base-200 text-base-content min-h-screen">
     <!-- The site header, the same one the home page has; harness.js mounts it at the shell's width. -->
     <div data-site-header></div>
 
-    <!-- One shell for every demo: the component in the middle, the fixtures beside it and always in view. See harness.js. -->
+    <!-- One shell for every demo: the component gets the column in full, and the column is a wide one. See harness.js. -->
     <section
       class="showcase"
       dir="ltr"
@@ -34,15 +34,15 @@
         mocks: 'part-lookup',
       })"
     >
-      <!-- The brief: title above the component, the about text below it — and one block floating beside it on a wide screen. -->
+      <!-- The brief: a one-line title above the component, the about text below it. -->
       <div class="showcase-brief">
-        <header class="showcase-title flex flex-wrap items-baseline gap-x-3 gap-y-1 wide:flex-col wide:items-start">
-          <h1 class="text-2xl font-bold tracking-tight">Part lookup</h1>
+        <header class="showcase-title flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h1 class="text-lg font-bold tracking-tight">Part lookup</h1>
           <p class="eyebrow text-neutral">adp-web-components · part lookup</p>
         </header>
 
         <!-- What the page demonstrates, beside the demo rather than above it: the component is what the page is for. -->
-        <aside class="showcase-about border-base-300 border-t border-dashed pt-5 wide:mt-5 wide:border-t-0 wide:pt-0">
+        <aside class="showcase-about border-base-300 border-t border-dashed pt-5">
           <p class="eyebrow text-neutral">About this page</p>
           <p class="lede text-base-content/70 mt-2 text-sm">
             The wrapper that holds all three part lookups and shows one at a time. The search field and tab strip above are the host's — they are what a page embedding this
@@ -51,29 +51,36 @@
         </aside>
       </div>
 
-      <!-- Generated fixtures, beside the component and always in view. -->
-      <div data-harness-fixtures class="showcase-fixtures" x-cloak></div>
-
       <!-- Only the stage follows the language control; the shell around it stays put. -->
-      <div class="showcase-stage flex flex-col gap-4" :dir="dir">
+      <div class="showcase-stage flex flex-col gap-3" :dir="dir">
         <!--
           Host-side chrome, not harness chrome: a real embedding page owns the
           search field and the tab strip, so they stay in the page body rather
           than moving into the rail.
         -->
-        <div class="card bg-base-100 border-base-300 flex flex-row flex-wrap items-center gap-3 border p-4" x-data="{ code: 'SU00302474' }">
-          <label class="input min-w-60 flex-1">
-            <span class="eyebrow text-neutral">Part no.</span>
-            <input x-model="code" type="search" placeholder="e.g. SU00302474" aria-label="Part number" @keydown.enter.prevent="run(code)" />
-          </label>
+        <!--
+          A fixture is a search like any other: picking one fills the field and
+          runs it, so the field always shows the number the component was asked
+          for. It starts empty — the chips below it are the examples.
+        -->
+        <div class="card bg-base-100 border-base-300 flex flex-col gap-2 border p-3" x-data="{ code: '' }" x-init="$watch('fixture', key => { if (key !== null) code = key })">
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="input input-sm min-w-60 flex-1">
+              <span class="eyebrow text-neutral">Part no.</span>
+              <input x-model="code" type="search" placeholder="Type a part number, or pick one below" aria-label="Part number" @keydown.enter.prevent="run(code)" />
+            </label>
 
-          <button type="button" class="btn btn-primary" :disabled="loading" @click="run(code)">
-            <span class="loading loading-spinner loading-xs" x-show="loading"></span>
-            Search
-          </button>
+            <button type="button" class="btn btn-sm btn-primary" :disabled="loading" @click="run(code)">
+              <span class="loading loading-spinner loading-xs" x-show="loading"></span>
+              Search
+            </button>
+          </div>
+
+          <!-- Generated fixtures, under the field they fill: harness chrome inside the host's panel, so a dashed rule marks where one ends. -->
+          <div data-harness-fixtures class="border-base-300 border-t border-dashed pt-2" x-cloak></div>
         </div>
 
-        <div role="tablist" class="tabs tabs-box self-start" x-data="{ tab: 'distributor-lookup' }">
+        <div role="tablist" class="tabs tabs-box tabs-sm self-start" x-data="{ tab: 'distributor-lookup' }">
           <template
             x-for="item in [
               { value: 'dead-stock-lookup', label: 'Dead stock' },

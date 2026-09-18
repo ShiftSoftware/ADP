@@ -45,10 +45,12 @@
 }
 
 /*
- * `wide:` — the breakpoint at which the showcase shell floats its two panels
- * beside the content column instead of stacking them with it. It is the width
- * the column plus both panels need: --page-max + 2 * (--side + --gap), and a
- * Tailwind breakpoint has to be a literal, so keep the three in step.
+ * `wide:` — the breakpoint at which a page with a side panel (ticket-forms) floats
+ * it and the brief beside the content column instead of stacking them with it.
+ * It is the width the prose column plus a panel on each side needs:
+ * --page-max + 2 * (--side + --gap), and a Tailwind breakpoint has to be a
+ * literal, so keep the three in step. A component demo never reaches it — its
+ * column (see .wide-column) leaves no margin to float anything into.
  */
 @theme {
   --breakpoint-wide: 110.5rem;
@@ -118,13 +120,14 @@
   interpolate-size: allow-keywords;
 
   /*
-   * The sticky site header's height. Everything else that sticks — the fixtures
-   * strip on a phone, the fixtures column and the brief on a desktop — stacks
-   * under it by this amount, and scroll-padding-top uses it so a row a component
-   * brings into view lands below the bar rather than under it. site-header.js
-   * measures the real value once the header is mounted; this is what applies
-   * before then. --strip-h is written by the page: the height of the fixtures
-   * strip while it is a strip, 0 once it is a column.
+   * The sticky site header's height. Everything else that sticks — a page's side
+   * panel while it is a strip on a phone, the same panel and the brief on a
+   * desktop — stacks under it by this amount, and scroll-padding-top uses it so
+   * a row a component brings into view lands below the bar rather than under
+   * it. site-header.js measures the real value once the header is mounted; this
+   * is what applies before then. --strip-h is written by a page that has a side
+   * panel (ticket-forms): the panel's height while it is a strip, 0 once it is
+   * a column. A component demo has no strip and leaves it at zero.
    */
   --nav-h: 3.3125rem;
   --strip-h: 0px;
@@ -132,18 +135,17 @@
   /*
    * The page column and what sits beside it.
    *
-   *   --page-max      the content column, gutters included: what a demo, a
-   *                   document, a form or the home page's sections get, centred,
-   *                   and never wider — and the width of the site header's row,
-   *                   on every page, so the header's edges meet the content's.
-   *                   Two values in two places is how the header ended up
-   *                   1400px wide over a 1180px page.
-   *   --side, --gap   the two panels the showcase shell floats beside the column
-   *                   on a wide screen (the brief and the fixtures), and the gap.
-   *   --shell-max     what the shell is capped at: the column alone, or the
-   *                   column plus both panels once they float beside it — from
-   *                   `wide` (the @theme block above), which is exactly the
-   *                   width the three need.
+   *   --page-max      the content column, gutters included: what a document, a
+   *                   form or the home page's sections get, centred, and never
+   *                   wider — and the width of the site header's row, on every
+   *                   page, so the header's edges meet the content's. Two values
+   *                   in two places is how the header ended up 1400px wide over
+   *                   a 1180px page. This is a prose width; a component demo
+   *                   puts .wide-column on <body> for a wider one, and the
+   *                   header, mounted inside <body>, follows it.
+   *   --side, --gap   a page's own side panel (ticket-forms' map) and, once it
+   *                   floats beside the column at `wide`, the brief on the other
+   *                   side — and the gap between the three.
    *   --gutter        the side gutter. It grows with the viewport and, from lg,
    *                   leaves room on the right for the rail's edge tab, which is
    *                   pinned to the viewport.
@@ -151,7 +153,6 @@
   --page-max: 77.5rem;
   --side: 15rem;
   --gap: 1.5rem;
-  --shell-max: var(--page-max);
   --gutter: 1rem;
 
   --leading-display: 1.05;
@@ -192,14 +193,6 @@ html[lang='ku'] {
 @media (min-width: 64rem) {
   :root {
     --gutter: 3rem;
-  }
-}
-
-/* The panels float beside the column from here (see .showcase), so the cap
-   grows by exactly their width — the column itself stays at --page-max. */
-@media (min-width: 110.5rem) {
-  :root {
-    --shell-max: calc(var(--page-max) + 2 * (var(--side) + var(--gap)));
   }
 }
 
@@ -364,48 +357,59 @@ html[lang='ku'] {
  */
 @layer components {
   /*
+   * A component demo's column. --page-max is a prose width, chosen for the home
+   * page and the documents; a component reads fine at 1500px where a paragraph
+   * would not, and on a laptop the difference is a fifth of the screen given
+   * back to the thing under test. On <body> rather than on the shell so that
+   * the site header, mounted inside <body>, is the same width as the content
+   * under it.
+   */
+  .wide-column {
+    --page-max: 100rem;
+  }
+
+  /*
    * The showcase shell — one layout for every harness page, so the component
    * under test gets the screen and the tooling around it stays out of its way
-   * (R1). Four regions in ONE markup order — brief (title + about), fixtures,
-   * stage — placed by grid areas, so no breakpoint has to move an element:
+   * (R1). Title, stage and about, stacked in one column, and the chrome above
+   * the component kept short — a one-line title, tight gaps — so that on a
+   * laptop the component starts in the top third of the screen and nothing has
+   * to be scrolled past to reach it. The fixtures are a row of chips inside the
+   * stage, right above the component (harness.js): a column beside the
+   * component takes width from the thing under test, a strip over it takes
+   * height.
    *
-   *   phone     title / fixtures / stage / about, stacked. The fixtures are a
-   *             single row that scrolls sideways and sticks under the nav, so
-   *             switching a VIN never means scrolling back up.
-   *   lg        title, stage and about in one column; fixtures in a sticky
-   *             column on the right, as tall as the viewport allows — all of it
-   *             inside the --page-max column, under the header's row.
-   *   wide      the content column stays centred at --page-max — the header's
-   *             width, so the two are flush — and the brief and the fixtures
-   *             float beside it in the margins, each stuck to the top. The whole
-   *             thing is capped at --shell-max, so on a wide monitor the panels
-   *             sit next to the component rather than at the edges of the screen.
-   *
-   * The brief is `display: contents` until `wide`, so the title and the about
-   * text are grid items in their own right (title above, about below the stage)
-   * — and one sticky block once they share a column.
+   * A page that navigates between sections — ticket-forms' map — adds a side
+   * panel (.showcase-fixtures) as a direct child, and :has() grows the grid a
+   * region for it: a strip under the nav on a phone, a sticky column on the
+   * right from lg, and at `wide` the third column, with the brief (title +
+   * about, one block once `display: contents` is lifted) floating on the other
+   * side. Only that page has one, and only it is capped wider than --page-max.
+   * Markup order is the same everywhere — brief, panel, stage — so no
+   * breakpoint has to move an element.
    *
    * The shell is written LTR by the page (see the note beside the rail in
    * harness.js) and only the stage follows the language control, so the tooling
-   * never changes sides when the component does. A page with nothing to pick
-   * omits the fixtures element; :has() then drops the column and the stage
-   * takes its width.
+   * never changes sides when the component does.
    */
   .showcase {
     display: grid;
-    grid-template-areas: 'title' 'fixtures' 'stage' 'about';
+    grid-template-areas: 'title' 'stage' 'about';
     grid-template-columns: minmax(0, 1fr);
     align-items: start;
-    row-gap: 1.25rem;
+    row-gap: 0.75rem;
     column-gap: var(--gap);
-    max-width: var(--shell-max);
+    max-width: var(--page-max);
     margin-inline: auto;
-    padding-block: 1.25rem 2.5rem;
+    padding-block: 0.75rem 2.5rem;
     padding-inline: var(--gutter);
   }
 
-  .showcase:not(:has(> .showcase-fixtures)) {
-    grid-template-areas: 'title' 'stage' 'about';
+  /* Roomier, as a page of prose wants. */
+  .showcase:has(> .showcase-fixtures) {
+    grid-template-areas: 'title' 'fixtures' 'stage' 'about';
+    row-gap: 1.25rem;
+    padding-block-start: 1.25rem;
   }
 
   .showcase-brief {
@@ -428,9 +432,9 @@ html[lang='ku'] {
   }
 
   /*
-   * Phone: a band under the nav, bled to the page edges so it reads as part of
-   * the chrome rather than a card that happens to have stopped. z-index sits
-   * under the nav (30) and the rail (40+).
+   * The side panel on a phone: a band under the nav, bled to the page edges so
+   * it reads as part of the chrome rather than a card that happens to have
+   * stopped. z-index sits under the nav (30) and the rail (40+).
    */
   .showcase-fixtures {
     grid-area: fixtures;
@@ -446,15 +450,10 @@ html[lang='ku'] {
   }
 
   @media (min-width: 64rem) {
-    .showcase {
+    .showcase:has(> .showcase-fixtures) {
       grid-template-areas: 'title fixtures' 'stage fixtures' 'about fixtures';
       grid-template-columns: minmax(0, 1fr) var(--side);
       grid-template-rows: auto 1fr auto;
-    }
-
-    .showcase:not(:has(> .showcase-fixtures)) {
-      grid-template-areas: 'title' 'stage' 'about';
-      grid-template-columns: minmax(0, 1fr);
     }
 
     /* Column: a dashed card (R2) that sticks under the nav and scrolls inside
@@ -476,19 +475,17 @@ html[lang='ku'] {
   }
 
   @media (min-width: 110.5rem) {
-    .showcase {
+    /* The panels float beside the column, so the cap grows by exactly their
+       width — the column itself stays at --page-max, flush with the header. */
+    .showcase:has(> .showcase-fixtures) {
       grid-template-areas: 'brief stage fixtures';
       grid-template-columns: var(--side) minmax(0, 1fr) var(--side);
       grid-template-rows: none;
+      max-width: calc(var(--page-max) + 2 * (var(--side) + var(--gap)));
     }
 
-    .showcase:not(:has(> .showcase-fixtures)) {
-      grid-template-areas: 'brief stage';
-      grid-template-columns: var(--side) minmax(0, 1fr);
-    }
-
-    /* The brief floats beside the column the same way the fixtures do. */
-    .showcase-brief {
+    /* The brief floats beside the column the same way the side panel does. */
+    .showcase:has(> .showcase-fixtures) > .showcase-brief {
       display: block;
       grid-area: brief;
       min-width: 0;

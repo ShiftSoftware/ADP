@@ -12,20 +12,18 @@
  *       <header class="showcase-title">…h1 and eyebrow…</header>
  *       <aside class="showcase-about">…what the page demonstrates…</aside>
  *     </div>
- *     <div data-harness-fixtures class="showcase-fixtures" x-cloak></div>
  *     <div class="showcase-stage" :dir="dir">
+ *       <div data-harness-fixtures class="card border-dashed …" x-cloak></div>
  *       <div class="frame">…the component…</div>
  *     </div>
  *     <div data-harness-rail x-cloak></div>
  *   </section>
  *
  * `.showcase` is the one layout every demo shares (harness.src.css): a centred
- * content column the component gets in full, with the brief floating on one
- * side and the fixtures on the other on a wide screen — the fixtures in a
- * sticky column on a laptop, a sticky strip under the nav on a phone — so
- * reading what the page is about or picking a fixture never means scrolling
- * away from the component. Markup order is fixed (brief, fixtures, stage); the
- * grid places the pieces per breakpoint.
+ * content column the component gets in full — never a side column beside it,
+ * which would take width from the thing under test — with the brief floating
+ * in the margin on a wide screen, so reading what the page is about never
+ * means scrolling away from the component.
  *
  * There are three stamped pieces:
  *
@@ -40,11 +38,15 @@
  *
  * …and the controls, split by how often you touch them:
  *
- *   [data-harness-fixtures]  Fixtures, beside the component and always in view.
- *                            Reached in one click, because that is every
- *                            interaction. A page with nothing to pick (a gallery,
- *                            a form) leaves the element out and the stage takes
- *                            its column.
+ *   [data-harness-fixtures]  Fixtures, as a row of chips directly above the
+ *                            component — inside the host's own search panel on a
+ *                            page that has one, in a dashed card of their own on
+ *                            a page that does not. Reached in one click, because
+ *                            that is every interaction; nothing else is in the
+ *                            row, because nothing else is used that often. The
+ *                            page owns the container; the harness hides it when
+ *                            there is nothing to pick. A page with no fixtures at
+ *                            all (a gallery, a form) leaves the element out.
  *   [data-harness-rail]      Connection, Environment, Today, language, theme,
  *                            platform width and the event log, in a drawer
  *                            behind a tab on the right edge (a button on a phone).
@@ -849,6 +851,8 @@ window.harness = function harness(options = {}) {
       this.hidden = keys.length - this.keys.length;
     },
 
+    // Running the current key again is a click on its chip (or on Search), so
+    // there is no separate reload.
     run(key) {
       if (this.environmentChanging) return;
 
@@ -856,10 +860,6 @@ window.harness = function harness(options = {}) {
       this.write('fetch', key === '' ? '(empty)' : key);
 
       return key === '' ? clear?.(this.subject, this) : select?.(this.subject, key, this);
-    },
-
-    reload() {
-      this.run(this.fixture ?? '');
     },
 
     submit() {
@@ -907,59 +907,50 @@ function summarise(response) {
 /* ---------- the standard rail ---------- */
 
 /*
- * Fixtures sit BESIDE the component and stick, because they are touched on every
- * interaction and must never need a scroll to reach. Connection and the other
+ * Fixtures sit directly ABOVE the component, as a row of small chips, because
+ * they are touched on every interaction. They were a sticky column beside the
+ * component for one release, and that cost the thing under test a fifth of the
+ * page — the same mistake the rail made as an aside. Connection and the other
  * set-once controls stay in the drawer.
  *
- * One template, two shapes. The container (.showcase-fixtures, harness.src.css)
- * is a strip under the nav on a phone and a column on the right from lg up, and
- * the list inside follows it: chips in one row that scrolls sideways, or rows
- * with the note under the key and the current one marked by a bar on its edge.
+ * The chips are the whole row: no heading (a row of VINs under a VIN field
+ * explains itself; the group is labelled for a screen reader) and no reload
+ * button (the current chip, Search and Enter all run the key again). Every line
+ * of chrome above the component is a line the component does not get.
+ *
+ * The page provides the container (see the header comment) and the harness
+ * fills it. A chip runs its key through `run`, the same path a search field
+ * takes, so a page with a field follows `fixture` to fill it.
  */
 const FIXTURES = /* html */ `
-  <template x-if="show.fixtures">
-    <div class="flex flex-col">
-      <div class="flex items-center gap-x-3 lg:flex-col lg:items-stretch lg:gap-y-2">
-        <div class="flex shrink-0 items-center gap-2">
-          <span class="eyebrow text-neutral">Fixtures</span>
-          <button type="button" class="btn btn-xs btn-outline" :disabled="connected || environmentChanging" @click="reload()">Reload</button>
-        </div>
-
-        <!-- py-1 keeps the focus ring inside the strip's scroll box, which would otherwise clip it. -->
-        <div
-          class="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-1 [scrollbar-width:thin] lg:flex-col lg:items-stretch lg:gap-0.5 lg:overflow-visible lg:py-0"
-          role="group"
-          aria-label="Fixtures"
+  <div class="flex flex-col">
+    <div class="flex flex-wrap gap-1.5" role="group" aria-label="Fixtures">
+      <template x-for="item in fixtures" :key="item.value">
+        <button
+          type="button"
+          class="btn btn-xs px-1.5 font-mono font-normal"
+          :class="fixture === item.value ? 'btn-primary' : 'btn-outline'"
+          :disabled="connected || environmentChanging"
+          :aria-pressed="fixture === item.value"
+          :title="item.note || item.label"
+          @click="run(item.value)"
         >
-          <template x-for="item in fixtures" :key="item.value">
-            <button
-              type="button"
-              class="relative flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs whitespace-nowrap transition-colors lg:w-full lg:flex-col lg:items-start lg:gap-0 lg:rounded-lg lg:border-transparent lg:py-1.5 lg:text-start lg:whitespace-normal"
-              :class="fixture === item.value ? 'bg-primary/12 border-accent/50 text-base-content font-semibold lg:border-transparent' : 'bg-base-100 border-base-300 text-base-content/80 hover:bg-base-200 lg:bg-transparent'"
-              :disabled="connected || environmentChanging"
-              :aria-pressed="fixture === item.value"
-              :title="item.note || item.label"
-              @click="run(item.value)"
-            >
-              <span class="bg-primary absolute inset-y-1.5 start-0 hidden w-[3px] rounded-full lg:block" x-show="fixture === item.value" aria-hidden="true"></span>
-              <span class="font-mono" x-text="item.label"></span>
-              <span class="font-sans text-[11px] opacity-70 lg:text-xs" x-show="item.note" x-text="item.note"></span>
-            </button>
-          </template>
-
-          <!-- Never a silent cut: a page that filters says how much it filtered. -->
-          <p class="text-base-content/50 shrink-0 text-xs whitespace-nowrap lg:mt-1.5 lg:whitespace-normal" x-show="hidden" x-text="hidden + ' fixture(s) hidden — no data for this component'"></p>
-        </div>
-      </div>
-
-      <div
-        class="grid overflow-hidden transition-[grid-template-rows,opacity] duration-[320ms]"
-        :class="connected ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
-      >
-        <p class="text-base-content/60 min-h-0 pt-2 text-xs">Generated fixtures are available again after Disconnect.</p>
-      </div>
+          <span x-text="item.label"></span>
+          <span class="font-sans opacity-70" x-show="item.note" x-text="item.note"></span>
+        </button>
+      </template>
     </div>
-  </template>
+
+    <!-- Never a silent cut: a page that filters says how much it filtered. -->
+    <p class="text-base-content/50 mt-1.5 text-xs" x-show="hidden" x-text="hidden + ' fixture(s) hidden — no data for this component'"></p>
+
+    <div
+      class="grid overflow-hidden transition-[grid-template-rows,opacity] duration-[320ms]"
+      :class="connected ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
+    >
+      <p class="text-base-content/60 min-h-0 pt-1.5 text-xs">Generated fixtures are available again after Disconnect.</p>
+    </div>
+  </div>
 `;
 
 /** Sliders glyph, shared by both drawer launchers. */
@@ -1225,32 +1216,13 @@ const RAIL = /* html */ `
 // ordering the fixtures and the rail rely on. The header brings its own scope.
 if (document.querySelector('[data-site-header]')) mountSiteHeader();
 
+// The page styles the container (a dashed card, or a rule inside its own search
+// panel); it only earns that space when there is something to pick.
 document.querySelectorAll('[data-harness-fixtures]').forEach(fixtures => {
+  fixtures.setAttribute('x-show', 'show.fixtures');
   fixtures.innerHTML = FIXTURES;
-  followStrip(fixtures);
 });
 
 document.querySelectorAll('[data-harness-rail]').forEach(rail => {
   rail.innerHTML = RAIL;
 });
-
-/*
- * While the fixtures are a strip under the nav they cover the top of the page,
- * and a component that scrolls a row into view (reveal-below) has to know by
- * how much. The strip's height is not a constant — it grows a line when Live is
- * connected — so it is measured and written to the stylesheet's --strip-h, which
- * html's scroll-padding-top adds to the nav. Once the strip becomes the column
- * (lg, the breakpoint harness.src.css uses) it covers nothing, and the value
- * goes back to zero.
- */
-function followStrip(element) {
-  if (typeof ResizeObserver === 'undefined') return;
-
-  const column = window.matchMedia('(min-width: 64rem)');
-  const root = document.documentElement;
-
-  const write = () => root.style.setProperty('--strip-h', column.matches ? '0px' : `${element.getBoundingClientRect().height}px`);
-
-  new ResizeObserver(write).observe(element);
-  column.addEventListener('change', write);
-}
