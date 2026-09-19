@@ -3,6 +3,11 @@
 Hawta ingests source data into a DuckDB snapshot, reconciles typed rows, builds
 serving projections, replicates changes to Cosmos DB, and publishes versioned
 Parquet snapshots. Hosts configure source mappings, schedules and ownership.
+The agent loop can also copy its own run history (source runs, publish attempts,
+loop cycles and per-table pump drains) to Parquet on a cadence, into a location
+of its own, so the history can be read outside the process, and it prunes the
+copied rows of earlier days out of its write database once a day; see
+`SnapshotRunLog`.
 
 - [Engineering Explorer](Explorer/README.md): an interactive overview, eight
   mechanisms and thirty illustrative scenarios with public source evidence and

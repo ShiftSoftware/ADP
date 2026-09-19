@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Net;
 using Xunit;
 
 namespace ShiftSoftware.ADP.Hawta.Tests;
@@ -61,7 +63,9 @@ public sealed class SnapshotAgentLoopTests : IDisposable
         SourceRegistry registry,
         bool dryRun = false,
         TimeSpan? publishCadence = null,
-        int ingestDegree = 1) =>
+        int ingestDegree = 1,
+        SnapshotRunLogOptions? runLog = null,
+        ICosmosSnapshotTransport? transport = null) =>
         new(new SnapshotAgentOptions
         {
             Registry = registry,
@@ -73,6 +77,8 @@ public sealed class SnapshotAgentLoopTests : IDisposable
             IngestDegree = ingestDegree,
             TimeProvider = clock,
             OnEvent = events.Add,
+            RunLog = runLog,
+            ReplicationTransport = transport,
         }, cosmosClient: null);
 
     [Fact]
@@ -364,6 +370,7 @@ public sealed class SnapshotAgentLoopTests : IDisposable
         Assert.Empty(cycle.Pumps);
         Assert.Equal(SnapshotPublishStatus.Published, cycle.Publish!.Status);
         Assert.Equal(1L, loop.Store!.CountDirtyRows(Table));   // nothing stamped — the queue is intact
+        Assert.Equal(0L, Convert.ToInt64(loop.Store.ExecuteScalar("SELECT count(*) FROM meta.PumpRuns")));   // and no drain to record
     }
 
     [Fact]
@@ -721,5 +728,436 @@ public sealed class SnapshotAgentLoopTests : IDisposable
         Assert.True(cycle.ColdStartRebuild);
         Assert.Contains(events, e => e.Message.Contains("stay deferred to the published copy"));
         Assert.Equal(SnapshotPublishStatus.SkippedNoChanges, cycle.Publish!.Status);
+    }
+
+    // ---- The run log inside the loop -----------------------------------------------------------
+
+    private string RunLogDir => Path.Combine(root, "run-log");
+
+    private SourceRegistry OneWidgetSource(TimeSpan cadence, Func<IEnumerable<(string, string, int)>>? rows = null) => new(
+    [
+        new SnapshotSource
+        {
+            Key = "widgets",
+            RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("Code"),
+            Table = Table,
+            Cadence = cadence,
+            Ingest = IngestOf("widgets", rows ?? (() => [("W1", "alpha", 1)])),
+        },
+    ]);
+
+    private static long Count(string parquet)
+    {
+        using var reader = new DuckDB.NET.Data.DuckDBConnection("Data Source=:memory:");
+        reader.Open();
+        using var command = reader.CreateCommand();
+        command.CommandText = $"SELECT count(*) FROM read_parquet('{parquet.Replace('\\', '/').Replace("'", "''")}')";
+        return Convert.ToInt64(command.ExecuteScalar());
+    }
+
+    private int RunLogWrites => events.Count(e => e.Level == SnapshotAgentEventLevel.Info && e.Message.StartsWith("Run log:"));
+
+    [Fact]
+    public async Task RunLog_FlushesAtItsCadence_AndNotOnEveryCycle()
+    {
+        var registry = OneWidgetSource(TimeSpan.FromMinutes(1));
+        using var loop = Loop(registry, runLog: new SnapshotRunLogOptions
+        {
+            Store = new LocalPublishStore(RunLogDir),
+            Cadence = TimeSpan.FromMinutes(5),
+            HostInstance = "instance-1",
+        });
+
+        // The first cycle after a boot flushes at once: the source run, the publish and the
+        // cycle itself each land under their own folder, named by the boot.
+        var first = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+        Assert.NotNull(first.RunLog);
+        Assert.False(first.RunLog!.Skipped);
+        Assert.Equal(3, first.RunLog.FilesWritten.Count);
+        var syncRuns = Assert.Single(first.RunLog.FilesWritten, f => f.Contains(SnapshotRunLog.SyncRunsFolder));
+        var publishRuns = Assert.Single(first.RunLog.FilesWritten, f => f.Contains(SnapshotRunLog.PublishRunsFolder));
+        var cycleRuns = Assert.Single(first.RunLog.FilesWritten, f => f.Contains(SnapshotRunLog.CycleRunsFolder));
+        Assert.All(first.RunLog.FilesWritten, f => Assert.Equal($"{loop.BootId}.parquet", Path.GetFileName(f)));
+        Assert.Equal(1, Count(syncRuns));
+        Assert.Equal(1, Count(publishRuns));
+        Assert.Equal(1, Count(cycleRuns));
+        Assert.Equal(1, RunLogWrites);
+
+        // One minute later the source runs again, but the run log is not due: nothing is written
+        // even though there is something new to write.
+        clock.Advance(TimeSpan.FromMinutes(1));
+        var second = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+        Assert.Single(second.Sources);
+        Assert.Null(second.RunLog);
+        Assert.Equal(1, Count(syncRuns));
+        Assert.Equal(1, RunLogWrites);
+
+        // At the cadence it is due, and the day file is rewritten with every row of the day so far.
+        clock.Advance(TimeSpan.FromMinutes(4));
+        var third = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+        Assert.NotNull(third.RunLog);
+        Assert.False(third.RunLog!.Skipped);
+        Assert.Equal(3, Count(syncRuns));
+        Assert.Equal(3, Count(cycleRuns));
+        Assert.Equal(2, RunLogWrites);
+    }
+
+    [Fact]
+    public async Task RunLog_RewritesOnlyTheTablesThatGainedRows_AndSkipsWhenNothingIsNew()
+    {
+        // A quiet estate: the source's cadence is long, so the cycles between are publish-only,
+        // and an unchanged set writes no publish run. Only the cycle table gains a row per cycle.
+        var registry = OneWidgetSource(TimeSpan.FromMinutes(30));
+        using var loop = Loop(registry, runLog: new SnapshotRunLogOptions
+        {
+            Store = new LocalPublishStore(RunLogDir),
+            Cadence = TimeSpan.FromMinutes(5),
+        });
+
+        var first = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+        var syncRuns = Assert.Single(first.RunLog!.FilesWritten, f => f.Contains(SnapshotRunLog.SyncRunsFolder));
+        var publishRuns = Assert.Single(first.RunLog.FilesWritten, f => f.Contains(SnapshotRunLog.PublishRunsFolder));
+        var syncRunsWritten = File.GetLastWriteTimeUtc(syncRuns);
+        var publishRunsWritten = File.GetLastWriteTimeUtc(publishRuns);
+
+        clock.Advance(TimeSpan.FromMinutes(5));
+        var second = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(SnapshotPublishStatus.SkippedNoChanges, second.Publish!.Status);
+        Assert.NotNull(second.RunLog);
+        Assert.False(second.RunLog!.Skipped);
+        // The source and publish files gained nothing and were not touched; the cycle file was.
+        Assert.Single(second.RunLog.FilesWritten);
+        Assert.Contains(SnapshotRunLog.CycleRunsFolder, second.RunLog.FilesWritten[0]);
+        Assert.Equal(syncRunsWritten, File.GetLastWriteTimeUtc(syncRuns));
+        Assert.Equal(publishRunsWritten, File.GetLastWriteTimeUtc(publishRuns));
+
+        // With nothing new at all, a flush writes nothing: the shutdown flush straight after a
+        // cadence flush is exactly that case.
+        var writesBefore = RunLogWrites;
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+        await loop.RunAsync(cancelled.Token);
+        Assert.Equal(writesBefore, RunLogWrites);
+        Assert.DoesNotContain(events, e => e.Level == SnapshotAgentEventLevel.Warning && e.Message.StartsWith("Run log:"));
+    }
+
+    [Fact]
+    public async Task RunLog_StoppingTheLoop_FlushesTheTailOnce()
+    {
+        var registry = OneWidgetSource(TimeSpan.FromMinutes(1));
+        using var loop = Loop(registry, runLog: new SnapshotRunLogOptions
+        {
+            Store = new LocalPublishStore(RunLogDir),
+            Cadence = TimeSpan.FromMinutes(5),
+        });
+
+        var first = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+        var syncRuns = Assert.Single(first.RunLog!.FilesWritten, f => f.Contains(SnapshotRunLog.SyncRunsFolder));
+
+        // A second cycle adds a run the cadence has not flushed yet: the tail.
+        clock.Advance(TimeSpan.FromMinutes(1));
+        var second = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+        Assert.Null(second.RunLog);
+        Assert.Equal(1, Count(syncRuns));
+
+        // The loop is asked to stop: it runs no cycle and flushes the tail on its way out.
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+        await loop.RunAsync(cancelled.Token);
+
+        Assert.Equal(2, Count(syncRuns));
+        Assert.Equal(2, RunLogWrites);
+        Assert.Contains(events, e => e.Message.StartsWith("Run log:") && e.Message.Contains("(shutdown)"));
+
+        // Stopping again writes nothing more: the tail was flushed once.
+        await loop.RunAsync(cancelled.Token);
+        Assert.Equal(2, RunLogWrites);
+    }
+
+    [Fact]
+    public async Task RunLog_AnUnusableDestination_IsAWarning_AndTheCycleStillCounts()
+    {
+        // A file sitting where the run-log directory should be: creating the directory fails, so
+        // every flush fails. The agent must not care beyond saying so.
+        var blocked = Path.Combine(root, "blocked-run-log");
+        File.WriteAllText(blocked, "not a directory");
+        var registry = OneWidgetSource(TimeSpan.FromMinutes(1));
+        using var loop = Loop(registry, runLog: new SnapshotRunLogOptions
+        {
+            Store = new LocalPublishStore(blocked),
+            Cadence = TimeSpan.FromMinutes(5),
+        });
+
+        var cycle = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(cycle.GateAcquired);
+        Assert.Single(cycle.Sources);
+        Assert.Equal(SnapshotPublishStatus.Published, cycle.Publish!.Status);
+        Assert.Null(cycle.RunLog);
+        var warning = Assert.Single(events, e => e.Level == SnapshotAgentEventLevel.Warning && e.Message.StartsWith("Run log:"));
+        Assert.Contains(blocked, warning.Message);
+        Assert.NotNull(warning.Exception);
+        Assert.DoesNotContain(events, e => e.Level == SnapshotAgentEventLevel.Error);
+
+        // Not retried on the very next cycle: the warning repeats at the cadence, not per cycle.
+        clock.Advance(TimeSpan.FromMinutes(1));
+        await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+        Assert.Single(events, e => e.Level == SnapshotAgentEventLevel.Warning && e.Message.StartsWith("Run log:"));
+
+        clock.Advance(TimeSpan.FromMinutes(4));
+        await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(2, events.Count(e => e.Level == SnapshotAgentEventLevel.Warning && e.Message.StartsWith("Run log:")));
+
+        // The loop still reports itself serviceable when driven the production way.
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+        await loop.RunAsync(cancelled.Token);
+        Assert.Equal(3, events.Count(e => e.Level == SnapshotAgentEventLevel.Warning && e.Message.StartsWith("Run log:")));
+    }
+
+    [Fact]
+    public async Task EveryGatedCycle_RecordsARow_WithTheCountsTheCycleCarries()
+    {
+        var attempts = 0;
+        var registry = new SourceRegistry(
+        [
+            new SnapshotSource
+            {
+                Key = "widgets",
+                SourceScope = "widgets",
+                RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("Code"),
+                Table = Table,
+                Cadence = TimeSpan.FromMinutes(1),
+                Ingest = IngestOf("widgets", () => [("W1", "alpha", 1)], scope: "widgets"),
+            },
+            new SnapshotSource
+            {
+                Key = "broken",
+                SourceScope = "broken",
+                RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("Code"),
+                Table = Table,
+                Cadence = TimeSpan.FromMinutes(1),
+                Ingest = _ => { attempts++; throw new InvalidOperationException("unreachable"); },
+            },
+        ]);
+        using var loop = Loop(registry);
+
+        var first = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+        clock.Advance(TimeSpan.FromMinutes(1));
+        var second = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+
+        Assert.NotNull(first.CycleId);
+        Assert.StartsWith(loop.BootId, first.CycleId);
+        Assert.NotEqual(first.CycleId, second.CycleId);
+
+        // The loop is idle now, so its store may be read: one row per cycle, facts only.
+        var store = loop.Store!;
+        Assert.Equal(2L, Convert.ToInt64(store.ExecuteScalar("SELECT count(*) FROM meta.CycleRuns")));
+        Assert.Equal("Ran", store.ExecuteScalar("SELECT \"Outcome\" FROM meta.CycleRuns WHERE \"CycleId\" = ?", first.CycleId));
+        Assert.Equal(true, store.ExecuteScalar("SELECT \"ColdStart\" FROM meta.CycleRuns WHERE \"CycleId\" = ?", first.CycleId));
+        Assert.Equal(false, store.ExecuteScalar("SELECT \"ColdStart\" FROM meta.CycleRuns WHERE \"CycleId\" = ?", second.CycleId));
+        Assert.Equal(2, Convert.ToInt32(store.ExecuteScalar("SELECT \"SourcesDue\" FROM meta.CycleRuns WHERE \"CycleId\" = ?", first.CycleId)));
+        Assert.Equal(1, Convert.ToInt32(store.ExecuteScalar("SELECT \"SourcesRun\" FROM meta.CycleRuns WHERE \"CycleId\" = ?", first.CycleId)));
+        Assert.Equal(1, Convert.ToInt32(store.ExecuteScalar("SELECT \"SourcesFailed\" FROM meta.CycleRuns WHERE \"CycleId\" = ?", first.CycleId)));
+        Assert.Equal("Published", store.ExecuteScalar("SELECT \"PublishStatus\" FROM meta.CycleRuns WHERE \"CycleId\" = ?", first.CycleId));
+        Assert.Equal(first.Publish!.PublishId, store.ExecuteScalar("SELECT \"PublishId\" FROM meta.CycleRuns WHERE \"CycleId\" = ?", first.CycleId));
+        Assert.Equal("SkippedNoChanges", store.ExecuteScalar("SELECT \"PublishStatus\" FROM meta.CycleRuns WHERE \"CycleId\" = ?", second.CycleId));
+        Assert.Equal(0, Convert.ToInt32(store.ExecuteScalar("SELECT \"PumpTables\" FROM meta.CycleRuns WHERE \"CycleId\" = ?", first.CycleId)));
+        Assert.Equal(2L, Convert.ToInt64(store.ExecuteScalar("SELECT count(*) FROM meta.CycleRuns WHERE \"FinishedAt\" >= \"StartedAt\" AND \"Error\" IS NULL")));
+        Assert.Equal(2, attempts);
+    }
+
+    [Fact]
+    public async Task ACycleThatFailsAtStoreLevel_RecordsAFailedRow_WhenTheStoreIsOpen()
+    {
+        var registry = OneWidgetSource(TimeSpan.FromMinutes(1));
+        using var loop = Loop(registry);
+        await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+
+        // Force the next cycle to fail after the store is open: the publish directory becomes a
+        // file, so the publisher throws at store level and the loop's caller sees the exception.
+        clock.Advance(TimeSpan.FromMinutes(1));
+        Directory.Delete(PublishDir, recursive: true);
+        File.WriteAllText(PublishDir, "not a directory");
+        await Assert.ThrowsAnyAsync<Exception>(() => loop.RunCycleAsync(TestContext.Current.CancellationToken));
+
+        var store = loop.Store!;
+        Assert.Equal(2L, Convert.ToInt64(store.ExecuteScalar("SELECT count(*) FROM meta.CycleRuns")));
+        Assert.Equal(1L, Convert.ToInt64(store.ExecuteScalar(
+            "SELECT count(*) FROM meta.CycleRuns WHERE \"Outcome\" = 'Failed' AND \"Error\" IS NOT NULL AND \"SourcesRun\" = 1")));
+    }
+
+    // ---- The pump's own rows, with no Cosmos anywhere ------------------------------------------
+
+    /// <summary>An in-memory container, so a wet cycle can pump without a Cosmos account or emulator.</summary>
+    private sealed class InMemoryTransport : ICosmosSnapshotTransport
+    {
+        private readonly InMemoryContainer container = new();
+
+        public int Documents => container.Documents.Count;
+
+        public ICosmosSnapshotContainer GetContainer(string database, string containerName) => container;
+
+        private sealed class InMemoryContainer : ICosmosSnapshotContainer
+        {
+            public ConcurrentDictionary<string, CosmosDocument> Documents { get; } = new(StringComparer.Ordinal);
+
+            public Task<CosmosTransportResponse> UpsertAsync(CosmosDocument document, CancellationToken cancellationToken)
+            {
+                Documents[document.Id] = document;
+                return Task.FromResult(new CosmosTransportResponse(HttpStatusCode.OK, true, 1, RetryAfter: null, ErrorMessage: null));
+            }
+
+            public Task<CosmosTransportResponse> DeleteAsync(string id, IReadOnlyList<object?> partitionKey, CancellationToken cancellationToken)
+            {
+                Documents.TryRemove(id, out _);
+                return Task.FromResult(new CosmosTransportResponse(HttpStatusCode.NoContent, true, 1, RetryAfter: null, ErrorMessage: null));
+            }
+        }
+    }
+
+    private static readonly IReadOnlyList<CosmosFamilyMapping> WidgetFamily =
+    [
+        new CosmosFamilyMapping
+        {
+            Family = "Widget",
+            Database = "D",
+            Container = "C",
+            Map = row => new CosmosDocument
+            {
+                Id = row.PrimaryKey,
+                PartitionKey = [row.PrimaryKey],
+                Body = new Dictionary<string, object?> { ["Code"] = row.Values["Code"] },
+            },
+        },
+    ];
+
+    [Fact]
+    public async Task AWetCycle_RecordsOnePumpRowPerTable_AndTheRunLogCopiesIt()
+    {
+        var transport = new InMemoryTransport();
+        var registry = new SourceRegistry(
+        [
+            new SnapshotSource
+            {
+                Key = "widgets",
+                RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("Code"),
+                Table = Table,
+                Cadence = TimeSpan.FromMinutes(1),
+                Ingest = IngestOf("widgets", () => [("W1", "alpha", 1), ("W2", "beta", 2)]),
+                Families = WidgetFamily,
+            },
+        ]);
+        using var loop = Loop(registry, transport: transport, runLog: new SnapshotRunLogOptions
+        {
+            Store = new LocalPublishStore(RunLogDir),
+            Cadence = TimeSpan.FromMinutes(5),
+        });
+
+        var cycle = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+
+        // The pump ran through the in-memory container and reported the drain as facts, timed.
+        var pump = Assert.Single(cycle.Pumps);
+        Assert.Equal("Widget", pump.Table);
+        Assert.Equal(2, pump.RowsRead);
+        Assert.Equal(2, pump.Upserted);
+        Assert.True(pump.Drained);
+        Assert.Equal("QueueEmpty", pump.StopReason);
+        Assert.True(pump.StartedAt >= loop.BootStartedAt, "the drain's start time is missing");
+        Assert.True(pump.FinishedAt >= pump.StartedAt, "the drain's finish time is missing");
+        Assert.Equal(2, transport.Documents);
+
+        // One row per pumped table in the write DB, keyed by the cycle, carrying the same facts;
+        // the cycle row carries their sum.
+        var store = loop.Store!;
+        Assert.Equal(1L, Convert.ToInt64(store.ExecuteScalar("SELECT count(*) FROM meta.PumpRuns")));
+        Assert.Equal(cycle.CycleId, store.ExecuteScalar("SELECT \"CycleId\" FROM meta.PumpRuns WHERE \"Table\" = 'Widget'"));
+        Assert.Equal(2L, Convert.ToInt64(store.ExecuteScalar("SELECT \"Upserted\" FROM meta.PumpRuns")));
+        Assert.Equal(2L, Convert.ToInt64(store.ExecuteScalar("SELECT \"RemoteAttemptedRows\" FROM meta.PumpRuns")));
+        Assert.Equal("QueueEmpty", store.ExecuteScalar("SELECT \"StopReason\" FROM meta.PumpRuns"));
+        Assert.Equal(true, store.ExecuteScalar("SELECT \"Drained\" FROM meta.PumpRuns"));
+        Assert.Equal(1L, Convert.ToInt64(store.ExecuteScalar("SELECT count(*) FROM meta.PumpRuns WHERE \"FinishedAt\" >= \"StartedAt\"")));
+        Assert.Equal(1, Convert.ToInt32(store.ExecuteScalar("SELECT \"PumpTables\" FROM meta.CycleRuns WHERE \"CycleId\" = ?", cycle.CycleId)));
+        Assert.Equal(2L, Convert.ToInt64(store.ExecuteScalar("SELECT \"PumpUpserted\" FROM meta.CycleRuns WHERE \"CycleId\" = ?", cycle.CycleId)));
+
+        // The run log copied it out beside the other three tables.
+        Assert.NotNull(cycle.RunLog);
+        Assert.Equal(4, cycle.RunLog!.FilesWritten.Count);
+        var pumpRuns = Assert.Single(cycle.RunLog.FilesWritten, f => f.Contains(SnapshotRunLog.PumpRunsFolder));
+        Assert.Equal($"{loop.BootId}.parquet", Path.GetFileName(pumpRuns));
+        Assert.Equal(1, Count(pumpRuns));
+
+        // A cycle that drains a table with nothing dirty still records the drain it made.
+        clock.Advance(TimeSpan.FromMinutes(1));
+        var second = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+        var quiet = Assert.Single(second.Pumps);
+        Assert.Equal(0, quiet.RowsRead);
+        Assert.Equal(2L, Convert.ToInt64(store.ExecuteScalar("SELECT count(*) FROM meta.PumpRuns")));
+        Assert.Equal(2, transport.Documents);
+    }
+
+    // ---- Pruning the write DB's run tables -----------------------------------------------------
+
+    /// <summary>A run row from an earlier boot, placed by hand with a chosen start time.</summary>
+    private static void InsertRun(SnapshotStore store, string runId, string source, DateTime startedAt) =>
+        store.Execute(
+            """
+            INSERT INTO meta.SyncRuns ("RunId", "Source", "TargetTable", "StartedAt", "FinishedAt", "Status")
+            VALUES (?, ?, 'Widget', ?, ?, 'Succeeded')
+            """,
+            runId, source, startedAt, startedAt.AddSeconds(1));
+
+    [Fact]
+    public async Task TheFirstCadenceFlush_PrunesFlushedRowsOfEarlierDays_AndOnlyOnceADay()
+    {
+        // A warm boot over a write DB that earlier boots left run rows in, on earlier days: the
+        // shape of a persistent estate. Two sources: one this boot runs, one that only ran before.
+        var twoDaysAgo = DateTime.UtcNow.AddDays(-2);
+        var threeDaysAgo = DateTime.UtcNow.AddDays(-3);
+        using (var earlier = SnapshotStore.Open(new SnapshotStoreOptions { DatabasePath = WriteDbPath }))
+        {
+            InsertRun(earlier, "gone-widgets", "widgets", twoDaysAgo);
+            InsertRun(earlier, "gone-retired", "retired", threeDaysAgo);
+            InsertRun(earlier, "kept-retired", "retired", twoDaysAgo);
+            earlier.Execute("INSERT INTO meta.CycleRuns (\"CycleId\", \"StartedAt\", \"Outcome\") VALUES ('gone-cycle', ?, 'Ran')", twoDaysAgo);
+            earlier.Execute("INSERT INTO meta.PublishRuns (\"PublishId\", \"SnapshotName\", \"StartedAt\", \"Status\") VALUES ('gone-publish', 'agent-test', ?, 'Published')", twoDaysAgo);
+            earlier.Execute("INSERT INTO meta.PumpRuns (\"CycleId\", \"Table\", \"StartedAt\") VALUES ('gone-cycle', 'Widget', ?)", twoDaysAgo);
+        }
+        var registry = OneWidgetSource(TimeSpan.FromMinutes(1));
+        using var loop = Loop(registry, runLog: new SnapshotRunLogOptions
+        {
+            Store = new LocalPublishStore(RunLogDir),
+            Cadence = TimeSpan.FromMinutes(5),
+        });
+
+        var first = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+
+        Assert.False(first.ColdStartRebuild);
+        Assert.NotNull(first.RunLog);
+        // The first cadence flush wrote today's rows, then the prune took the earlier days' rows:
+        // six placed, five gone, and the one kept is the newest row of the source this boot has
+        // not run, which the publisher reads into the manifest.
+        var store = loop.Store!;
+        var pruned = Assert.Single(events, e => e.Level == SnapshotAgentEventLevel.Info && e.Message.StartsWith("Run log: pruned"));
+        Assert.Contains("5 flushed row(s)", pruned.Message);
+        Assert.Equal(0L, Convert.ToInt64(store.ExecuteScalar("SELECT count(*) FROM meta.SyncRuns WHERE \"RunId\" LIKE 'gone-%'")));
+        Assert.Equal(1L, Convert.ToInt64(store.ExecuteScalar("SELECT count(*) FROM meta.SyncRuns WHERE \"RunId\" = 'kept-retired'")));
+        Assert.Equal(1L, Convert.ToInt64(store.ExecuteScalar("SELECT count(*) FROM meta.CycleRuns")));
+        Assert.Equal(1L, Convert.ToInt64(store.ExecuteScalar("SELECT count(*) FROM meta.PublishRuns")));
+        Assert.Equal(0L, Convert.ToInt64(store.ExecuteScalar("SELECT count(*) FROM meta.PumpRuns")));
+        Assert.Contains(store.ReadLatestRunPerSource(), run => run.SourceKey == "retired");
+        // Earlier boots' rows were never this boot's to export: no file for their days.
+        Assert.DoesNotContain(first.RunLog!.FilesWritten, f => f.Contains($"date={twoDaysAgo:yyyy-MM-dd}"));
+        Assert.DoesNotContain(events, e => e.Level == SnapshotAgentEventLevel.Warning && e.Message.StartsWith("Run log:"));
+
+        // Once a day: a row that turns up later the same day waits for tomorrow's first flush.
+        InsertRun(store, "later-widgets", "widgets", threeDaysAgo);
+        clock.Advance(TimeSpan.FromMinutes(5));
+        var second = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+
+        Assert.NotNull(second.RunLog);
+        Assert.Single(events, e => e.Message.StartsWith("Run log: pruned"));
+        Assert.Equal(1L, Convert.ToInt64(store.ExecuteScalar("SELECT count(*) FROM meta.SyncRuns WHERE \"RunId\" = 'later-widgets'")));
     }
 }

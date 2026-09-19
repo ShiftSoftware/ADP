@@ -312,6 +312,76 @@ public sealed class SnapshotStore : IDisposable
             )
             """);
 
+        // What each loop cycle did: outcome, timings, source and pump totals, and which publish it
+        // made. These facts used to live only in memory and were gone after the log line.
+        // Additive on the same terms as meta.SourceFileStamps below: no version gate, so an existing
+        // write DB gains the table empty on the next open, with no schema-version bump and no forced
+        // cold-start rebuild. Written by the agent loop, copied out by the run log.
+        Execute(
+            """
+            CREATE TABLE IF NOT EXISTS meta.CycleRuns (
+                "CycleId" VARCHAR NOT NULL PRIMARY KEY,
+                "StartedAt" TIMESTAMP NOT NULL,
+                "FinishedAt" TIMESTAMP,
+                "Outcome" VARCHAR NOT NULL,
+                "ColdStart" BOOLEAN NOT NULL DEFAULT false,
+                "SourcesDue" INTEGER NOT NULL DEFAULT 0,
+                "SourcesRun" INTEGER NOT NULL DEFAULT 0,
+                "SourcesFailed" INTEGER NOT NULL DEFAULT 0,
+                "IngestFetchedAhead" INTEGER NOT NULL DEFAULT 0,
+                "IngestPeakWidth" INTEGER NOT NULL DEFAULT 0,
+                "PumpTables" INTEGER NOT NULL DEFAULT 0,
+                "PumpBatches" INTEGER NOT NULL DEFAULT 0,
+                "PumpRowsRead" BIGINT NOT NULL DEFAULT 0,
+                "PumpUpserted" BIGINT NOT NULL DEFAULT 0,
+                "PumpDeleted" BIGINT NOT NULL DEFAULT 0,
+                "PumpFailed" BIGINT NOT NULL DEFAULT 0,
+                "PumpDeadLettered" BIGINT NOT NULL DEFAULT 0,
+                "PumpRequestCharge" DOUBLE NOT NULL DEFAULT 0,
+                "PumpThrottledRequests" INTEGER NOT NULL DEFAULT 0,
+                "PumpCosmosMs" DOUBLE NOT NULL DEFAULT 0,
+                "PumpBookkeepingMs" DOUBLE NOT NULL DEFAULT 0,
+                "PublishStatus" VARCHAR,
+                "PublishId" VARCHAR,
+                "Error" VARCHAR
+            )
+            """);
+
+        // What each table's pump drain did within a cycle: the per-table facts the cycle row sums
+        // up, plus the ones a sum cannot keep (whether the table drained, why the drain stopped,
+        // the remote attempts, the peak in flight, the group recompute counts). Same additive
+        // terms as meta.CycleRuns above. Written by the agent loop beside the cycle row, copied
+        // out by the run log.
+        Execute(
+            """
+            CREATE TABLE IF NOT EXISTS meta.PumpRuns (
+                "CycleId" VARCHAR NOT NULL,
+                "Table" VARCHAR NOT NULL,
+                "StartedAt" TIMESTAMP NOT NULL,
+                "FinishedAt" TIMESTAMP,
+                "Batches" INTEGER NOT NULL DEFAULT 0,
+                "RowsRead" BIGINT NOT NULL DEFAULT 0,
+                "Upserted" BIGINT NOT NULL DEFAULT 0,
+                "Deleted" BIGINT NOT NULL DEFAULT 0,
+                "Excluded" BIGINT NOT NULL DEFAULT 0,
+                "Failed" BIGINT NOT NULL DEFAULT 0,
+                "DeadLettered" BIGINT NOT NULL DEFAULT 0,
+                "Drained" BOOLEAN NOT NULL DEFAULT false,
+                "StopReason" VARCHAR,
+                "RemoteAttemptedRows" BIGINT NOT NULL DEFAULT 0,
+                "RemoteFailedRows" BIGINT NOT NULL DEFAULT 0,
+                "MaxObservedInFlightRows" INTEGER NOT NULL DEFAULT 0,
+                "RequestCharge" DOUBLE NOT NULL DEFAULT 0,
+                "ThrottledRequests" INTEGER NOT NULL DEFAULT 0,
+                "CosmosMs" DOUBLE NOT NULL DEFAULT 0,
+                "BookkeepingMs" DOUBLE NOT NULL DEFAULT 0,
+                "GroupsRead" INTEGER NOT NULL DEFAULT 0,
+                "SourceRowsLoaded" BIGINT NOT NULL DEFAULT 0,
+                "GroupsRecomputed" INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY ("CycleId", "Table")
+            )
+            """);
+
         // The source change gate's memory: what each file source looked like the last time its
         // merge SUCCEEDED. Additive, so an existing write DB gains it empty on the next open and
         // no schema-version bump (and therefore no forced cold-start rebuild) is needed — every

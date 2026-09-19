@@ -109,6 +109,25 @@ public sealed class SnapshotAgentOptions
 
     /// <summary>Observability callback (the host adapts to its logger). Exceptions in the callback are swallowed.</summary>
     public Action<SnapshotAgentEvent>? OnEvent { get; init; }
+
+    /// <summary>
+    /// The run-log exporter. Null keeps it off, the incumbent behaviour. When set, the loop copies
+    /// the run tables (<c>meta.SyncRuns</c>, <c>meta.PublishRuns</c>, <c>meta.CycleRuns</c>,
+    /// <c>meta.PumpRuns</c>) to parquet on <see cref="SnapshotRunLogOptions.Cadence"/>, once more
+    /// at shutdown, and never per cycle. Facts only, into a location of its own, never into the
+    /// published set. A flush that fails is a warning, never a failed cycle. Once a day, after a
+    /// cadence flush, the loop also prunes flushed rows of earlier days out of the write DB
+    /// (<see cref="SnapshotRunLog.Prune"/>); with the run log off nothing is ever pruned, because
+    /// nothing was ever copied out. See <see cref="SnapshotRunLog"/>.
+    /// </summary>
+    public SnapshotRunLogOptions? RunLog { get; init; }
+
+    /// <summary>
+    /// What the pump writes through instead of a Cosmos client: an in-memory container for the
+    /// engine's own tests and for the host repository's drills, which need a wet cycle with no
+    /// Cosmos anywhere. Null in production, where the client given to the loop is the transport.
+    /// </summary>
+    internal ICosmosSnapshotTransport? ReplicationTransport { get; init; }
 }
 
 public enum SnapshotAgentEventLevel { Info, Warning, Error }
@@ -123,6 +142,9 @@ public sealed record SnapshotAgentEvent(
 public sealed record SnapshotAgentSourceRun(string SourceKey, SnapshotMergeResult? Merge, Exception? Error);
 
 /// <summary>One table's pump drain within a cycle (accumulated across batches).</summary>
+/// <param name="StopReason">Why the drain stopped, as <see cref="ReplicationDrainStop"/> names it. Null when the caller did not record one.</param>
+/// <param name="StartedAt">System-clock UTC time the drain started. Default when the caller did not record one.</param>
+/// <param name="FinishedAt">System-clock UTC time the drain finished. Default when the caller did not record one.</param>
 public sealed record SnapshotAgentPumpRun(
     string Table,
     int Batches,
@@ -142,7 +164,10 @@ public sealed record SnapshotAgentPumpRun(
     int GroupsRead = 0,
     int SourceRowsLoaded = 0,
     int GroupsRecomputed = 0,
-    int DeadLettered = 0);
+    int DeadLettered = 0,
+    string? StopReason = null,
+    DateTime StartedAt = default,
+    DateTime FinishedAt = default);
 
 /// <summary>What one cycle did.</summary>
 public sealed record SnapshotAgentCycle(
@@ -154,6 +179,15 @@ public sealed record SnapshotAgentCycle(
 {
     public static readonly SnapshotAgentCycle Idle = new(true, false, [], [], null);
     public static readonly SnapshotAgentCycle GateUnavailable = new(false, false, [], [], null);
+
+    /// <summary>The id of this cycle's row in <c>meta.CycleRuns</c>. Null for an idle cycle, which records nothing.</summary>
+    public string? CycleId { get; init; }
+
+    /// <summary>
+    /// What the run log did at the end of this cycle. Null when no flush was due, when the run log
+    /// is off, and when the flush failed (that is reported as a warning event instead).
+    /// </summary>
+    public SnapshotRunLogFlushResult? RunLog { get; init; }
 }
 
 /// <summary>
@@ -180,6 +214,17 @@ public sealed class SnapshotAgentLoop : IDisposable
     private readonly Dictionary<string, DateTimeOffset> nextDue = new(StringComparer.OrdinalIgnoreCase);
     private DateTimeOffset nextPublish = DateTimeOffset.MinValue;
 
+    // The run log's state. The boot time comes from the SYSTEM clock, not the TimeProvider: the
+    // run tables are stamped with DateTime.UtcNow, and the "since boot" filter has to speak the
+    // same clock. The first flush is due at once, so the first cycle after a boot leaves a trace;
+    // after that the cadence applies. Cadence arithmetic uses the TimeProvider like the rest.
+    private readonly DateTime bootStartedAt = DateTime.UtcNow;
+    private readonly string bootId;
+    private DateTimeOffset nextRunLogFlush = DateTimeOffset.MinValue;
+    private DateTime? runLogFlushedThrough;
+    private DateOnly? runLogPrunedOn;
+    private long cycleSequence;
+
     private SnapshotStore? store;
     private CosmosSnapshotReplicator? replicator;
 
@@ -190,11 +235,15 @@ public sealed class SnapshotAgentLoop : IDisposable
                 nameof(options.MaxPumpBatchesPerCycle),
                 "Max pump batches per cycle must be positive.");
 
+        options.RunLog?.Validate();
+
         this.options = options;
         this.cosmosClient = cosmosClient;
+        bootId = SnapshotRunLog.NewBootId(bootStartedAt);
 
         if (!options.DryRun
             && cosmosClient is null
+            && options.ReplicationTransport is null
             && options.Registry.Sources.Any(s => s is { Families.Count: > 0, ReplicationEnabled: true }))
         {
             throw new InvalidOperationException(
@@ -223,6 +272,15 @@ public sealed class SnapshotAgentLoop : IDisposable
 
     /// <summary>The store, once a cycle has opened it (exposed for hosts' diagnostics endpoints).</summary>
     public SnapshotStore? Store => store;
+
+    /// <summary>
+    /// This process lifetime's id. It is the run log's file name, so a host that prints it in its
+    /// startup line lets an operator match the log stream to the files.
+    /// </summary>
+    public string BootId => bootId;
+
+    /// <summary>When this loop was constructed, by the system clock. Run-log rows older than this belong to an earlier boot.</summary>
+    public DateTime BootStartedAt => bootStartedAt;
 
     /// <summary>Runs cycles until cancelled. Contains its own failures: a crashed cycle is an event + backoff, not a dead agent.</summary>
     /// <summary>
@@ -266,6 +324,12 @@ public sealed class SnapshotAgentLoop : IDisposable
             var wait = cycle.GateAcquired ? ComputeWait() : options.GateRetryWait;
             if (!await WaitAsync(wait, cancellationToken)) break;
         }
+
+        // The final flush, once the loop has stopped and before the host disposes it. No gate is
+        // held and none is needed: run-log files are per boot. One attempt, no retry. A lost tail
+        // is bounded by the cadence and is visible in the log itself, because the next boot's rows
+        // start a new file.
+        FlushRunLog("shutdown");
     }
 
     /// <summary>
@@ -301,6 +365,11 @@ public sealed class SnapshotAgentLoop : IDisposable
     private async Task<SnapshotAgentCycle> RunAsync(
         IReadOnlyList<SnapshotSource> due, bool publishDue, CancellationToken cancellationToken)
     {
+        // The cycle's row in meta.CycleRuns starts here, before the gate, so a cycle that could not
+        // take the gate is recorded too (when a store is already open to record it in).
+        var cycleStartedAt = DateTime.UtcNow;
+        var cycleId = $"{bootId}-{Interlocked.Increment(ref cycleSequence):D6}";
+
         WriteGateLease? gate = null;
         if (options.WriteGate is not null)
         {
@@ -309,9 +378,20 @@ public sealed class SnapshotAgentLoop : IDisposable
             {
                 Emit(SnapshotAgentEventLevel.Warning,
                     "Write gate held elsewhere — skipping this cycle (normal during deploy overlap).");
+                RecordCycle(cycleId, cycleStartedAt, "GateUnavailable", coldStart: false, due.Count,
+                    [], 0, 0, [], publish: null, error: null);
                 return SnapshotAgentCycle.GateUnavailable;
             }
         }
+
+        // Declared outside the try, so the cycle's row can be written from the catch blocks with
+        // whatever the cycle managed to do before it failed.
+        var coldStart = false;
+        var sourceRuns = new List<SnapshotAgentSourceRun>();
+        var pumpRuns = new List<SnapshotAgentPumpRun>();
+        var ingestFetchedAhead = 0;
+        var ingestPeakWidth = 0;
+        SnapshotPublishResult? publish = null;
 
         try
         {
@@ -321,14 +401,13 @@ public sealed class SnapshotAgentLoop : IDisposable
             var token = linkedCts.Token;
             Action? ownershipGuard = gate is null ? null : new Action(gate.EnsureOwnership);
 
-            var coldStart = EnsureStore();
+            coldStart = EnsureStore();
 
             // One probe per cycle, always — it is lazy, so a registry with no gated source never
             // touches the file system through it. Sharing it across the cycle is the point: every
             // source sees the same picture of the share, and no cycle inherits another's cache.
             var fileMetadata = new DirectoryListingFileMetadataProbe();
 
-            var sourceRuns = new List<SnapshotAgentSourceRun>();
             var pumpTables = new Dictionary<string, (SnapshotTableDefinition Table, IReadOnlyList<CosmosFamilyMapping> Families, int BatchSize, int MaxInFlightRows)>(
                 StringComparer.OrdinalIgnoreCase);
 
@@ -396,6 +475,9 @@ public sealed class SnapshotAgentLoop : IDisposable
                 },
                 token);
 
+            ingestFetchedAhead = ingest.SourcesFetched;
+            ingestPeakWidth = ingest.MaxObservedFetchesInFlight;
+
             // Width is the thing that silently fails here: a fan-out whose blocking work cannot
             // get threads reaches degree 1 and reports nothing. Say it once per cycle that
             // actually fanned out, so a regression is visible in the log rather than in the clock.
@@ -445,7 +527,6 @@ public sealed class SnapshotAgentLoop : IDisposable
                 }
             }
 
-            var pumpRuns = new List<SnapshotAgentPumpRun>();
             if (!options.DryRun)
             {
                 foreach (var (table, families, batchSize, maxInFlightRows) in pumpTables.Values)
@@ -463,7 +544,6 @@ public sealed class SnapshotAgentLoop : IDisposable
                 }
             }
 
-            SnapshotPublishResult? publish = null;
             if (publishDue && !token.IsCancellationRequested)
             {
                 // The gate is what makes publishing to the shared location safe — if the lease
@@ -500,7 +580,38 @@ public sealed class SnapshotAgentLoop : IDisposable
                 Emit(SnapshotAgentEventLevel.Warning, "Skipped publish — gate lost or cancellation requested mid-cycle.");
             }
 
-            return new SnapshotAgentCycle(true, coldStart, sourceRuns, pumpRuns, publish);
+            // This cycle's facts, written before the run log flushes so the flush can carry them.
+            RecordCycle(cycleId, cycleStartedAt, "Ran", coldStart, due.Count, sourceRuns,
+                ingestFetchedAhead, ingestPeakWidth, pumpRuns, publish, error: null);
+
+            // The run log, on its own clock and on this thread. It reads the run tables this cycle
+            // just wrote, which is why it lives here and nowhere else: the store is single-connection
+            // and the loop is one caller at a time. Skipped while the process is shutting down,
+            // because the final flush after the loop covers that. Contained when it fails, because
+            // observability must never fail the agent.
+            var runLog = cancellationToken.IsCancellationRequested ? null : FlushRunLogIfDue();
+
+            return new SnapshotAgentCycle(true, coldStart, sourceRuns, pumpRuns, publish)
+            {
+                CycleId = cycleId,
+                RunLog = runLog,
+            };
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // A shutdown mid-cycle is not a failure, and the row says so.
+            RecordCycle(cycleId, cycleStartedAt, "Cancelled", coldStart, due.Count, sourceRuns,
+                ingestFetchedAhead, ingestPeakWidth, pumpRuns, publish, error: null);
+            throw;
+        }
+        catch (Exception exception)
+        {
+            var error = exception is OperationCanceledException && gate?.LostToken.IsCancellationRequested == true
+                ? "The write gate was lost mid-cycle."
+                : exception.Message;
+            RecordCycle(cycleId, cycleStartedAt, "Failed", coldStart, due.Count, sourceRuns,
+                ingestFetchedAhead, ingestPeakWidth, pumpRuns, publish, error);
+            throw;
         }
         finally
         {
@@ -519,7 +630,8 @@ public sealed class SnapshotAgentLoop : IDisposable
     {
         // The drain (cursor paging + systemic-failure breaker + batch bound) lives in the
         // replicator so every caller — this loop and the dev harness alike — rehearses the
-        // SAME outage behavior.
+        // SAME outage behavior. Timed by the system clock, like every run record.
+        var startedAt = DateTime.UtcNow;
         var drain = await replicator!.DrainAsync(
             new CosmosSnapshotReplicatorOptions
             {
@@ -576,7 +688,7 @@ public sealed class SnapshotAgentLoop : IDisposable
             drain.RemoteFailedRows, drain.MaxObservedInFlightRows, drain.RequestCharge,
             drain.ThrottledRequests, drain.CosmosOperationTime, drain.BookkeepingTime,
             drain.GroupsRead, drain.SourceRowsLoaded, drain.GroupsRecomputed,
-            drain.DeadLettered);
+            drain.DeadLettered, drain.Stopped.ToString(), startedAt, DateTime.UtcNow);
     }
 
     /// <summary>Opens (or rebuilds) the write DB. Returns true when this was a cold start that restored from the published set.</summary>
@@ -585,7 +697,9 @@ public sealed class SnapshotAgentLoop : IDisposable
         DatabasePath = options.WriteDatabasePath,
         ExtensionDirectory = options.ExtensionDirectory,
         ExtensionDirectories = options.ExtensionDirectories,
-        AzureConnectionString = options.AzureConnectionString,
+        // The run log's credential stands in when the publish tier is local but the run log is a
+        // container, so the store still provisions the azure extension and holds a credential.
+        AzureConnectionString = options.AzureConnectionString ?? options.RunLog?.AzureConnectionString,
         ConfigureConnection = options.ConfigureStoreConnection,
     };
 
@@ -623,10 +737,17 @@ public sealed class SnapshotAgentLoop : IDisposable
             existed = false;
         }
 
+        // The run log's own credential, when it has one. Scoped to the run-log root, so it changes
+        // nothing for the publish tier.
+        if (options.RunLog is { } runLog)
+            SnapshotRunLog.ApplyCredential(store, runLog);
+
         foreach (var table in options.Registry.Tables)
             store.EnsureTable(table);
 
-        replicator = new CosmosSnapshotReplicator(store, cosmosClient);
+        replicator = options.ReplicationTransport is { } transport
+            ? new CosmosSnapshotReplicator(new SnapshotReplicationStateStore(store), transport)
+            : new CosmosSnapshotReplicator(store, cosmosClient);
 
         var coldStart = !existed;
         if (coldStart)
@@ -679,6 +800,173 @@ public sealed class SnapshotAgentLoop : IDisposable
         var wal = options.WriteDatabasePath + ".wal";
         if (File.Exists(wal)) File.Delete(wal);
         if (File.Exists(options.WriteDatabasePath)) File.Delete(options.WriteDatabasePath);
+    }
+
+    /// <summary>Flushes the run log when its cadence has elapsed. Null when it is off or not due.</summary>
+    private SnapshotRunLogFlushResult? FlushRunLogIfDue()
+    {
+        if (options.RunLog is null || nextRunLogFlush > options.TimeProvider.GetUtcNow())
+            return null;
+        var result = FlushRunLog("cadence");
+        if (result is not null)
+            PruneRunLogIfDue();
+        return result;
+    }
+
+    /// <summary>
+    /// Once per UTC day, right after a cadence flush that succeeded: deletes the flushed rows of
+    /// earlier days from the write DB's run tables (<see cref="SnapshotRunLog.Prune"/>). Never
+    /// before the first flush that wrote, so nothing is deleted until the run log has proven it can
+    /// copy rows out; never at shutdown, which does the minimum. Contained: a prune that fails is a
+    /// warning, and the day is marked before the attempt so it is retried tomorrow, not per flush.
+    /// </summary>
+    private void PruneRunLogIfDue()
+    {
+        if (store is null || runLogFlushedThrough is not { } flushedThrough)
+            return;
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (runLogPrunedOn == today)
+            return;
+
+        runLogPrunedOn = today;
+        try
+        {
+            var pruned = SnapshotRunLog.Prune(store, flushedThrough, today);
+            if (pruned.Total > 0)
+            {
+                var detail = string.Join(", ", pruned.RowsDeleted
+                    .Where(entry => entry.Value > 0)
+                    .Select(entry => $"{entry.Key} {entry.Value}"));
+                Emit(SnapshotAgentEventLevel.Info,
+                    $"Run log: pruned {pruned.Total} flushed row(s) from days before {today:yyyy-MM-dd} out of the " +
+                    $"write DB ({detail}) in {pruned.Elapsed.TotalMilliseconds:F0} ms; the newest row per source stays.");
+            }
+        }
+        catch (Exception exception)
+        {
+            Emit(SnapshotAgentEventLevel.Warning,
+                "Run log: pruning the write DB's run tables failed. The cycle and the run log are unaffected; " +
+                "the first cadence flush of the next day retries.",
+                exception: exception);
+        }
+    }
+
+    /// <summary>
+    /// One flush attempt, contained. The next due time moves BEFORE the attempt, so a destination
+    /// that keeps failing is retried at the cadence and warns at the cadence, never every cycle:
+    /// a missing container is loud every few minutes and heals itself once the container appears.
+    /// </summary>
+    private SnapshotRunLogFlushResult? FlushRunLog(string reason)
+    {
+        var runLog = options.RunLog;
+        if (runLog is null || store is null)
+            return null;
+
+        nextRunLogFlush = options.TimeProvider.GetUtcNow() + runLog.Cadence;
+        try
+        {
+            var result = SnapshotRunLog.Flush(
+                store, runLog, options.SnapshotName, bootId, bootStartedAt, runLogFlushedThrough);
+            runLogFlushedThrough = result.FlushedThrough;
+            if (!result.Skipped)
+            {
+                Emit(SnapshotAgentEventLevel.Info,
+                    $"Run log: {result.RowsWritten} row(s) written to {result.FilesWritten.Count} file(s) under " +
+                    $"{runLog.Store.Root} in {result.Elapsed.TotalMilliseconds:F0} ms ({reason}).");
+            }
+            return result;
+        }
+        catch (Exception exception)
+        {
+            // A warning, never a failed cycle. The destination is named; the credential never is.
+            Emit(SnapshotAgentEventLevel.Warning,
+                $"Run log: flush to {runLog.Store.Root} failed ({reason}). The cycle is unaffected and the " +
+                "next due flush retries. If the destination is a container, an operator must create it first.",
+                exception: exception);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Writes the cycle's row in <c>meta.CycleRuns</c>: what the cycle did, as recorded facts.
+    /// <c>SourcesRun</c> counts sources that reached a merge (their own outcome is in
+    /// <c>meta.SyncRuns</c>); <c>SourcesFailed</c> counts sources that crashed before one. Then one
+    /// row per pumped table in <c>meta.PumpRuns</c>: the facts the cycle row sums, and the ones a
+    /// sum cannot keep. Only when the store is open, which it is not for a cycle that failed to
+    /// open it. Contained: a row that cannot be written is a warning, and the cycle's own outcome
+    /// stands.
+    /// </summary>
+    private void RecordCycle(
+        string cycleId, DateTime startedAt, string outcome, bool coldStart, int sourcesDue,
+        IReadOnlyList<SnapshotAgentSourceRun> sources, int ingestFetchedAhead, int ingestPeakWidth,
+        IReadOnlyList<SnapshotAgentPumpRun> pumps, SnapshotPublishResult? publish, string? error)
+    {
+        if (store is null)
+            return;
+
+        try
+        {
+            store.Execute(
+                """
+                INSERT INTO meta.CycleRuns
+                ("CycleId", "StartedAt", "FinishedAt", "Outcome", "ColdStart",
+                 "SourcesDue", "SourcesRun", "SourcesFailed", "IngestFetchedAhead", "IngestPeakWidth",
+                 "PumpTables", "PumpBatches", "PumpRowsRead", "PumpUpserted", "PumpDeleted", "PumpFailed",
+                 "PumpDeadLettered", "PumpRequestCharge", "PumpThrottledRequests", "PumpCosmosMs", "PumpBookkeepingMs",
+                 "PublishStatus", "PublishId", "Error")
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                cycleId, startedAt, DateTime.UtcNow, outcome, coldStart,
+                sourcesDue,
+                sources.Count(run => run.Merge is not null),
+                sources.Count(run => run.Error is not null),
+                ingestFetchedAhead, ingestPeakWidth,
+                pumps.Count,
+                pumps.Sum(pump => pump.Batches),
+                pumps.Sum(pump => (long)pump.RowsRead),
+                pumps.Sum(pump => (long)pump.Upserted),
+                pumps.Sum(pump => (long)pump.Deleted),
+                pumps.Sum(pump => (long)pump.Failed),
+                pumps.Sum(pump => (long)pump.DeadLettered),
+                pumps.Sum(pump => pump.RequestCharge),
+                pumps.Sum(pump => pump.ThrottledRequests),
+                pumps.Sum(pump => pump.CosmosOperationTime.TotalMilliseconds),
+                pumps.Sum(pump => pump.BookkeepingTime.TotalMilliseconds),
+                publish?.Status.ToString(), publish?.PublishId, error);
+
+            // A pump run that carries no time of its own (a caller built the record by hand) is
+            // placed at the cycle's start, so it always lands in the cycle's day file.
+            foreach (var pump in pumps)
+            {
+                store.Execute(
+                    """
+                    INSERT INTO meta.PumpRuns
+                    ("CycleId", "Table", "StartedAt", "FinishedAt",
+                     "Batches", "RowsRead", "Upserted", "Deleted", "Excluded", "Failed", "DeadLettered",
+                     "Drained", "StopReason", "RemoteAttemptedRows", "RemoteFailedRows", "MaxObservedInFlightRows",
+                     "RequestCharge", "ThrottledRequests", "CosmosMs", "BookkeepingMs",
+                     "GroupsRead", "SourceRowsLoaded", "GroupsRecomputed")
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    cycleId, pump.Table,
+                    pump.StartedAt == default ? startedAt : pump.StartedAt,
+                    pump.FinishedAt == default ? null : pump.FinishedAt,
+                    pump.Batches, (long)pump.RowsRead, (long)pump.Upserted, (long)pump.Deleted, (long)pump.Excluded,
+                    (long)pump.Failed, (long)pump.DeadLettered,
+                    pump.Drained, pump.StopReason, (long)pump.RemoteAttemptedRows, (long)pump.RemoteFailedRows,
+                    pump.MaxObservedInFlightRows,
+                    pump.RequestCharge, pump.ThrottledRequests,
+                    pump.CosmosOperationTime.TotalMilliseconds, pump.BookkeepingTime.TotalMilliseconds,
+                    pump.GroupsRead, (long)pump.SourceRowsLoaded, pump.GroupsRecomputed);
+            }
+        }
+        catch (Exception exception)
+        {
+            Emit(SnapshotAgentEventLevel.Warning,
+                $"The cycle record {cycleId} could not be written in full to meta.CycleRuns and meta.PumpRuns.",
+                exception: exception);
+        }
     }
 
     private DateTimeOffset NextDueFor(string key) => nextDue.GetValueOrDefault(key, DateTimeOffset.MinValue);
