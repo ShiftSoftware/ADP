@@ -158,6 +158,8 @@ describe('vehicle-lookup', () => {
       html: '<vehicle-lookup active-element="vehicle-ssc"></vehicle-lookup>',
     });
     const shadow = page.root.shadowRoot;
+    // Fired the way a panel fires it: from inside the composite's shadow root, so it is retargeted by
+    // the time the host hears it and the panel must be read off the composed path.
     const announce = (tag: string, verdict: string) =>
       shadow.getElementById(tag)?.dispatchEvent(new CustomEvent('verdictChange', { detail: verdict, bubbles: true, composed: true }));
 

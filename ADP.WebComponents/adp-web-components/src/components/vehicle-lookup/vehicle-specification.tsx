@@ -125,6 +125,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   render() {
     const verdict = recordVerdict({
       locale: this.locale.sharedLocales,
+      error: this.isError ? this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard : undefined,
       vehicleLoaded: !!this.vehicleLookup?.vin,
       authorized: this.vehicleLookup?.isAuthorized,
       hasRecords: !!(this.vehicleLookup?.vehicleSpecification || this.vehicleLookup?.vehicleVariantInfo || this.vehicleLookup?.identifiers),
@@ -157,41 +158,42 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
           isLoading={this.isLoading}
           header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
-          errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
           <LookupHead title={texts.vehicleSpecification} verdict={verdict} />
-          <div class="lookup-slide">
-            <flexible-container>
-              <div class="flex p-[16px] [&>div]:grow overflow-auto gap-[16px] items-stretch justify-center md:justify-between flex-wrap">
-                <MaterialCard class="grow" title={texts?.model} minWidth="300px">
-                  <MaterialCardChildren
-                    class="text-center"
-                    hidden={!this?.vehicleLookup?.vehicleVariantInfo?.modelCode?.trim() && !this?.vehicleLookup?.vehicleSpecification?.modelDescription?.trim()}
-                  >
-                    {this?.vehicleLookup?.vehicleVariantInfo?.modelCode?.trim() || ''} <br class="my-2" />
-                    {this?.vehicleLookup?.vehicleSpecification?.modelDescription?.trim() || ''}
-                  </MaterialCardChildren>
-                </MaterialCard>
+          <div class="lookup-slide-clip">
+            <div class="lookup-slide">
+              <flexible-container>
+                <div class="flex p-[16px] [&>div]:grow overflow-auto gap-[16px] items-stretch justify-center md:justify-between flex-wrap">
+                  <MaterialCard class="grow" title={texts?.model} minWidth="300px">
+                    <MaterialCardChildren
+                      class="text-center"
+                      hidden={!this?.vehicleLookup?.vehicleVariantInfo?.modelCode?.trim() && !this?.vehicleLookup?.vehicleSpecification?.modelDescription?.trim()}
+                    >
+                      {this?.vehicleLookup?.vehicleVariantInfo?.modelCode?.trim() || ''} <br class="my-2" />
+                      {this?.vehicleLookup?.vehicleSpecification?.modelDescription?.trim() || ''}
+                    </MaterialCardChildren>
+                  </MaterialCard>
 
-                <MaterialCard class="grow" title={texts?.variant} minWidth="300px">
-                  <MaterialCardChildren
-                    class="text-center"
-                    hidden={!this?.vehicleLookup?.identifiers?.variant?.trim() && !this?.vehicleLookup?.vehicleSpecification?.variantDescription?.trim()}
-                  >
-                    {this?.vehicleLookup?.identifiers?.variant?.trim() || ''} <br />
-                    {this?.vehicleLookup?.vehicleSpecification?.variantDescription?.trim() || ''}
-                  </MaterialCardChildren>
-                </MaterialCard>
+                  <MaterialCard class="grow" title={texts?.variant} minWidth="300px">
+                    <MaterialCardChildren
+                      class="text-center"
+                      hidden={!this?.vehicleLookup?.identifiers?.variant?.trim() && !this?.vehicleLookup?.vehicleSpecification?.variantDescription?.trim()}
+                    >
+                      {this?.vehicleLookup?.identifiers?.variant?.trim() || ''} <br />
+                      {this?.vehicleLookup?.vehicleSpecification?.variantDescription?.trim() || ''}
+                    </MaterialCardChildren>
+                  </MaterialCard>
 
-                <MaterialCard desc={this?.vehicleLookup?.identifiers?.katashiki?.trim() || ''} title={texts?.katashiki} minWidth="250px" />
+                  <MaterialCard desc={this?.vehicleLookup?.identifiers?.katashiki?.trim() || ''} title={texts?.katashiki} minWidth="250px" />
 
-                <MaterialCard desc={this?.vehicleLookup?.vehicleVariantInfo?.modelYear?.toString()?.trim() || ''} title={texts?.modelYear} minWidth="250px" />
+                  <MaterialCard desc={this?.vehicleLookup?.vehicleVariantInfo?.modelYear?.toString()?.trim() || ''} title={texts?.modelYear} minWidth="250px" />
 
-                <MaterialCard desc={productionDate ? productionDate : ''} title={texts?.productionDate} minWidth="250px" />
+                  <MaterialCard desc={productionDate ? productionDate : ''} title={texts?.productionDate} minWidth="250px" />
 
-                <MaterialCard desc={this?.vehicleLookup?.vehicleVariantInfo?.sfx?.trim() || ''} title={texts?.sfx} minWidth="250px" />
-              </div>
-            </flexible-container>
+                  <MaterialCard desc={this?.vehicleLookup?.vehicleVariantInfo?.sfx?.trim() || ''} title={texts?.sfx} minWidth="250px" />
+                </div>
+              </flexible-container>
+            </div>
           </div>
         </VehicleInfoLayout>
       </Host>

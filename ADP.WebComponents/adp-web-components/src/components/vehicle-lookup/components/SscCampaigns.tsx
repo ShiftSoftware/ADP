@@ -9,7 +9,7 @@ import { SscRepairTraceDTO } from '~types/generated/vehicle-lookup/ssc-repair-tr
 import { SscRepairTraceLaborLineDTO } from '~types/generated/vehicle-lookup/ssc-repair-trace-labor-line-dto';
 import { SscRepairTraceWarrantyClaimDTO } from '~types/generated/vehicle-lookup/ssc-repair-trace-warranty-claim-dto';
 
-import { VerdictState } from '~features/vehicle-info-layout';
+import { VerdictState, measurePill } from '~features/vehicle-info-layout';
 
 import { BADGE_GLYPHS } from './glyphs';
 
@@ -66,6 +66,8 @@ export type PanelState = {
   checkAvailable: boolean;
   /** The manufacturer's answer, once it arrived. */
   checkStatus?: ManufacturerCheckStatus | null;
+  /** The lookup failed: the translated message, carried by the pill in the negative tone. */
+  error?: string;
 };
 
 type Props = PanelState & {
@@ -143,7 +145,8 @@ export const openDrawerKey = ({
  * written down; `SscCampaigns.spec.tsx` now fails if it happens again. The wider rule is in
  * .shift/repos/adp/web-components/vehicle-lookup-invariants.md.
  */
-export const panelVerdict = ({ locale, vehicleLoaded, authorized, campaigns, checkStatus, skipped }: PanelState): PanelVerdict => {
+export const panelVerdict = ({ locale, vehicleLoaded, authorized, campaigns, checkStatus, skipped, error }: PanelState): PanelVerdict => {
+  if (error) return { state: 'negative', text: error };
   if (!vehicleLoaded) return skipped ? { state: 'attention', text: locale.skipped } : { state: 'idle', text: '' };
 
   if (authorized === false) {
@@ -222,7 +225,7 @@ const StatusBadge = ({ state, text }: { state: VerdictState; text: string }) => 
   const glyph = BADGE_GLYPH[state];
 
   return (
-    <span class={`status-badge is-${state}`} aria-hidden={state === 'idle' ? 'true' : null}>
+    <span class={`status-badge is-${state}`} aria-hidden={state === 'idle' ? 'true' : null} ref={pill => measurePill(pill)}>
       <svg class="badge-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
         {glyph && <path fill="currentColor" d={BADGE_GLYPHS[glyph]} />}
       </svg>
@@ -530,158 +533,158 @@ export const SscCampaigns: FunctionalComponent<Props> = (props, children) => {
 
   return (
     <section class="ssc-card" data-verdict={verdict.state} data-phase={busy ? 'busy' : 'settled'}>
-      <header class="ssc-head">
-        <span class="ssc-title lookup-head-content" data-head-edge="start">
-          {locale.title}
-        </span>
-        <div class="ssc-summary lookup-head-content" data-head-edge="end">
+      <header class="ssc-head lookup-head-band">
+        <span class="ssc-title lookup-head-content lookup-skeleton">{locale.title}</span>
+        <div class="ssc-summary lookup-head-content">
           <StatusBadge state={verdict.state} text={verdict.text} />
         </div>
       </header>
 
-      {/* lookup-slide: the region under the head that travels on a composite's tab switch; the head stays put. */}
-      <div class={cn('ssc-grid lookup-slide', { 'has-trace': showTrace })} role={shown === 'rows' && bodyOpen ? 'table' : null}>
-        <div class="ssc-lead layer-stack" data-lead={lead}>
-          <div class="layer ssc-lead-skeleton" data-active={lead === 'skeleton' ? 'true' : 'false'} aria-hidden="true" />
+      {/* lookup-slide: the region under the head that travels on a composite's tab switch, clipped so it passes under the head, never over it. */}
+      <div class="lookup-slide-clip">
+        <div class={cn('ssc-grid lookup-slide', { 'has-trace': showTrace })} role={shown === 'rows' && bodyOpen ? 'table' : null}>
+          <div class="ssc-lead layer-stack" data-lead={lead}>
+            <div class="layer ssc-lead-skeleton" data-active={lead === 'skeleton' ? 'true' : 'false'} aria-hidden="true" />
+
+            <div
+              class={cn('layer ssc-lead-notice', notice && `is-${notice.tone}`)}
+              data-active={lead === 'notice' ? 'true' : 'false'}
+              role="status"
+              aria-hidden={lead === 'notice' ? null : 'true'}
+            >
+              {notice && <Glyph kind={TONE_GLYPH[notice.tone]} className="notice-icon" />}
+              <span>{notice?.text ?? ''}</span>
+            </div>
+
+            <div class="layer ssc-lead-columns" data-active={lead === 'columns' ? 'true' : 'false'} role="row" aria-hidden={lead === 'columns' ? null : 'true'}>
+              <span class="ssc-cell ssc-code" role="columnheader">
+                {locale.code}
+              </span>
+              <span class="ssc-cell ssc-description" role="columnheader">
+                {locale.description}
+              </span>
+              <span class="ssc-cell ssc-status" role="columnheader">
+                {locale.status}
+              </span>
+              <span class="ssc-cell ssc-labors" role="columnheader">
+                {locale.laborCodes}
+              </span>
+              <span class="ssc-cell ssc-parts" role="columnheader">
+                {locale.parts}
+              </span>
+              {showTrace && (
+                <span class="ssc-cell ssc-trace-cell" role="columnheader">
+                  <span class="sr-only">{locale.viewTrace}</span>
+                </span>
+              )}
+              {/* Narrow panels drop the headings (each card labels its own fields) and keep one word on the strip. */}
+              <span class="ssc-columns-label" aria-hidden="true">
+                {locale.campaignList}
+              </span>
+            </div>
+          </div>
 
           <div
-            class={cn('layer ssc-lead-notice', notice && `is-${notice.tone}`)}
-            data-active={lead === 'notice' ? 'true' : 'false'}
-            role="status"
-            aria-hidden={lead === 'notice' ? null : 'true'}
+            class="ssc-body collapsible"
+            data-open={bodyOpen ? 'true' : 'false'}
+            data-body={shown}
+            role={shown === 'rows' && bodyOpen ? 'rowgroup' : null}
+            aria-hidden={bodyOpen ? null : 'true'}
           >
-            {notice && <Glyph kind={TONE_GLYPH[notice.tone]} className="notice-icon" />}
-            <span>{notice?.text ?? ''}</span>
-          </div>
+            <div class="collapsible-body ssc-body-inner">
+              {shown === 'rows' && (
+                <div class="ssc-rows">
+                  {items.map((item, index) => {
+                    const key = sscTraceKey(item, index);
+                    const wanted = showTrace && openTraceKey === key;
+                    const trace = traces[key] || item.trace;
+                    // Fetching the evidence spins the button; the drawer opens only once there is
+                    // something to show (openDrawerKey), so it never swaps a spinner for content mid-air.
+                    const drawerOpen = openDrawer === key;
+                    const fetching = wanted && !drawerOpen;
 
-          <div class="layer ssc-lead-columns" data-active={lead === 'columns' ? 'true' : 'false'} role="row" aria-hidden={lead === 'columns' ? null : 'true'}>
-            <span class="ssc-cell ssc-code" role="columnheader">
-              {locale.code}
-            </span>
-            <span class="ssc-cell ssc-description" role="columnheader">
-              {locale.description}
-            </span>
-            <span class="ssc-cell ssc-status" role="columnheader">
-              {locale.status}
-            </span>
-            <span class="ssc-cell ssc-labors" role="columnheader">
-              {locale.laborCodes}
-            </span>
-            <span class="ssc-cell ssc-parts" role="columnheader">
-              {locale.parts}
-            </span>
-            {showTrace && (
-              <span class="ssc-cell ssc-trace-cell" role="columnheader">
-                <span class="sr-only">{locale.viewTrace}</span>
-              </span>
-            )}
-            {/* Narrow panels drop the headings (each card labels its own fields) and keep one word on the strip. */}
-            <span class="ssc-columns-label" aria-hidden="true">
-              {locale.campaignList}
-            </span>
-          </div>
-        </div>
-
-        <div
-          class="ssc-body collapsible"
-          data-open={bodyOpen ? 'true' : 'false'}
-          data-body={shown}
-          role={shown === 'rows' && bodyOpen ? 'rowgroup' : null}
-          aria-hidden={bodyOpen ? null : 'true'}
-        >
-          <div class="collapsible-body ssc-body-inner">
-            {shown === 'rows' && (
-              <div class="ssc-rows">
-                {items.map((item, index) => {
-                  const key = sscTraceKey(item, index);
-                  const wanted = showTrace && openTraceKey === key;
-                  const trace = traces[key] || item.trace;
-                  // Fetching the evidence spins the button; the drawer opens only once there is
-                  // something to show (openDrawerKey), so it never swaps a spinner for content mid-air.
-                  const drawerOpen = openDrawer === key;
-                  const fetching = wanted && !drawerOpen;
-
-                  return [
-                    <div class="ssc-row" role="row" data-open={drawerOpen ? 'true' : 'false'} data-trace-key={key} key={key}>
-                      <div class="ssc-cell ssc-code" role="cell" data-label={locale.code}>
-                        <strong>{item.sscCode}</strong>
-                      </div>
-                      <div class="ssc-cell ssc-description" role="cell" data-label={locale.description}>
-                        {item.description}
-                      </div>
-                      <div class="ssc-cell ssc-status" role="cell" data-label={locale.status}>
-                        <RepairStatus item={item} locale={locale} />
-                      </div>
-                      <div class="ssc-cell ssc-labors" role="cell" data-label={locale.laborCodes}>
-                        <div class="ssc-chips">
-                          {(item.labors || []).length ? (item.labors || []).map(labor => <Chip tone="accent" text={labor?.laborCode} />) : <span class="ssc-none">—</span>}
+                    return [
+                      <div class="ssc-row" role="row" data-open={drawerOpen ? 'true' : 'false'} data-trace-key={key} key={key}>
+                        <div class="ssc-cell ssc-code" role="cell" data-label={locale.code}>
+                          <strong>{item.sscCode}</strong>
                         </div>
-                      </div>
-                      <div class="ssc-cell ssc-parts" role="cell" data-label={locale.parts}>
-                        <div class="ssc-chips">
-                          {(item.parts || []).length ? (
-                            (item.parts || []).map(part => <PartChip partNumber={part?.partNumber} isAvailable={part?.isAvailable} locale={locale} />)
-                          ) : (
-                            <span class="ssc-none">—</span>
-                          )}
+                        <div class="ssc-cell ssc-description" role="cell" data-label={locale.description}>
+                          {item.description}
                         </div>
-                      </div>
-                      {showTrace && (
-                        <div class="ssc-cell ssc-trace-cell" role="cell">
-                          <button
-                            type="button"
-                            class="ssc-trace-button"
-                            data-loading={fetching ? 'true' : 'false'}
-                            aria-busy={fetching ? 'true' : null}
-                            aria-expanded={drawerOpen ? 'true' : 'false'}
-                            title={drawerOpen ? locale.hideTrace : locale.viewTrace}
-                            aria-label={drawerOpen ? locale.hideTrace : locale.viewTrace}
-                            onClick={() => onToggleTrace(key)}
-                          >
-                            <Glyph kind="question" className="ssc-trace-button-icon" />
-                            <span class="ssc-trace-button-spinner" aria-hidden="true" />
-                          </button>
+                        <div class="ssc-cell ssc-status" role="cell" data-label={locale.status}>
+                          <RepairStatus item={item} locale={locale} />
                         </div>
-                      )}
-                    </div>,
-                    showTrace && (
-                      <div class="ssc-trace-row" role="row" data-open={drawerOpen ? 'true' : 'false'} key={`${key}-trace`}>
-                        <div role="cell">
-                          <Collapsible open={drawerOpen}>
-                            {/* Kept while the drawer shuts, so the evidence slides away rather than vanishing. */}
-                            {(wanted || trace || traceError) && <SscTrace locale={locale} item={item} trace={trace} error={traceError} />}
-                          </Collapsible>
+                        <div class="ssc-cell ssc-labors" role="cell" data-label={locale.laborCodes}>
+                          <div class="ssc-chips">
+                            {(item.labors || []).length ? (item.labors || []).map(labor => <Chip tone="accent" text={labor?.laborCode} />) : <span class="ssc-none">—</span>}
+                          </div>
                         </div>
-                      </div>
-                    ),
-                  ];
-                })}
-              </div>
-            )}
+                        <div class="ssc-cell ssc-parts" role="cell" data-label={locale.parts}>
+                          <div class="ssc-chips">
+                            {(item.parts || []).length ? (
+                              (item.parts || []).map(part => <PartChip partNumber={part?.partNumber} isAvailable={part?.isAvailable} locale={locale} />)
+                            ) : (
+                              <span class="ssc-none">—</span>
+                            )}
+                          </div>
+                        </div>
+                        {showTrace && (
+                          <div class="ssc-cell ssc-trace-cell" role="cell">
+                            <button
+                              type="button"
+                              class="ssc-trace-button"
+                              data-loading={fetching ? 'true' : 'false'}
+                              aria-busy={fetching ? 'true' : null}
+                              aria-expanded={drawerOpen ? 'true' : 'false'}
+                              title={drawerOpen ? locale.hideTrace : locale.viewTrace}
+                              aria-label={drawerOpen ? locale.hideTrace : locale.viewTrace}
+                              onClick={() => onToggleTrace(key)}
+                            >
+                              <Glyph kind="question" className="ssc-trace-button-icon" />
+                              <span class="ssc-trace-button-spinner" aria-hidden="true" />
+                            </button>
+                          </div>
+                        )}
+                      </div>,
+                      showTrace && (
+                        <div class="ssc-trace-row" role="row" data-open={drawerOpen ? 'true' : 'false'} key={`${key}-trace`}>
+                          <div role="cell">
+                            <Collapsible open={drawerOpen}>
+                              {/* Kept while the drawer shuts, so the evidence slides away rather than vanishing. */}
+                              {(wanted || trace || traceError) && <SscTrace locale={locale} item={item} trace={trace} error={traceError} />}
+                            </Collapsible>
+                          </div>
+                        </div>
+                      ),
+                    ];
+                  })}
+                </div>
+              )}
 
-            {shown === 'check' && (
-              <div class="ssc-check" data-checking={checking ? 'true' : 'false'}>
-                {children}
-                <Collapsible open={checking} className="ssc-checking-slot">
-                  <div class="ssc-checking" role="status">
-                    <span class="ssc-spinner" aria-hidden="true" />
-                    <span>{locale.checkingTMC}</span>
-                  </div>
-                </Collapsible>
-              </div>
-            )}
+              {shown === 'check' && (
+                <div class="ssc-check" data-checking={checking ? 'true' : 'false'}>
+                  {children}
+                  <Collapsible open={checking} className="ssc-checking-slot">
+                    <div class="ssc-checking" role="status">
+                      <span class="ssc-spinner" aria-hidden="true" />
+                      <span>{locale.checkingTMC}</span>
+                    </div>
+                  </Collapsible>
+                </div>
+              )}
 
-            {shown === 'run' && (
-              <div class="ssc-run">
-                <button type="button" class="ssc-run-button" onClick={onRunLookup}>
-                  <svg class="ssc-run-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <circle cx="10.5" cy="10.5" r="6.5" fill="currentColor" fill-opacity="0.24" stroke="currentColor" stroke-width="1.6" />
-                    <path d="M15.6 15.6L20.5 20.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
-                  <span>{locale.runCheck}</span>
-                </button>
-              </div>
-            )}
+              {shown === 'run' && (
+                <div class="ssc-run">
+                  <button type="button" class="ssc-run-button" onClick={onRunLookup}>
+                    <svg class="ssc-run-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <circle cx="10.5" cy="10.5" r="6.5" fill="currentColor" fill-opacity="0.24" stroke="currentColor" stroke-width="1.6" />
+                      <path d="M15.6 15.6L20.5 20.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                    <span>{locale.runCheck}</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

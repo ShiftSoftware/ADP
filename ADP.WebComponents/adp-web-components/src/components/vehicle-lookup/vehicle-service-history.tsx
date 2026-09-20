@@ -127,6 +127,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
   render() {
     const verdict = recordVerdict({
       locale: this.locale.sharedLocales,
+      error: this.isError ? this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard : undefined,
       vehicleLoaded: !!this.vehicleLookup?.vin,
       authorized: this.vehicleLookup?.isAuthorized,
       hasRecords: (this.vehicleLookup?.serviceHistory?.length ?? 0) > 0,
@@ -151,21 +152,22 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
           isLoading={this.isLoading}
           header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
-          errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
           <LookupHead title={this.locale.serviceHistory} verdict={verdict} />
-          <div class="lookup-slide">
-            <div class="overflow-x-auto">
-              <information-table
-                size="small"
-                allowAutoWidth
-                scrollExpandedIntoView
-                expandUsingEntireRow
-                headers={tableHeaders}
-                isLoading={this.isLoading}
-                rows={this.vehicleLookup?.serviceHistory || []}
-                subRowRenderer={(row: any) => <ServiceHistorySubRow row={row} locale={this.locale} />}
-              />
+          <div class="lookup-slide-clip">
+            <div class="lookup-slide">
+              <div class="overflow-x-auto">
+                <information-table
+                  size="small"
+                  allowAutoWidth
+                  scrollExpandedIntoView
+                  expandUsingEntireRow
+                  headers={tableHeaders}
+                  isLoading={this.isLoading}
+                  rows={this.vehicleLookup?.serviceHistory || []}
+                  subRowRenderer={(row: any) => <ServiceHistorySubRow row={row} locale={this.locale} />}
+                />
+              </div>
             </div>
           </div>
         </VehicleInfoLayout>

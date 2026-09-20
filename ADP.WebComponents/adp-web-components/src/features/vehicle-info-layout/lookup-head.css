@@ -33,22 +33,18 @@
   line-height: 1.35;
 }
 
-/* The legacy panels reset every descendant to their own face with !important; the head is the
-   family's and must read in the family's face. Both go when the panel is migrated. */
-.lookup-head,
-.lookup-head * {
-  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-}
-
 /* A class, not a heading element: the component is embedded in a host page and must not inject a
-   heading into that page's outline. */
+   heading into that page's outline. Set as a label rather than a headline (owner, 2026-09-20):
+   17px at 600 with neutral tracking, so the pill carries the emphasis and the title reads quietly
+   beside it. The same figures on the SSC's and the timeline's titles. */
 .lookup-title {
   min-width: 0;
   overflow-wrap: anywhere;
-  font-size: clamp(16px, 3.2cqw, 20px);
-  font-weight: 760;
-  letter-spacing: -0.025em;
-  line-height: 1.15;
+  color: var(--ink);
+  font-size: clamp(15px, 2.6cqw, 17px);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.2;
 }
 
 /* The trailing group: any control the panel puts beside its verdict, then the pill last. */
@@ -153,31 +149,47 @@
   background: var(--line);
 }
 
-/* Text width cannot be transitioned; max-width can. Clamped to the skeleton width while idle and in
-   flight, released on settle, so the pill shrinks to the skeleton and grows to its verdict instead of
-   jumping between them. */
+/* Text width cannot be transitioned to; a measured one can. The pill writes its natural width on
+   itself as --pill-width (measurePill, lookup-head.tsx) and `width` is transitioned between that
+   and the skeleton's, so it shrinks to the skeleton and grows to its verdict, the whole ease curve
+   each way. (A max-width clamp between the skeleton and a ceiling looked like it did the same, but
+   the curve was cut off wherever the words ended — a lurch out, and a wait then a snap back in.)
+   Without a measurement the max() is invalid and the width falls back to auto: the words are never
+   clipped. The ceiling stays as a guard against a message that would not fit the head. */
 .lookup-summary .status-badge {
+  width: max(var(--pill-rest), var(--pill-width));
   min-width: var(--pill-rest);
   max-width: 360px;
   transition:
     color var(--settle) ease,
     background var(--settle) ease,
     box-shadow var(--settle) ease,
-    max-width var(--settle) ease;
+    width var(--settle) ease;
 }
 
 .lookup-summary .status-badge.is-idle:not(.has-text) {
-  max-width: var(--pill-rest);
+  width: var(--pill-rest);
+}
+
+/* A verdict with no words on screen is the cap alone: a 30px disc with the glyph, the text span
+   collapsed. min-width released so it can shrink to it. */
+.lookup-summary .status-badge:not(.is-idle):not(.has-text) {
+  width: var(--pill-width, 34px);
+  min-width: 0;
+}
+
+.lookup-summary .status-badge:not(.is-idle):not(.has-text) > span {
+  padding: 0;
 }
 
 /* In flight the pill carries no verdict: every colour that says one goes neutral and the sheen
    sweeps the shape itself (never an overlay — two nested antialiased curves fringe the rim). Below
    the verdict colours on purpose: these tie on specificity and win on source order. */
 .loading .lookup-summary .status-badge {
-  max-width: var(--pill-rest);
+  width: var(--pill-rest);
   color: transparent;
   background-color: #dcdfe4;
-  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 255, 255, 0) 100%);
+  background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
   background-repeat: no-repeat;
   background-size: 45% 100%;
   box-shadow: inset 0 0 0 1px rgba(95, 108, 120, 0.42);
@@ -187,57 +199,6 @@
 .loading .lookup-summary .status-badge .badge-icon {
   background: #dcdfe4;
   opacity: 0;
-}
-
-/* ---------------------------------------------------------------------------------------------
-   The outlined round button beside the pill: a trace trigger
-   ------------------------------------------------------------------------------------------- */
-
-.lookup-trace-button {
-  position: relative;
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  color: var(--blue-dark);
-  background: var(--paper);
-  border: 1px solid rgba(48, 113, 169, 0.32);
-  border-radius: 999px;
-  font: inherit;
-  cursor: pointer;
-  transition:
-    color 0.2s ease,
-    background 0.2s ease,
-    border-color 0.2s ease,
-    opacity var(--settle) ease;
-}
-
-.lookup-trace-button:hover,
-.lookup-trace-button[aria-expanded='true'],
-.lookup-trace-button[data-loading='true'] {
-  color: #ffffff;
-  background: var(--blue);
-  border-color: var(--blue-dark);
-}
-
-.lookup-trace-button:focus-visible {
-  outline: 2px solid var(--blue-dark);
-  outline-offset: 2px;
-}
-
-.lookup-trace-button-icon {
-  width: 18px;
-  height: 18px;
-}
-
-/* No vehicle, nothing to trace: the control keeps its box and fades, so the pill beside it never
-   moves when a vehicle lands. */
-.lookup-trace-button[data-empty='true'] {
-  opacity: 0;
-  pointer-events: none;
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -263,6 +224,7 @@
   /* Full width in every state, so there is no width to animate here. */
   .lookup-summary .status-badge,
   .lookup-summary .status-badge.is-idle,
+  .lookup-summary .status-badge:not(.is-idle):not(.has-text),
   .loading .lookup-summary .status-badge {
     flex: 1 1 auto;
     width: 100%;

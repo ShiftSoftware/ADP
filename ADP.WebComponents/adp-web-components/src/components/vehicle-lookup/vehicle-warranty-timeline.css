@@ -24,8 +24,10 @@
      in a 380px column and the totals were clipped off the side of the card. */
   container-type: inline-size;
   container-name: warranty-panel;
-  /* How far text swells as it leaves. The panel header's VIN uses 1.5, but it is one short string
-     centred in an empty bar; the same figure on a line of body text reads as a lunge. */
+  /* How tall the body's text grows as it leaves — vertical only (owner, 2026-09-20): a line that
+     also grew sideways spread its words apart and pushed its ends toward the card's edges, and
+     read as a lunge. The head's text is the wrapper's to move (--head-leave-scale, the same
+     figure); this is for the journey's pills and the notice. */
   --leave-scale: 1.25;
   /* The rail leaves as one piece and is far wider than a line of text, so it needs much less to
      read as the same movement — 1.25 across 900px is a lurch, not a lift. */
@@ -43,7 +45,7 @@
   position: relative;
   width: 100%;
   color: var(--ink);
-  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  /* No font-family: the wrapper's root sets the face for the language and this inherits it. */
 }
 
 /* The possession notice's row is a .collapsible from lookup-motion.css (imported through the
@@ -54,9 +56,6 @@
    back down to size. The blocks below give up the shared skeleton to do it: that overlay is opaque,
    so text animating underneath it cannot be seen at all. The rail keeps the shimmer, being
    graphical rather than prose. */
-.activation-title,
-.activation-broker,
-.total-coverage,
 .status-badge > span,
 .warranty-notice > span {
   transition:
@@ -64,36 +63,18 @@
     transform var(--settle) ease;
 }
 
-/* Anchored to the edge the text is set from, not its middle. The card clips, so a line growing out
-   of its own centre loses its opening words over the side — "Dealer: Sample Motors" left mid-flight
-   as "ple Motors". Growing inward from the anchor keeps every word on the card the whole way out. */
-.activation-title,
-.activation-broker,
-.warranty-notice > span {
-  transform-origin: left center;
-}
-
-.total-coverage {
-  transform-origin: right center;
-}
-
-[dir='rtl'] .activation-title,
-[dir='rtl'] .activation-broker,
-[dir='rtl'] .warranty-notice > span {
-  transform-origin: right center;
-}
-
-[dir='rtl'] .total-coverage {
-  transform-origin: left center;
-}
-
-.loading .activation-title,
-.loading .activation-broker,
-.loading .total-coverage,
+/* Grows about its own centre line: with no horizontal growth, no word can be pushed over the
+   card's edge, so the text needs no anchoring to the edge it is set from. The head — title,
+   broker, total — is not here: its words become sheen bars where they stand, by the wrapper's
+   .lookup-skeleton rule, the same as every other panel's head. */
 .loading .status-badge > span,
 .loading .warranty-notice > span {
   opacity: 0;
-  transform: scale(var(--leave-scale));
+  transform: scaleY(var(--leave-scale));
+}
+
+.loading .total-coverage {
+  border-inline-start-color: #dcdfe4;
 }
 
 /* Glyphs fade without growing: they are stretched caps rather than lettering, and scaling them
@@ -132,7 +113,7 @@
    shared file is imported by every other vehicle panel, which keep the treatment they shipped. */
 .shift-skeleton::after {
   background-color: #dde1e6;
-  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 255, 255, 0) 100%);
+  background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
   background-repeat: no-repeat;
   background-size: 45% 100%;
 }
@@ -157,15 +138,12 @@
 
 /* Blocks that a vehicle has nothing to put in. They fade where they stand and keep their box, so
    the card is the same height whichever vehicle is loaded and the reader's eye keeps its place.
-   The totals and the rail also travel on a composite's tab switch (lookup-head-content and
-   lookup-slide in the wrapper's stylesheet); a transition shorthand here would drop that, so the
-   transform is named alongside. */
+   (The totals' hand-over on a composite's tab switch is on a box of their own around this slot, so
+   this fade and that movement never share an element.) */
 .broker-slot,
 .total-slot,
 .timeline-shell {
-  transition:
-    opacity var(--settle) ease,
-    transform var(--tab-settle) var(--tab-ease);
+  transition: opacity var(--settle) ease;
 }
 
 /* A block on its way out must not be handed its content back as it goes. When a vehicle arrives
@@ -193,16 +171,29 @@
   opacity: 0.45;
 }
 
+/* The family's head geometry (owner, 2026-09-20): every panel's head band is the same 58px — the
+   standard head's 16 + 30 + 12 — so a composite's tab switch never changes the band's height. The
+   title, the broker and the totals are laid out on one row each to fit it. Ruled off from the
+   chips below by its own bottom edge, as an inset shadow so nothing that strips borders can move
+   the card's height. */
 .activation-header {
   display: grid;
   grid-template-columns: minmax(130px, 1fr) auto;
   gap: 14px;
   align-items: center;
-  padding: 14px 20px 12px;
+  min-height: 58px;
+  padding: 16px 20px 12px;
+  box-shadow: inset 0 -1px 0 var(--line-soft);
 }
 
+/* Dealer and broker on one line — the broker slot is inline, so a vehicle without one shortens
+   the line rather than removing a row. */
 .activation-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
   min-width: 0;
+  align-items: baseline;
 }
 
 /* Split cap: a solid leading cap carrying the glyph, against a tinted body. */
@@ -297,7 +288,7 @@
    specificity and win only on source order. */
 .loading .status-badge {
   background-color: #dcdfe4;
-  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 255, 255, 0) 100%);
+  background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
   background-repeat: no-repeat;
   background-size: 45% 100%;
   box-shadow: inset 0 0 0 1px rgba(95, 108, 120, 0.42);
@@ -312,7 +303,7 @@
    put two stray vertical ticks against its edges for the length of the load. */
 .loading .warranty-notice {
   background-color: #dcdfe4;
-  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 255, 255, 0) 100%);
+  background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
   background-repeat: no-repeat;
   background-size: 45% 100%;
   box-shadow:
@@ -326,11 +317,12 @@
 .activation-title {
   margin: 0;
   overflow-wrap: anywhere;
-  /* Scales with the panel, not the window — the rest of the card's breakpoints already do. */
-  font-size: clamp(16px, 3.2cqw, 20px);
+  /* The family's title (lookup-head.css): 17px, neutral tracking; the label at 500 in --muted, the
+     value at 600 in --ink. Scales with the panel, not the window. */
+  font-size: clamp(15px, 2.6cqw, 17px);
   font-weight: 500;
-  line-height: 1.15;
-  letter-spacing: -0.025em;
+  line-height: 1.2;
+  letter-spacing: 0;
 }
 
 .activation-title span {
@@ -339,24 +331,25 @@
 
 .activation-title strong {
   color: var(--ink);
-  font-weight: 760;
+  font-weight: 600;
 }
 
-/* Second attribution line: the broker that anchored the warranty, under the dealer it came from.
-
-   Held to one line so the box it reserves is identical on every vehicle. Left to wrap, a long name
-   in a narrow column would run to two or three lines and reintroduce exactly the height change this
-   slot exists to remove — reserved space cannot depend on the name that happens to fill it. */
+/* The broker that anchored the warranty, beside the dealer it came from, at the body size. Held
+   to one line so it never adds a row; a long name ellipsises and stays whole in the aria text. */
 .activation-broker {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  margin: 3px 0 0;
+  display: block;
+  max-width: 100%;
+  margin: 0;
   overflow: hidden;
-  overflow-wrap: anywhere;
   font-size: 13px;
   font-weight: 500;
   line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.broker-slot {
+  min-width: 0;
 }
 
 .activation-broker span {
@@ -397,55 +390,80 @@
 }
 
 .total-slot {
-  min-width: 250px;
+  min-width: 0;
 }
 
+/* The KPI (§ 14) as two columns behind its 2px rail: the caption stacked over the mix on the
+   reading side, the figure alone on the trailing side, centred on the pair. Two lines
+   (caption 11px/1.2 + mix 12px/1.25 = 28.2px) sit inside the family's 30px content band, so the
+   head keeps its 58px whether the mix is there or not. No vertical padding for that reason: the
+   rail runs the exact height of the two lines. The caption and mix are one group (.total-text),
+   the figure beside it. */
 .total-coverage {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto auto;
-  padding: 2px 0 2px 14px;
+  grid-template-columns: minmax(0, auto) auto;
+  grid-template-rows: auto;
+  /* 20, not the head's 14: the figure is a 20px KPI beside 11–12px text, and at the head's gap it
+     read as the end of the mix line rather than a column of its own (owner, 2026-09-20). */
+  column-gap: 40px;
+  align-items: center;
+  padding-block: 0;
+  padding-inline-start: 12px;
   background: transparent;
   border: 0;
   border-inline-start: 2px solid var(--green);
+  /* The rail is a verdict's colour; in flight it is a skeleton of its own, the sheen grey, and
+     returns with the data. */
+  transition: border-color var(--settle) ease;
   border-radius: 0;
+  white-space: nowrap;
 }
 
-.total-coverage span {
+/* The caption over the mix, as one group: one skeleton bar in flight, so the bar is exactly the
+   two lines' box. */
+.total-coverage .total-text {
+  display: grid;
+  grid-template-rows: auto auto;
+  min-width: 0;
+}
+
+.total-coverage .total-caption {
   color: var(--muted);
   font-size: 11px;
   font-weight: 700;
+  line-height: 1.2;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
+/* The KPI figure role: 20px at 760 in the hue's dark, centred on the caption/mix pair. `strong`
+   would otherwise resolve to `bolder`. */
 .total-coverage strong {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: center;
-  margin: 0 0 0 10px;
+  margin: 0;
   color: var(--green-dark);
   font-size: 20px;
+  font-weight: 760;
   line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
+/* The mix, under the caption at the body's weight: it is read ("3 years standard + 2 years
+   extended"), not skimmed, so it is not a bold note. Its line is kept whether or not there is a
+   mix to name, so a vehicle with only a standard warranty has the same head. */
 .total-coverage .coverage-mix {
-  /* Holds its line even when there is no mix to name, so the faded totals block is not a line
-     shorter than a real one. Sized in em against this element's own size, so the reservation
-     tracks the type rather than a pixel figure that has to be kept in step by hand. */
-  min-height: 1.3em;
-  margin-top: 2px;
+  min-height: 1.25em;
+  margin: 0;
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   letter-spacing: 0;
-  line-height: 1.3;
+  line-height: 1.25;
   text-transform: none;
 }
 
+/* No rule above it (owner, 2026-09-20): the head band's own edge is the only line under the head. */
 .journey {
   padding: 10px 20px 12px;
-  border-top: 1px dashed var(--line);
 }
 
 .journey-head {
@@ -797,24 +815,21 @@
   .activation-header {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 6px 10px;
-    padding: 10px 12px 9px;
+    padding: 14px 14px 10px;
   }
   .activation-title {
-    font-size: 16px;
+    font-size: 15px;
   }
-  .total-slot {
-    min-width: 0;
-    width: clamp(170px, 50cqw, 190px);
-    justify-self: end;
-  }
+  /* Capped at half the panel so the title keeps the other half; a long mix wraps under its
+     caption inside the cap rather than squeezing the title to a sliver. The head grows here, as
+     the standard head does when it stacks. */
   .total-coverage {
+    max-width: clamp(190px, 50cqw, 280px);
+    column-gap: 14px;
     padding-inline-start: 10px;
   }
-  /* Two parts to the mix — standard plus extended — no longer fit on one line in the narrowed
-     totals column, so the line is reserved here rather than left to appear only on the vehicles
-     that happen to have both. That was the last thing left changing the card's height. */
   .total-coverage .coverage-mix {
-    min-height: 2.6em;
+    white-space: normal;
   }
 }
 
@@ -869,6 +884,14 @@
 /* Below this the two badges no longer fit side by side, so stack them
    full width rather than letting them wrap into a ragged row. */
 @container warranty-panel (max-width: 430px) {
+  /* The head stacks (§ 22): the KPI drops under the title on a row of its own, at the panel's
+     full width, instead of the two sharing one that fits neither. */
+  .activation-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .total-coverage {
+    max-width: none;
+  }
   .journey-head {
     flex-direction: column;
     align-items: stretch;

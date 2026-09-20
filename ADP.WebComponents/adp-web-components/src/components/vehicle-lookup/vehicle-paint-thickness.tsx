@@ -195,6 +195,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   render() {
     const verdict = recordVerdict({
       locale: this.locale.sharedLocales,
+      error: this.isError ? this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard : undefined,
       vehicleLoaded: !!this.vehicleLookup?.vin,
       authorized: this.vehicleLookup?.isAuthorized,
       hasRecords: (this.vehicleLookup?.paintThicknessInspections?.length ?? 0) > 0,
@@ -208,7 +209,9 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
       const isDuplicate = inspections.some((other, otherIdx) => otherIdx !== idx && other.source === inspection.source);
       return isDuplicate && inspection.inspectionDate ? `${inspection.source} (${inspection.inspectionDate})` : inspection.source;
     });
-    const hideTabs = this.isLoading || this.isError;
+    // No inspections means no tab strip: shift-tabs draws its baseline even with zero tabs, which
+    // would read as a second rule under the head's own.
+    const hideTabs = this.isLoading || this.isError || !tabs.length;
 
     const activeInspection = inspections[this.activeTabIndex] || inspections[0];
     const panels = activeInspection?.panels || [];
@@ -237,157 +240,158 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
           isLoading={this.isLoading}
           header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
-          errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
           <LookupHead title={texts.paintThickness} verdict={verdict} />
-          <div class="lookup-slide">
-            <div class={cn('duration-300', 'py-[15px]', 'flex', 'items-center', 'gap-[8px]', { hidden: hideTabs })}>
-              <div class="min-w-0 flex-1">
-                <shift-tabs activeTabIndex={this.activeTabIndex} changeActiveTab={this.onActiveTabChange} tabs={tabs}></shift-tabs>
+          <div class="lookup-slide-clip">
+            <div class="lookup-slide">
+              <div class={cn('duration-300', 'py-[15px]', 'flex', 'items-center', 'gap-[8px]', { hidden: hideTabs })}>
+                <div class="min-w-0 flex-1">
+                  <shift-tabs activeTabIndex={this.activeTabIndex} changeActiveTab={this.onActiveTabChange} tabs={tabs}></shift-tabs>
+                </div>
+
+                {/* Print menu sized to mirror the shift-tabs tab buttons (px-16 / py-6 / 17px).
+                    The button opens a language menu; each item is a plain anchor to that
+                    language's server-issued signed URL — opens in a new tab with no fetch, so
+                    no auth plumbing and no popup-blocker interception. */}
+                {this.showCertificateButton && !!certificateUrls.length && (
+                  <div class="relative me-[16px] shrink-0">
+                    <button
+                      aria-haspopup="menu"
+                      aria-expanded={this.certificateMenuOpen ? 'true' : 'false'}
+                      onClick={() => (this.certificateMenuOpen = !this.certificateMenuOpen)}
+                      class="flex w-full cursor-pointer items-center gap-[8px] rounded-[4px] border border-amber-500 bg-amber-500 px-[16px] py-[6px] text-[17px] font-medium text-white shadow-sm transition-colors duration-300 hover:border-amber-600 hover:bg-amber-600"
+                    >
+                      <PrintIcon fill="currentColor" viewBox="0 0 24 24" class="size-[18px] shrink-0" />
+                      <span class="whitespace-nowrap">{texts.printCertificate}</span>
+                      <ArrowIcon class={cn('size-[16px] shrink-0 transition-transform duration-300', { 'rotate-180': this.certificateMenuOpen })} />
+                    </button>
+
+                    {this.certificateMenuOpen && (
+                      <div role="menu" class="absolute end-0 top-full z-10 mt-[4px] min-w-full overflow-hidden rounded-[4px] border border-slate-200 bg-white shadow-lg">
+                        {certificateUrls.map(({ language, name, url }) => (
+                          <a
+                            key={language}
+                            role="menuitem"
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => (this.certificateMenuOpen = false)}
+                            class="block whitespace-nowrap px-[16px] py-[8px] text-[16px] text-slate-700 no-underline transition-colors duration-150 hover:bg-amber-50"
+                          >
+                            {name || language}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Print menu sized to mirror the shift-tabs tab buttons (px-16 / py-6 / 17px).
-                  The button opens a language menu; each item is a plain anchor to that
-                  language's server-issued signed URL — opens in a new tab with no fetch, so
-                  no auth plumbing and no popup-blocker interception. */}
-              {this.showCertificateButton && !!certificateUrls.length && (
-                <div class="relative me-[16px] shrink-0">
-                  <button
-                    aria-haspopup="menu"
-                    aria-expanded={this.certificateMenuOpen ? 'true' : 'false'}
-                    onClick={() => (this.certificateMenuOpen = !this.certificateMenuOpen)}
-                    class="flex w-full cursor-pointer items-center gap-[8px] rounded-[4px] border border-amber-500 bg-amber-500 px-[16px] py-[6px] text-[17px] font-medium text-white shadow-sm transition-colors duration-300 hover:border-amber-600 hover:bg-amber-600"
-                  >
-                    <PrintIcon fill="currentColor" viewBox="0 0 24 24" class="size-[18px] shrink-0" />
-                    <span class="whitespace-nowrap">{texts.printCertificate}</span>
-                    <ArrowIcon class={cn('size-[16px] shrink-0 transition-transform duration-300', { 'rotate-180': this.certificateMenuOpen })} />
-                  </button>
+              <flexible-container isOpened={!this.isLoading && !!activeInspection?.inspectionDate}>
+                <div class="flex items-center justify-center gap-[6px] border-b border-slate-200 px-[16px] py-[10px] text-[16px] text-slate-700">
+                  <CalendarDaysIcon class="size-[18px] shrink-0" />
+                  <span class="font-semibold">{texts.inspectionDate}:</span>
+                  <span class="shift-skeleton">{activeInspection?.inspectionDate}</span>
+                </div>
+              </flexible-container>
 
-                  {this.certificateMenuOpen && (
-                    <div role="menu" class="absolute end-0 top-full z-10 mt-[4px] min-w-full overflow-hidden rounded-[4px] border border-slate-200 bg-white shadow-lg">
-                      {certificateUrls.map(({ language, name, url }) => (
-                        <a
-                          key={language}
-                          role="menuitem"
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => (this.certificateMenuOpen = false)}
-                          class="block whitespace-nowrap px-[16px] py-[8px] text-[16px] text-slate-700 no-underline transition-colors duration-150 hover:bg-amber-50"
-                        >
-                          {name || language}
-                        </a>
-                      ))}
+              <div class="overflow-x-auto">
+                <div class={cn('mx-auto w-fit', { loading: this.isLoading })}>
+                  {/* Header */}
+                  <div class="flex">
+                    <div class="font-semibold border-b py-[16px] px-[16px] text-center" style={{ width: `${colWidths.panel}px` }}>
+                      {texts.panel}
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
+                    <div class="font-semibold border-b py-[16px] px-[16px] text-center" style={{ width: `${colWidths.position}px` }}>
+                      {texts.position}
+                    </div>
+                    <div class="font-semibold border-b py-[16px] px-[16px] text-center" style={{ width: `${colWidths.side}px` }}>
+                      {texts.left}
+                    </div>
+                    <div class="font-semibold border-b py-[16px] px-[16px] text-center" style={{ width: `${colWidths.side}px` }}>
+                      {texts.right}
+                    </div>
+                  </div>
 
-            <flexible-container isOpened={!this.isLoading && !!activeInspection?.inspectionDate}>
-              <div class="flex items-center justify-center gap-[6px] border-b border-slate-200 px-[16px] py-[10px] text-[16px] text-slate-700">
-                <CalendarDaysIcon class="size-[18px] shrink-0" />
-                <span class="font-semibold">{texts.inspectionDate}:</span>
-                <span class="shift-skeleton">{activeInspection?.inspectionDate}</span>
-              </div>
-            </flexible-container>
-
-            <div class="overflow-x-auto">
-              <div class={cn('mx-auto w-fit', { loading: this.isLoading })}>
-                {/* Header */}
-                <div class="flex">
-                  <div class="font-semibold border-b py-[16px] px-[16px] text-center" style={{ width: `${colWidths.panel}px` }}>
-                    {texts.panel}
-                  </div>
-                  <div class="font-semibold border-b py-[16px] px-[16px] text-center" style={{ width: `${colWidths.position}px` }}>
-                    {texts.position}
-                  </div>
-                  <div class="font-semibold border-b py-[16px] px-[16px] text-center" style={{ width: `${colWidths.side}px` }}>
-                    {texts.left}
-                  </div>
-                  <div class="font-semibold border-b py-[16px] px-[16px] text-center" style={{ width: `${colWidths.side}px` }}>
-                    {texts.right}
-                  </div>
-                </div>
-
-                {/* Rows */}
-                <flexible-container height="auto">
-                  {!groupedRows.length && (
-                    <div class="border-b">
-                      <div class="flex">
-                        <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.panel}px` }}>
-                          <div class="shift-skeleton">&nbsp;</div>
-                        </div>
-                        <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.position}px` }}>
-                          <div class="shift-skeleton">&nbsp;</div>
-                        </div>
-                        <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side}px` }}>
-                          <div class="shift-skeleton">&nbsp;</div>
-                        </div>
-                        <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side}px` }}>
-                          <div class="shift-skeleton">&nbsp;</div>
+                  {/* Rows */}
+                  <flexible-container height="auto">
+                    {!groupedRows.length && (
+                      <div class="border-b">
+                        <div class="flex">
+                          <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.panel}px` }}>
+                            <div class="shift-skeleton">&nbsp;</div>
+                          </div>
+                          <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.position}px` }}>
+                            <div class="shift-skeleton">&nbsp;</div>
+                          </div>
+                          <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side}px` }}>
+                            <div class="shift-skeleton">&nbsp;</div>
+                          </div>
+                          <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side}px` }}>
+                            <div class="shift-skeleton">&nbsp;</div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                  {groupedRows.map((row, idx) => (
-                    <div key={row.panel + row.position + idx} class="border-b last:border-b-0">
-                      <div class={cn('flex hover:bg-sky-100/50 transition duration-300', { 'bg-slate-100': idx % 2 === 1 })}>
-                        <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.panel}px` }}>
-                          <div class="shift-skeleton">{row.panel}</div>
-                        </div>
-                        <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.position}px` }}>
-                          <div class="shift-skeleton">{row.position || '\u00A0'}</div>
-                        </div>
-                        {row.center !== undefined ? (
-                          <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side * 2}px` }}>
-                            <div class="shift-skeleton">{row.center}</div>
+                    )}
+                    {groupedRows.map((row, idx) => (
+                      <div key={row.panel + row.position + idx} class="border-b last:border-b-0">
+                        <div class={cn('flex hover:bg-sky-100/50 transition duration-300', { 'bg-slate-100': idx % 2 === 1 })}>
+                          <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.panel}px` }}>
+                            <div class="shift-skeleton">{row.panel}</div>
                           </div>
-                        ) : (
-                          [
-                            <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side}px` }}>
-                              <div class="shift-skeleton">{row.left !== undefined ? row.left : '\u00A0'}</div>
-                            </div>,
-                            <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side}px` }}>
-                              <div class="shift-skeleton">{row.right !== undefined ? row.right : '\u00A0'}</div>
-                            </div>,
-                          ]
-                        )}
+                          <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.position}px` }}>
+                            <div class="shift-skeleton">{row.position || '\u00A0'}</div>
+                          </div>
+                          {row.center !== undefined ? (
+                            <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side * 2}px` }}>
+                              <div class="shift-skeleton">{row.center}</div>
+                            </div>
+                          ) : (
+                            [
+                              <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side}px` }}>
+                                <div class="shift-skeleton">{row.left !== undefined ? row.left : '\u00A0'}</div>
+                              </div>,
+                              <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side}px` }}>
+                                <div class="shift-skeleton">{row.right !== undefined ? row.right : '\u00A0'}</div>
+                              </div>,
+                            ]
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </flexible-container>
+                </div>
+              </div>
+
+              <flexible-container isOpened={!this.isLoading && !!imageGroups?.length}>
+                <div class="py-[16px] gap-[16px] justify-center flex flex-wrap px-[24px] w-full">
+                  {imageGroups?.map((imageGroup, index) => (
+                    <div class="shrink-0 rounded-lg shadow-sm border overflow-hidden flex flex-col" key={imageGroup?.name + index}>
+                      <h1 class="text-center border-b bg-slate-50 font-semibold p-[6px]">
+                        <span class="shift-skeleton">{imageGroup?.name}</span>
+                      </h1>
+
+                      <div class="flex max-w-full flex-wrap p-[12px] gap-[8px]">
+                        {imageGroup?.images.map((image, idx) => (
+                          <div class={cn('flex shift-skeleton gap-[8px]', { loading: !image })} key={image + idx}>
+                            <button
+                              onClick={({ target }) => openImageViewer.bind(this)(target as HTMLImageElement, image)}
+                              class="shrink-0 relative ring-0 outline-none w-fit mx-auto [&_img]:hover:shadow-lg [&_div]:hover:!opacity-100 cursor-pointer"
+                            >
+                              <div class="absolute flex-col justify-center gap-[4px] size-full flex items-center pointer-events-none hover:opacity-100 rounded-lg opacity-0 bg-black/40 transition-all duration-300">
+                                <img src={Eye} />
+                                <span class="text-white">{texts.expand}</span>
+                              </div>
+                              <img src={image} class="h-[150px] cursor-pointer shadow-sm rounded-lg w-[84px] transition-all duration-300" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ))}
-                </flexible-container>
-              </div>
+                </div>
+              </flexible-container>
             </div>
-
-            <flexible-container isOpened={!this.isLoading && !!imageGroups?.length}>
-              <div class="py-[16px] gap-[16px] justify-center flex flex-wrap px-[24px] w-full">
-                {imageGroups?.map((imageGroup, index) => (
-                  <div class="shrink-0 rounded-lg shadow-sm border overflow-hidden flex flex-col" key={imageGroup?.name + index}>
-                    <h1 class="text-center border-b bg-slate-50 font-semibold p-[6px]">
-                      <span class="shift-skeleton">{imageGroup?.name}</span>
-                    </h1>
-
-                    <div class="flex max-w-full flex-wrap p-[12px] gap-[8px]">
-                      {imageGroup?.images.map((image, idx) => (
-                        <div class={cn('flex shift-skeleton gap-[8px]', { loading: !image })} key={image + idx}>
-                          <button
-                            onClick={({ target }) => openImageViewer.bind(this)(target as HTMLImageElement, image)}
-                            class="shrink-0 relative ring-0 outline-none w-fit mx-auto [&_img]:hover:shadow-lg [&_div]:hover:!opacity-100 cursor-pointer"
-                          >
-                            <div class="absolute flex-col justify-center gap-[4px] size-full flex items-center pointer-events-none hover:opacity-100 rounded-lg opacity-0 bg-black/40 transition-all duration-300">
-                              <img src={Eye} />
-                              <span class="text-white">{texts.expand}</span>
-                            </div>
-                            <img src={image} class="h-[150px] cursor-pointer shadow-sm rounded-lg w-[84px] transition-all duration-300" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </flexible-container>
           </div>
         </VehicleInfoLayout>
       </Host>

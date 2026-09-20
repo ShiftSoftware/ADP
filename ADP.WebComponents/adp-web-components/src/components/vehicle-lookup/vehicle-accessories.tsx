@@ -135,6 +135,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
   render() {
     const verdict = recordVerdict({
       locale: this.locale.sharedLocales,
+      error: this.isError ? this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard : undefined,
       vehicleLoaded: !!this.vehicleLookup?.vin,
       authorized: this.vehicleLookup?.isAuthorized,
       hasRecords: (this.vehicleLookup?.accessories?.length ?? 0) > 0,
@@ -196,12 +197,13 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
           coreOnly={this.coreOnly}
           header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
-          errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
           <LookupHead title={texts.vehicleAccessories} verdict={verdict} />
-          <div class="lookup-slide">
-            <div class="overflow-x-auto">
-              <information-table templateRow={templateRow} rows={rows} headers={tableHeaders} isLoading={this.isLoading}></information-table>
+          <div class="lookup-slide-clip">
+            <div class="lookup-slide">
+              <div class="overflow-x-auto">
+                <information-table templateRow={templateRow} rows={rows} headers={tableHeaders} isLoading={this.isLoading}></information-table>
+              </div>
             </div>
           </div>
         </VehicleInfoLayout>

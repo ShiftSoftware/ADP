@@ -6,8 +6,8 @@
 :host {
   display: block;
   all: initial !important;
-  font-family: inherit !important;
-  font-family: 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif !important;
+  /* The family's face (lookup-tokens.css); the wrapper's root switches it for an rtl locale. */
+  font-family: var(--font-sans) !important;
 }
 
 *,

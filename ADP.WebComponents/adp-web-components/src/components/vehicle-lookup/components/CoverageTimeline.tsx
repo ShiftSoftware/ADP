@@ -68,12 +68,15 @@ export type VerdictInput = {
   vehicleInformation?: VehicleLookupDTO;
   isAuthorized?: boolean;
   today?: string;
+  /** The lookup failed. */
+  error?: boolean;
 };
 
 /**
  * What the card's accent may say about the warranty. One colour, never a gradient: the accent is
  * the verdict's fill, and a three-colour plan across the top read as a verdict it was not.
  *
+ *  - the lookup failed: negative;
  *  - no vehicle yet: idle — nothing to judge;
  *  - a vehicle the distributor has no record of: neutral — warranty is not the distributor's to
  *    assert (vehicle-lookup-invariants.md), so neither green nor red may be shown for it;
@@ -83,7 +86,8 @@ export type VerdictInput = {
  *  - a bare card with no coverage and nothing to declare: idle — there is nothing to report, and a
  *    red bar over an empty rail would be accusing the vehicle of something the data does not say.
  */
-export const panelVerdict = ({ locale, vehicleInformation, isAuthorized, today }: VerdictInput): VerdictState => {
+export const panelVerdict = ({ locale, vehicleInformation, isAuthorized, today, error }: VerdictInput): VerdictState => {
+  if (error) return 'negative';
   if (!vehicleInformation) return 'idle';
   if (isAuthorized === false) return 'neutral';
 
@@ -400,9 +404,10 @@ export default function CoverageTimeline({ vehicleInformation, locale, isAuthori
   // The card around this — paper, border, shadow, the accent bar — is the wrapper's.
   return (
     <article class="coverage-timeline" data-empty={hasCoverage ? 'false' : 'true'}>
-      <header class="activation-header">
-        <div class="activation-main lookup-head-content" data-head-edge="start">
-          <p class="activation-title">
+      <header class="activation-header lookup-head-band">
+        <div class="activation-main lookup-head-content">
+          {/* lookup-skeleton: in flight, each line's box becomes a sheen bar where it stands (the wrapper's rule). */}
+          <p class="activation-title lookup-skeleton">
             <span>{dealerLabel}:</span> <strong>{dealerName || '—'}</strong>
           </p>
 
@@ -410,14 +415,18 @@ export default function CoverageTimeline({ vehicleInformation, locale, isAuthori
               vehicles does not resize the header. Only the possession notice below is allowed to
               change the card's height, and it slides. */}
           <div class="broker-slot" data-empty={activatingBroker ? 'false' : 'true'} aria-hidden={activatingBroker ? null : 'true'}>
-            <p class="activation-broker">
+            <p class="activation-broker lookup-skeleton">
               <span>{locale.broker}:</span> <strong>{activatingBroker}</strong>
             </p>
           </div>
         </div>
 
-        <div class="total-slot lookup-head-content" data-head-edge="end" data-empty={hasCoverage ? 'false' : 'true'} aria-hidden={hasCoverage ? null : 'true'}>
-          <TotalCoverage coverages={coverages} locale={locale} />
+        {/* Its own box for the tab hand-over: the slot beneath keeps its opacity for the empty fade, and one
+            element cannot carry both. */}
+        <div class="lookup-head-content">
+          <div class="total-slot" data-empty={hasCoverage ? 'false' : 'true'} aria-hidden={hasCoverage ? null : 'true'}>
+            <TotalCoverage coverages={coverages} locale={locale} />
+          </div>
         </div>
       </header>
 
@@ -427,93 +436,100 @@ export default function CoverageTimeline({ vehicleInformation, locale, isAuthori
         <NoticeStrip text={notice} />
       </Collapsible>
 
-      <section class="journey" aria-label={locale.warrantyCoverage}>
-        <div class="journey-head lookup-head-content" data-head-edge="start">
-          <StatusBadge state={verdict(isAuthorized)} text={isAuthorized ? locale.authorized : locale.unauthorized} />
-          <StatusBadge state={verdict(hasActiveWarranty)} text={hasActiveWarranty ? locale.activeWarranty : locale.notActiveWarranty} />
-        </div>
+      <div class="lookup-slide-clip">
+        <section class="journey lookup-slide" aria-label={locale.warrantyCoverage}>
+          <div class="journey-head">
+            <StatusBadge state={verdict(isAuthorized)} text={isAuthorized ? locale.authorized : locale.unauthorized} />
+            <StatusBadge state={verdict(hasActiveWarranty)} text={hasActiveWarranty ? locale.activeWarranty : locale.notActiveWarranty} />
+          </div>
 
-        <div class="timeline-shell lookup-slide" data-empty={hasCoverage ? 'false' : 'true'} aria-hidden={hasCoverage ? null : 'true'}>
-          <div class="timeline shift-skeleton" role="group" aria-label={locale.warrantyCoverage}>
-            <div class="today-head" aria-hidden="true" style={{ '--at': asPercentage(todayPosition) }} ref={element => positionTodayPill(element, todayPosition)}>
-              {hasCoverage && <span class="today-pill">{`${locale.today} · ${snapshot}`}</span>}
-            </div>
+          <div class="timeline-shell" data-empty={hasCoverage ? 'false' : 'true'} aria-hidden={hasCoverage ? null : 'true'}>
+            <div class="timeline shift-skeleton" role="group" aria-label={locale.warrantyCoverage}>
+              <div class="today-head" aria-hidden="true" style={{ '--at': asPercentage(todayPosition) }} ref={element => positionTodayPill(element, todayPosition)}>
+                {hasCoverage && <span class="today-pill">{`${locale.today} · ${snapshot}`}</span>}
+              </div>
 
-            <div class="axis" aria-hidden="true" ref={thinAxis}>
-              {ticks.map(tick => {
-                const at = positionInRange(tick);
+              <div class="axis" aria-hidden="true" ref={thinAxis}>
+                {ticks.map(tick => {
+                  const at = positionInRange(tick);
 
-                // Ticks no longer necessarily reach the rail's ends — a lapsed warranty's dates all
-                // sit left of today — so which way a date is set follows its position rather than
-                // its place in the list.
-                return (
-                  <span class="axis-date" key={tick} data-align={at <= 0.5 ? 'start' : at >= 99.5 ? 'end' : 'mid'} style={{ '--at': asPercentage(at) }}>
-                    {tick}
-                  </span>
-                );
-              })}
-            </div>
-
-            <div class="lane">
-              {hasCoverage && <span class="today-tail" aria-hidden="true" style={{ '--at': asPercentage(todayPosition) }} />}
-
-              <div class="coverage-list" role="list">
-                {coverages.map(coverage => {
-                  const status = coverageStatus(coverage, snapshot);
-                  const start = positionInRange(coverage.start);
-                  const span = positionInRange(coverage.end) - start;
-
+                  // Ticks no longer necessarily reach the rail's ends — a lapsed warranty's dates all
+                  // sit left of today — so which way a date is set follows its position rather than
+                  // its place in the list.
                   return (
-                    <div
-                      key={coverage.id}
-                      role="listitem"
-                      class="coverage-entry"
-                      data-kind={coverage.kind}
-                      data-status={status}
-                      aria-label={`${describe(coverage)}, ${coverage.start} — ${coverage.end}`}
-                      style={{ '--start': asPercentage(start), '--span': asPercentage(span), ...toneVariables(coverage.tone) }}
-                    >
-                      <div class={`segment ${coverage.kind === 'standard' ? 'is-standard' : 'is-extended'}${coverage.alt ? ' tone-alt' : ''}`}>
-                        {/* Only the standard band carries text: it has no provider to show, and its
+                    <span class="axis-date" key={tick} data-align={at <= 0.5 ? 'start' : at >= 99.5 ? 'end' : 'mid'} style={{ '--at': asPercentage(at) }}>
+                      {tick}
+                    </span>
+                  );
+                })}
+              </div>
+
+              <div class="lane">
+                {hasCoverage && <span class="today-tail" aria-hidden="true" style={{ '--at': asPercentage(todayPosition) }} />}
+
+                <div class="coverage-list" role="list">
+                  {coverages.map(coverage => {
+                    const status = coverageStatus(coverage, snapshot);
+                    const start = positionInRange(coverage.start);
+                    const span = positionInRange(coverage.end) - start;
+
+                    return (
+                      <div
+                        key={coverage.id}
+                        role="listitem"
+                        class="coverage-entry"
+                        data-kind={coverage.kind}
+                        data-status={status}
+                        aria-label={`${describe(coverage)}, ${coverage.start} — ${coverage.end}`}
+                        style={{ '--start': asPercentage(start), '--span': asPercentage(span), ...toneVariables(coverage.tone) }}
+                      >
+                        <div class={`segment ${coverage.kind === 'standard' ? 'is-standard' : 'is-extended'}${coverage.alt ? ' tone-alt' : ''}`}>
+                          {/* Only the standard band carries text: it has no provider to show, and its
                             own mark is worded differently from the label beneath so the two do not
                             read as the same phrase twice. An extended band shows its provider's logo
                             or nothing at all — never the provider's name, which on a persisted
                             coverage is whichever company happened to store the row. The provider stays
                             in the entry's aria-label either way, so nothing is lost to a screen reader. */}
-                        {coverage.kind === 'standard' ? (
-                          <strong>{locale.standardWarrantyMark}</strong>
-                        ) : coverage.logo ? (
-                          // Decorative: the provider is already named in the entry's aria-label,
-                          // so alt text here would announce it twice.
-                          <img class="provider-logo" src={coverage.logo} alt="" loading="lazy" />
-                        ) : null}
+                          {coverage.kind === 'standard' ? (
+                            <strong>{locale.standardWarrantyMark}</strong>
+                          ) : coverage.logo ? (
+                            // Decorative: the provider is already named in the entry's aria-label,
+                            // so alt text here would announce it twice.
+                            <img class="provider-logo" src={coverage.logo} alt="" loading="lazy" />
+                          ) : null}
+                        </div>
+
+                        <span class="coverage-label">{coverage.label}</span>
                       </div>
+                    );
+                  })}
+                </div>
 
-                      <span class="coverage-label">{coverage.label}</span>
-                    </div>
-                  );
-                })}
+                {hasCoverage && <span class="past-wash" aria-hidden="true" style={{ '--to': asPercentage(todayPosition) }} />}
+
+                <div class="boundary-layer" aria-hidden="true">
+                  {coverages.slice(1).map(coverage => (
+                    <span key={coverage.id} class="boundary" style={{ '--at': asPercentage(positionInRange(coverage.start)), ...toneVariables(coverage.tone) }} />
+                  ))}
+                </div>
+
+                {hasCoverage && <span class="today-marker" aria-hidden="true" style={{ '--at': asPercentage(todayPosition) }} />}
               </div>
 
-              {hasCoverage && <span class="past-wash" aria-hidden="true" style={{ '--to': asPercentage(todayPosition) }} />}
-
-              <div class="boundary-layer" aria-hidden="true">
-                {coverages.slice(1).map(coverage => (
-                  <span key={coverage.id} class="boundary" style={{ '--at': asPercentage(positionInRange(coverage.start)), ...toneVariables(coverage.tone) }} />
-                ))}
-              </div>
-
-              {hasCoverage && <span class="today-marker" aria-hidden="true" style={{ '--at': asPercentage(todayPosition) }} />}
+              {hasCoverage && <p class="sr-only">{summary}</p>}
             </div>
-
-            {hasCoverage && <p class="sr-only">{summary}</p>}
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </article>
   );
 }
 
+/**
+ * The head's trailing end: the KPI (§ 14). Caption over the mix by kind ("3 years standard +
+ * 2 years extended") on the reading side, the total figure on the other, behind the hue's rail.
+ * The layout is the stylesheet's; the DOM stays in reading order for the aria text.
+ */
 function TotalCoverage({ coverages, locale }: { coverages: Coverage[]; locale: TimelineLocale }) {
   const monthsFor = (kind: Coverage['kind']) =>
     coverages.filter(coverage => coverage.kind === kind).reduce((total, coverage) => total + monthsBetween(coverage.start, coverage.end), 0);
@@ -533,11 +549,16 @@ function TotalCoverage({ coverages, locale }: { coverages: Coverage[]; locale: T
   // reflow the label beside it, which is what made the invisible block taller than a real one.
   const total = mix ? formatDuration(standardMonths + extendedMonths, locale) : '—';
 
+  // In flight the KPI is three skeletons, one per thing on it (owner, 2026-09-20): the rail
+  // (its own rule), the caption-and-mix group as one bar, the figure as another. Hence the group
+  // wrapper — a bar per element, and the two lines read as one thing.
   return (
     <aside class="total-coverage" aria-label={`${locale.totalWarranty}: ${mix || total}`}>
-      <span>{locale.totalWarranty}</span>
-      <strong>{total}</strong>
-      <span class="coverage-mix">{mix}</span>
+      <span class="total-text lookup-skeleton">
+        <span class="total-caption">{locale.totalWarranty}</span>
+        <span class="coverage-mix">{mix}</span>
+      </span>
+      <strong class="lookup-skeleton">{total}</strong>
     </aside>
   );
 }

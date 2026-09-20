@@ -61,6 +61,14 @@ describe('vehicle-specification', () => {
     await page.waitForChanges();
     expect(shadow(page).querySelector('.lookup-card')?.getAttribute('data-verdict')).toBe('idle');
 
-    expect(heard).toEqual(['positive', 'neutral', 'idle']);
+    // A failed lookup: no band — the accent goes negative and the pill carries the message.
+    await (page.rootInstance as VehicleSpecification).setErrorMessage('wrongResponseFormat');
+    await page.waitForChanges();
+    expect(shadow(page).querySelector('.lookup-card')?.getAttribute('data-verdict')).toBe('negative');
+    expect(shadow(page).querySelector('.lookup-summary .status-badge')?.classList.contains('is-negative')).toBe(true);
+    expect(shadow(page).querySelector('.lookup-summary .status-badge > span')?.textContent).toBe('Wrong response format');
+    expect(shadow(page).querySelector('.lookup-error')).toBeNull();
+
+    expect(heard).toEqual(['positive', 'neutral', 'idle', 'negative']);
   });
 });

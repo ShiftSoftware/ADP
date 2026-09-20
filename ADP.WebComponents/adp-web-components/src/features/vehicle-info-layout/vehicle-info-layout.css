@@ -3,8 +3,9 @@
  * family. A panel imports this file into its own stylesheet (shadow roots share nothing) and
  * renders the wrapper inside its own root, so these rules and the panel's live side by side.
  *
- * What is here: the one padding, the card and its accent bar, the error band, the body and the
- * scrollbars inside it, and the screen-reader-only VIN. What is not: a title, a pill, a strip — the
+ * What is here: the card and its accent bar, the body and the scrollbars inside it, and the
+ * screen-reader-only VIN. An error is the accent in its negative tone; the message is the panel's,
+ * in its pill. What is not: a title, a pill, a strip — the
  * panel's head is the head. Reads top to bottom as the card does. Every value has its reason beside
  * it; the tokens and the motion primitives come from the shared files.
  */
@@ -13,21 +14,39 @@
 @import '../../components/style/lookup-motion.css';
 
 :host {
-  /* The panel is embedded at whatever width the host gives it; the narrow padding below is a
-     container query on the host, not the window. A panel that names its container keeps the name —
-     an unnamed query resolves to the nearest container either way. */
+  /* The panel is embedded at whatever width the host gives it; the head's narrow breakpoints are
+     container queries on the host, not the window. A panel that names its container keeps the
+     name — an unnamed query resolves to the nearest container either way. */
   container-type: inline-size;
-  /* How far a panel's content travels on a composite's tab switch: enough to read as a direction,
-     not enough to read as a page turning. */
-  --tab-travel: 14px;
-  /* The one duration longer than --settle that is not a loop, and a deliberate exception to the
-     language's rule (owner, 2026-09-20): a tab switch changes the whole content of the card and
-     its height at once, and at --settle the hand-over read as a flicker. Long enough to be
-     followed, short enough that a second click never waits on it. */
-  --tab-settle: 520ms;
-  /* One critically-damped ease-out for the switch — movement, fade and height alike. A tab click
-     carries no momentum, so nothing overshoots or bounces. */
-  --tab-ease: cubic-bezier(0.2, 0, 0, 1);
+  /* How a panel's body changes on a composite's tab switch: a sequence, barely overlapping. The
+     outgoing content leaves first — fading as it lifts 8px over 220ms on a soft in-out curve, so
+     it departs rather than blinks — and the incoming starts at 160ms, when the outgoing is ~90%
+     gone (its curve has most of its travel done by three quarters), so there is no dead frame
+     between them yet never a frame with two lists showing through each other, which is what made
+     a simultaneous rise-out / rise-in read as a double exposure. The incoming arrives slower,
+     over 400ms: fading in as it rises 12px into place on the settle curve. The distances are
+     small so the eye reads a change, not a movement; the direction — up and out, in from below —
+     is the head content's, so the card turns as one page. 560ms in all, inside the head's 600ms
+     hand-over and the height's 600ms follow, so the body reads before the card has finished
+     settling round it. Durations here longer than --settle are deliberate exceptions to the
+     language's one-duration rule. */
+  --tab-exit: 220ms;
+  --tab-exit-travel: 8px;
+  --tab-exit-ease: cubic-bezier(0.45, 0, 0.55, 1);
+  --tab-enter: 400ms;
+  --tab-enter-delay: 160ms;
+  --tab-enter-travel: 12px;
+  /* The settle curve, for everything that arrives or moves into place on a switch: a long, even
+     deceleration with no snap at the start — a strong ease-out (0.23, 1, 0.32, 1) did most of
+     its travel in the first fifth of the time and read as a jump then a crawl (owner,
+     2026-09-20 — "fast and not smooth"). */
+  --tab-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --tab-height-settle: 600ms;
+  --tab-height-ease: ease-in-out;
+  /* The head's hand-over: the outgoing content slides up out of the band as the incoming slides in
+     from below it, one movement (owner, 2026-09-20), on the settle curve — the same clock as the
+     height, so the band and its content land together. */
+  --tab-head-settle: 600ms;
 }
 
 .lookup-panel,
@@ -42,17 +61,35 @@
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Panel: the one padding
+   Panel
    ------------------------------------------------------------------------------------------- */
 
-/* The card is its only child. The padding gives the shadow room and a host that sets the element
-   display:block at width:100% a card with breathing space. */
+/* The card is its only child and fills the element edge to edge: no padding of its own (owner,
+   2026-09-20 — the design language's one-padding rule, § 13, is not applied here). The host places
+   the element and gives the shadow whatever room it wants around it. */
 .lookup-panel {
-  padding: 16px;
   color: var(--ink);
-  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-size: 13px;
   line-height: 1.35;
+}
+
+/* An embedded panel (coreOnly) has no .lookup-panel of its own — the composite draws the card — but
+   it is still its own shadow root, and the face does not inherit across that boundary: Tailwind's
+   preflight sets a family on every :host and would win. So the embedded root sets the face too,
+   and carries the locale's direction so the rtl switch below reaches it (owner, 2026-09-20: the
+   composite's warranty panel fell to the system face when the panels stopped naming their own). */
+.lookup-core {
+  font-family: var(--font-sans);
+}
+
+/* The face follows the language (lookup-tokens.css): any root that carries the locale's direction
+   — the panel, a popover, a dialog beside it — sets the Arabic face when that direction is rtl,
+   and everything under it inherits. `:host` is here for specificity alone, and !important because
+   the legacy panels reset every descendant to their host's face with !important; a plain rule
+   tied and lost on source order. Both go when the last legacy panel is migrated. */
+:host [dir='rtl'] {
+  font-family: var(--font-arabic) !important;
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -70,11 +107,14 @@
   box-shadow: var(--shadow);
 }
 
-/* The accent bar is the verdict's fill: red for a negative verdict, green for a positive one, amber
+/* The accent bar (6px — a step up from the language's 4, owner 2026-09-20) is the verdict's fill:
+   red for a negative verdict, green for a positive one, amber
    for a statement without a verdict, violet breathing for a required action not taken, --line when
    there is nothing to say. Drawn over the border — inset -1px — so the corners show no grey sliver
-   of border under the bar. It fades to 0 while busy: the colours would otherwise snap on the frame
-   the data lands. */
+   of border under the bar. While busy it slides up out of the card (its own height, clipped by the
+   card's overflow) rather than fading in place, and slides back in with its new colour: the colours
+   would otherwise snap on the frame the data lands, and a bar that leaves and returns reads as the
+   verdict being taken away and given back. A transform, so it never touches layout. */
 .lookup-card::before {
   position: absolute;
   z-index: 3;
@@ -84,7 +124,7 @@
   content: '';
   transition:
     background var(--settle) ease,
-    opacity var(--settle) ease;
+    transform var(--settle) ease;
 }
 
 .lookup-card[data-verdict='positive']::before {
@@ -107,7 +147,7 @@
 }
 
 .lookup-card[data-phase='busy']::before {
-  opacity: 0;
+  transform: translateY(-100%);
 }
 
 @keyframes lookup-attention-bar {
@@ -119,43 +159,6 @@
   50% {
     opacity: 0.45;
   }
-}
-
-/* ---------------------------------------------------------------------------------------------
-   Error band: the notice band in its negative tone, sliding open under the accent bar
-   ------------------------------------------------------------------------------------------- */
-
-/* .lookup-error is a .collapsible (lookup-motion.css): always mounted, open while isError. */
-
-/* The notice band's recipe when it stands alone outside a strip: 9px 20px, the tone's dark on the
-   tone's tint, ruled top and bottom only — a ring on a band that runs edge to edge would leave two
-   stray vertical ticks against the card's sides — and square, because it runs the card's full width. */
-.lookup-error-notice {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  padding: 9px 20px;
-  color: var(--red-dark);
-  background: var(--red-tint);
-  border-radius: 0;
-  box-shadow:
-    inset 0 1px 0 rgba(180, 35, 24, 0.18),
-    inset 0 -1px 0 rgba(180, 35, 24, 0.18);
-  font-size: 13px;
-  font-weight: 650;
-  line-height: 1.3;
-}
-
-.lookup-error-notice .notice-icon {
-  flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
-}
-
-/* A host's error text can be any length. */
-.lookup-error-text {
-  min-width: 0;
-  overflow-wrap: anywhere;
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -230,89 +233,135 @@
 .lookup-tabs {
   position: relative;
   overflow: hidden;
-  transition: height var(--tab-settle) var(--tab-ease);
+  transition: height var(--tab-height-settle) var(--tab-height-ease);
 }
 
-/* Every tab is mounted always. The active one is in flow; an inactive one is laid over it at the
-   same width, faded out, and — visibility delayed by the fade — unreachable by keyboard and
-   pointer. A switch changes these attributes and nothing else, so the transitions start from the
-   live on-screen values and a click mid-switch reverses from wherever the content is. The fade
-   finishes before the travel, as the primitives do. */
+/* Every tab is mounted always. The active one is in flow and paints above the rest; an inactive
+   one is laid under it at the same width and — visibility delayed until the slowest of its
+   content's fades has finished — unreachable by keyboard and pointer. The tab itself does not
+   fade: its head content and its body fade on their own clocks (below), and a fade on the tab
+   would multiply into both. A switch changes these attributes and nothing else, so the
+   transitions start from the live on-screen values and a click mid-switch reverses from wherever
+   the content is. */
 .lookup-tab {
   position: relative;
-  opacity: 1;
+  z-index: 1;
   visibility: visible;
-  transition:
-    opacity calc(var(--tab-settle) - 60ms) var(--tab-ease),
-    visibility 0s;
+  transition: visibility 0s;
 }
 
 .lookup-tab[data-state='inactive'] {
   position: absolute;
+  z-index: 0;
   inset-inline: 0;
   top: 0;
-  opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition:
-    opacity calc(var(--tab-settle) - 60ms) var(--tab-ease),
-    visibility 0s linear var(--tab-settle);
+  transition: visibility 0s linear var(--tab-head-settle);
 }
 
-/* The card and the head band never move; what travels is the region under the head, which every
-   panel marks .lookup-slide. The panel's host is told which side it is parked on (data-tab-park,
-   physical, so no RTL rule is needed here) and slides its own region from there. At rest the
-   transform is none, not translateX(0), so a fixed-positioned descendant keeps the viewport as its
-   containing block. Never put this class on a .collapsible: the transition list would replace
-   the slide's. */
+/* The panel host hides itself while parked, on the same clock as the tab that holds it: the legacy
+   panels reset every property on their host with `all: initial !important`, which would make them
+   visible under a hidden tab — and show the re-park of a leaving head, meant to happen unseen, as
+   a slide down through the band. Important, so it beats that reset; the attribute form, so it
+   out-specifies it. The tab that just left is parked too, so it hides on the same clock — once its
+   head has left the band — and its re-park below happens hidden. A tab made active is visible at
+   once. */
+:host([data-tab-park]) {
+  visibility: hidden !important;
+  transition: visibility 0s linear var(--tab-head-settle) !important;
+}
+
+/* The card and the head band never move; what changes is the region under the head, which every
+   panel marks .lookup-slide. The outgoing leaves first — up and out, fast — and the incoming
+   arrives once it has gone, from below, slower (the figures and their reasons are on :host). The
+   panel's host is told when it is parked (data-tab-park) and when it has just left
+   (data-tab-leaving) and moves its own region accordingly. A transition is read from the state
+   being entered, which is what gives each leg its own clock: the base rule below is the arrival,
+   the leaving rule the departure, and the parked rule — reached only once the tab is hidden —
+   has none. At rest the transform is none, not translateY(0), so a fixed-positioned descendant
+   keeps the viewport as its containing block. Never put this class on a .collapsible: the
+   transition list would replace the slide's. */
+/* The slide's own box clips it: on its way up it passes under the head band's edge, never over the
+   head, and on its way in it rises from under the card's bottom. */
+.lookup-slide-clip {
+  overflow: hidden;
+}
+
 .lookup-slide {
-  transition: transform var(--tab-settle) var(--tab-ease);
+  transition:
+    transform var(--tab-enter) var(--tab-ease) var(--tab-enter-delay),
+    opacity var(--tab-enter) var(--tab-ease) var(--tab-enter-delay);
 }
 
-:host([data-tab-park='left']) .lookup-slide {
-  transform: translateX(calc(-1 * var(--tab-travel)));
+:host([data-tab-park]) .lookup-slide {
+  opacity: 0;
+  transform: translateY(var(--tab-enter-travel));
+  transition: none;
 }
 
-:host([data-tab-park='right']) .lookup-slide {
-  transform: translateX(var(--tab-travel));
+/* After the park rule, so it wins the tie: the leaving host is parked too. */
+:host([data-tab-leaving]) .lookup-slide {
+  opacity: 0;
+  transform: translateY(calc(-1 * var(--tab-exit-travel)));
+  transition:
+    transform var(--tab-exit) var(--tab-exit-ease),
+    opacity var(--tab-exit) var(--tab-exit-ease);
 }
 
-/* The head band itself never moves; what it holds does. A panel marks its head's content
-   .lookup-head-content (the title and the summary, separately, each with the edge it is set from
-   in data-head-edge). Leaving, the content rises and shrinks a step from its own edge — the same
-   figure the panels use for text leaving (--leave-scale) scaled down to a head that is not
-   clipped away, so it reads as receding rather than lunging. Arriving, it slides up from a short
-   distance below. Parked tabs rest at the arrival position, so an entry is always from below; the
-   tab that just left is told so (data-tab-leaving) and rests up and small until the switch has
-   settled, then re-parks unseen. The two paths differ on purpose: the head is a label changing
-   hands, not a page turning, and a label that came from below and leaves upward reads as one
-   motion through the band. */
+/* The head band itself never moves; what it holds slides through it. A panel marks its head's
+   content .lookup-head-content (the title and the summary, separately) and gives the band
+   .lookup-head-band, which clips. On a switch the outgoing content slides up and out of the band
+   and the incoming slides in from below it, together, as one movement over --tab-head-settle — a
+   line of a list rolling up to the next — and the accent bar and the band's rule stay where they
+   are. Neither end is invisible: the content dims to 0.6 as it leaves and arrives at 0.6, so it
+   is the band's edge that takes it, not a fade. The travel is the content's own height plus more
+   than the band's padding, so nothing lingers in the padding once out. Parked tabs rest below the
+   band, so an entry is always from below; the tab that just left is told so (data-tab-leaving) and
+   rests above it until the movement is over, then re-parks unseen. */
+/* The band also changes height across a switch — a taller head (the timeline's KPI and second
+   line) takes the room as its content arrives. The composite measures both bands and drives this
+   variable on the panel's host: pinned to the outgoing height through the patch, sent to the
+   incoming height with the slide, released to auto on settle. Box-sizing so the pinned figure
+   is the band's outer height. */
+.lookup-head-band {
+  box-sizing: border-box;
+  height: var(--lookup-head-height, auto);
+  overflow: hidden;
+  transition: height var(--tab-head-settle) var(--tab-ease);
+}
+
 .lookup-head-content {
-  transition: transform var(--tab-settle) var(--tab-ease);
-}
-
-.lookup-head-content[data-head-edge='start'] {
-  transform-origin: left center;
-}
-
-.lookup-head-content[data-head-edge='end'] {
-  transform-origin: right center;
-}
-
-[dir='rtl'] .lookup-head-content[data-head-edge='start'] {
-  transform-origin: right center;
-}
-
-[dir='rtl'] .lookup-head-content[data-head-edge='end'] {
-  transform-origin: left center;
+  transition:
+    translate var(--tab-head-settle) var(--tab-ease),
+    opacity var(--tab-head-settle) var(--tab-ease);
 }
 
 :host([data-tab-park]) .lookup-head-content {
-  transform: translateY(8px);
+  opacity: 0.6;
+  translate: 0 calc(100% + 20px);
 }
 
 :host([data-tab-leaving]) .lookup-head-content {
-  transform: translateY(-6px) scale(0.96);
+  opacity: 0.6;
+  translate: 0 calc(-100% - 20px);
+}
+
+/* A tab made active again while its content is still up and out (a quick switch back) must not
+   come back down from the top: the composite marks the host for one frame, its content jumps below
+   the band with no transition, the mark is lifted, and it arrives from below like any other. After
+   the leaving rules, so it wins the tie. For the body this is unseen except inside the 220ms of
+   its exit, where a half-faded body 8px up snaps to clear and below — small, brief and rare. */
+:host([data-tab-reset]) .lookup-head-content {
+  opacity: 0.6;
+  translate: 0 calc(100% + 20px);
+  transition: none;
+}
+
+:host([data-tab-reset]) .lookup-slide {
+  opacity: 0;
+  transform: translateY(var(--tab-enter-travel));
+  transition: none;
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -331,22 +380,17 @@
   border: 0;
 }
 
-/* ---------------------------------------------------------------------------------------------
-   Narrow panels
-   ------------------------------------------------------------------------------------------- */
-
-@container (max-width: 720px) {
-  .lookup-panel {
-    padding: 12px;
-  }
-}
-
-/* Reduced motion: a switch is a pure cross-fade, no travel; the shared rule in lookup-motion.css
+/* Reduced motion: a switch is a pure fade, no travel; the shared rule in lookup-motion.css
    makes every transition immediate. */
 @media (prefers-reduced-motion: reduce) {
   :host([data-tab-park]) .lookup-slide,
+  :host([data-tab-leaving]) .lookup-slide,
+  :host([data-tab-reset]) .lookup-slide {
+    transform: none;
+  }
+
   :host([data-tab-park]) .lookup-head-content,
   :host([data-tab-leaving]) .lookup-head-content {
-    transform: none;
+    translate: none;
   }
 }

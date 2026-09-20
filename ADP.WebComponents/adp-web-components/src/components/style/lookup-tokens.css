@@ -36,4 +36,19 @@
   /* One duration for everything that appears, disappears or resizes, so a card settles as a
      single movement instead of a sequence of unrelated ones. */
   --settle: 320ms;
+  /* The two faces, one per script (owner, 2026-09-20). A panel sets --font-sans on its root and
+     --font-arabic on a root whose dir is rtl — Arabic and Kurdish are the family's two RTL locales,
+     so the direction the locale already declares is the switch, and no root needs to know the
+     language. Both are loaded once for the page by the global script (middleware.ts).
+
+     --font-sans: Manrope, a variable face with a 200–800 axis so the language's 650 and 760 render
+     true instead of snapping to the nearest static cut; Cyrillic for ru; tabular figures for the
+     dates and VINs. Noto Kufi Arabic follows it so an Arabic string inside an English panel (a
+     dealer's name) sets in the family's Arabic face rather than the system's. Then the platform
+     UI faces for when the web fonts have not arrived.
+
+     --font-arabic: the face the vehicle-specification panel has always used, first in the stack so
+     its own Latin sets the VINs and dates beside the Arabic, drawn to sit with it. */
+  --font-sans: 'Manrope', 'Noto Kufi Arabic', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-arabic: 'Noto Kufi Arabic', 'Manrope', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }

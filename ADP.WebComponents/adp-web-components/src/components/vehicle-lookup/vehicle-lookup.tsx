@@ -138,7 +138,10 @@ export class VehicleLookup implements MultiLingual {
 
   @Listen('verdictChange')
   onVerdictChange(event: CustomEvent<VerdictState>) {
-    const tag = (event.target as HTMLElement | null)?.id as ActiveElement | undefined;
+    // By the time the event reaches this host it has crossed the shadow boundary and its target has
+    // been retargeted to the host itself; the panel that fired it is the first node of the path.
+    const source = (event.composedPath?.()[0] ?? event.target) as HTMLElement | null;
+    const tag = source?.id as ActiveElement | undefined;
     if (!tag || !Object.values(componentTags).includes(tag as any)) return;
     this.verdicts = { ...this.verdicts, [tag]: event.detail };
   }
@@ -157,15 +160,15 @@ export class VehicleLookup implements MultiLingual {
     this.switchingTo = next;
     this.leaving = previous || undefined;
     clearTimeout(this.leavingTimer);
-    // Re-parked once hidden, unseen: --tab-settle plus the frame it starts on.
-    this.leavingTimer = setTimeout(() => (this.leaving = undefined), this.settleMs() + 80);
+    // Re-parked once out of the band, unseen: the head's movement plus the frame it starts on.
+    this.leavingTimer = setTimeout(() => (this.leaving = undefined), this.headSettleMs() + 80);
   }
 
-  /** The --tab-settle token, read from the stylesheet; its default when it cannot be read, as in tests. */
-  private settleMs(): number {
-    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(this.el).getPropertyValue('--tab-settle') : '';
+  /** The --tab-head-settle token, read from the stylesheet; its default when it cannot be read, as in tests. */
+  private headSettleMs(): number {
+    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(this.el).getPropertyValue('--tab-head-settle') : '';
     const parsed = parseFloat(raw);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 520;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 600;
   }
 
   private tabOf(tag: string | undefined) {
@@ -174,14 +177,17 @@ export class VehicleLookup implements MultiLingual {
 
   componentWillRender() {
     if (this.switchingTo === undefined) return;
-    // Read once, before the patch: the region as it shows now and the incoming tab as laid out.
-    this.tabRegion.beforeSwitch(this.tabOf(this.switchingTo));
+    // Read once, before the patch: the region as it shows now, the incoming tab as laid out, and
+    // both panels' head bands.
+    const host = (tag: string | undefined) => (tag ? ((this.el.shadowRoot?.getElementById(tag) as HTMLElement | null) ?? undefined) : undefined);
+    this.tabRegion.beforeSwitch(this.tabOf(this.switchingTo), { incoming: host(this.switchingTo), outgoing: host(this.leaving) });
   }
 
   componentDidRender() {
     if (this.switchingTo !== undefined) {
+      const incoming = (this.el.shadowRoot?.getElementById(this.switchingTo) as HTMLElement | null) ?? undefined;
       this.switchingTo = undefined;
-      this.tabRegion.afterSwitch();
+      this.tabRegion.afterSwitch(incoming);
     }
     // Follow the active panel's own growth (a drawer opening) with the same transition.
     this.tabRegion.observe(this.el.shadowRoot?.getElementById(this.activeElement) ?? undefined);
@@ -225,11 +231,11 @@ export class VehicleLookup implements MultiLingual {
       [componentTags.vehicleSsc]: vehicleSsc,
     };
 
-    Object.values(this.componentsList).forEach(element => {
+    Object.entries(this.componentsList).forEach(([tag, element]) => {
       if (!element) return;
 
       element.errorCallback = this.syncErrorAcrossComponents;
-      element.loadingStateChange = this.loadingStateChangingMiddleware;
+      element.loadingStateChange = (newState: boolean) => this.loadingStateChangingMiddleware(newState, tag as ActiveElement);
       element.loadedResponse = newResponse => this.handleLoadData(newResponse, element);
       // Every child asks the wrapper, and the wrapper asks the host, so a token refreshed for one
       // request is refreshed for all of them. Only the children that make follow-up requests of
@@ -321,8 +327,17 @@ export class VehicleLookup implements MultiLingual {
     });
   }
 
-  private loadingStateChangingMiddleware = (newState: boolean) => {
+  /**
+   * Each panel's own loading flag, by tag. The card's phase follows the active panel only: after
+   * a search the other panels are hydrated in turn and each is busy for the helper's second, and
+   * the accent must not stay out of the card for as long as the last of them takes. The host's
+   * callback keeps the old meaning — the composite as a whole is loading while any panel is.
+   */
+  @State() loadingByTag: Partial<Record<ActiveElement, boolean>> = {};
+
+  private loadingStateChangingMiddleware = (newState: boolean, tag?: ActiveElement) => {
     this.isLoading = newState;
+    if (tag) this.loadingByTag = { ...this.loadingByTag, [tag]: newState };
     if (this.loadingStateChanged) this.loadingStateChanged(newState);
     if (this.blazorRef && this.blazorOnLoadingStateChange) this.blazorRef.invokeMethodAsync(this.blazorOnLoadingStateChange, newState);
   };
@@ -531,10 +546,9 @@ export class VehicleLookup implements MultiLingual {
         <VehicleInfoLayout
           isError={this.isError}
           header={this.currentVin}
-          isLoading={this.isLoading}
+          isLoading={!!(active && this.loadingByTag[active])}
           direction={direction}
           verdict={(active && this.verdicts[active]) || 'idle'}
-          errorMessage={this.errorMessage || this.locale.errors.wildCard}
         >
           <LookupTabs active={active} panels={panels} regionRef={el => (this.regionEl = el)} />
         </VehicleInfoLayout>

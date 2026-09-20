@@ -1,7 +1,9 @@
 import { FunctionalComponent, h } from '@stencil/core';
 
-/** The --tab-settle token (vehicle-info-layout.css) when the stylesheet cannot be read, as in tests. */
-const DEFAULT_SETTLE_MS = 520;
+/** The --tab-height-settle token (vehicle-info-layout.css) when the stylesheet cannot be read, as in tests. */
+const DEFAULT_SETTLE_MS = 600;
+/** The --tab-head-settle token when the stylesheet cannot be read. */
+const DEFAULT_HEAD_SETTLE_MS = 600;
 
 /** Which side of the active tab an inactive one rests on, in physical terms — the stylesheet needs no RTL rule. */
 export type TabPark = 'left' | 'right';
@@ -30,12 +32,13 @@ type LookupTabsProps = {
 
 /**
  * The tab region of a composite: every panel is mounted always, one of them active and in flow,
- * the rest absolutely positioned over it, hidden, inert and parked a short travel to one side. A
- * switch changes the attributes and nothing else — the transitions run from the live on-screen
- * values, so a click mid-transition reverses from wherever the content is. The card around the
+ * the rest absolutely positioned under it, hidden and inert. A switch changes the attributes and
+ * nothing else — the transitions run from the live on-screen values, so a click mid-transition
+ * reverses from wherever the content is. The card around the
  * region and the head band inside each panel never move: only each panel's `.lookup-slide` region
- * travels (a rule in vehicle-info-layout.css, driven by `data-tab-park` on the panel's host), and
- * the region's height follows the incoming panel (`createTabRegion`).
+ * changes — the outgoing leaves, then the incoming arrives (a rule in vehicle-info-layout.css,
+ * driven by `data-tab-park` / `data-tab-leaving` on the panel's host) — and the region's height
+ * follows the incoming panel (`createTabRegion`).
  */
 export const LookupTabs: FunctionalComponent<LookupTabsProps> = ({ active, panels, regionRef }) => (
   <div class="lookup-tabs" ref={regionRef}>
@@ -68,20 +71,44 @@ export const LookupTabs: FunctionalComponent<LookupTabsProps> = ({ active, panel
  *
  * Nothing here gates input: the settle timer only releases the pinned height.
  */
+/** A panel's head band, inside its shadow root — the composite may look into its own children. */
+const bandOf = (host: Element | undefined) => (host?.shadowRoot?.querySelector('.lookup-head-band') as HTMLElement | null) ?? undefined;
+
 export const createTabRegion = (region: () => HTMLElement | undefined) => {
   let pending: number | undefined;
   let settleTimer: ReturnType<typeof setTimeout> | undefined;
+  /** The two hosts whose head bands are travelling to `bandTarget`, and the timer that releases them. */
+  let bandHosts: HTMLElement[] = [];
+  let bandTarget: number | undefined;
+  let bandTimer: ReturnType<typeof setTimeout> | undefined;
   let observer: ResizeObserver | undefined;
   let observed: Element | undefined;
   let observedHeight: number | undefined;
 
   const settleMs = (el: HTMLElement) => {
-    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(el).getPropertyValue('--tab-settle') : '';
+    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(el).getPropertyValue('--tab-height-settle') : '';
     const parsed = parseFloat(raw);
     return (Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_SETTLE_MS) + 80;
   };
 
   const heightOf = (el: Element | undefined) => (el ? el.getBoundingClientRect().height : 0);
+
+  const headSettleMs = (el: HTMLElement) => {
+    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(el).getPropertyValue('--tab-head-settle') : '';
+    const parsed = parseFloat(raw);
+    return (Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_HEAD_SETTLE_MS) + 80;
+  };
+
+  const releaseBands = () => {
+    bandTimer = undefined;
+    bandHosts.forEach(host => {
+      host.style.removeProperty('--lookup-head-height');
+      const band = bandOf(host);
+      if (band) band.style.transition = '';
+    });
+    bandHosts = [];
+    bandTarget = undefined;
+  };
 
   const release = () => {
     settleTimer = undefined;
@@ -124,12 +151,39 @@ export const createTabRegion = (region: () => HTMLElement | undefined) => {
   };
 
   return {
-    beforeSwitch(incoming: Element | undefined) {
+    beforeSwitch(incoming: Element | undefined, hosts?: { incoming?: HTMLElement; outgoing?: HTMLElement }) {
       const el = region();
       if (!el) return;
 
+      // The head bands: the incoming one is held at the outgoing's height through the patch (a
+      // held band is what the incoming tab is measured with, so the region's target is the settled
+      // figure either way — read the natural height first), then both travel to the incoming's.
+      const inBand = bandOf(hosts?.incoming);
+      const outBand = bandOf(hosts?.outgoing);
+      const inHeight = heightOf(inBand);
+      const outHeight = outBand ? heightOf(outBand) : inHeight;
+      const naturalIncoming = heightOf(incoming);
+
+      if (inBand && hosts?.incoming && Math.abs(inHeight - outHeight) >= 0.5) {
+        if (bandTimer) clearTimeout(bandTimer);
+        releaseBands();
+        bandHosts = [hosts.incoming, hosts.outgoing].filter(Boolean) as HTMLElement[];
+        bandTarget = inHeight;
+        // Pinned with the transition off: a band laid out as a grid starts transitioning from its
+        // laid-out height the moment a pixel height is written, and the pin never lands.
+        bandHosts.forEach(host => {
+          const band = bandOf(host);
+          if (band) band.style.transition = 'none';
+          host.style.setProperty('--lookup-head-height', `${outHeight}px`);
+        });
+      }
+
+      // Coming back while still on its way out: park it below first, unseen, so it arrives from
+      // below rather than returning from the top.
+      if (hosts?.incoming?.hasAttribute('data-tab-leaving')) hosts.incoming.setAttribute('data-tab-reset', '');
+
       const from = heightOf(el);
-      pending = heightOf(incoming);
+      pending = naturalIncoming;
       if (Math.abs(from - pending) < 0.5) {
         pending = undefined;
         return;
@@ -138,10 +192,30 @@ export const createTabRegion = (region: () => HTMLElement | undefined) => {
       pin(el, from);
     },
 
-    afterSwitch() {
+    afterSwitch(incomingHost?: HTMLElement) {
       const el = region();
-      if (!el || pending === undefined) return;
+      if (!el) return;
 
+      if (incomingHost?.hasAttribute('data-tab-reset')) {
+        // One reflow with the content parked below, then the mark lifts and it arrives from there.
+        const root = incomingHost.shadowRoot;
+        root?.querySelectorAll('.lookup-head-content, .lookup-slide').forEach(node => void (node as HTMLElement).offsetHeight);
+        incomingHost.removeAttribute('data-tab-reset');
+      }
+
+      if (bandTarget !== undefined && bandHosts.length) {
+        // One reflow with the bands held, then both go to the incoming height with the slide.
+        bandHosts.forEach(host => void bandOf(host)?.offsetHeight);
+        const target = bandTarget;
+        bandHosts.forEach(host => {
+          const band = bandOf(host);
+          if (band) band.style.transition = '';
+          host.style.setProperty('--lookup-head-height', `${target}px`);
+        });
+        bandTimer = setTimeout(releaseBands, headSettleMs(el));
+      }
+
+      if (pending === undefined) return;
       const to = pending;
       pending = undefined;
       settleTo(el, to);
@@ -179,6 +253,8 @@ export const createTabRegion = (region: () => HTMLElement | undefined) => {
       observer = undefined;
       observed = undefined;
       if (settleTimer) clearTimeout(settleTimer);
+      if (bandTimer) clearTimeout(bandTimer);
+      releaseBands();
       release();
     },
   };

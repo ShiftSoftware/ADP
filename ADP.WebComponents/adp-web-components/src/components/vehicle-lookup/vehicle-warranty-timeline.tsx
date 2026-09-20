@@ -141,7 +141,13 @@ export class VehicleWarrantyTimeline implements MultiLingual, VehicleInfoLayoutI
   // #endregion
 
   render() {
-    const verdict = panelVerdict({ locale: this.locale, vehicleInformation: this.vehicleLookup, isAuthorized: this.vehicleLookup?.isAuthorized, today: this.today });
+    const verdict = panelVerdict({
+      locale: this.locale,
+      vehicleInformation: this.vehicleLookup,
+      isAuthorized: this.vehicleLookup?.isAuthorized,
+      today: this.today,
+      error: this.isError,
+    });
     this.currentVerdict = verdict;
 
     return (
@@ -153,7 +159,6 @@ export class VehicleWarrantyTimeline implements MultiLingual, VehicleInfoLayoutI
           verdict={verdict}
           header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
-          errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
           <CoverageTimeline vehicleInformation={this.vehicleLookup} locale={this.locale} isAuthorized={this.vehicleLookup?.isAuthorized} today={this.today} />
         </VehicleInfoLayout>

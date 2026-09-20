@@ -146,6 +146,7 @@ describe('CoverageTimeline', () => {
 
     expect(total?.querySelector('strong')?.textContent).toBe('5 years');
     expect(total?.querySelector('.coverage-mix')?.textContent).toBe('3 years standard + 2 years extended');
+    expect(total?.getAttribute('aria-label')).toBe('Total Warranty: 3 years standard + 2 years extended');
   });
 
   it('shows a provider logo when one resolved and nothing at all when it did not', async () => {

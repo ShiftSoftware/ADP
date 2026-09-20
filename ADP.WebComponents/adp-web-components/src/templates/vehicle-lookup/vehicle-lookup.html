@@ -93,7 +93,14 @@
             </button>
           </div>
 
-          <p class="text-error text-xs" x-show="error" x-text="error"></p>
+          <!-- The line is always there, one line tall; the message fades into it, so showing or clearing an error never moves the fixtures below. -->
+          <p
+            class="text-error min-h-4 text-xs transition-opacity duration-300"
+            :class="error ? 'opacity-100' : 'pointer-events-none opacity-0'"
+            :aria-hidden="error ? null : 'true'"
+            role="status"
+            x-text="error"
+          ></p>
 
           <!-- Generated fixtures, under the field they fill: harness chrome inside the host's panel, so a dashed rule marks where one ends. -->
           <div data-harness-fixtures class="border-base-300 border-t border-dashed pt-2" x-cloak></div>

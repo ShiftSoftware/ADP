@@ -1,15 +1,23 @@
 @import '../../features/image-viewer/image-viewer.css';
+@import '../style/lookup-tokens.css';
 
 :host {
   display: block;
   all: initial !important;
-  font-family: inherit !important;
-  font-family: 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif !important;
+  /* The vehicle-lookup family's face (lookup-tokens.css). */
+  font-family: var(--font-sans) !important;
 }
 
 *,
 :host * {
   font-family: inherit !important;
+}
+
+/* The face follows the language, as in the wrapper (vehicle-info-layout.css): the form is its own
+   shadow root beside the panel rather than inside it, so it carries the switch itself. !important
+   and the :host prefix beat the reset above. */
+:host [dir='rtl'] {
+  font-family: var(--font-arabic) !important;
 }
 
 /* ============================================================

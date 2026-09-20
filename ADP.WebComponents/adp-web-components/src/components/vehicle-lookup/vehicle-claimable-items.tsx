@@ -7,7 +7,7 @@ import { bindEscapeFallback, closeModalOverlay, demoteOverlay, openModalOverlay,
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
 
-import { LookupHead, TraceGlyph, VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
+import { LookupHead, VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { RequestHeadersProvider, resolveRequestHeaders, setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent } from '~features/vehicle-lookup-component';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
@@ -781,6 +781,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   render() {
     const verdict = recordVerdict({
       locale: this.locale.sharedLocales,
+      error: this.isError ? this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard : undefined,
       vehicleLoaded: !!this.vehicleLookup?.vin,
       authorized: this.vehicleLookup?.isAuthorized,
       hasRecords: (this.vehicleLookup?.serviceItems?.length ?? 0) > 0,
@@ -855,112 +856,115 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
           header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
           isLoading={this.isLoading}
-          errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
           <LookupHead title={this.locale.title} verdict={verdict}>
-            {/* The trace trigger keeps its box in every state and fades while there is nothing to trace, so the pill beside it never moves. */}
+            {/* The trigger this panel always had, now beside its pill. It keeps its box in every state and fades while there is
+                nothing to trace, so the pill never moves. */}
             {this.showTrace && (
               <button
                 type="button"
-                class="lookup-trace-button"
+                class="trace-trigger-button"
                 data-empty={traceable ? 'false' : 'true'}
                 tabIndex={traceable ? null : -1}
                 aria-hidden={traceable ? null : 'true'}
-                aria-expanded={this.showTraceModal ? 'true' : 'false'}
-                aria-busy={this.isLoadingTrace ? 'true' : null}
-                data-loading={this.isLoadingTrace ? 'true' : 'false'}
                 title={this.locale.viewTrace}
                 aria-label={this.locale.viewTrace}
                 onClick={this.openTraceModal}
               >
-                <TraceGlyph />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="6" cy="19" r="3" />
+                  <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" />
+                  <circle cx="18" cy="5" r="3" />
+                </svg>
               </button>
             )}
           </LookupHead>
-          <div dir="ltr" class={cn('lookup-slide relative flex items-center h-[320px] transition-all duration-300', { loading: this.isLoading || this.tabAnimationLoading })}>
-            {/* Tabs container */}
-            <div dir={this.locale.sharedLocales.direction} class="absolute top-0 z-10 w-full pt-[16px]">
-              <div class={cn('duration-300', { 'translate-y-[-50%] opacity-0': hideTabs })}>
-                <shift-tabs activeTabLabel={this.activeTab} changeActiveTab={this.onActiveTabChange} tabs={tabs}></shift-tabs>
-              </div>
-            </div>
-
-            {/* Loading Component  */}
-            <div class={cn('absolute w-[calc(100%-60px)] left-[30px] progress-container-style opacity-0', { 'opacity-100': this.isLoading || this.tabAnimationLoading })}>
-              <div class="w-full h-full rounded-[4px] overflow-x-hidden absolute left-0 top-0">
-                <div class="absolute opacity-0 bg-[#1a1a1a] w-[150%] h-full" />
-                <div class="absolute h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)] lane-inc" />
-                <div class="absolute h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)] lane-dec" />
-              </div>
-            </div>
-
-            {/* Inactive items activation & Print functionality */}
-            <div
-              dir={this.locale.sharedLocales.direction}
-              class={cn(
-                'absolute w-[90%] z-10 pointer-events-none border opacity-0 translate-y-[-5px] scale-[70%] p-[25px] text-[16px] rounded-[6px] flex items-center justify-between left-1/2 -translate-x-1/2 h-10 bottom-[40px] transition duration-500',
-                {
-                  'text-[#8a6d3b] bg-[#fcf8e3] border-[#faebcc]': !isBlockedBox,
-                  'text-[#58151c] bg-[#f7d7d8] border-[#f2aeb5]': isBlockedBox,
-                  'opacity-100 pointer-events-auto translate-y-0 scale-100': !this.isLoading && this.vehicleLookup && !this.tabAnimationLoading && showActivationBox,
-                },
-              )}
-            >
-              <span class="font-semibold">
-                {this.showPrintBox
-                  ? this.locale.successFulClaimMessage
-                  : showActivationBlocked
-                    ? this.locale.activationBlockedNotAllocated
-                    : this.locale.warrantyAndServicesNotActivated}
-              </span>
-
-              {showActionButton && (
-                <button class="claim-button" onClick={this.showPrintBox ? this.printLastClaimResponse : this.activateClaimItem}>
-                  {this.showPrintBox ? <PrintIcon class="size-[30px] duration-200" /> : <ActivationIcon class="size-[30px] duration-200" />}
-                  <span>{this.showPrintBox ? this.locale.print : this.locale.activateNow}</span>
-                </button>
-              )}
-            </div>
-
-            <div class="claimable-items-box px-[30px] min-w-full relative overflow-x-scroll h-full overflow-y-hidden">
-              <div class="flex relative w-fit min-w-full items-center h-full [&_*]:shrink-0 gap-[250px] justify-between">
-                {/* Lane */}
-                <div
-                  class={cn('progress-container-style progress-lane absolute overflow-hidden w-[calc(100%-0px)] translate-y-0 opacity-100', {
-                    'opacity-0': this.isLoading || this.tabAnimationLoading || isNoServicesAvailable || !this.vehicleLookup,
-                  })}
-                >
-                  {/* Progress lane */}
-                  <div part="progress-bar" class="progress-bar transition-all w-1/2 h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)]" />
+          <div class="lookup-slide-clip">
+            <div dir="ltr" class={cn('lookup-slide relative flex items-center h-[320px] transition-all duration-300', { loading: this.isLoading || this.tabAnimationLoading })}>
+              {/* Tabs container */}
+              <div dir={this.locale.sharedLocales.direction} class="absolute top-0 z-10 w-full pt-[16px]">
+                <div class={cn('duration-300', { 'translate-y-[-50%] opacity-0': hideTabs })}>
+                  <shift-tabs activeTabLabel={this.activeTab} changeActiveTab={this.onActiveTabChange} tabs={tabs}></shift-tabs>
                 </div>
-
-                {/* Claim items */}
-                <div class="ml-[-125px]" />
-
-                {serviceItems.map((item, idx) => (
-                  <ClaimableItem
-                    item={item}
-                    locale={this.locale}
-                    setClaimableItemPopover={this.setClaimableItemPopover}
-                    addStatusClass={!isAwaitingClaim(item) || firstAwaitingIndex === idx}
-                  />
-                ))}
-
-                <div class="ml-[-125px]" />
               </div>
 
-              {/* Empty state */}
+              {/* Loading Component  */}
+              <div class={cn('absolute w-[calc(100%-60px)] left-[30px] progress-container-style opacity-0', { 'opacity-100': this.isLoading || this.tabAnimationLoading })}>
+                <div class="w-full h-full rounded-[4px] overflow-x-hidden absolute left-0 top-0">
+                  <div class="absolute opacity-0 bg-[#1a1a1a] w-[150%] h-full" />
+                  <div class="absolute h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)] lane-inc" />
+                  <div class="absolute h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)] lane-dec" />
+                </div>
+              </div>
+
+              {/* Inactive items activation & Print functionality */}
               <div
                 dir={this.locale.sharedLocales.direction}
                 class={cn(
-                  'absolute top-0 left-0 pointer-events-none size-full box-content flex flex-col justify-center opacity-0 transition duration-500 items-center text-slate-700',
+                  'absolute w-[90%] z-10 pointer-events-none border opacity-0 translate-y-[-5px] scale-[70%] p-[25px] text-[16px] rounded-[6px] flex items-center justify-between left-1/2 -translate-x-1/2 h-10 bottom-[10px] transition duration-500',
                   {
-                    'opacity-100 scale-100': isNoServicesAvailable,
+                    'text-[#8a6d3b] bg-[#fcf8e3] border-[#faebcc]': !isBlockedBox,
+                    'text-[#58151c] bg-[#f7d7d8] border-[#f2aeb5]': isBlockedBox,
+                    'opacity-100 pointer-events-auto translate-y-0 scale-100': !this.isLoading && this.vehicleLookup && !this.tabAnimationLoading && showActivationBox,
                   },
                 )}
               >
-                <EmptyTableIcon class="size-[90px]" />
-                <div class="text-[22px]">{this.locale.sharedLocales.errors.noServiceAvailable}</div>
+                <span class="font-semibold">
+                  {this.showPrintBox
+                    ? this.locale.successFulClaimMessage
+                    : showActivationBlocked
+                      ? this.locale.activationBlockedNotAllocated
+                      : this.locale.warrantyAndServicesNotActivated}
+                </span>
+
+                {showActionButton && (
+                  <button class="claim-button" onClick={this.showPrintBox ? this.printLastClaimResponse : this.activateClaimItem}>
+                    {this.showPrintBox ? <PrintIcon class="size-[30px] duration-200" /> : <ActivationIcon class="size-[30px] duration-200" />}
+                    <span>{this.showPrintBox ? this.locale.print : this.locale.activateNow}</span>
+                  </button>
+                )}
+              </div>
+
+              <div class="claimable-items-box px-[30px] min-w-full relative overflow-x-scroll h-full overflow-y-hidden">
+                <div class="flex relative w-fit min-w-full items-center h-full [&_*]:shrink-0 gap-[250px] justify-between">
+                  {/* Lane */}
+                  <div
+                    class={cn('progress-container-style progress-lane absolute overflow-hidden w-[calc(100%-0px)] translate-y-0 opacity-100', {
+                      'opacity-0': this.isLoading || this.tabAnimationLoading || isNoServicesAvailable || !this.vehicleLookup,
+                    })}
+                  >
+                    {/* Progress lane */}
+                    <div part="progress-bar" class="progress-bar transition-all w-1/2 h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)]" />
+                  </div>
+
+                  {/* Claim items */}
+                  <div class="ml-[-125px]" />
+
+                  {serviceItems.map((item, idx) => (
+                    <ClaimableItem
+                      item={item}
+                      locale={this.locale}
+                      setClaimableItemPopover={this.setClaimableItemPopover}
+                      addStatusClass={!isAwaitingClaim(item) || firstAwaitingIndex === idx}
+                    />
+                  ))}
+
+                  <div class="ml-[-125px]" />
+                </div>
+
+                {/* Empty state */}
+                <div
+                  dir={this.locale.sharedLocales.direction}
+                  class={cn(
+                    'absolute top-0 left-0 pointer-events-none size-full box-content flex flex-col justify-center opacity-0 transition duration-500 items-center text-slate-700',
+                    {
+                      'opacity-100 scale-100': isNoServicesAvailable,
+                    },
+                  )}
+                >
+                  <EmptyTableIcon class="size-[90px]" />
+                  <div class="text-[22px]">{this.locale.sharedLocales.errors.noServiceAvailable}</div>
+                </div>
               </div>
             </div>
           </div>

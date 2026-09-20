@@ -835,6 +835,7 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
       // always matches the widget rendered into it, whatever the mode is flipped to afterwards.
       checkAvailable: this.showRecaptcha,
       checkStatus: this.recaptchaRes?.status,
+      error: this.isError ? this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard : undefined,
     };
   }
 
@@ -885,7 +886,6 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
           verdict={verdict}
           header={this.vehicleLookup?.vin ?? this.skippedVin}
           direction={this.locale.sharedLocales.direction}
-          errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
           <div class="ssc-panel" dir={this.locale.sharedLocales.direction}>
             <SscCampaigns

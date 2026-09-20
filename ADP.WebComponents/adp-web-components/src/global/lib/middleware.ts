@@ -1,11 +1,14 @@
 (async function () {
-  const href = 'https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@100..900&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap';
+  // Manrope is the vehicle-lookup family's Latin/Cyrillic face (lookup-tokens.css, --font-sans);
+  // Noto Kufi Arabic its Arabic/Kurdish one and the legacy components'; Nunito the other
+  // components' Latin face.
+  const href = 'https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Noto+Kufi+Arabic:wght@100..900&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap';
   if (!document.querySelector(`link[href="${href}"]`)) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = href;
     document.head.appendChild(link);
-    console.log('✅ Noto Kufi Arabic and Nunito Fonts loaded globally.');
+    console.log('✅ Manrope, Noto Kufi Arabic and Nunito fonts loaded globally.');
   }
 
   if (!window['blazorInvoke']) {

@@ -14,14 +14,14 @@ const render = (props: Partial<Props>) =>
   newSpecPage({
     components: [],
     template: () => (
-      <VehicleInfoLayout isError={false} isLoading={false} direction="ltr" errorMessage="Something went wrong." {...props}>
+      <VehicleInfoLayout isError={false} isLoading={false} direction="ltr" {...props}>
         <p class="panel-content">content</p>
       </VehicleInfoLayout>
     ),
   });
 
 describe('VehicleInfoLayout', () => {
-  it('draws one card with an idle accent, the VIN for screen readers only, and the error band shut', async () => {
+  it('draws one card with an idle accent and the VIN for screen readers only', async () => {
     const page = await render({ header: 'SAMPLE-VIN' });
     const card = page.body.querySelector('.lookup-card');
 
@@ -35,13 +35,6 @@ describe('VehicleInfoLayout', () => {
     expect(vin?.textContent).toBe('SAMPLE-VIN');
     expect(vin?.classList.contains('sr-only')).toBe(true);
     expect(page.body.querySelector('.vehicle-info-header')).toBeNull();
-
-    // The error band is an anchor: mounted shut, hidden from assistive readers, its text ready to slide in.
-    const error = page.body.querySelector('.lookup-error');
-    expect(error?.classList.contains('collapsible')).toBe(true);
-    expect(error?.getAttribute('data-open')).toBe('false');
-    expect(error?.getAttribute('aria-hidden')).toBe('true');
-    expect(error?.querySelector('[role="alert"]')).not.toBeNull();
 
     expect(page.body.querySelector('.lookup-body .lookup-content .panel-content')).not.toBeNull();
     expect(page.body.querySelector('.lookup-core')).toBeNull();
@@ -61,27 +54,29 @@ describe('VehicleInfoLayout', () => {
     expect(page.body.querySelector('.lookup-card')?.getAttribute('data-phase')).toBe('busy');
   });
 
-  it('opens the error band on the translated message and leaves the content in place beneath it', async () => {
-    const page = await render({ isError: true, errorMessage: 'The VIN is not valid.' });
-    const error = page.body.querySelector('.lookup-error');
+  it('turns the accent negative on an error, whatever the verdict, and leaves the content in place', async () => {
+    const page = await render({ isError: true, verdict: 'positive' });
+    const card = page.body.querySelector('.lookup-card');
 
-    expect(error?.getAttribute('data-open')).toBe('true');
-    expect(error?.getAttribute('aria-hidden')).toBeNull();
-    expect(error?.querySelector('.lookup-error-text')?.textContent).toBe('The VIN is not valid.');
-    expect(error?.querySelector('.notice-icon')).not.toBeNull();
+    // There is no error band: the accent says "failed" and the panel's own pill says why.
+    expect(card?.getAttribute('data-verdict')).toBe('negative');
+    expect(card?.getAttribute('data-error')).toBe('true');
+    expect(page.body.querySelector('.lookup-error')).toBeNull();
     expect(page.body.querySelector('.panel-content')).not.toBeNull();
   });
 
   it('renders only the core, with the loading class, when embedded', async () => {
-    const page = await render({ coreOnly: true, isLoading: true, isError: true, header: 'SAMPLE-VIN' });
+    const page = await render({ coreOnly: true, isLoading: true, isError: true, header: 'SAMPLE-VIN', direction: 'rtl' });
     const core = page.body.querySelector('.lookup-core');
 
     expect(core?.classList.contains('loading')).toBe(true);
     expect(core?.getAttribute('part')).toBe('vehicle-info-content');
+    // The face follows the direction, and an embedded panel is its own shadow root: the core must
+    // carry the locale's direction itself or the rtl switch never reaches it.
+    expect(core?.getAttribute('dir')).toBe('rtl');
     expect(core?.querySelector('.panel-content')).not.toBeNull();
-    // The card, its error band and the identifier belong to whatever draws the card.
+    // The card and the identifier belong to whatever draws the card.
     expect(page.body.querySelector('.lookup-card')).toBeNull();
-    expect(page.body.querySelector('.lookup-error')).toBeNull();
     expect(page.body.querySelector('.vehicle-info-header-vin')).toBeNull();
   });
 });

@@ -70,5 +70,19 @@
   border: 0;
 }
 
-/* The trace trigger is the outlined round button beside the verdict pill in the panel's head
-   (features/vehicle-info-layout/lookup-head.css). */
+/* Trace trigger — beside the verdict pill in the panel's head. Yellow/warning palette
+   to signal "this is a debug/trace tool, not a regular action." */
+.trace-trigger-button {
+  @apply flex items-center justify-center size-[32px] rounded-full border border-[#e0c97a] bg-white text-[#c08a0e] hover:text-[#8a6d3b] hover:border-[#c08a0e] hover:bg-[#fcf8e3] cursor-pointer transition duration-200 shadow-sm;
+}
+
+.trace-trigger-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Kept in the head in every state; nothing to trace fades it, so the pill beside it never moves. */
+.trace-trigger-button[data-empty='true'] {
+  opacity: 0;
+  pointer-events: none;
+}
