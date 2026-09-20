@@ -1,6 +1,6 @@
 @import '../style/shift-skeleton.css';
 @import './components/dead-stock-item.css';
-@import '../../features/vehicle-info-layout/vehicle-info-layout.css';
+@import '../../features/legacy-info-layout/legacy-info-layout.css';
 
 :host {
   display: block;

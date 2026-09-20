@@ -8,7 +8,7 @@ import { MaterialCard, MaterialCardChildren } from '../components/material-card'
 import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 
 import { getMockFile } from '~features/mocks';
-import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
+import { LegacyInfoLayout, LegacyInfoLayoutInterface } from '~features/legacy-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { PartLookupComponent, PartLookupMock, setPartLookupData, setPartLookupErrorState } from '~features/part-lookup-components';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
@@ -20,7 +20,7 @@ import { Endpoint } from '~lib/fetch-from';
   tag: 'distributor-lookup',
   styleUrl: 'distributor-lookup.css',
 })
-export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterface, PartLookupComponent, BlazorInvokable {
+export class DistributorLookup implements MultiLingual, LegacyInfoLayoutInterface, PartLookupComponent, BlazorInvokable {
   // #region Localization
 
   @Prop() language: LanguageKeys = 'en';
@@ -39,7 +39,7 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
 
   // #endregion
 
-  // #region Vehicle info layout prop
+  // #region Legacy info layout prop
 
   @Prop() coreOnly: boolean = false;
 
@@ -195,7 +195,7 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
 
     return (
       <Host translate="no">
-        <VehicleInfoLayout
+        <LegacyInfoLayout
           isError={this.isError}
           coreOnly={this.coreOnly}
           isLoading={this.isLoading}
@@ -245,7 +245,7 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
               manufacturerPartLookupEndpoint={this.manufacturerPartLookupEndpoint}
             />
           </div>
-        </VehicleInfoLayout>
+        </LegacyInfoLayout>
       </Host>
     );
   }

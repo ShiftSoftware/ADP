@@ -1,6 +1,11 @@
 import { FunctionalComponent, h } from '@stencil/core';
 
-type VehicleInfoLayoutProps = {
+/**
+ * The frame the vehicle-lookup panels used before the wrapper became the design language's card: a
+ * 5px-radius box with a grey band carrying the identifier (or the error, in red) and the content
+ * below it. Kept for the part-lookup family only, unchanged, until that family is redesigned.
+ */
+type LegacyInfoLayoutProps = {
   header: string;
   isError: boolean;
   direction: string;
@@ -10,7 +15,7 @@ type VehicleInfoLayoutProps = {
   headerRight?: any;
 };
 
-export const VehicleInfoLayout: FunctionalComponent<VehicleInfoLayoutProps> = (props, children) =>
+export const LegacyInfoLayout: FunctionalComponent<LegacyInfoLayoutProps> = (props, children) =>
   props.coreOnly ? (
     <div class={{ loading: props.isLoading }}>{children}</div>
   ) : (

@@ -7,7 +7,7 @@ import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 import manufacturerSchema from '~locales/partLookup/manufacturer/type';
 
 import { getMockFile } from '~features/mocks';
-import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
+import { LegacyInfoLayout, LegacyInfoLayoutInterface } from '~features/legacy-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { PartLookupComponent, PartLookupMock, setPartLookupData, setPartLookupErrorState } from '~features/part-lookup-components';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
@@ -19,7 +19,7 @@ import { Endpoint } from '~lib/fetch-from';
   tag: 'manufacturer-lookup',
   styleUrl: 'manufacturer-lookup.css',
 })
-export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterface, PartLookupComponent, BlazorInvokable {
+export class ManufacturerLookup implements MultiLingual, LegacyInfoLayoutInterface, PartLookupComponent, BlazorInvokable {
   // #region Localization
 
   @Prop() language: LanguageKeys = 'en';
@@ -38,7 +38,7 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
 
   // #endregion
 
-  // #region Vehicle info layout prop
+  // #region Legacy info layout prop
 
   @Prop() coreOnly: boolean = false;
 
@@ -153,7 +153,7 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
 
     return (
       <Host translate="no">
-        <VehicleInfoLayout
+        <LegacyInfoLayout
           isError={this.isError}
           coreOnly={this.coreOnly}
           isLoading={this.isLoading}
@@ -183,7 +183,7 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
               )}
             </div>
           </flexible-container>
-        </VehicleInfoLayout>
+        </LegacyInfoLayout>
       </Host>
     );
   }

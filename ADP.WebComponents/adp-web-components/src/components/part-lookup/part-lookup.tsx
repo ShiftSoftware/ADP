@@ -6,7 +6,7 @@ import { ManufacturerLookup } from './manufacturer-lookup';
 
 import partLookupWrapperSchema from '~locales/partLookup/wrapper-type';
 
-import { VehicleInfoLayout } from '~features/vehicle-info-layout';
+import { LegacyInfoLayout } from '~features/legacy-info-layout';
 import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
 import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
@@ -230,7 +230,7 @@ export class PartLookup implements MultiLingual {
     };
     return (
       <Host class="part-lookup" translate="no">
-        <VehicleInfoLayout
+        <LegacyInfoLayout
           isError={this.isError}
           header={this.header}
           isLoading={this.isLoading}
@@ -238,7 +238,7 @@ export class PartLookup implements MultiLingual {
           errorMessage={this.locale.errors[this.errorKey] || this.locale.errors.wildCard}
         >
           <shift-tab-content components={componentList} activeComponent={this.activeElement}></shift-tab-content>
-        </VehicleInfoLayout>
+        </LegacyInfoLayout>
       </Host>
     );
   }
