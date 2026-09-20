@@ -4,6 +4,7 @@ import { InferType } from 'yup';
 
 import warrantyTimelineSchema from '~locales/vehicleLookup/warrantyTimeline/type';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
+import { VerdictState } from '~features/vehicle-info-layout';
 
 import { BADGE_GLYPHS } from './glyphs';
 
@@ -60,6 +61,40 @@ const asDate = (value?: string) => (value || '').slice(0, 10);
 const clampPercentage = (value: number) => Math.min(100, Math.max(0, value));
 
 const asPercentage = (value: number) => `${value.toFixed(6)}%`;
+
+/** Everything the panel's verdict — the wrapper's accent bar — is decided from. */
+export type VerdictInput = {
+  locale: TimelineLocale;
+  vehicleInformation?: VehicleLookupDTO;
+  isAuthorized?: boolean;
+  today?: string;
+};
+
+/**
+ * What the card's accent may say about the warranty. One colour, never a gradient: the accent is
+ * the verdict's fill, and a three-colour plan across the top read as a verdict it was not.
+ *
+ *  - no vehicle yet: idle — nothing to judge;
+ *  - a vehicle the distributor has no record of: neutral — warranty is not the distributor's to
+ *    assert (vehicle-lookup-invariants.md), so neither green nor red may be shown for it;
+ *  - a coverage running today: positive;
+ *  - coverage that has lapsed or not begun, or a declared reason it has not started: negative —
+ *    the "not active" chip's verdict, on the bar;
+ *  - a bare card with no coverage and nothing to declare: idle — there is nothing to report, and a
+ *    red bar over an empty rail would be accusing the vehicle of something the data does not say.
+ */
+export const panelVerdict = ({ locale, vehicleInformation, isAuthorized, today }: VerdictInput): VerdictState => {
+  if (!vehicleInformation) return 'idle';
+  if (isAuthorized === false) return 'neutral';
+
+  const snapshot = clockToday(today);
+  const coverages = buildCoverages(vehicleInformation, locale);
+
+  if (coverages.some(coverage => coverageStatus(coverage, snapshot) === 'active')) return 'positive';
+  if (coverages.length > 0 || notStartedMessage(vehicleInformation, locale, isAuthorized)) return 'negative';
+
+  return 'idle';
+};
 
 const monthsBetween = (start: string, end: string) => {
   const [startYear, startMonth, startDay] = start.split('-').map(Number);
@@ -352,38 +387,19 @@ export default function CoverageTimeline({ vehicleInformation, locale, isAuthori
 
   const positionInRange = (isoDate: string) => ((toTimestamp(isoDate) - range.from) / (range.to - range.from)) * 100;
 
-  // The stripe is proportioned across the cover itself, not the rail. The rail stretches to reach
-  // today, so sharing its scale would leave the stripe part-drawn, with the last band's colour
-  // running out to the edge on any vehicle whose warranty has lapsed.
-  const planFrom = hasCoverage ? toTimestamp(coverages[0].start) : 0;
-  const planTo = hasCoverage ? coverages.reduce((latest, coverage) => Math.max(latest, toTimestamp(coverage.end)), planFrom + 1) : 1;
-  const positionInPlan = (isoDate: string) => ((toTimestamp(isoDate) - planFrom) / (planTo - planFrom)) * 100;
-
   const ticks = hasCoverage ? Array.from(new Set(coverages.flatMap(coverage => [coverage.start, coverage.end]))).sort((a, b) => toTimestamp(a) - toTimestamp(b)) : [];
 
   // Inside the rail by construction; clamped anyway so malformed dates can never put an element at
   // `left: 190%`, which widens the rail to match and makes the card scroll sideways to reach it.
   const todayPosition = hasCoverage ? clampPercentage(positionInRange(snapshot)) : 0;
 
-  const cardAccent = !hasCoverage
-    ? // No bands means no coverage to describe, so the accent must not fall through to a
-      // green/blue/violet gradient — that reads as a three-stage plan on a vehicle that has none.
-      // Red when we are saying why coverage has not started, otherwise inert.
-      notice
-      ? 'var(--red)'
-      : 'var(--line)'
-    : coverages.length === 1
-      ? TONE_STANDARD.base
-      : `linear-gradient(90deg, ${coverages
-          .map(coverage => `${coverage.tone.base} ${asPercentage(positionInPlan(coverage.start))} ${asPercentage(positionInPlan(coverage.end))}`)
-          .join(', ')})`;
-
   const summary = coverages.map(coverage => `${describe(coverage)}: ${coverage.start} — ${coverage.end} (${coverageStatus(coverage, snapshot)})`).join('. ');
 
   // One structure for every vehicle. Blocks a vehicle has nothing to put in fade out in place
   // instead of being dropped, so moving between vehicles does not resize the card under the reader.
+  // The card around this — paper, border, shadow, the accent bar — is the wrapper's.
   return (
-    <article class="coverage-timeline warranty-card" data-empty={hasCoverage ? 'false' : 'true'} style={{ '--card-accent': cardAccent }}>
+    <article class="coverage-timeline" data-empty={hasCoverage ? 'false' : 'true'}>
       <header class="activation-header">
         <div class="activation-main">
           <p class="activation-title">

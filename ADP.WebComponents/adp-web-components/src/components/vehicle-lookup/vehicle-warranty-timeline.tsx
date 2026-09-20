@@ -4,7 +4,7 @@ import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup
 
 import warrantyTimelineSchema from '~locales/vehicleLookup/warrantyTimeline/type';
 
-import CoverageTimeline from './components/CoverageTimeline';
+import CoverageTimeline, { panelVerdict } from './components/CoverageTimeline';
 
 import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
@@ -123,13 +123,12 @@ export class VehicleWarrantyTimeline implements MultiLingual, VehicleInfoLayoutI
           isError={this.isError}
           coreOnly={this.coreOnly}
           isLoading={this.isLoading}
+          verdict={panelVerdict({ locale: this.locale, vehicleInformation: this.vehicleLookup, isAuthorized: this.vehicleLookup?.isAuthorized, today: this.today })}
           header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
-          <div class="p-[16px]">
-            <CoverageTimeline vehicleInformation={this.vehicleLookup} locale={this.locale} isAuthorized={this.vehicleLookup?.isAuthorized} today={this.today} />
-          </div>
+          <CoverageTimeline vehicleInformation={this.vehicleLookup} locale={this.locale} isAuthorized={this.vehicleLookup?.isAuthorized} today={this.today} />
         </VehicleInfoLayout>
       </Host>
     );

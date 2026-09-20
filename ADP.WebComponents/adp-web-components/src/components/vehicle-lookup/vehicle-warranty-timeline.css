@@ -3,12 +3,14 @@
  * src/templates/vehicle-lookup/extended-warranty-prototype.html.
  *
  * Campaigns live in <vehicle-ssc>, which shares this design language through
- * lookup-tokens.css but keeps its own stylesheet.
+ * lookup-tokens.css but keeps its own stylesheet. The card around the timeline — paper, border,
+ * shadow and the accent bar — is the wrapper's (features/vehicle-info-layout); this file styles
+ * what is inside it.
  */
 
-/* The panel chrome and the load transition every other vehicle-lookup panel gets. Without these the
-   component still renders the layout's markup but none of its styling, which is why switching VIN
-   used to cut straight from one vehicle to the next with no fade. */
+/* The wrapper's card and the motion primitives (through the wrapper's own imports), and the shared
+   skeleton the rail still uses. Without the wrapper's file the component renders the layout's
+   markup but none of its styling. */
 @import '../style/shift-skeleton.css';
 @import '../style/lookup-tokens.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
@@ -38,52 +40,15 @@
 }
 
 .coverage-timeline {
+  position: relative;
+  width: 100%;
   color: var(--ink);
   font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-.warranty-card {
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  box-shadow: var(--shadow);
-}
-
-.warranty-card::before {
-  position: absolute;
-  z-index: 3;
-  inset: 0 0 auto;
-  height: 4px;
-  background: var(--card-accent, var(--line));
-  content: '';
-  transition: opacity var(--settle) ease;
-}
-
-/* A row the card gains and loses. Animating the grid track rather than the content lets the row
-   slide shut on the same frame its message is cleared, so nothing pops out of existence. */
-.collapsible {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  transition:
-    grid-template-rows var(--settle) ease,
-    opacity calc(var(--settle) - 60ms) ease;
-}
-
-.collapsible[data-open='true'] {
-  grid-template-rows: 1fr;
-  opacity: 1;
-}
-
-/* overflow:hidden is load-bearing twice over: it clips the content while the row is shut, and it
-   zeroes the item's automatic minimum size, which is what lets the 0fr track actually reach zero
-   instead of stopping at the content's height. */
-.collapsible-body {
-  overflow: hidden;
-}
+/* The possession notice's row is a .collapsible from lookup-motion.css (imported through the
+   wrapper): the grid track animates rather than the content, so the row slides shut on the same
+   frame its message is cleared, and a shut row cannot be tabbed to. */
 
 /* Text leaves the way the panel header's VIN does — growing as it fades — and arrives by settling
    back down to size. The blocks below give up the shared skeleton to do it: that overlay is opaque,
@@ -188,13 +153,6 @@
   to {
     background-position: 200% 0;
   }
-}
-
-/* The accent bar is the one part the shared skeleton cannot cover, and it carries a gradient, which
-   does not interpolate to a different gradient — left alone it snaps to the next vehicle's colours
-   the instant the data lands. Fading it over the load hides the swap. */
-.loading .warranty-card::before {
-  opacity: 0;
 }
 
 /* Blocks that a vehicle has nothing to put in. They fade where they stand and keep their box, so

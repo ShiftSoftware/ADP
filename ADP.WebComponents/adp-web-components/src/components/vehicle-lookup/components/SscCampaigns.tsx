@@ -9,6 +9,8 @@ import { SscRepairTraceDTO } from '~types/generated/vehicle-lookup/ssc-repair-tr
 import { SscRepairTraceLaborLineDTO } from '~types/generated/vehicle-lookup/ssc-repair-trace-labor-line-dto';
 import { SscRepairTraceWarrantyClaimDTO } from '~types/generated/vehicle-lookup/ssc-repair-trace-warranty-claim-dto';
 
+import { VerdictState } from '~features/vehicle-info-layout';
+
 import { BADGE_GLYPHS } from './glyphs';
 
 export type SscLocale = InferType<typeof sscSchema>;
@@ -30,8 +32,9 @@ export type LeadKind = 'skeleton' | 'columns' | 'notice';
 /**
  * `neutral` is a statement without a verdict; `attention` is a required action not taken yet — the
  * check was not run — and has a hue of its own so it is never read as a verdict or as a statement.
+ * The type is the wrapper's (it paints the accent from it); re-exported here for this panel's specs.
  */
-export type VerdictState = 'positive' | 'negative' | 'neutral' | 'attention' | 'idle';
+export type { VerdictState };
 
 export type PanelVerdict = { state: VerdictState; text: string };
 
@@ -485,10 +488,12 @@ const SscTrace: FunctionalComponent<{ locale: SscLocale; item: SscDTO; trace?: S
 };
 
 /**
- * The campaigns of one vehicle. The card is three fixed parts, and every state is a different
- * content of the same three — nothing is added to or removed from the card between states, which
+ * The campaigns of one vehicle. The panel is three fixed parts, and every state is a different
+ * content of the same three — nothing is added to or removed from the panel between states, which
  * is what lets every change be a movement (the rule is in lookup-motion.css and
- * .shift/repos/adp/web-components/motion.md):
+ * .shift/repos/adp/web-components/motion.md). The card around them — paper, border, shadow and
+ * the accent bar — is the wrapper's; the owner hands it `panelVerdict(...).state` for the accent,
+ * and `.ssc-card` keeps the same verdict and phase as data attributes for the rules inside:
  *
  *  - the header: the title and the verdict pill. Idle the pill is a blank shape; in flight it
  *    carries the sheen; settled it names the verdict.

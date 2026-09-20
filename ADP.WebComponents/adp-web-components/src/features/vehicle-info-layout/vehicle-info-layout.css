@@ -1,94 +1,236 @@
-.vehicle-info-container {
+/*
+ * The vehicle-lookup wrapper — the design language's card, drawn once for every panel in the
+ * family. A panel imports this file into its own stylesheet (shadow roots share nothing) and
+ * renders the wrapper inside its own root, so these rules and the panel's live side by side.
+ *
+ * What is here: the one padding, the card and its accent bar, the error band, the body and the
+ * scrollbars inside it, and the screen-reader-only VIN. What is not: a title, a pill, a strip — the
+ * panel's head is the head. Reads top to bottom as the card does. Every value has its reason beside
+ * it; the tokens and the motion primitives come from the shared files.
+ */
+
+@import '../../components/style/lookup-tokens.css';
+@import '../../components/style/lookup-motion.css';
+
+:host {
+  /* The panel is embedded at whatever width the host gives it; the narrow padding below is a
+     container query on the host, not the window. A panel that names its container keeps the name —
+     an unnamed query resolves to the nearest container either way. */
+  container-type: inline-size;
+}
+
+.lookup-panel,
+.lookup-panel *,
+.lookup-panel *::before,
+.lookup-panel *::after,
+.lookup-core,
+.lookup-core *,
+.lookup-core *::before,
+.lookup-core *::after {
+  box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Panel: the one padding
+   ------------------------------------------------------------------------------------------- */
+
+/* The card is its only child. The padding gives the shadow room and a host that sets the element
+   display:block at width:100% a card with breathing space. */
+.lookup-panel {
+  padding: 16px;
+  color: var(--ink);
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Card
+   ------------------------------------------------------------------------------------------- */
+
+.lookup-card {
   position: relative;
-  transition-property: all;
-  transition-duration: 500ms;
+  width: 100%;
+  /* Clips the accent bar and every sliding region to the radius. */
   overflow: hidden;
-  padding: 0;
-  border-radius: 5px;
-  border: 1px solid #dcdcdc;
-  background-color: #fdfdfd;
-  box-shadow:
-    inset 0 1px 3px rgba(0, 0, 0, 0.05),
-    0 1px 0 rgba(255, 255, 255, 0.1);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  box-shadow: var(--shadow);
 }
 
-*::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+/* The accent bar is the verdict's fill: red for a negative verdict, green for a positive one, amber
+   for a statement without a verdict, violet breathing for a required action not taken, --line when
+   there is nothing to say. Drawn over the border — inset -1px — so the corners show no grey sliver
+   of border under the bar. It fades to 0 while busy: the colours would otherwise snap on the frame
+   the data lands. */
+.lookup-card::before {
+  position: absolute;
+  z-index: 3;
+  inset: -1px -1px auto;
+  height: 4px;
+  background: var(--line);
+  content: '';
+  transition:
+    background var(--settle) ease,
+    opacity var(--settle) ease;
 }
 
-*::-webkit-scrollbar-track {
-  border-radius: 5px;
-  background: #f6f6f6;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-  border-top: 1px solid #dcdcdc;
+.lookup-card[data-verdict='positive']::before {
+  background: var(--green);
 }
 
-*::-webkit-scrollbar-thumb {
-  background: #c5c5c5;
-  border-radius: 10px;
+.lookup-card[data-verdict='negative']::before {
+  background: var(--red);
 }
 
-*::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
+.lookup-card[data-verdict='neutral']::before {
+  background: var(--amber);
 }
 
-.loading *::-webkit-scrollbar-thumb,
-.hide-scroll::-webkit-scrollbar-thumb,
-.hide-scroll *::-webkit-scrollbar-thumb {
-  background: transparent;
+/* A required action not taken: the bar breathes until it is. One of the four loops of the
+   language; the reduced-motion rule in lookup-motion.css stops it. */
+.lookup-card[data-verdict='attention']::before {
+  background: var(--violet);
+  animation: lookup-attention-bar 2.4s ease-in-out infinite;
 }
 
-.vehicle-info-body {
-  overflow: hidden;
+.lookup-card[data-phase='busy']::before {
+  opacity: 0;
+}
+
+@keyframes lookup-attention-bar {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Error band: the notice band in its negative tone, sliding open under the accent bar
+   ------------------------------------------------------------------------------------------- */
+
+/* .lookup-error is a .collapsible (lookup-motion.css): always mounted, open while isError. */
+
+/* The notice band's recipe when it stands alone outside a strip: 9px 20px, the tone's dark on the
+   tone's tint, ruled top and bottom only — a ring on a band that runs edge to edge would leave two
+   stray vertical ticks against the card's sides — and square, because it runs the card's full width. */
+.lookup-error-notice {
   display: flex;
-  flex-direction: column;
-  position: relative;
-  transition-property: all;
-  transition-duration: 500ms;
-  transition-timing-function: ease-in-out;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 20px;
+  color: var(--red-dark);
+  background: var(--red-tint);
+  border-radius: 0;
+  box-shadow:
+    inset 0 1px 0 rgba(180, 35, 24, 0.18),
+    inset 0 -1px 0 rgba(180, 35, 24, 0.18);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.3;
 }
 
-.vehicle-info-content {
-  transition-property: all;
-  transition-duration: 500ms;
+.lookup-error-notice .notice-icon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+}
+
+/* A host's error text can be any length. */
+.lookup-error-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Body
+   ------------------------------------------------------------------------------------------- */
+
+.lookup-body {
+  position: relative;
+  overflow: hidden;
+  /* A stacking context of its own, so a panel's internal z-indexes never climb above the accent
+     bar or the error band. */
+  isolation: isolate;
+}
+
+.lookup-content {
   width: 100%;
 }
 
-.vehicle-info-header {
-  position: relative;
-  height: 54px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  background-color: #f6f6f6;
-  border: 1px solid #ededed;
+/* ---------------------------------------------------------------------------------------------
+   Scrollbars, scoped to the body and the core — never a bare * selector
+   ------------------------------------------------------------------------------------------- */
+
+/* The standard properties, which inherit down into the panel's content; the WebKit pseudo-elements
+   below are for engines that do not honour them. A thin --line thumb on a transparent track, so a
+   table that scrolls sideways reads as part of the card rather than a boxed widget. */
+.lookup-body,
+.lookup-core {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
 }
 
-.vehicle-info-header-action {
+/* While a lookup is in flight nothing inside is readable, and a thumb over the sheen would be. */
+.loading .lookup-body,
+.lookup-core.loading {
+  scrollbar-color: transparent transparent;
+}
+
+.lookup-body ::-webkit-scrollbar,
+.lookup-core ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.lookup-body ::-webkit-scrollbar-track,
+.lookup-core ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.lookup-body ::-webkit-scrollbar-thumb,
+.lookup-core ::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 999px;
+}
+
+.lookup-body ::-webkit-scrollbar-thumb:hover,
+.lookup-core ::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+.loading .lookup-body ::-webkit-scrollbar-thumb,
+.lookup-core.loading ::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Screen-reader-only text
+   ------------------------------------------------------------------------------------------- */
+
+.sr-only {
   position: absolute;
-  top: 50%;
-  right: 12px;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-.vehicle-info-header-vin {
-  transition-property: all;
-  font-size: 16px;
-  transition-duration: 0.5s;
-  display: inline-block;
-}
+/* ---------------------------------------------------------------------------------------------
+   Narrow panels
+   ------------------------------------------------------------------------------------------- */
 
-.vehicle-info-header-vin span {
-  color: #ef4444; /* Tailwind's red-500 */
-}
-
-.loading .vehicle-info-header-vin {
-  opacity: 0;
-  visibility: hidden;
-  transform: scale(1.5);
+@container (max-width: 720px) {
+  .lookup-panel {
+    padding: 12px;
+  }
 }

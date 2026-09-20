@@ -10,7 +10,7 @@ import { SscRepairTraceDTO } from '~types/generated/vehicle-lookup/ssc-repair-tr
 
 import sscSchema from '~locales/vehicleLookup/ssc/type';
 
-import { BodyKind, ManufacturerCheckStatus, PanelState, SscCampaigns, openDrawerKey, panelBody, sscTraceKey } from './components/SscCampaigns';
+import { BodyKind, ManufacturerCheckStatus, PanelState, SscCampaigns, openDrawerKey, panelBody, panelVerdict, sscTraceKey } from './components/SscCampaigns';
 
 import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
@@ -849,12 +849,17 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
       </div>
     );
 
+    // The wrapper's phase follows the panel's: the accent fades whenever the pill and strip are on
+    // the sheen — a lookup, a clear on its way out, the manufacturer check in flight.
+    const busy = this.isLoading || this.leaving || this.checkingUnauthorizedSSC;
+
     return (
       <Host translate="no">
         <VehicleInfoLayout
           isError={this.isError}
           coreOnly={this.coreOnly}
-          isLoading={this.isLoading}
+          isLoading={busy}
+          verdict={panelVerdict(state).state}
           header={this.vehicleLookup?.vin ?? this.skippedVin}
           direction={this.locale.sharedLocales.direction}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}

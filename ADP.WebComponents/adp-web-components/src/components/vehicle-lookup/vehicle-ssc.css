@@ -1,9 +1,10 @@
 /*
- * Special Service Campaigns — the stylesheet for <vehicle-ssc>, in the design language of the
- * warranty timeline: tokens from lookup-tokens.css, motion from lookup-motion.css, a card with an
- * accent bar, split-cap verdict pills, container queries rather than viewport ones.
+ * Special Service Campaigns — the stylesheet for <vehicle-ssc>, in the component design language:
+ * tokens from lookup-tokens.css, motion from lookup-motion.css, split-cap verdict pills, container
+ * queries rather than viewport ones. The card itself — paper, border, radius, shadow, the accent
+ * bar — is the wrapper's (features/vehicle-info-layout); this file styles what is inside it.
  *
- * The card is three fixed parts — header, lead strip, body — and every state is a different
+ * The panel is three fixed parts — head, lead strip, body — and every state is a different
  * content of the same three (see the note on SscCampaigns). Nothing here is display:none'd
  * between states: the strip's layers cross-fade, the body slides, the pill and the strip carry
  * the sheen while a lookup is in flight.
@@ -44,8 +45,9 @@
   box-sizing: border-box;
 }
 
+/* No padding here: the wrapper's panel is the one padding, whether this panel is standalone or
+   embedded in a composite that draws the card once. */
 .ssc-panel {
-  padding: 16px;
   color: var(--ink);
   font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   font-size: 13px;
@@ -53,55 +55,13 @@
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Card
+   Card: the wrapper draws it. This root only carries the state its descendants style off —
+   data-verdict for the pill's hue and data-phase for the sheen.
    ------------------------------------------------------------------------------------------- */
 
 .ssc-card {
   position: relative;
   width: 100%;
-  overflow: hidden;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  box-shadow: var(--shadow);
-}
-
-/* The accent bar reads the verdict: red while a campaign is open, green when the vehicle is
-   clear, amber for a statement without a verdict, neutral before a lookup. It carries a colour,
-   which interpolates — but it fades over a load anyway so the next vehicle's colour never snaps
-   in the frame the data lands. */
-.ssc-card::before {
-  position: absolute;
-  z-index: 3;
-  inset: 0 0 auto;
-  height: 4px;
-  background: var(--line);
-  content: '';
-  transition:
-    background var(--settle) ease,
-    opacity var(--settle) ease;
-}
-
-.ssc-card[data-verdict='negative']::before {
-  background: var(--red);
-}
-
-.ssc-card[data-verdict='positive']::before {
-  background: var(--green);
-}
-
-.ssc-card[data-verdict='neutral']::before {
-  background: var(--amber);
-}
-
-/* A required action not taken: the bar breathes until the check is run. */
-.ssc-card[data-verdict='attention']::before {
-  background: var(--violet);
-  animation: ssc-attention-bar 2.4s ease-in-out infinite;
-}
-
-.ssc-card[data-phase='busy']::before {
-  opacity: 0;
 }
 
 .ssc-head {
@@ -1111,17 +1071,6 @@
   outline-offset: 3px;
 }
 
-@keyframes ssc-attention-bar {
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.45;
-  }
-}
-
 @keyframes ssc-attention-ring {
   0% {
     box-shadow: 0 0 0 0 var(--violet-halo);
@@ -1225,10 +1174,6 @@
    ------------------------------------------------------------------------------------------- */
 
 @container ssc-panel (max-width: 720px) {
-  .ssc-panel {
-    padding: 12px;
-  }
-
   .ssc-head {
     padding: 14px 14px 10px;
   }

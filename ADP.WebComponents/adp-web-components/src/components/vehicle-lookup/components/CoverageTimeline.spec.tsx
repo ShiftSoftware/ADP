@@ -5,7 +5,7 @@ import timelineLocale from '../../../locales/vehicleLookup/warrantyTimeline/en.j
 import standardDealerVehicleLookup from '../../../features/mocks/data/generated/standard-dealer/vehicle-lookup.json';
 import type { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
-import CoverageTimeline from './CoverageTimeline';
+import CoverageTimeline, { panelVerdict } from './CoverageTimeline';
 
 const SNAPSHOT = '2027-06-01';
 
@@ -225,20 +225,46 @@ describe('CoverageTimeline', () => {
     expect(page.body.querySelector('.activation-title')?.textContent).not.toContain(timelineLocale.activatedBy);
   });
 
-  // Falling through to the stylesheet default would paint the green/blue/violet coverage gradient
-  // across the top of a vehicle that has no coverage at all.
-  // Asserted one page at a time on purpose: successive newSpecPage calls share a document, so
-  // reading an earlier page's body after rendering a later one returns the later one's DOM.
-  it('paints a blocked accent when it is saying why coverage has not started', async () => {
-    const page = await renderTimeline({ warranty: { startState: 'AwaitingBrokerInvoice' } } as Partial<VehicleLookupDTO>);
+  /**
+   * The wrapper paints its accent bar from this verdict. One colour, never the old coverage
+   * gradient: the accent is a verdict's fill, and a green/blue/violet plan across the top read as
+   * a verdict it was not. The branches are the honesty rule for warranty.
+   */
+  describe('panelVerdict', () => {
+    // Loose on purpose: a partial DTO is what every other test here hands the component.
+    const verdict = (vehicleInformation: any, isAuthorized?: boolean, today = SNAPSHOT) =>
+      panelVerdict({ locale: timelineLocale, vehicleInformation: vehicleInformation as VehicleLookupDTO, isAuthorized, today });
 
-    expect((page.body.querySelector('.warranty-card') as HTMLElement).style.getPropertyValue('--card-accent')).toBe('var(--red)');
-  });
+    it('asserts nothing before a vehicle has been looked up', () => {
+      expect(verdict(undefined, undefined)).toBe('idle');
+    });
 
-  it('paints an inert accent on a bare card with nothing to report', async () => {
-    const page = await renderTimeline({ saleInformation: { companyName: 'Sample Motors' } } as Partial<VehicleLookupDTO>);
+    it('is a statement, not a verdict, for a vehicle the distributor has no record of', () => {
+      // Warranty is not the distributor's to assert for an unauthorized vehicle — whatever the DTO
+      // happens to carry, neither green nor red may be shown for it.
+      expect(verdict({ warranty: { warrantyStartDate: '2024-02-01', warrantyEndDate: '2027-02-01' } }, false)).toBe('neutral');
+      expect(verdict({}, false)).toBe('neutral');
+    });
 
-    expect((page.body.querySelector('.warranty-card') as HTMLElement).style.getPropertyValue('--card-accent')).toBe('var(--line)');
+    it('is positive while a coverage is running today', () => {
+      expect(verdict(threeBandVehicle, true)).toBe('positive');
+      expect(verdict({ warranty: { warrantyStartDate: '2025-01-01', warrantyEndDate: '2028-01-01' } }, true)).toBe('positive');
+    });
+
+    it('is negative once every coverage has lapsed, or before any has begun', () => {
+      expect(verdict({ warranty: { warrantyStartDate: '2020-02-01', warrantyEndDate: '2023-02-01' } }, true)).toBe('negative');
+      expect(verdict({ warranty: { warrantyStartDate: '2028-02-01', warrantyEndDate: '2031-02-01' } }, true)).toBe('negative');
+    });
+
+    it('is negative when it is saying why coverage has not started', () => {
+      expect(verdict({ warranty: { startState: 'AwaitingBrokerInvoice' } }, true)).toBe('negative');
+    });
+
+    it('is inert on a bare card with nothing to report', () => {
+      // No coverage and nothing to declare: a red bar over an empty rail would accuse the vehicle of
+      // something the data does not say.
+      expect(verdict({ saleInformation: { companyName: 'Sample Motors' } }, true)).toBe('idle');
+    });
   });
 
   it('declares supply-chain possession without naming a broker', async () => {
@@ -261,7 +287,11 @@ describe('CoverageTimeline', () => {
   });
 
   it('does not promise an activation to a vehicle it is not authorized for', async () => {
-    const page = await renderTimeline({ saleInformation: { companyName: 'Sample Motors' }, warranty: { startState: 'AwaitingActivation' } } as Partial<VehicleLookupDTO>, SNAPSHOT, false);
+    const page = await renderTimeline(
+      { saleInformation: { companyName: 'Sample Motors' }, warranty: { startState: 'AwaitingActivation' } } as Partial<VehicleLookupDTO>,
+      SNAPSHOT,
+      false,
+    );
 
     expect(isShown(page, '.warranty-notice')).toBe(false);
   });
