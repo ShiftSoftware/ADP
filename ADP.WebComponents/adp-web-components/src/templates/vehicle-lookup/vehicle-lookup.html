@@ -36,6 +36,9 @@
           ZU8PC1Z95PP935130: 'realistic',
           ZV8DK3F90PP174225: 'realistic, at distributor stock',
           BLOCKEDNOTALLOC01: 'blocked, not allocated',
+          ZS8WJEXK206451985: 'few records (short panels)',
+          ZV9LMW6D75T151181: 'not in distributor records',
+          UNKNOWN_VIN_12345: 'not in distributor records',
         },
       })"
     >
@@ -97,9 +100,10 @@
         </div>
 
         <!--
-          The old page disabled every inactive tab while a search was in flight —
-          that is the one piece of the jQuery wiring worth keeping, so it is here
-          as a binding instead.
+          Never disabled, not even mid-search: a switch while a lookup is in flight is a state
+          pair of its own (the panels are already on the sheen and stay on it), and the
+          component's tab transition is interruptible by design. The strip's order is handed to
+          the component as tab-order, so the content travels the way the strip reads.
         -->
         <div role="tablist" class="tabs tabs-box tabs-sm self-start" x-data="{ tab: 'vehicle-specification' }">
           <template
@@ -121,19 +125,20 @@
               class="tab"
               :class="tab === item.value && 'tab-active'"
               :aria-selected="tab === item.value"
-              :disabled="loading && tab !== item.value"
               @click="tab = item.value; subject.activeElement = item.value"
               x-text="item.label"
             ></button>
           </template>
         </div>
 
-        <div class="frame card bg-base-100 border-base-300 border p-5">
+        <!-- No card of the page's own around the component: the component draws the design language's card itself. -->
+        <div class="frame">
           <vehicle-lookup
             id="subject"
             language="en"
             query-string=""
             active-element="vehicle-specification"
+            tab-order="vehicle-specification,vehicle-sale-information,vehicle-accessories,vehicle-warranty-timeline,vehicle-ssc,vehicle-service-history,vehicle-paint-thickness,vehicle-claimable-items"
             ssc-query-string="logCampaignCheck=true"
             children-props='{"vehicle-claimable-items":{"showTrace":true},"vehicle-ssc":{"showTrace":true},"vehicle-paint-thickness":{"showCertificateButton":true}}'
           ></vehicle-lookup>

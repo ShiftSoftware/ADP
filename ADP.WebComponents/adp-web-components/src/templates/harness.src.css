@@ -665,10 +665,6 @@ html[lang='ku'] {
     letter-spacing: 0.08em;
   }
 
-  .lede {
-    max-width: 70ch;
-  }
-
   .log {
     font-family: var(--font-mono);
     font-size: 0.75rem;

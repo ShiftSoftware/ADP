@@ -37,6 +37,8 @@
           ZT8P9NAL1LG988010: 'open + repaired, traced',
           JTMHF33P5D5012345: 'open campaign',
           JTEBU5JR8L5234567: 'repaired campaign',
+          ZV9LMW6D75T151181: 'not in distributor records',
+          UNKNOWN_VIN_12345: 'not in distributor records',
         },
         events: {
           unauthorizedSscLookupResponse: status => ['ssc lookup', status],
@@ -66,7 +68,8 @@
         <!-- Generated fixtures. This page has no field of its own — the chips are the search — so they get a dashed card above the component. -->
         <div data-harness-fixtures class="card border-base-300 bg-base-100 border border-dashed p-3" x-cloak></div>
 
-        <div class="frame card bg-base-100 border-base-300 border p-5">
+        <!-- No card of the page's own around the component: the component draws the design language's card itself. -->
+        <div class="frame">
           <vehicle-ssc id="subject" user-id="1" language="en" query-string="" show-trace="true" brand-integration-id="TYT"></vehicle-ssc>
         </div>
       </div>

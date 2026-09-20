@@ -40,6 +40,9 @@
           ZU8PC1Z95PP935130: 'realistic',
           ZV8DK3F90PP174225: 'realistic, at distributor stock',
           BLOCKEDNOTALLOC01: 'blocked, not allocated',
+          ZS8WJEXK206451985: 'no claimable items on record',
+          ZV9LMW6D75T151181: 'not in distributor records',
+          UNKNOWN_VIN_12345: 'not in distributor records',
         },
         events: {
           /* Both of these replace the profile's default line and do the page's own work. */
@@ -77,7 +80,8 @@
         <!-- Generated fixtures. This page has no field of its own — the chips are the search — so they get a dashed card above the component. -->
         <div data-harness-fixtures class="card border-base-300 bg-base-100 border border-dashed p-3" x-cloak></div>
 
-        <div class="frame card bg-base-100 border-base-300 border p-5">
+        <!-- No card of the page's own around the component: the component draws the design language's card itself. -->
+        <div class="frame">
           <vehicle-claimable-items id="subject" language="en" query-string=""></vehicle-claimable-items>
         </div>
       </div>

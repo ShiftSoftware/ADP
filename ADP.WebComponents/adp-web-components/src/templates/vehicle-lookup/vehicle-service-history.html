@@ -31,6 +31,12 @@
       dir="ltr"
       x-data="harness({
         mocks: 'vehicle-lookup',
+        labels: {
+          ZS88F5CL80J407317: 'no service history on record',
+          JTMW43FV10D123456: 'no service history on record',
+          ZV9LMW6D75T151181: 'not in distributor records',
+          UNKNOWN_VIN_12345: 'not in distributor records',
+        },
         has: vehicle => vehicle?.serviceHistory?.length > 0,
       })"
     >
@@ -55,7 +61,8 @@
         <!-- Generated fixtures. This page has no field of its own — the chips are the search — so they get a dashed card above the component. -->
         <div data-harness-fixtures class="card border-base-300 bg-base-100 border border-dashed p-3" x-cloak></div>
 
-        <div class="frame card bg-base-100 border-base-300 border p-5">
+        <!-- No card of the page's own around the component: the component draws the design language's card itself. -->
+        <div class="frame">
           <vehicle-service-history id="subject" language="en" query-string=""></vehicle-service-history>
         </div>
       </div>
