@@ -157,15 +157,15 @@ export class VehicleLookup implements MultiLingual {
     this.switchingTo = next;
     this.leaving = previous || undefined;
     clearTimeout(this.leavingTimer);
-    // Re-parked once hidden, unseen: --settle plus the frame it starts on.
+    // Re-parked once hidden, unseen: --tab-settle plus the frame it starts on.
     this.leavingTimer = setTimeout(() => (this.leaving = undefined), this.settleMs() + 80);
   }
 
-  /** The --settle token, read from the stylesheet; its default when it cannot be read, as in tests. */
+  /** The --tab-settle token, read from the stylesheet; its default when it cannot be read, as in tests. */
   private settleMs(): number {
-    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(this.el).getPropertyValue('--settle') : '';
+    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(this.el).getPropertyValue('--tab-settle') : '';
     const parsed = parseFloat(raw);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 320;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 520;
   }
 
   private tabOf(tag: string | undefined) {

@@ -165,7 +165,7 @@
 .timeline-shell {
   transition:
     opacity var(--settle) ease,
-    transform var(--settle) var(--tab-ease);
+    transform var(--tab-settle) var(--tab-ease);
 }
 
 /* A block on its way out must not be handed its content back as it goes. When a vehicle arrives

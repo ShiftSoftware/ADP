@@ -1,7 +1,7 @@
 import { FunctionalComponent, h } from '@stencil/core';
 
-/** The --settle token (lookup-tokens.css) when the stylesheet cannot be read, as in tests. */
-const DEFAULT_SETTLE_MS = 320;
+/** The --tab-settle token (vehicle-info-layout.css) when the stylesheet cannot be read, as in tests. */
+const DEFAULT_SETTLE_MS = 520;
 
 /** Which side of the active tab an inactive one rests on, in physical terms — the stylesheet needs no RTL rule. */
 export type TabPark = 'left' | 'right';
@@ -76,7 +76,7 @@ export const createTabRegion = (region: () => HTMLElement | undefined) => {
   let observedHeight: number | undefined;
 
   const settleMs = (el: HTMLElement) => {
-    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(el).getPropertyValue('--settle') : '';
+    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(el).getPropertyValue('--tab-settle') : '';
     const parsed = parseFloat(raw);
     return (Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_SETTLE_MS) + 80;
   };

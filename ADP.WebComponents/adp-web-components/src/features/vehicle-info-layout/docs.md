@@ -69,7 +69,8 @@ head `.lookup-slide`.
 always, one active and in flow, the rest hidden, inert and parked a short travel to one side
 (`data-tab-park` on the panel's host, physical `left`/`right`, from `tabPark(tag, active, order,
 direction)`). On a switch the card and every head band stay put; the tabs cross-fade and each
-panel's `.lookup-slide` travels `--tab-travel` from the side it was parked on, with `--tab-ease`; the
-region's height goes from the height it is showing to the incoming tab's and is released to `auto`
-on settle. A `ResizeObserver` on the active host follows later growth the same way. Every value is
+panel's `.lookup-slide` travels `--tab-travel` from the side it was parked on, over `--tab-settle`
+(520ms — the one non-loop duration longer than `--settle`, a deliberate exception) with `--tab-ease`;
+the region's height goes from the height it is showing to the incoming tab's and is released to
+`auto` on settle. A `ResizeObserver` on the active host follows later growth the same way. Every value is
 read from the live box, so a switch mid-switch reverses from wherever the content is.

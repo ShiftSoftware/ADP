@@ -20,6 +20,11 @@
   /* How far a panel's content travels on a composite's tab switch: enough to read as a direction,
      not enough to read as a page turning. */
   --tab-travel: 14px;
+  /* The one duration longer than --settle that is not a loop, and a deliberate exception to the
+     language's rule (owner, 2026-09-20): a tab switch changes the whole content of the card and
+     its height at once, and at --settle the hand-over read as a flicker. Long enough to be
+     followed, short enough that a second click never waits on it. */
+  --tab-settle: 520ms;
   /* One critically-damped ease-out for the switch — movement, fade and height alike. A tab click
      carries no momentum, so nothing overshoots or bounces. */
   --tab-ease: cubic-bezier(0.2, 0, 0, 1);
@@ -225,7 +230,7 @@
 .lookup-tabs {
   position: relative;
   overflow: hidden;
-  transition: height var(--settle) var(--tab-ease);
+  transition: height var(--tab-settle) var(--tab-ease);
 }
 
 /* Every tab is mounted always. The active one is in flow; an inactive one is laid over it at the
@@ -238,7 +243,7 @@
   opacity: 1;
   visibility: visible;
   transition:
-    opacity calc(var(--settle) - 60ms) var(--tab-ease),
+    opacity calc(var(--tab-settle) - 60ms) var(--tab-ease),
     visibility 0s;
 }
 
@@ -250,8 +255,8 @@
   visibility: hidden;
   pointer-events: none;
   transition:
-    opacity calc(var(--settle) - 60ms) var(--tab-ease),
-    visibility 0s linear var(--settle);
+    opacity calc(var(--tab-settle) - 60ms) var(--tab-ease),
+    visibility 0s linear var(--tab-settle);
 }
 
 /* The card and the head band never move; what travels is the region under the head, which every
@@ -261,7 +266,7 @@
    containing block. Never put this class on a .collapsible: the transition list would replace
    the slide's. */
 .lookup-slide {
-  transition: transform var(--settle) var(--tab-ease);
+  transition: transform var(--tab-settle) var(--tab-ease);
 }
 
 :host([data-tab-park='left']) .lookup-slide {
@@ -283,7 +288,7 @@
    hands, not a page turning, and a label that came from below and leaves upward reads as one
    motion through the band. */
 .lookup-head-content {
-  transition: transform var(--settle) var(--tab-ease);
+  transition: transform var(--tab-settle) var(--tab-ease);
 }
 
 .lookup-head-content[data-head-edge='start'] {
