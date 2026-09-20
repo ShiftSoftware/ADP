@@ -1,4 +1,4 @@
-import { Component, Element, FunctionalComponent, Host, Method, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Element, Event, EventEmitter, FunctionalComponent, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
@@ -6,7 +6,7 @@ import saleInformationSchema from '~locales/vehicleLookup/saleInformation/type';
 
 import { MaterialCard } from '../components/material-card';
 
-import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
+import { LookupHead, VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
 import { VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState } from '~features/vehicle-lookup-component/vehicle-lookup-api-integration';
@@ -121,7 +121,39 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
     }
   }
 
+  // #region Verdict
+
+  /**
+   * Fires whenever the panel's verdict changes — including back to idle when the vehicle is
+   * cleared — so a composite that draws one card for several panels can colour its accent from the
+   * active one.
+   */
+  @Event() verdictChange: EventEmitter<VerdictState>;
+
+  private lastVerdict?: VerdictState;
+  private currentVerdict: VerdictState = 'idle';
+
+  private announceVerdict() {
+    if (this.currentVerdict === this.lastVerdict) return;
+    this.lastVerdict = this.currentVerdict;
+    this.verdictChange.emit(this.currentVerdict);
+  }
+
+  componentDidRender() {
+    this.announceVerdict();
+  }
+
+  // #endregion
+
   render() {
+    const verdict = recordVerdict({
+      locale: this.locale.sharedLocales,
+      vehicleLoaded: !!this.vehicleLookup?.vin,
+      authorized: this.vehicleLookup?.isAuthorized,
+      hasRecords: !!this.vehicleLookup?.saleInformation,
+    });
+    this.currentVerdict = verdict.state;
+
     const hiddenFields = this.hiddenFields?.split(',')?.map(field => field.trim()) || [];
 
     const texts = this.locale;
@@ -232,66 +264,70 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
       <Host translate="no">
         <VehicleInfoLayout
           isError={this.isError}
+          verdict={verdict.state}
           coreOnly={this.coreOnly}
           isLoading={this.isLoading}
           header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
-          <flexible-container>
-            <flexible-container classes={cn({ loading: this.isLoading || this.isError || !this.vehicleLookup })} isOpened={!!this.vehicleLookup && !this.isError}>
-              <div class="p-[16px] mx-auto !pb-0 max-w-[520px]">
-                <div class={cn('relative shift-skeleton !rounded-[12px] shift-card', { 'shift-card-warning': !hasEndCustomer })}>
-                  <div
-                    class={cn(
-                      'absolute flex size-full left-0 top-0 px-[12px] items-center justify-center p-[12px] transition-opacity',
-                      !hasEndCustomer ? 'opacity-100' : 'opacity-0 pointer-events-none select-none',
-                    )}
-                  >
-                    <div class="w-full max-w-[460px] rounded-[14px] px-[14px] py-[12px]">
-                      <div class="size-full flex flex-col justify-start gap-[12px] items-center">
-                        <span class="shift-card-icon" aria-hidden="true">
-                          <TriangleAlertIcon />
-                        </span>
+          <LookupHead title={texts.vehicleSaleInformation} verdict={verdict} />
+          <div class="lookup-slide">
+            <flexible-container>
+              <flexible-container classes={cn({ loading: this.isLoading || this.isError || !this.vehicleLookup })} isOpened={!!this.vehicleLookup && !this.isError}>
+                <div class="p-[16px] mx-auto !pb-0 max-w-[520px]">
+                  <div class={cn('relative shift-skeleton !rounded-[12px] shift-card', { 'shift-card-warning': !hasEndCustomer })}>
+                    <div
+                      class={cn(
+                        'absolute flex size-full left-0 top-0 px-[12px] items-center justify-center p-[12px] transition-opacity',
+                        !hasEndCustomer ? 'opacity-100' : 'opacity-0 pointer-events-none select-none',
+                      )}
+                    >
+                      <div class="w-full max-w-[460px] rounded-[14px] px-[14px] py-[12px]">
+                        <div class="size-full flex flex-col justify-start gap-[12px] items-center">
+                          <span class="shift-card-icon" aria-hidden="true">
+                            <TriangleAlertIcon />
+                          </span>
 
-                        <p class="mt-[4px] text-[13.5px] text-center text-amber-900/90 leading-[1.35]">{texts['Vehicle has no end customer.'] || ''}</p>
+                          <p class="mt-[4px] text-[13.5px] text-center text-amber-900/90 leading-[1.35]">{texts['Vehicle has no end customer.'] || ''}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class={cn('transition-opacity', !hasEndCustomer ? 'opacity-0 pointer-events-none select-none' : 'opacity-100')}>
+                      <h2 class="shift-card-header">{texts.customerInformation}</h2>
+                      <div class="flex flex-col gap-[2px]">
+                        {filteredEndCustomerFields.map(field => {
+                          const value = field.value || '';
+                          const Icon = field.Icon;
+                          return (
+                            <div class="flex gap-[12px] items-start">
+                              <span class="shift-card-icon" aria-hidden="true">
+                                <Icon />
+                              </span>
+                              <div class="flex flex-col translate-y-[-4px]">
+                                <div class="shift-card-seconary-text">{field.title}:</div>
+                                <div class={cn('shift-card-primary-text translate-y-[-4px]', { 'shift-card-empty-text': !value })}>{value || '—'}</div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
-
-                  <div class={cn('transition-opacity', !hasEndCustomer ? 'opacity-0 pointer-events-none select-none' : 'opacity-100')}>
-                    <h2 class="shift-card-header">{texts.customerInformation}</h2>
-                    <div class="flex flex-col gap-[2px]">
-                      {filteredEndCustomerFields.map(field => {
-                        const value = field.value || '';
-                        const Icon = field.Icon;
-                        return (
-                          <div class="flex gap-[12px] items-start">
-                            <span class="shift-card-icon" aria-hidden="true">
-                              <Icon />
-                            </span>
-                            <div class="flex flex-col translate-y-[-4px]">
-                              <div class="shift-card-seconary-text">{field.title}:</div>
-                              <div class={cn('shift-card-primary-text translate-y-[-4px]', { 'shift-card-empty-text': !value })}>{value || '—'}</div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
                 </div>
+              </flexible-container>
+
+              <div class="flex p-[16px] [&>div]:grow overflow-auto gap-[16px] items-stretch justify-center md:justify-between flex-wrap">
+                {filteredFields.map(field => (
+                  <MaterialCard title={field.title} desc={field.value} minWidth="250px" />
+                ))}
+                {/* Intermediary legs (0..n) — one card per intermediary; suppressed by hiddenFields="intermediaries" */}
+                {!hiddenFields.includes('intermediaries') &&
+                  (sale?.intermediaries || []).map(intermediary => <MaterialCard title={texts.intermediaryName} desc={getText(intermediary?.companyName)} minWidth="250px" />)}
               </div>
             </flexible-container>
-
-            <div class="flex p-[16px] [&>div]:grow overflow-auto gap-[16px] items-stretch justify-center md:justify-between flex-wrap">
-              {filteredFields.map(field => (
-                <MaterialCard title={field.title} desc={field.value} minWidth="250px" />
-              ))}
-              {/* Intermediary legs (0..n) — one card per intermediary; suppressed by hiddenFields="intermediaries" */}
-              {!hiddenFields.includes('intermediaries') &&
-                (sale?.intermediaries || []).map(intermediary => <MaterialCard title={texts.intermediaryName} desc={getText(intermediary?.companyName)} minWidth="250px" />)}
-            </div>
-          </flexible-container>
+          </div>
         </VehicleInfoLayout>
       </Host>
     );

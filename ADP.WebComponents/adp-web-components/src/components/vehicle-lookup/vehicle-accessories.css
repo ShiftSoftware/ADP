@@ -1,6 +1,7 @@
 @import '../style/shift-skeleton.css';
 @import '../../features/image-viewer/image-viewer.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
+@import '../../features/vehicle-info-layout/lookup-head.css';
 
 :host {
   display: block;

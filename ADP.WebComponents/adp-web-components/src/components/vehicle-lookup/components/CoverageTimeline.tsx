@@ -330,7 +330,7 @@ const Collapsible: FunctionalComponent<{ open: boolean }> = ({ open }, children)
 );
 
 const NoticeStrip = ({ text }: { text: string }) => (
-  <div class="warranty-notice" role="status">
+  <div class="warranty-notice lookup-slide" role="status">
     <svg class="notice-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
       <path fill="currentColor" d={BADGE_GLYPHS.negative} />
     </svg>
@@ -421,6 +421,8 @@ export default function CoverageTimeline({ vehicleInformation, locale, isAuthori
         </div>
       </header>
 
+      {/* lookup-slide (on the notice and the rail, never on a .collapsible, whose transition list it would replace): what travels on a
+          composite's tab switch; the head and the chips stay put. */}
       <Collapsible open={!!notice}>
         <NoticeStrip text={notice} />
       </Collapsible>
@@ -431,7 +433,7 @@ export default function CoverageTimeline({ vehicleInformation, locale, isAuthori
           <StatusBadge state={verdict(hasActiveWarranty)} text={hasActiveWarranty ? locale.activeWarranty : locale.notActiveWarranty} />
         </div>
 
-        <div class="timeline-shell" data-empty={hasCoverage ? 'false' : 'true'} aria-hidden={hasCoverage ? null : 'true'}>
+        <div class="timeline-shell lookup-slide" data-empty={hasCoverage ? 'false' : 'true'} aria-hidden={hasCoverage ? null : 'true'}>
           <div class="timeline shift-skeleton" role="group" aria-label={locale.warrantyCoverage}>
             <div class="today-head" aria-hidden="true" style={{ '--at': asPercentage(todayPosition) }} ref={element => positionTodayPill(element, todayPosition)}>
               {hasCoverage && <span class="today-pill">{`${locale.today} · ${snapshot}`}</span>}

@@ -1,4 +1,4 @@
-import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
@@ -6,7 +6,7 @@ import warrantyTimelineSchema from '~locales/vehicleLookup/warrantyTimeline/type
 
 import CoverageTimeline, { panelVerdict } from './components/CoverageTimeline';
 
-import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
+import { VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
@@ -116,14 +116,41 @@ export class VehicleWarrantyTimeline implements MultiLingual, VehicleInfoLayoutI
 
   // #endregion
 
+  // #region Verdict
+
+  /**
+   * Fires whenever the panel's verdict changes — including back to idle when the vehicle is
+   * cleared — so a composite that draws one card for several panels can colour its accent from the
+   * active one.
+   */
+  @Event() verdictChange: EventEmitter<VerdictState>;
+
+  private lastVerdict?: VerdictState;
+  private currentVerdict: VerdictState = 'idle';
+
+  private announceVerdict() {
+    if (this.currentVerdict === this.lastVerdict) return;
+    this.lastVerdict = this.currentVerdict;
+    this.verdictChange.emit(this.currentVerdict);
+  }
+
+  componentDidRender() {
+    this.announceVerdict();
+  }
+
+  // #endregion
+
   render() {
+    const verdict = panelVerdict({ locale: this.locale, vehicleInformation: this.vehicleLookup, isAuthorized: this.vehicleLookup?.isAuthorized, today: this.today });
+    this.currentVerdict = verdict;
+
     return (
       <Host translate="no">
         <VehicleInfoLayout
           isError={this.isError}
           coreOnly={this.coreOnly}
           isLoading={this.isLoading}
-          verdict={panelVerdict({ locale: this.locale, vehicleInformation: this.vehicleLookup, isAuthorized: this.vehicleLookup?.isAuthorized, today: this.today })}
+          verdict={verdict}
           header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}

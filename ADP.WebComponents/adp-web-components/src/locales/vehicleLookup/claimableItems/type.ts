@@ -34,6 +34,7 @@ const claimableItemsSchema = object({
   claimForm: claimFormSchema,
 }).concat(
   yupTypeMapper([
+    'title',
     'serviceType',
     'activationDate',
     'expireDate',

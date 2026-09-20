@@ -1,0 +1,278 @@
+/*
+ * The standard head — the design language's § 14 head and § 16 verdict pill as a shared fragment,
+ * for the panels that have no head of their own yet (specification, accessories, sale information,
+ * service history, paint thickness, claimable items). The two reference panels keep their own
+ * copies of the same recipe; this file exists so a panel that has not been redesigned inside can
+ * still open with the family's title row and pill, and so the composite's tab switch has one head
+ * geometry to hold still across every panel.
+ *
+ * Imported by a panel's stylesheet after vehicle-info-layout.css. Busy is read from the wrapper's
+ * `.loading` element, which exists in both of its modes.
+ */
+
+:host {
+  /* The verdict pill's width while it is a skeleton: idle, and in flight. */
+  --pill-rest: 132px;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Head
+   ------------------------------------------------------------------------------------------- */
+
+.lookup-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  color: var(--ink);
+  /* A panel without a lead strip has nothing else to rule its head off from its body. */
+  box-shadow: inset 0 -1px 0 var(--line-soft);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* The legacy panels reset every descendant to their own face with !important; the head is the
+   family's and must read in the family's face. Both go when the panel is migrated. */
+.lookup-head,
+.lookup-head * {
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+/* A class, not a heading element: the component is embedded in a host page and must not inject a
+   heading into that page's outline. */
+.lookup-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: clamp(16px, 3.2cqw, 20px);
+  font-weight: 760;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+/* The trailing group: any control the panel puts beside its verdict, then the pill last. */
+.lookup-summary {
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+  align-items: center;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Verdict pill: the split cap
+   ------------------------------------------------------------------------------------------- */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 30px;
+  overflow: hidden;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.005em;
+  transition:
+    color var(--settle) ease,
+    background var(--settle) ease,
+    box-shadow var(--settle) ease;
+}
+
+.status-badge.is-positive {
+  color: var(--green-dark);
+  background: var(--green-tint);
+  box-shadow: inset 0 0 0 1px rgba(44, 138, 88, 0.32);
+}
+
+.status-badge.is-negative {
+  color: var(--red-dark);
+  background: var(--red-tint);
+  box-shadow: inset 0 0 0 1px rgba(180, 35, 24, 0.28);
+}
+
+/* A statement without a verdict: "not in the distributor's records". */
+.status-badge.is-neutral {
+  color: var(--amber-dark);
+  background: var(--amber-tint);
+  box-shadow: inset 0 0 0 1px rgba(183, 121, 31, 0.32);
+}
+
+/* A required action not taken. */
+.status-badge.is-attention {
+  color: var(--violet-dark);
+  background: var(--violet-tint);
+  box-shadow: inset 0 0 0 1px rgba(117, 90, 165, 0.42);
+}
+
+/* Nothing asserted: before a lookup (no text), or a record panel with nothing on record (its text
+   says so, in grey — "no records" is a fact about the records, not a verdict about the vehicle). */
+.status-badge.is-idle {
+  color: var(--muted);
+  background: var(--line-soft);
+  box-shadow: inset 0 0 0 1px rgba(95, 108, 120, 0.22);
+}
+
+.status-badge > span {
+  padding: 6px 13px 6px 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.badge-icon {
+  display: block;
+  flex: 0 0 auto;
+  align-self: stretch;
+  width: 34px;
+  height: auto;
+  padding: 6px 9px;
+  color: #ffffff;
+  transition:
+    opacity var(--settle) ease,
+    background var(--settle) ease;
+}
+
+.status-badge.is-positive .badge-icon {
+  background: var(--green);
+}
+
+.status-badge.is-negative .badge-icon {
+  background: var(--red);
+}
+
+.status-badge.is-neutral .badge-icon {
+  background: var(--amber);
+}
+
+.status-badge.is-attention .badge-icon {
+  background: var(--violet);
+}
+
+.status-badge.is-idle .badge-icon {
+  background: var(--line);
+}
+
+/* Text width cannot be transitioned; max-width can. Clamped to the skeleton width while idle and in
+   flight, released on settle, so the pill shrinks to the skeleton and grows to its verdict instead of
+   jumping between them. */
+.lookup-summary .status-badge {
+  min-width: var(--pill-rest);
+  max-width: 360px;
+  transition:
+    color var(--settle) ease,
+    background var(--settle) ease,
+    box-shadow var(--settle) ease,
+    max-width var(--settle) ease;
+}
+
+.lookup-summary .status-badge.is-idle:not(.has-text) {
+  max-width: var(--pill-rest);
+}
+
+/* In flight the pill carries no verdict: every colour that says one goes neutral and the sheen
+   sweeps the shape itself (never an overlay — two nested antialiased curves fringe the rim). Below
+   the verdict colours on purpose: these tie on specificity and win on source order. */
+.loading .lookup-summary .status-badge {
+  max-width: var(--pill-rest);
+  color: transparent;
+  background-color: #dcdfe4;
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 255, 255, 0) 100%);
+  background-repeat: no-repeat;
+  background-size: 45% 100%;
+  box-shadow: inset 0 0 0 1px rgba(95, 108, 120, 0.42);
+  animation: lookup-sheen 1.3s linear infinite;
+}
+
+.loading .lookup-summary .status-badge .badge-icon {
+  background: #dcdfe4;
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   The outlined round button beside the pill: a trace trigger
+   ------------------------------------------------------------------------------------------- */
+
+.lookup-trace-button {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--blue-dark);
+  background: var(--paper);
+  border: 1px solid rgba(48, 113, 169, 0.32);
+  border-radius: 999px;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    opacity var(--settle) ease;
+}
+
+.lookup-trace-button:hover,
+.lookup-trace-button[aria-expanded='true'],
+.lookup-trace-button[data-loading='true'] {
+  color: #ffffff;
+  background: var(--blue);
+  border-color: var(--blue-dark);
+}
+
+.lookup-trace-button:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 2px;
+}
+
+.lookup-trace-button-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* No vehicle, nothing to trace: the control keeps its box and fades, so the pill beside it never
+   moves when a vehicle lands. */
+.lookup-trace-button[data-empty='true'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Narrow panels
+   ------------------------------------------------------------------------------------------- */
+
+@container (max-width: 720px) {
+  .lookup-head {
+    padding: 14px 14px 10px;
+  }
+}
+
+@container (max-width: 430px) {
+  .lookup-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .lookup-summary {
+    justify-content: stretch;
+  }
+
+  /* Full width in every state, so there is no width to animate here. */
+  .lookup-summary .status-badge,
+  .lookup-summary .status-badge.is-idle,
+  .loading .lookup-summary .status-badge {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: none;
+    justify-content: center;
+  }
+
+  .lookup-summary .status-badge > span {
+    flex: 1 1 auto;
+    text-align: center;
+    white-space: normal;
+  }
+}

@@ -537,7 +537,8 @@ export const SscCampaigns: FunctionalComponent<Props> = (props, children) => {
         </div>
       </header>
 
-      <div class={cn('ssc-grid', { 'has-trace': showTrace })} role={shown === 'rows' && bodyOpen ? 'table' : null}>
+      {/* lookup-slide: the region under the head that travels on a composite's tab switch; the head stays put. */}
+      <div class={cn('ssc-grid lookup-slide', { 'has-trace': showTrace })} role={shown === 'rows' && bodyOpen ? 'table' : null}>
         <div class="ssc-lead layer-stack" data-lead={lead}>
           <div class="layer ssc-lead-skeleton" data-active={lead === 'skeleton' ? 'true' : 'false'} aria-hidden="true" />
 

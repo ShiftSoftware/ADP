@@ -12,6 +12,15 @@ ADP (Auto Distributor Platform) by ShiftSoftware. A multi-project .NET solution 
 > of the behaviour instead (e.g. "some deployments store parts T-prefixed"). Client-specific facts belong in
 > private planning, not here. Hosts consume these packages from their own private repos.
 
+> **Web components — read this first, before any other file:**
+> `.shift/repos/adp/web-components/component-design-language.md` is the component design language and it
+> takes priority over everything else in this file for any work that touches a component, the
+> wrapper, a stylesheet, a fixture or a showcase page. Every new or reworked component is built in
+> it; every review is against it. Read it in full at the start of the session — not the section you
+> think applies — then `.shift/repos/adp/web-components/motion.md` and
+> `.shift/repos/adp/web-components/vehicle-lookup-invariants.md`, which it depends on. If a request
+> conflicts with the design language, say so before building.
+
 ## Build & Test Commands
 
 ### .NET (from repo root)
@@ -83,6 +92,15 @@ npm run create:locale-mapper # Generate locale mapper
 Built with **Stencil.js** (namespace: `shift-components`). Components are styled with plain CSS, one
 stylesheet per component; Tailwind 3 is still wired into the build for the components that have not
 been migrated yet.
+
+**Design language (priority read): `.shift/repos/adp/web-components/component-design-language.md`.**
+The complete language — philosophy, tokens, colour roles, typography, the card / head / strip / body
+anatomy, the split-cap verdict pill, the state model and its pure derivations, the load choreography,
+container-query breakpoints, the a11y contract, file layout, the pre-review checklist and the
+anti-patterns. `vehicle-ssc` and `vehicle-warranty-timeline` are the reference implementations, but
+the page is written to outlive them: a component built from it alone must be indistinguishable in
+language. Read it in full before starting a component, before touching a panel's head, pill, strip
+or card chrome, and before reviewing one.
 
 **Styling rule (in force since 2026-09-17): no new Tailwind in any component, and the component you
 touch is the one you migrate.** No utility classes in TSX, no `@apply`, no `cn()` from `~lib/cn`. If

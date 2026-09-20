@@ -1,4 +1,4 @@
-import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
@@ -8,7 +8,7 @@ import { InformationTableColumn } from '../components/information-table';
 
 import { ServiceHistorySubRow } from './components/service-history-sub-row';
 
-import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
+import { LookupHead, VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
 import { VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState } from '~features/vehicle-lookup-component/vehicle-lookup-api-integration';
@@ -100,7 +100,39 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
 
   // #endregion
 
+  // #region Verdict
+
+  /**
+   * Fires whenever the panel's verdict changes — including back to idle when the vehicle is
+   * cleared — so a composite that draws one card for several panels can colour its accent from the
+   * active one.
+   */
+  @Event() verdictChange: EventEmitter<VerdictState>;
+
+  private lastVerdict?: VerdictState;
+  private currentVerdict: VerdictState = 'idle';
+
+  private announceVerdict() {
+    if (this.currentVerdict === this.lastVerdict) return;
+    this.lastVerdict = this.currentVerdict;
+    this.verdictChange.emit(this.currentVerdict);
+  }
+
+  componentDidRender() {
+    this.announceVerdict();
+  }
+
+  // #endregion
+
   render() {
+    const verdict = recordVerdict({
+      locale: this.locale.sharedLocales,
+      vehicleLoaded: !!this.vehicleLookup?.vin,
+      authorized: this.vehicleLookup?.isAuthorized,
+      hasRecords: (this.vehicleLookup?.serviceHistory?.length ?? 0) > 0,
+    });
+    this.currentVerdict = verdict.state;
+
     const tableHeaders: InformationTableColumn[] = [
       { key: 'branchName', label: this.locale.branch },
       { key: 'companyName', label: this.locale.dealer, nowrap: true },
@@ -114,23 +146,27 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
       <Host translate="no">
         <VehicleInfoLayout
           isError={this.isError}
+          verdict={verdict.state}
           coreOnly={this.coreOnly}
           isLoading={this.isLoading}
           header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
-          <div class="overflow-x-auto">
-            <information-table
-              size="small"
-              allowAutoWidth
-              scrollExpandedIntoView
-              expandUsingEntireRow
-              headers={tableHeaders}
-              isLoading={this.isLoading}
-              rows={this.vehicleLookup?.serviceHistory || []}
-              subRowRenderer={(row: any) => <ServiceHistorySubRow row={row} locale={this.locale} />}
-            />
+          <LookupHead title={this.locale.serviceHistory} verdict={verdict} />
+          <div class="lookup-slide">
+            <div class="overflow-x-auto">
+              <information-table
+                size="small"
+                allowAutoWidth
+                scrollExpandedIntoView
+                expandUsingEntireRow
+                headers={tableHeaders}
+                isLoading={this.isLoading}
+                rows={this.vehicleLookup?.serviceHistory || []}
+                subRowRenderer={(row: any) => <ServiceHistorySubRow row={row} locale={this.locale} />}
+              />
+            </div>
           </div>
         </VehicleInfoLayout>
       </Host>

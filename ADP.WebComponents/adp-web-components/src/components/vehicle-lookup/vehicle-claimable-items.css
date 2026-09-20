@@ -3,6 +3,7 @@
 @import './components/claimable-item-popover.css';
 @import './components/claimable-trace-modal.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
+@import '../../features/vehicle-info-layout/lookup-head.css';
 
 :host {
   display: block;

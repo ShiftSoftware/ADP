@@ -1,4 +1,4 @@
-import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
@@ -8,7 +8,7 @@ import accessoriesSchema from '~locales/vehicleLookup/accessories/type';
 
 import { InformationTableColumn } from '../components/information-table';
 
-import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
+import { LookupHead, VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
 import { closeImageViewer, ImageViewer, ImageViewerInterface, openImageViewer } from '~features/image-viewer';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
@@ -108,7 +108,39 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
   // #endregion
 
+  // #region Verdict
+
+  /**
+   * Fires whenever the panel's verdict changes — including back to idle when the vehicle is
+   * cleared — so a composite that draws one card for several panels can colour its accent from the
+   * active one.
+   */
+  @Event() verdictChange: EventEmitter<VerdictState>;
+
+  private lastVerdict?: VerdictState;
+  private currentVerdict: VerdictState = 'idle';
+
+  private announceVerdict() {
+    if (this.currentVerdict === this.lastVerdict) return;
+    this.lastVerdict = this.currentVerdict;
+    this.verdictChange.emit(this.currentVerdict);
+  }
+
+  componentDidRender() {
+    this.announceVerdict();
+  }
+
+  // #endregion
+
   render() {
+    const verdict = recordVerdict({
+      locale: this.locale.sharedLocales,
+      vehicleLoaded: !!this.vehicleLookup?.vin,
+      authorized: this.vehicleLookup?.isAuthorized,
+      hasRecords: (this.vehicleLookup?.accessories?.length ?? 0) > 0,
+    });
+    this.currentVerdict = verdict.state;
+
     const texts = this.locale;
     const accessories = this?.vehicleLookup?.accessories ? this.vehicleLookup?.accessories : [];
 
@@ -159,14 +191,18 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
         <VehicleInfoLayout
           isError={this.isError}
+          verdict={verdict.state}
           isLoading={this.isLoading}
           coreOnly={this.coreOnly}
           header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
-          <div class="overflow-x-auto">
-            <information-table templateRow={templateRow} rows={rows} headers={tableHeaders} isLoading={this.isLoading}></information-table>
+          <LookupHead title={texts.vehicleAccessories} verdict={verdict} />
+          <div class="lookup-slide">
+            <div class="overflow-x-auto">
+              <information-table templateRow={templateRow} rows={rows} headers={tableHeaders} isLoading={this.isLoading}></information-table>
+            </div>
           </div>
         </VehicleInfoLayout>
       </Host>

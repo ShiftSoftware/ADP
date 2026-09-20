@@ -1,4 +1,4 @@
-import { Component, Element, Host, Method, Prop, State, Watch, forceUpdate, h } from '@stencil/core';
+import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, forceUpdate, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 import { Grecaptcha } from '~lib/recaptcha';
@@ -12,7 +12,7 @@ import sscSchema from '~locales/vehicleLookup/ssc/type';
 
 import { BodyKind, ManufacturerCheckStatus, PanelState, SscCampaigns, openDrawerKey, panelBody, panelVerdict, sscTraceKey } from './components/SscCampaigns';
 
-import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
+import { VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import {
   RequestHeadersProvider,
@@ -256,6 +256,7 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
 
   componentDidRender() {
     this.followOpenDrawer();
+    this.announceVerdict();
 
     const state = this.panelState();
     const body = panelBody(state);
@@ -803,6 +804,26 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
 
   // #endregion
 
+  // #region Verdict
+
+  /**
+   * Fires whenever the panel's verdict changes — including back to idle when the vehicle is
+   * cleared — so a composite that draws one card for several panels can colour its accent from the
+   * active one.
+   */
+  @Event() verdictChange: EventEmitter<VerdictState>;
+
+  private lastVerdict?: VerdictState;
+  private currentVerdict: VerdictState = 'idle';
+
+  private announceVerdict() {
+    if (this.currentVerdict === this.lastVerdict) return;
+    this.lastVerdict = this.currentVerdict;
+    this.verdictChange.emit(this.currentVerdict);
+  }
+
+  // #endregion
+
   private panelState(): PanelState {
     return {
       locale: this.locale,
@@ -819,6 +840,8 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
 
   render() {
     const state = this.panelState();
+    const verdict = panelVerdict(state).state;
+    this.currentVerdict = verdict;
 
     this.retainBody(panelBody(state));
 
@@ -859,7 +882,7 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
           isError={this.isError}
           coreOnly={this.coreOnly}
           isLoading={busy}
-          verdict={panelVerdict(state).state}
+          verdict={verdict}
           header={this.vehicleLookup?.vin ?? this.skippedVin}
           direction={this.locale.sharedLocales.direction}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}

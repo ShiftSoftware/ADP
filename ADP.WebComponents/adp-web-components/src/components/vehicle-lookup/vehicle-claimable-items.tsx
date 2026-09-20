@@ -1,4 +1,4 @@
-import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 import { scrollIntoContainerView } from '~lib/scroll-into-container-view';
@@ -7,7 +7,7 @@ import { bindEscapeFallback, closeModalOverlay, demoteOverlay, openModalOverlay,
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
 
-import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
+import { LookupHead, TraceGlyph, VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { RequestHeadersProvider, resolveRequestHeaders, setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent } from '~features/vehicle-lookup-component';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
@@ -331,6 +331,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
   componentDidRender() {
     this.takePendingProgressBarUpdate();
+    this.announceVerdict();
   }
 
   async disconnectedCallback() {
@@ -757,7 +758,35 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   }
   // #endregion
 
+  // #region Verdict
+
+  /**
+   * Fires whenever the panel's verdict changes — including back to idle when the vehicle is
+   * cleared — so a composite that draws one card for several panels can colour its accent from the
+   * active one.
+   */
+  @Event() verdictChange: EventEmitter<VerdictState>;
+
+  private lastVerdict?: VerdictState;
+  private currentVerdict: VerdictState = 'idle';
+
+  private announceVerdict() {
+    if (this.currentVerdict === this.lastVerdict) return;
+    this.lastVerdict = this.currentVerdict;
+    this.verdictChange.emit(this.currentVerdict);
+  }
+
+  // #endregion
+
   render() {
+    const verdict = recordVerdict({
+      locale: this.locale.sharedLocales,
+      vehicleLoaded: !!this.vehicleLookup?.vin,
+      authorized: this.vehicleLookup?.isAuthorized,
+      hasRecords: (this.vehicleLookup?.serviceItems?.length ?? 0) > 0,
+    });
+    this.currentVerdict = verdict.state;
+
     const serviceItems = this.getServiceItems();
 
     // Only the first item still awaiting a claim wears its status colour; the rest are drawn plain.
@@ -776,6 +805,8 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     const showActivationBox = showActivationRequired || showActivationBlocked || this.showPrintBox;
     const isBlockedBox = showActivationBlocked && !this.showPrintBox;
     const showActionButton = this.showPrintBox || showActivationRequired;
+
+    const traceable = !!this.vehicleLookup?.vin && !this.isLoading && !this.isError;
 
     return (
       <Host translate="no">
@@ -819,24 +850,34 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
         <VehicleInfoLayout
           isError={this.isError}
+          verdict={verdict.state}
           coreOnly={this.coreOnly}
           header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
-          isLoading={this.isLoading || this.tabAnimationLoading}
+          isLoading={this.isLoading}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
-          headerRight={
-            this.showTrace && this.vehicleLookup && !this.isLoading && !this.tabAnimationLoading && !this.isError ? (
-              <button type="button" class="trace-trigger-button" title={this.locale.viewTrace} aria-label={this.locale.viewTrace} onClick={this.openTraceModal}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="6" cy="19" r="3" />
-                  <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" />
-                  <circle cx="18" cy="5" r="3" />
-                </svg>
-              </button>
-            ) : null
-          }
         >
-          <div dir="ltr" class={cn('relative flex items-center h-[320px] transition-all duration-300', { loading: this.isLoading || this.tabAnimationLoading })}>
+          <LookupHead title={this.locale.title} verdict={verdict}>
+            {/* The trace trigger keeps its box in every state and fades while there is nothing to trace, so the pill beside it never moves. */}
+            {this.showTrace && (
+              <button
+                type="button"
+                class="lookup-trace-button"
+                data-empty={traceable ? 'false' : 'true'}
+                tabIndex={traceable ? null : -1}
+                aria-hidden={traceable ? null : 'true'}
+                aria-expanded={this.showTraceModal ? 'true' : 'false'}
+                aria-busy={this.isLoadingTrace ? 'true' : null}
+                data-loading={this.isLoadingTrace ? 'true' : 'false'}
+                title={this.locale.viewTrace}
+                aria-label={this.locale.viewTrace}
+                onClick={this.openTraceModal}
+              >
+                <TraceGlyph />
+              </button>
+            )}
+          </LookupHead>
+          <div dir="ltr" class={cn('lookup-slide relative flex items-center h-[320px] transition-all duration-300', { loading: this.isLoading || this.tabAnimationLoading })}>
             {/* Tabs container */}
             <div dir={this.locale.sharedLocales.direction} class="absolute top-0 z-10 w-full pt-[16px]">
               <div class={cn('duration-300', { 'translate-y-[-50%] opacity-0': hideTabs })}>
