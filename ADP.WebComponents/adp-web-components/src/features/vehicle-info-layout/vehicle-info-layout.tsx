@@ -18,12 +18,6 @@ type VehicleInfoLayoutProps = {
   errorMessage: string;
   /** Colours the accent bar. The panel passes its own verdict when standalone; a composite passes the active panel's. */
   verdict?: VerdictState;
-  /**
-   * @deprecated There is no identifier band to place anything in. Ignored; a panel renders its
-   * controls in its own head. Kept only until the last caller has moved (claimable-items, then
-   * the composite), and deleted with them.
-   */
-  headerRight?: unknown;
 };
 
 /**

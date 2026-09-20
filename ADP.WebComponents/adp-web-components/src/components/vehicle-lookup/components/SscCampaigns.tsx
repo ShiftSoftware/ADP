@@ -531,8 +531,10 @@ export const SscCampaigns: FunctionalComponent<Props> = (props, children) => {
   return (
     <section class="ssc-card" data-verdict={verdict.state} data-phase={busy ? 'busy' : 'settled'}>
       <header class="ssc-head">
-        <span class="ssc-title">{locale.title}</span>
-        <div class="ssc-summary">
+        <span class="ssc-title lookup-head-content" data-head-edge="start">
+          {locale.title}
+        </span>
+        <div class="ssc-summary lookup-head-content" data-head-edge="end">
           <StatusBadge state={verdict.state} text={verdict.text} />
         </div>
       </header>

@@ -401,7 +401,7 @@ export default function CoverageTimeline({ vehicleInformation, locale, isAuthori
   return (
     <article class="coverage-timeline" data-empty={hasCoverage ? 'false' : 'true'}>
       <header class="activation-header">
-        <div class="activation-main">
+        <div class="activation-main lookup-head-content" data-head-edge="start">
           <p class="activation-title">
             <span>{dealerLabel}:</span> <strong>{dealerName || '—'}</strong>
           </p>
@@ -416,7 +416,7 @@ export default function CoverageTimeline({ vehicleInformation, locale, isAuthori
           </div>
         </div>
 
-        <div class="total-slot" data-empty={hasCoverage ? 'false' : 'true'} aria-hidden={hasCoverage ? null : 'true'}>
+        <div class="total-slot lookup-head-content" data-head-edge="end" data-empty={hasCoverage ? 'false' : 'true'} aria-hidden={hasCoverage ? null : 'true'}>
           <TotalCoverage coverages={coverages} locale={locale} />
         </div>
       </header>
@@ -428,7 +428,7 @@ export default function CoverageTimeline({ vehicleInformation, locale, isAuthori
       </Collapsible>
 
       <section class="journey" aria-label={locale.warrantyCoverage}>
-        <div class="journey-head">
+        <div class="journey-head lookup-head-content" data-head-edge="start">
           <StatusBadge state={verdict(isAuthorized)} text={isAuthorized ? locale.authorized : locale.unauthorized} />
           <StatusBadge state={verdict(hasActiveWarranty)} text={hasActiveWarranty ? locale.activeWarranty : locale.notActiveWarranty} />
         </div>

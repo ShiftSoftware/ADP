@@ -4,7 +4,6 @@ import { join } from 'path';
 import { newSpecPage } from '@stencil/core/testing';
 
 import { VehicleLookup } from './vehicle-lookup';
-import { ShiftTabContent } from '../components/shift-tab-content';
 
 import vehicleLookupMocks from '../../features/mocks/data/generated/standard-dealer/vehicle-lookup.json';
 
@@ -81,9 +80,8 @@ describe('vehicle-lookup', () => {
   });
 
   it('hands the SSC query string to the SSC panel as its lookup-only query string, apart from the shared one', async () => {
-    // The tab strip is registered here so the children are actually rendered and their attributes can be read.
     const page = await newSpecPage({
-      components: [VehicleLookup, ShiftTabContent],
+      components: [VehicleLookup],
       html: '<vehicle-lookup active-element="vehicle-ssc" query-string="lang=en" ssc-query-string="logCampaignCheck=true"></vehicle-lookup>',
     });
 
@@ -96,7 +94,7 @@ describe('vehicle-lookup', () => {
 
   it('forwards today to every panel', async () => {
     const page = await newSpecPage({
-      components: [VehicleLookup, ShiftTabContent],
+      components: [VehicleLookup],
       html: '<vehicle-lookup active-element="vehicle-warranty-timeline" today="2026-09-01"></vehicle-lookup>',
     });
 
@@ -112,6 +110,69 @@ describe('vehicle-lookup', () => {
     ]) {
       expect(page.root.shadowRoot.getElementById(tag)?.getAttribute('today')).toBe('2026-09-01');
     }
+  });
+
+  /**
+   * One card. Every panel is mounted in the tab region always; the active one is in flow and the
+   * rest are hidden, inert and parked to the side they will return from, so a switch is a change
+   * of attributes that the stylesheet turns into a movement. The accent reads the active panel's
+   * announced verdict.
+   */
+  it('draws one card, keeps every panel mounted, and parks the inactive ones by strip order', async () => {
+    const page = await newSpecPage({
+      components: [VehicleLookup],
+      html: '<vehicle-lookup active-element="vehicle-ssc" tab-order="vehicle-specification,vehicle-warranty-timeline,vehicle-ssc,vehicle-service-history"></vehicle-lookup>',
+    });
+    const shadow = page.root.shadowRoot;
+
+    expect(shadow.querySelectorAll('.lookup-card')).toHaveLength(1);
+    expect(shadow.querySelector('.lookup-card')?.getAttribute('data-verdict')).toBe('idle');
+    expect(shadow.querySelectorAll('.lookup-tabs > .lookup-tab')).toHaveLength(8);
+
+    const tab = (tag: string) => shadow.querySelector(`.lookup-tab[data-tab="${tag}"]`);
+    expect(tab('vehicle-ssc')?.getAttribute('data-state')).toBe('active');
+    expect(tab('vehicle-ssc')?.getAttribute('aria-hidden')).toBeNull();
+    expect(tab('vehicle-specification')?.getAttribute('data-state')).toBe('inactive');
+    expect(tab('vehicle-specification')?.getAttribute('aria-hidden')).toBe('true');
+    expect(tab('vehicle-specification')?.hasAttribute('inert')).toBe(true);
+
+    // Earlier in the strip parks to the left, later to the right; the active one is not parked.
+    expect(shadow.getElementById('vehicle-specification')?.getAttribute('data-tab-park')).toBe('left');
+    expect(shadow.getElementById('vehicle-warranty-timeline')?.getAttribute('data-tab-park')).toBe('left');
+    expect(shadow.getElementById('vehicle-ssc')?.hasAttribute('data-tab-park')).toBe(false);
+    expect(shadow.getElementById('vehicle-service-history')?.getAttribute('data-tab-park')).toBe('right');
+    // A tag the host's order does not name keeps this component's own place, after the named ones.
+    expect(shadow.getElementById('vehicle-claimable-items')?.getAttribute('data-tab-park')).toBe('right');
+
+    // Switching re-parks from the new active tab, and the old active tab goes inactive.
+    page.root.setAttribute('active-element', 'vehicle-specification');
+    await page.waitForChanges();
+    expect(tab('vehicle-specification')?.getAttribute('data-state')).toBe('active');
+    expect(tab('vehicle-ssc')?.getAttribute('data-state')).toBe('inactive');
+    expect(shadow.getElementById('vehicle-ssc')?.getAttribute('data-tab-park')).toBe('right');
+  });
+
+  it('colours its accent from the active panel’s announced verdict, and follows a switch', async () => {
+    const page = await newSpecPage({
+      components: [VehicleLookup],
+      html: '<vehicle-lookup active-element="vehicle-ssc"></vehicle-lookup>',
+    });
+    const shadow = page.root.shadowRoot;
+    const announce = (tag: string, verdict: string) =>
+      shadow.getElementById(tag)?.dispatchEvent(new CustomEvent('verdictChange', { detail: verdict, bubbles: true, composed: true }));
+
+    announce('vehicle-ssc', 'negative');
+    announce('vehicle-specification', 'positive');
+    await page.waitForChanges();
+    expect(shadow.querySelector('.lookup-card')?.getAttribute('data-verdict')).toBe('negative');
+
+    page.root.setAttribute('active-element', 'vehicle-specification');
+    await page.waitForChanges();
+    expect(shadow.querySelector('.lookup-card')?.getAttribute('data-verdict')).toBe('positive');
+
+    announce('vehicle-specification', 'idle');
+    await page.waitForChanges();
+    expect(shadow.querySelector('.lookup-card')?.getAttribute('data-verdict')).toBe('idle');
   });
 
   it('hydrates the other panels from the SSC panel’s own search without skipping anything', async () => {

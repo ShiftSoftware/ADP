@@ -17,6 +17,12 @@
      container query on the host, not the window. A panel that names its container keeps the name —
      an unnamed query resolves to the nearest container either way. */
   container-type: inline-size;
+  /* How far a panel's content travels on a composite's tab switch: enough to read as a direction,
+     not enough to read as a page turning. */
+  --tab-travel: 14px;
+  /* One critically-damped ease-out for the switch — movement, fade and height alike. A tab click
+     carries no momentum, so nothing overshoots or bounces. */
+  --tab-ease: cubic-bezier(0.2, 0, 0, 1);
 }
 
 .lookup-panel,
@@ -210,6 +216,101 @@
 }
 
 /* ---------------------------------------------------------------------------------------------
+   Tab region (a composite) and the sliding region (every panel)
+   ------------------------------------------------------------------------------------------- */
+
+/* At rest the region is as tall as the active tab. Through a switch, or while the active panel
+   grows, it holds an explicit height that createTabRegion animates — the one non-compositor
+   property in the switch — and is released to auto once settled. */
+.lookup-tabs {
+  position: relative;
+  overflow: hidden;
+  transition: height var(--settle) var(--tab-ease);
+}
+
+/* Every tab is mounted always. The active one is in flow; an inactive one is laid over it at the
+   same width, faded out, and — visibility delayed by the fade — unreachable by keyboard and
+   pointer. A switch changes these attributes and nothing else, so the transitions start from the
+   live on-screen values and a click mid-switch reverses from wherever the content is. The fade
+   finishes before the travel, as the primitives do. */
+.lookup-tab {
+  position: relative;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity calc(var(--settle) - 60ms) var(--tab-ease),
+    visibility 0s;
+}
+
+.lookup-tab[data-state='inactive'] {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity calc(var(--settle) - 60ms) var(--tab-ease),
+    visibility 0s linear var(--settle);
+}
+
+/* The card and the head band never move; what travels is the region under the head, which every
+   panel marks .lookup-slide. The panel's host is told which side it is parked on (data-tab-park,
+   physical, so no RTL rule is needed here) and slides its own region from there. At rest the
+   transform is none, not translateX(0), so a fixed-positioned descendant keeps the viewport as its
+   containing block. Never put this class on a .collapsible: the transition list would replace
+   the slide's. */
+.lookup-slide {
+  transition: transform var(--settle) var(--tab-ease);
+}
+
+:host([data-tab-park='left']) .lookup-slide {
+  transform: translateX(calc(-1 * var(--tab-travel)));
+}
+
+:host([data-tab-park='right']) .lookup-slide {
+  transform: translateX(var(--tab-travel));
+}
+
+/* The head band itself never moves; what it holds does. A panel marks its head's content
+   .lookup-head-content (the title and the summary, separately, each with the edge it is set from
+   in data-head-edge). Leaving, the content rises and shrinks a step from its own edge — the same
+   figure the panels use for text leaving (--leave-scale) scaled down to a head that is not
+   clipped away, so it reads as receding rather than lunging. Arriving, it slides up from a short
+   distance below. Parked tabs rest at the arrival position, so an entry is always from below; the
+   tab that just left is told so (data-tab-leaving) and rests up and small until the switch has
+   settled, then re-parks unseen. The two paths differ on purpose: the head is a label changing
+   hands, not a page turning, and a label that came from below and leaves upward reads as one
+   motion through the band. */
+.lookup-head-content {
+  transition: transform var(--settle) var(--tab-ease);
+}
+
+.lookup-head-content[data-head-edge='start'] {
+  transform-origin: left center;
+}
+
+.lookup-head-content[data-head-edge='end'] {
+  transform-origin: right center;
+}
+
+[dir='rtl'] .lookup-head-content[data-head-edge='start'] {
+  transform-origin: right center;
+}
+
+[dir='rtl'] .lookup-head-content[data-head-edge='end'] {
+  transform-origin: left center;
+}
+
+:host([data-tab-park]) .lookup-head-content {
+  transform: translateY(8px);
+}
+
+:host([data-tab-leaving]) .lookup-head-content {
+  transform: translateY(-6px) scale(0.96);
+}
+
+/* ---------------------------------------------------------------------------------------------
    Screen-reader-only text
    ------------------------------------------------------------------------------------------- */
 
@@ -232,5 +333,15 @@
 @container (max-width: 720px) {
   .lookup-panel {
     padding: 12px;
+  }
+}
+
+/* Reduced motion: a switch is a pure cross-fade, no travel; the shared rule in lookup-motion.css
+   makes every transition immediate. */
+@media (prefers-reduced-motion: reduce) {
+  :host([data-tab-park]) .lookup-slide,
+  :host([data-tab-park]) .lookup-head-content,
+  :host([data-tab-leaving]) .lookup-head-content {
+    transform: none;
   }
 }

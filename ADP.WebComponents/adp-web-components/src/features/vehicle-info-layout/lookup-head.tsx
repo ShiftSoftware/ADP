@@ -70,12 +70,15 @@ type LookupHeadProps = {
 /**
  * The standard head (§ 14): the title on the reading edge, the verdict pill on the other, and
  * between them any control the panel keeps beside its verdict (the children). An anchor: it is
- * rendered in every state and only its content changes.
+ * rendered in every state and only its content changes. The two content blocks are marked for a
+ * composite's tab switch (vehicle-info-layout.css): the band stays, the content changes hands.
  */
 export const LookupHead: FunctionalComponent<LookupHeadProps> = ({ title, verdict }, children) => (
   <header class="lookup-head">
-    <span class="lookup-title">{title}</span>
-    <div class="lookup-summary">
+    <span class="lookup-title lookup-head-content" data-head-edge="start">
+      {title}
+    </span>
+    <div class="lookup-summary lookup-head-content" data-head-edge="end">
       {children}
       <StatusBadge state={verdict.state} text={verdict.text} />
     </div>

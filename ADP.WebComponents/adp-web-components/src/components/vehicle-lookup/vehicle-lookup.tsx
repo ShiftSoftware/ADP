@@ -1,4 +1,4 @@
-import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Element, Host, Listen, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 import { getMockFile } from '~features/mocks';
@@ -16,7 +16,7 @@ import { VehicleSaleInformation } from './vehicle-sale-information';
 
 import { DotNetObjectReference } from '~features/blazor-ref';
 import { RequestHeadersProvider, VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
-import { VehicleInfoLayout } from '~features/vehicle-info-layout/vehicle-info-layout';
+import { LookupTabs, VehicleInfoLayout, VerdictState, createTabRegion, tabPark } from '~features/vehicle-info-layout';
 import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
 const componentTags = {
@@ -89,6 +89,12 @@ export class VehicleLookup implements MultiLingual {
    */
   @Prop() sscQueryString: string = '';
   @Prop() hiddenTabs: string = '';
+  /**
+   * The host's tab strip order, as a comma-separated list of tags, so a switch travels the way the
+   * strip reads: content enters from the side the new tab is on and the old content leaves to the
+   * other. Defaults to this component's own order; a host whose strip differs passes its own.
+   */
+  @Prop() tabOrder: string = '';
   @Prop() childrenProps?: string | object;
 
   /**
@@ -124,6 +130,79 @@ export class VehicleLookup implements MultiLingual {
   @Element() el: HTMLElement;
 
   private componentsList: ComponentMap;
+
+  // #region One card, the active panel's verdict, the tab region
+
+  /** Each panel's last announced verdict, by tag; the card's accent reads the active one's. */
+  @State() verdicts: Partial<Record<ActiveElement, VerdictState>> = {};
+
+  @Listen('verdictChange')
+  onVerdictChange(event: CustomEvent<VerdictState>) {
+    const tag = (event.target as HTMLElement | null)?.id as ActiveElement | undefined;
+    if (!tag || !Object.values(componentTags).includes(tag as any)) return;
+    this.verdicts = { ...this.verdicts, [tag]: event.detail };
+  }
+
+  private regionEl?: HTMLDivElement;
+  private tabRegion = createTabRegion(() => this.regionEl);
+  /** Set by the activeElement watcher, consumed by the render that switches the tab. */
+  private switchingTo?: ActiveElement;
+
+  /** The tab that just left, until the switch has settled: its head content rests up and small, not below. */
+  @State() leaving?: ActiveElement;
+  private leavingTimer?: ReturnType<typeof setTimeout>;
+
+  @Watch('activeElement')
+  onActiveElementChange(next: ActiveElement, previous: ActiveElement) {
+    this.switchingTo = next;
+    this.leaving = previous || undefined;
+    clearTimeout(this.leavingTimer);
+    // Re-parked once hidden, unseen: --settle plus the frame it starts on.
+    this.leavingTimer = setTimeout(() => (this.leaving = undefined), this.settleMs() + 80);
+  }
+
+  /** The --settle token, read from the stylesheet; its default when it cannot be read, as in tests. */
+  private settleMs(): number {
+    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(this.el).getPropertyValue('--settle') : '';
+    const parsed = parseFloat(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 320;
+  }
+
+  private tabOf(tag: string | undefined) {
+    return tag ? ((this.el.shadowRoot?.querySelector(`.lookup-tab[data-tab="${tag}"]`) as HTMLElement | null) ?? undefined) : undefined;
+  }
+
+  componentWillRender() {
+    if (this.switchingTo === undefined) return;
+    // Read once, before the patch: the region as it shows now and the incoming tab as laid out.
+    this.tabRegion.beforeSwitch(this.tabOf(this.switchingTo));
+  }
+
+  componentDidRender() {
+    if (this.switchingTo !== undefined) {
+      this.switchingTo = undefined;
+      this.tabRegion.afterSwitch();
+    }
+    // Follow the active panel's own growth (a drawer opening) with the same transition.
+    this.tabRegion.observe(this.el.shadowRoot?.getElementById(this.activeElement) ?? undefined);
+  }
+
+  disconnectedCallback() {
+    clearTimeout(this.leavingTimer);
+    this.tabRegion.dispose();
+  }
+
+  /** The strip order the travel direction follows: the host's, or this component's own. */
+  private get order(): string[] {
+    const own = Object.values(componentTags) as string[];
+    const given = this.tabOrder
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(tag => own.includes(tag));
+    return given.length ? [...given, ...own.filter(tag => !given.includes(tag))] : own;
+  }
+
+  // #endregion
 
   async componentDidLoad() {
     const vehicleAccessories = this.el.shadowRoot.getElementById('vehicle-accessories') as unknown as VehicleAccessories;
@@ -309,8 +388,13 @@ export class VehicleLookup implements MultiLingual {
         .filter(Boolean),
     );
 
-    if (!Object.values(componentTags).includes(this.activeElement as any) || hiddenSet.has(this.activeElement))
-      return <div class="w-full h-[200px] text-[26px] text-red-600 flex items-center justify-center">Invalid tag</div>;
+    // An active tag that is unknown or hidden leaves every tab inactive: an empty region, not a message.
+    const active = Object.values(componentTags).includes(this.activeElement as any) && !hiddenSet.has(this.activeElement) ? this.activeElement : '';
+    const order = this.order;
+    const direction = this.locale.direction;
+    /** The side an inactive panel's content parks on, on the panel's host, for its own .lookup-slide rule. */
+    const park = (tag: string) => (tag === active ? null : tabPark(tag, active, order, direction));
+    const leaving = (tag: string) => (tag !== active && tag === this.leaving ? 'true' : null);
 
     const allComponents: Partial<Record<ActiveElement, Node>> = {
       'vehicle-specification': (
@@ -323,6 +407,8 @@ export class VehicleLookup implements MultiLingual {
           language={this.language}
           query-string={this.queryString}
           id={componentTags.vehicleSpecification}
+          data-tab-park={park(componentTags.vehicleSpecification)}
+          data-tab-leaving={leaving(componentTags.vehicleSpecification)}
           {...props[componentTags.vehicleSpecification]}
         />
       ),
@@ -336,6 +422,8 @@ export class VehicleLookup implements MultiLingual {
           language={this.language}
           query-string={this.queryString}
           id={componentTags.vehicleAccessories}
+          data-tab-park={park(componentTags.vehicleAccessories)}
+          data-tab-leaving={leaving(componentTags.vehicleAccessories)}
           {...props[componentTags.vehicleAccessories]}
         />
       ),
@@ -349,6 +437,8 @@ export class VehicleLookup implements MultiLingual {
           language={this.language}
           query-string={this.queryString}
           id={componentTags.vehicleSaleInformation}
+          data-tab-park={park(componentTags.vehicleSaleInformation)}
+          data-tab-leaving={leaving(componentTags.vehicleSaleInformation)}
           {...props[componentTags.vehicleSaleInformation]}
         />
       ),
@@ -362,6 +452,8 @@ export class VehicleLookup implements MultiLingual {
           language={this.language}
           query-string={this.queryString}
           id={componentTags.vehicleWarrantyTimeline}
+          data-tab-park={park(componentTags.vehicleWarrantyTimeline)}
+          data-tab-leaving={leaving(componentTags.vehicleWarrantyTimeline)}
           {...props[componentTags.vehicleWarrantyTimeline]}
         />
       ),
@@ -377,6 +469,8 @@ export class VehicleLookup implements MultiLingual {
           query-string={this.queryString}
           lookup-query-string={this.sscQueryString}
           id={componentTags.vehicleSsc}
+          data-tab-park={park(componentTags.vehicleSsc)}
+          data-tab-leaving={leaving(componentTags.vehicleSsc)}
           {...props[componentTags.vehicleSsc]}
         />
       ),
@@ -390,6 +484,8 @@ export class VehicleLookup implements MultiLingual {
           language={this.language}
           query-string={this.queryString}
           id={componentTags.vehicleServiceHistory}
+          data-tab-park={park(componentTags.vehicleServiceHistory)}
+          data-tab-leaving={leaving(componentTags.vehicleServiceHistory)}
           {...props[componentTags.vehicleServiceHistory]}
         />
       ),
@@ -403,6 +499,8 @@ export class VehicleLookup implements MultiLingual {
           language={this.language}
           query-string={this.queryString}
           id={componentTags.vehiclePaintThickness}
+          data-tab-park={park(componentTags.vehiclePaintThickness)}
+          data-tab-leaving={leaving(componentTags.vehiclePaintThickness)}
           {...props[componentTags.vehiclePaintThickness]}
         />
       ),
@@ -416,48 +514,29 @@ export class VehicleLookup implements MultiLingual {
           language={this.language}
           query-string={this.queryString}
           id={componentTags.vehicleClaimableItems}
+          data-tab-park={park(componentTags.vehicleClaimableItems)}
+          data-tab-leaving={leaving(componentTags.vehicleClaimableItems)}
           {...props[componentTags.vehicleClaimableItems]}
         />
       ),
     };
 
-    const componentList = Object.fromEntries(Object.entries(allComponents).filter(([key]) => !hiddenSet.has(key))) as Partial<Record<ActiveElement, Node>>;
+    const panels = Object.entries(allComponents).filter(([key]) => !hiddenSet.has(key)) as [string, Node][];
 
-    const claimableProps = props[componentTags.vehicleClaimableItems] as Record<string, any> | undefined;
-    const showClaimableTrace =
-      this.activeElement === componentTags.vehicleClaimableItems &&
-      !!(claimableProps?.showTrace ?? claimableProps?.['show-trace']) &&
-      !!this.currentVin &&
-      !this.isError &&
-      !this.isLoading;
-
+    // One card for every panel: its own loading and error state, the active panel's verdict on the
+    // accent — which cross-fades to the incoming panel's colour on a switch and to the new verdict
+    // on a lookup. The panels render coreOnly inside it.
     return (
       <Host translate="no">
         <VehicleInfoLayout
           isError={this.isError}
           header={this.currentVin}
           isLoading={this.isLoading}
-          direction={this.locale.direction}
+          direction={direction}
+          verdict={(active && this.verdicts[active]) || 'idle'}
           errorMessage={this.errorMessage || this.locale.errors.wildCard}
-          headerRight={
-            showClaimableTrace ? (
-              <button
-                type="button"
-                class="trace-trigger-button"
-                title="View Lookup Trace"
-                aria-label="View Lookup Trace"
-                onClick={() => this.componentsList?.[componentTags.vehicleClaimableItems]?.openTrace()}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="6" cy="19" r="3" />
-                  <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" />
-                  <circle cx="18" cy="5" r="3" />
-                </svg>
-              </button>
-            ) : null
-          }
         >
-          <shift-tab-content components={componentList} activeComponent={this.activeElement}></shift-tab-content>
+          <LookupTabs active={active} panels={panels} regionRef={el => (this.regionEl = el)} />
         </VehicleInfoLayout>
       </Host>
     );

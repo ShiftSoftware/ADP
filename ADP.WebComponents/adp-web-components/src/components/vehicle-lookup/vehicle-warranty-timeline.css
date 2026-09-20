@@ -156,11 +156,16 @@
 }
 
 /* Blocks that a vehicle has nothing to put in. They fade where they stand and keep their box, so
-   the card is the same height whichever vehicle is loaded and the reader's eye keeps its place. */
+   the card is the same height whichever vehicle is loaded and the reader's eye keeps its place.
+   The totals and the rail also travel on a composite's tab switch (lookup-head-content and
+   lookup-slide in the wrapper's stylesheet); a transition shorthand here would drop that, so the
+   transform is named alongside. */
 .broker-slot,
 .total-slot,
 .timeline-shell {
-  transition: opacity var(--settle) ease;
+  transition:
+    opacity var(--settle) ease,
+    transform var(--settle) var(--tab-ease);
 }
 
 /* A block on its way out must not be handed its content back as it goes. When a vehicle arrives

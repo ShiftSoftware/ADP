@@ -1,25 +1,11 @@
-@import '../style/shift-skeleton.css';
+/*
+ * <vehicle-lookup> — the composite: one card of the design language (the wrapper's) holding the
+ * eight vehicle panels, one active at a time. The card, its tab region and every panel's sliding
+ * region are styled by the wrapper's stylesheet; nothing is particular to the composite itself.
+ */
+
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 
 :host {
   display: block;
-  all: initial !important;
-  font-family: inherit !important;
-  font-family: 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif !important;
-}
-
-.part-lookup,
-.part-lookup * {
-  font-family: 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif !important;
-}
-
-/* Mirrors .trace-trigger-button in claimable-trace-modal.css; rendered in this
-   wrapper's header when claimable-items runs with coreOnly. */
-.trace-trigger-button {
-  @apply flex items-center justify-center size-[32px] rounded-full border border-[#e0c97a] bg-white text-[#c08a0e] hover:text-[#8a6d3b] hover:border-[#c08a0e] hover:bg-[#fcf8e3] cursor-pointer transition duration-200 shadow-sm;
-}
-
-.trace-trigger-button svg {
-  width: 18px;
-  height: 18px;
 }

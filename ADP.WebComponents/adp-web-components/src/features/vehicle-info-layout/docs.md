@@ -57,3 +57,19 @@ in the identifier band (claimable-items' trace trigger) lives in the panel's own
 The panel passes its own verdict from an exported pure function (`panelVerdict` in its functional
 component; `SscCampaigns.panelVerdict` is the model) and emits `verdictChange` whenever it changes, so
 a composite can colour its one card from the active panel.
+
+### The standard head and the tab region
+
+`LookupHead` (`lookup-head.tsx` + `lookup-head.css`) is the family's head — title, split-cap pill,
+any control beside the pill — for a panel that has no head of its own yet; `recordVerdict` is the
+verdict of a panel that shows records rather than a judgement. A panel marks the region under its
+head `.lookup-slide`.
+
+`LookupTabs` + `createTabRegion` (`lookup-tabs.tsx`) is a composite's tab region: every panel mounted
+always, one active and in flow, the rest hidden, inert and parked a short travel to one side
+(`data-tab-park` on the panel's host, physical `left`/`right`, from `tabPark(tag, active, order,
+direction)`). On a switch the card and every head band stay put; the tabs cross-fade and each
+panel's `.lookup-slide` travels `--tab-travel` from the side it was parked on, with `--tab-ease`; the
+region's height goes from the height it is showing to the incoming tab's and is released to `auto`
+on settle. A `ResizeObserver` on the active host follows later growth the same way. Every value is
+read from the live box, so a switch mid-switch reverses from wherever the content is.
