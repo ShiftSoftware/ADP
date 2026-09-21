@@ -42,7 +42,7 @@
      2026-09-20 — "fast and not smooth"). */
   --tab-ease: cubic-bezier(0.32, 0.72, 0, 1);
   --tab-height-settle: 820ms;
-  --tab-height-ease: ease-in-out;
+  --tab-height-ease: var(--tab-ease);
   /* The head's hand-over: the outgoing content slides up out of the band as the incoming slides in
      from below it, one movement (owner, 2026-09-20), on the settle curve — the same clock as the
      height, so the band and its content land together. */

@@ -1,9 +1,9 @@
 import { FunctionalComponent, h } from '@stencil/core';
 
 /** The --tab-height-settle token (vehicle-info-layout.css) when the stylesheet cannot be read, as in tests. */
-const DEFAULT_SETTLE_MS = 600;
+const DEFAULT_SETTLE_MS = 820;
 /** The --tab-head-settle token when the stylesheet cannot be read. */
-const DEFAULT_HEAD_SETTLE_MS = 600;
+const DEFAULT_HEAD_SETTLE_MS = 820;
 
 /** Which side of the active tab an inactive one rests on, in physical terms — the stylesheet needs no RTL rule. */
 export type TabPark = 'left' | 'right';
