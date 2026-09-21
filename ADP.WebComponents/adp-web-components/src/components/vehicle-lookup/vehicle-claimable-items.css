@@ -18,7 +18,7 @@
 }
 
 .progress-container-style {
-  @apply h-[10px] -translate-y-1/2 rounded-full transition duration-500 bg-[#f2f2f2] border border-[#ddd];
+  @apply h-[10px] -translate-y-2 rounded-full transition duration-500 bg-[#f2f2f2] border border-[#ddd];
 }
 
 .loading .lane-inc {

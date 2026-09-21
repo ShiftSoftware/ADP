@@ -10,8 +10,11 @@
  * the sheen while a lookup is in flight.
  */
 
+/* The motion primitives (lookup-motion.css) come through the wrapper's own import, never directly:
+   a file imported twice into one shadow stylesheet — here and inside vehicle-info-layout.css —
+   loses its @keyframes in Stencil's dedupe, and the head's wait spinner and the sheen stopped
+   turning while their rules were still present (2026-09-21). */
 @import '../style/lookup-tokens.css';
-@import '../style/lookup-motion.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 
 :host {
@@ -26,8 +29,6 @@
   /* The lead strip's height in every state, so the strip is the same band whether it carries the
      headings, a notice or the skeleton. */
   --lead-height: 38px;
-  /* The verdict pill's width while it is a skeleton: idle, and in flight. */
-  --pill-rest: 132px;
   /* The body never shuts below this: the header's height at rest (16 + 30 + 12), so the strip sits
      between two equal bands whether or not there is anything below it. */
   --body-rest: 58px;
@@ -83,9 +84,12 @@
   line-height: 1.2;
 }
 
+/* Holds the pill's height itself: the pill is only rendered when it has words, and the band is
+   the same height with and without one. */
 .ssc-summary {
   display: flex;
   min-width: 0;
+  min-height: 30px;
   align-items: center;
 }
 
@@ -104,10 +108,8 @@
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.005em;
-  transition:
-    color var(--settle) ease,
-    background var(--settle) ease,
-    box-shadow var(--settle) ease;
+  /* No transition: the head's content is out of the band while a verdict changes (the wrapper's
+     .loading .lookup-head-content), so a pill is never seen changing state. */
 }
 
 .status-badge.is-positive {
@@ -137,12 +139,6 @@
   box-shadow: inset 0 0 0 1px var(--violet-rim);
 }
 
-.status-badge.is-idle {
-  color: var(--muted);
-  background: var(--line-soft);
-  box-shadow: inset 0 0 0 1px rgba(95, 108, 120, 0.22);
-}
-
 .status-badge > span {
   padding: 6px 13px 6px 11px;
   font-variant-numeric: tabular-nums;
@@ -157,9 +153,6 @@
   height: auto;
   padding: 6px 9px;
   color: #ffffff;
-  transition:
-    opacity var(--settle) ease,
-    background var(--settle) ease;
 }
 
 .status-badge.is-positive .badge-icon {
@@ -178,47 +171,9 @@
   background: var(--violet);
 }
 
-.status-badge.is-idle .badge-icon {
-  background: var(--line);
-}
-
-/* The header pill's width follows its text, and text cannot be transitioned to; a measured one
-   can. The pill writes its natural width on itself as --pill-width (measurePill, lookup-head.tsx)
-   and `width` is transitioned between that and the skeleton's, so it shrinks to the skeleton and
-   grows to its verdict, the whole ease curve each way. Without a measurement the max() is invalid
-   and the width falls back to auto, so the words are never clipped; the ceiling stays as a guard. */
+/* A ceiling, as a guard against a message that would not fit the head. */
 .ssc-summary .status-badge {
-  width: max(var(--pill-rest), var(--pill-width));
-  min-width: var(--pill-rest);
   max-width: 360px;
-  transition:
-    color var(--settle) ease,
-    background var(--settle) ease,
-    box-shadow var(--settle) ease,
-    width var(--settle) ease;
-}
-
-.ssc-summary .status-badge.is-idle {
-  width: var(--pill-rest);
-}
-
-/* In flight the pill carries no verdict, so every colour that says one goes neutral and the
-   sheen sweeps it. Below the verdict colours on purpose: these tie on specificity and win on
-   source order. The shape is coloured itself rather than overlaid, see lookup-motion.css. */
-.ssc-card[data-phase='busy'] .ssc-summary .status-badge {
-  width: var(--pill-rest);
-  color: transparent;
-  background-color: #dcdfe4;
-  background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
-  background-repeat: no-repeat;
-  background-size: 45% 100%;
-  box-shadow: inset 0 0 0 1px rgba(95, 108, 120, 0.42);
-  animation: lookup-sheen 1.3s linear infinite;
-}
-
-.ssc-card[data-phase='busy'] .ssc-summary .status-badge .badge-icon {
-  background: #dcdfe4;
-  opacity: 0;
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -1295,10 +1250,7 @@
     align-items: stretch;
   }
 
-  /* Full width in every state, so there is no width to animate here. */
-  .ssc-summary .status-badge,
-  .ssc-summary .status-badge.is-idle,
-  .ssc-card[data-phase='busy'] .ssc-summary .status-badge {
+  .ssc-summary .status-badge {
     width: 100%;
     max-width: none;
     justify-content: center;

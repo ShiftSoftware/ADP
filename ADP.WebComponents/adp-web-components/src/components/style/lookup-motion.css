@@ -81,7 +81,7 @@
    mid-sweep. The band is white at half strength and leans 10° off the vertical (owner,
    2026-09-20): at .85 it read as a white wave washing over the shape rather than a light
    passing across it, and a dead-vertical edge read as a wipe. The same gradient is restated
-   wherever a shape takes the sheen on itself (pills, head text, the lead skeleton); change it
+   wherever a shape takes the sheen on itself (pills, the lead skeleton); change it
    everywhere or nowhere. A shape that carries verdict colours of its own (a pill) is coloured neutral by its
    own stylesheet before the sheen is applied, and after its verdict rules in source order — the
    sheen must not be an overlay on such a shape: two nested antialiased curves never land on the
@@ -102,47 +102,6 @@
 
   to {
     background-position: 200% 0;
-  }
-
-  /* The skeleton you give to anything: put `lookup-skeleton` on any element and it does nothing
-   until the wrapper is `.loading`; then the element stays exactly where it is, its ink goes
-   transparent (its own and that of any child a panel colours itself — a label's muted span, a
-   value's strong) and its own box becomes the sheen — on the element, never an overlay — with
-   the pill's radius. Both cross-fade over --settle, so a text that reads the same after the
-   lookup lands on itself and one that changes arrives as new words under the fading grey. The
-   box keeps its width through it: a width that changes with the words changes on the frame they
-   land, as the language accepts for text. Give it to a group (a caption over a mix) and the group
-   is one bar; give it to the parts and each is its own. Written from the wrapper's root
-   (.lookup-panel / .lookup-core, whichever carries .loading) so it out-specifies a panel's
-   two-class colour rule: the panel's stylesheet comes after this one and would otherwise win a
-   tie and leave its words showing. A transition list on the element replaces this one — restate
-   the colour transitions there (the timeline's KPI rail does). */
-  .lookup-skeleton {
-    border-radius: 999px;
-    background-color: transparent;
-    transition:
-      color var(--settle) ease,
-      background-color var(--settle) ease;
-  }
-
-  .lookup-skeleton * {
-    transition: color var(--settle) ease;
-  }
-
-  .lookup-panel.loading .lookup-skeleton,
-  .lookup-panel.loading .lookup-skeleton *,
-  .lookup-core.loading .lookup-skeleton,
-  .lookup-core.loading .lookup-skeleton * {
-    color: transparent;
-  }
-
-  .lookup-panel.loading .lookup-skeleton,
-  .lookup-core.loading .lookup-skeleton {
-    background-color: #dcdfe4;
-    background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
-    background-repeat: no-repeat;
-    background-size: 45% 100%;
-    animation: lookup-sheen 1.3s linear infinite;
   }
 }
 

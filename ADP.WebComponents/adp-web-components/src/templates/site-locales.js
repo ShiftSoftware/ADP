@@ -179,6 +179,8 @@
         'Grouped by the part of the platform they read from. Every element listed here ships in the package today — where a group has no demo page yet, it is the demo that is pending, not the code.',
       'components.empty': 'Demo pages are still being published. The elements are already in the package.',
       'components.soon': 'Demo pending',
+      // Badge on the group's wrapper — the composite that hosts every other panel.
+      'components.wrapper': 'All panels',
       'components.page': 'page',
       'components.pages': 'pages',
 
@@ -405,6 +407,7 @@
       'components.lede': 'مجمّعة حسب الجزء الذي تقرأ منه في المنصّة. وكل عنصر مذكور هنا موجود في الحزمة اليوم — فحيث لا توجد صفحة تجريبية بعد، فالمعلَّق هو العرض لا الشيفرة.',
       'components.empty': 'ما تزال الصفحات التجريبية قيد النشر. أما العناصر فهي في الحزمة أصلًا.',
       'components.soon': 'العرض قريبًا',
+      'components.wrapper': 'كل اللوحات',
       'components.page': 'صفحة',
       'components.pages': 'صفحة',
 
@@ -636,6 +639,7 @@
         'بەپێی ئەو بەشەی پلاتفۆرم کە لێی دەخوێننەوە کۆکراونەتەوە. هەر توخمێکی لێرە ناوبراو ئەمڕۆ لە پاکێجەکەدایە — لەو شوێنانەی هێشتا لاپەڕەی نموونە نییە، ئەوەی ماوە پیشاندانەکەیە نەک کۆدەکە.',
       'components.empty': 'لاپەڕە نموونەییەکان هێشتا لە بڵاوکردنەوەدان. بەڵام توخمەکان پێشتر لە پاکێجەکەدان.',
       'components.soon': 'نموونە بەم زووانە',
+      'components.wrapper': 'هەموو پانێڵەکان',
       'components.page': 'لاپەڕە',
       'components.pages': 'لاپەڕە',
 
@@ -864,6 +868,7 @@
         'Сгруппированы по той части платформы, из которой они читают. Каждый перечисленный элемент уже есть в пакете — там, где у группы пока нет демо-страницы, не хватает именно демо, а не кода.',
       'components.empty': 'Демо-страницы ещё публикуются. Сами элементы уже в пакете.',
       'components.soon': 'Демо готовится',
+      'components.wrapper': 'Все панели',
       'components.page': 'стр.',
       'components.pages': 'стр.',
 

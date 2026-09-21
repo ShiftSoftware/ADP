@@ -41,12 +41,18 @@
      its travel in the first fifth of the time and read as a jump then a crawl (owner,
      2026-09-20 — "fast and not smooth"). */
   --tab-ease: cubic-bezier(0.32, 0.72, 0, 1);
-  --tab-height-settle: 600ms;
+  --tab-height-settle: 820ms;
   --tab-height-ease: ease-in-out;
   /* The head's hand-over: the outgoing content slides up out of the band as the incoming slides in
      from below it, one movement (owner, 2026-09-20), on the settle curve — the same clock as the
      height, so the band and its content land together. */
-  --tab-head-settle: 600ms;
+  --tab-head-settle: 820ms;
+  /* How far the head's content drops as it leaves for a lookup, in its own height: past its own
+     bottom edge by a quarter, so the whole block is out from under the title line before the fade
+     is over and the spinner rising into its place never crosses legible words. A translate, so
+     the layout under it never moves; straight down, because sideways movement spread the title
+     from the pill and read as a lunge. */
+  --head-leave-travel: 1.25;
 }
 
 .lookup-panel,
@@ -124,7 +130,8 @@
   content: '';
   transition:
     background var(--settle) ease,
-    transform var(--settle) ease;
+    transform var(--settle) ease,
+    height var(--settle) ease;
 }
 
 .lookup-card[data-verdict='positive']::before {
@@ -147,7 +154,8 @@
 }
 
 .lookup-card[data-phase='busy']::before {
-  transform: translateY(-100%);
+  background: var(--line);
+  height: 10px;
 }
 
 @keyframes lookup-attention-bar {
@@ -323,18 +331,87 @@
    line) takes the room as its content arrives. The composite measures both bands and drives this
    variable on the panel's host: pinned to the outgoing height through the patch, sent to the
    incoming height with the slide, released to auto on settle. Box-sizing so the pinned figure
-   is the band's outer height. */
+   is the band's outer height. Positioned, so the wait spinner below fills the band and is
+   clipped by it. */
 .lookup-head-band {
+  position: relative;
   box-sizing: border-box;
   height: var(--lookup-head-height, auto);
   overflow: hidden;
   transition: height var(--tab-head-settle) var(--tab-ease);
 }
 
+/* The content's two movements share one element and one opacity, and each has a property of its
+   own so each keeps its own clock: the tab switch slides it on `translate` (the tab clock); a
+   lookup drops it on `transform` and fades it (--settle, below). A property transitions on the
+   clock of the state being entered, and the rest state is entered from both — a tab arrival and
+   a lookup's end — so if the two shared a property the lookup's return would take the tab's
+   600ms while the spinner beside it took 320ms. Opacity is on --settle here, at rest, because
+   the return to rest whose fade matters is the end of a lookup — a tab arrival's 0.6 → 1 is
+   secondary to the band's edge taking it, and finishing it at 320ms of the 600ms slide is
+   unseen. Both are none at rest, not 0, so the block creates no stacking context. */
 .lookup-head-content {
   transition:
     translate var(--tab-head-settle) var(--tab-ease),
-    opacity var(--tab-head-settle) var(--tab-ease);
+    transform var(--settle) ease,
+    opacity var(--settle) ease;
+}
+
+/* In flight the head's content leaves as one piece — the title, the pill and whatever the panel
+   keeps beside them — dropping out of the band's bottom edge (--head-leave-travel) as it fades
+   to nothing over --settle, while the wait spinner rises into its place (below); the new content
+   comes back up from below as the spinner sinks, and the two cross while both are faint (owner,
+   2026-09-21 — in place of the sheen bars each line used to become where it stood). The band
+   itself stays: its rule under the head and its height are the anchor. A transform, so the
+   layout under it never moves. Every panel's head content is .lookup-head-content — the family's
+   LookupHead and the two reference panels' own — and .loading sits on the wrapper's root in both
+   of its modes, so this is the one in-flight head for the family. The tab rules below out-specify
+   this one, and a parked tab is hidden anyway. */
+.loading .lookup-head-content {
+  opacity: 0;
+  transform: translateY(calc(var(--head-leave-travel) * 120%));
+}
+
+/* The head's stand-in while a lookup is in flight: the language's spinner (§ 18 — 16px, a 2px
+   --line ring with a --blue lead, the .8s spin), centred in the band. The layer is the band's
+   whole box, so parked one length below (`translate: 0 100%`) it is exactly out of the band's
+   clip whatever the band's height — the timeline's is taller than the standard head's — and it
+   rises the band's height into place as the content drops, on the same --settle clock, one
+   movement. The ring's rotation is on `transform` and the travel on `translate`, so the two never
+   fight. The loop only runs while shown: a spinner turning under the clip is work nobody sees.
+   Every band renders it last, in every state (LookupHeadWait, vehicle-info-layout.tsx) — an
+   anchor, never mounted or unmounted. Decorative and out of the way of the pointer. */
+.lookup-head-wait {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  translate: 0 100%;
+  pointer-events: none;
+  transition:
+    translate var(--settle) ease,
+    opacity var(--settle) ease;
+}
+
+.lookup-head-wait::before {
+  width: 26px;
+  height: 26px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-top-color: var(--line);
+  border-radius: 50%;
+  content: '';
+  animation: lookup-spin 0.65s linear infinite;
+  animation-play-state: paused;
+}
+
+.loading .lookup-head-wait {
+  opacity: 1;
+  translate: 0 6.5%;
+}
+
+.loading .lookup-head-wait::before {
+  animation-play-state: running;
 }
 
 :host([data-tab-park]) .lookup-head-content {
@@ -391,6 +468,15 @@
 
   :host([data-tab-park]) .lookup-head-content,
   :host([data-tab-leaving]) .lookup-head-content {
+    translate: none;
+  }
+
+  /* The head's leave, and the spinner's arrival in its place, are pure fades too. */
+  .loading .lookup-head-content {
+    transform: none;
+  }
+
+  .lookup-head-wait {
     translate: none;
   }
 }

@@ -6,9 +6,15 @@ import { SharedLocales } from '~features/multi-lingual';
 import { BADGE_GLYPHS } from '../../components/vehicle-lookup/components/glyphs';
 
 import { VerdictState } from './interface';
+import { LookupHeadWait } from './vehicle-info-layout';
 
-/** `label` is what a screen reader hears when a pill shows no words on screen. */
-export type PanelVerdict = { state: VerdictState; text: string; label?: string };
+/**
+ * The pill and the accent bar, decided together. `state` and `text` are the pill's: a verdict with
+ * no `text` has nothing to say, and the pill is not rendered. `accent` is the card's bar, which
+ * always has a colour — the two part ways on a record panel with records on file, where the pill
+ * says nothing and the bar says the lookup succeeded (owner, 2026-09-21).
+ */
+export type PanelVerdict = { state: VerdictState; text: string; accent: VerdictState };
 
 /** Everything a record panel's verdict is decided from. */
 export type RecordPanelState = {
@@ -21,6 +27,15 @@ export type RecordPanelState = {
   hasRecords: boolean;
   /** The lookup failed: the translated message, which the pill then carries in the negative tone. */
   error?: string;
+  /**
+   * What the records say about the vehicle, once it is the distributor's and there are records on
+   * file — the accent bar's colour for that one state, since the pill says nothing there. A panel
+   * with a judgement to make writes it from its own data (a reading over its threshold, a service
+   * overdue: `negative`); one with none leaves it out and the bar is green — the lookup succeeded
+   * and the panel holds what it asked for. Not read in any other state: those colour the bar from
+   * the pill.
+   */
+  recordsVerdict?: 'positive' | 'negative';
 };
 
 /**
@@ -31,80 +46,43 @@ export type RecordPanelState = {
  *  - a vehicle the distributor has no record of: neutral, "not in the distributor's records" —
  *    whatever the list happens to hold, it is not the distributor's to show
  *    (.shift/repos/adp/web-components/vehicle-lookup-invariants.md);
- *  - records on file: positive, "on record";
+ *  - records on file: the pill is idle and says nothing — the records themselves are the
+ *    statement, and a green "on record" on every panel that had anything at all said nothing the
+ *    body did not (owner, 2026-09-21). The slot stays for a detail a panel may want to say here
+ *    later. The accent bar does speak: green, the lookup succeeded and the records are there, or
+ *    the panel's own `recordsVerdict` where it has a judgement to make (owner, 2026-09-21);
  *  - an authorized vehicle with nothing on file: idle, in words — "no records" is a fact about the
  *    records and is said in grey, never in green (a verdict read off an empty list) and never in
  *    amber (which would say the vehicle is unknown).
  */
-export const recordVerdict = ({ locale, vehicleLoaded, authorized, hasRecords, error }: RecordPanelState): PanelVerdict => {
-  if (error) return { state: 'negative', text: error };
-  if (!vehicleLoaded) return { state: 'idle', text: '' };
-  if (authorized === false) return { state: 'neutral', text: locale.notInRecords };
-  if (hasRecords) return { state: 'positive', text: locale.onRecord };
-  return { state: 'idle', text: locale.noRecords };
+export const recordVerdict = ({ locale, vehicleLoaded, authorized, hasRecords, error, recordsVerdict }: RecordPanelState): PanelVerdict => {
+  if (error) return { state: 'negative', text: error, accent: 'negative' };
+  if (!vehicleLoaded) return { state: 'idle', text: '', accent: 'idle' };
+  if (authorized === false) return { state: 'neutral', text: locale.notInRecords, accent: 'neutral' };
+  if (hasRecords) return { state: 'idle', text: '', accent: recordsVerdict ?? 'positive' };
+  return { state: 'idle', text: locale.noRecords, accent: 'idle' };
 };
 
 const BADGE_GLYPH: Record<VerdictState, keyof typeof BADGE_GLYPHS | null> = { positive: 'positive', negative: 'negative', neutral: 'question', attention: 'alert', idle: null };
 
 /**
- * Text width cannot be transitioned to, but a measured one can: the pill writes its natural width
- * (cap plus words) on itself as `--pill-width` on every render, and the stylesheet transitions
- * `width` between it and the skeleton's. Measured from the children, not `scrollWidth`, which
- * never reports less than the box the pill is still shrinking from. A `ref`, so it runs after the
- * words are in the DOM and before they are painted — passed as a fresh closure each render, since
- * Stencil skips a `ref` whose identity has not changed.
- */
-export const measurePill = (pill?: HTMLElement) => {
-  if (!pill) return;
-  writePillWidth(pill);
-  measured.add(pill);
-  remeasureOnFonts(pill.ownerDocument);
-};
-
-const writePillWidth = (pill: HTMLElement) => {
-  const width = Array.from(pill.children).reduce((sum, child) => sum + child.getBoundingClientRect().width, 0);
-  pill.style.setProperty('--pill-width', `${width}px`);
-};
-
-/** Every pill measured so far; pruned of the ones no longer on the page when a font lands. */
-const measured = new Set<HTMLElement>();
-const watchedFontSets = new WeakSet<FontFaceSet>();
-
-/**
- * The faces are web fonts (lookup-tokens.css), and one that arrives after the words were measured
- * changes their width: a pill measured in the fallback face would clip or float its words until
- * its next render. The page's font set says when a face has landed; every measured pill still on
- * the page is measured again, and its width transitions to the correction like any other change.
- * One listener per document, however many panels it holds.
- */
-const remeasureOnFonts = (doc: Document) => {
-  const fonts = doc?.fonts;
-  if (!fonts || watchedFontSets.has(fonts)) return;
-  watchedFontSets.add(fonts);
-  fonts.addEventListener('loadingdone', () => measured.forEach(pill => (pill.isConnected ? writePillWidth(pill) : measured.delete(pill))));
-};
-
-/**
  * The split-cap verdict pill (§ 16): a solid leading cap carrying the glyph against a tinted body.
- * Idle keeps the shape and asserts nothing; an idle pill with words ("no records") is a grey
- * statement and is read, one without is furniture and is hidden from assistive readers.
+ * Rendered only when it has words — the pill is a statement, not furniture, and a record panel
+ * with nothing to say shows none (owner, 2026-09-21). An idle pill with words ("no records") is a
+ * grey statement and is read like any other. It has no transitions of its own: the head's content
+ * is out of the band while a verdict changes (the wrapper's `.loading .lookup-head-content`), so
+ * the pill is never seen changing.
  */
-export const StatusBadge: FunctionalComponent<PanelVerdict> = ({ state, text, label }) => {
+export const StatusBadge: FunctionalComponent<Pick<PanelVerdict, 'state' | 'text'>> = ({ state, text }) => {
+  if (!text) return null;
   const glyph = BADGE_GLYPH[state];
-  const shown = text || '';
-  const spoken = shown || label || '';
 
   return (
-    <span
-      class={{ 'status-badge': true, [`is-${state}`]: true, 'has-text': !!shown }}
-      aria-hidden={spoken ? null : 'true'}
-      aria-label={!shown && label ? label : null}
-      ref={pill => measurePill(pill)}
-    >
+    <span class={{ 'status-badge': true, [`is-${state}`]: true }}>
       <svg class="badge-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
         {glyph && <path fill="currentColor" d={BADGE_GLYPHS[glyph]} />}
       </svg>
-      <span>{shown}</span>
+      <span>{text}</span>
     </span>
   );
 };
@@ -112,7 +90,8 @@ export const StatusBadge: FunctionalComponent<PanelVerdict> = ({ state, text, la
 type LookupHeadProps = {
   /** The panel's name. A class on a span, never a heading element. */
   title: string;
-  verdict: PanelVerdict;
+  /** The pill's `state` and `text`; the head does not draw the `accent`, the wrapper's card does. */
+  verdict: Pick<PanelVerdict, 'state' | 'text'>;
 };
 
 /**
@@ -120,15 +99,17 @@ type LookupHeadProps = {
  * between them any control the panel keeps beside its verdict (the children). An anchor: it is
  * rendered in every state and only its content changes. The two content blocks are marked for a
  * composite's tab switch (vehicle-info-layout.css): the band stays, the content changes hands. The
- * title carries lookup-skeleton (lookup-motion.css): while a lookup is in flight its box becomes a
- * sheen bar in place, as the pill's does.
+ * same two blocks are what leave while a lookup is in flight — dropping out of the band as they
+ * fade, the wrapper's .loading .lookup-head-content rule — and the band's wait spinner rises in
+ * their place, so nothing in here needs a loading treatment of its own.
  */
 export const LookupHead: FunctionalComponent<LookupHeadProps> = ({ title, verdict }, children) => (
   <header class="lookup-head lookup-head-band">
-    <span class="lookup-title lookup-head-content lookup-skeleton">{title}</span>
+    <span class="lookup-title lookup-head-content">{title}</span>
     <div class="lookup-summary lookup-head-content">
       {children}
-      <StatusBadge state={verdict.state} text={verdict.text} label={verdict.label} />
+      <StatusBadge state={verdict.state} text={verdict.text} />
     </div>
+    <LookupHeadWait />
   </header>
 );

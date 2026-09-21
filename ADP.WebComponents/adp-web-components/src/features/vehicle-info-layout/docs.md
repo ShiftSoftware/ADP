@@ -15,7 +15,7 @@ vehicle-lookup family. A panel renders it inside its own shadow root and `@impor
 
 With `coreOnly` the wrapper renders `div.lookup-core[.loading]` around the children and nothing else —
 for a panel embedded in a composite that draws the card itself. `loading` is on the outermost element
-in both modes; every panel's skeleton is a `.loading .x` descendant selector.
+in both modes; every panel's in-flight rule is a `.loading .x` descendant selector.
 
 ### Props
 
@@ -59,18 +59,29 @@ a composite can colour its one card from the active panel.
 
 ### The head in flight
 
-While `isLoading`, the head stays where it is: every element a panel marks `.lookup-skeleton`
-(lookup-motion.css — give it to anything, it is inert until the wrapper is `.loading`) keeps its box
-and becomes a sheen bar in place, the way the pill does. On a group it is one bar; on the parts, one
-each. A panel's own `.loading` rules are for its body and for anything verdict-coloured beside that
-text (the timeline greys its KPI rail).
+While `isLoading`, the head's content (`.lookup-head-content` — the title and the summary, the
+same blocks the tab switch moves; the family's `LookupHead` and the two reference panels' own heads
+alike) leaves: it drops out of the band's bottom edge (`transform: translateY(…)`,
+`--head-leave-travel` = 1.25 of its own height) as it fades to 0 over `--settle`, and the band's
+wait spinner (`LookupHeadWait`, rendered last in every head band, in every state) rises from under
+the band's clip into the content's place on the same clock. When the lookup lands the spinner
+sinks back out and the new content comes up from below as it fades in. The band, its rule and its
+height stay; a transform, so nothing under it moves. The drop is on `transform` and the tab
+switch's slide on `translate` so each keeps its own clock at rest. There is no head skeleton. A
+panel's own `.loading` rules are for its body.
 
 ### The standard head and the tab region
 
 `LookupHead` (`lookup-head.tsx` + `lookup-head.css`) is the family's head — title, split-cap pill,
 any control beside the pill — for a panel that has no head of its own yet; `recordVerdict` is the
-verdict of a panel that shows records rather than a judgement. A panel marks the region under its
-head `.lookup-slide`.
+verdict of a panel that shows records rather than a judgement. It decides the pill (`state`,
+`text`) and the accent bar (`accent`) together, and they part ways in one state: an authorized
+vehicle with records on file has no pill — the records are the statement — and a green bar, the
+lookup succeeded and the panel holds what it asked for. A panel with a judgement of its own to make
+there (a reading over its threshold, a service overdue) passes `recordsVerdict: 'negative'` from its
+data; the other states colour the bar from the pill and ignore it. The panel gives the wrapper and
+`verdictChange` the `accent`, and `LookupHead` the pill. A panel marks the region under its head
+`.lookup-slide`.
 
 `LookupTabs` + `createTabRegion` (`lookup-tabs.tsx`) is a composite's tab region: every panel mounted
 always, one active and in flow, the rest hidden, inert and parked a short travel to one side

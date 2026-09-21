@@ -57,7 +57,9 @@ export async function writeCatalog(root) {
   const catalog = {
     package: { name, version },
     areas,
-    pages: listed.sort((a, b) => rank(a.area) - rank(b.area) || a.title.localeCompare(b.title)),
+    // Within an area the wrapper leads — it is the composite the other pages are
+    // parts of — and the rest read alphabetically.
+    pages: listed.sort((a, b) => rank(a.area) - rank(b.area) || lead(b) - lead(a) || a.title.localeCompare(b.title)),
   };
 
   await writeFile(path.join(templates, CATALOG_FILE), JSON.stringify(catalog, null, 2) + '\n');
@@ -92,6 +94,11 @@ function rank(area) {
   return index === -1 ? AREA_ORDER.length : index;
 }
 
+/** 1 for the page that leads its area, 0 for the rest. */
+function lead(page) {
+  return page.role === 'wrapper' ? 1 : 0;
+}
+
 function describe(relative, source) {
   const segments = relative.split('/');
   const area = segments.length > 1 ? segments[0] : 'root';
@@ -102,6 +109,7 @@ function describe(relative, source) {
     area,
     kind: kind(relative, source),
     publish: publish(source),
+    role: role(source),
     tags: tags(source),
     harness: source.includes('/templates/harness.css'),
     legacy: legacy(source),
@@ -127,6 +135,21 @@ function title(source, filename) {
  */
 function publish(source) {
   return /<meta[^>]+name=["']adp-publish["'][^>]+content=["']true["']/i.test(source);
+}
+
+/*
+ * What the page is to the rest of its area. `wrapper` marks the composite that
+ * hosts the area's other panels — the vehicle lookup around the vehicle panels —
+ * so the menus can lead with it instead of losing it in the alphabet:
+ *
+ *   <meta name="adp-role" content="wrapper" />
+ *
+ * Absent for an ordinary demo; the key is left off the catalog entry too.
+ */
+function role(source) {
+  const match = source.match(/<meta[^>]+name=["']adp-role["'][^>]+content=["']([^"']+)["']/i);
+
+  return match ? match[1] : undefined;
 }
 
 function kind(relative, source) {

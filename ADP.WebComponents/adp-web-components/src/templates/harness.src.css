@@ -665,6 +665,21 @@ html[lang='ku'] {
     letter-spacing: 0.08em;
   }
 
+  /*
+   * The row a group's menu leads with: the wrapper that hosts every other page
+   * in the group (`adp-role="wrapper"` in the catalog). A heavier weight and the
+   * gold badge beside the title say "the whole" where the rows below are the
+   * parts, and the gap underneath is the line between the two. No fill or
+   * outline of its own, so the current-page tint (`bg-primary/15`) still reads.
+   */
+  .menu .menu-lead {
+    margin-bottom: 0.375rem;
+  }
+
+  .menu .menu-lead > a {
+    font-weight: 600;
+  }
+
   .log {
     font-family: var(--font-mono);
     font-size: 0.75rem;

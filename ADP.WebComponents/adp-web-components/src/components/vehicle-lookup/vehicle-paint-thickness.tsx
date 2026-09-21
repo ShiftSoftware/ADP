@@ -200,7 +200,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
       authorized: this.vehicleLookup?.isAuthorized,
       hasRecords: (this.vehicleLookup?.paintThicknessInspections?.length ?? 0) > 0,
     });
-    this.currentVerdict = verdict.state;
+    this.currentVerdict = verdict.accent;
 
     const texts = this.locale;
 
@@ -235,7 +235,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
         <VehicleInfoLayout
           isError={this.isError}
-          verdict={verdict.state}
+          verdict={verdict.accent}
           coreOnly={this.coreOnly}
           isLoading={this.isLoading}
           header={this.vehicleLookup?.vin}

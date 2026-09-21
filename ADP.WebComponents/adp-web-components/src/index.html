@@ -250,7 +250,15 @@
 
                   <ul class="mt-3 flex flex-col gap-1" x-show="group.pages.length">
                     <template x-for="page in group.pages" :key="page.path">
-                      <li><a :href="site(page.path)" class="link link-hover text-accent inline-flex min-h-6 items-center text-sm" x-text="page.title"></a></li>
+                      <li class="flex items-center gap-2">
+                        <a
+                          :href="site(page.path)"
+                          class="link link-hover text-accent inline-flex min-h-6 items-center text-sm"
+                          :class="page.role === 'wrapper' && 'font-semibold'"
+                          x-text="page.title"
+                        ></a>
+                        <span class="badge badge-xs badge-primary" x-show="page.role === 'wrapper'" x-text="t('components.wrapper')"></span>
+                      </li>
                     </template>
                   </ul>
                 </li>

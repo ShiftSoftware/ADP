@@ -130,7 +130,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
       authorized: this.vehicleLookup?.isAuthorized,
       hasRecords: !!(this.vehicleLookup?.vehicleSpecification || this.vehicleLookup?.vehicleVariantInfo || this.vehicleLookup?.identifiers),
     });
-    this.currentVerdict = verdict.state;
+    this.currentVerdict = verdict.accent;
 
     const texts = this.locale;
 
@@ -153,7 +153,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
       <Host translate="no">
         <VehicleInfoLayout
           isError={this.isError}
-          verdict={verdict.state}
+          verdict={verdict.accent}
           coreOnly={this.coreOnly}
           isLoading={this.isLoading}
           header={this.vehicleLookup?.vin}

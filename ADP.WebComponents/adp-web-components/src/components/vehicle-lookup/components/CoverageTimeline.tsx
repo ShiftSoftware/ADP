@@ -4,7 +4,7 @@ import { InferType } from 'yup';
 
 import warrantyTimelineSchema from '~locales/vehicleLookup/warrantyTimeline/type';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
-import { VerdictState } from '~features/vehicle-info-layout';
+import { LookupHeadWait, VerdictState } from '~features/vehicle-info-layout';
 
 import { BADGE_GLYPHS } from './glyphs';
 
@@ -406,8 +406,7 @@ export default function CoverageTimeline({ vehicleInformation, locale, isAuthori
     <article class="coverage-timeline" data-empty={hasCoverage ? 'false' : 'true'}>
       <header class="activation-header lookup-head-band">
         <div class="activation-main lookup-head-content">
-          {/* lookup-skeleton: in flight, each line's box becomes a sheen bar where it stands (the wrapper's rule). */}
-          <p class="activation-title lookup-skeleton">
+          <p class="activation-title">
             <span>{dealerLabel}:</span> <strong>{dealerName || '—'}</strong>
           </p>
 
@@ -415,7 +414,7 @@ export default function CoverageTimeline({ vehicleInformation, locale, isAuthori
               vehicles does not resize the header. Only the possession notice below is allowed to
               change the card's height, and it slides. */}
           <div class="broker-slot" data-empty={activatingBroker ? 'false' : 'true'} aria-hidden={activatingBroker ? null : 'true'}>
-            <p class="activation-broker lookup-skeleton">
+            <p class="activation-broker">
               <span>{locale.broker}:</span> <strong>{activatingBroker}</strong>
             </p>
           </div>
@@ -428,6 +427,7 @@ export default function CoverageTimeline({ vehicleInformation, locale, isAuthori
             <TotalCoverage coverages={coverages} locale={locale} />
           </div>
         </div>
+        <LookupHeadWait />
       </header>
 
       {/* lookup-slide (on the notice and the rail, never on a .collapsible, whose transition list it would replace): what travels on a
@@ -549,16 +549,14 @@ function TotalCoverage({ coverages, locale }: { coverages: Coverage[]; locale: T
   // reflow the label beside it, which is what made the invisible block taller than a real one.
   const total = mix ? formatDuration(standardMonths + extendedMonths, locale) : '—';
 
-  // In flight the KPI is three skeletons, one per thing on it (owner, 2026-09-20): the rail
-  // (its own rule), the caption-and-mix group as one bar, the figure as another. Hence the group
-  // wrapper — a bar per element, and the two lines read as one thing.
+  // The caption and the mix are one group so the two lines read as one thing beside the figure.
   return (
     <aside class="total-coverage" aria-label={`${locale.totalWarranty}: ${mix || total}`}>
-      <span class="total-text lookup-skeleton">
+      <span class="total-text">
         <span class="total-caption">{locale.totalWarranty}</span>
         <span class="coverage-mix">{mix}</span>
       </span>
-      <strong class="lookup-skeleton">{total}</strong>
+      <strong>{total}</strong>
     </aside>
   );
 }

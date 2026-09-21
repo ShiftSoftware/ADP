@@ -132,7 +132,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
       authorized: this.vehicleLookup?.isAuthorized,
       hasRecords: (this.vehicleLookup?.serviceHistory?.length ?? 0) > 0,
     });
-    this.currentVerdict = verdict.state;
+    this.currentVerdict = verdict.accent;
 
     const tableHeaders: InformationTableColumn[] = [
       { key: 'branchName', label: this.locale.branch },
@@ -147,7 +147,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
       <Host translate="no">
         <VehicleInfoLayout
           isError={this.isError}
-          verdict={verdict.state}
+          verdict={verdict.accent}
           coreOnly={this.coreOnly}
           isLoading={this.isLoading}
           header={this.vehicleLookup?.vin}
@@ -156,18 +156,22 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
           <LookupHead title={this.locale.serviceHistory} verdict={verdict} />
           <div class="lookup-slide-clip">
             <div class="lookup-slide">
-              <div class="overflow-x-auto">
-                <information-table
-                  size="small"
-                  allowAutoWidth
-                  scrollExpandedIntoView
-                  expandUsingEntireRow
-                  headers={tableHeaders}
-                  isLoading={this.isLoading}
-                  rows={this.vehicleLookup?.serviceHistory || []}
-                  subRowRenderer={(row: any) => <ServiceHistorySubRow row={row} locale={this.locale} />}
-                />
-              </div>
+              {/* The table's auto-width mode renders a bare <table>, so its height would jump on the frame the
+                  rows land; the container measures the change and animates it, as the table's own flex mode does. */}
+              <flexible-container>
+                <div class="overflow-x-auto">
+                  <information-table
+                    size="small"
+                    allowAutoWidth
+                    scrollExpandedIntoView
+                    expandUsingEntireRow
+                    headers={tableHeaders}
+                    isLoading={this.isLoading}
+                    rows={this.vehicleLookup?.serviceHistory || []}
+                    subRowRenderer={(row: any) => <ServiceHistorySubRow row={row} locale={this.locale} />}
+                  />
+                </div>
+              </flexible-container>
             </div>
           </div>
         </VehicleInfoLayout>

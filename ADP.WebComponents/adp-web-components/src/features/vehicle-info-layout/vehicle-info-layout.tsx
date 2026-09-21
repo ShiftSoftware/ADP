@@ -25,13 +25,23 @@ type VehicleInfoLayoutProps = {
  * vehicle the card is about.
  *
  * Two modes. Standalone, the card. With `coreOnly`, only the children, inside one div that carries
- * the `loading` class — every panel's skeleton is a `.loading .x` descendant selector inside its own
- * shadow root, and this element is what keeps those alive whichever mode the panel is in. In both
- * modes `loading` sits on the outermost element the wrapper renders.
+ * the `loading` class — every in-flight rule (the head's leave, a panel's own) is a `.loading .x`
+ * descendant selector inside its own shadow root, and this element is what keeps those alive
+ * whichever mode the panel is in. In both modes `loading` sits on the outermost element the wrapper
+ * renders.
  *
  * An error has no band of its own (owner, 2026-09-20): the accent goes negative and the panel's own
  * verdict pill carries the translated message, in the negative tone, where the verdict would be.
  */
+/**
+ * The head's stand-in while a lookup is in flight: a spinner that rises into the band as the
+ * head's content drops out of it, and sinks back out as the content returns (the wrapper's
+ * `.lookup-head-wait` rules in vehicle-info-layout.css). Every head band renders it as its last
+ * child in every state — an anchor, parked under the band's clip at rest — so it is never mounted
+ * or unmounted. Decorative: the panel's own status regions say what is happening in words.
+ */
+export const LookupHeadWait: FunctionalComponent = () => <span class="lookup-head-wait" aria-hidden="true" />;
+
 export const VehicleInfoLayout: FunctionalComponent<VehicleInfoLayoutProps> = (props, children) => {
   if (props.coreOnly)
     return (

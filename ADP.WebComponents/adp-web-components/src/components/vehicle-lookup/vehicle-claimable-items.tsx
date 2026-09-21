@@ -786,7 +786,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
       authorized: this.vehicleLookup?.isAuthorized,
       hasRecords: (this.vehicleLookup?.serviceItems?.length ?? 0) > 0,
     });
-    this.currentVerdict = verdict.state;
+    this.currentVerdict = verdict.accent;
 
     const serviceItems = this.getServiceItems();
 
@@ -851,7 +851,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
         <VehicleInfoLayout
           isError={this.isError}
-          verdict={verdict.state}
+          verdict={verdict.accent}
           coreOnly={this.coreOnly}
           header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}

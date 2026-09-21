@@ -153,7 +153,7 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
       authorized: this.vehicleLookup?.isAuthorized,
       hasRecords: !!this.vehicleLookup?.saleInformation,
     });
-    this.currentVerdict = verdict.state;
+    this.currentVerdict = verdict.accent;
 
     const hiddenFields = this.hiddenFields?.split(',')?.map(field => field.trim()) || [];
 
@@ -265,7 +265,7 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
       <Host translate="no">
         <VehicleInfoLayout
           isError={this.isError}
-          verdict={verdict.state}
+          verdict={verdict.accent}
           coreOnly={this.coreOnly}
           isLoading={this.isLoading}
           header={this.vehicleLookup?.vin}

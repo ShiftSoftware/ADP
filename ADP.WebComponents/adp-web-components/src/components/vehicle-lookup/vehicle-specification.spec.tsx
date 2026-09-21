@@ -36,19 +36,21 @@ const newPage = async () => {
 const shadow = (page: Awaited<ReturnType<typeof newPage>>) => page.root.shadowRoot;
 
 describe('vehicle-specification', () => {
-  it('opens with the standard head, an idle pill and an idle accent, and announces each verdict it reaches', async () => {
+  it('opens with the standard head, no pill and an idle accent, goes green on records, and announces each verdict it reaches', async () => {
     const page = await newPage();
     const heard: string[] = [];
     page.root.addEventListener('verdictChange', (event: CustomEvent<string>) => heard.push(event.detail));
 
     expect(shadow(page).querySelector('.lookup-head .lookup-title')?.textContent).toBe('Vehicle Specifications');
-    expect(shadow(page).querySelector('.lookup-summary .status-badge')?.classList.contains('is-idle')).toBe(true);
+    expect(shadow(page).querySelector('.lookup-summary .status-badge')).toBeNull();
     expect(shadow(page).querySelector('.lookup-card')?.getAttribute('data-verdict')).toBe('idle');
 
+    // Records on file: the records are the statement — no pill — and the accent goes green: the
+    // lookup succeeded and the panel holds what it asked for.
     await (page.rootInstance as VehicleSpecification).fetchVin(AUTHORIZED_VIN);
     await page.waitForChanges();
     expect(shadow(page).querySelector('.lookup-card')?.getAttribute('data-verdict')).toBe('positive');
-    expect(shadow(page).querySelector('.lookup-summary .status-badge')?.classList.contains('is-positive')).toBe(true);
+    expect(shadow(page).querySelector('.lookup-summary .status-badge')).toBeNull();
     expect(shadow(page).querySelector('.lookup-head')).not.toBeNull();
 
     // Not in the distributor's records: amber, whatever the DTO carries.

@@ -6,14 +6,10 @@
  * still open with the family's title row and pill, and so the composite's tab switch has one head
  * geometry to hold still across every panel.
  *
- * Imported by a panel's stylesheet after vehicle-info-layout.css. Busy is read from the wrapper's
- * `.loading` element, which exists in both of its modes.
+ * Imported by a panel's stylesheet after vehicle-info-layout.css. In flight the head's content
+ * leaves — the wrapper's `.loading .lookup-head-content` rule in vehicle-info-layout.css — and the
+ * band with its rule stays, so nothing here has a loading state of its own.
  */
-
-:host {
-  /* The verdict pill's width while it is a skeleton: idle, and in flight. */
-  --pill-rest: 132px;
-}
 
 /* ---------------------------------------------------------------------------------------------
    Head
@@ -47,11 +43,14 @@
   line-height: 1.2;
 }
 
-/* The trailing group: any control the panel puts beside its verdict, then the pill last. */
+/* The trailing group: any control the panel puts beside its verdict, then the pill last. The
+   pill is only rendered when it has words, so the group holds the pill's height itself: the band
+   is the same height with and without one, and the title line never moves. */
 .lookup-summary {
   display: flex;
   gap: 10px;
   min-width: 0;
+  min-height: 30px;
   align-items: center;
 }
 
@@ -70,10 +69,8 @@
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.005em;
-  transition:
-    color var(--settle) ease,
-    background var(--settle) ease,
-    box-shadow var(--settle) ease;
+  /* No transition: the head's content is out of the band while a verdict changes (the wrapper's
+     .loading .lookup-head-content), so a pill is never seen changing state. */
 }
 
 .status-badge.is-positive {
@@ -102,8 +99,8 @@
   box-shadow: inset 0 0 0 1px rgba(117, 90, 165, 0.42);
 }
 
-/* Nothing asserted: before a lookup (no text), or a record panel with nothing on record (its text
-   says so, in grey — "no records" is a fact about the records, not a verdict about the vehicle). */
+/* A statement in grey: a record panel with nothing on record says so ("no records" is a fact about
+   the records, not a verdict about the vehicle). Idle with nothing to say renders no pill at all. */
 .status-badge.is-idle {
   color: var(--muted);
   background: var(--line-soft);
@@ -124,9 +121,6 @@
   height: auto;
   padding: 6px 9px;
   color: #ffffff;
-  transition:
-    opacity var(--settle) ease,
-    background var(--settle) ease;
 }
 
 .status-badge.is-positive .badge-icon {
@@ -149,56 +143,9 @@
   background: var(--line);
 }
 
-/* Text width cannot be transitioned to; a measured one can. The pill writes its natural width on
-   itself as --pill-width (measurePill, lookup-head.tsx) and `width` is transitioned between that
-   and the skeleton's, so it shrinks to the skeleton and grows to its verdict, the whole ease curve
-   each way. (A max-width clamp between the skeleton and a ceiling looked like it did the same, but
-   the curve was cut off wherever the words ended — a lurch out, and a wait then a snap back in.)
-   Without a measurement the max() is invalid and the width falls back to auto: the words are never
-   clipped. The ceiling stays as a guard against a message that would not fit the head. */
+/* A ceiling, as a guard against a message that would not fit the head. */
 .lookup-summary .status-badge {
-  width: max(var(--pill-rest), var(--pill-width));
-  min-width: var(--pill-rest);
   max-width: 360px;
-  transition:
-    color var(--settle) ease,
-    background var(--settle) ease,
-    box-shadow var(--settle) ease,
-    width var(--settle) ease;
-}
-
-.lookup-summary .status-badge.is-idle:not(.has-text) {
-  width: var(--pill-rest);
-}
-
-/* A verdict with no words on screen is the cap alone: a 30px disc with the glyph, the text span
-   collapsed. min-width released so it can shrink to it. */
-.lookup-summary .status-badge:not(.is-idle):not(.has-text) {
-  width: var(--pill-width, 34px);
-  min-width: 0;
-}
-
-.lookup-summary .status-badge:not(.is-idle):not(.has-text) > span {
-  padding: 0;
-}
-
-/* In flight the pill carries no verdict: every colour that says one goes neutral and the sheen
-   sweeps the shape itself (never an overlay — two nested antialiased curves fringe the rim). Below
-   the verdict colours on purpose: these tie on specificity and win on source order. */
-.loading .lookup-summary .status-badge {
-  width: var(--pill-rest);
-  color: transparent;
-  background-color: #dcdfe4;
-  background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
-  background-repeat: no-repeat;
-  background-size: 45% 100%;
-  box-shadow: inset 0 0 0 1px rgba(95, 108, 120, 0.42);
-  animation: lookup-sheen 1.3s linear infinite;
-}
-
-.loading .lookup-summary .status-badge .badge-icon {
-  background: #dcdfe4;
-  opacity: 0;
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -221,11 +168,7 @@
     justify-content: stretch;
   }
 
-  /* Full width in every state, so there is no width to animate here. */
-  .lookup-summary .status-badge,
-  .lookup-summary .status-badge.is-idle,
-  .lookup-summary .status-badge:not(.is-idle):not(.has-text),
-  .loading .lookup-summary .status-badge {
+  .lookup-summary .status-badge {
     flex: 1 1 auto;
     width: 100%;
     max-width: none;

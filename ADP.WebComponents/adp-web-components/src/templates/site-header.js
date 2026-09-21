@@ -381,15 +381,18 @@ const MARKUP = /* html */ `
                           x-transition:leave="transition ease-in duration-100"
                           x-transition:leave-end="opacity-0"
                         >
+                          <!-- The catalog sorts the group's wrapper first; .menu-lead
+                               is what makes it read as the whole, not just the first part. -->
                           <template x-for="page in group.pages" :key="page.path">
-                            <li>
+                            <li :class="page.role === 'wrapper' && 'menu-lead'">
                               <a
                                 :href="site(page.path)"
-                                class="truncate"
                                 :class="isCurrentPage(page.path) && 'bg-primary/15 font-semibold'"
                                 :aria-current="isCurrentPage(page.path) ? 'page' : null"
-                                x-text="page.title"
-                              ></a>
+                              >
+                                <span class="truncate" x-text="page.title"></span>
+                                <span class="badge badge-xs badge-primary justify-self-end" x-show="page.role === 'wrapper'" x-text="t('components.wrapper')"></span>
+                              </a>
                             </li>
                           </template>
                         </ul>
@@ -646,14 +649,15 @@ const MARKUP = /* html */ `
                       x-transition:enter-start="opacity-0 -translate-y-1"
                     >
                       <template x-for="page in group.pages" :key="page.path">
-                        <li>
+                        <li :class="page.role === 'wrapper' && 'menu-lead'">
                           <a
                             :href="site(page.path)"
-                            class="truncate"
                             :class="isCurrentPage(page.path) && 'bg-primary/15 font-semibold'"
                             :aria-current="isCurrentPage(page.path) ? 'page' : null"
-                            x-text="page.title"
-                          ></a>
+                          >
+                            <span class="truncate" x-text="page.title"></span>
+                            <span class="badge badge-xs badge-primary justify-self-end" x-show="page.role === 'wrapper'" x-text="t('components.wrapper')"></span>
+                          </a>
                         </li>
                       </template>
                     </ul>

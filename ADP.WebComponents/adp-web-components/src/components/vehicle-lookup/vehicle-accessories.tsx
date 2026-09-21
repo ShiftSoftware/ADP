@@ -140,7 +140,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
       authorized: this.vehicleLookup?.isAuthorized,
       hasRecords: (this.vehicleLookup?.accessories?.length ?? 0) > 0,
     });
-    this.currentVerdict = verdict.state;
+    this.currentVerdict = verdict.accent;
 
     const texts = this.locale;
     const accessories = this?.vehicleLookup?.accessories ? this.vehicleLookup?.accessories : [];
@@ -192,7 +192,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
         <VehicleInfoLayout
           isError={this.isError}
-          verdict={verdict.state}
+          verdict={verdict.accent}
           isLoading={this.isLoading}
           coreOnly={this.coreOnly}
           header={this.vehicleLookup?.vin}

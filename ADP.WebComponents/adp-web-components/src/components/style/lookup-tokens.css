@@ -35,7 +35,7 @@
   --shadow: 0 18px 45px rgba(27, 45, 61, 0.1), 0 2px 7px rgba(27, 45, 61, 0.06);
   /* One duration for everything that appears, disappears or resizes, so a card settles as a
      single movement instead of a sequence of unrelated ones. */
-  --settle: 320ms;
+  --settle: 820ms;
   /* The two faces, one per script (owner, 2026-09-20). A panel sets --font-sans on its root and
      --font-arabic on a root whose dir is rtl — Arabic and Kurdish are the family's two RTL locales,
      so the direction the locale already declares is the switch, and no root needs to know the

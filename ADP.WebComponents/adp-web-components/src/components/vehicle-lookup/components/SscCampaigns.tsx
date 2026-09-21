@@ -9,7 +9,7 @@ import { SscRepairTraceDTO } from '~types/generated/vehicle-lookup/ssc-repair-tr
 import { SscRepairTraceLaborLineDTO } from '~types/generated/vehicle-lookup/ssc-repair-trace-labor-line-dto';
 import { SscRepairTraceWarrantyClaimDTO } from '~types/generated/vehicle-lookup/ssc-repair-trace-warranty-claim-dto';
 
-import { VerdictState, measurePill } from '~features/vehicle-info-layout';
+import { LookupHeadWait, VerdictState } from '~features/vehicle-info-layout';
 
 import { BADGE_GLYPHS } from './glyphs';
 
@@ -218,18 +218,20 @@ const TONE_GLYPH: Record<Tone, keyof typeof BADGE_GLYPHS> = { positive: 'positiv
 
 /**
  * The split-cap verdict pill shared with the warranty timeline: a solid cap carrying the glyph
- * against a tinted body. Idle keeps the shape and asserts nothing, so a row does not move when
- * the verdict lands; neutral is a statement without a verdict ("not in the records").
+ * against a tinted body. Rendered only when it has words: idle asserts nothing and shows nothing
+ * (owner, 2026-09-21); neutral is a statement without a verdict ("not in the records"). No
+ * transitions of its own — the head's content is out of the band while the verdict changes.
  */
 const StatusBadge = ({ state, text }: { state: VerdictState; text: string }) => {
+  if (state === 'idle' || !text) return null;
   const glyph = BADGE_GLYPH[state];
 
   return (
-    <span class={`status-badge is-${state}`} aria-hidden={state === 'idle' ? 'true' : null} ref={pill => measurePill(pill)}>
+    <span class={`status-badge is-${state}`}>
       <svg class="badge-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
         {glyph && <path fill="currentColor" d={BADGE_GLYPHS[glyph]} />}
       </svg>
-      <span>{state === 'idle' ? '' : text}</span>
+      <span>{text}</span>
     </span>
   );
 };
@@ -534,10 +536,11 @@ export const SscCampaigns: FunctionalComponent<Props> = (props, children) => {
   return (
     <section class="ssc-card" data-verdict={verdict.state} data-phase={busy ? 'busy' : 'settled'}>
       <header class="ssc-head lookup-head-band">
-        <span class="ssc-title lookup-head-content lookup-skeleton">{locale.title}</span>
+        <span class="ssc-title lookup-head-content">{locale.title}</span>
         <div class="ssc-summary lookup-head-content">
           <StatusBadge state={verdict.state} text={verdict.text} />
         </div>
+        <LookupHeadWait />
       </header>
 
       {/* lookup-slide: the region under the head that travels on a composite's tab switch, clipped so it passes under the head, never over it. */}

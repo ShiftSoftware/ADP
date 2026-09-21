@@ -102,8 +102,8 @@ describe('SscCampaigns', () => {
   it('asserts nothing before a vehicle has been looked up', async () => {
     const page = await render({ vehicleLoaded: false });
 
-    expect(badge(page)?.classList.contains('is-idle')).toBe(true);
-    expect(badge(page)?.getAttribute('aria-hidden')).toBe('true');
+    // Nothing to say, so no pill: the head is the title alone.
+    expect(badge(page)).toBeNull();
     expect(verdictOf(page)).toBe('idle');
     // The strip is a skeleton and the body is shut: no headings, no rows, nothing said.
     expect(leadOf(page)).toBe('skeleton');

@@ -3,7 +3,6 @@
   "direction": "ltr",
   "language": "русский",
   "noData": "Данных нет.",
-  "onRecord": "Есть записи",
   "noRecords": "Записей нет",
   "notInRecords": "Нет в записях дистрибьютора"
 }

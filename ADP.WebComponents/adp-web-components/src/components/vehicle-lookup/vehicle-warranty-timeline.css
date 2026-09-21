@@ -26,8 +26,9 @@
   container-name: warranty-panel;
   /* How tall the body's text grows as it leaves — vertical only (owner, 2026-09-20): a line that
      also grew sideways spread its words apart and pushed its ends toward the card's edges, and
-     read as a lunge. The head's text is the wrapper's to move (--head-leave-scale, the same
-     figure); this is for the journey's pills and the notice. */
+     read as a lunge. The head's content is the wrapper's to move (it drops out of the band and a
+     spinner takes its place, vehicle-info-layout.css); this is for the journey's pills and the
+     notice. */
   --leave-scale: 1.25;
   /* The rail leaves as one piece and is far wider than a line of text, so it needs much less to
      read as the same movement — 1.25 across 900px is a lurch, not a lift. */
@@ -65,16 +66,13 @@
 
 /* Grows about its own centre line: with no horizontal growth, no word can be pushed over the
    card's edge, so the text needs no anchoring to the edge it is set from. The head — title,
-   broker, total — is not here: its words become sheen bars where they stand, by the wrapper's
-   .lookup-skeleton rule, the same as every other panel's head. */
+   broker, total — is not here: its content drops out of the band and the wait spinner rises in
+   its place, by the wrapper's .loading .lookup-head-content and .lookup-head-wait rules, the
+   same as every other panel's head. */
 .loading .status-badge > span,
 .loading .warranty-notice > span {
   opacity: 0;
   transform: scaleY(var(--leave-scale));
-}
-
-.loading .total-coverage {
-  border-inline-start-color: #dcdfe4;
 }
 
 /* Glyphs fade without growing: they are stretched caps rather than lettering, and scaling them
@@ -412,15 +410,11 @@
   background: transparent;
   border: 0;
   border-inline-start: 2px solid var(--green);
-  /* The rail is a verdict's colour; in flight it is a skeleton of its own, the sheen grey, and
-     returns with the data. */
-  transition: border-color var(--settle) ease;
   border-radius: 0;
   white-space: nowrap;
 }
 
-/* The caption over the mix, as one group: one skeleton bar in flight, so the bar is exactly the
-   two lines' box. */
+/* The caption over the mix, as one group. */
 .total-coverage .total-text {
   display: grid;
   grid-template-rows: auto auto;
