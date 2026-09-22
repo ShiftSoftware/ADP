@@ -142,7 +142,7 @@
           "BrandID": 1,
           "VariantCode": "VAR001",
           "Katashiki": "MXAA52L-ANXGP",
-          "ExteriorColorCode": "1G3",
+          "ExteriorColorCode": "040",
           "InteriorColorCode": "LA20",
           "ModelDescription": "RAV4 2.0L 4WD",
           "ModelCode": "42605",
@@ -221,7 +221,7 @@
           "BrandID": 1,
           "VariantCode": "72310QX202601",
           "Katashiki": "QFN480R-PBXTVA",
-          "ExteriorColorCode": "923",
+          "ExteriorColorCode": "Q23",
           "InteriorColorCode": "LA20",
           "ProductionDate": "2026-02-01",
           "ModelYear": 2026
@@ -260,7 +260,7 @@
           "BrandID": 1,
           "VariantCode": "50127RD202601",
           "Katashiki": "DKZD22F-HWQLM",
-          "ExteriorColorCode": "553",
+          "ExteriorColorCode": "254",
           "InteriorColorCode": "26",
           "ModelYear": 2026
         }
@@ -298,7 +298,7 @@
           "BrandID": 1,
           "VariantCode": "88406LM202501",
           "Katashiki": "FZP502K-TRMDVA",
-          "ExteriorColorCode": "085",
+          "ExteriorColorCode": "042",
           "InteriorColorCode": "75",
           "ProductionDate": "2025-03-01",
           "ModelYear": 2025

@@ -282,7 +282,7 @@
       "vin": "ZS8WJEXK506960999",
       "variant": "FZI760M-TYBGDG-E1-085-75",
       "katashiki": "FZI760M-TYBGDG",
-      "color": "085",
+      "color": "Q85",
       "trim": "75",
       "brandID": "2"
     },
@@ -857,7 +857,7 @@
       "vin": "ZS8EU8AK406452424",
       "variant": "FZP174S-FGEVWQ-X8-085-75",
       "katashiki": "FZP174S-FGEVWQ",
-      "color": "085",
+      "color": "Q85",
       "trim": "75",
       "brandID": "2"
     },
@@ -1927,7 +1927,7 @@
       "vin": "ZS88F5CL80J407317",
       "variant": "KYFF24I-DXDRP-80-923-75",
       "katashiki": "KYFF24I-DXDRP",
-      "color": "923",
+      "color": "Q23",
       "trim": "75",
       "brandID": "2"
     },
@@ -2316,7 +2316,7 @@
       "vin": "ZU8GGTUK902057683",
       "variant": "DJTG00X-CFQUKH-TE-085-75",
       "katashiki": "DJTG00X-CFQUKH",
-      "color": "085",
+      "color": "Q85",
       "trim": "75",
       "brandID": "2"
     },
@@ -2512,7 +2512,7 @@
       "vin": "ZT8STYDZ00B925664",
       "variant": "DTI942Z-PCMMGC-U3-923-63",
       "katashiki": "DTI942Z-PCMMGC",
-      "color": "923",
+      "color": "Q23",
       "trim": "63",
       "brandID": "2"
     },
@@ -3105,7 +3105,7 @@
       "vin": "ZT8STYDZ501002487",
       "variant": "DTI942Z-PCMMGC-U3-923-63",
       "katashiki": "DTI942Z-PCMMGC",
-      "color": "923",
+      "color": "Q23",
       "trim": "63",
       "brandID": "2"
     },
@@ -4002,7 +4002,7 @@
       "vin": "ZT8STYDZ40B819962",
       "variant": "DTI942Z-PCMDJE-I1-923-75",
       "katashiki": "DTI942Z-PCMDJE",
-      "color": "923",
+      "color": "Q23",
       "trim": "75",
       "brandID": "2"
     },
@@ -4280,7 +4280,7 @@
       "vin": "ZS8EU8AK606178045",
       "variant": "FZP174S-FGEVWQ-X8-085-53",
       "katashiki": "FZP174S-FGEVWQ",
-      "color": "085",
+      "color": "Q85",
       "trim": "53",
       "brandID": "2"
     },
@@ -5348,7 +5348,7 @@
       "vin": "ZT8F9VVT502643013",
       "variant": "KYAM38D-RQOMYO-D9-923-66",
       "katashiki": "KYAM38D-RQOMYO",
-      "color": "923",
+      "color": "Q23",
       "trim": "66",
       "brandID": "2"
     },

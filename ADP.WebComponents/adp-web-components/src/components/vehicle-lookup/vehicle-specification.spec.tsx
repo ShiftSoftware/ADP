@@ -335,7 +335,9 @@ describe('vehicle-specification', () => {
     expect(values()).toHaveLength(8);
     expect(shadow(page).querySelectorAll('.spec-identity .spec-value-content[data-empty="true"]')).toHaveLength(0);
     expect(text(page, '.spec-cell[data-label="Katashiki"] .spec-value')).toBe('DTI942Z-PCMDJC');
-    expect(text(page, '.spec-cell[data-label="Exterior colour"] .spec-value')).toBe('923 · HARBOR GREY METALLIC');
+    // The distributor's own name for a real paint code: the name the backend resolved, which wins
+    // over the catalogue's wording for the same code. No swatch here — this page sets no brandSlugs.
+    expect(text(page, '.spec-cell[data-label="Exterior colour"] .spec-value')).toBe('1G3 · GRAPHITE METALLIC');
     // A loaded vehicle with nothing in the slot reads as a dash, and the block says so.
     expect(shadow(page).querySelector('.spec-cell[data-label="Production date"] .spec-value')?.getAttribute('data-role')).toBe('empty');
   });
