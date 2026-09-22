@@ -555,35 +555,37 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
               details has no block at all and got there by sliding rather than by vanishing. */}
           <div class="spec-details collapsible" data-open={shellOpen ? 'true' : 'false'} data-empty={groups.length ? 'false' : 'true'} aria-hidden={shellOpen ? null : 'true'}>
             <div class="collapsible-body">
-              <div class="spec-details-summary">
-                {/* A heading for the region, not a label for the button: it reads the same open or
-                    shut, so only the trigger's words and its chevron change. */}
+              {/*
+                The whole row is the control, not just the mark at its end. The row is what the
+                reader is looking at -- the group names and the count are the promise the trigger
+                acts on -- and a 30px target beside a full-width row is a smaller thing to hit than
+                the thing it belongs to. The round mark stays exactly as it was, now painted by the
+                row's own states rather than carrying them itself.
+
+                Its words key off regionOpen, the same state aria-expanded reports.
+              */}
+              <button
+                type="button"
+                class="spec-details-summary"
+                aria-expanded={regionOpen ? 'true' : 'false'}
+                aria-controls="spec-details-region"
+                title={regionOpen ? locale.collapseDetails : locale.expandDetails}
+                aria-label={regionOpen ? locale.collapseDetails : locale.expandDetails}
+                onClick={onToggleDetails}
+              >
                 <span class="spec-details-caption">
                   <span class="spec-details-names">{summary.names}</span>
                   <span class="spec-details-count">{summary.count}</span>
                 </span>
 
-                {/* The language's outlined round trigger, the SSC's trace button's geometry,
-                    colours, states, transitions and focus ring verbatim — with a chevron instead of
-                    the question mark, which in this family means "why this status?", and with no
-                    spinner, because nothing is fetched: the fields are already in the response.
-
-                    Its words key off regionOpen, the same state aria-expanded reports. They used to
-                    key off detailsOpen, which disagrees with it while the shell is shut: no
-                    reachable state exposed the difference, but it would have become a lie the
-                    moment the shell was reachable while shut. */}
-                <button
-                  type="button"
-                  class="spec-details-button"
-                  aria-expanded={regionOpen ? 'true' : 'false'}
-                  aria-controls="spec-details-region"
-                  title={regionOpen ? locale.collapseDetails : locale.expandDetails}
-                  aria-label={regionOpen ? locale.collapseDetails : locale.expandDetails}
-                  onClick={onToggleDetails}
-                >
+                {/* The language's outlined round mark, the SSC trace button's geometry and colours
+                    verbatim -- with a chevron instead of the question mark, which in this family
+                    means "why this status?". A span now: the row around it is the button, and a
+                    button inside a button is not a thing. */}
+                <span class="spec-details-button" aria-hidden="true">
                   <ArrowIcon class="spec-details-chevron" />
-                </button>
-              </div>
+                </span>
+              </button>
 
               <div id="spec-details-region" class="collapsible" data-open={regionOpen ? 'true' : 'false'} aria-hidden={regionOpen ? null : 'true'}>
                 <div class="collapsible-body">

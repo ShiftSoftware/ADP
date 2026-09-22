@@ -337,7 +337,8 @@ describe('vehicle-specification', () => {
 
     const shell = () => shadow(page).querySelector('.spec-details');
     const region = () => shadow(page).querySelector('#spec-details-region');
-    const trigger = () => shadow(page).querySelector('.spec-details-button') as HTMLButtonElement;
+    // The whole summary row is the control; the round mark inside it is decoration.
+    const trigger = () => shadow(page).querySelector('.spec-details-summary') as HTMLButtonElement;
 
     expect(shell()?.getAttribute('data-open')).toBe('true');
     expect(region()?.getAttribute('data-open')).toBe('true');
@@ -804,9 +805,32 @@ describe('vehicle-specification — the details block', () => {
     expect(shell?.getAttribute('data-open')).toBe('false');
     expect(shell?.getAttribute('data-empty')).toBe('true');
     expect(shell?.getAttribute('aria-hidden')).toBe('true');
-    expect(shadow(page).querySelector('.spec-details-button')?.getAttribute('aria-expanded')).toBe('false');
+    expect(shadow(page).querySelector('.spec-details-summary')?.getAttribute('aria-expanded')).toBe('false');
     // The identity grid is unaffected: it is the fixed structure and never shuts.
     expect(shadow(page).querySelectorAll('.spec-identity .spec-value')).toHaveLength(8);
+  });
+
+  it('toggles from anywhere on the summary row, not only from the mark at its end', async () => {
+    const page = await newPage(edgeCaseMocks);
+    await owner(page).fetchVin('ZT8VC4MH7TB552731');
+    await page.waitForChanges();
+
+    const row = shadow(page).querySelector('.spec-details-summary') as HTMLButtonElement;
+    const region = () => shadow(page).querySelector('#spec-details-region');
+
+    // The row is the control: the names and the count are inside it, and the round mark is a span.
+    expect(row.tagName).toBe('BUTTON');
+    expect(row.querySelector('.spec-details-names')).not.toBeNull();
+    expect(row.querySelector('.spec-details-count')).not.toBeNull();
+    expect(shadow(page).querySelector('.spec-details-button')?.tagName).toBe('SPAN');
+    expect(shadow(page).querySelector('.spec-details-button')?.getAttribute('aria-hidden')).toBe('true');
+
+    // Clicking the words shuts it, exactly as clicking the mark did.
+    expect(region()?.getAttribute('data-open')).toBe('true');
+    (row.querySelector('.spec-details-names') as HTMLElement).click();
+    await page.waitForChanges();
+    expect(region()?.getAttribute('data-open')).toBe('false');
+    expect(row.getAttribute('aria-expanded')).toBe('false');
   });
 
   it('brings the next vehicle back expanded after a clear', async () => {
@@ -814,7 +838,7 @@ describe('vehicle-specification — the details block', () => {
 
     await owner(page).fetchVin(RICH_VIN);
     await page.waitForChanges();
-    (shadow(page).querySelector('.spec-details-button') as HTMLButtonElement).click();
+    (shadow(page).querySelector('.spec-details-summary') as HTMLButtonElement).click();
     await page.waitForChanges();
     expect(shadow(page).querySelector('#spec-details-region')?.getAttribute('data-open')).toBe('false');
 
@@ -826,7 +850,7 @@ describe('vehicle-specification — the details block', () => {
     await owner(page).fetchVin(RICH_VIN);
     await page.waitForChanges();
     expect(shadow(page).querySelector('#spec-details-region')?.getAttribute('data-open')).toBe('true');
-    expect(shadow(page).querySelector('.spec-details-button')?.getAttribute('aria-label')).toBe('Hide the details');
+    expect(shadow(page).querySelector('.spec-details-summary')?.getAttribute('aria-label')).toBe('Hide the details');
   });
 });
 
@@ -854,7 +878,7 @@ describe('vehicle-specification — direction and language', () => {
     expect(text(page, '.spec-lead-caption-label')).toBe(arabicLocale.identity);
     expect(shadow(page).querySelector(`.spec-cell[data-label="${arabicLocale.exteriorColour}"]`)).not.toBeNull();
     expect(text(page, '.spec-details-names')).toBe(`${arabicLocale.powertrain} · ${arabicLocale.body}`);
-    expect(shadow(page).querySelector('.spec-details-button')?.getAttribute('aria-label')).toBe(arabicLocale.collapseDetails);
+    expect(shadow(page).querySelector('.spec-details-summary')?.getAttribute('aria-label')).toBe(arabicLocale.collapseDetails);
     // The identity grid is still the same eight slots: a language is a re-layout, not a state.
     expect(shadow(page).querySelectorAll('.spec-identity .spec-value')).toHaveLength(8);
 

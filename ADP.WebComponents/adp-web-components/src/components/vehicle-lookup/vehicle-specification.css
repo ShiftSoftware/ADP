@@ -378,13 +378,40 @@
 }
 
 /* 10 keeps the 30px trigger clear of the rule above it. */
+/* A button, so it carries no UA chrome of its own and spans the block: the row IS the control. */
 .spec-details-summary {
   display: flex;
+  width: 100%;
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
   justify-content: space-between;
   padding: 10px 20px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+/* The round mark reads the row's states rather than its own -- it is a span now. */
+.spec-details-summary:hover .spec-details-button,
+.spec-details-summary[aria-expanded='true'] .spec-details-button {
+  color: #ffffff;
+  background: var(--blue);
+  border-color: var(--blue-dark);
+}
+
+/* The ring goes on the mark, not round the whole band: a 2px outline on a full-width row reads as
+   the block being selected rather than as a control being focused. */
+.spec-details-summary:focus-visible {
+  outline: none;
+}
+
+.spec-details-summary:focus-visible .spec-details-button {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }
 
 .spec-details-caption {
@@ -396,10 +423,10 @@
 }
 
 .spec-details-names {
-  color: var(--muted);
+  color: var(--ink);
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-weight: 760;
+  letter-spacing: 0.08em;
   line-height: 1.2;
   text-transform: uppercase;
 }
@@ -429,23 +456,10 @@
   background: var(--paper);
   border: 1px solid rgba(48, 113, 169, 0.32);
   border-radius: 999px;
-  cursor: pointer;
   transition:
     color var(--settle) ease,
     background var(--settle) ease,
     border-color var(--settle) ease;
-}
-
-.spec-details-button:hover,
-.spec-details-button[aria-expanded='true'] {
-  color: #ffffff;
-  background: var(--blue);
-  border-color: var(--blue-dark);
-}
-
-.spec-details-button:focus-visible {
-  outline: 2px solid var(--blue);
-  outline-offset: 2px;
 }
 
 /* A chevron, not the family's question mark: `question` means "why this status?" here, and a second
@@ -458,25 +472,36 @@
   transition: transform var(--settle) ease;
 }
 
-.spec-details-button[aria-expanded='true'] .spec-details-chevron {
+.spec-details-summary[aria-expanded='true'] .spec-details-chevron {
   transform: rotate(180deg);
 }
 
 /* 4 rather than 12 at the top: the summary row has already given the block its air. */
 .spec-group {
   display: block;
-  padding: 4px 20px 14px;
+  padding: 4px 20px 16px;
 }
 
+.spec-group + .spec-group {
+  padding-top: 8px;
+}
+
+/* A group heading, not another field label. It was byte-identical to `.spec-cell-label` -- same
+   size, weight, colour, tracking and case -- so "Powertrain" read as a peer of "Engine type" and
+   the grouping carried no weight at all. It takes the ink and the code weight the language gives a
+   value, and a hairline across the block under it: the rule is what makes the group a section
+   rather than one more label in the run (owner, 2026-09-22). */
 .spec-group-label {
   display: block;
-  margin-bottom: 6px;
-  color: var(--muted);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  color: var(--ink);
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-weight: 760;
+  letter-spacing: 0.08em;
   line-height: 1.2;
   text-transform: uppercase;
+  box-shadow: inset 0 -1px 0 var(--line-soft);
 }
 
 /* A step denser than tier 1 on both figures: these values are short words ("Automatic", "Diesel",
