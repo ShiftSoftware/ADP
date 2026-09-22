@@ -6,6 +6,7 @@ import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup
 
 import { ArrowIcon } from '~assets/arrow-icon';
 
+import { ColourEntry } from '~features/colour-catalogue';
 import { LookupHeadWait, PanelVerdict, StatusBadge } from '~features/vehicle-info-layout';
 
 import { BADGE_GLYPHS } from './glyphs';
@@ -46,6 +47,13 @@ type Props = SpecPanelState & {
   verdict: Pick<PanelVerdict, 'state' | 'text'>;
   /** The locale's language tag, for the production date's month name. */
   language: string;
+  /**
+   * This vehicle's brand's exterior paint table, already resolved through the host's `brandSlugs`
+   * map — a plain code → colour table with no brand id in it, so the barrier holds by type. Absent
+   * whenever the host configured no map, the brand is unmapped, or the chunk has not arrived, and
+   * every one of those reads as "no catalogue", which is a complete state.
+   */
+  exteriorColours?: Record<string, ColourEntry>;
   /** The groups this vehicle has, from `detailGroups` — empty when it has no tier-2 value at all. */
   groups: DetailGroup[];
   /**

@@ -88,6 +88,13 @@ export class VehicleLookup implements MultiLingual {
    * joins the panel's trace request: a trace re-reads a lookup that was already logged.
    */
   @Prop() sscQueryString: string = '';
+  /**
+   * Forwarded to the specification tab unchanged: the host's own `brandID → brand slug` map, which
+   * is the only way the paint-colour catalogue can be keyed (`~features/colour-catalogue`). The
+   * composite neither reads it nor defaults it — a panel-level setting passing through, exactly
+   * like `today` or `queryString`.
+   */
+  @Prop() brandSlugs?: Record<string, string> | string;
   @Prop() hiddenTabs: string = '';
   /**
    * The host's tab strip order, as a comma-separated list of tags, so a switch travels the way the
@@ -421,6 +428,7 @@ export class VehicleLookup implements MultiLingual {
           today={this.today}
           language={this.language}
           query-string={this.queryString}
+          brandSlugs={this.brandSlugs}
           id={componentTags.vehicleSpecification}
           data-tab-park={park(componentTags.vehicleSpecification)}
           data-tab-leaving={leaving(componentTags.vehicleSpecification)}
