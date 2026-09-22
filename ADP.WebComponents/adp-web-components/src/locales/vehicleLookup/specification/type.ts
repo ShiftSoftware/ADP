@@ -13,7 +13,6 @@ const specification = object({}).concat(
     'recordYearNote',
     'exteriorColour',
     'interiorColour',
-    'swatchCaveat',
     'identity',
     'powertrain',
     'body',

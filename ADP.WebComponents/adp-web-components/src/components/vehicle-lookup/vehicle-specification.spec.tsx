@@ -128,41 +128,30 @@ describe('vehicle-specification — the derivations', () => {
     expect(disagreeing[3].note).toBe('record: 2024');
   });
 
-  it('resolves the paint colour by the four branches, and never guesses one', () => {
+  it('reads the paint colour as the code and the distributor’s name, and nothing else', () => {
     const locale = specificationLocale as any;
-    const table = {
-      '1G3': { name: 'Magnetic Gray Metallic', approxHex: '#59585d', finish: 'metallic' as const },
-      '042': { name: 'White Pearl', finish: 'pearl' as const },
-    };
-    const colour = (identifiers: object, spec: object = {}, catalogue = table) => exteriorColour({ identifiers, vehicleSpecification: spec } as any, locale, catalogue);
+    const colour = (identifiers: object, spec: object = {}) => exteriorColour({ identifiers, vehicleSpecification: spec } as any);
 
-    // A swatch, and no name: the catalogue knew the code and had a hex for it, but a catalogue
-    // knows a code, not a car, so it is never allowed to name one. Its `name` is provenance.
-    expect(colour({ color: '1G3' })).toEqual({ code: '1G3', name: '', swatch: { hex: '#59585d', finish: 'metallic', caveat: locale.swatchCaveat } });
+    // The code alone, when the distributor resolved no name for it. Never a colour drawn from the
+    // code: a reference table keyed by a code knows neither the model nor the year, so a depiction
+    // of the paint would be a claim this panel cannot stand behind.
+    expect(colour({ color: '1G3' })).toEqual({ code: '1G3', name: '' });
 
-    // The backend's name is the only name there is. The catalogue supplies the swatch beside it.
-    expect(colour({ color: '1G3' }, { exteriorColor: 'GRAPHITE METALLIC' }).name).toBe('GRAPHITE METALLIC');
+    // The distributor's name is the only name there is.
+    expect(colour({ color: '1G3' }, { exteriorColor: 'GRAPHITE METALLIC' })).toEqual({ code: '1G3', name: 'GRAPHITE METALLIC' });
 
-    // An entry with no defensible hex draws no swatch — and still names nothing of its own.
-    expect(colour({ color: '042' })).toEqual({ code: '042', name: '', swatch: undefined });
+    // A name with no code, and a slot the record left empty.
+    expect(colour({}, { exteriorColor: 'Storm Grey' })).toEqual({ code: '', name: 'Storm Grey' });
+    expect(colour({})).toEqual({ code: '', name: '' });
 
-    // A code nothing resolved reads as the code alone — no swatch, no invented colour, no label.
-    expect(colour({ color: '254' })).toEqual({ code: '254', name: '', swatch: undefined });
-    // ... and so does every code when the host configured no catalogue at all.
-    expect(exteriorColour({ identifiers: { color: '1G3' } } as any, locale, undefined)).toEqual({ code: '1G3', name: '', swatch: undefined });
-
-    // A host that resolves a name without a code, and a slot the record left empty.
-    expect(colour({}, { exteriorColor: 'Storm Grey' })).toEqual({ code: '', name: 'Storm Grey', swatch: undefined });
-    expect(colour({})).toEqual({ code: '', name: '', swatch: undefined });
-
-    // The interior cell has no catalogue and never a swatch, whatever the exterior resolved.
-    expect(identityCells({ identifiers: { color: '1G3', trim: 'LA20' } } as any, locale, 'en', true, table)[7].colour).toEqual({ code: 'LA20', name: '' });
+    // The interior cell reads the same way.
+    expect(identityCells({ identifiers: { color: '1G3', trim: 'LA20' } } as any, locale, 'en', true)[7].colour).toEqual({ code: 'LA20', name: '' });
   });
 
-  it('draws the swatch inside the covered value block, with the caveat and no verdict shape', async () => {
+  it('draws no depiction of the paint, whatever the code', async () => {
     const page = await newSpecPage({
       components: [VehicleSpecification],
-      html: `<vehicle-specification is-dev="true" brand-slugs='{"1":"toyota"}'></vehicle-specification>`,
+      html: `<vehicle-specification is-dev="true"></vehicle-specification>`,
     });
     await (page.rootInstance as VehicleSpecification).setMockData(vehicleLookupMocks as any);
 
@@ -171,24 +160,15 @@ describe('vehicle-specification — the derivations', () => {
 
     const cell = shadow(page).querySelector('.spec-cell[data-label="Exterior colour"]');
     const value = cell?.querySelector('.spec-value');
-    const swatch = cell?.querySelector('.spec-swatch') as HTMLElement;
 
-    // The code and the chip, and no name: this vehicle's record resolved none, and the catalogue
-    // does not get to supply one.
+    // A real manufacturer code whose colour is widely published, and the panel still shows only the
+    // code: it knows neither the model nor the year, so it cannot say what the car looks like.
     expect(cell?.textContent).toContain('1G3');
     expect(cell?.textContent).not.toContain('Magnetic Gray Metallic');
-    // Inside the one covered block, so it comes up with its row and never on a beat of its own.
     expect(value?.classList.contains('shift-skeleton')).toBe(true);
-    expect(value?.querySelector('.spec-swatch')).toBe(swatch);
-    expect(swatch?.style.background).toBe('#59585d');
-    expect(swatch?.getAttribute('data-finish')).toBe('metallic');
-    // A depiction: hidden from the reader who cannot see it, its meaning the words beside it.
-    expect(swatch?.getAttribute('aria-hidden')).toBe('true');
-    expect(swatch?.getAttribute('title')).toBe((specificationLocale as any).swatchCaveat);
-    expect(value?.getAttribute('aria-description')).toBe((specificationLocale as any).swatchCaveat);
-
-    // The interior code is real and the catalogue has no interior table: code, no swatch.
-    expect(shadow(page).querySelectorAll('.spec-swatch')).toHaveLength(1);
+    expect(shadow(page).querySelectorAll('.spec-swatch')).toHaveLength(0);
+    // Nothing is left behind the old depiction either: no caveat to explain a mark that is gone.
+    expect(shadow(page).querySelector('.spec-value[aria-description]')).toBeNull();
   });
 
   it('shows the production date at the granularity the record means', () => {
@@ -342,7 +322,7 @@ describe('vehicle-specification', () => {
     expect(shadow(page).querySelectorAll('.spec-identity .spec-value-content[data-empty="true"]')).toHaveLength(0);
     expect(text(page, '.spec-cell[data-label="Katashiki"] .spec-value')).toBe('DTI942Z-PCMDJC');
     // The distributor's own name for a real paint code: the name the backend resolved, which wins
-    // over the catalogue's wording for the same code. No swatch here — this page sets no brandSlugs.
+    // The distributor's wording is the only wording: nothing else may name a paint code.
     expect(text(page, '.spec-cell[data-label="Exterior colour"] .spec-value')).toBe('1G3 · GRAPHITE METALLIC');
     // A loaded vehicle with nothing in the slot reads as a dash, and the block says so.
     expect(shadow(page).querySelector('.spec-cell[data-label="Production date"] .spec-value')?.getAttribute('data-role')).toBe('empty');
@@ -594,7 +574,7 @@ describe('vehicle-specification — the head statement in every state', () => {
 
 describe('vehicle-specification — the invariants', () => {
   it('says nothing about a vehicle the distributor has no record of, whatever the response carries', async () => {
-    const page = await newPageWith(`brand-slugs='{"1":"toyota"}'`);
+    const page = await newPageWith('');
 
     // Everything populated, and every bit of it the distributor's to withhold: the VIN is not in
     // its systems, so nothing in the response is its to assert.
@@ -627,8 +607,8 @@ describe('vehicle-specification — the invariants', () => {
     expect(shadow(page).querySelectorAll('.spec-identity .spec-value[data-role="empty"]')).toHaveLength(8);
     expect(shadow(page).querySelectorAll('.spec-identity .spec-value-content[data-empty="true"]')).toHaveLength(0);
 
-    // No details block, and no swatch — the paint code is real and the catalogue is configured, and
-    // it is still not the distributor's to draw.
+    // No details block, and no colour of any kind — the paint code is real, and it is still not
+    // the distributor's to assert.
     expect(shadow(page).querySelector('.spec-details')?.getAttribute('data-empty')).toBe('true');
     expect(shadow(page).querySelector('.spec-details')?.getAttribute('aria-hidden')).toBe('true');
     expect(shadow(page).querySelectorAll('.spec-swatch')).toHaveLength(0);
@@ -738,98 +718,51 @@ describe('vehicle-specification — the model year', () => {
 });
 
 describe('vehicle-specification — the colour cell, branch by branch', () => {
-  it('draws a swatch only where the catalogue has a defensible hex, and never invents one', async () => {
-    const page = await newPageWith(`brand-slugs='{"1":"toyota"}'`, edgeCaseMocks);
+  it('shows the code, the distributor s name when there is one, and never a colour', async () => {
+    const page = await newPageWith('', edgeCaseMocks);
     const read = () => colourValue(page);
-    const swatch = () => colourCell(page)?.querySelector('.spec-swatch') as HTMLElement | null;
 
-    // A metallic code the catalogue knows, with a hex. The backend named nothing, so the cell is
-    // the code and the chip: the swatch carries the finish, and no word is invented for it.
-    await owner(page).fetchVin('ZW8UWF8J4TJ368365');
-    await page.waitForChanges();
-    expect(read()).toBe('1G3');
-    expect(swatch()?.getAttribute('data-finish')).toBe('metallic');
-    expect(swatch()?.style.background).toBe('#59585d');
+    // Four real manufacturer codes, each with a published colour. All four read as the code alone,
+    // because this environment's distributor resolved no name for them.
+    for (const [vin, code] of [
+      ['ZW8UWF8J4TJ368365', '1G3'],
+      ['ZS8Z4RNS9TC073619', '040'],
+      ['ZS8QK3WR5TD881204', '070'],
+      ['ZU9HB6TM3T4719068', '254'],
+    ] as const) {
+      await owner(page).fetchVin(vin);
+      await page.waitForChanges();
+      expect(read()).toBe(code);
+      // The part that has to be asserted rather than assumed: no "unknown" label of any kind, and
+      // no dash — the record has a code, so the cell is not empty.
+      expect(colourCell(page)?.querySelector('.spec-value')?.getAttribute('data-role')).toBe('code');
+      expect(colourCell(page)?.textContent?.toLowerCase()).not.toContain('unknown');
+      expect(colourCell(page)?.textContent).not.toContain('—');
+    }
 
-    // A solid finish: the same recipe, a different data-finish, no highlight to claim.
-    await owner(page).fetchVin('ZS8Z4RNS9TC073619');
-    await page.waitForChanges();
-    expect(read()).toBe('040');
-    expect(swatch()?.getAttribute('data-finish')).toBe('solid');
-
-    // A pearl finish.
-    await owner(page).fetchVin('ZS8QK3WR5TD881204');
-    await page.waitForChanges();
-    expect(read()).toBe('070');
-    expect(swatch()?.getAttribute('data-finish')).toBe('pearl');
-
-    // A code the catalogue names but has no defensible hex for: a name and no swatch, which is a
-    // complete answer and not a degraded one.
-    await owner(page).fetchVin('ZW8PD9FK1T6034557');
-    await page.waitForChanges();
-    expect(read()).toBe('042');
-    expect(swatch()).toBeNull();
-
-    // A real code the catalogue does not carry: the code alone. No swatch, no guessed colour, and —
-    // the part that has to be asserted rather than assumed — no "unknown" label of any kind.
-    await owner(page).fetchVin('ZU9HB6TM3T4719068');
-    await page.waitForChanges();
-    expect(read()).toBe('254');
-    expect(swatch()).toBeNull();
-    expect(colourCell(page)?.querySelector('.spec-value')?.getAttribute('data-role')).toBe('code');
-    expect(colourCell(page)?.textContent?.toLowerCase()).not.toContain('unknown');
-    expect(colourCell(page)?.textContent).not.toContain('—');
-
-    // A code nothing anywhere can know.
-    await owner(page).fetchVin('ZT8VC4MH7TB552731');
-    await page.waitForChanges();
-    expect(read()).toBe('Q23');
-    expect(swatch()).toBeNull();
+    expect(shadow(page).querySelectorAll('.spec-swatch')).toHaveLength(0);
   });
 
-  it('prints the name the distributor resolved over the catalogue s, and still draws the catalogue s chip', async () => {
-    const page = await newPageWith(`brand-slugs='{"1":"toyota"}'`, brokerMarketMocks);
+  it('prints the name the distributor resolved, and only that', async () => {
+    const page = await newPageWith('', brokerMarketMocks);
 
-    // The same real code the catalogue calls "Magnetic Gray Metallic": the distributor's own word
-    // is printed, and the chip beside it is still the catalogue's, because there is no hex anywhere
-    // in the response.
     await owner(page).fetchVin(RICH_VIN);
     await page.waitForChanges();
 
+    // A real code that published sources call "Magnetic Gray Metallic". The distributor's own word
+    // is what is printed, and no other wording appears from anywhere.
     expect(colourValue(page)).toBe('1G3 · GRAPHITE METALLIC');
-    expect(colourCell(page)?.querySelector('.spec-swatch')?.getAttribute('data-finish')).toBe('metallic');
     expect(colourCell(page)?.textContent).not.toContain('Magnetic Gray Metallic');
   });
 
-  it('draws nothing for a brand the host did not map, and nothing for a response with no brand id', async () => {
-    // The map carries another brand's id. There is no fallback and no guess: an unmapped id has no
-    // slug, a brand with no slug has no table, and a vehicle with no table has no chip.
-    const unmapped = await newPageWith(`brand-slugs='{"9":"toyota"}'`, edgeCaseMocks);
-    await owner(unmapped).fetchVin('ZW8UWF8J4TJ368365');
-    await unmapped.waitForChanges();
-    expect(colourValue(unmapped)).toBe('1G3');
-    expect(unmapped.root.shadowRoot.querySelectorAll('.spec-swatch')).toHaveLength(0);
+  it('dashes for a vehicle the distributor has no records for', async () => {
+    const page = await newPageWith('', brokerMarketMocks);
 
-    // A response with no brandID at all — the same answer, reached without a guess.
-    const missing = await newPageWith(`brand-slugs='{"1":"toyota"}'`);
-    await owner(missing).fetchVin({ vin: 'ZT8P9NAL1LG988010', isAuthorized: true, identifiers: { color: '1G3' } } as any);
-    await missing.waitForChanges();
-    expect(colourValue(missing)).toBe('1G3');
-    expect(missing.root.shadowRoot.querySelectorAll('.spec-swatch')).toHaveLength(0);
-  });
-
-  it('puts no catalogue output on a vehicle the distributor has no records for', async () => {
-    const page = await newPageWith(`brand-slugs='{"1":"toyota"}'`, brokerMarketMocks);
-
-    // Authorized, but the record is empty. There is no code to look up, so there is no name and no
-    // chip — the cell dashes like every other, and the catalogue is not consulted for a fallback.
     await owner(page).fetchVin(EMPTY_RECORD_VIN);
     await page.waitForChanges();
 
     expect(colourCell(page)?.querySelector('.spec-value')?.getAttribute('data-role')).toBe('empty');
     expect(colourValue(page)).toBe('—');
-    expect(shadow(page).querySelectorAll('.spec-swatch')).toHaveLength(0);
-    expect(shadow(page).querySelector('.spec-value[aria-description]')).toBeNull();
   });
 });
 
@@ -994,14 +927,11 @@ describe('vehicle-specification — direction and language', () => {
 
 describe('vehicle-specification — the barrier', () => {
   it('leaks nothing from outside the five sub-objects through text, an attribute or a title', async () => {
-    // The host maps the leak-marker brand id itself, so the panel really does read `brandID` on
-    // this render — it is the key that reaches the catalogue and draws the chip below — and the
-    // audit is therefore about a value the panel *held*, not one it never touched.
-    const page = await newPageWith(`brand-slugs='{"BRAND-HASH-ID":"toyota"}'`);
+    const page = await newPageWith('');
 
     // Every sub-object the barrier names, populated with a string that exists nowhere else, plus the
-    // brand id — which the panel is allowed to *read* (it keys the colour catalogue) and forbidden
-    // to put anywhere a reader, a screen reader or a log could find it.
+    // brand id — an internal key the panel must never put anywhere a reader, a screen reader or a
+    // log could find it.
     await owner(page).fetchVin({
       vin: 'ZT8P9NAL1LG988010',
       isAuthorized: true,
@@ -1028,7 +958,7 @@ describe('vehicle-specification — the barrier', () => {
     // The panel did render this vehicle — so the audit below is about what it left out, not about a
     // card that happened to draw nothing at all.
     expect(text(page, '.spec-title-value')).toBe('TALORA');
-    expect(colourCell(page)?.querySelector('.spec-swatch')).not.toBeNull();
+    expect(colourValue(page)).toContain('1G3');
 
     const said = everythingSaid(page);
     [
@@ -1063,7 +993,8 @@ describe('vehicle-specification — the barrier', () => {
     // attributes and titles, not only text, and the values the panel *is* allowed to say must be in
     // what it read — otherwise an empty string would pass every assertion above.
     expect(said).toContain('data-label="Katashiki"');
-    expect(said).toContain('title="On-screen colour is approximate');
+    // A title the panel does render, so the walk is proven to read titles and not only text.
+    expect(said).toContain('title="Hide the details');
     expect(said).toContain('MXAA52L-ANXGP');
     expect(said.split('\n').length).toBeGreaterThan(50);
   });

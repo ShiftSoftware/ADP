@@ -85,9 +85,9 @@
             the reader's — it opens expanded and folds away on the chevron, and that choice survives the next lookup.
           </p>
           <p class="text-base-content/70 mt-2 text-sm">
-            The paint chip beside an exterior colour code comes from a bundled reference table, never from the response — there is no colour in the data, only a code. The name the
-            distributor resolved always wins over the table's; the table is the only source of the chip, and a code it does not carry is shown as the code alone rather than guessed
-            at. The chip is approximate and for identification only, which is what its tooltip says.
+            An exterior colour cell shows the manufacturer's paint code and whatever name the distributor resolved for it — and never a depiction of the paint. A published paint
+            code is unique only with the model and the year it was built under, so a colour drawn from the code alone is a claim about the car this panel cannot stand behind. A
+            code with no resolved name reads as the code, which is a complete answer and not a degraded one.
           </p>
           <p class="text-base-content/70 mt-2 text-sm">
             Each fixture chip says which state it reaches. <strong class="text-accent">Empty</strong> clears the panel back to idle and <strong class="text-accent">Error</strong>
@@ -108,19 +108,9 @@
 
         <!-- No card of the page's own around the component: the component draws the design language's card itself. -->
         <div class="frame">
-          <!--
-            The host's own brandID -> brand-slug map, which is the only way the paint-colour
-            catalogue can be keyed: a brandID is a per-deployment hash id, a slug is a name a
-            catalogue can be written against once. The generated fixtures are anonymised down to
-            "1" and "2", so this page declares what a real host would declare about its own
-            brands — and a demo saying "these vehicles are Toyotas" is what makes the shipped
-            table's real codes resolve. Take the attribute off and every colour cell reads code +
-            name with no swatch, which is a complete state and not a degraded one.
-          -->
           <vehicle-specification
             id="subject"
             language="en"
-            brand-slugs='{"1": "toyota", "2": "toyota"}'
             query-string=""
             error-callback="blazorErrorCallback"
             loaded-response="blazorLoadedResponse"

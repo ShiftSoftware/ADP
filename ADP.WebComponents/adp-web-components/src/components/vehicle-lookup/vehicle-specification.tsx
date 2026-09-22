@@ -3,8 +3,6 @@ import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Wat
 import { createResizeSettle } from '~lib/resize-settle';
 import { createHeightChangeAnnouncer } from '~lib/flexible-parents';
 
-import { BrandSlugs, ColourCatalogue, ColourEntry, exteriorColours, loadColourCatalogue, parseBrandSlugs, slugOf } from '~features/colour-catalogue';
-
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import specificationSchema from '~locales/vehicleLookup/specification/type';
@@ -53,7 +51,6 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   @State() locale: ComponentLocale<typeof specificationSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...specificationSchema.getDefault() };
 
   async componentWillLoad() {
-    this.loadColours();
     await this.changeLanguage(this.language);
   }
 
@@ -73,54 +70,6 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   // #region Vehicle info layout prop
 
   @Prop() coreOnly: boolean = false;
-
-  // #endregion
-
-  // #region The colour catalogue
-
-  /**
-   * Maps the host's own brand ids (`identifiers.brandID`, an opaque hash id from its identity
-   * system) to the brand slugs the colour catalogue is keyed by — `{ "<brandID>": "<slug>" }`.
-   * Accepts an object, or the JSON string of one so a Blazor or plain-HTML host can pass it as an
-   * attribute.
-   *
-   * Without it no swatch is ever drawn and every colour cell reads code + name, which is a complete
-   * state and not a degraded one. There is no default and no guess: an id the map does not carry
-   * has no slug, and a brand with no slug has no catalogue.
-   */
-  @Prop() brandSlugs?: BrandSlugs | string;
-
-  /**
-   * The catalogue, once its chunk has arrived. It is **not** fetched: it is a dynamic import of a
-   * JSON module in this same bundle, so a host that never configures `brandSlugs` pays nothing for
-   * it and no colour ever depends on a third-party URL.
-   */
-  @State() colourCatalogue?: ColourCatalogue;
-
-  /**
-   * Started at mount, and again whenever the host changes its map — never on a lookup. A lookup
-   * waits a second before it asks the server, so a chunk started at mount is long since parsed by
-   * the time any vehicle lands, and the swatch comes up under its cell's cover with the rest of the
-   * value rather than arriving on a beat of its own.
-   */
-  @Watch('brandSlugs')
-  loadColours() {
-    if (!parseBrandSlugs(this.brandSlugs)) return;
-
-    loadColourCatalogue().then(catalogue => {
-      this.colourCatalogue = catalogue;
-    });
-  }
-
-  /**
-   * This vehicle's brand's exterior table, or nothing — the one and only use of
-   * `identifiers.brandID`, which is never rendered, never spoken, never put in a title or a data
-   * attribute and never logged. The brand id stops here: what goes down to the render is a plain
-   * code → colour table with no brand in it.
-   */
-  private exteriorTable(): Record<string, ColourEntry> | undefined {
-    return exteriorColours(this.colourCatalogue, slugOf(this.record()?.identifiers?.brandID, parseBrandSlugs(this.brandSlugs)));
-  }
 
   // #endregion
 
@@ -338,7 +287,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   private signature(): string {
     const record = this.record();
     const readable = !!record?.vin && !this.isError && record.isAuthorized !== false;
-    const cells = identityCells(record, this.locale, this.locale.sharedLocales.lang, readable, this.exteriorTable());
+    const cells = identityCells(record, this.locale, this.locale.sharedLocales.lang, readable);
 
     return [
       this.isLoading || this.leaving,
@@ -346,10 +295,9 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
       this.detailsOpen,
       hasRecords(record),
       !!record?.vehicleSpecification?.variantDescription?.trim(),
-      // The swatch is in the signature because it changes the block's width, and so its height at a
       // narrow column: a catalogue that arrives, or a vehicle whose code resolves where the last
       // one's did not, is a resize like any other and gets the same eased settle.
-      cells.map(cell => `${cell.key}=${cell.colour ? `${cell.colour.code}/${cell.colour.name}/${cell.colour.swatch?.hex ?? ''}` : cell.text}${cell.note ?? ''}`).join(','),
+      cells.map(cell => `${cell.key}=${cell.colour ? `${cell.colour.code}/${cell.colour.name}` : cell.text}${cell.note ?? ''}`).join(','),
       this.groups()
         .map(group => `${group.key}:${group.cells.map(cell => cell.key).join('+')}`)
         .join(','),
@@ -440,7 +388,6 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
             loading={busy}
             verdict={verdict}
             lang={this.locale.sharedLocales.lang}
-            exteriorColours={this.exteriorTable()}
             groups={groups}
             retainedGroups={this.retainedGroups}
             detailsOpen={this.detailsOpen}

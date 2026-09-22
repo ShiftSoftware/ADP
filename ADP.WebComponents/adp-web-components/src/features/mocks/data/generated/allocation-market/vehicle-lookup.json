@@ -3,9 +3,9 @@
     "vin": "ZT8LY7CZ0S2959088",
     "identifiers": {
       "vin": "ZT8LY7CZ0S2959088",
-      "variant": "KYAT26Z-SWNFSC-X2-553-75",
+      "variant": "UM25HX2202501",
       "katashiki": "KYAT26Z-SWNFSC",
-      "color": "553",
+      "color": "1G3",
       "trim": "75",
       "brandID": "2"
     },
@@ -194,11 +194,30 @@
         }
       }
     ],
+    "vehicleVariantInfo": {
+      "modelCode": "UM25H",
+      "sfx": "X2",
+      "modelYear": 2025
+    },
     "vehicleSpecification": {
-      "modelCode": "UMBREL HEV",
+      "modelCode": "UM25H",
+      "modelYear": 2025,
       "productionDate": "2025-05-01T00:00:00",
       "modelDescription": "UMBREL HEV",
-      "exteriorColor": "STORM GREY",
+      "variantDescription": "2.5 HEV / Lounge",
+      "class": "Passenger",
+      "bodyType": "SUV",
+      "engine": "2.5L A25A-FXS",
+      "cylinders": "4",
+      "lightHeavyType": "Light",
+      "doors": "5",
+      "fuel": "Hybrid",
+      "transmission": "e-CVT",
+      "side": "LHD",
+      "engineType": "Gasoline Hybrid",
+      "tankCap": "55",
+      "style": "Crossover",
+      "exteriorColor": "MAGNETIC GREY METALLIC",
       "interiorColor": "CREAM LEATHER"
     },
     "serviceItems": [
@@ -3603,9 +3622,22 @@
     },
     "serviceHistory": [],
     "vehicleSpecification": {
-      "modelCode": "UMBREL HEV",
+      "modelCode": "UM25H",
       "productionDate": "2025-08-01T00:00:00",
       "modelDescription": "UMBREL HEV",
+      "variantDescription": "2.5 HEV / Lounge",
+      "class": "Passenger",
+      "bodyType": "SUV",
+      "engine": "2.5L A25A-FXS",
+      "cylinders": "4",
+      "lightHeavyType": "Light",
+      "doors": "5",
+      "fuel": "Hybrid",
+      "transmission": "e-CVT",
+      "side": "LHD",
+      "engineType": "Gasoline Hybrid",
+      "tankCap": "55",
+      "style": "Crossover",
       "exteriorColor": "STORM GREY",
       "interiorColor": "SLATE CLOTH"
     },

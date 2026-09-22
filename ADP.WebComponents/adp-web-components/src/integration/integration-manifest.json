@@ -30,7 +30,6 @@
           { "name": "blazorErrorStateListener", "attribute": "blazor-error-state-listener", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "blazorOnLoadingStateChange", "attribute": "blazor-on-loading-state-change", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "blazorRequestHeadersProvider", "attribute": "blazor-request-headers-provider", "type": "string", "default": null, "mutable": false, "required": false },
-          { "name": "brandSlugs", "attribute": "brand-slugs", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "childrenProps", "attribute": "children-props", "type": "object | string", "default": null, "mutable": false, "required": false },
           { "name": "disableVinValidation", "attribute": "disable-vin-validation", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "dynamicClaimActivate", "type": "(vehicleInformation: VehicleLookupDTO) => void", "default": null, "mutable": false, "required": false },
@@ -87,7 +86,6 @@
       "api": {
         "props": [
           { "name": "baseUrl", "attribute": "base-url", "type": "string", "default": null, "mutable": false, "required": false },
-          { "name": "brandSlugs", "attribute": "brand-slugs", "type": "string | { [x: string]: string; }", "default": null, "mutable": false, "required": false },
           { "name": "coreOnly", "attribute": "core-only", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "disableVinValidation", "attribute": "disable-vin-validation", "type": "boolean", "default": null, "mutable": false, "required": false },
           {
