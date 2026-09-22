@@ -4,7 +4,18 @@ import { join } from 'path';
 import { newSpecPage } from '@stencil/core/testing';
 
 import { VehicleSpecification } from './vehicle-specification';
-import { detailGroups, detailsSummary, hasRecords, headValue, identityCells, modelYearOf, normalise, panelLead, productionMonth } from './components/VehicleSpecificationPanel';
+import {
+  detailGroups,
+  detailsSummary,
+  exteriorColour,
+  hasRecords,
+  headValue,
+  identityCells,
+  modelYearOf,
+  normalise,
+  panelLead,
+  productionMonth,
+} from './components/VehicleSpecificationPanel';
 
 import specificationLocale from '../../locales/vehicleLookup/specification/en.json';
 
@@ -113,6 +124,65 @@ describe('vehicle-specification — the derivations', () => {
     const disagreeing = identityCells({ vehicleVariantInfo: { modelYear: 2025 }, vehicleSpecification: { modelYear: 2024 } } as any, locale, 'en', true);
     expect(disagreeing[3].text).toBe('2025');
     expect(disagreeing[3].note).toBe('record: 2024');
+  });
+
+  it('resolves the paint colour by the four branches, and never guesses one', () => {
+    const locale = specificationLocale as any;
+    const table = {
+      '1G3': { name: 'Magnetic Gray Metallic', approxHex: '#59585d', finish: 'metallic' as const },
+      '042': { name: 'White Pearl', finish: 'pearl' as const },
+    };
+    const colour = (identifiers: object, spec: object = {}, catalogue = table) => exteriorColour({ identifiers, vehicleSpecification: spec } as any, locale, catalogue);
+
+    // Resolved, with a swatch: the catalogue knew the code and had a hex for it.
+    expect(colour({ color: '1G3' })).toEqual({ code: '1G3', name: 'Magnetic Gray Metallic', swatch: { hex: '#59585d', finish: 'metallic', caveat: locale.swatchCaveat } });
+
+    // The backend's own name always wins; the catalogue is only ever the swatch and a fallback name.
+    expect(colour({ color: '1G3' }, { exteriorColor: 'GRAPHITE METALLIC' }).name).toBe('GRAPHITE METALLIC');
+
+    // Resolved by name only: an entry with no defensible hex draws no swatch, which is complete.
+    expect(colour({ color: '042' })).toEqual({ code: '042', name: 'White Pearl', swatch: undefined });
+
+    // A code nothing resolved reads as the code alone — no swatch, no invented colour, no label.
+    expect(colour({ color: '254' })).toEqual({ code: '254', name: '', swatch: undefined });
+    // ... and so does every code when the host configured no catalogue at all.
+    expect(exteriorColour({ identifiers: { color: '1G3' } } as any, locale, undefined)).toEqual({ code: '1G3', name: '', swatch: undefined });
+
+    // A host that resolves a name without a code, and a slot the record left empty.
+    expect(colour({}, { exteriorColor: 'Storm Grey' })).toEqual({ code: '', name: 'Storm Grey', swatch: undefined });
+    expect(colour({})).toEqual({ code: '', name: '', swatch: undefined });
+
+    // The interior cell has no catalogue and never a swatch, whatever the exterior resolved.
+    expect(identityCells({ identifiers: { color: '1G3', trim: 'LA20' } } as any, locale, 'en', true, table)[7].colour).toEqual({ code: 'LA20', name: '' });
+  });
+
+  it('draws the swatch inside the covered value block, with the caveat and no verdict shape', async () => {
+    const page = await newSpecPage({
+      components: [VehicleSpecification],
+      html: `<vehicle-specification is-dev="true" brand-slugs='{"1":"toyota"}'></vehicle-specification>`,
+    });
+    await (page.rootInstance as VehicleSpecification).setMockData(vehicleLookupMocks as any);
+
+    await (page.rootInstance as VehicleSpecification).fetchVin(AUTHORIZED_VIN);
+    await page.waitForChanges();
+
+    const cell = shadow(page).querySelector('.spec-cell[data-label="Exterior colour"]');
+    const value = cell?.querySelector('.spec-value');
+    const swatch = cell?.querySelector('.spec-swatch') as HTMLElement;
+
+    expect(cell?.textContent).toContain('1G3 · Magnetic Gray Metallic');
+    // Inside the one covered block, so it comes up with its row and never on a beat of its own.
+    expect(value?.classList.contains('shift-skeleton')).toBe(true);
+    expect(value?.querySelector('.spec-swatch')).toBe(swatch);
+    expect(swatch?.style.background).toBe('#59585d');
+    expect(swatch?.getAttribute('data-finish')).toBe('metallic');
+    // A depiction: hidden from the reader who cannot see it, its meaning the words beside it.
+    expect(swatch?.getAttribute('aria-hidden')).toBe('true');
+    expect(swatch?.getAttribute('title')).toBe((specificationLocale as any).swatchCaveat);
+    expect(value?.getAttribute('aria-description')).toBe((specificationLocale as any).swatchCaveat);
+
+    // The interior code is real and the catalogue has no interior table: code, no swatch.
+    expect(shadow(page).querySelectorAll('.spec-swatch')).toHaveLength(1);
   });
 
   it('shows the production date at the granularity the record means', () => {

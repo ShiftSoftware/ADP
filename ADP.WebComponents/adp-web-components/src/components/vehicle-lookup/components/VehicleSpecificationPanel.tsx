@@ -6,7 +6,7 @@ import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup
 
 import { ArrowIcon } from '~assets/arrow-icon';
 
-import { ColourEntry } from '~features/colour-catalogue';
+import { ColourEntry, ColourFinish, colourEntry } from '~features/colour-catalogue';
 import { LookupHeadWait, PanelVerdict, StatusBadge } from '~features/vehicle-info-layout';
 
 import { BADGE_GLYPHS } from './glyphs';
@@ -201,7 +201,21 @@ export type SpecCell = {
   role: 'code' | 'figure' | 'word';
   text: string;
   note?: string;
-  colour?: { code: string; name: string };
+  colour?: SpecColour;
+};
+
+/**
+ * A colour value: the identity code the record carries, the name something resolved for it, and —
+ * only when a catalogue knew the code and had a defensible hex for it — a swatch.
+ *
+ * The swatch is a *depiction*, not a statement: it is `aria-hidden`, its meaning is the words beside
+ * it, and it carries the accuracy caveat rather than standing on its own. A code nothing resolved
+ * reads as the code alone — no swatch, no invented colour and no "unknown" label.
+ */
+export type SpecColour = {
+  code: string;
+  name: string;
+  swatch?: { hex: string; finish: ColourFinish; caveat: string };
 };
 
 /** A tier-2 group and the cells that will actually render in it. */
@@ -241,7 +255,32 @@ export const productionMonth = (raw: string | undefined, language: string): stri
  * says "the record has nothing here", a blank says "there is no vehicle yet", and the two must not
  * be confused.
  */
-export const identityCells = (record: SpecificationRecord | undefined, locale: SpecificationLocale, language: string, readable: boolean): SpecCell[] => {
+export const exteriorColour = (record: SpecificationRecord | undefined, locale: SpecificationLocale, exterior?: Record<string, ColourEntry>): SpecColour => {
+  const code = normalise(record?.identifiers?.color);
+  const entry = colourEntry(exterior, code);
+
+  return {
+    code,
+    // Precedence: the name the host's own backend resolved wins, always. It is the distributor's
+    // record of this vehicle; the catalogue is a reference table that knows a code, not a car, and
+    // a manufacturer reuses a code across decades. The catalogue name only fills a name the
+    // backend left empty — which it does whenever the code is blank, the brand has no entry, or
+    // the read failed.
+    name: normalise(record?.vehicleSpecification?.exteriorColor) || normalise(entry?.name),
+    // The catalogue is the only source of a swatch: there is no hex anywhere in the response. No
+    // hex, no swatch — the name alone is a complete answer, and a guessed colour beside a real
+    // paint code is the one thing this cell exists not to show.
+    swatch: entry?.approxHex ? { hex: entry.approxHex, finish: entry.finish, caveat: locale.swatchCaveat } : undefined,
+  };
+};
+
+export const identityCells = (
+  record: SpecificationRecord | undefined,
+  locale: SpecificationLocale,
+  language: string,
+  readable: boolean,
+  exterior?: Record<string, ColourEntry>,
+): SpecCell[] => {
   const spec = readable ? record?.vehicleSpecification : undefined;
   const variant = readable ? record?.vehicleVariantInfo : undefined;
   const identifiers = readable ? record?.identifiers : undefined;
@@ -270,7 +309,9 @@ export const identityCells = (record: SpecificationRecord | undefined, locale: S
     // The paint code and the trim code are `identifiers`, the same object as the variant and the
     // katashiki: they *are* identity, and the paint is the first thing an advisor uses to find the
     // car in the lot. The resolved name is the backend's; a catalogue name is its fallback.
-    { key: 'exteriorColour', label: locale.exteriorColour, role: 'code', text: '', colour: { code: normalise(identifiers?.color), name: normalise(spec?.exteriorColor) } },
+    { key: 'exteriorColour', label: locale.exteriorColour, role: 'code', text: '', colour: exteriorColour(readable ? record : undefined, locale, exterior) },
+    // No swatch, ever: a trim code encodes material and colour together and there is no corroborated
+    // public trim table to stand behind, so the cell says what the record says and nothing more.
     { key: 'interiorColour', label: locale.interiorColour, role: 'code', text: '', colour: { code: normalise(identifiers?.trim), name: normalise(spec?.interiorColor) } },
   ];
 };
@@ -366,7 +407,10 @@ const SpecCellView: FunctionalComponent<{ cell: SpecCell; blank: boolean; key?: 
           heard twice. The data-label stays as the stable hook. */}
       <span class="spec-cell-label">{cell.label}</span>
 
-      <span class="spec-value shift-skeleton resize-settle" data-role={empty ? 'empty' : cell.role}>
+      {/* The caveat rides on the value block rather than on the swatch, which is aria-hidden: it is
+          the one thing the swatch adds that a reader who cannot see it still has to be told, and it
+          is there only when a swatch is. */}
+      <span class="spec-value shift-skeleton resize-settle" data-role={empty ? 'empty' : cell.role} aria-description={(!blank && cell.colour?.swatch?.caveat) || null}>
         <span class="spec-value-content" data-empty={blank ? 'true' : 'false'}>
           {blank ? ' ' : <SpecCellValue cell={cell} />}
         </span>
@@ -379,29 +423,28 @@ const SpecCellValue: FunctionalComponent<{ cell: SpecCell }> = ({ cell }) => {
   if (cellIsEmpty(cell)) return <span>—</span>;
 
   if (cell.colour) {
-    const { code, name } = cell.colour;
+    const { code, name, swatch } = cell.colour;
 
     return (
       <span class="spec-colour">
         {/*
-         * SEAM for the colour catalogue (a separate change, landing after this one).
+         * A depiction of the paint, not a statement about it. It mounts and unmounts freely — a
+         * code no catalogue knows draws nothing — which is legal only because the whole value is
+         * inside one covered `.spec-value` block: the swatch arrives with its row, under the same
+         * cover, and never on a beat of its own. A mark that came up on its own beat would read as
+         * a verdict arriving, and no hue may be borrowed for emphasis.
          *
-         * What plugs in here, and nowhere else: a `span.spec-swatch` as the FIRST child of this
-         * block — 16px, radius 4, `margin-inline-end: 6px`, the grey rim at .22, its `background`
-         * the catalogue's `approxHex` set inline, `aria-hidden="true"`, and `title` carrying
-         * `locale.swatchCaveat` (the key is already in all four locale files, unused until then).
-         * A non-solid finish adds `data-finish` and the raised-band highlight over the rim.
+         * It has no transitions, deliberately. A cross-fade of the background would put a colour on
+         * screen that no vehicle has — a lie about a colour, which is the one thing this cell
+         * exists not to tell — and a finish is a fact about the paint, not a state of the panel, so
+         * the rim and the highlight do not animate either. The change happens under the cover, in
+         * one frame, where it is invisible.
          *
-         * Everything it needs is already in place: the code and the name are here, the whole value
-         * is one covered `.spec-value` block so the swatch arrives with its row and never on a beat
-         * of its own, and `.resize-settle` already animates the block when the swatch makes it wrap.
-         * It must NOT transition its background: a cross-fade would put a colour on screen that no
-         * vehicle has.
-         *
-         * Not yet built here, deliberately: the `brandSlugs` prop, `slugOf`, the catalogue asset and
-         * its lookup. Until they land the cell is code + resolved name, which is the honest
-         * rendering of a code no catalogue has resolved — a complete state, not a degraded one.
+         * aria-hidden, because its meaning is the words beside it; the caveat it adds is on its
+         * `title` and on the value block's `aria-description`, so a reader who can see it is told
+         * what it is and is not.
          */}
+        {!!swatch && <span class="spec-swatch" data-finish={swatch.finish} style={{ background: swatch.hex }} title={swatch.caveat} aria-hidden="true" />}
         {!!code && <code class="spec-colour-code">{code}</code>}
         {!!code && !!name && <span class="spec-colour-separator">{' · '}</span>}
         {!!name && <span class="spec-colour-name">{name}</span>}
@@ -442,7 +485,7 @@ export const headStatement = (record: SpecificationRecord | undefined, readable:
  * raises its spinner, so nothing here has a loading state of its own.
  */
 export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
-  const { locale, record, error, loading, verdict, language, groups, retainedGroups, detailsOpen, onToggleDetails } = props;
+  const { locale, record, error, loading, verdict, language, exteriorColours, groups, retainedGroups, detailsOpen, onToggleDetails } = props;
 
   const vehicleLoaded = !!record?.vin && !error;
   /**
@@ -453,7 +496,7 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
   const readable = vehicleLoaded && record?.isAuthorized !== false;
   const lead = panelLead({ vehicleLoaded, authorized: record?.isAuthorized, error }, loading);
   const statement = headStatement(record, readable);
-  const cells = identityCells(record, locale, language, readable);
+  const cells = identityCells(record, locale, language, readable, exteriorColours);
 
   // Two empties, two meanings: before any lookup the values keep their box with a blank, because a
   // dash would say "the record has nothing here" about a vehicle that does not exist yet.

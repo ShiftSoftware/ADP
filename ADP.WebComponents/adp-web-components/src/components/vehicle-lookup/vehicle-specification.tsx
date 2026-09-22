@@ -338,7 +338,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   private signature(): string {
     const record = this.record();
     const readable = !!record?.vin && !this.isError && record.isAuthorized !== false;
-    const cells = identityCells(record, this.locale, this.locale.sharedLocales.language, readable);
+    const cells = identityCells(record, this.locale, this.locale.sharedLocales.language, readable, this.exteriorTable());
 
     return [
       this.isLoading || this.leaving,
@@ -346,7 +346,10 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
       this.detailsOpen,
       hasRecords(record),
       !!record?.vehicleSpecification?.variantDescription?.trim(),
-      cells.map(cell => `${cell.key}=${cell.colour ? `${cell.colour.code}/${cell.colour.name}` : cell.text}${cell.note ?? ''}`).join(','),
+      // The swatch is in the signature because it changes the block's width, and so its height at a
+      // narrow column: a catalogue that arrives, or a vehicle whose code resolves where the last
+      // one's did not, is a resize like any other and gets the same eased settle.
+      cells.map(cell => `${cell.key}=${cell.colour ? `${cell.colour.code}/${cell.colour.name}/${cell.colour.swatch?.hex ?? ''}` : cell.text}${cell.note ?? ''}`).join(','),
       this.groups()
         .map(group => `${group.key}:${group.cells.map(cell => cell.key).join('+')}`)
         .join(','),
