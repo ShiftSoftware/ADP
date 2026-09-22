@@ -20,50 +20,61 @@ const block = (heights: number[]) => {
 
 const pin = (element: HTMLElement) => element.style.getPropertyValue('--resize-settle-height');
 
+/** Every `--resize-settle-height` written to a block, in order, so the sequence itself is testable. */
+const recordWrites = (element: HTMLElement) => {
+  const writes: string[] = [];
+  const setProperty = element.style.setProperty.bind(element.style);
+
+  element.style.setProperty = ((name: string, value: string) => {
+    if (name === '--resize-settle-height') writes.push(value);
+    setProperty(name, value);
+  }) as never;
+
+  return writes;
+};
+
 describe('createResizeSettle', () => {
   /**
-   * The observed behaviour today, pinned so that the `it.failing` below cannot pass for the wrong
-   * reason. A block whose content grew from one line to two is left with no pinned height at all,
-   * so the stylesheet's `height: var(--resize-settle-height, auto)` stays `auto` and the change
-   * lands in one frame.
+   * What M.8 specifies: measure → patch → reflow → target.
    *
-   * Confirmed in the browser as well as here: at 420px, 700px and the full column, the exterior
-   * colour cell goes 16.9px → 34.4px across a lookup and neither a `--resize-settle-height` write
-   * nor a `height` transition on any `.spec-value` is ever observed
-   * (scratchpad/diag-resize.mjs).
+   * This failed from the day the primitive landed until 2026-09-22. `beforeSwap` recorded the live
+   * heights into its map but never wrote them, and `afterSwap` cleared the map and re-measured
+   * `previous` from the element that had already been patched — so `previous` was the *new* height,
+   * `next` was the same figure, and the "nothing moved" guard returned before anything was pinned.
+   * In the browser the exterior colour cell went 16.9px → 34.4px with zero `--resize-settle-height`
+   * writes and zero `height` transitions (scratchpad/diag-resize.mjs). `previous` now comes from the
+   * recorded map, which is what the map is for.
    */
-  it('DEFECT: writes no height at all when a value grows, so nothing eases', () => {
+  it('eases a grown block from its old height to its new one', () => {
     // 20px before the patch; 40px once the new value is in the DOM.
     const grown = block([20, 40, 40]);
+    const writes = recordWrites(grown);
     const settle = createResizeSettle(() => [grown]);
 
     settle.beforeSwap();
     settle.afterSwap();
 
-    expect(pin(grown)).toBe('');
+    // Pinned to the height it was showing, then sent to the new one: the pin is the transition's
+    // start, and the reflow between them is what makes it land instead of being animated to.
+    expect(writes).toEqual(['20px', '40px']);
+    expect(pin(grown)).toBe('40px');
+    // The transition is switched off for the pin and released before the target, so the figure the
+    // stylesheet animates to is the one the browser eases on its own clock.
+    expect(grown.style.transition).toBe('');
   });
 
-  /**
-   * What M.8 specifies, and what the browser evidence says does not happen.
-   *
-   * The cause is in `afterSwap`: `beforeSwap` records the live heights into `pinned`, but it never
-   * writes them to the DOM, and `afterSwap` then clears that map and re-measures `previous` from
-   * the already-patched element. `previous` is therefore the *new* height, `next` is the same
-   * figure, and the "nothing moved" guard returns before anything is pinned. The recorded heights
-   * are never read. The fix is to take `previous` from `pinned` rather than from the DOM.
-   *
-   * `it.failing` so the suite stays honest in both directions: it passes while the defect is there
-   * and fails the day somebody fixes it without coming back to this test.
-   */
-  it.failing('eases a grown block from its old height to its new one', () => {
-    const grown = block([20, 40, 40]);
-    const settle = createResizeSettle(() => [grown]);
+  it('starts from where a settle still running has got to, not from its target', () => {
+    // A lookup that lands while the last one is still easing: the block is pinned at 40px and is
+    // showing 31px on its way there. The new value needs 24px, and the ease must start from 31.
+    const interrupted = block([31, 24, 24]);
+    interrupted.style.setProperty('--resize-settle-height', '40px');
+    const writes = recordWrites(interrupted);
+    const settle = createResizeSettle(() => [interrupted]);
 
     settle.beforeSwap();
     settle.afterSwap();
 
-    // The last write is the target; the pin that preceded it was the measured old height.
-    expect(pin(grown)).toBe('40px');
+    expect(writes).toEqual(['31px', '24px']);
   });
 
   it('leaves a block that did not move alone', () => {

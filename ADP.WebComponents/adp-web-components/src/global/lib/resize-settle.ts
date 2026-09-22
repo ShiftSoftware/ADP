@@ -75,18 +75,31 @@ export const createResizeSettle = (blocks: () => Iterable<HTMLElement>): ResizeS
       if (!pinned.size) return;
 
       const items = [...blocks()].filter(block => pinned.has(block));
+      // `previous` is what `beforeSwap` measured, BEFORE the patch. Re-measuring it here would read
+      // the element that has already been patched, which makes it equal to `next` and sends the
+      // "nothing moved" guard below off every time — the defect that left the primitive inert from
+      // the day it landed until 2026-09-22. The recorded heights are the whole point of the map.
+      const previous = items.map(block => pinned.get(block) as number);
       pinned.clear();
       if (!items.length) return;
 
-      // The new content is in the DOM but the blocks still carry the old pin. Lift every pin in one
-      // style pass, then read: the first read lays the whole set out, so this costs one reflow, and
-      // it all happens inside componentDidRender — before paint, so the natural height is never seen.
-      const previous = items.map(block => heightOf(block));
-      items.forEach(block => block.style.removeProperty('--resize-settle-height'));
+      // A pin left over from a settle that is still running would make `next` the old target rather
+      // than the natural height of the new content, so it is lifted first — in one style pass, so
+      // the read below costs one reflow. All of this happens inside componentDidRender, before
+      // paint, so the natural height is never on screen.
+      const settling = items.some(block => !!block.style.getPropertyValue('--resize-settle-height'));
+      if (settling) items.forEach(block => block.style.removeProperty('--resize-settle-height'));
       const next = items.map(block => heightOf(block));
 
-      // Nothing moved: leave the blocks `auto` rather than pin them to a figure for a settle.
-      if (next.every((height, index) => Math.abs(height - previous[index]) < 0.5)) return;
+      // Nothing moved: leave the blocks `auto` rather than pin them to a figure for a settle. The
+      // lift above already released anything that was still running, so this path ends at `auto`.
+      if (next.every((height, index) => Math.abs(height - previous[index]) < 0.5)) {
+        if (settling) {
+          if (releaseTimer) clearTimeout(releaseTimer);
+          release();
+        }
+        return;
+      }
 
       // Put them back where they were, with the transition off so the pin lands instead of being
       // animated to, and force the one reflow that makes the pinned value the transition's start.
