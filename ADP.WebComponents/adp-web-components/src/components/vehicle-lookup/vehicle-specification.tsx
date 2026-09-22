@@ -1,14 +1,13 @@
-import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, forceUpdate, h } from '@stencil/core';
 
+import { createResizeSettle } from '~lib/resize-settle';
 import { createHeightChangeAnnouncer } from '~lib/flexible-parents';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import specificationSchema from '~locales/vehicleLookup/specification/type';
 
-import { MaterialCard, MaterialCardChildren } from '../components/material-card';
-
-import { SpecificationRecord, VehicleSpecificationPanel, hasRecords } from './components/VehicleSpecificationPanel';
+import { DetailGroup, SpecificationRecord, VehicleSpecificationPanel, detailGroups, hasRecords, identityCells } from './components/VehicleSpecificationPanel';
 
 import { VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
 import { VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
@@ -136,6 +135,9 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   async clearData() {
     await this.leave();
     this.emptyPanel();
+    // The panel is back to no vehicle, so it is back to its default. It resets while the details
+    // block is shut, so nothing on screen moves for it and the next vehicle arrives expanded.
+    this.detailsOpen = true;
   }
 
   @Watch('isLoading')
@@ -208,6 +210,55 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
 
   // #endregion
 
+  // #region The details block
+
+  /**
+   * The one piece of panel state that is not a function of the response: whether the reader has the
+   * details expanded. Expanded on every load, so nothing is hidden from a reader who does not know
+   * the control exists — and a new vehicle does **not** reset it. A reader who folded the details
+   * away has said what they want to see, and re-opening the block under them on every VIN would
+   * undo that choice once a minute. Only `clearData()` resets it, where the panel is back to no
+   * vehicle at all.
+   */
+  @State() detailsOpen: boolean = true;
+
+  private toggleDetails = () => {
+    this.detailsOpen = !this.detailsOpen;
+  };
+
+  /**
+   * The last vehicle's groups, kept while the block is shut so they slide away with it instead of
+   * blinking out on the frame the data changed. Dropped a settle after the block shut, while
+   * nothing is on screen.
+   */
+  private retainedGroups: DetailGroup[] = [];
+  private retainTimer?: ReturnType<typeof setTimeout>;
+
+  private groups(): DetailGroup[] {
+    const record = this.record();
+    const readable = !!record?.vin && !this.isError && record.isAuthorized !== false;
+    return detailGroups(record, this.locale, readable);
+  }
+
+  private retainDetails(groups: DetailGroup[]) {
+    if (groups.length) {
+      this.retainedGroups = groups;
+      clearTimeout(this.retainTimer);
+      this.retainTimer = undefined;
+      return;
+    }
+
+    if (this.retainedGroups.length && !this.retainTimer) {
+      this.retainTimer = setTimeout(() => {
+        this.retainTimer = undefined;
+        this.retainedGroups = [];
+        forceUpdate(this);
+      }, this.settleMs());
+    }
+  }
+
+  // #endregion
+
   // #region Height
 
   /**
@@ -218,23 +269,64 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
    */
   private heightAnnouncer?: ReturnType<typeof createHeightChangeAnnouncer>;
   private layoutSignature?: string;
+  private valuesChanged = false;
 
-  /** Everything that can move the card's height, joined. A render that changes none of it announces nothing. */
+  /**
+   * A value block is the same slot on every vehicle but not the same size: the exterior-colour cell
+   * wraps to a second line whenever a catalogue name resolves, the model-year cell whenever the
+   * record note appears. Without this the block's height would change in one frame under a cover
+   * that is about to lift on it.
+   */
+  private resizeSettle = createResizeSettle(() => this.el.shadowRoot?.querySelectorAll<HTMLElement>('.spec-value') ?? []);
+
+  /**
+   * Everything that can move the card's height, joined: the phase, the vehicle, every tier-1 value,
+   * the reader's disclosure, and the groups and cells that will render. A render that changes none
+   * of it announces nothing and pins no heights.
+   */
   private signature(): string {
-    return [this.isLoading || this.leaving, hasRecords(this.record()), !!this.vehicleLookup?.vehicleSpecification?.variantDescription?.trim(), this.vehicleLookup?.vin].join('|');
+    const record = this.record();
+    const readable = !!record?.vin && !this.isError && record.isAuthorized !== false;
+    const cells = identityCells(record, this.locale, this.locale.sharedLocales.language, readable);
+
+    return [
+      this.isLoading || this.leaving,
+      record?.vin,
+      this.detailsOpen,
+      hasRecords(record),
+      !!record?.vehicleSpecification?.variantDescription?.trim(),
+      cells.map(cell => `${cell.key}=${cell.colour ? `${cell.colour.code}/${cell.colour.name}` : cell.text}${cell.note ?? ''}`).join(','),
+      this.groups()
+        .map(group => `${group.key}:${group.cells.map(cell => cell.key).join('+')}`)
+        .join(','),
+    ].join('|');
+  }
+
+  componentWillRender() {
+    const signature = this.signature();
+    this.valuesChanged = this.layoutSignature !== undefined && this.layoutSignature !== signature;
+    // Pin the live heights before the patch; the new measurements go on in componentDidRender.
+    if (this.valuesChanged) this.resizeSettle.beforeSwap();
   }
 
   componentDidRender() {
     this.announceVerdict();
 
-    const signature = this.signature();
-    const changed = this.layoutSignature !== undefined && this.layoutSignature !== signature;
-    this.layoutSignature = signature;
+    this.layoutSignature = this.signature();
 
-    if (!changed) return;
+    if (!this.valuesChanged) return;
+    this.valuesChanged = false;
+
+    this.resizeSettle.afterSwap();
 
     this.heightAnnouncer ??= createHeightChangeAnnouncer(this.el);
     this.heightAnnouncer.announce(this.settleMs() + 80);
+  }
+
+  disconnectedCallback() {
+    clearTimeout(this.retainTimer);
+    this.resizeSettle.dispose();
+    this.heightAnnouncer?.dispose();
   }
 
   // #endregion
@@ -274,22 +366,8 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
     // The wrapper's phase follows the panel's: the head leaves and the covers come up whenever a
     // lookup is in flight or the panel is on its way to empty.
     const busy = this.isLoading || this.leaving;
-    const texts = this.locale;
-
-    let productionDate: string | null = null;
-
-    try {
-      if (record?.vehicleSpecification?.productionDate) {
-        const productionDateObj = new Date(record.vehicleSpecification.productionDate);
-
-        productionDate = productionDateObj.toLocaleDateString(this.locale.sharedLocales.language, {
-          year: 'numeric',
-          month: 'long',
-        });
-      }
-    } catch {
-      productionDate = null;
-    }
+    const groups = this.groups();
+    this.retainDetails(groups);
 
     return (
       <Host translate="no">
@@ -301,39 +379,18 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
           header={record?.vin}
           direction={this.locale.sharedLocales.direction}
         >
-          <VehicleSpecificationPanel locale={this.locale} record={record} error={error} loading={busy} verdict={verdict}>
-            {/* The body is still the six titled cards of the old panel; the identity grid and the
-                details block replace them in the next commit, with the MaterialCard wrapper and the
-                flexible-container it nests. */}
-            <flexible-container>
-              <div class="spec-grid">
-                <MaterialCard class="spec-card-legacy" title={texts?.modelCode} minWidth="300px">
-                  <MaterialCardChildren
-                    class="spec-legacy-value"
-                    hidden={!record?.vehicleVariantInfo?.modelCode?.trim() && !record?.vehicleSpecification?.modelDescription?.trim()}
-                  >
-                    {record?.vehicleVariantInfo?.modelCode?.trim() || ''} <br />
-                    {record?.vehicleSpecification?.modelDescription?.trim() || ''}
-                  </MaterialCardChildren>
-                </MaterialCard>
-
-                <MaterialCard class="spec-card-legacy" title={texts?.variant} minWidth="300px">
-                  <MaterialCardChildren class="spec-legacy-value" hidden={!record?.identifiers?.variant?.trim() && !record?.vehicleSpecification?.variantDescription?.trim()}>
-                    {record?.identifiers?.variant?.trim() || ''} <br />
-                    {record?.vehicleSpecification?.variantDescription?.trim() || ''}
-                  </MaterialCardChildren>
-                </MaterialCard>
-
-                <MaterialCard desc={record?.identifiers?.katashiki?.trim() || ''} title={texts?.katashiki} minWidth="250px" />
-
-                <MaterialCard desc={record?.vehicleVariantInfo?.modelYear?.toString()?.trim() || ''} title={texts?.modelYear} minWidth="250px" />
-
-                <MaterialCard desc={productionDate ? productionDate : ''} title={texts?.productionDate} minWidth="250px" />
-
-                <MaterialCard desc={record?.vehicleVariantInfo?.sfx?.trim() || ''} title={texts?.sfx} minWidth="250px" />
-              </div>
-            </flexible-container>
-          </VehicleSpecificationPanel>
+          <VehicleSpecificationPanel
+            locale={this.locale}
+            record={record}
+            error={error}
+            loading={busy}
+            verdict={verdict}
+            language={this.locale.sharedLocales.language}
+            groups={groups}
+            retainedGroups={this.retainedGroups}
+            detailsOpen={this.detailsOpen}
+            onToggleDetails={this.toggleDetails}
+          />
         </VehicleInfoLayout>
       </Host>
     );

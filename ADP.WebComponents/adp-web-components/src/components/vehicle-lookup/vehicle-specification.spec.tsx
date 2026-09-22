@@ -4,7 +4,9 @@ import { join } from 'path';
 import { newSpecPage } from '@stencil/core/testing';
 
 import { VehicleSpecification } from './vehicle-specification';
-import { hasRecords, headValue, modelYearOf, normalise, panelLead } from './components/VehicleSpecificationPanel';
+import { detailGroups, detailsSummary, hasRecords, headValue, identityCells, modelYearOf, normalise, panelLead, productionMonth } from './components/VehicleSpecificationPanel';
+
+import specificationLocale from '../../locales/vehicleLookup/specification/en.json';
 
 import vehicleLookupMocks from '../../features/mocks/data/generated/standard-dealer/vehicle-lookup.json';
 import brokerMarketMocks from '../../features/mocks/data/generated/broker-market/vehicle-lookup.json';
@@ -92,6 +94,74 @@ describe('vehicle-specification — the derivations', () => {
     // skeleton between them, so a notice is never seen changing tone in place.
     expect(panelLead({ vehicleLoaded: true, authorized: false }, true)).toBe('skeleton');
   });
+
+  it('keeps every tier-1 slot in every state and dashes the model code that repeats the head', () => {
+    const locale = specificationLocale as any;
+
+    const cells = identityCells({ vehicleSpecification: { modelCode: 'UMBREL HEV', modelDescription: 'UMBREL HEV' }, identifiers: { variant: 'V1' } } as any, locale, 'en', true);
+    expect(cells.map(cell => cell.key)).toEqual(['modelCode', 'variant', 'katashiki', 'modelYear', 'productionDate', 'sfx', 'exteriorColour', 'interiorColour']);
+    // The same string under two labels is two labels for one thing.
+    expect(cells[0].text).toBe('');
+    expect(cells[1].text).toBe('V1');
+
+    // A vehicle the panel may not speak for keeps all eight slots and empties every one.
+    const silent = identityCells({ vehicleSpecification: { modelCode: 'X' }, identifiers: { variant: 'V1' } } as any, locale, 'en', false);
+    expect(silent).toHaveLength(8);
+    expect(silent.every(cell => !cell.text && !cell.colour?.code && !cell.colour?.name)).toBe(true);
+
+    // The record's own year rides inside the value block as a note when the two disagree.
+    const disagreeing = identityCells({ vehicleVariantInfo: { modelYear: 2025 }, vehicleSpecification: { modelYear: 2024 } } as any, locale, 'en', true);
+    expect(disagreeing[3].text).toBe('2025');
+    expect(disagreeing[3].note).toBe('record: 2024');
+  });
+
+  it('shows the production date at the granularity the record means', () => {
+    expect(productionMonth('2025-05-01T00:00:00', 'en')).toBe('May 2025');
+    expect(productionMonth('  ', 'en')).toBe('');
+    expect(productionMonth('not a date', 'en')).toBe('');
+  });
+
+  it('drops empty tier-2 fields and empty groups, dedupes style against body type, and composes the count', () => {
+    const locale = specificationLocale as any;
+
+    const groups = detailGroups(
+      {
+        vehicleSpecification: {
+          engine: ' 2400 ',
+          cylinders: ' 0 ',
+          fuel: 'P',
+          tankCap: ' 0 ',
+          transmission: 'Automatic',
+          class: 'P',
+          bodyType: 'SUV',
+          style: 'suv',
+          doors: ' 5 ',
+          side: '1',
+        },
+      } as any,
+      locale,
+      true,
+    );
+
+    expect(groups.map(group => group.key)).toEqual(['powertrain', 'body']);
+    expect(groups[0].cells.map(cell => cell.key)).toEqual(['engine', 'fuel', 'transmission']);
+    // Style repeats the body type case-insensitively, so it is not shown twice.
+    expect(groups[1].cells.map(cell => cell.key)).toEqual(['class', 'bodyType', 'doors', 'steering']);
+    // Coded values verbatim: the panel is not a decoder.
+    expect(groups[1].cells.find(cell => cell.key === 'steering')?.text).toBe('1');
+    expect(detailsSummary(groups, locale)).toEqual({ names: 'Powertrain · Body', count: '— 7 details' });
+
+    // One field, one group, the singular word.
+    const single = detailGroups({ vehicleSpecification: { fuel: 'Petrol' } } as any, locale, true);
+    expect(detailsSummary(single, locale)).toEqual({ names: 'Powertrain', count: '— 1 detail' });
+
+    // The fuel capacity composes its unit from the locale and falls back to the litre field.
+    expect(detailGroups({ vehicleSpecification: { tankCap: '60' } } as any, locale, true)[0].cells[0].text).toBe('60 L');
+    expect(detailGroups({ vehicleSpecification: { fuelLiter: 55 } } as any, locale, true)[0].cells[0].text).toBe('55 L');
+
+    expect(detailGroups({ vehicleSpecification: { engine: 'i4' } } as any, locale, false)).toEqual([]);
+    expect(detailGroups(undefined, locale, true)).toEqual([]);
+  });
 });
 
 describe('vehicle-specification', () => {
@@ -171,6 +241,126 @@ describe('vehicle-specification', () => {
     expect(shadow(page).querySelector('.spec-grade-slot')?.getAttribute('data-empty')).toBe('true');
     expect(shadow(page).querySelector('.spec-grade')).not.toBeNull();
     expect(shadow(page).querySelector('.spec-title-year')).toBeNull();
+  });
+
+  it('carries the identity grid in every state, with the covers on the values and on nothing else', async () => {
+    const page = await newPage(brokerMarketMocks);
+
+    const values = () => Array.from(shadow(page).querySelectorAll('.spec-identity .spec-value'));
+
+    // Idle: eight slots, blank, never unmounted — and the dash is not used, because there is no
+    // vehicle for the record to have nothing about.
+    expect(values()).toHaveLength(8);
+    expect(values().every(value => value.classList.contains('shift-skeleton') && value.classList.contains('resize-settle'))).toBe(true);
+    expect(shadow(page).querySelectorAll('.spec-identity .spec-value-content[data-empty="true"]')).toHaveLength(8);
+    expect(shadow(page).querySelector('.spec-identity')?.textContent).not.toContain('—');
+    // The cover goes on the smallest block that is exactly the value.
+    expect(shadow(page).querySelectorAll('.spec-cell-label.shift-skeleton')).toHaveLength(0);
+    expect(shadow(page).querySelectorAll('.spec-cell.shift-skeleton')).toHaveLength(0);
+    expect(shadow(page).querySelectorAll('.spec-identity.shift-skeleton')).toHaveLength(0);
+
+    await (page.rootInstance as VehicleSpecification).fetchVin(RICH_VIN);
+    await page.waitForChanges();
+
+    expect(values()).toHaveLength(8);
+    expect(shadow(page).querySelectorAll('.spec-identity .spec-value-content[data-empty="true"]')).toHaveLength(0);
+    expect(text(page, '.spec-cell[data-label="Katashiki"] .spec-value')).toBe('DTI942Z-PCMDJC');
+    expect(text(page, '.spec-cell[data-label="Exterior colour"] .spec-value')).toBe('923 · HARBOR GREY METALLIC');
+    // A loaded vehicle with nothing in the slot reads as a dash, and the block says so.
+    expect(shadow(page).querySelector('.spec-cell[data-label="Production date"] .spec-value')?.getAttribute('data-role')).toBe('empty');
+  });
+
+  it('opens the details expanded, keeps the reader s choice across a lookup, and resets it on a clear', async () => {
+    const page = await newPage(brokerMarketMocks);
+    const owner = page.rootInstance as VehicleSpecification;
+
+    await owner.fetchVin(RICH_VIN);
+    await page.waitForChanges();
+
+    const shell = () => shadow(page).querySelector('.spec-details');
+    const region = () => shadow(page).querySelector('#spec-details-region');
+    const trigger = () => shadow(page).querySelector('.spec-details-button') as HTMLButtonElement;
+
+    expect(shell()?.getAttribute('data-open')).toBe('true');
+    expect(region()?.getAttribute('data-open')).toBe('true');
+    expect(trigger()?.getAttribute('aria-expanded')).toBe('true');
+    expect(trigger()?.getAttribute('aria-controls')).toBe('spec-details-region');
+    expect(trigger()?.getAttribute('aria-label')).toBe('Hide the details');
+    expect(text(page, '.spec-details-names')).toBe('Powertrain · Body');
+
+    // The reader folds it away.
+    trigger().click();
+    await page.waitForChanges();
+    expect(region()?.getAttribute('data-open')).toBe('false');
+    expect(region()?.getAttribute('aria-hidden')).toBe('true');
+    expect(trigger()?.getAttribute('aria-label')).toBe('Show the details');
+    // The summary row stays: only the region moves.
+    expect(shadow(page).querySelector('.spec-details-summary')).not.toBeNull();
+
+    // A new vehicle does not undo the reader's choice.
+    await owner.fetchVin('ZS8AJAYC9P6174790');
+    await page.waitForChanges();
+    expect(region()?.getAttribute('data-open')).toBe('false');
+
+    // A clear puts the panel back to no vehicle, so it is back to its default — while shut.
+    await owner.clearData();
+    await page.waitForChanges();
+    expect((owner as unknown as { detailsOpen: boolean }).detailsOpen).toBe(true);
+  });
+
+  it('shuts the details shell over the outgoing groups rather than dropping them', async () => {
+    const page = await newPage(brokerMarketMocks);
+    const owner = page.rootInstance as VehicleSpecification;
+
+    await owner.fetchVin(RICH_VIN);
+    await page.waitForChanges();
+    expect(shadow(page).querySelectorAll('.spec-group')).toHaveLength(2);
+
+    // A vehicle with no tier-2 value at all: the shell shuts, and the outgoing groups are still
+    // rendered inside it so they slide away with it.
+    await owner.fetchVin(EMPTY_RECORD_VIN);
+    await page.waitForChanges();
+    expect(shadow(page).querySelector('.spec-details')?.getAttribute('data-open')).toBe('false');
+    expect(shadow(page).querySelector('.spec-details')?.getAttribute('data-empty')).toBe('true');
+    expect(shadow(page).querySelector('.spec-details')?.getAttribute('aria-hidden')).toBe('true');
+    expect(shadow(page).querySelectorAll('.spec-group').length).toBeGreaterThan(0);
+  });
+
+  it('does not touch a loading flag when the language changes', async () => {
+    const page = await newPage(brokerMarketMocks);
+    const owner = page.rootInstance as VehicleSpecification;
+
+    await owner.fetchVin(RICH_VIN);
+    await page.waitForChanges();
+
+    await owner.changeLanguage('ar');
+    await page.waitForChanges();
+
+    expect(owner.isLoading).toBe(false);
+    expect((owner as unknown as { leaving: boolean }).leaving).toBe(false);
+    // The covers never came up and the region never shut for a change of words.
+    expect(shadow(page).querySelector('#spec-details-region')?.getAttribute('data-open')).toBe('true');
+    expect(text(page, '.spec-title-label')).toBe('الموديل:');
+  });
+
+  it('enters an error raised on a settled card through the leave', async () => {
+    const page = await newPage(brokerMarketMocks);
+    const owner = page.rootInstance as VehicleSpecification;
+
+    await owner.fetchVin(RICH_VIN);
+    await page.waitForChanges();
+
+    const seen: boolean[] = [];
+    const pending = owner.setErrorMessage('wrongResponseFormat');
+    // The head has to be out of the band before the red pill lands, so `leaving` is true while the
+    // method is still running and the pill has not been assigned yet.
+    seen.push((owner as unknown as { leaving: boolean }).leaving);
+    seen.push(owner.isError);
+    await pending;
+    await page.waitForChanges();
+
+    expect(seen).toEqual([true, false]);
+    expect(shadow(page).querySelector('.lookup-summary .status-badge')?.classList.contains('is-negative')).toBe(true);
   });
 
   it('renders nothing from the sub-objects outside the barrier', async () => {

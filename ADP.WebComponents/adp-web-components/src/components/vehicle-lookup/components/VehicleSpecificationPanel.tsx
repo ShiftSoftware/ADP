@@ -4,6 +4,8 @@ import { InferType } from 'yup';
 import specificationSchema from '~locales/vehicleLookup/specification/type';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
+import { ArrowIcon } from '~assets/arrow-icon';
+
 import { LookupHeadWait, PanelVerdict, StatusBadge } from '~features/vehicle-info-layout';
 
 import { BADGE_GLYPHS } from './glyphs';
@@ -42,6 +44,18 @@ type Props = SpecPanelState & {
   loading: boolean;
   /** The pill's state and words. The accent is the owner's; the wrapper draws it. */
   verdict: Pick<PanelVerdict, 'state' | 'text'>;
+  /** The locale's language tag, for the production date's month name. */
+  language: string;
+  /** The groups this vehicle has, from `detailGroups` — empty when it has no tier-2 value at all. */
+  groups: DetailGroup[];
+  /**
+   * What the details block keeps rendering while it is shut: the last vehicle's groups, so they
+   * slide away with the block instead of blinking out on the frame the data changed.
+   */
+  retainedGroups: DetailGroup[];
+  /** The reader's choice, not the vehicle's: it survives a lookup and is reset only by `clearData()`. */
+  detailsOpen: boolean;
+  onToggleDetails: () => void;
 };
 
 /**
@@ -167,6 +181,237 @@ export const panelLead = (state: { vehicleLoaded: boolean; authorized?: boolean;
   return state.authorized === false ? 'notice' : 'caption';
 };
 
+/**
+ * One labelled value. `text` is the plain value and is empty when the record has nothing for the
+ * slot; `note` is a second, smaller line inside the same block; `colour` replaces `text` for the two
+ * cells that pair an identity code with a resolved name.
+ */
+export type SpecCell = {
+  key: string;
+  label: string;
+  /** The typographic role: a code, a figure, or a word. An empty cell takes the grey dash's. */
+  role: 'code' | 'figure' | 'word';
+  text: string;
+  note?: string;
+  colour?: { code: string; name: string };
+};
+
+/** A tier-2 group and the cells that will actually render in it. */
+export type DetailGroup = { key: 'powertrain' | 'body'; label: string; cells: SpecCell[] };
+
+const same = (a: string, b: string) => !!a && a.trim().toUpperCase() === b.trim().toUpperCase();
+
+/** Whether the record left this slot empty — a dash, not a blank. */
+export const cellIsEmpty = (cell: SpecCell): boolean => (cell.colour ? !cell.colour.code && !cell.colour.name : !cell.text);
+
+/**
+ * Month and year in the locale's words.
+ *
+ * The production date in every record is a first-of-month: it is a month-granularity fact, and
+ * printing a day the record does not mean would be a claim. Tolerant of a full timestamp.
+ */
+export const productionMonth = (raw: string | undefined, language: string): string => {
+  const value = normalise(raw);
+  if (!value) return '';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  try {
+    return date.toLocaleDateString(language, { year: 'numeric', month: 'long' });
+  } catch {
+    return '';
+  }
+};
+
+/**
+ * Tier 1 — the identity grid: the same eight titled slots for every vehicle, in every state. This is
+ * the fixed structure, so the slots never come and go; only their values change, under a cover.
+ *
+ * `readable` false (no vehicle, an error, or a vehicle the distributor has no record of) empties
+ * every cell, and the renderer decides whether an empty cell reads as a dash or as a blank: a dash
+ * says "the record has nothing here", a blank says "there is no vehicle yet", and the two must not
+ * be confused.
+ */
+export const identityCells = (record: SpecificationRecord | undefined, locale: SpecificationLocale, language: string, readable: boolean): SpecCell[] => {
+  const spec = readable ? record?.vehicleSpecification : undefined;
+  const variant = readable ? record?.vehicleVariantInfo : undefined;
+  const identifiers = readable ? record?.identifiers : undefined;
+  const { year, recordYear } = readable ? modelYearOf(record) : {};
+
+  // The head's label is "Model" and carries the description; this cell carries the code. Where the
+  // two resolve to the same string — a catalogue with no separate code, or a vehicle whose
+  // description never resolved and whose head therefore shows the code — the cell dashes rather
+  // than print one string under two labels.
+  const modelCode = normalise(variant?.modelCode) || normalise(spec?.modelCode);
+
+  return [
+    { key: 'modelCode', label: locale.modelCode, role: 'code', text: same(modelCode, headValue(readable ? record : undefined)) ? '' : modelCode },
+    { key: 'variant', label: locale.variant, role: 'code', text: normalise(identifiers?.variant) },
+    { key: 'katashiki', label: locale.katashiki, role: 'code', text: normalise(identifiers?.katashiki) },
+    {
+      key: 'modelYear',
+      label: locale.modelYear,
+      role: 'figure',
+      // Four digits, never a locale grouping separator: a year is not a quantity.
+      text: year === undefined ? '' : String(year),
+      note: recordYear === undefined ? undefined : `${locale.recordYearNote} ${recordYear}`,
+    },
+    { key: 'productionDate', label: locale.productionDate, role: 'figure', text: productionMonth(spec?.productionDate, language) },
+    { key: 'sfx', label: locale.sfx, role: 'code', text: normalise(variant?.sfx) },
+    // The paint code and the trim code are `identifiers`, the same object as the variant and the
+    // katashiki: they *are* identity, and the paint is the first thing an advisor uses to find the
+    // car in the lot. The resolved name is the backend's; a catalogue name is its fallback.
+    { key: 'exteriorColour', label: locale.exteriorColour, role: 'code', text: '', colour: { code: normalise(identifiers?.color), name: normalise(spec?.exteriorColor) } },
+    { key: 'interiorColour', label: locale.interiorColour, role: 'code', text: '', colour: { code: normalise(identifiers?.trim), name: normalise(spec?.interiorColor) } },
+  ];
+};
+
+/**
+ * Tier 2 — the details: the other twelve specification fields, in two groups, with every empty
+ * field and every empty group dropped. This is the variable structure, so it lives in a
+ * `.collapsible` and the mounts and unmounts happen while that region is shut.
+ *
+ * The summary row's names and count are read from this same result, so what the row promises cannot
+ * drift from what opening it delivers.
+ *
+ * Coded values are rendered verbatim, after nothing but a trim: `side` reads `LHD` or `1`, `fuel`
+ * reads `Petrol` or `P`, `class` reads `Sedan` or `P`. The panel is not a decoder and never guesses
+ * — "LHD" expanded to "Left-hand drive" is a translation it cannot verify, and the feed that writes
+ * `1` uses a coding it has never been told. A host whose feed is coded can make its feed say words.
+ */
+export const detailGroups = (record: SpecificationRecord | undefined, locale: SpecificationLocale, readable: boolean): DetailGroup[] => {
+  const spec = readable ? record?.vehicleSpecification : undefined;
+
+  const bodyType = normalise(spec?.bodyType);
+  const style = normalise(spec?.style);
+  // One cell for two fields: both are litres, and `fuelLiter` is not populated by the evaluator
+  // today — the fallback is there for a host that fills it.
+  const capacity = normalise(spec?.tankCap, true) || normalise(spec?.fuelLiter, true);
+
+  const groups: DetailGroup[] = [
+    {
+      key: 'powertrain',
+      label: locale.powertrain,
+      cells: [
+        // Verbatim after the trim. A bare number is never suffixed "cc": the feed does not say what
+        // unit it is.
+        { key: 'engine', label: locale.engine, role: 'word', text: normalise(spec?.engine) },
+        { key: 'engineType', label: locale.engineType, role: 'word', text: normalise(spec?.engineType) },
+        { key: 'cylinders', label: locale.cylinders, role: 'figure', text: normalise(spec?.cylinders, true) },
+        { key: 'fuel', label: locale.fuel, role: 'word', text: normalise(spec?.fuel) },
+        { key: 'fuelCapacity', label: locale.fuelCapacity, role: 'figure', text: capacity ? `${capacity} ${locale.litreUnit}` : '' },
+        { key: 'transmission', label: locale.transmission, role: 'word', text: normalise(spec?.transmission) },
+      ],
+    },
+    {
+      key: 'body',
+      label: locale.body,
+      cells: [
+        { key: 'class', label: locale.class, role: 'word', text: normalise(spec?.class) },
+        { key: 'bodyType', label: locale.bodyType, role: 'word', text: bodyType },
+        // One name per object: a style that repeats the body type is dropped rather than shown twice.
+        { key: 'style', label: locale.style, role: 'word', text: same(style, bodyType) ? '' : style },
+        { key: 'doors', label: locale.doors, role: 'figure', text: normalise(spec?.doors, true) },
+        { key: 'steering', label: locale.steering, role: 'word', text: normalise(spec?.side) },
+        { key: 'vehicleType', label: locale.vehicleType, role: 'word', text: normalise(spec?.lightHeavyType) },
+      ],
+    },
+  ];
+
+  return groups.map(group => ({ ...group, cells: group.cells.filter(cell => !cellIsEmpty(cell)) })).filter(group => group.cells.length > 0);
+};
+
+/**
+ * What the summary row promises: the names of the groups that will actually render, and the count of
+ * cells that will actually appear. The word is the locale's, composed with the figure — never a
+ * suffix on a stem.
+ */
+export const detailsSummary = (groups: DetailGroup[], locale: SpecificationLocale): { names: string; count: string } => {
+  const count = groups.reduce((total, group) => total + group.cells.length, 0);
+
+  return {
+    names: groups.map(group => group.label).join(' · '),
+    count: `— ${count} ${count === 1 ? locale.detailsOne : locale.detailsMany}`,
+  };
+};
+
+/**
+ * One labelled value, in the language's labelled-card form — used at every width, because a record's
+ * fields are labelled values, not columns: a one-row table would be a form pretending to be a table.
+ *
+ * `blank` is the idle case: the value keeps its box with a non-breaking space and its text pinned at
+ * 0, because a dash beside a label would say "the record has nothing here" about a vehicle that does
+ * not exist yet. A loaded vehicle with nothing in the slot gets the dash.
+ *
+ * `shift-skeleton` goes on this block and on nothing else — not the label, not the cell, not a
+ * wrapper — and `resize-settle` beside it, so the block eases between the old value's height and the
+ * new one while the cover is still up.
+ */
+const SpecCellView: FunctionalComponent<{ cell: SpecCell; blank: boolean; key?: string }> = ({ cell, blank }) => {
+  const empty = cellIsEmpty(cell);
+
+  return (
+    <div class="spec-cell" data-label={cell.label}>
+      {/* A real element rather than a ::before caption: generated content is announced by most
+          screen readers, so the CSS caption plus the sr-only span the language suggests would be
+          heard twice. The data-label stays as the stable hook. */}
+      <span class="spec-cell-label">{cell.label}</span>
+
+      <span class="spec-value shift-skeleton resize-settle" data-role={empty ? 'empty' : cell.role}>
+        <span class="spec-value-content" data-empty={blank ? 'true' : 'false'}>
+          {blank ? ' ' : <SpecCellValue cell={cell} />}
+        </span>
+      </span>
+    </div>
+  );
+};
+
+const SpecCellValue: FunctionalComponent<{ cell: SpecCell }> = ({ cell }) => {
+  if (cellIsEmpty(cell)) return <span>—</span>;
+
+  if (cell.colour) {
+    const { code, name } = cell.colour;
+
+    return (
+      <span class="spec-colour">
+        {/*
+         * SEAM for the colour catalogue (a separate change, landing after this one).
+         *
+         * What plugs in here, and nowhere else: a `span.spec-swatch` as the FIRST child of this
+         * block — 16px, radius 4, `margin-inline-end: 6px`, the grey rim at .22, its `background`
+         * the catalogue's `approxHex` set inline, `aria-hidden="true"`, and `title` carrying
+         * `locale.swatchCaveat` (the key is already in all four locale files, unused until then).
+         * A non-solid finish adds `data-finish` and the raised-band highlight over the rim.
+         *
+         * Everything it needs is already in place: the code and the name are here, the whole value
+         * is one covered `.spec-value` block so the swatch arrives with its row and never on a beat
+         * of its own, and `.resize-settle` already animates the block when the swatch makes it wrap.
+         * It must NOT transition its background: a cross-fade would put a colour on screen that no
+         * vehicle has.
+         *
+         * Not yet built here, deliberately: the `brandSlugs` prop, `slugOf`, the catalogue asset and
+         * its lookup. Until they land the cell is code + resolved name, which is the honest
+         * rendering of a code no catalogue has resolved — a complete state, not a degraded one.
+         */}
+        {!!code && <code class="spec-colour-code">{code}</code>}
+        {!!code && !!name && <span class="spec-colour-separator">{' · '}</span>}
+        {!!name && <span class="spec-colour-name">{name}</span>}
+      </span>
+    );
+  }
+
+  return (
+    <span>
+      <span class="spec-value-text">{cell.text}</span>
+      {/* The two model years are columns of one record and the panel cannot adjudicate which is the
+          typo: showing one would assert it, hiding the other would hide a fact that decides parts
+          and campaign eligibility. No hue and no glyph — a data-quality fault is not a verdict. */}
+      {!!cell.note && <span class="spec-value-note">{cell.note}</span>}
+    </span>
+  );
+};
+
 /** The head's statement: what the vehicle is, in the distributor's words. Empty in every state the panel may not speak for. */
 export const headStatement = (record: SpecificationRecord | undefined, readable: boolean) => ({
   value: readable ? headValue(record) : '',
@@ -188,8 +433,8 @@ export const headStatement = (record: SpecificationRecord | undefined, readable:
  * treatment above the strip — the wrapper's `.loading` drops the head's content out of the band and
  * raises its spinner, so nothing here has a loading state of its own.
  */
-export const VehicleSpecificationPanel: FunctionalComponent<Props> = (props, children) => {
-  const { locale, record, error, loading, verdict } = props;
+export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
+  const { locale, record, error, loading, verdict, language, groups, retainedGroups, detailsOpen, onToggleDetails } = props;
 
   const vehicleLoaded = !!record?.vin && !error;
   /**
@@ -200,6 +445,20 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = (props, chi
   const readable = vehicleLoaded && record?.isAuthorized !== false;
   const lead = panelLead({ vehicleLoaded, authorized: record?.isAuthorized, error }, loading);
   const statement = headStatement(record, readable);
+  const cells = identityCells(record, locale, language, readable);
+
+  // Two empties, two meanings: before any lookup the values keep their box with a blank, because a
+  // dash would say "the record has nothing here" about a vehicle that does not exist yet.
+  const blank = !vehicleLoaded;
+
+  // The shell carries the summary row and the region; it shuts when the vehicle has no tier-2 value
+  // at all, so "nothing renders" is true and it got there by sliding. The region inside it carries
+  // the groups and answers to the reader. Both shut for a lookup, whatever the reader had chosen,
+  // and both keep rendering the outgoing groups while they do.
+  const shown = groups.length ? groups : retainedGroups;
+  const shellOpen = groups.length > 0 && !loading;
+  const regionOpen = shellOpen && detailsOpen;
+  const summary = detailsSummary(shown, locale);
 
   return (
     <section class="spec-card" data-verdict={verdict.state} data-phase={loading ? 'busy' : 'settled'}>
@@ -252,7 +511,61 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = (props, chi
             </div>
           </div>
 
-          {children}
+          {/* Tier 1 — the fixed structure. It never shuts: the same eight titled slots exist
+              whatever the answer is, so in flight they are anchors with their values covered where
+              they stand, and nothing but the values moves. */}
+          <div class="spec-identity" role="group" aria-label={locale.identity}>
+            {cells.map(cell => (
+              <SpecCellView key={cell.key} cell={cell} blank={blank} />
+            ))}
+          </div>
+
+          {/* Tier 2 — the variable structure, in two nested collapsibles. The shell carries the
+              recessed band, its top rule, the summary row and the region, so a vehicle with no
+              details has no block at all and got there by sliding rather than by vanishing. */}
+          <div class="spec-details collapsible" data-open={shellOpen ? 'true' : 'false'} data-empty={groups.length ? 'false' : 'true'} aria-hidden={shellOpen ? null : 'true'}>
+            <div class="collapsible-body">
+              <div class="spec-details-summary">
+                {/* A heading for the region, not a label for the button: it reads the same open or
+                    shut, so only the trigger's words and its chevron change. */}
+                <span class="spec-details-caption">
+                  <span class="spec-details-names">{summary.names}</span>
+                  <span class="spec-details-count">{summary.count}</span>
+                </span>
+
+                {/* The language's outlined round trigger, the SSC's trace button's geometry,
+                    colours, states, transitions and focus ring verbatim — with a chevron instead of
+                    the question mark, which in this family means "why this status?", and with no
+                    spinner, because nothing is fetched: the fields are already in the response. */}
+                <button
+                  type="button"
+                  class="spec-details-button"
+                  aria-expanded={regionOpen ? 'true' : 'false'}
+                  aria-controls="spec-details-region"
+                  title={detailsOpen ? locale.collapseDetails : locale.expandDetails}
+                  aria-label={detailsOpen ? locale.collapseDetails : locale.expandDetails}
+                  onClick={onToggleDetails}
+                >
+                  <ArrowIcon class="spec-details-chevron" />
+                </button>
+              </div>
+
+              <div id="spec-details-region" class="collapsible" data-open={regionOpen ? 'true' : 'false'} aria-hidden={regionOpen ? null : 'true'}>
+                <div class="collapsible-body">
+                  {shown.map(group => (
+                    <section class="spec-group" data-group={group.key} key={group.key} role="group" aria-label={group.label}>
+                      <span class="spec-group-label">{group.label}</span>
+                      <div class="spec-group-grid">
+                        {group.cells.map(cell => (
+                          <SpecCellView key={cell.key} cell={cell} blank={false} />
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
