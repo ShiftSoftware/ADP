@@ -338,7 +338,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   private signature(): string {
     const record = this.record();
     const readable = !!record?.vin && !this.isError && record.isAuthorized !== false;
-    const cells = identityCells(record, this.locale, this.locale.sharedLocales.language, readable, this.exteriorTable());
+    const cells = identityCells(record, this.locale, this.locale.sharedLocales.lang, readable, this.exteriorTable());
 
     return [
       this.isLoading || this.leaving,
@@ -439,7 +439,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
             error={error}
             loading={busy}
             verdict={verdict}
-            language={this.locale.sharedLocales.language}
+            lang={this.locale.sharedLocales.lang}
             exteriorColours={this.exteriorTable()}
             groups={groups}
             retainedGroups={this.retainedGroups}

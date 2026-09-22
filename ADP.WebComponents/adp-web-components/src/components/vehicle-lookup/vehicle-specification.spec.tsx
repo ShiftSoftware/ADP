@@ -11,6 +11,7 @@ import {
   hasRecords,
   headValue,
   identityCells,
+  intlLocalesFor,
   modelYearOf,
   normalise,
   panelLead,
@@ -948,46 +949,44 @@ describe('vehicle-specification — direction and language', () => {
   });
 
   /**
-   * The defect above, pinned as it actually renders, so that the `it.failing` below cannot pass for
-   * the wrong reason: the cell *is* found under the Arabic label, it *is* populated, and what it
-   * holds is the English month.
+   * The cell's label and its figure both follow the reader's language. Before 2026-09-22 only the
+   * label did: the panel formatted the date with `sharedLocales.language` — the *word* "english" /
+   * "arabic" / "kurdish" / "русский" — which `Intl` accepts as a structurally valid subtag it has no
+   * data for and resolves to the runtime's own default, so the figure read "November 2024" in every
+   * language, against § 3 ("month name + year in the locale"). It is handed `sharedLocales.lang` now.
    */
-  it('renders the production date under the locale s label — in English, whatever the language', async () => {
+  it('renders the production date under the locale s label, and in the locale s words', async () => {
     const page = await newPage(edgeCaseMocks);
-    const english = new Date('2024-11-01T00:00:00').toLocaleDateString('en', { year: 'numeric', month: 'long' });
+    const month = (lang: string | string[]) => new Date('2024-11-01T00:00:00').toLocaleDateString(lang, { year: 'numeric', month: 'long' });
 
     await owner(page).fetchVin('ZS8QK3WR5TD881204');
     await page.waitForChanges();
-    expect(text(page, `.spec-cell[data-label="${(specificationLocale as any).productionDate}"] .spec-value`)).toBe(english);
+    expect(text(page, `.spec-cell[data-label="${(specificationLocale as any).productionDate}"] .spec-value`)).toBe(month('en'));
 
     await owner(page).changeLanguage('ar');
     await page.waitForChanges();
-    // The label translated; the figure beside it did not.
     expect(shadow(page).querySelector(`.spec-cell[data-label="${arabicLocale.productionDate}"]`)).not.toBeNull();
-    expect(text(page, `.spec-cell[data-label="${arabicLocale.productionDate}"] .spec-value`)).toBe(english);
+    expect(text(page, `.spec-cell[data-label="${arabicLocale.productionDate}"] .spec-value`)).toBe(month('ar'));
+    // The figure really did change with the language, not merely differ from the label.
+    expect(text(page, `.spec-cell[data-label="${arabicLocale.productionDate}"] .spec-value`)).not.toBe(month('en'));
   });
 
   /**
-   * DEFECT, recorded rather than hidden. The panel formats the production date with
-   * `sharedLocales.language`, which is the word "english" / "arabic" / "kurdish" / "russian" and not
-   * a BCP-47 tag. `Intl` accepts each of those as a structurally valid language subtag it has no
-   * data for, so it resolves every one of them to the runtime's default locale instead of throwing.
-   * The cell therefore reads "November 2024" in Arabic, Kurdish and Russian, against § 3 of the
-   * specification ("month name + year in the locale").
-   *
-   * Written with `it.failing` so the suite stays honest in both directions: it passes while the
-   * defect is there and fails the moment somebody fixes it without coming back to this test.
+   * Kurdish is the one language whose tag is not the family's own key: the copy is Sorani, whose
+   * BCP-47 tag is `ckb`, and `ku` alone has no data on most runtimes. `intlLocalesFor` gives Intl a
+   * chain to fall back along — Sorani, then Kurdish, then Arabic, which is at least the right script
+   * for a Sorani reader — so the cell never silently reverts to English.
    */
-  it.failing('formats the production date in the reader s language', async () => {
+  it('formats the production date for Kurdish through the Sorani chain', async () => {
     const page = await newPage(edgeCaseMocks);
 
-    await owner(page).changeLanguage('ar');
+    await owner(page).changeLanguage('ku');
     await owner(page).fetchVin('ZS8QK3WR5TD881204');
     await page.waitForChanges();
 
-    expect(text(page, `.spec-cell[data-label="${arabicLocale.productionDate}"] .spec-value`)).toBe(
-      new Date('2024-11-01T00:00:00').toLocaleDateString('ar', { year: 'numeric', month: 'long' }),
-    );
+    const rendered = text(page, `.spec-cell[data-label="${kurdishLocale.productionDate}"] .spec-value`);
+    expect(rendered).toBe(new Date('2024-11-01T00:00:00').toLocaleDateString(intlLocalesFor('ku'), { year: 'numeric', month: 'long' }));
+    expect(rendered).not.toBe(new Date('2024-11-01T00:00:00').toLocaleDateString('en', { year: 'numeric', month: 'long' }));
   });
 });
 

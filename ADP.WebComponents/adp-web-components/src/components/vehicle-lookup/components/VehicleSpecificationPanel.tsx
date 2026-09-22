@@ -45,8 +45,8 @@ type Props = SpecPanelState & {
   loading: boolean;
   /** The pill's state and words. The accent is the owner's; the wrapper draws it. */
   verdict: Pick<PanelVerdict, 'state' | 'text'>;
-  /** The locale's language tag, for the production date's month name. */
-  language: string;
+  /** The locale's BCP-47 tag (`sharedLocales.lang`), for the production date's month name. */
+  lang: string;
   /**
    * This vehicle's brand's exterior paint table, already resolved through the host's `brandSlugs`
    * map — a plain code → colour table with no brand id in it, so the barrier holds by type. Absent
@@ -227,12 +227,37 @@ const same = (a: string, b: string) => !!a && a.trim().toUpperCase() === b.trim(
 export const cellIsEmpty = (cell: SpecCell): boolean => (cell.colour ? !cell.colour.code && !cell.colour.name : !cell.text);
 
 /**
+ * The Intl locales to format a date with, for one of the family's four languages.
+ *
+ * The panel is handed `sharedLocales.lang` — `en`, `ar`, `ku`, `ru` — and never
+ * `sharedLocales.language`, which is the *word* "english" / "arabic" / "kurdish" / "русский". Those
+ * words are structurally valid language subtags that `Intl` has no data for, so it resolves each of
+ * them to the runtime's own default instead of throwing, and the cell read "November 2024" in every
+ * language (found 2026-09-22).
+ *
+ * A list rather than a tag, so `Intl` falls back on its own: the family's Kurdish is Sorani, whose
+ * tag is `ckb` and whose support is patchy on older Android WebViews, and Arabic in the same script
+ * is a better last resort for a Sorani reader than English. The same chain the repo's date pickers
+ * already use (`branch-date-picker.tsx`), minus their regional first choices — this cell prints a
+ * month name and a year, where a region would only change which calendar's month names are used and
+ * the specification asks for the plain locale's.
+ */
+const INTL_LOCALES: Record<string, string[]> = {
+  en: ['en'],
+  ar: ['ar'],
+  ku: ['ckb', 'ku', 'ar'],
+  ru: ['ru'],
+};
+
+export const intlLocalesFor = (lang: string): string[] => INTL_LOCALES[lang] ?? INTL_LOCALES.en;
+
+/**
  * Month and year in the locale's words.
  *
  * The production date in every record is a first-of-month: it is a month-granularity fact, and
  * printing a day the record does not mean would be a claim. Tolerant of a full timestamp.
  */
-export const productionMonth = (raw: string | undefined, language: string): string => {
+export const productionMonth = (raw: string | undefined, lang: string): string => {
   const value = normalise(raw);
   if (!value) return '';
 
@@ -240,7 +265,7 @@ export const productionMonth = (raw: string | undefined, language: string): stri
   if (Number.isNaN(date.getTime())) return '';
 
   try {
-    return date.toLocaleDateString(language, { year: 'numeric', month: 'long' });
+    return date.toLocaleDateString(intlLocalesFor(lang), { year: 'numeric', month: 'long' });
   } catch {
     return '';
   }
@@ -277,7 +302,7 @@ export const exteriorColour = (record: SpecificationRecord | undefined, locale: 
 export const identityCells = (
   record: SpecificationRecord | undefined,
   locale: SpecificationLocale,
-  language: string,
+  lang: string,
   readable: boolean,
   exterior?: Record<string, ColourEntry>,
 ): SpecCell[] => {
@@ -304,7 +329,7 @@ export const identityCells = (
       text: year === undefined ? '' : String(year),
       note: recordYear === undefined ? undefined : `${locale.recordYearNote} ${recordYear}`,
     },
-    { key: 'productionDate', label: locale.productionDate, role: 'figure', text: productionMonth(spec?.productionDate, language) },
+    { key: 'productionDate', label: locale.productionDate, role: 'figure', text: productionMonth(spec?.productionDate, lang) },
     { key: 'sfx', label: locale.sfx, role: 'code', text: normalise(variant?.sfx) },
     // The paint code and the trim code are `identifiers`, the same object as the variant and the
     // katashiki: they *are* identity, and the paint is the first thing an advisor uses to find the
@@ -485,7 +510,7 @@ export const headStatement = (record: SpecificationRecord | undefined, readable:
  * raises its spinner, so nothing here has a loading state of its own.
  */
 export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
-  const { locale, record, error, loading, verdict, language, exteriorColours, groups, retainedGroups, detailsOpen, onToggleDetails } = props;
+  const { locale, record, error, loading, verdict, lang, exteriorColours, groups, retainedGroups, detailsOpen, onToggleDetails } = props;
 
   const vehicleLoaded = !!record?.vin && !error;
   /**
@@ -496,7 +521,7 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
   const readable = vehicleLoaded && record?.isAuthorized !== false;
   const lead = panelLead({ vehicleLoaded, authorized: record?.isAuthorized, error }, loading);
   const statement = headStatement(record, readable);
-  const cells = identityCells(record, locale, language, readable, exteriorColours);
+  const cells = identityCells(record, locale, lang, readable, exteriorColours);
 
   // Two empties, two meanings: before any lookup the values keep their box with a blank, because a
   // dash would say "the record has nothing here" about a vehicle that does not exist yet.
