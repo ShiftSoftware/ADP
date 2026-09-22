@@ -120,5 +120,252 @@
     "serviceItems": [],
     "accessories": [],
     "basicModelCode": "MXAA52"
+  },
+  "ZS8QK3WR5TD881204": {
+    "vin": "ZS8QK3WR5TD881204",
+    "identifiers": {
+      "vin": "ZS8QK3WR5TD881204",
+      "variant": "61840KP202501",
+      "katashiki": "MXBA61T-QLNXP",
+      "color": "070",
+      "trim": "FB20",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Meridia",
+      "companyID": "5",
+      "companyName": "Sample Distributor",
+      "branchID": "500",
+      "branchName": "Distributor HQ",
+      "invoiceDate": "2026-05-20",
+      "invoiceNumber": "48120735",
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Sample Distributor",
+        "branchID": "500",
+        "branchName": "Distributor HQ",
+        "invoiceNumber": "48120735",
+        "invoiceDate": "2026-05-20"
+      },
+      "intermediaries": []
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": false,
+      "startState": "AwaitingEndCustomerSale",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": []
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {
+      "modelCode": "61840",
+      "sfx": "KP",
+      "modelYear": 2025
+    },
+    "vehicleSpecification": {
+      "modelCode": "61840",
+      "modelYear": 2024,
+      "productionDate": "2024-11-01T00:00:00",
+      "modelDescription": "SELVARA 2.5L",
+      "variantDescription": "2.5 / Prestige",
+      "bodyType": "Sedan",
+      "engine": "2.5L A25A-FKS",
+      "fuel": "Petrol",
+      "transmission": "8AT"
+    },
+    "serviceItems": [],
+    "accessories": [],
+    "basicModelCode": "MXBA61T"
+  },
+  "ZT8VC4MH7TB552731": {
+    "vin": "ZT8VC4MH7TB552731",
+    "identifiers": {
+      "vin": "ZT8VC4MH7TB552731",
+      "variant": "72310QX202601",
+      "katashiki": "QFN480R-PBXTVA",
+      "color": "923",
+      "trim": "LA20",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Meridia",
+      "companyID": "5",
+      "companyName": "Sample Distributor",
+      "branchID": "500",
+      "branchName": "Distributor HQ",
+      "invoiceDate": "2026-05-20",
+      "invoiceNumber": "73301642",
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Sample Distributor",
+        "branchID": "500",
+        "branchName": "Distributor HQ",
+        "invoiceNumber": "73301642",
+        "invoiceDate": "2026-05-20"
+      },
+      "intermediaries": []
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": false,
+      "startState": "AwaitingEndCustomerSale",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": []
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {
+      "modelCode": "72310",
+      "sfx": "QX",
+      "modelYear": 2026
+    },
+    "vehicleSpecification": {
+      "modelCode": "72310",
+      "modelYear": 2026,
+      "productionDate": "2026-02-01T00:00:00",
+      "modelDescription": "ORINTA HEV",
+      "variantDescription": "2.5 HEV / Platinum",
+      "class": "Passenger",
+      "bodyType": "Wagon",
+      "engine": "2.5L A25A-FXS",
+      "cylinders": "4",
+      "lightHeavyType": "Light",
+      "doors": "5",
+      "fuel": "Hybrid",
+      "transmission": "e-CVT",
+      "side": "RHD",
+      "engineType": "Gasoline Hybrid",
+      "tankCap": "55",
+      "style": "Estate"
+    },
+    "serviceItems": [],
+    "accessories": [],
+    "basicModelCode": "QFN480"
+  },
+  "ZU9HB6TM3T4719068": {
+    "vin": "ZU9HB6TM3T4719068",
+    "identifiers": {
+      "vin": "ZU9HB6TM3T4719068",
+      "variant": "50127RD202601",
+      "katashiki": "DKZD22F-HWQLM",
+      "color": "553",
+      "trim": "26",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Meridia",
+      "companyID": "5",
+      "companyName": "Sample Distributor",
+      "branchID": "500",
+      "branchName": "Distributor HQ",
+      "invoiceDate": "2026-05-20",
+      "invoiceNumber": "20558914",
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Sample Distributor",
+        "branchID": "500",
+        "branchName": "Distributor HQ",
+        "invoiceNumber": "20558914",
+        "invoiceDate": "2026-05-20"
+      },
+      "intermediaries": []
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": false,
+      "startState": "AwaitingEndCustomerSale",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": []
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {
+      "modelCode": "50127",
+      "sfx": "RD",
+      "modelYear": 2026
+    },
+    "vehicleSpecification": {
+      "modelCode": "50127",
+      "modelYear": 2026,
+      "modelDescription": "VELDIN",
+      "variantDescription": "1.8 / Base",
+      "cylinders": " 0 ",
+      "doors": " 0 ",
+      "fuel": "Petrol",
+      "tankCap": " 0 "
+    },
+    "serviceItems": [],
+    "accessories": [],
+    "basicModelCode": "DKZD22F"
+  },
+  "ZW8PD9FK1T6034557": {
+    "vin": "ZW8PD9FK1T6034557",
+    "identifiers": {
+      "vin": "ZW8PD9FK1T6034557",
+      "variant": "88406LM202501",
+      "katashiki": "FZP502K-TRMDVA",
+      "color": "085",
+      "trim": "75",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Meridia",
+      "companyID": "5",
+      "companyName": "Sample Distributor",
+      "branchID": "500",
+      "branchName": "Distributor HQ",
+      "invoiceDate": "2026-05-20",
+      "invoiceNumber": "66427083",
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Sample Distributor",
+        "branchID": "500",
+        "branchName": "Distributor HQ",
+        "invoiceNumber": "66427083",
+        "invoiceDate": "2026-05-20"
+      },
+      "intermediaries": []
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": false,
+      "startState": "AwaitingEndCustomerSale",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": []
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {
+      "modelCode": "88406",
+      "sfx": "LM",
+      "modelYear": 2025
+    },
+    "vehicleSpecification": {
+      "modelCode": "88406",
+      "modelYear": 2025,
+      "productionDate": "2025-03-01T00:00:00",
+      "modelDescription": "KORRAVA",
+      "variantDescription": "2.0 / Comfort"
+    },
+    "serviceItems": [],
+    "accessories": [],
+    "basicModelCode": "FZP502K"
   }
 }
