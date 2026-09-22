@@ -29,7 +29,7 @@ export type SpecificationLocale = InferType<typeof specificationSchema>;
 export type SpecificationRecord = Pick<VehicleLookupDTO, 'vin' | 'isAuthorized' | 'identifiers' | 'vehicleVariantInfo' | 'vehicleSpecification'>;
 
 /** What the strip — the band between the head and the body — shows. */
-export type LeadKind = 'skeleton' | 'caption' | 'notice';
+export type LeadKind = 'caption' | 'notice';
 
 /** Everything the panel's strip is decided from. The pill and the accent are the family's `recordVerdict`. */
 export type SpecPanelState = {
@@ -177,17 +177,22 @@ const recordValues = (record?: SpecificationRecord): string[] => {
 export const hasRecords = (record?: SpecificationRecord): boolean => recordValues(record).some(Boolean);
 
 /**
- * The strip: a flat skeleton before any lookup, while one is in flight and on an error; the amber
- * notice for a vehicle the distributor has no record of; otherwise the identity grid's caption.
+ * The strip: the identity grid's caption, except for a vehicle the distributor has no record of,
+ * which gets the amber notice instead.
+ *
+ * The caption is not covered to load and is not a skeleton before the first lookup. The language's
+ * skeleton layer is for a strip whose content is variable -- a table's heading row, which is a lie
+ * above rows that do not exist yet. This strip is a fixed structure's title: the grid below it
+ * carries the same eight labelled cells in every state, so "Identity" is as true of an empty panel
+ * as of a loaded one, and covering a word that cannot change says nothing while costing a flicker
+ * on every lookup (S 21: a fixed structure's titles "stay exactly as they are"; S 5: the strip is
+ * one of the things that exist in every state).
  *
  * A caption rather than a notice for both the records and the no-records states, because records
  * are shown, not judged: there is no tone to say them in, the no-records fact is already said by
  * the pill in grey, and amber would claim the vehicle is unknown, which it is not.
  */
-export const panelLead = (state: { vehicleLoaded: boolean; authorized?: boolean; error?: string }, busy: boolean): LeadKind => {
-  if (busy || state.error || !state.vehicleLoaded) return 'skeleton';
-  return state.authorized === false ? 'notice' : 'caption';
-};
+export const panelLead = (state: { authorized?: boolean }): LeadKind => (state.authorized === false ? 'notice' : 'caption');
 
 /**
  * One labelled value. `text` is the plain value and is empty when the record has nothing for the
@@ -522,7 +527,7 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
    * the distributor's to assert.
    */
   const readable = vehicleLoaded && record?.isAuthorized !== false;
-  const lead = panelLead({ vehicleLoaded, authorized: record?.isAuthorized, error }, loading);
+  const lead = panelLead({ authorized: record?.isAuthorized });
   const statement = headStatement(record, readable);
   const cells = identityCells(record, locale, lang, readable, exteriorColours);
 
@@ -573,15 +578,14 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
       <div class="lookup-slide-clip">
         <div class="spec-under-head lookup-slide">
           <div class="spec-lead layer-stack" data-lead={lead}>
-            <div class="layer spec-lead-skeleton" data-active={lead === 'skeleton' ? 'true' : 'false'} aria-hidden="true" />
-
             <div class="layer spec-lead-caption" data-active={lead === 'caption' ? 'true' : 'false'} aria-hidden={lead === 'caption' ? null : 'true'}>
               <span class="spec-lead-caption-label">{locale.identity}</span>
             </div>
 
-            {/* An anchor like the other two: mounted in every state, and its tone never changes in
-                place — `panelLead` returns the skeleton while busy, so every change of tone is two
-                cross-fades with the skeleton between them. */}
+            {/* The other anchor: mounted in every state, and its tone never changes in place. The
+                strip only ever moves between these two, and it does so as the layer stack's
+                cross-fade — the caption is never covered, because the grid it names is the same
+                eight cells whatever the lookup returns. */}
             <div class="layer spec-lead-notice is-neutral" data-active={lead === 'notice' ? 'true' : 'false'} role="status" aria-hidden={lead === 'notice' ? null : 'true'}>
               <svg class="notice-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
                 <path fill="currentColor" d={BADGE_GLYPHS.question} />

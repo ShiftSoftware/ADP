@@ -100,15 +100,12 @@ describe('vehicle-specification — the derivations', () => {
     expect(hasRecords(undefined)).toBe(false);
   });
 
-  it('shows the skeleton while busy, idle and on an error; a notice only for an unauthorized vehicle', () => {
-    expect(panelLead({ vehicleLoaded: false }, false)).toBe('skeleton');
-    expect(panelLead({ vehicleLoaded: true, authorized: true }, true)).toBe('skeleton');
-    expect(panelLead({ vehicleLoaded: false, error: 'Wrong response format' }, false)).toBe('skeleton');
-    expect(panelLead({ vehicleLoaded: true, authorized: false }, false)).toBe('notice');
-    expect(panelLead({ vehicleLoaded: true, authorized: true }, false)).toBe('caption');
-    // Never a notice while a lookup is in flight: a tone change is two cross-fades with the
-    // skeleton between them, so a notice is never seen changing tone in place.
-    expect(panelLead({ vehicleLoaded: true, authorized: false }, true)).toBe('skeleton');
+  it('keeps the caption in every state but an unauthorized vehicle, which gets the notice', () => {
+    // The caption names the grid below, which is the same eight labelled cells whatever the lookup
+    // returns — so it is not covered to load and is not a skeleton before the first lookup either.
+    expect(panelLead({})).toBe('caption');
+    expect(panelLead({ authorized: true })).toBe('caption');
+    expect(panelLead({ authorized: false })).toBe('notice');
   });
 
   it('keeps every tier-1 slot in every state and dashes the model code that repeats the head', () => {
@@ -254,7 +251,7 @@ describe('vehicle-specification', () => {
     expect(text(page, '.spec-title-value')).toBe('—');
     expect(shadow(page).querySelector('.lookup-summary .status-badge')).toBeNull();
     expect(shadow(page).querySelector('.lookup-card')?.getAttribute('data-verdict')).toBe('idle');
-    expect(shadow(page).querySelector('.spec-lead')?.getAttribute('data-lead')).toBe('skeleton');
+    expect(shadow(page).querySelector('.spec-lead')?.getAttribute('data-lead')).toBe('caption');
 
     // Records on file: the records are the statement — no pill — and the accent goes green.
     await (page.rootInstance as VehicleSpecification).fetchVin(AUTHORIZED_VIN);
@@ -665,30 +662,31 @@ describe('vehicle-specification — the invariants', () => {
     expect(shadow(page).querySelector('.spec-identity')?.textContent).not.toContain('—');
   });
 
-  it('keeps the strip s three layers mounted in every state, with exactly one active', async () => {
+  it('keeps the strip s two layers mounted in every state, with exactly one active', async () => {
     const page = await newPage(brokerMarketMocks);
 
     const layers = () => Array.from(shadow(page).querySelectorAll('.spec-lead .layer'));
     const active = () => layers().filter(layer => layer.getAttribute('data-active') === 'true');
     const hiddenIsInactive = () => layers().every(layer => (layer.getAttribute('data-active') === 'true') === (layer.getAttribute('aria-hidden') !== 'true'));
 
-    // Idle. The skeleton layer is aria-hidden in every state — it is a decoration, not a statement.
-    expect(layers()).toHaveLength(3);
-    expect(active().map(layer => layer.className.includes('skeleton'))).toEqual([true]);
-    expect(shadow(page).querySelector('.spec-lead-skeleton')?.getAttribute('aria-hidden')).toBe('true');
+    // Idle, and the caption is already there: it names the grid below, which carries the same eight
+    // labelled cells before a lookup as after one. There is no skeleton layer to cover a word that
+    // cannot change.
+    expect(layers()).toHaveLength(2);
+    expect(active().map(layer => layer.className.includes('caption'))).toEqual([true]);
     // The band's wait spinner is an anchor too: the head's last child in every state.
     expect(shadow(page).querySelectorAll('.spec-head .lookup-head-wait')).toHaveLength(1);
 
     await owner(page).fetchVin(RICH_VIN);
     await page.waitForChanges();
-    expect(layers()).toHaveLength(3);
+    expect(layers()).toHaveLength(2);
     expect(active()).toHaveLength(1);
     expect(shadow(page).querySelector('.spec-lead-caption')?.getAttribute('data-active')).toBe('true');
     expect(shadow(page).querySelector('.spec-lead-notice')?.getAttribute('aria-hidden')).toBe('true');
 
     await owner(page).fetchVin('ZV8GHHHP37P214642');
     await page.waitForChanges();
-    expect(layers()).toHaveLength(3);
+    expect(layers()).toHaveLength(2);
     expect(active()).toHaveLength(1);
     expect(hiddenIsInactive()).toBe(true);
     // The caption layer is still mounted under the notice, so the tone never changes in place.

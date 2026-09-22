@@ -175,26 +175,6 @@
   min-height: var(--lead-height);
 }
 
-/* Idle it is the flat grey of a shape with nothing to say; in flight it darkens a shade and the
-   sheen sweeps it. The rest position keeps the band clear of the box so it enters and leaves
-   rather than appearing mid-sweep. */
-.spec-lead-skeleton {
-  background-color: var(--line-soft);
-  background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
-  background-repeat: no-repeat;
-  background-position: -100% 0;
-  background-size: 45% 100%;
-  transition:
-    opacity var(--settle) ease,
-    visibility 0s linear var(--settle),
-    background-color var(--settle) ease;
-}
-
-.spec-card[data-phase='busy'] .spec-lead-skeleton {
-  background-color: #dcdfe4;
-  animation: lookup-sheen 1.3s linear infinite;
-}
-
 /* The identity grid's caption: the columns layer in its one-word form, because a record's fields
    are labelled values, not columns. A caption and not a notice — records are shown, not judged. */
 .spec-lead-caption {
