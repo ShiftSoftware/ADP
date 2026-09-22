@@ -58,6 +58,20 @@ describe('the colour catalogue asset', () => {
     }
 
     expect([...occurrences].filter(([, count]) => count > 1)).toEqual([]);
+
+    // The scan is only worth anything if it found the entries: a regex that stopped matching — an
+    // entry written with `approxHex` first, a reformat that put the brace on its own line — would
+    // make this test pass over a file it never read. So the count it found must be the count the
+    // parse holds, and duplicates must be counted per brand rather than across the whole file.
+    const parsed = Object.values(catalogue).flatMap(brand => tables(brand).flatMap(([, codes]) => Object.keys(codes)));
+    expect([...occurrences.values()].reduce((total, count) => total + count, 0)).toBe(parsed.length);
+
+    for (const [slug, brand] of Object.entries(catalogue)) {
+      for (const [table, codes] of tables(brand)) {
+        const seen = [...rawCatalogue.matchAll(/"([0-9A-Za-z]{1,8})"\s*:\s*\{\s*"name"/g)].map(hit => hit[1]).filter(code => code in codes);
+        expect(`${slug}.${table}: ${seen.length}`).toBe(`${slug}.${table}: ${Object.keys(codes).length}`);
+      }
+    }
   });
 
   it('ships its provenance beside it: every source, the retrieval date and the caveat', () => {
@@ -80,21 +94,53 @@ describe('the colour catalogue asset', () => {
     expect(meta.interior).toContain('no interior swatch');
   });
 
-  it('counts what it says it counts', () => {
-    const exterior = catalogue.toyota?.exterior ?? {};
-    const withHex = Object.values(exterior).filter(entry => entry.approxHex !== undefined);
+  it('is a table of codes under `exterior` under a slug, and nothing else', () => {
+    // The shape the panel reads is `catalogue[slug].exterior[code]`, so each of those three levels
+    // is asserted: a brand with no exterior table would resolve to no swatch for every vehicle it
+    // covers, and a code key with a space or a lower-case letter would never match a record's code,
+    // which is compared after a trim and nothing else.
+    for (const [slug, brand] of Object.entries(catalogue)) {
+      expect(`${slug}: ${typeof brand.exterior === 'object' && brand.exterior !== null}`).toBe(`${slug}: true`);
 
-    expect(Object.keys(exterior).length).toBe(meta.brands.toyota.exterior);
-    expect(withHex.length).toBe(meta.brands.toyota.exteriorWithApproxHex);
-    expect(catalogue.toyota?.interior).toBeUndefined();
+      for (const [table, codes] of tables(brand)) {
+        expect(`${slug}.${table}: ${Object.keys(codes).length > 0}`).toBe(`${slug}.${table}: true`);
+
+        for (const [code, entry] of Object.entries(codes)) {
+          expect(`${slug}.${table}.${code}`).toMatch(/^[a-z0-9-]+\.[a-z]+\.[0-9A-Z]{1,8}$/);
+          expect(`${slug}.${table}.${code}: ${typeof entry === 'object' && entry !== null && !Array.isArray(entry)}`).toBe(`${slug}.${table}.${code}: true`);
+        }
+      }
+    }
+  });
+
+  it('counts what it says it counts, for every brand it ships', () => {
+    // Every brand in the data has a line in the meta file and every line has a brand, so a brand
+    // added without its provenance — or provenance for a brand that was dropped — fails here.
+    expect(Object.keys(meta.brands).sort()).toEqual(Object.keys(catalogue).sort());
+
+    for (const [slug, brand] of Object.entries(catalogue)) {
+      const exterior = brand.exterior ?? {};
+      const withHex = Object.values(exterior).filter(entry => entry.approxHex !== undefined);
+
+      expect(`${slug}: ${Object.keys(exterior).length}`).toBe(`${slug}: ${meta.brands[slug].exterior}`);
+      expect(`${slug}: ${withHex.length}`).toBe(`${slug}: ${meta.brands[slug].exteriorWithApproxHex}`);
+      // No interior table ships, and the meta file says so in a figure as well as in prose.
+      expect(brand.interior).toBeUndefined();
+      expect(`${slug}: ${meta.brands[slug].interior}`).toBe(`${slug}: 0`);
+    }
   });
 
   it('keeps a pure black or white only where the finish makes it defensible', () => {
-    const pure = Object.entries(catalogue.toyota?.exterior ?? {}).filter(([, entry]) => ['#000000', '#ffffff'].includes(String(entry.approxHex).toLowerCase()));
-
     // A chart render that flattened a metallic or pearl paint to pure black or white is the chart's
     // shorthand, not the paint: "Black Sand Pearl" is not #000000. Those entries ship name-only.
-    expect(pure.every(([, entry]) => entry.finish === 'solid')).toBe(true);
+    for (const [slug, brand] of Object.entries(catalogue)) {
+      for (const [table, codes] of tables(brand)) {
+        for (const [code, entry] of Object.entries(codes)) {
+          if (!['#000000', '#ffffff'].includes(String(entry.approxHex).toLowerCase())) continue;
+          expect(`${slug}.${table}.${code}: ${entry.finish}`).toBe(`${slug}.${table}.${code}: solid`);
+        }
+      }
+    }
   });
 });
 
