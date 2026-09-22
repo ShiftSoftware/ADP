@@ -246,12 +246,26 @@
    in every state, so it never shuts and its values are covered where they stand.
    ------------------------------------------------------------------------------------------- */
 
-/* 180px is the floor: the longest tier-1 code in the fixtures is a 24-character katashiki-variant
-   at 13px/760, about 185px wide. `overflow-wrap: anywhere` on the value is the safety; the floor is
-   what keeps it from wrapping in the common case. 20 is the card's horizontal inset. */
+/* Two figures decide the grid, and § 3's Widths table gives both.
+ *
+ * The FLOOR is 180px: the longest tier-1 code in the fixtures is a 24-character katashiki-variant
+ * at 13px/760, about 185px wide. `overflow-wrap: anywhere` on the value is the safety; the floor is
+ * what keeps it from wrapping in the common case.
+ *
+ * The CEILING is --spec-columns: four above 960px, three to 720, two to 430, one below it. Plain
+ * `auto-fill` at the floor honoured only the floor, and on the showcase's 1150px column it laid the
+ * eight cells seven-up — a row of thin columns where the table says four, and the colour pair
+ * stranded alone on a second row instead of read together (found 2026-09-22). The track's minimum
+ * is therefore the LARGER of the floor and an equal share of the row, which caps `auto-fill` at the
+ * share's count while still dropping to fewer tracks when the floor will not fit — a narrow
+ * container in a host page never gets a cell squeezed under 180px to satisfy a count.
+ *
+ * 20 is the card's horizontal inset; the 12 in the share is the column gap below. */
 .spec-identity {
+  --spec-columns: 4;
+
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(max(180px, (100% - (var(--spec-columns) - 1) * 12px) / var(--spec-columns)), 1fr));
   gap: 10px 12px;
   padding: 12px 20px 14px;
 }
@@ -371,13 +385,24 @@
 
 /* Metallic and pearl must not read as flat colour. The language's raised-band highlight — a light
    catching a raised band, not a shadow — layered over the rim, which is as far as an approximation
-   should go: a gradient or a sparkle would pretend to be the finish rather than name it. The name
-   beside it carries the finish too ("… METALLIC", "PEARL …"), so the mark is never the only say. */
+   should go: a gradient or a sparkle would pretend to be the finish rather than name it. Where the
+   distributor resolved a name it carries the finish too ("… METALLIC", "PEARL …"); where it did not,
+   the cell is the code and this mark, and the mark says "not flat" without naming a colour. */
 .spec-swatch[data-finish='metallic'],
 .spec-swatch[data-finish='pearl'] {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.56),
     inset 0 0 0 1px rgba(95, 108, 120, 0.22);
+}
+
+/* The whole value is one directional unit. The code and the name are Latin, so in an rtl line they
+   form their own left-to-right run — and the swatch, being an element rather than text, was ordered
+   against it: the chip drifted to the line's right edge and came to rest beside the NAME, with a
+   wrapped word stranded underneath it, while the code it belongs to sat at the far end. `isolate`
+   makes the cell mirror as a block instead, so the chip keeps leading its code in every direction
+   (found in the ar render, 2026-09-22). */
+.spec-colour {
+  unicode-bidi: isolate;
 }
 
 .spec-colour-code {
@@ -513,11 +538,16 @@
   text-transform: uppercase;
 }
 
-/* A step denser than tier 1: these values are short words ("Automatic", "Diesel", "4"), and the
-   floor is the width of "Automatic 6-Speed" at 13px/500. */
+/* A step denser than tier 1 on both figures: these values are short words ("Automatic", "Diesel",
+   "4"), so the floor is the width of "Automatic 6-Speed" at 13px/500 and the ceiling is one column
+   more than the identity grid's — § 3's "4-5 cells per row" at full width, then 4, 3, 2. Same
+   recipe as above: the larger of the floor and an equal share, so `auto-fill` cannot exceed the
+   count and cannot squeeze a cell below its floor either. */
 .spec-group-grid {
+  --spec-columns: 5;
+
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(max(160px, (100% - (var(--spec-columns) - 1) * 12px) / var(--spec-columns)), 1fr));
   gap: 8px 12px;
 }
 
@@ -544,8 +574,18 @@
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Narrow panels
+   Narrow panels. The column ceilings are § 3's Widths table, widest first.
    ------------------------------------------------------------------------------------------- */
+
+@container spec-panel (max-width: 960px) {
+  .spec-identity {
+    --spec-columns: 3;
+  }
+
+  .spec-group-grid {
+    --spec-columns: 4;
+  }
+}
 
 @container spec-panel (max-width: 720px) {
   .spec-head {
