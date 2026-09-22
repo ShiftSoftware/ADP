@@ -1,3 +1,17 @@
+/*
+ * Vehicle specification — the stylesheet for <vehicle-specification>. The card around the panel
+ * (paper, border, radius, shadow, the accent bar) is the wrapper's
+ * (features/vehicle-info-layout); this file styles what is inside it.
+ *
+ * The body is a fixed structure — six titled cards, one value each — so it does not shut to load:
+ * every value block carries `shift-skeleton` (through MaterialCardChildren) and the wrapper root's
+ * `.loading` covers it in flight. See the design language, § 21 "the changeable content".
+ *
+ * Plain CSS since 2026-09-22; the rules below are the exact values the Tailwind utilities they
+ * replaced were generating (read out of the build, not from memory). Parity only — nothing here is
+ * a design decision, and the redesign is a separate commit.
+ */
+
 @import '../style/shift-skeleton.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 @import '../../features/vehicle-info-layout/lookup-head.css';
@@ -12,4 +26,52 @@
 *,
 :host * {
   font-family: inherit !important;
+}
+
+/* The six cards, wrapping as the panel narrows. Was:
+   `flex p-[16px] [&>div]:grow overflow-auto gap-[16px] items-stretch justify-center
+    md:justify-between flex-wrap`. */
+.spec-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  /* Centred while the row is short, spread once the panel is wide enough for it to read as a row
+     rather than a huddle — the `md:` breakpoint, kept as the viewport query it was. The design
+     language asks for a container query here; changing it is a visual decision, so it belongs to
+     the redesign commit, not to this one. */
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  overflow: auto;
+}
+
+/* `[&>div]:grow` — every direct child, which is what a MaterialCard renders. MaterialCard also
+   sets `flex: 1` inline, so this has never decided anything; kept because parity is the whole
+   point of this commit. */
+.spec-grid > div {
+  flex-grow: 1;
+}
+
+@media (min-width: 768px) {
+  .spec-grid {
+    justify-content: space-between;
+  }
+}
+
+/* On MaterialCard's root, beside its inline `flex: 1`. Was `grow`. */
+.spec-card {
+  flex-grow: 1;
+}
+
+/* On the value block MaterialCardChildren renders, beside `shift-skeleton`. Was `text-center`. */
+.spec-value {
+  text-align: center;
+}
+
+/* Was `my-2` on the <br> between the model code and its description. Vertical margins do not apply
+   to a non-replaced inline element, so this has never drawn anything; written out rather than
+   dropped so the commit stays a pure translation. */
+.spec-value-break {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
 }

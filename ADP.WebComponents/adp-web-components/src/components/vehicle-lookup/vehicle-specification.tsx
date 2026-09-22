@@ -163,20 +163,20 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
           <div class="lookup-slide-clip">
             <div class="lookup-slide">
               <flexible-container>
-                <div class="flex p-[16px] [&>div]:grow overflow-auto gap-[16px] items-stretch justify-center md:justify-between flex-wrap">
-                  <MaterialCard class="grow" title={texts?.model} minWidth="300px">
+                <div class="spec-grid">
+                  <MaterialCard class="spec-card" title={texts?.model} minWidth="300px">
                     <MaterialCardChildren
-                      class="text-center"
+                      class="spec-value"
                       hidden={!this?.vehicleLookup?.vehicleVariantInfo?.modelCode?.trim() && !this?.vehicleLookup?.vehicleSpecification?.modelDescription?.trim()}
                     >
-                      {this?.vehicleLookup?.vehicleVariantInfo?.modelCode?.trim() || ''} <br class="my-2" />
+                      {this?.vehicleLookup?.vehicleVariantInfo?.modelCode?.trim() || ''} <br class="spec-value-break" />
                       {this?.vehicleLookup?.vehicleSpecification?.modelDescription?.trim() || ''}
                     </MaterialCardChildren>
                   </MaterialCard>
 
-                  <MaterialCard class="grow" title={texts?.variant} minWidth="300px">
+                  <MaterialCard class="spec-card" title={texts?.variant} minWidth="300px">
                     <MaterialCardChildren
-                      class="text-center"
+                      class="spec-value"
                       hidden={!this?.vehicleLookup?.identifiers?.variant?.trim() && !this?.vehicleLookup?.vehicleSpecification?.variantDescription?.trim()}
                     >
                       {this?.vehicleLookup?.identifiers?.variant?.trim() || ''} <br />
