@@ -29,7 +29,7 @@
  */
 
 /** The `--settle` token (lookup-tokens.css) when the stylesheet cannot be read, as in tests. */
-const DEFAULT_SETTLE_MS = 320;
+const DEFAULT_SETTLE_MS = 480;
 
 const heightOf = (block: HTMLElement) => block.getBoundingClientRect().height;
 

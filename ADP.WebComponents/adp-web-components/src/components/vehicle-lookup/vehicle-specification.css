@@ -535,24 +535,6 @@
    Loading: the shared cover, with this panel's sheen. Must come after the imports it overrides.
    ------------------------------------------------------------------------------------------- */
 
-/* The shared cover's shimmer is a -45deg gradient sweeping out and back over two seconds between
-   two greys about 5% apart — moving, yet reading as static — and it fades over 500ms rather than
-   --settle. Replaced here with the language's single band of light on the one clock. Scoped to this
-   stylesheet exactly as the warranty timeline scopes its own: changing the shared file is the
-   family-wide fix (the design language's § 28.11) and would move six other panels' loading
-   treatment in a commit with no screenshots of them. Recorded as a debt, not taken here. */
-.shift-skeleton::after {
-  background-color: #dde1e6;
-  background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
-  background-repeat: no-repeat;
-  background-size: 45% 100%;
-  transition-duration: var(--settle);
-}
-
-.loading .shift-skeleton::after {
-  animation: lookup-sheen 1.3s linear infinite;
-}
-
 /* ---------------------------------------------------------------------------------------------
    Narrow panels. The column ceilings are § 3's Widths table, widest first.
    ------------------------------------------------------------------------------------------- */

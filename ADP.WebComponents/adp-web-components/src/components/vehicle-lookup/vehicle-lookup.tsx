@@ -45,6 +45,9 @@ export type ActiveElement = (typeof componentTags)[keyof typeof componentTags] |
 
 const hasEntries = (value?: object | null) => !!value && typeof value === 'object' && Object.keys(value).length > 0;
 
+/** The --settle token (lookup-tokens.css) when the stylesheet cannot be read, as in tests. */
+const DEFAULT_SETTLE_MS = 480;
+
 @Component({
   shadow: true,
   tag: 'vehicle-lookup',
@@ -175,7 +178,7 @@ export class VehicleLookup implements MultiLingual {
   private headSettleMs(): number {
     const raw = typeof getComputedStyle === 'function' ? getComputedStyle(this.el).getPropertyValue('--settle') : '';
     const parsed = parseFloat(raw);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 820;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_SETTLE_MS;
   }
 
   private tabOf(tag: string | undefined) {

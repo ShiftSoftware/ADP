@@ -18,7 +18,7 @@ import { setVehicleLookupData, setVehicleLookupErrorState } from '~features/vehi
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
 /** The --settle token (lookup-tokens.css) when the stylesheet cannot be read, as in tests. */
-const DEFAULT_SETTLE_MS = 320;
+const DEFAULT_SETTLE_MS = 480;
 
 /**
  * The build record for a VIN: what this vehicle *is* — the model, the year, the grade, and the
