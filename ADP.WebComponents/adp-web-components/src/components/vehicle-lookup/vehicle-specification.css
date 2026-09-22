@@ -16,16 +16,24 @@
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 @import '../../features/vehicle-info-layout/lookup-head.css';
 
+/* The panel is embedded at whatever width the host gives it, so its breakpoints read its own width
+   rather than the window's — the same :host as the two reference panels (vehicle-ssc.css lines
+   20-26). It replaces a legacy `all: initial !important` reset that predates the design language:
+   `all` covers `container-type` as well, so the inline-size container the wrapper declares on this
+   same :host (vehicle-info-layout.css line 20) was reset to `normal` and every @container rule in
+   this shadow root would have matched nothing. The reset also beat the `display: block` above it
+   (`all: initial` resolves display to `inline`), which is why the host has been an inline box.
+
+   Gone with it: the `font-family: var(--font-sans) !important` that restored what the reset had
+   just taken away, and the `*, :host * { font-family: inherit !important }` pair that forced it
+   onto every descendant. The face now arrives the way it does in the reference panels — the
+   wrapper's `.lookup-panel` / `.lookup-core` set it and everything under them inherits, and
+   `:host [dir='rtl']` switches it for an Arabic-script locale (vehicle-info-layout.css lines
+   62-85). A descendant that declared a face of its own would now keep it; none does. */
 :host {
   display: block;
-  all: initial !important;
-  /* The family's face (lookup-tokens.css); the wrapper's root switches it for an rtl locale. */
-  font-family: var(--font-sans) !important;
-}
-
-*,
-:host * {
-  font-family: inherit !important;
+  container-type: inline-size;
+  container-name: spec-panel;
 }
 
 /* The six cards, wrapping as the panel narrows. Was:
