@@ -18,35 +18,21 @@
      container queries on the host, not the window. A panel that names its container keeps the
      name — an unnamed query resolves to the nearest container either way. */
   container-type: inline-size;
-  /* How a panel's body changes on a composite's tab switch: a sequence, barely overlapping. The
-     outgoing content leaves first — fading as it lifts 8px over 220ms on a soft in-out curve, so
-     it departs rather than blinks — and the incoming starts at 160ms, when the outgoing is ~90%
-     gone (its curve has most of its travel done by three quarters), so there is no dead frame
-     between them yet never a frame with two lists showing through each other, which is what made
-     a simultaneous rise-out / rise-in read as a double exposure. The incoming arrives slower,
-     over 400ms: fading in as it rises 12px into place on the settle curve. The distances are
-     small so the eye reads a change, not a movement; the direction — up and out, in from below —
-     is the head content's, so the card turns as one page. 560ms in all, inside the head's 600ms
-     hand-over and the height's 600ms follow, so the body reads before the card has finished
-     settling round it. Durations here longer than --settle are deliberate exceptions to the
-     language's one-duration rule. */
-  --tab-exit: 220ms;
+  /* A composite's tab switch is on the language's one clock — --settle, `ease` — like a lookup:
+     the head's content, the band's height, the region's height and each panel's body all move
+     together and land together; the body fades to nothing as it goes, the head only to 0.9 (its
+     rule below says why). Before
+     2026-09-22 the switch had four clocks of its own (an 820ms slide on a front-loaded curve that
+     did three quarters of its travel in the first quarter of the time, a 220ms body exit, a 400ms
+     body entry after 160ms, and a 320ms dim to 0.6) and read as abrupt beside the lookup's one
+     movement (owner, 2026-09-22 — the lookup "feels much smoother"). The two travels below are
+     the body's only figures of its own: small, so the eye reads a change rather than a movement;
+     the direction — up and out, in from below — is the head content's, so the card turns as one
+     page. The outgoing and incoming bodies cross while both are faint, as the lookup's head and
+     spinner do; if that reads as a double exposure the fallback is to delay the arrival by the
+     departure's fade. */
   --tab-exit-travel: 8px;
-  --tab-exit-ease: cubic-bezier(0.45, 0, 0.55, 1);
-  --tab-enter: 400ms;
-  --tab-enter-delay: 160ms;
   --tab-enter-travel: 12px;
-  /* The settle curve, for everything that arrives or moves into place on a switch: a long, even
-     deceleration with no snap at the start — a strong ease-out (0.23, 1, 0.32, 1) did most of
-     its travel in the first fifth of the time and read as a jump then a crawl (owner,
-     2026-09-20 — "fast and not smooth"). */
-  --tab-ease: cubic-bezier(0.32, 0.72, 0, 1);
-  --tab-height-settle: 820ms;
-  --tab-height-ease: var(--tab-ease);
-  /* The head's hand-over: the outgoing content slides up out of the band as the incoming slides in
-     from below it, one movement (owner, 2026-09-20), on the settle curve — the same clock as the
-     height, so the band and its content land together. */
-  --tab-head-settle: 820ms;
   /* How far the head's content drops as it leaves for a lookup, in its own height: past its own
      bottom edge by a quarter, so the whole block is out from under the title line before the fade
      is over and the spinner rising into its place never crosses legible words. A translate, so
@@ -241,16 +227,15 @@
 .lookup-tabs {
   position: relative;
   overflow: hidden;
-  transition: height var(--tab-height-settle) var(--tab-height-ease);
+  transition: height var(--settle) ease;
 }
 
 /* Every tab is mounted always. The active one is in flow and paints above the rest; an inactive
-   one is laid under it at the same width and — visibility delayed until the slowest of its
-   content's fades has finished — unreachable by keyboard and pointer. The tab itself does not
-   fade: its head content and its body fade on their own clocks (below), and a fade on the tab
-   would multiply into both. A switch changes these attributes and nothing else, so the
-   transitions start from the live on-screen values and a click mid-switch reverses from wherever
-   the content is. */
+   one is laid under it at the same width and — visibility delayed until its content's fades have
+   finished — unreachable by keyboard and pointer. The tab itself does not fade: its head content
+   and its body fade (below), and a fade on the tab would multiply into both. A switch changes
+   these attributes and nothing else, so the transitions start from the live on-screen values and
+   a click mid-switch reverses from wherever the content is. */
 .lookup-tab {
   position: relative;
   z-index: 1;
@@ -265,7 +250,7 @@
   top: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: visibility 0s linear var(--tab-head-settle);
+  transition: visibility 0s linear var(--settle);
 }
 
 /* The panel host hides itself while parked, on the same clock as the tab that holds it: the legacy
@@ -277,19 +262,19 @@
    once. */
 :host([data-tab-park]) {
   visibility: hidden !important;
-  transition: visibility 0s linear var(--tab-head-settle) !important;
+  transition: visibility 0s linear var(--settle) !important;
 }
 
 /* The card and the head band never move; what changes is the region under the head, which every
-   panel marks .lookup-slide. The outgoing leaves first — up and out, fast — and the incoming
-   arrives once it has gone, from below, slower (the figures and their reasons are on :host). The
-   panel's host is told when it is parked (data-tab-park) and when it has just left
-   (data-tab-leaving) and moves its own region accordingly. A transition is read from the state
-   being entered, which is what gives each leg its own clock: the base rule below is the arrival,
-   the leaving rule the departure, and the parked rule — reached only once the tab is hidden —
-   has none. At rest the transform is none, not translateY(0), so a fixed-positioned descendant
-   keeps the viewport as its containing block. Never put this class on a .collapsible: the
-   transition list would replace the slide's. */
+   panel marks .lookup-slide. The outgoing fades as it lifts a little and the incoming fades in as
+   it rises into place from a little below, together, over --settle (the travels and their reasons
+   are on :host). The panel's host is told when it is parked (data-tab-park) and when it has just
+   left (data-tab-leaving) and moves its own region accordingly. A transition is read from the
+   state being entered: the base rule below is the arrival, the leaving rule the departure on the
+   same clock, and the parked rule — reached only once the tab is hidden — has none. At rest the
+   transform is none, not translateY(0), so a fixed-positioned descendant keeps the viewport as
+   its containing block. Never put this class on a .collapsible: the transition list would
+   replace the slide's. */
 /* The slide's own box clips it: on its way up it passes under the head band's edge, never over the
    head, and on its way in it rises from under the card's bottom. */
 .lookup-slide-clip {
@@ -298,8 +283,8 @@
 
 .lookup-slide {
   transition:
-    transform var(--tab-enter) var(--tab-ease) var(--tab-enter-delay),
-    opacity var(--tab-enter) var(--tab-ease) var(--tab-enter-delay);
+    transform var(--settle) ease,
+    opacity var(--settle) ease;
 }
 
 :host([data-tab-park]) .lookup-slide {
@@ -308,25 +293,30 @@
   transition: none;
 }
 
-/* After the park rule, so it wins the tie: the leaving host is parked too. */
+/* After the park rule, so it wins the tie: the leaving host is parked too. The departure keeps
+   the base rule's transition — one clock for both legs. */
 :host([data-tab-leaving]) .lookup-slide {
   opacity: 0;
   transform: translateY(calc(-1 * var(--tab-exit-travel)));
   transition:
-    transform var(--tab-exit) var(--tab-exit-ease),
-    opacity var(--tab-exit) var(--tab-exit-ease);
+    transform var(--settle) ease,
+    opacity var(--settle) ease;
 }
 
 /* The head band itself never moves; what it holds slides through it. A panel marks its head's
    content .lookup-head-content (the title and the summary, separately) and gives the band
    .lookup-head-band, which clips. On a switch the outgoing content slides up and out of the band
-   and the incoming slides in from below it, together, as one movement over --tab-head-settle — a
-   line of a list rolling up to the next — and the accent bar and the band's rule stay where they
-   are. Neither end is invisible: the content dims to 0.6 as it leaves and arrives at 0.6, so it
-   is the band's edge that takes it, not a fade. The travel is the content's own height plus more
-   than the band's padding, so nothing lingers in the padding once out. Parked tabs rest below the
-   band, so an entry is always from below; the tab that just left is told so (data-tab-leaving) and
-   rests above it until the movement is over, then re-parks unseen. */
+   and the incoming slides in from below it, together, as one movement over --settle — a line of
+   a list rolling up to the next — and the accent bar and the band's rule stay where they are.
+   Neither end is invisible: the content dims only to 0.9 as it leaves and arrives at 0.9, so it
+   is the band's edge that takes it, not a fade — the words stay legible right up to the clip,
+   and the head reads as one line rolling to the next rather than two dissolving through each
+   other (owner, 2026-09-22; 0.6 before that, which with the slide's old front-loaded curve read
+   as a cut). The lookup's leave, by contrast, fades to 0: there the spinner rises through the
+   same space and the words must be gone before it does. The travel is the content's own
+   height plus more than the band's padding, so nothing lingers in the padding once out. Parked
+   tabs rest below the band, so an entry is always from below; the tab that just left is told so
+   (data-tab-leaving) and rests above it until the movement is over, then re-parks unseen. */
 /* The band also changes height across a switch — a taller head (the timeline's KPI and second
    line) takes the room as its content arrives. The composite measures both bands and drives this
    variable on the panel's host: pinned to the outgoing height through the patch, sent to the
@@ -338,21 +328,17 @@
   box-sizing: border-box;
   height: var(--lookup-head-height, auto);
   overflow: hidden;
-  transition: height var(--tab-head-settle) var(--tab-ease);
+  transition: height var(--settle) ease;
 }
 
-/* The content's two movements share one element and one opacity, and each has a property of its
-   own so each keeps its own clock: the tab switch slides it on `translate` (the tab clock); a
-   lookup drops it on `transform` and fades it (--settle, below). A property transitions on the
-   clock of the state being entered, and the rest state is entered from both — a tab arrival and
-   a lookup's end — so if the two shared a property the lookup's return would take the tab's
-   600ms while the spinner beside it took 320ms. Opacity is on --settle here, at rest, because
-   the return to rest whose fade matters is the end of a lookup — a tab arrival's 0.6 → 1 is
-   secondary to the band's edge taking it, and finishing it at 320ms of the 600ms slide is
-   unseen. Both are none at rest, not 0, so the block creates no stacking context. */
+/* The content's two movements share one element, one opacity and one clock, but each has a
+   property of its own: the tab switch slides it on `translate`, a lookup drops it on `transform`.
+   Separate so they compose — a lookup that lands mid-switch adds its drop to the slide instead
+   of replacing it, and each returns to rest on its own. Both are none at rest, not 0, so the
+   block creates no stacking context. */
 .lookup-head-content {
   transition:
-    translate var(--tab-head-settle) var(--tab-ease),
+    translate var(--settle) ease,
     transform var(--settle) ease,
     opacity var(--settle) ease;
 }
@@ -415,22 +401,22 @@
 }
 
 :host([data-tab-park]) .lookup-head-content {
-  opacity: 0.6;
+  opacity: 0.9;
   translate: 0 calc(100% + 20px);
 }
 
 :host([data-tab-leaving]) .lookup-head-content {
-  opacity: 0.6;
+  opacity: 0.9;
   translate: 0 calc(-100% - 20px);
 }
 
 /* A tab made active again while its content is still up and out (a quick switch back) must not
    come back down from the top: the composite marks the host for one frame, its content jumps below
    the band with no transition, the mark is lifted, and it arrives from below like any other. After
-   the leaving rules, so it wins the tie. For the body this is unseen except inside the 220ms of
-   its exit, where a half-faded body 8px up snaps to clear and below — small, brief and rare. */
+   the leaving rules, so it wins the tie. Inside the departure a half-faded head or body snaps to
+   clear and below — small, brief and rare. */
 :host([data-tab-reset]) .lookup-head-content {
-  opacity: 0.6;
+  opacity: 0.9;
   translate: 0 calc(100% + 20px);
   transition: none;
 }

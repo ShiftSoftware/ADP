@@ -1,9 +1,7 @@
 import { FunctionalComponent, h } from '@stencil/core';
 
-/** The --tab-height-settle token (vehicle-info-layout.css) when the stylesheet cannot be read, as in tests. */
+/** The --settle token (lookup-tokens.css) when the stylesheet cannot be read, as in tests. */
 const DEFAULT_SETTLE_MS = 820;
-/** The --tab-head-settle token when the stylesheet cannot be read. */
-const DEFAULT_HEAD_SETTLE_MS = 820;
 
 /** Which side of the active tab an inactive one rests on, in physical terms — the stylesheet needs no RTL rule. */
 export type TabPark = 'left' | 'right';
@@ -85,19 +83,14 @@ export const createTabRegion = (region: () => HTMLElement | undefined) => {
   let observed: Element | undefined;
   let observedHeight: number | undefined;
 
+  /** The one clock, plus the frame a transition starts on: the region's height and the head bands both travel on it. */
   const settleMs = (el: HTMLElement) => {
-    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(el).getPropertyValue('--tab-height-settle') : '';
+    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(el).getPropertyValue('--settle') : '';
     const parsed = parseFloat(raw);
     return (Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_SETTLE_MS) + 80;
   };
 
   const heightOf = (el: Element | undefined) => (el ? el.getBoundingClientRect().height : 0);
-
-  const headSettleMs = (el: HTMLElement) => {
-    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(el).getPropertyValue('--tab-head-settle') : '';
-    const parsed = parseFloat(raw);
-    return (Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_HEAD_SETTLE_MS) + 80;
-  };
 
   const releaseBands = () => {
     bandTimer = undefined;
@@ -212,7 +205,7 @@ export const createTabRegion = (region: () => HTMLElement | undefined) => {
           if (band) band.style.transition = '';
           host.style.setProperty('--lookup-head-height', `${target}px`);
         });
-        bandTimer = setTimeout(releaseBands, headSettleMs(el));
+        bandTimer = setTimeout(releaseBands, settleMs(el));
       }
 
       if (pending === undefined) return;

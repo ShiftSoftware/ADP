@@ -87,12 +87,12 @@ data; the other states colour the bar from the pill and ignore it. The panel giv
 always, one active and in flow, the rest hidden, inert and parked a short travel to one side
 (`data-tab-park` on the panel's host, physical `left`/`right`, from `tabPark(tag, active, order,
 direction)`). On a switch the card and every head band stay put; the head content hands over
-through the band (up and out, in from below, over `--tab-head-settle`) and each panel's
-`.lookup-slide` changes in sequence, barely overlapping: the outgoing fades as it lifts
-`--tab-exit-travel` (8px) over `--tab-exit` (220ms, `--tab-exit-ease`); after `--tab-enter-delay`
-(160ms) the incoming fades in as it rises `--tab-enter-travel` (12px) into place over `--tab-enter`
-(400ms) with `--tab-ease`, a long even deceleration. 560ms in all, inside the head's hand-over (the
-tab durations are the non-loop durations longer than `--settle`, a deliberate exception). The
-region's height goes from the height it is showing to the incoming tab's over `--tab-height-settle`
-and is released to `auto` on settle. A `ResizeObserver` on the active host follows later growth the same way. Every value is
+through the band (up and out, in from below, fading to nothing at both ends) and each panel's
+`.lookup-slide` changes with it: the outgoing fades as it lifts `--tab-exit-travel` (8px), the
+incoming fades in as it rises `--tab-enter-travel` (12px) into place. All of it — head content, the
+band's height, the region's height, both bodies — is on the language's one clock, `--settle` with
+`ease`, the same movement as a lookup's leave and arrive (owner, 2026-09-22; the switch had four
+clocks and a front-loaded curve of its own before that, and read as abrupt beside the lookup). The
+region's height goes from the height it is showing to the incoming tab's and is released to `auto`
+on settle. A `ResizeObserver` on the active host follows later growth the same way. Every value is
 read from the live box, so a switch mid-switch reverses from wherever the content is.

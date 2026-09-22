@@ -164,11 +164,11 @@ export class VehicleLookup implements MultiLingual {
     this.leavingTimer = setTimeout(() => (this.leaving = undefined), this.headSettleMs() + 80);
   }
 
-  /** The --tab-head-settle token, read from the stylesheet; its default when it cannot be read, as in tests. */
+  /** The --settle token — the switch's one clock — read from the stylesheet; its default when it cannot be read, as in tests. */
   private headSettleMs(): number {
-    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(this.el).getPropertyValue('--tab-head-settle') : '';
+    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(this.el).getPropertyValue('--settle') : '';
     const parsed = parseFloat(raw);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 600;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 820;
   }
 
   private tabOf(tag: string | undefined) {
