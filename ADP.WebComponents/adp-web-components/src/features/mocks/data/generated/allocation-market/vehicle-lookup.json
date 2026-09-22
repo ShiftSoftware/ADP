@@ -282,7 +282,7 @@
       "vin": "ZS8WJEXK506960999",
       "variant": "FZI760M-TYBGDG-E1-085-75",
       "katashiki": "FZI760M-TYBGDG",
-      "color": "Q85",
+      "color": "085",
       "trim": "75",
       "brandID": "2"
     },
@@ -857,7 +857,7 @@
       "vin": "ZS8EU8AK406452424",
       "variant": "FZP174S-FGEVWQ-X8-085-75",
       "katashiki": "FZP174S-FGEVWQ",
-      "color": "Q85",
+      "color": "085",
       "trim": "75",
       "brandID": "2"
     },
@@ -2316,7 +2316,7 @@
       "vin": "ZU8GGTUK902057683",
       "variant": "DJTG00X-CFQUKH-TE-085-75",
       "katashiki": "DJTG00X-CFQUKH",
-      "color": "Q85",
+      "color": "085",
       "trim": "75",
       "brandID": "2"
     },
@@ -4280,7 +4280,7 @@
       "vin": "ZS8EU8AK606178045",
       "variant": "FZP174S-FGEVWQ-X8-085-53",
       "katashiki": "FZP174S-FGEVWQ",
-      "color": "Q85",
+      "color": "085",
       "trim": "53",
       "brandID": "2"
     },
