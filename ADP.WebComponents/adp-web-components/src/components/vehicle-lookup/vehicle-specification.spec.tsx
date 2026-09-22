@@ -139,14 +139,15 @@ describe('vehicle-specification — the derivations', () => {
     };
     const colour = (identifiers: object, spec: object = {}, catalogue = table) => exteriorColour({ identifiers, vehicleSpecification: spec } as any, locale, catalogue);
 
-    // Resolved, with a swatch: the catalogue knew the code and had a hex for it.
-    expect(colour({ color: '1G3' })).toEqual({ code: '1G3', name: 'Magnetic Gray Metallic', swatch: { hex: '#59585d', finish: 'metallic', caveat: locale.swatchCaveat } });
+    // A swatch, and no name: the catalogue knew the code and had a hex for it, but a catalogue
+    // knows a code, not a car, so it is never allowed to name one. Its `name` is provenance.
+    expect(colour({ color: '1G3' })).toEqual({ code: '1G3', name: '', swatch: { hex: '#59585d', finish: 'metallic', caveat: locale.swatchCaveat } });
 
-    // The backend's own name always wins; the catalogue is only ever the swatch and a fallback name.
+    // The backend's name is the only name there is. The catalogue supplies the swatch beside it.
     expect(colour({ color: '1G3' }, { exteriorColor: 'GRAPHITE METALLIC' }).name).toBe('GRAPHITE METALLIC');
 
-    // Resolved by name only: an entry with no defensible hex draws no swatch, which is complete.
-    expect(colour({ color: '042' })).toEqual({ code: '042', name: 'White Pearl', swatch: undefined });
+    // An entry with no defensible hex draws no swatch — and still names nothing of its own.
+    expect(colour({ color: '042' })).toEqual({ code: '042', name: '', swatch: undefined });
 
     // A code nothing resolved reads as the code alone — no swatch, no invented colour, no label.
     expect(colour({ color: '254' })).toEqual({ code: '254', name: '', swatch: undefined });
@@ -175,7 +176,10 @@ describe('vehicle-specification — the derivations', () => {
     const value = cell?.querySelector('.spec-value');
     const swatch = cell?.querySelector('.spec-swatch') as HTMLElement;
 
-    expect(cell?.textContent).toContain('1G3 · Magnetic Gray Metallic');
+    // The code and the chip, and no name: this vehicle's record resolved none, and the catalogue
+    // does not get to supply one.
+    expect(cell?.textContent).toContain('1G3');
+    expect(cell?.textContent).not.toContain('Magnetic Gray Metallic');
     // Inside the one covered block, so it comes up with its row and never on a beat of its own.
     expect(value?.classList.contains('shift-skeleton')).toBe(true);
     expect(value?.querySelector('.spec-swatch')).toBe(swatch);
@@ -741,31 +745,31 @@ describe('vehicle-specification — the colour cell, branch by branch', () => {
     const read = () => colourValue(page);
     const swatch = () => colourCell(page)?.querySelector('.spec-swatch') as HTMLElement | null;
 
-    // A metallic code the catalogue knows, with a hex: the catalogue supplies the name the backend
-    // left empty, and the swatch carries the finish.
+    // A metallic code the catalogue knows, with a hex. The backend named nothing, so the cell is
+    // the code and the chip: the swatch carries the finish, and no word is invented for it.
     await owner(page).fetchVin('ZW8UWF8J4TJ368365');
     await page.waitForChanges();
-    expect(read()).toBe('1G3 · Magnetic Gray Metallic');
+    expect(read()).toBe('1G3');
     expect(swatch()?.getAttribute('data-finish')).toBe('metallic');
     expect(swatch()?.style.background).toBe('#59585d');
 
     // A solid finish: the same recipe, a different data-finish, no highlight to claim.
     await owner(page).fetchVin('ZS8Z4RNS9TC073619');
     await page.waitForChanges();
-    expect(read()).toBe('040 · Super White');
+    expect(read()).toBe('040');
     expect(swatch()?.getAttribute('data-finish')).toBe('solid');
 
     // A pearl finish.
     await owner(page).fetchVin('ZS8QK3WR5TD881204');
     await page.waitForChanges();
-    expect(read()).toBe('070 · Blizzard Pearl');
+    expect(read()).toBe('070');
     expect(swatch()?.getAttribute('data-finish')).toBe('pearl');
 
     // A code the catalogue names but has no defensible hex for: a name and no swatch, which is a
     // complete answer and not a degraded one.
     await owner(page).fetchVin('ZW8PD9FK1T6034557');
     await page.waitForChanges();
-    expect(read()).toBe('042 · White Pearl');
+    expect(read()).toBe('042');
     expect(swatch()).toBeNull();
 
     // A real code the catalogue does not carry: the code alone. No swatch, no guessed colour, and —

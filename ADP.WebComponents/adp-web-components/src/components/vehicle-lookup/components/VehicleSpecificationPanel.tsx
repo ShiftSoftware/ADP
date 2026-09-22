@@ -286,12 +286,15 @@ export const exteriorColour = (record: SpecificationRecord | undefined, locale: 
 
   return {
     code,
-    // Precedence: the name the host's own backend resolved wins, always. It is the distributor's
-    // record of this vehicle; the catalogue is a reference table that knows a code, not a car, and
-    // a manufacturer reuses a code across decades. The catalogue name only fills a name the
-    // backend left empty — which it does whenever the code is blank, the brand has no entry, or
-    // the read failed.
-    name: normalise(record?.vehicleSpecification?.exteriorColor) || normalise(entry?.name),
+    // The name is the host's own backend's, and nothing else's. The catalogue is a reference table
+    // that knows a code, not a car: a paint code is unique only with the model and the year it was
+    // built under, which the table does not carry, and a manufacturer reuses a code across decades.
+    // 543 of its 701 codes (77%) have more than one published name — `040` alone is Super White,
+    // Super White II, Ice Cap, White and Alpine White — and a catalogue name renders in the same
+    // slot and the same type as the distributor's, so a reader cannot tell the two apart. The
+    // variants agree on the hue and not on the word, which is why the hex below survives the
+    // ambiguity and the name does not. No backend name means no name (owner, 2026-09-22).
+    name: normalise(record?.vehicleSpecification?.exteriorColor),
     // The catalogue is the only source of a swatch: there is no hex anywhere in the response. No
     // hex, no swatch — the name alone is a complete answer, and a guessed colour beside a real
     // paint code is the one thing this cell exists not to show.
@@ -612,14 +615,19 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
                 {/* The language's outlined round trigger, the SSC's trace button's geometry,
                     colours, states, transitions and focus ring verbatim — with a chevron instead of
                     the question mark, which in this family means "why this status?", and with no
-                    spinner, because nothing is fetched: the fields are already in the response. */}
+                    spinner, because nothing is fetched: the fields are already in the response.
+
+                    Its words key off regionOpen, the same state aria-expanded reports. They used to
+                    key off detailsOpen, which disagrees with it while the shell is shut: no
+                    reachable state exposed the difference, but it would have become a lie the
+                    moment the shell was reachable while shut. */}
                 <button
                   type="button"
                   class="spec-details-button"
                   aria-expanded={regionOpen ? 'true' : 'false'}
                   aria-controls="spec-details-region"
-                  title={detailsOpen ? locale.collapseDetails : locale.expandDetails}
-                  aria-label={detailsOpen ? locale.collapseDetails : locale.expandDetails}
+                  title={regionOpen ? locale.collapseDetails : locale.expandDetails}
+                  aria-label={regionOpen ? locale.collapseDetails : locale.expandDetails}
                   onClick={onToggleDetails}
                 >
                   <ArrowIcon class="spec-details-chevron" />
