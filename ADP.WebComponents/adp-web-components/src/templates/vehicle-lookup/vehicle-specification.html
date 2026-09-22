@@ -39,7 +39,7 @@
          */
         labels: {
           /* broker-market */
-          ZT8APGED9RB475247: 'full identity · both detail groups',
+          ZT8APGED9RB475247: 'both detail groups · distributor paint name, catalogue chip',
           ZU9XJD4GXPB336861: 'identity only · no details, so no trigger',
           ZU8ZL7VAXG2426255: 'authorized, empty record · no records',
           ZV8GHHHP37P214642: 'not in distributor records',
@@ -50,14 +50,20 @@
           ZS8WJEXK206451985: 'authorized, empty record · no records',
           ZV9LMW6D75T151181: 'not in distributor records',
           /* standard-dealer */
-          ZT8P9NAL1LG988010: 'no year, no model code · catalogue paint code',
+          ZT8P9NAL1LG988010: 'no year, no model code · a metallic paint, resolved',
           UNKNOWN_VIN_12345: 'not in distributor records',
-          /* edge-cases */
-          ZS8Z4RNS9TC073619: 'year from the record only',
-          ZS8QK3WR5TD881204: 'the two model years disagree · record note',
-          ZT8VC4MH7TB552731: 'every detail field · 12 details',
-          ZU9HB6TM3T4719068: 'one detail · the singular count',
-          ZW8PD9FK1T6034557: 'full identity, no details · no trigger at all',
+          /*
+           * edge-cases — the environment with no colour table of its own, so the catalogue's
+           * fallback name is what every colour cell shows here, and all four colour branches
+           * (a swatch of each finish, a name with no swatch, and two codes with neither) sit
+           * beside one another.
+           */
+          ZW8UWF8J4TJ368365: 'paint: metallic · swatch with the finish highlight',
+          ZS8Z4RNS9TC073619: 'year from the record only · paint: solid · flat swatch',
+          ZS8QK3WR5TD881204: 'the two model years disagree · paint: pearl · swatch',
+          ZW8PD9FK1T6034557: 'full identity, no details · paint: a name with no swatch',
+          ZU9HB6TM3T4719068: 'one detail · a real paint code the catalogue has no entry for',
+          ZT8VC4MH7TB552731: 'every detail field · 12 details · a paint code nothing knows',
         },
         /*
          * The panel's own `hasRecords`, by value rather than by object: the evaluators build
@@ -104,6 +110,11 @@
             the reader's — it opens expanded and folds away on the chevron, and that choice survives the next lookup.
           </p>
           <p class="text-base-content/70 mt-2 text-sm">
+            The paint chip beside an exterior colour code comes from a bundled reference table, never from the response — there is no colour in the data, only a code. The name the
+            distributor resolved always wins over the table's; the table is the only source of the chip, and a code it does not carry is shown as the code alone rather than guessed
+            at. The chip is approximate and for identification only, which is what its tooltip says.
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
             Each fixture chip says which state it reaches. <strong class="text-accent">Empty</strong> clears the panel back to idle and <strong class="text-accent">Error</strong>
             raises one on a settled card — the edge that has to go through the head's leave. Switch the Environment control in the rail to reach the fixtures from another
             environment.
@@ -122,9 +133,19 @@
 
         <!-- No card of the page's own around the component: the component draws the design language's card itself. -->
         <div class="frame">
+          <!--
+            The host's own brandID -> brand-slug map, which is the only way the paint-colour
+            catalogue can be keyed: a brandID is a per-deployment hash id, a slug is a name a
+            catalogue can be written against once. The generated fixtures are anonymised down to
+            "1" and "2", so this page declares what a real host would declare about its own
+            brands — and a demo saying "these vehicles are Toyotas" is what makes the shipped
+            table's real codes resolve. Take the attribute off and every colour cell reads code +
+            name with no swatch, which is a complete state and not a degraded one.
+          -->
           <vehicle-specification
             id="subject"
             language="en"
+            brand-slugs='{"1": "toyota", "2": "toyota"}'
             query-string=""
             error-callback="blazorErrorCallback"
             loaded-response="blazorLoadedResponse"
