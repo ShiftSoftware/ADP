@@ -31,11 +31,57 @@
       dir="ltr"
       x-data="harness({
         mocks: 'vehicle-lookup',
+        /*
+         * Every state the panel can reach, named — a state the page cannot show is a state that
+         * will regress. `labels` keeps the empty and unauthorized fixtures that `has` would
+         * otherwise drop, and names what each one is for; switch the Environment control to reach
+         * the ones from another environment.
+         */
         labels: {
+          /* broker-market */
+          ZT8APGED9RB475247: 'full identity · both detail groups',
+          ZU9XJD4GXPB336861: 'identity only · no details, so no trigger',
+          ZU8ZL7VAXG2426255: 'authorized, empty record · no records',
+          ZV8GHHHP37P214642: 'not in distributor records',
+          /* allocation-market */
+          ZT8F9VVT502643013: 'production date · rich details · code = description',
+          ZW9KBUWL2T1319799: 'identity only · no details',
+          ZS8WJEXK106589744: 'UNKNOWN sentinels, shown verbatim',
+          ZS8WJEXK206451985: 'authorized, empty record · no records',
           ZV9LMW6D75T151181: 'not in distributor records',
+          /* standard-dealer */
+          ZT8P9NAL1LG988010: 'no year, no model code · catalogue paint code',
           UNKNOWN_VIN_12345: 'not in distributor records',
+          /* edge-cases */
+          ZS8Z4RNS9TC073619: 'year from the record only',
         },
-        has: vehicle => Boolean(vehicle?.vehicleSpecification),
+        /*
+         * The panel's own `hasRecords`, by value rather than by object: the evaluators build
+         * `identifiers` and `vehicleSpecification` for every VIN, so testing the objects would keep
+         * a fixture with nothing in it. Unauthorized vehicles are kept too — they are a state, not
+         * an absence.
+         */
+        has: vehicle => {
+          if (vehicle?.isAuthorized === false) return true;
+
+          const spec = vehicle?.vehicleSpecification ?? {};
+          const identifiers = vehicle?.identifiers ?? {};
+          const variant = vehicle?.vehicleVariantInfo ?? {};
+
+          const value = raw => String(raw ?? '').trim();
+          /* The feed writes ' 0 ' where it has no figure; a placeholder is not a record. */
+          const figure = raw => (Number(value(raw)) === 0 ? '' : value(raw));
+
+          return [
+            value(spec.modelDescription), value(spec.modelCode), value(variant.modelCode), value(identifiers.katashiki),
+            value(spec.variantDescription), value(identifiers.variant), value(variant.modelYear), value(spec.modelYear),
+            value(spec.productionDate), value(variant.sfx), value(identifiers.color), value(spec.exteriorColor),
+            value(identifiers.trim), value(spec.interiorColor), value(spec.engine), value(spec.engineType),
+            figure(spec.cylinders), value(spec.fuel), figure(spec.tankCap), figure(spec.fuelLiter),
+            value(spec.transmission), value(spec.class), value(spec.bodyType), value(spec.style),
+            figure(spec.doors), value(spec.side), value(spec.lightHeavyType),
+          ].some(Boolean);
+        },
         events: false,
       })"
     >
@@ -50,8 +96,17 @@
         <aside class="showcase-about border-base-300 border-t border-dashed pt-5">
           <p class="eyebrow text-neutral">About this page</p>
           <p class="lede text-base-content/70 mt-2 text-sm">
-            The build record for a VIN. This page deliberately consumes the component the way a Blazor host does — through <code>setBlazorRef</code> and callbacks named as
-            attribute strings — rather than by assigning functions to the props.
+            The build record for a VIN: what the vehicle <em>is</em> in the head, and the codes those words were resolved from below it. The details band under the identity grid is
+            the reader's — it opens expanded and folds away on the chevron, and that choice survives the next lookup.
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
+            Each fixture chip says which state it reaches. <strong class="text-accent">Empty</strong> clears the panel back to idle and <strong class="text-accent">Error</strong>
+            raises one on a settled card — the edge that has to go through the head's leave. Switch the Environment control in the rail to reach the fixtures from another
+            environment.
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
+            This page deliberately consumes the component the way a Blazor host does — through <code>setBlazorRef</code> and callbacks named as attribute strings — rather than by
+            assigning functions to the props.
           </p>
         </aside>
       </div>
