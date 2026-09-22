@@ -1,17 +1,22 @@
 /*
- * Vehicle specification — the stylesheet for <vehicle-specification>. The card around the panel
- * (paper, border, radius, shadow, the accent bar) is the wrapper's
- * (features/vehicle-info-layout); this file styles what is inside it.
+ * Vehicle specification — the stylesheet for <vehicle-specification>, in the component design
+ * language. The card around the panel — paper, border, radius, shadow, the accent bar — is the
+ * wrapper's (features/vehicle-info-layout); this file styles what is inside it.
  *
- * The body is a fixed structure — six titled cards, one value each — so it does not shut to load:
- * every value block carries `shift-skeleton` (through MaterialCardChildren) and the wrapper root's
- * `.loading` covers it in flight. See the design language, § 21 "the changeable content".
+ * The panel is three fixed parts — head, strip, body — and every state is a different content of
+ * the same three. The head is the statement ("Model: TALORA · 2024", the grade beside it), the
+ * strip names what is below it, and the body is the evidence: the codes those words were resolved
+ * from. Nothing here is display:none'd between states: the strip's layers cross-fade and the head's
+ * content leaves the band on the wrapper's clock.
  *
- * Plain CSS since 2026-09-22; the rules below are the exact values the Tailwind utilities they
- * replaced were generating (read out of the build, not from memory). Parity only — nothing here is
- * a design decision, and the redesign is a separate commit.
+ * Reads top to bottom as the card does: imports, :host tokens, panel, card, head, strip, body,
+ * loading rules, container queries widest-first.
  */
 
+/* The motion primitives (lookup-motion.css) come through the wrapper's own import, never directly:
+   a file imported twice into one shadow stylesheet loses its @keyframes in Stencil's dedupe while
+   its rules survive, so the sheen and the spinner stop silently (the SSC, 2026-09-21). */
+@import '../style/lookup-tokens.css';
 @import '../style/shift-skeleton.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 @import '../../features/vehicle-info-layout/lookup-head.css';
@@ -34,28 +39,223 @@
   display: block;
   container-type: inline-size;
   container-name: spec-panel;
+  /* The strip's height in every state, so its meaning can change without the body moving. */
+  --lead-height: 38px;
 }
 
-/* The six cards, wrapping as the panel narrows. Was:
-   `flex p-[16px] [&>div]:grow overflow-auto gap-[16px] items-stretch justify-center
-    md:justify-between flex-wrap`. */
+.spec-card,
+.spec-card *,
+.spec-card *::before,
+.spec-card *::after {
+  box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Card: the wrapper draws it. This root only carries the state its descendants style off —
+   data-verdict for the pill's hue and data-phase for the strip's sheen. It must sit here rather
+   than on the wrapper's .lookup-card, which does not exist in this shadow root under coreOnly —
+   and a composite is where the panel is most used.
+   ------------------------------------------------------------------------------------------- */
+
+.spec-card {
+  position: relative;
+  width: 100%;
+  color: var(--ink);
+  /* No font-family: the wrapper's root sets the face for the language and this inherits it. */
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Head: the statement
+   ------------------------------------------------------------------------------------------- */
+
+/* The family's head geometry (owner, 2026-09-20): every panel's head band is the same 58px — the
+   standard head's 16 + 30 + 12 — so a composite's tab switch never changes the band's height. */
+.spec-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+}
+
+/* Model and grade on one line — the grade slot is inline, so a vehicle without one shortens the
+   line rather than adding a row. */
+.spec-main {
+  display: flex;
+  flex: 1 1 0;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  min-width: 0;
+  align-items: baseline;
+}
+
+/* A class on a paragraph, not a heading element: the component is embedded in a host page and must
+   not inject a heading into that page's outline. The family's title (lookup-head.css): 17px at the
+   panel's width, neutral tracking, the label at 500 in --muted and the value at 600 in --ink.
+   `overflow-wrap: anywhere` because a model description is a string a host supplies. */
+.spec-title {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: clamp(15px, 2.6cqw, 17px);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.spec-title-label {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.spec-title-value {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* The year is a figure and takes the figure's role — a shade darker than --muted because it is
+   read, not glanced at — at the title's size so it sits on the title's baseline. */
+.spec-title-year {
+  color: var(--date-ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Holds its share of the line whether or not the vehicle has a grade, so moving between vehicles
+   does not resize the head. */
+.spec-grade-slot {
+  flex: 1 1 0;
+  min-width: 0;
+  transition: opacity var(--settle) ease;
+}
+
+.spec-grade-slot[data-empty='true'] {
+  opacity: 0;
+}
+
+/* A block on its way out must not be handed its content back as it goes: nested opacities multiply,
+   so a wrapper fading 1 to 0 over text fading 0 to 1 peaks about a quarter visible a third of the
+   way through and ghosts back. This pins the text and must out-specify the rule that returns it. */
+.spec-grade-slot[data-empty='true'] .spec-grade {
+  opacity: 0;
+}
+
+/* The grade at the body size, held to one line so it never adds a row; a long one is cut and stays
+   whole in the `title`. The owner accepted that cost at Gate A: a uniform 58px band across every
+   panel is worth more than a grade read in full on a narrow-but-not-stacked card. */
+.spec-grade {
+  display: block;
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Lead strip: one band, three layers
+   ------------------------------------------------------------------------------------------- */
+
+.spec-lead {
+  min-height: var(--lead-height);
+  box-shadow:
+    inset 0 1px 0 var(--line),
+    inset 0 -1px 0 var(--line);
+}
+
+.spec-lead > .layer {
+  min-height: var(--lead-height);
+}
+
+/* Idle it is the flat grey of a shape with nothing to say; in flight it darkens a shade and the
+   sheen sweeps it. The rest position keeps the band clear of the box so it enters and leaves
+   rather than appearing mid-sweep. */
+.spec-lead-skeleton {
+  background-color: var(--line-soft);
+  background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
+  background-repeat: no-repeat;
+  background-position: -100% 0;
+  background-size: 45% 100%;
+  transition:
+    opacity var(--settle) ease,
+    visibility 0s linear var(--settle),
+    background-color var(--settle) ease;
+}
+
+.spec-card[data-phase='busy'] .spec-lead-skeleton {
+  background-color: #dcdfe4;
+  animation: lookup-sheen 1.3s linear infinite;
+}
+
+/* The identity grid's caption: the columns layer in its one-word form, because a record's fields
+   are labelled values, not columns. A caption and not a notice — records are shown, not judged. */
+.spec-lead-caption {
+  display: flex;
+  align-items: center;
+  padding: 6px 20px;
+  background: var(--paper-soft);
+}
+
+.spec-lead-caption-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+/* The panel's one statement in a sentence: a vehicle the distributor has no record of. Amber — a
+   statement without a verdict — ruled top and bottom in its own tone, square because it runs the
+   card's full width. */
+.spec-lead-notice {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 20px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.spec-lead-notice.is-neutral {
+  color: var(--amber-dark);
+  background: var(--amber-tint);
+  box-shadow:
+    inset 0 1px 0 rgba(183, 121, 31, 0.22),
+    inset 0 -1px 0 rgba(183, 121, 31, 0.22);
+}
+
+.notice-icon {
+  display: block;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Body — still the six titled cards of the old panel. The identity grid and the details block
+   replace them in the next commit, with the MaterialCard wrapper and the flexible-container.
+   ------------------------------------------------------------------------------------------- */
+
 .spec-grid {
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
-  /* Centred while the row is short, spread once the panel is wide enough for it to read as a row
-     rather than a huddle — the `md:` breakpoint, kept as the viewport query it was. The design
-     language asks for a container query here; changing it is a visual decision, so it belongs to
-     the redesign commit, not to this one. */
   justify-content: center;
   gap: 16px;
   padding: 16px;
   overflow: auto;
 }
 
-/* `[&>div]:grow` — every direct child, which is what a MaterialCard renders. MaterialCard also
-   sets `flex: 1` inline, so this has never decided anything; kept because parity is the whole
-   point of this commit. */
 .spec-grid > div {
   flex-grow: 1;
 }
@@ -66,20 +266,49 @@
   }
 }
 
-/* On MaterialCard's root, beside its inline `flex: 1`. Was `grow`. */
-.spec-card {
+.spec-card-legacy {
   flex-grow: 1;
 }
 
-/* On the value block MaterialCardChildren renders, beside `shift-skeleton`. Was `text-center`. */
-.spec-value {
+.spec-legacy-value {
   text-align: center;
 }
 
-/* Was `my-2` on the <br> between the model code and its description. Vertical margins do not apply
-   to a non-replaced inline element, so this has never drawn anything; written out rather than
-   dropped so the commit stays a pure translation. */
-.spec-value-break {
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
+/* ---------------------------------------------------------------------------------------------
+   Narrow panels
+   ------------------------------------------------------------------------------------------- */
+
+@container spec-panel (max-width: 720px) {
+  .spec-head {
+    padding: 14px 14px 10px;
+  }
+
+  /* Below the stacking breakpoint the grade takes a line of its own under the title, reserved
+     whether or not the vehicle has one (an empty grade renders a non-breaking space), so at this
+     width too the band never resizes between vehicles. */
+  .spec-main {
+    flex-direction: column;
+    gap: 2px;
+    align-items: stretch;
+  }
+
+  .spec-grade-slot {
+    flex: 0 0 auto;
+  }
+
+  .spec-grade {
+    min-height: 1.2em;
+  }
+
+  .spec-lead-caption,
+  .spec-lead-notice {
+    padding: 6px 14px;
+  }
+}
+
+@container spec-panel (max-width: 430px) {
+  .spec-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

@@ -3,8 +3,6 @@ import yupTypeMapper from '~lib/yup-type-mapper';
 
 const specification = object({}).concat(
   yupTypeMapper([
-    'vehicleSpecification',
-    'noData',
     'model',
     'variant',
     'katashiki',
