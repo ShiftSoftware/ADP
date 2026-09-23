@@ -142,7 +142,7 @@
           "BrandID": 1,
           "VariantCode": "VAR001",
           "Katashiki": "MXAA52L-ANXGP",
-          "ExteriorColorCode": "1G3",
+          "ExteriorColorCode": "040",
           "InteriorColorCode": "LA20",
           "ModelDescription": "RAV4 2.0L 4WD",
           "ModelCode": "42605",
@@ -152,6 +152,161 @@
       "InitialOfficialVINs": [
         {
           "VIN": "ZS8Z4RNS9TC073619",
+          "CompanyID": 5
+        }
+      ],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
+      "Accessories": [],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
+    },
+    "ZS8QK3WR5TD881204": {
+      "VehicleEntries": [
+        {
+          "VIN": "ZS8QK3WR5TD881204",
+          "InvoiceDate": "2026-05-20",
+          "InvoiceNumber": "48120735",
+          "CompanyID": 5,
+          "BranchID": 500,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "61840KP202501",
+          "Katashiki": "MXBA61T-QLNXP",
+          "ExteriorColorCode": "070",
+          "InteriorColorCode": "FB20",
+          "ProductionDate": "2024-11-01",
+          "ModelYear": 2024
+        }
+      ],
+      "InitialOfficialVINs": [
+        {
+          "VIN": "ZS8QK3WR5TD881204",
+          "CompanyID": 5
+        }
+      ],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
+      "Accessories": [],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
+    },
+    "ZT8VC4MH7TB552731": {
+      "VehicleEntries": [
+        {
+          "VIN": "ZT8VC4MH7TB552731",
+          "InvoiceDate": "2026-05-20",
+          "InvoiceNumber": "73301642",
+          "CompanyID": 5,
+          "BranchID": 500,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "72310QX202601",
+          "Katashiki": "QFN480R-PBXTVA",
+          "ExteriorColorCode": "Q23",
+          "InteriorColorCode": "LA20",
+          "ProductionDate": "2026-02-01",
+          "ModelYear": 2026
+        }
+      ],
+      "InitialOfficialVINs": [
+        {
+          "VIN": "ZT8VC4MH7TB552731",
+          "CompanyID": 5
+        }
+      ],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
+      "Accessories": [],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
+    },
+    "ZU9HB6TM3T4719068": {
+      "VehicleEntries": [
+        {
+          "VIN": "ZU9HB6TM3T4719068",
+          "InvoiceDate": "2026-05-20",
+          "InvoiceNumber": "20558914",
+          "CompanyID": 5,
+          "BranchID": 500,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "50127RD202601",
+          "Katashiki": "DKZD22F-HWQLM",
+          "ExteriorColorCode": "254",
+          "InteriorColorCode": "26",
+          "ModelYear": 2026
+        }
+      ],
+      "InitialOfficialVINs": [
+        {
+          "VIN": "ZU9HB6TM3T4719068",
+          "CompanyID": 5
+        }
+      ],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
+      "Accessories": [],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
+    },
+    "ZW8PD9FK1T6034557": {
+      "VehicleEntries": [
+        {
+          "VIN": "ZW8PD9FK1T6034557",
+          "InvoiceDate": "2026-05-20",
+          "InvoiceNumber": "66427083",
+          "CompanyID": 5,
+          "BranchID": 500,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "88406LM202501",
+          "Katashiki": "FZP502K-TRMDVA",
+          "ExteriorColorCode": "042",
+          "InteriorColorCode": "75",
+          "ProductionDate": "2025-03-01",
+          "ModelYear": 2025
+        }
+      ],
+      "InitialOfficialVINs": [
+        {
+          "VIN": "ZW8PD9FK1T6034557",
           "CompanyID": 5
         }
       ],
@@ -186,6 +341,62 @@
       "Transmission": "CVT",
       "Doors": "5",
       "Side": "LHD"
+    },
+    {
+      "BrandID": 1,
+      "VariantCode": "61840KP202501",
+      "Katashiki": "MXBA61T-QLNXP",
+      "ModelCode": "61840",
+      "ModelDescription": "SELVARA 2.5L",
+      "VariantDescription": "2.5 / Prestige",
+      "BasicModelCode": "MXBA61T",
+      "BodyType": "Sedan",
+      "Engine": "2.5L A25A-FKS",
+      "Fuel": "Petrol",
+      "Transmission": "8AT"
+    },
+    {
+      "BrandID": 1,
+      "VariantCode": "72310QX202601",
+      "Katashiki": "QFN480R-PBXTVA",
+      "ModelCode": "72310",
+      "ModelDescription": "ORINTA HEV",
+      "VariantDescription": "2.5 HEV / Platinum",
+      "BasicModelCode": "QFN480R",
+      "Class": "Passenger",
+      "BodyType": "Wagon",
+      "Style": "Estate",
+      "Doors": "5",
+      "Side": "RHD",
+      "LightHeavyType": "Light",
+      "Engine": "2.5L A25A-FXS",
+      "EngineType": "Gasoline Hybrid",
+      "Cylinders": "4",
+      "Fuel": "Hybrid",
+      "TankCap": "55",
+      "Transmission": "e-CVT"
+    },
+    {
+      "BrandID": 1,
+      "VariantCode": "50127RD202601",
+      "Katashiki": "DKZD22F-HWQLM",
+      "ModelCode": "50127",
+      "ModelDescription": "VELDIN",
+      "VariantDescription": "1.8 / Base",
+      "BasicModelCode": "DKZD22F",
+      "Fuel": "Petrol",
+      "Cylinders": " 0 ",
+      "Doors": " 0 ",
+      "TankCap": " 0 "
+    },
+    {
+      "BrandID": 1,
+      "VariantCode": "88406LM202501",
+      "Katashiki": "FZP502K-TRMDVA",
+      "ModelCode": "88406",
+      "ModelDescription": "KORRAVA",
+      "VariantDescription": "2.0 / Comfort",
+      "BasicModelCode": "FZP502K"
     }
   ],
   "ServiceItems": [],

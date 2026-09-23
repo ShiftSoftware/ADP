@@ -1,15 +1,564 @@
+/*
+ * Vehicle specification — the stylesheet for <vehicle-specification>, in the component design
+ * language. The card around the panel — paper, border, radius, shadow, the accent bar — is the
+ * wrapper's (features/vehicle-info-layout); this file styles what is inside it.
+ *
+ * The panel is three fixed parts — head, strip, body — and every state is a different content of
+ * the same three. The head is the statement ("Model: TALORA · 2024", the grade beside it), the
+ * strip names what is below it, and the body is the evidence: the codes those words were resolved
+ * from. Nothing here is display:none'd between states: the strip's layers cross-fade and the head's
+ * content leaves the band on the wrapper's clock.
+ *
+ * Reads top to bottom as the card does: imports, :host tokens, panel, card, head, strip, body,
+ * loading rules, container queries widest-first.
+ */
+
+/* The motion primitives (lookup-motion.css) come through the wrapper's own import, never directly:
+   a file imported twice into one shadow stylesheet loses its @keyframes in Stencil's dedupe while
+   its rules survive, so the sheen and the spinner stop silently (the SSC, 2026-09-21). */
+@import '../style/lookup-tokens.css';
 @import '../style/shift-skeleton.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 @import '../../features/vehicle-info-layout/lookup-head.css';
 
+/* Breakpoints read the panel's own width, not the window's — the same :host as the two reference
+   panels. This replaced a legacy `all: initial !important` reset, which also covered
+   `container-type` and so silently killed every @container rule in this shadow root (and resolved
+   display to `inline`). The font now inherits from the wrapper, as it does in the references. */
 :host {
   display: block;
-  all: initial !important;
-  /* The family's face (lookup-tokens.css); the wrapper's root switches it for an rtl locale. */
-  font-family: var(--font-sans) !important;
+  container-type: inline-size;
+  container-name: spec-panel;
+  /* The strip's height in every state, so its meaning can change without the body moving. */
+  --lead-height: 38px;
 }
 
-*,
-:host * {
-  font-family: inherit !important;
+.spec-card,
+.spec-card *,
+.spec-card *::before,
+.spec-card *::after {
+  box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Card: the wrapper draws it. This root only carries the state its descendants style off —
+   data-verdict for the pill's hue and data-phase for the strip's sheen. It must sit here rather
+   than on the wrapper's .lookup-card, which does not exist in this shadow root under coreOnly —
+   and a composite is where the panel is most used.
+   ------------------------------------------------------------------------------------------- */
+
+.spec-card {
+  position: relative;
+  width: 100%;
+  color: var(--ink);
+  /* No font-family: the wrapper's root sets the face for the language and this inherits it. */
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Head: the statement
+   ------------------------------------------------------------------------------------------- */
+
+/* The family's head geometry (owner, 2026-09-20): every panel's head band is the same 58px — the
+   standard head's 16 + 30 + 12 — so a composite's tab switch never changes the band's height. */
+.spec-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+}
+
+/* Model and grade on one line — the grade slot is inline, so a vehicle without one shortens the
+   line rather than adding a row. */
+.spec-main {
+  display: flex;
+  flex: 1 1 0;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  min-width: 0;
+  align-items: baseline;
+}
+
+/* A class on a paragraph, not a heading element: the component is embedded in a host page and must
+   not inject a heading into that page's outline. The family's title (lookup-head.css): 17px at the
+   panel's width, neutral tracking, the label at 500 in --muted and the value at 600 in --ink.
+   `overflow-wrap: anywhere` because a model description is a string a host supplies. */
+.spec-title {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: clamp(15px, 2.6cqw, 17px);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.spec-title-label {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.spec-title-value {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* The year is a figure and takes the figure's role — a shade darker than --muted because it is
+   read, not glanced at — at the title's size so it sits on the title's baseline. */
+.spec-title-year {
+  color: var(--date-ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Holds its share of the line whether or not the vehicle has a grade, so moving between vehicles
+   does not resize the head. */
+.spec-grade-slot {
+  flex: 1 1 0;
+  min-width: 0;
+  transition: opacity var(--settle) ease;
+}
+
+.spec-grade-slot[data-empty='true'] {
+  opacity: 0;
+}
+
+/* A block on its way out must not be handed its content back as it goes: nested opacities multiply,
+   so a wrapper fading 1 to 0 over text fading 0 to 1 peaks about a quarter visible a third of the
+   way through and ghosts back. This pins the text and must out-specify the rule that returns it. */
+.spec-grade-slot[data-empty='true'] .spec-grade {
+  opacity: 0;
+}
+
+/* The grade at the body size, held to one line so it never adds a row; a long one is cut and stays
+   whole in the `title`. The owner accepted that cost at Gate A: a uniform 58px band across every
+   panel is worth more than a grade read in full on a narrow-but-not-stacked card. */
+.spec-grade {
+  display: block;
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Lead strip: one band, three layers
+   ------------------------------------------------------------------------------------------- */
+
+.spec-lead {
+  display: flex;
+  min-height: var(--lead-height);
+  align-items: center;
+  padding: 6px 20px;
+  background: var(--paper-soft);
+  box-shadow:
+    inset 0 1px 0 var(--line),
+    inset 0 -1px 0 var(--line);
+}
+
+/* The identity grid's caption: the columns layer in its one-word form, because a record's fields
+   are labelled values, not columns. A caption and not a notice — records are shown, not judged. */
+
+.spec-lead-caption-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+/* The panel's one statement in a sentence: a vehicle the distributor has no record of. Amber — a
+   statement without a verdict — ruled top and bottom in its own tone, square because it runs the
+   card's full width. */
+/* The notice band. A .collapsible, so nothing about it appears or disappears without travelling:
+   it is shut before the first lookup and shut while one is in flight, and it slides open only once
+   there is something to say about the vehicle on screen. The tone lives on a data attribute rather
+   than a class so a second tone is one rule, not a second element. */
+.spec-notice-body {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+/* Ruled on top only: the strip below brings its own top rule, so a bottom rule here put two
+   hairlines a pixel apart, and it was the first thing to go as the band folded. */
+.spec-notice[data-tone='neutral'] .spec-notice-body {
+  color: var(--amber-dark);
+  background: var(--amber-tint);
+  box-shadow: inset 0 1px 0 rgba(183, 121, 31, 0.22);
+}
+
+.notice-icon {
+  display: block;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Tier 1 — the identity grid. A fixed structure: the same eight titled slots for every vehicle,
+   in every state, so it never shuts and its values are covered where they stand.
+   ------------------------------------------------------------------------------------------- */
+
+/* Two figures, both from § 3's Widths table. The FLOOR is 180px — the longest tier-1 code is about
+   185px wide. The CEILING is --spec-columns: `auto-fill` at the floor alone laid the eight cells
+   seven-up on a wide column. The track minimum is the LARGER of the two, which caps the count while
+   still dropping tracks when the floor will not fit. 20 is the card inset, 12 the column gap. */
+.spec-identity {
+  --spec-columns: 4;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(max(180px, (100% - (var(--spec-columns) - 1) * 12px) / var(--spec-columns)), 1fr));
+  gap: 10px 12px;
+  padding: 12px 20px 14px;
+}
+
+.spec-cell {
+  min-width: 0;
+}
+
+/* The language's small label. A real element rather than a `::before { content: attr(data-label) }`
+   caption: generated content is announced by most screen readers, so the CSS caption plus the
+   sr-only span would be heard twice. The data-label attribute stays as the stable hook. */
+.spec-cell-label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+/* The cover is the cell's width in every state, so the in-flight shape is one rectangle per slot
+   whatever the value under it is. `resize-settle` (lookup-motion.css) eases the block between the
+   old value's height and the new one while the cover is still up. */
+.spec-value {
+  display: block;
+  width: 100%;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* The code role at 13px rather than the 15px a lead code takes on a card: there are eight of these
+   side by side and one of them is always the longest string on the row. */
+.spec-value[data-role='code'] {
+  color: var(--ink);
+  font-weight: 760;
+  letter-spacing: 0.01em;
+}
+
+/* Figures sit a shade darker than --muted: at 13px they are read, not glanced at. */
+.spec-value[data-role='figure'] {
+  color: var(--date-ink);
+  font-weight: 600;
+}
+
+.spec-value[data-role='word'] {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* The dash: a loaded vehicle with nothing in this slot. Grey, because "not on record" is a fact
+   about the record and not a verdict about the vehicle. */
+.spec-value[data-role='empty'] {
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* Before any lookup the value keeps its box with a non-breaking space and its text is pinned at 0 —
+   a dash would say "the record has nothing here" about a vehicle that does not exist yet. The pin
+   is on the text and not on the block, because the block carries the skeleton's cover and the cover
+   must still come up over an idle panel. */
+.spec-value-content {
+  display: block;
+  transition: opacity var(--settle) ease;
+}
+
+.spec-value-content[data-empty='true'] {
+  opacity: 0;
+}
+
+/* The record's own model year, when it disagrees with the one parsed from the variant. The small
+   note role; no hue and no glyph — a data-quality fault in a record is not a verdict, and not a
+   required action either. */
+.spec-value-note {
+  display: block;
+  margin-top: 2px;
+  color: var(--date-ink);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* The two colour cells: an identity code and the name the distributor's catalogue resolved for it.
+   The code takes the block's code role; the name is a word beside it. Both inside one value block,
+   so the whole colour value is one covered shape in flight — and so the swatch, when the colour
+   catalogue lands, arrives with its row rather than on a beat of its own. */
+/* The whole value is one directional unit. The code and the name are Latin, so in an rtl line they
+   form their own left-to-right run — and the swatch, being an element rather than text, was ordered
+   against it: the chip drifted to the line's right edge and came to rest beside the NAME, with a
+   wrapped word stranded underneath it, while the code it belongs to sat at the far end. `isolate`
+   makes the cell mirror as a block instead, so the chip keeps leading its code in every direction
+   (found in the ar render, 2026-09-22). */
+.spec-colour {
+  unicode-bidi: isolate;
+}
+
+.spec-colour-code {
+  font-family: inherit;
+  font-weight: 760;
+  letter-spacing: 0.01em;
+}
+
+.spec-colour-name {
+  color: var(--ink);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.spec-colour-separator {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Tier 2 — the details block. A variable structure, so it is a .collapsible and it slides: the
+   shell carries the band itself, so a vehicle with no tier-2 value has no block at all and got
+   there by sliding rather than by vanishing.
+   ------------------------------------------------------------------------------------------- */
+
+/* A recessed band, not an inset panel: no radius and no shadow, because there is one card. Ruled
+   top only — the card's own border is its bottom edge, and a ring on a band that runs edge to edge
+   would leave two stray vertical ticks against the card's sides. */
+.spec-details {
+  background: var(--paper-soft);
+  box-shadow: inset 0 1px 0 var(--line);
+}
+
+/* 10 keeps the 30px trigger clear of the rule above it. */
+/* A button, so it carries no UA chrome of its own and spans the block: the row IS the control. */
+.spec-details-summary {
+  display: flex;
+  width: 100%;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+/* The round mark reads the row's states rather than its own -- it is a span now. */
+.spec-details-summary:hover .spec-details-button,
+.spec-details-summary[aria-expanded='true'] .spec-details-button {
+  color: #ffffff;
+  background: var(--blue);
+  border-color: var(--blue-dark);
+}
+
+/* The ring goes on the mark, not round the whole band: a 2px outline on a full-width row reads as
+   the block being selected rather than as a control being focused. */
+.spec-details-summary:focus-visible {
+  outline: none;
+}
+
+.spec-details-summary:focus-visible .spec-details-button {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.spec-details-caption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  align-items: baseline;
+}
+
+.spec-details-names {
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.spec-details-count {
+  color: var(--date-ink);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+/* The language's outlined round trigger: .ssc-trace-button's geometry, colours, states, transitions
+   and focus ring verbatim (vehicle-ssc.css). A control, not a chip, so it never stretches — it
+   stays a 30px circle at every width and takes the trailing edge when the caption wraps above it. */
+.spec-details-button {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  margin-inline-start: auto;
+  padding: 0;
+  color: var(--blue-dark);
+  background: var(--paper);
+  border: 1px solid rgba(48, 113, 169, 0.32);
+  border-radius: 999px;
+  transition:
+    color var(--settle) ease,
+    background var(--settle) ease,
+    border-color var(--settle) ease;
+}
+
+/* A chevron, not the family's question mark: `question` means "why this status?" here, and a second
+   meaning on the same mark would blur a glyph the reader has learned. It turns on --settle, the
+   same clock as the region it controls. */
+.spec-details-chevron {
+  display: block;
+  width: 18px;
+  height: 18px;
+  transition: transform var(--settle) ease;
+}
+
+.spec-details-summary[aria-expanded='true'] .spec-details-chevron {
+  transform: rotate(180deg);
+}
+
+/* 4 rather than 12 at the top: the summary row has already given the block its air. */
+.spec-group {
+  display: block;
+  padding: 4px 20px 16px;
+}
+
+.spec-group + .spec-group {
+  padding-top: 8px;
+}
+
+/* A group heading, not another field label. It was byte-identical to `.spec-cell-label` -- same
+   size, weight, colour, tracking and case -- so "Powertrain" read as a peer of "Engine type" and
+   the grouping carried no weight at all. It takes the ink and the code weight the language gives a
+   value, and a hairline across the block under it: the rule is what makes the group a section
+   rather than one more label in the run (owner, 2026-09-22). */
+.spec-group-label {
+  display: block;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  box-shadow: inset 0 -1px 0 var(--line-soft);
+}
+
+/* A step denser than tier 1 on both figures: these values are short words ("Automatic", "Diesel",
+   "4"), so the floor is the width of "Automatic 6-Speed" at 13px/500 and the ceiling is one column
+   more than the identity grid's — § 3's "4-5 cells per row" at full width, then 4, 3, 2. Same
+   recipe as above: the larger of the floor and an equal share, so `auto-fill` cannot exceed the
+   count and cannot squeeze a cell below its floor either. */
+.spec-group-grid {
+  --spec-columns: 5;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(max(160px, (100% - (var(--spec-columns) - 1) * 12px) / var(--spec-columns)), 1fr));
+  gap: 8px 12px;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Loading: the shared cover, with this panel's sheen. Must come after the imports it overrides.
+   ------------------------------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------------------------------------
+   Narrow panels. The column ceilings are § 3's Widths table, widest first.
+   ------------------------------------------------------------------------------------------- */
+
+@container spec-panel (max-width: 960px) {
+  .spec-identity {
+    --spec-columns: 3;
+  }
+
+  .spec-group-grid {
+    --spec-columns: 4;
+  }
+}
+
+@container spec-panel (max-width: 720px) {
+  .spec-head {
+    padding: 14px 14px 10px;
+  }
+
+  /* Below the stacking breakpoint the grade takes a line of its own under the title, reserved
+     whether or not the vehicle has one (an empty grade renders a non-breaking space), so at this
+     width too the band never resizes between vehicles. */
+  .spec-main {
+    flex-direction: column;
+    gap: 2px;
+    align-items: stretch;
+  }
+
+  .spec-grade-slot {
+    flex: 0 0 auto;
+  }
+
+  .spec-grade {
+    min-height: 1.2em;
+  }
+
+  .spec-lead {
+    padding: 6px 14px;
+  }
+
+  .spec-notice-body {
+    padding: 8px 14px;
+  }
+
+  .spec-identity {
+    padding: 12px 14px 14px;
+  }
+
+  .spec-details-summary {
+    padding: 10px 14px;
+  }
+
+  .spec-group {
+    padding: 4px 14px 14px;
+  }
+}
+
+@container spec-panel (max-width: 430px) {
+  .spec-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

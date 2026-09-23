@@ -35,6 +35,10 @@
       x-data="harness({
         profile: 'composite',
         mocks: 'vehicle-lookup',
+        /*
+         * The shell's own fixtures: vehicles worth opening whichever tab is showing.
+         * Used whenever the tab on screen has no set of its own in `componentLabels`.
+         */
         labels: {
           ZU8PC1Z95PP935130: 'realistic',
           ZV8DK3F90PP174225: 'realistic, at distributor stock',
@@ -43,6 +47,14 @@
           ZV9LMW6D75T151181: 'not in distributor records',
           UNKNOWN_VIN_12345: 'not in distributor records',
         },
+        /*
+         * Per-tab fixtures, straight from the shared registry (templates/fixture-tags.js): open a
+         * tab and the rail tags the vehicles that reach that panel's states. A component with no
+         * set there falls back to `labels` above — which is every tab but Specification today, each
+         * earning its set as it is reworked. Reading the registry rather than repeating it means a
+         * component added there shows up here with no edit to this page.
+         */
+        componentLabels: window.fixtureTags,
       })"
     >
       <!-- The brief: a one-line title above the component, the about text below it. -->
@@ -115,7 +127,11 @@
           component's tab transition is interruptible by design. The strip's order is handed to
           the component as tab-order, so the content travels the way the strip reads.
         -->
-        <div role="tablist" class="tabs tabs-box tabs-sm self-start" x-data="{ tab: 'vehicle-specification' }">
+        <!--
+          `tab` is the page's, not the component's: the strip belongs to the host. It also tells the
+          harness which panel is on screen, so the fixture rail can offer that panel's vehicles.
+        -->
+        <div role="tablist" class="tabs tabs-box tabs-sm self-start" x-data="{ tab: 'vehicle-specification' }" x-init="setActiveComponent(tab)">
           <template
             x-for="item in [
               { value: 'vehicle-specification', label: 'Specification' },
@@ -135,7 +151,7 @@
               class="tab"
               :class="tab === item.value && 'tab-active'"
               :aria-selected="tab === item.value"
-              @click="tab = item.value; subject.activeElement = item.value"
+              @click="tab = item.value; subject.activeElement = item.value; setActiveComponent(item.value)"
               x-text="item.label"
             ></button>
           </template>

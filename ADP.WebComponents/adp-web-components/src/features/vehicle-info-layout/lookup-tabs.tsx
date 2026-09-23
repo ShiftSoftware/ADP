@@ -1,7 +1,7 @@
 import { FunctionalComponent, h } from '@stencil/core';
 
 /** The --settle token (lookup-tokens.css) when the stylesheet cannot be read, as in tests. */
-const DEFAULT_SETTLE_MS = 820;
+const DEFAULT_SETTLE_MS = 480;
 
 /** Which side of the active tab an inactive one rests on, in physical terms — the stylesheet needs no RTL rule. */
 export type TabPark = 'left' | 'right';
@@ -63,9 +63,8 @@ export const LookupTabs: FunctionalComponent<LookupTabsProps> = ({ active, panel
  *    the transition off, so the patch that puts the incoming tab in flow moves nothing on screen;
  *  - `afterSwitch` runs after the patch (componentDidRender): one forced reflow, then the target
  *    with the transition on;
- *  - `observe` watches the active panel's host with a ResizeObserver and does the same pin → target
- *    for any later growth. If the region is already mid-transition it only retargets, and the
- *    transition restarts from where it is.
+ *  - `observe` watches the active panel with a ResizeObserver and RELEASES the region on a resize
+ *    rather than animating it — the panel already animates that distance on the same clock.
  *
  * Nothing here gates input: the settle timer only releases the pinned height.
  */
@@ -128,19 +127,13 @@ export const createTabRegion = (region: () => HTMLElement | undefined) => {
     pin(el, heightOf(el));
     void el.offsetHeight;
     el.style.transition = '';
-    el.style.height = `${px}px`;
+    // Marked before the target is written: the stylesheet's height transition is scoped to this
+    // attribute, so setting it afterwards would leave the first frame untransitioned.
     el.setAttribute('data-settling', 'true');
+    el.style.height = `${px}px`;
 
     if (settleTimer) clearTimeout(settleTimer);
     settleTimer = setTimeout(release, settleMs(el));
-  };
-
-  const move = (el: HTMLElement, from: number, to: number) => {
-    if (Math.abs(from - to) < 0.5) return;
-    // The observer fires after layout and before paint: at rest the region is already showing `to`,
-    // so it is put back to `from` unseen and sent from there. Mid-transition its own box is the start.
-    if (!el.style.height) pin(el, from);
-    settleTo(el, to);
   };
 
   return {
@@ -234,9 +227,17 @@ export const createTabRegion = (region: () => HTMLElement | undefined) => {
           observedHeight = next;
           return;
         }
-        const previous = observedHeight;
         observedHeight = next;
-        move(el, previous, next);
+
+        // Follow the panel, do not re-animate it. The panel resizes its own body on the same clock
+        // and the observer only hears about it a frame later, so animating the region too put a
+        // second height transition on top of one already running and the shell trailed its content.
+        // `height: auto` tracks it frame for frame. A tab SWITCH still animates: there the region
+        // really does move between two panels' heights.
+        // Only a leftover pinned height from a finished switch needs clearing, and only once:
+        // releasing on every tick restored the inline height dozens of times and made it stutter.
+        if (settleTimer || !el.style.height) return;
+        release();
       });
       observer.observe(host);
     },

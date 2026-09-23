@@ -15,6 +15,9 @@
  *   .layer-stack / .layer              layers sharing one cell; the one with data-active="true" is
  *                                      shown, the others fade out under it. For a strip whose
  *                                      meaning changes (a skeleton, a notice, a heading row).
+ *   .resize-settle                     a block that keeps its slot in every state but changes
+ *                                      size with the vehicle: it eases between two measured
+ *                                      content heights, driven by lib/resize-settle.ts.
  *   .sheen                             the in-progress treatment: a neutral shape with a band of
  *                                      light sweeping left to right. Applied to the shapes that stay
  *                                      on screen through a load, in place of their content.
@@ -23,6 +26,11 @@
  * sequence of unrelated ones.
  */
 
+/* Opacity runs on --settle, the same clock as the fold. It used to finish 60ms early, which left
+   the last sliver of a closing band transparent while it still had height: a hairline of bare paper
+   where the band's own colour should have been, read as a leftover gap at the bottom of the fold.
+   The file's own rule at the top says every duration is --settle; this was the one place that was
+   not (owner, 2026-09-23). */
 .collapsible {
   display: grid;
   grid-template-rows: 0fr;
@@ -30,7 +38,7 @@
   visibility: hidden;
   transition:
     grid-template-rows var(--settle) ease,
-    opacity calc(var(--settle) - 60ms) ease,
+    opacity var(--settle) ease,
     visibility 0s linear var(--settle);
 }
 
@@ -40,7 +48,7 @@
   visibility: visible;
   transition:
     grid-template-rows var(--settle) ease,
-    opacity calc(var(--settle) - 60ms) ease,
+    opacity var(--settle) ease,
     visibility 0s;
 }
 
@@ -76,6 +84,34 @@
     visibility 0s;
 }
 
+/*
+ * .resize-settle — a block that is the same slot on every vehicle but not the same size.
+ *
+ * A .collapsible moves between zero and the content's height. This moves between two content
+ * heights: a value that wraps to a second line on the next vehicle makes its block taller, and
+ * that change lands in one frame, under a skeleton cover that is about to lift on it. A height
+ * that changes without moving is a pop with a different name (motion.md rule 7), and no
+ * `height: auto` can be transitioned to — `interpolate-size: allow-keywords` is not on the
+ * family's browser floor.
+ *
+ * The owner measures the block before the patch and after it and writes the two figures into
+ * --resize-settle-height, with one forced reflow between them — the three steps createTabRegion
+ * already uses for a composite's tab region (lookup-tabs.tsx). The helper is
+ * src/global/lib/resize-settle.ts. The property is UNSET at rest, so the block is `auto` and a
+ * host resize, a breakpoint or a language change re-lays it out with no figure left to go stale.
+ * overflow:hidden so a shrink does not spill during the ease.
+ *
+ * Duration --settle, easing ease — the same clock as everything else in an arrival, so the blocks
+ * resize *with* the covers lifting, the head returning and a region opening, as one movement.
+ * Reduced motion needs no rule of its own: the blanket block at the foot of this file makes it
+ * immediate, which is what a reader who asked for no motion wants.
+ */
+.resize-settle {
+  height: var(--resize-settle-height, auto);
+  overflow: hidden;
+  transition: height var(--settle) ease;
+}
+
 /* A single band of light travelling left to right on repeat, over the flat grey a skeleton is
    made of. Starts and ends clear of the box so the band enters and leaves rather than appearing
    mid-sweep. The band is white at half strength and leans 10° off the vertical (owner,
@@ -92,7 +128,7 @@
   background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
   background-repeat: no-repeat;
   background-size: 45% 100%;
-  animation: lookup-sheen 1.3s linear infinite;
+  animation: lookup-sheen var(--sheen) linear infinite;
 }
 
 @keyframes lookup-sheen {

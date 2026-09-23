@@ -29,7 +29,7 @@ declare const grecaptcha: Grecaptcha;
 const RECAPTCHA_SCRIPT_SRC = 'https://www.google.com/recaptcha/api.js?render=explicit';
 
 /** The --settle token (lookup-tokens.css) when the stylesheet cannot be read, as in tests. */
-const DEFAULT_SETTLE_MS = 320;
+const DEFAULT_SETTLE_MS = 480;
 
 const isAbort = (error: unknown) => (error as DOMException)?.name === 'AbortError';
 

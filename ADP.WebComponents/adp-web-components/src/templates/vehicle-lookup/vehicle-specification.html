@@ -31,11 +31,42 @@
       dir="ltr"
       x-data="harness({
         mocks: 'vehicle-lookup',
-        labels: {
-          ZV9LMW6D75T151181: 'not in distributor records',
-          UNKNOWN_VIN_12345: 'not in distributor records',
+        /*
+         * The states this panel can reach, one VIN each, in reading order — from the shared
+         * registry (templates/fixture-tags.js), because the composite's rail needs the same list
+         * and the two drifted when they were written separately. `labelsOnly` turns the rail into
+         * exactly these, so an untagged vehicle that merely carries data no longer sits there
+         * rendering the same thing as its neighbour.
+         */
+        labelsOnly: true,
+        labels: window.harnessTags('vehicle-specification'),
+        /*
+         * The panel's own `hasRecords`, by value rather than by object: the evaluators build
+         * `identifiers` and `vehicleSpecification` for every VIN, so testing the objects would keep
+         * a fixture with nothing in it. Unauthorized vehicles are kept too — they are a state, not
+         * an absence.
+         */
+        has: vehicle => {
+          if (vehicle?.isAuthorized === false) return true;
+
+          const spec = vehicle?.vehicleSpecification ?? {};
+          const identifiers = vehicle?.identifiers ?? {};
+          const variant = vehicle?.vehicleVariantInfo ?? {};
+
+          const value = raw => String(raw ?? '').trim();
+          /* The feed writes ' 0 ' where it has no figure; a placeholder is not a record. */
+          const figure = raw => (Number(value(raw)) === 0 ? '' : value(raw));
+
+          return [
+            value(spec.modelDescription), value(spec.modelCode), value(variant.modelCode), value(identifiers.katashiki),
+            value(spec.variantDescription), value(identifiers.variant), value(variant.modelYear), value(spec.modelYear),
+            value(spec.productionDate), value(variant.sfx), value(identifiers.color), value(spec.exteriorColor),
+            value(identifiers.trim), value(spec.interiorColor), value(spec.engine), value(spec.engineType),
+            figure(spec.cylinders), value(spec.fuel), figure(spec.tankCap), figure(spec.fuelLiter),
+            value(spec.transmission), value(spec.class), value(spec.bodyType), value(spec.style),
+            figure(spec.doors), value(spec.side), value(spec.lightHeavyType),
+          ].some(Boolean);
         },
-        has: vehicle => Boolean(vehicle?.vehicleSpecification),
         events: false,
       })"
     >
@@ -50,8 +81,22 @@
         <aside class="showcase-about border-base-300 border-t border-dashed pt-5">
           <p class="eyebrow text-neutral">About this page</p>
           <p class="lede text-base-content/70 mt-2 text-sm">
-            The build record for a VIN. This page deliberately consumes the component the way a Blazor host does — through <code>setBlazorRef</code> and callbacks named as
-            attribute strings — rather than by assigning functions to the props.
+            The build record for a VIN: what the vehicle <em>is</em> in the head, and the codes those words were resolved from below it. The details band under the identity grid is
+            the reader's — it opens expanded and folds away on the chevron, and that choice survives the next lookup.
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
+            An exterior colour cell shows the manufacturer's paint code and whatever name the distributor resolved for it — and never a depiction of the paint. A published paint
+            code is unique only with the model and the year it was built under, so a colour drawn from the code alone is a claim about the car this panel cannot stand behind. A
+            code with no resolved name reads as the code, which is a complete answer and not a degraded one.
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
+            Each fixture chip says which state it reaches. <strong class="text-accent">Empty</strong> clears the panel back to idle and <strong class="text-accent">Error</strong>
+            raises one on a settled card — the edge that has to go through the head's leave. Switch the Environment control in the rail to reach the fixtures from another
+            environment.
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
+            This page deliberately consumes the component the way a Blazor host does — through <code>setBlazorRef</code> and callbacks named as attribute strings — rather than by
+            assigning functions to the props.
           </p>
         </aside>
       </div>

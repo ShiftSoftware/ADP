@@ -43,6 +43,7 @@
           { "name": "queryString", "attribute": "query-string", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "requestHeadersProvider", "type": "() => object | Promise<object>", "default": null, "mutable": false, "required": false },
           { "name": "sscQueryString", "attribute": "ssc-query-string", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "tabOrder", "attribute": "tab-order", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "today", "attribute": "today", "type": "string", "default": null, "mutable": false, "required": false }
         ],
         "methods": [
@@ -60,8 +61,7 @@
           "vehicle-ssc",
           "vehicle-service-history",
           "vehicle-paint-thickness",
-          "vehicle-claimable-items",
-          "shift-tab-content"
+          "vehicle-claimable-items"
         ]
       },
       "runtimeAssets": {
@@ -119,13 +119,14 @@
           { "name": "today", "attribute": "today", "type": "string", "default": null, "mutable": false, "required": false }
         ],
         "methods": [
+          { "name": "clearData", "parameters": "() => Promise<void>", "returns": "Promise<void>" },
           { "name": "fetchVin", "parameters": "(newData: VehicleLookupDTO | string, headers?: any) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setBlazorRef", "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
         ],
-        "events": [],
-        "dependencies": ["flexible-container"]
+        "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
+        "dependencies": []
       },
       "runtimeAssets": { "locales": "dist/locales", "notes": [] }
     },
@@ -182,7 +183,7 @@
           { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
         ],
-        "events": [],
+        "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
         "dependencies": ["flexible-container"]
       },
       "runtimeAssets": { "locales": "dist/locales", "notes": ["The host may use hiddenFields to apply its approved presentation policy."] }
@@ -239,7 +240,7 @@
           { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
         ],
-        "events": [],
+        "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
         "dependencies": ["information-table"]
       },
       "runtimeAssets": { "locales": "dist/locales", "notes": [] }
@@ -296,8 +297,8 @@
           { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
         ],
-        "events": [],
-        "dependencies": ["information-table"]
+        "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
+        "dependencies": ["flexible-container", "information-table"]
       },
       "runtimeAssets": { "locales": "dist/locales", "notes": ["The current package global script loads shared fonts and browser interop helpers."] }
     },
@@ -354,7 +355,7 @@
           { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
         ],
-        "events": [],
+        "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
         "dependencies": ["shift-tabs", "flexible-container"]
       },
       "runtimeAssets": { "locales": "dist/locales", "notes": [] }
@@ -447,7 +448,7 @@
           { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" },
           { "name": "skipLookup", "parameters": "(vin: string) => Promise<void>", "returns": "Promise<void>" }
         ],
-        "events": [],
+        "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
         "dependencies": []
       },
       "runtimeAssets": {
@@ -514,7 +515,7 @@
           { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
         ],
-        "events": [],
+        "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
         "dependencies": []
       },
       "runtimeAssets": { "locales": "dist/locales", "notes": ["Warranty coverage only. Campaign rendering, reCAPTCHA and unauthorized campaign lookup belong to vehicle-ssc."] }
@@ -589,7 +590,7 @@
           { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
         ],
-        "events": [],
+        "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
         "dependencies": ["vehicle-item-claim-form", "shift-tabs"]
       },
       "runtimeAssets": {

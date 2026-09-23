@@ -1,5 +1,40 @@
+import { object } from 'yup';
 import yupTypeMapper from '~lib/yup-type-mapper';
 
-const specificationSchema = yupTypeMapper(['vehicleSpecification', 'noData', 'model', 'variant', 'katashiki', 'modelYear', 'sfx', 'productionDate']);
+const specification = object({}).concat(
+  yupTypeMapper([
+    'model',
+    'variant',
+    'katashiki',
+    'modelYear',
+    'sfx',
+    'productionDate',
+    'modelCode',
+    'recordYearNote',
+    'exteriorColour',
+    'interiorColour',
+    'identity',
+    'powertrain',
+    'body',
+    'engine',
+    'engineType',
+    'cylinders',
+    'fuel',
+    'fuelCapacity',
+    'litreUnit',
+    'transmission',
+    'class',
+    'bodyType',
+    'style',
+    'doors',
+    'steering',
+    'vehicleType',
+    'detailsOne',
+    'detailsMany',
+    'expandDetails',
+    'collapseDetails',
+    'unauthorizedNotice',
+  ]),
+);
 
-export default specificationSchema;
+export default specification;

@@ -73,6 +73,7 @@
  */
 
 import { chooseEnvironment, environmentFileUrl, environmentLabel, environmentsFrom } from './harness-environment.js';
+import { FIXTURE_TAGS, tagsFor } from './fixture-tags.js';
 import { mountSiteHeader } from './site-header.js';
 import {
   captureConnectionState,
@@ -264,6 +265,15 @@ const DEFAULTS = {
   profile: 'lookup',
   mocks: null,
   labels: {},
+  // Per-component tags, for a page that shows more than one component at a time.
+  // A composite page names the tags each of its components cares about; the page
+  // tells the harness which one is on screen (`setActiveComponent`) and the rail
+  // swaps to that component's tags. A single-component page just uses `labels`.
+  componentLabels: null,
+  // Show ONLY tagged fixtures. A page whose tags already name every state it can
+  // reach says so, and the rail stops offering the rest — `has` keeps a vehicle
+  // that merely carries data, which on a well-tagged page is noise.
+  labelsOnly: false,
   // Fixture to run as soon as the subject is ready, so a page can deep-link a
   // scenario (`?vin=…`) instead of asking whoever opened the link to click.
   start: null,
@@ -297,6 +307,12 @@ const DEFAULTS = {
   select: undefined,
   clear: undefined,
 };
+
+// The shared tag registry, so a page's inline config can name a component instead of repeating a
+// list. This module runs before Alpine's deferred script, so both are set by the time a page's
+// x-data is evaluated.
+window.fixtureTags = FIXTURE_TAGS;
+window.harnessTags = tagsFor;
 
 window.harness = function harness(options = {}) {
   const config = { ...DEFAULTS, ...options };
@@ -361,6 +377,12 @@ window.harness = function harness(options = {}) {
     // not just its key.
     data: null,
     keys: [],
+    // The unfiltered set, so the rail can be rebuilt when the active component
+    // changes without the caller handing the keys over again.
+    allKeys: null,
+    // Which component's tags the rail is showing. Null on a single-component
+    // page, which then uses the page's own `labels`.
+    activeComponent: null,
     // How many fixtures `has` filtered out. Shown, never silently dropped.
     hidden: 0,
     fixture: null,
@@ -389,9 +411,40 @@ window.harness = function harness(options = {}) {
       return 'Live API responses use the server’s current time. Disconnect to use the generated Anchor or Custom choices.';
     },
 
+    /** The tags in force: the active component's set on a composite, else the page's own. */
+    get activeLabels() {
+      return (config.componentLabels && config.componentLabels[this.activeComponent]) || config.labels;
+    },
+
+    /** A composite sets this as its tab strip changes; elsewhere it stays null. */
+    setActiveComponent(name) {
+      // Only what the tags SAY changes. The rail is not rebuilt: which vehicles a page offers, and
+      // in what order, is the page's own answer and is the same on every tab -- one VIN list for
+      // the whole page, so changing tab re-tags the chips instead of replacing them.
+      this.activeComponent = name;
+    },
+
+    /** Two different cuts: "no data" would be a lie for the tagged-list one. */
+    get hiddenExplanation() {
+      return config.labelsOnly
+        ? `${this.hidden} more in this environment — the list above is one vehicle per state`
+        : `${this.hidden} fixture(s) hidden — no data for this component`;
+    },
+
+    /**
+     * A rail with one fixed tag set spells its tags out. One whose set changes under the reader
+     * cannot: tags of different lengths make chips of different widths, so every tab change
+     * reflowed the rail. That gets a fixed-width marker instead, words one hover away.
+     */
+    get tagsAsMarker() {
+      return Boolean(config.componentLabels);
+    },
+
     /** Empty and Error are always offered; the rest is generated, never listed (R7). */
     get fixtures() {
-      return [{ value: '', label: 'Empty' }, { value: 'error', label: 'Error' }, ...this.keys.map(key => ({ value: key, label: key, note: config.labels[key] }))];
+      const labels = this.activeLabels;
+
+      return [{ value: '', label: 'Empty' }, { value: 'error', label: 'Error' }, ...this.keys.map(key => ({ value: key, label: key, note: labels[key], vin: true }))];
     },
 
     async init() {
@@ -842,12 +895,38 @@ window.harness = function harness(options = {}) {
     setFixtures(keys, data) {
       if (data) this.data = data;
 
+      // Kept, so a change of active component can re-filter the same set without
+      // the caller handing them over again.
+      this.allKeys = keys;
+
+      // The PAGE's own tags, never the active component's: membership and order belong to the page.
+      // Filtering by the active component's set made the composite swap its VIN list every time the
+      // tab changed, because a vehicle tagged for one panel and not another would come and go.
+      const labels = config.labels;
+
       // An annotated fixture always survives the filter. A label means someone
       // picked that key deliberately — often precisely to show an empty or null
       // state, which is the one case `has` would otherwise throw away.
-      const keep = key => Boolean(config.labels[key]) || Boolean(config.has(this.data?.[key], key));
+      // Under `labelsOnly` the tags are the whole list: the page is saying its
+      // tags already name every state it can reach.
+      const keep = key => Boolean(labels[key]) || (!config.labelsOnly && Boolean(config.has(this.data?.[key], key)));
 
-      this.keys = config.has ? keys.filter(keep) : keys;
+      const kept = config.has || config.labelsOnly ? keys.filter(keep) : keys;
+
+      // Tagged first, in the order the page tagged them, and the rest behind in
+      // the order the environment defines. The tags are the page's running order
+      // for its own states, so the rail reads as that list rather than as
+      // whatever position a vehicle happens to hold in a 31-vehicle environment.
+      // Ordering here rather than in the fixtures keeps every vehicle's payload
+      // exactly where the generator put it.
+      const order = Object.keys(labels);
+      const rank = key => {
+        const at = order.indexOf(key);
+
+        return at === -1 ? order.length : at;
+      };
+
+      this.keys = kept.slice().sort((a, b) => rank(a) - rank(b) || kept.indexOf(a) - kept.indexOf(b));
       this.hidden = keys.length - this.keys.length;
     },
 
@@ -926,23 +1005,43 @@ const FIXTURES = /* html */ `
   <div class="flex flex-col">
     <div class="flex flex-wrap gap-1.5" role="group" aria-label="Fixtures">
       <template x-for="item in fixtures" :key="item.value">
+        <!-- On the wrapper, not the button: the native title waits ~1s, and the button clips its
+             own overflow for the marker, which would clip a tooltip drawn from it. -->
+        <span class="inline-flex" :class="{ 'tooltip tooltip-bottom': tagsAsMarker && item.note }" :data-tip="(tagsAsMarker && item.note) || null">
         <button
           type="button"
-          class="btn btn-xs px-1.5 font-mono font-normal"
-          :class="fixture === item.value ? 'btn-primary' : 'btn-outline'"
+          class="btn btn-xs relative overflow-hidden ps-1.5 font-mono font-normal"
+          :class="[fixture === item.value ? 'btn-primary' : 'btn-outline', tagsAsMarker && item.vin ? 'pe-3.5' : 'pe-1.5']"
           :disabled="connected || environmentChanging"
           :aria-pressed="fixture === item.value"
-          :title="item.note || item.label"
           @click="run(item.value)"
         >
           <span x-text="item.label"></span>
-          <span class="font-sans opacity-70" x-show="item.note" x-text="item.note"></span>
+          <!-- A band down the trailing edge, the same width on every chip, so changing tab cannot
+               reflow the rail. Blue on the selected chip too: the tag is still true there. -->
+          <span
+            x-show="tagsAsMarker && item.vin"
+            class="absolute inset-y-0 end-0 w-3"
+            :class="item.note ? 'bg-info' : 'bg-base-content/20'"
+            :aria-label="item.note || 'no tag for this component'"
+            role="img"
+          ></span>
+
+          <!-- The tag in words, for a rail that keeps one set. The theme's info blue, so it reads
+               as its own thing beside the mono VIN; on the selected chip it inherits that ink. -->
+          <span
+            x-show="!tagsAsMarker && item.note"
+            class="font-sans font-medium"
+            :class="fixture === item.value ? 'opacity-90' : 'text-info'"
+            x-text="item.note"
+          ></span>
         </button>
+        </span>
       </template>
     </div>
 
-    <!-- Never a silent cut: a page that filters says how much it filtered. -->
-    <p class="text-base-content/50 mt-1.5 text-xs" x-show="hidden" x-text="hidden + ' fixture(s) hidden — no data for this component'"></p>
+    <!-- Never a silent cut: a page that filters says how much it filtered, and why. -->
+    <p class="text-base-content/50 mt-1.5 text-xs" x-show="hidden" x-text="hiddenExplanation"></p>
 
     <div
       class="grid overflow-hidden transition-[grid-template-rows,opacity] duration-[320ms]"

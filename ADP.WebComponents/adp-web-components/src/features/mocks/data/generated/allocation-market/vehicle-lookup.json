@@ -3,9 +3,9 @@
     "vin": "ZT8LY7CZ0S2959088",
     "identifiers": {
       "vin": "ZT8LY7CZ0S2959088",
-      "variant": "KYAT26Z-SWNFSC-X2-553-75",
+      "variant": "UM25HX2202501",
       "katashiki": "KYAT26Z-SWNFSC",
-      "color": "553",
+      "color": "1G3",
       "trim": "75",
       "brandID": "2"
     },
@@ -194,11 +194,30 @@
         }
       }
     ],
+    "vehicleVariantInfo": {
+      "modelCode": "UM25H",
+      "sfx": "X2",
+      "modelYear": 2025
+    },
     "vehicleSpecification": {
-      "modelCode": "UMBREL HEV",
+      "modelCode": "UM25H",
+      "modelYear": 2025,
       "productionDate": "2025-05-01T00:00:00",
       "modelDescription": "UMBREL HEV",
-      "exteriorColor": "STORM GREY",
+      "variantDescription": "2.5 HEV / Lounge",
+      "class": "Passenger",
+      "bodyType": "SUV",
+      "engine": "2.5L A25A-FXS",
+      "cylinders": "4",
+      "lightHeavyType": "Light",
+      "doors": "5",
+      "fuel": "Hybrid",
+      "transmission": "e-CVT",
+      "side": "LHD",
+      "engineType": "Gasoline Hybrid",
+      "tankCap": "55",
+      "style": "Crossover",
+      "exteriorColor": "MAGNETIC GREY METALLIC",
       "interiorColor": "CREAM LEATHER"
     },
     "serviceItems": [
@@ -1927,7 +1946,7 @@
       "vin": "ZS88F5CL80J407317",
       "variant": "KYFF24I-DXDRP-80-923-75",
       "katashiki": "KYFF24I-DXDRP",
-      "color": "923",
+      "color": "Q23",
       "trim": "75",
       "brandID": "2"
     },
@@ -2512,7 +2531,7 @@
       "vin": "ZT8STYDZ00B925664",
       "variant": "DTI942Z-PCMMGC-U3-923-63",
       "katashiki": "DTI942Z-PCMMGC",
-      "color": "923",
+      "color": "Q23",
       "trim": "63",
       "brandID": "2"
     },
@@ -3105,7 +3124,7 @@
       "vin": "ZT8STYDZ501002487",
       "variant": "DTI942Z-PCMMGC-U3-923-63",
       "katashiki": "DTI942Z-PCMMGC",
-      "color": "923",
+      "color": "Q23",
       "trim": "63",
       "brandID": "2"
     },
@@ -3603,9 +3622,22 @@
     },
     "serviceHistory": [],
     "vehicleSpecification": {
-      "modelCode": "UMBREL HEV",
+      "modelCode": "UM25H",
       "productionDate": "2025-08-01T00:00:00",
       "modelDescription": "UMBREL HEV",
+      "variantDescription": "2.5 HEV / Lounge",
+      "class": "Passenger",
+      "bodyType": "SUV",
+      "engine": "2.5L A25A-FXS",
+      "cylinders": "4",
+      "lightHeavyType": "Light",
+      "doors": "5",
+      "fuel": "Hybrid",
+      "transmission": "e-CVT",
+      "side": "LHD",
+      "engineType": "Gasoline Hybrid",
+      "tankCap": "55",
+      "style": "Crossover",
       "exteriorColor": "STORM GREY",
       "interiorColor": "SLATE CLOTH"
     },
@@ -4002,7 +4034,7 @@
       "vin": "ZT8STYDZ40B819962",
       "variant": "DTI942Z-PCMDJE-I1-923-75",
       "katashiki": "DTI942Z-PCMDJE",
-      "color": "923",
+      "color": "Q23",
       "trim": "75",
       "brandID": "2"
     },
@@ -5348,7 +5380,7 @@
       "vin": "ZT8F9VVT502643013",
       "variant": "KYAM38D-RQOMYO-D9-923-66",
       "katashiki": "KYAM38D-RQOMYO",
-      "color": "923",
+      "color": "Q23",
       "trim": "66",
       "brandID": "2"
     },

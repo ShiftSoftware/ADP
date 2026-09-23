@@ -237,7 +237,7 @@
 
 .ssc-card[data-phase='busy'] .ssc-lead-skeleton {
   background-color: #dcdfe4;
-  animation: lookup-sheen 1.3s linear infinite;
+  animation: lookup-sheen var(--sheen) linear infinite;
 }
 
 .ssc-lead-notice {
@@ -506,7 +506,7 @@
   border-radius: 50%;
   opacity: 0;
   transition: opacity var(--settle) ease;
-  animation: lookup-spin 0.8s linear infinite;
+  animation: lookup-spin var(--spin) linear infinite;
 }
 
 .ssc-trace-button[data-loading='true'] .ssc-trace-button-icon {
@@ -902,7 +902,7 @@
   border: 2px solid var(--line);
   border-top-color: var(--blue);
   border-radius: 50%;
-  animation: lookup-spin 0.8s linear infinite;
+  animation: lookup-spin var(--spin) linear infinite;
 }
 
 /* The spinner stays rendered inside its shut slot; no point spinning where nobody can see it. */
