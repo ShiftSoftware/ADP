@@ -14,7 +14,7 @@ import {
   intlLocalesFor,
   modelYearOf,
   normalise,
-  panelLead,
+  panelNotice,
   productionMonth,
 } from './components/VehicleSpecificationPanel';
 
@@ -100,12 +100,22 @@ describe('vehicle-specification — the derivations', () => {
     expect(hasRecords(undefined)).toBe(false);
   });
 
-  it('keeps the caption in every state but an unauthorized vehicle, which gets the notice', () => {
-    // The caption names the grid below, which is the same eight labelled cells whatever the lookup
-    // returns — so it is not covered to load and is not a skeleton before the first lookup either.
-    expect(panelLead({})).toBe('caption');
-    expect(panelLead({ authorized: true })).toBe('caption');
-    expect(panelLead({ authorized: false })).toBe('notice');
+  it('opens the notice only for an unauthorized vehicle, and never while busy or before a lookup', () => {
+    const locale = specificationLocale as any;
+    const open = (authorized: boolean | undefined, busy = false) => panelNotice({ authorized }, busy, locale).open;
+
+    // Idle, and a vehicle the distributor does have: nothing to say, so the band stays shut.
+    expect(open(undefined)).toBe(false);
+    expect(open(true)).toBe(false);
+
+    // The one case there is today.
+    expect(open(false)).toBe(true);
+    expect(panelNotice({ authorized: false }, false, locale).message).toBe(locale.unauthorizedNotice);
+
+    // Shut while a lookup is in flight, whatever the vehicle on screen was: a notice is about one
+    // vehicle and must not hang over the next while the panel is fetching it.
+    expect(open(false, true)).toBe(false);
+    expect(open(undefined, true)).toBe(false);
   });
 
   it('keeps every tier-1 slot in every state and dashes the model code that repeats the head', () => {
@@ -231,7 +241,7 @@ describe('vehicle-specification', () => {
     expect(text(page, '.spec-title-value')).toBe('—');
     expect(shadow(page).querySelector('.lookup-summary .status-badge')).toBeNull();
     expect(shadow(page).querySelector('.lookup-card')?.getAttribute('data-verdict')).toBe('idle');
-    expect(shadow(page).querySelector('.spec-lead')?.getAttribute('data-lead')).toBe('caption');
+    expect(shadow(page).querySelector('.spec-notice')?.getAttribute('data-open')).toBe('false');
 
     // Records on file: the records are the statement — no pill — and the accent goes green.
     await (page.rootInstance as VehicleSpecification).fetchVin(AUTHORIZED_VIN);
@@ -239,7 +249,7 @@ describe('vehicle-specification', () => {
     expect(shadow(page).querySelector('.lookup-card')?.getAttribute('data-verdict')).toBe('positive');
     expect(shadow(page).querySelector('.lookup-summary .status-badge')).toBeNull();
     expect(text(page, '.spec-title-value')).toBe('RAV4 2.0L 4WD');
-    expect(shadow(page).querySelector('.spec-lead')?.getAttribute('data-lead')).toBe('caption');
+    expect(shadow(page).querySelector('.spec-notice')?.getAttribute('data-open')).toBe('false');
 
     // Not in the distributor's records: amber, the notice on the strip, and the head says nothing
     // about the vehicle whatever the response carried.
@@ -247,7 +257,7 @@ describe('vehicle-specification', () => {
     await page.waitForChanges();
     expect(shadow(page).querySelector('.lookup-card')?.getAttribute('data-verdict')).toBe('neutral');
     expect(text(page, '.spec-title-value')).toBe('—');
-    expect(shadow(page).querySelector('.spec-lead')?.getAttribute('data-lead')).toBe('notice');
+    expect(shadow(page).querySelector('.spec-notice')?.getAttribute('data-open')).toBe('true');
     expect(shadow(page).querySelector('.lookup-summary .status-badge')?.classList.contains('is-neutral')).toBe(true);
 
     // Cleared: back to idle, and said so.
@@ -277,7 +287,7 @@ describe('vehicle-specification', () => {
     expect(text(page, '.lookup-summary .status-badge > span')).toBe('No records');
     expect(text(page, '.spec-title-value')).toBe('—');
     // A caption, not a notice: records are shown, not judged, and the fact is said by the pill.
-    expect(shadow(page).querySelector('.spec-lead')?.getAttribute('data-lead')).toBe('caption');
+    expect(shadow(page).querySelector('.spec-notice')?.getAttribute('data-open')).toBe('false');
   });
 
   it('carries the model, the year and the grade in the head, and keeps the grade slot when there is none', async () => {
@@ -569,7 +579,7 @@ describe('vehicle-specification — the head statement in every state', () => {
 
     expect(shadow(page).querySelector('.lookup-card')?.getAttribute('data-verdict')).toBe('idle');
     expect(text(page, '.lookup-summary .status-badge > span')).toBe('No records');
-    expect(shadow(page).querySelector('.spec-lead')?.getAttribute('data-lead')).toBe('caption');
+    expect(shadow(page).querySelector('.spec-notice')?.getAttribute('data-open')).toBe('false');
   });
 });
 
@@ -592,12 +602,11 @@ describe('vehicle-specification — the invariants', () => {
     expect(shadow(page).querySelector('.lookup-summary .status-badge')?.classList.contains('is-neutral')).toBe(true);
     expect(text(page, '.lookup-summary .status-badge > span')).toBe('Not in distributor records');
 
-    // The strip says it in words, in the neutral tone, and is a live region.
-    const notice = shadow(page).querySelector('.spec-lead-notice');
-    expect(shadow(page).querySelector('.spec-lead')?.getAttribute('data-lead')).toBe('notice');
-    expect(notice?.getAttribute('data-active')).toBe('true');
-    expect(notice?.getAttribute('role')).toBe('status');
-    expect(notice?.classList.contains('is-neutral')).toBe(true);
+    // Its own band above the grid says it in words, in the neutral tone, and is a live region.
+    const notice = shadow(page).querySelector('.spec-notice');
+    expect(notice?.getAttribute('data-open')).toBe('true');
+    expect(notice?.getAttribute('data-tone')).toBe('neutral');
+    expect(notice?.querySelector('.spec-notice-body')?.getAttribute('role')).toBe('status');
     expect(notice?.textContent).toContain((specificationLocale as any).unauthorizedNotice);
 
     // The head says nothing, the grade slot is empty but kept, and all eight slots read as dashes —
@@ -643,35 +652,36 @@ describe('vehicle-specification — the invariants', () => {
     expect(shadow(page).querySelector('.spec-identity')?.textContent).not.toContain('—');
   });
 
-  it('keeps the strip s two layers mounted in every state, with exactly one active', async () => {
+  it('keeps the grid s title in every state and slides the notice over nothing', async () => {
     const page = await newPage(brokerMarketMocks);
 
-    const layers = () => Array.from(shadow(page).querySelectorAll('.spec-lead .layer'));
-    const active = () => layers().filter(layer => layer.getAttribute('data-active') === 'true');
-    const hiddenIsInactive = () => layers().every(layer => (layer.getAttribute('data-active') === 'true') === (layer.getAttribute('aria-hidden') !== 'true'));
+    const strip = () => shadow(page).querySelector('.spec-lead');
+    const notice = () => shadow(page).querySelector('.spec-notice');
 
-    // Idle, and the caption is already there: it names the grid below, which carries the same eight
-    // labelled cells before a lookup as after one. There is no skeleton layer to cover a word that
-    // cannot change.
-    expect(layers()).toHaveLength(2);
-    expect(active().map(layer => layer.className.includes('caption'))).toEqual([true]);
+    // Idle. The title is already there — it names the grid below, which carries the same eight
+    // labelled cells before a lookup as after one — and the notice band is shut.
+    expect(strip()?.textContent?.trim()).toBe('Identity');
+    expect(notice()?.getAttribute('data-open')).toBe('false');
     // The band's wait spinner is an anchor too: the head's last child in every state.
     expect(shadow(page).querySelectorAll('.spec-head .lookup-head-wait')).toHaveLength(1);
 
     await owner(page).fetchVin(RICH_VIN);
     await page.waitForChanges();
-    expect(layers()).toHaveLength(2);
-    expect(active()).toHaveLength(1);
-    expect(shadow(page).querySelector('.spec-lead-caption')?.getAttribute('data-active')).toBe('true');
-    expect(shadow(page).querySelector('.spec-lead-notice')?.getAttribute('aria-hidden')).toBe('true');
+    expect(strip()?.textContent?.trim()).toBe('Identity');
+    expect(notice()?.getAttribute('data-open')).toBe('false');
+    expect(notice()?.getAttribute('aria-hidden')).toBe('true');
 
     await owner(page).fetchVin('ZV8GHHHP37P214642');
     await page.waitForChanges();
-    expect(layers()).toHaveLength(2);
-    expect(active()).toHaveLength(1);
-    expect(hiddenIsInactive()).toBe(true);
-    // The caption layer is still mounted under the notice, so the tone never changes in place.
-    expect(shadow(page).querySelector('.spec-lead-caption')).not.toBeNull();
+    // The notice opens ABOVE the grid rather than replacing its title: both are on screen at once,
+    // which is the whole point — the section it warns about keeps its name.
+    expect(notice()?.getAttribute('data-open')).toBe('true');
+    expect(notice()?.getAttribute('aria-hidden')).toBeNull();
+    expect(strip()?.textContent?.trim()).toBe('Identity');
+    expect(notice()?.textContent).toContain('not in the distributor');
+    // And it sits above the grid in document order.
+    const order = Array.from(shadow(page).querySelectorAll('.spec-notice, .spec-lead, .spec-identity')).map(el => el.className.split(' ')[0]);
+    expect(order).toEqual(['spec-notice', 'spec-lead', 'spec-identity']);
   });
 });
 
@@ -899,7 +909,7 @@ describe('vehicle-specification — direction and language', () => {
     await owner(page).changeLanguage('ar');
     await owner(page).fetchVin('ZV8GHHHP37P214642');
     await page.waitForChanges();
-    expect(shadow(page).querySelector('.spec-lead-notice')?.textContent).toContain(arabicLocale.unauthorizedNotice);
+    expect(shadow(page).querySelector('.spec-notice')?.textContent).toContain(arabicLocale.unauthorizedNotice);
     expect(text(page, '.lookup-summary .status-badge > span')).toBe(arabicShared.notInRecords);
 
     await owner(page).fetchVin(EMPTY_RECORD_VIN);

@@ -26,6 +26,11 @@
  * sequence of unrelated ones.
  */
 
+/* Opacity runs on --settle, the same clock as the fold. It used to finish 60ms early, which left
+   the last sliver of a closing band transparent while it still had height: a hairline of bare paper
+   where the band's own colour should have been, read as a leftover gap at the bottom of the fold.
+   The file's own rule at the top says every duration is --settle; this was the one place that was
+   not (owner, 2026-09-23). */
 .collapsible {
   display: grid;
   grid-template-rows: 0fr;
@@ -33,7 +38,7 @@
   visibility: hidden;
   transition:
     grid-template-rows var(--settle) ease,
-    opacity calc(var(--settle) - 60ms) ease,
+    opacity var(--settle) ease,
     visibility 0s linear var(--settle);
 }
 
@@ -43,7 +48,7 @@
   visibility: visible;
   transition:
     grid-template-rows var(--settle) ease,
-    opacity calc(var(--settle) - 60ms) ease,
+    opacity var(--settle) ease,
     visibility 0s;
 }
 

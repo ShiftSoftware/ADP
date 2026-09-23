@@ -165,24 +165,18 @@
    ------------------------------------------------------------------------------------------- */
 
 .spec-lead {
+  display: flex;
   min-height: var(--lead-height);
+  align-items: center;
+  padding: 6px 20px;
+  background: var(--paper-soft);
   box-shadow:
     inset 0 1px 0 var(--line),
     inset 0 -1px 0 var(--line);
 }
 
-.spec-lead > .layer {
-  min-height: var(--lead-height);
-}
-
 /* The identity grid's caption: the columns layer in its one-word form, because a record's fields
    are labelled values, not columns. A caption and not a notice — records are shown, not judged. */
-.spec-lead-caption {
-  display: flex;
-  align-items: center;
-  padding: 6px 20px;
-  background: var(--paper-soft);
-}
 
 .spec-lead-caption-label {
   color: var(--muted);
@@ -196,22 +190,27 @@
 /* The panel's one statement in a sentence: a vehicle the distributor has no record of. Amber — a
    statement without a verdict — ruled top and bottom in its own tone, square because it runs the
    card's full width. */
-.spec-lead-notice {
+/* The notice band. A .collapsible, so nothing about it appears or disappears without travelling:
+   it is shut before the first lookup and shut while one is in flight, and it slides open only once
+   there is something to say about the vehicle on screen. The tone lives on a data attribute rather
+   than a class so a second tone is one rule, not a second element. */
+.spec-notice-body {
   display: flex;
   gap: 8px;
   align-items: center;
-  padding: 6px 20px;
+  margin: 0;
+  padding: 8px 20px;
   font-size: 13px;
   font-weight: 650;
   line-height: 1.3;
 }
 
-.spec-lead-notice.is-neutral {
+/* Ruled on top only: the strip below brings its own top rule, so a bottom rule here put two
+   hairlines a pixel apart, and it was the first thing to go as the band folded. */
+.spec-notice[data-tone='neutral'] .spec-notice-body {
   color: var(--amber-dark);
   background: var(--amber-tint);
-  box-shadow:
-    inset 0 1px 0 rgba(183, 121, 31, 0.22),
-    inset 0 -1px 0 rgba(183, 121, 31, 0.22);
+  box-shadow: inset 0 1px 0 rgba(183, 121, 31, 0.22);
 }
 
 .notice-icon {
@@ -557,9 +556,12 @@
     min-height: 1.2em;
   }
 
-  .spec-lead-caption,
-  .spec-lead-notice {
+  .spec-lead {
     padding: 6px 14px;
+  }
+
+  .spec-notice-body {
+    padding: 8px 14px;
   }
 
   .spec-identity {

@@ -28,7 +28,6 @@ export type SpecificationLocale = InferType<typeof specificationSchema>;
 export type SpecificationRecord = Pick<VehicleLookupDTO, 'vin' | 'isAuthorized' | 'identifiers' | 'vehicleVariantInfo' | 'vehicleSpecification'>;
 
 /** What the strip — the band between the head and the body — shows. */
-export type LeadKind = 'caption' | 'notice';
 
 /** Everything the panel's strip is decided from. The pill and the accent are the family's `recordVerdict`. */
 export type SpecPanelState = {
@@ -169,22 +168,20 @@ const recordValues = (record?: SpecificationRecord): string[] => {
 export const hasRecords = (record?: SpecificationRecord): boolean => recordValues(record).some(Boolean);
 
 /**
- * The strip: the identity grid's caption, except for a vehicle the distributor has no record of,
- * which gets the amber notice instead.
+ * The panel's notice band: a statement about the vehicle that stands above the record rather than
+ * inside it. One case today -- a VIN the distributor has no record of -- and the shape is general
+ * so another reads the same way: a tone, a message, and whether it is open.
  *
- * The caption is not covered to load and is not a skeleton before the first lookup. The language's
- * skeleton layer is for a strip whose content is variable -- a table's heading row, which is a lie
- * above rows that do not exist yet. This strip is a fixed structure's title: the grid below it
- * carries the same eight labelled cells in every state, so "Identity" is as true of an empty panel
- * as of a loaded one, and covering a word that cannot change says nothing while costing a flicker
- * on every lookup (S 21: a fixed structure's titles "stay exactly as they are"; S 5: the strip is
- * one of the things that exist in every state).
- *
- * A caption rather than a notice for both the records and the no-records states, because records
- * are shown, not judged: there is no tone to say them in, the no-records fact is already said by
- * the pill in grey, and amber would claim the vehicle is unknown, which it is not.
+ * It is shut while a lookup is in flight and before the first one. A notice is about a particular
+ * vehicle, so it must not hang over the next one while the panel is fetching it, and it must not
+ * greet a reader who has looked nothing up. The message stays rendered while it shuts, so the band
+ * slides away with its words rather than blanking on the frame the state changed.
  */
-export const panelLead = (state: { authorized?: boolean }): LeadKind => (state.authorized === false ? 'notice' : 'caption');
+export const panelNotice = (state: { authorized?: boolean }, busy: boolean, locale: SpecificationLocale): { open: boolean; tone: 'neutral'; message: string } => ({
+  open: !busy && state.authorized === false,
+  tone: 'neutral',
+  message: locale.unauthorizedNotice,
+});
 
 /**
  * One labelled value. `text` is the plain value and is empty when the record has nothing for the
@@ -474,7 +471,7 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
    * the distributor's to assert.
    */
   const readable = vehicleLoaded && record?.isAuthorized !== false;
-  const lead = panelLead({ authorized: record?.isAuthorized });
+  const notice = panelNotice({ authorized: record?.isAuthorized }, loading, locale);
   const statement = headStatement(record, readable);
   const cells = identityCells(record, locale, lang, readable);
 
@@ -524,21 +521,33 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
           transition list would replace the other depending on source order. */}
       <div class="lookup-slide-clip">
         <div class="spec-under-head lookup-slide">
-          <div class="spec-lead layer-stack" data-lead={lead}>
-            <div class="layer spec-lead-caption" data-active={lead === 'caption' ? 'true' : 'false'} aria-hidden={lead === 'caption' ? null : 'true'}>
-              <span class="spec-lead-caption-label">{locale.identity}</span>
-            </div>
+          {/*
+            The notice is its own band, above the strip and the grid rather than inside the strip.
+            It used to be a layer of the strip's stack, which meant showing it REPLACED the
+            "Identity" caption -- the warning appeared to sit on top of the section it was about,
+            and the section lost its title for as long as the warning was up. A statement about the
+            whole record belongs above the record (owner, 2026-09-23).
 
-            {/* The other anchor: mounted in every state, and its tone never changes in place. The
-                strip only ever moves between these two, and it does so as the layer stack's
-                cross-fade — the caption is never covered, because the grid it names is the same
-                eight cells whatever the lookup returns. */}
-            <div class="layer spec-lead-notice is-neutral" data-active={lead === 'notice' ? 'true' : 'false'} role="status" aria-hidden={lead === 'notice' ? null : 'true'}>
-              <svg class="notice-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
-                <path fill="currentColor" d={BADGE_GLYPHS.question} />
-              </svg>
-              <span>{locale.unauthorizedNotice}</span>
+            A .collapsible, so it arrives and leaves by sliding rather than appearing: shut before
+            the first lookup and shut while one is in flight, open only once there is something to
+            say about the vehicle on screen. Its words stay rendered while it shuts, so it slides
+            away with them instead of blanking.
+          */}
+          <div class="spec-notice collapsible" data-open={notice.open ? 'true' : 'false'} data-tone={notice.tone} aria-hidden={notice.open ? null : 'true'}>
+            <div class="collapsible-body">
+              <p class="spec-notice-body" role="status">
+                <svg class="notice-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+                  <path fill="currentColor" d={BADGE_GLYPHS.question} />
+                </svg>
+                <span>{notice.message}</span>
+              </p>
             </div>
+          </div>
+
+          {/* The grid's title, and a fixed one: the eight labelled cells below are the same in every
+              state, so it is never covered and never swapped for something else. */}
+          <div class="spec-lead">
+            <span class="spec-lead-caption-label">{locale.identity}</span>
           </div>
 
           {/* Tier 1 — the fixed structure. It never shuts: the same eight titled slots exist
