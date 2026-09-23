@@ -45,10 +45,9 @@ public static class ClaimableItemsApiExtensions
         // are added as data assemblies because the FluentValidation validators live colocated with
         // the DTOs in the Shared project (dual-assembly scan).
         //
-        // No mapper registration accompanies these. The generated mappers register themselves
-        // through a [ModuleInitializer] the source generator emits next to each one, so they are in
-        // ShiftEntityMapperRegistry before any of this runs - there is nothing left for a
-        // registration call to do.
+        // No separate mapper registration accompanies these: RegisterShiftRepositories above also
+        // registers the Data assembly's generated ShiftMapper mapper - the repositories' automatic
+        // maps and Mappers/ClaimableItemsMapper.cs.
         services.Configure<ShiftEntityOptions>(o =>
         {
             o.AddDataAssembly(typeof(DataMarker).Assembly);

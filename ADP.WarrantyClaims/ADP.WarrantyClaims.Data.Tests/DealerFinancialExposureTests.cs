@@ -105,22 +105,21 @@ public class DealerFinancialExposureTests
     }
 
     [Fact]
-    public void The_shared_members_are_still_configured_on_the_dealer_map()
+    public void The_shared_members_are_still_mapped_on_the_dealer_list()
     {
         // Guards the other direction: blanking too much is as wrong as blanking too little.
-        // ProcessDate, DistributorProcessDate and ReferenceWarrantyClaimNumber were configured on
-        // BOTH old maps, so the dealer map must still carry them.
-        //
-        // This asserts against the generator's own record of what the repository configured
-        // (__shiftBakedCustom) rather than against projected VALUES, and deliberately so: those
-        // three are supplied by the repository's UseGeneratedMapper config, which a directly
-        // constructed mapper does not carry - only the ignores are baked into the type itself.
-        // Asserting values here would need a live DbContext and would test the harness more than
-        // the mapper.
-        var baked = BakedCustom(MapperTypeFor<DealerFinancialListDTO>());
+        // ProcessDate, DistributorProcessDate, ReferenceWarrantyClaimNumber and the two certificate
+        // flattenings are configured on the distributor map, which the dealer map inherits - so the
+        // dealer list must carry their VALUES, exactly as the distributor list does.
+        var dealer = ProjectOne<DealerFinancialListDTO>(SeedClaim());
 
-        foreach (var member in new[] { "ProcessDate", "DistributorProcessDate", "ReferenceWarrantyClaimNumber" })
-            Assert.Contains(member, baked);
+        Assert.Equal(new DateTimeOffset(2024, 3, 4, 5, 6, 7, TimeSpan.Zero), dealer.ProcessDate);
+        Assert.Equal(new DateTimeOffset(2024, 4, 5, 6, 7, 8, TimeSpan.Zero), dealer.DistributorProcessDate);
+        Assert.Equal("REF-0001", dealer.ReferenceWarrantyClaimNumber);
+
+        // A claim with no certificate: an EMPTY STRING, not null - the pinned pre-migration shape.
+        Assert.Equal("", dealer.CertificateCertificateNo);
+        Assert.Null(dealer.CertificateInvoiceDate);
     }
 
     [Fact]
@@ -146,40 +145,12 @@ public class DealerFinancialExposureTests
     }
 
     /// <summary>
-    /// Runs a triple's real list projection over a single entity. <c>AsQueryable</c> makes the
-    /// generated <c>__shiftListProjection</c> expression execute in memory, so this exercises the
-    /// same projection the endpoint splices into SQL rather than a re-implementation of it.
+    /// Runs a triple's real list projection over a single entity, through the mapper a repository closing
+    /// that triple maps through. <c>AsQueryable</c> makes the projection execute in memory, so this
+    /// exercises the same expression the endpoint hands to SQL rather than a re-implementation of it.
     /// </summary>
-    private static TListDTO ProjectOne<TListDTO>(Entities.WarrantyClaim entity)
-    {
-        var mapper = (IShiftEntityMapper<Entities.WarrantyClaim, TListDTO, WarrantyClaimDTO>)
-            Activator.CreateInstance(MapperTypeFor<TListDTO>(), nonPublic: true)!;
-
-        return mapper.MapToList(new[] { entity }.AsQueryable()).Single();
-    }
-
-    /// <summary>
-    /// The generated mapper type for a triple, found by its closed interface. Narrowed to the
-    /// generated-mappers namespace because <c>ShiftRepository</c> also satisfies that interface and
-    /// constructing one would need a DbContext.
-    /// </summary>
-    private static Type MapperTypeFor<TListDTO>()
-    {
-        var closed = typeof(IShiftEntityMapper<Entities.WarrantyClaim, TListDTO, WarrantyClaimDTO>);
-
-        return Assert.Single(
-            typeof(Entities.WarrantyClaim).Assembly.GetTypes(),
-            t => t is { IsAbstract: false, IsInterface: false }
-                 && t.Namespace == "ShiftSoftware.ShiftEntity.GeneratedMappers"
-                 && closed.IsAssignableFrom(t));
-    }
-
-    /// <summary>
-    /// The generator's own record of which members the repository configured explicitly. Reading it
-    /// is the same device item J uses to audit the emitted code.
-    /// </summary>
-    private static string[] BakedCustom(Type mapperType) =>
-        (string[])mapperType
-            .GetField("__shiftBakedCustom", BindingFlags.NonPublic | BindingFlags.Static)!
-            .GetValue(null)!;
+    private static TListDTO ProjectOne<TListDTO>(Entities.WarrantyClaim entity) =>
+        ModuleMapper.For<Entities.WarrantyClaim, TListDTO, WarrantyClaimDTO>()
+            .MapToList(new[] { entity }.AsQueryable())
+            .Single();
 }

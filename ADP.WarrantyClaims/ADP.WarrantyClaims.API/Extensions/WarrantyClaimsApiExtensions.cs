@@ -44,9 +44,9 @@ public static class WarrantyClaimsApiExtensions
         {
             o.AddDataAssembly(typeof(DataMarker).Assembly);
             o.AddDataAssembly(typeof(SharedMarker).Assembly);
-            // No mapper registration: the generated mappers register themselves through a
-            // [ModuleInitializer] the source generator emits beside each one, so they are already in
-            // ShiftEntityMapperRegistry before any of this runs.
+            // No separate mapper registration: RegisterShiftRepositories above also registers the Data
+            // assembly's generated ShiftMapper mapper - the repositories' automatic maps and
+            // Mappers/WarrantyClaimsMapper.cs.
         });
 
         // Contribute the module's entity configuration to the consumer's DbContext at model-build time.
