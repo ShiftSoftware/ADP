@@ -1,31 +1,19 @@
 /**
- * Eases a set of blocks between two content heights, for a fixed structure whose values change
- * under a cover (motion.md rule 11; the design language § 21, "the changeable content").
+ * Eases blocks between two content heights, for a fixed structure whose values change under a
+ * cover (motion.md rule 11; design language § 21).
  *
- * The case: a panel whose body is the same titled slots for every vehicle does not shut to load —
- * each value block carries `shift-skeleton` and the wrapper's `.loading` covers it while the text
- * underneath is swapped. But a value that wraps to a second line on the next vehicle makes its
- * block taller, and without this that change lands in one frame under a cover that is about to
- * lift on it: the grey block jumps, its grid row jumps, and everything below jumps with it. A
- * height that changes without moving is a pop with a different name (motion.md rule 7).
+ * A value that wraps to a second line on the next vehicle makes its block taller, and that change
+ * would otherwise land in one frame under a cover about to lift on it. No primitive covers it:
+ * `.collapsible` moves between zero and content height, and `height: auto` cannot be transitioned
+ * to on the family's browser floor.
  *
- * No primitive already covers it. `.collapsible` moves between zero and the content's height, and
- * the height announcer only tells *enclosing* containers to stop clipping; neither animates a
- * block between two non-zero content heights, and `height: auto` cannot be transitioned to on the
- * family's browser floor (`interpolate-size: allow-keywords` is not shippable).
+ * So: measure → patch → reflow → target → release, the steps `createTabRegion` already uses. The
+ * blocks carry `.resize-settle`, which reads `--resize-settle-height`; this writes the two figures
+ * with one forced reflow between them and clears it once settled. Unset at rest is deliberate — the
+ * block is `auto` again, so a resize or a language change re-lays it out rather than animating from
+ * a stale figure.
  *
- * So: measure → patch → reflow → target → release, the three steps `createTabRegion` already uses
- * for a composite's tab region (lookup-tabs.tsx). The blocks carry `.resize-settle`
- * (lookup-motion.css), which reads `--resize-settle-height` and transitions `height` on `--settle`;
- * this writes the two figures into that property with one forced reflow between them, and clears
- * it once the change has settled. UNSET at rest is deliberate: the block is `auto` again, so a
- * host resize, a container breakpoint or a language change re-lays it out naturally instead of
- * animating from a figure that has gone stale.
- *
- * The owner calls `beforeSwap()` from `componentWillRender` — only when the render about to run
- * changes a value, which is the signature it already computes for the height announcer — and
- * `afterSwap()` from `componentDidRender`. Nothing here gates input; the only timer releases the
- * pinned heights.
+ * Called from `componentWillRender` / `componentDidRender`. Nothing here gates input.
  */
 
 /** The `--settle` token (lookup-tokens.css) when the stylesheet cannot be read, as in tests. */

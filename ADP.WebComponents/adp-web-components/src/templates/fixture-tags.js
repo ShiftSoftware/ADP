@@ -1,22 +1,12 @@
 /**
- * Fixture tags, one set per component.
+ * Fixture tags, one set per component: what each vehicle is FOR, which state it reaches. A state
+ * with no vehicle tagged for it is a state no page can show, and one that regresses unnoticed.
  *
- * A tag says what a vehicle is FOR: which state of that component it reaches. The set is the
- * component's own state list written down — a state with no vehicle tagged for it is a state no
- * page can show, and one that will regress unnoticed.
+ * Here rather than in a page because two pages need the same answer — the component's own showcase
+ * and the composite, whose rail follows its tab strip. Written separately they drifted.
  *
- * It lives here rather than in a page because two pages need the same answer: the component's own
- * showcase page, and the composite, whose rail follows its tab strip. They drifted the first time
- * they were written separately (the composite listed four of the specification's six for one
- * environment), so there is one list and both read it.
- *
- * A component earns a set as it is reworked; a component with none falls back to whatever the page
- * itself declares. Keys are the component's tag name, so the composite can look a set up by the
- * tab it just switched to.
- *
- * Vehicles are grouped by the environment they belong to, because the rail shows one environment at
- * a time — and listed in reading order, because the rail is ordered by this list rather than by the
- * position a vehicle happens to hold in a 31-vehicle environment.
+ * Keyed by component tag; a component with no set falls back to the page's own `labels`. Grouped
+ * by environment (the rail shows one at a time) and in reading order, which the rail follows.
  */
 export const FIXTURE_TAGS = {
   'vehicle-specification': {

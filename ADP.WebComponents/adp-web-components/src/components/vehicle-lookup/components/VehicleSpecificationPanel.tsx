@@ -13,17 +13,9 @@ import { BADGE_GLYPHS } from './glyphs';
 export type SpecificationLocale = InferType<typeof specificationSchema>;
 
 /**
- * The only part of a `VehicleLookupDTO` this panel is allowed to see — the barrier, as a type, so a
- * field cannot cross it without changing something a reviewer reads.
- *
- * `vin` is the wrapper's screen-reader identifier and tells the panel a vehicle is loaded;
- * `isAuthorized` is the honesty rule; the other three carry the build record. Warranty, campaigns,
- * service history, sales, paint readings, accessories and service menus are other panels'
- * questions and are never read here — not to render, not to hint, not to derive a state.
- *
- * `identifiers.brandID` is an internal hash id from the host's identity system, not a
- * specification: it is never displayed, never spoken, never put in a title or a data attribute and
- * never logged. Its one legitimate use is as the key into a host's colour catalogue.
+ * The barrier as a type: the only part of a `VehicleLookupDTO` this panel may see. Warranty,
+ * campaigns, service history, sales, paint readings and accessories are other panels' questions.
+ * `identifiers.brandID` is an internal hash id — never rendered, spoken, titled or logged.
  */
 export type SpecificationRecord = Pick<VehicleLookupDTO, 'vin' | 'isAuthorized' | 'identifiers' | 'vehicleVariantInfo' | 'vehicleSpecification'>;
 
@@ -48,8 +40,7 @@ type Props = SpecPanelState & {
   /** The groups this vehicle has, from `detailGroups` — empty when it has no tier-2 value at all. */
   groups: DetailGroup[];
   /**
-   * What the details block keeps rendering while it is shut: the last vehicle's groups, so they
-   * slide away with the block instead of blinking out on the frame the data changed.
+   * Kept while the block is shut, so the groups slide away rather than blink out.
    */
   retainedGroups: DetailGroup[];
   /** The reader's choice, not the vehicle's: it survives a lookup and is reset only by `clearData()`. */
@@ -58,16 +49,9 @@ type Props = SpecPanelState & {
 };
 
 /**
- * One trim, and for the three fields the feed writes a placeholder zero into, a zero is nothing.
- *
- * 1. null / undefined is empty; a string is trimmed, because the feed pads (`" 3500 "`, `" "`).
- * 2. An empty string is empty.
- * 3. `numeric` — for `cylinders`, `doors`, `tankCap` and `fuelLiter` — makes a value that parses to
- *    zero empty: the feed writes `" 0 "` where it has no figure, and a vehicle with zero doors is
- *    not a fact, it is a placeholder.
- * 4. Nothing else. Case is shown as sent, and a sentinel the record carries (`UNKNOWN`) is shown as
- *    sent too: mapping it to a dash would be the panel editing a record to mean something else, and
- *    the dash is reserved for a field the record left empty.
+ * Trim, and treat the feed's padded `" 0 "` as empty for `numeric` fields (cylinders, doors,
+ * tankCap, fuelLiter) — a placeholder, not a figure. Nothing else is rewritten: a sentinel the
+ * record carries (`UNKNOWN`) is shown as sent, and the dash is reserved for an empty field.
  */
 export const normalise = (raw: string | number | null | undefined, numeric = false): string => {
   if (raw === null || raw === undefined) return '';
@@ -81,21 +65,10 @@ export const normalise = (raw: string | number | null | undefined, numeric = fal
 };
 
 /**
- * The model year, and the record's own figure when the two disagree.
- *
- * `vehicleVariantInfo.modelYear` wins. Both come from the same vehicle entry: the specification's
- * is the entry's `ModelYear` column copied through, and the variant info's is a positional parse of
- * the entry's variant code which the API *itself* falls back to the column for. The API has already
- * stated a precedence, and a panel that read the column first would contradict the API's own
- * derived field.
- *
- * The panel adds the one fallback the API cannot: when the parse gave up entirely — a variant of
- * another shape, so there is no `vehicleVariantInfo` at all — but the entry carries a year.
- *
- * When they disagree the cell shows both: the parse as the value, the column as a note. The two are
- * columns of one record and the panel cannot adjudicate which is the typo; showing one would assert
- * it, and hiding the other would hide a fact the advisor may need, since the model year decides
- * parts and campaign eligibility.
+ * `vehicleVariantInfo.modelYear` wins — the API states that precedence and already falls back to
+ * the record's column itself. The panel adds the one case the API cannot: no variant info at all.
+ * On a disagreement both show (parse as the value, column as a note): the panel cannot say which is
+ * the typo, and the year decides parts and campaign eligibility.
  */
 export const modelYearOf = (record?: SpecificationRecord): { year?: number; recordYear?: number } => {
   const parsed = record?.vehicleVariantInfo?.modelYear ?? undefined;
@@ -106,10 +79,8 @@ export const modelYearOf = (record?: SpecificationRecord): { year?: number; reco
 };
 
 /**
- * The head's answer to "what is this vehicle": the distributor's description if it resolved one,
- * else a code standing in for a name. A model code or a katashiki is still the honest answer when
- * no description was resolved, and it is shown in the title's typography rather than the code
- * role's — at title size the code role's weight would shout.
+ * The head's subject: the resolved description, else a code standing in for a name — still the
+ * honest answer. Set in the title's typography, not the code role's, which shouts at title size.
  */
 export const headValue = (record?: SpecificationRecord): string =>
   normalise(record?.vehicleSpecification?.modelDescription) ||
@@ -118,9 +89,7 @@ export const headValue = (record?: SpecificationRecord): string =>
   normalise(record?.identifiers?.katashiki);
 
 /**
- * Every value the panel would draw for this vehicle, normalised — the barrier audit as code.
- * `vin` and `brandID` are deliberately absent: the VIN is the wrapper's, and `brandID` is an
- * internal key, so neither is a record of anything about the build.
+ * Every value the panel would draw, normalised. `vin` and `brandID` are deliberately absent.
  */
 const recordValues = (record?: SpecificationRecord): string[] => {
   const spec = record?.vehicleSpecification;
@@ -158,24 +127,16 @@ const recordValues = (record?: SpecificationRecord): string[] => {
 };
 
 /**
- * Whether the distributor holds a build record for this vehicle — **by value, not by object**.
- *
- * The evaluators build `identifiers` and `vehicleSpecification` for every VIN, including one the
- * distributor has no entry for: those arrive as `{}`, and an empty object is not a record. Testing
- * the objects made the accent green over a blank card for the eight VINs in the fixtures that carry
- * no value at all — a verdict read off an absence, which is the one thing the family forbids.
+ * Whether the distributor holds a record — **by value, not by object**. The evaluators build these
+ * objects for every VIN, so an unknown one arrives as `{}`; testing the objects painted the accent
+ * green over a blank card, which is a verdict read off an absence.
  */
 export const hasRecords = (record?: SpecificationRecord): boolean => recordValues(record).some(Boolean);
 
 /**
- * The panel's notice band: a statement about the vehicle that stands above the record rather than
- * inside it. One case today -- a VIN the distributor has no record of -- and the shape is general
- * so another reads the same way: a tone, a message, and whether it is open.
- *
- * It is shut while a lookup is in flight and before the first one. A notice is about a particular
- * vehicle, so it must not hang over the next one while the panel is fetching it, and it must not
- * greet a reader who has looked nothing up. The message stays rendered while it shuts, so the band
- * slides away with its words rather than blanking on the frame the state changed.
+ * The notice band: a statement that stands above the record, not inside it. One case today; the
+ * shape is general so a second reads the same way. Shut while a lookup is in flight and before the
+ * first — a notice is about one vehicle and must not hang over the next.
  */
 export const panelNotice = (state: { authorized?: boolean }, busy: boolean, locale: SpecificationLocale): { open: boolean; tone: 'neutral'; message: string } => ({
   open: !busy && state.authorized === false,
@@ -184,9 +145,7 @@ export const panelNotice = (state: { authorized?: boolean }, busy: boolean, loca
 });
 
 /**
- * One labelled value. `text` is the plain value and is empty when the record has nothing for the
- * slot; `note` is a second, smaller line inside the same block; `colour` replaces `text` for the two
- * cells that pair an identity code with a resolved name.
+ * One labelled value: `text`, an optional smaller `note`, or `colour` for the two code+name cells.
  */
 export type SpecCell = {
   key: string;
@@ -199,11 +158,8 @@ export type SpecCell = {
 };
 
 /**
- * A colour value: the identity code the record carries, and the name the distributor resolved for
- * it. Nothing else. A code with no resolved name reads as the code alone -- never an invented
- * colour, never an "unknown" label, and never a depiction of the paint: an approximate hex from a
- * reference table that knows a code but not the model or the year is a claim about what the car
- * looks like that this panel cannot stand behind (owner, 2026-09-22).
+ * The code, and the name the distributor resolved for it. Nothing else: no invented colour, no
+ * "unknown" label, and no depiction of the paint — a code alone knows neither model nor year.
  */
 export type SpecColour = {
   code: string;
@@ -219,20 +175,10 @@ const same = (a: string, b: string) => !!a && a.trim().toUpperCase() === b.trim(
 export const cellIsEmpty = (cell: SpecCell): boolean => (cell.colour ? !cell.colour.code && !cell.colour.name : !cell.text);
 
 /**
- * The Intl locales to format a date with, for one of the family's four languages.
- *
- * The panel is handed `sharedLocales.lang` — `en`, `ar`, `ku`, `ru` — and never
- * `sharedLocales.language`, which is the *word* "english" / "arabic" / "kurdish" / "русский". Those
- * words are structurally valid language subtags that `Intl` has no data for, so it resolves each of
- * them to the runtime's own default instead of throwing, and the cell read "November 2024" in every
- * language (found 2026-09-22).
- *
- * A list rather than a tag, so `Intl` falls back on its own: the family's Kurdish is Sorani, whose
- * tag is `ckb` and whose support is patchy on older Android WebViews, and Arabic in the same script
- * is a better last resort for a Sorani reader than English. The same chain the repo's date pickers
- * already use (`branch-date-picker.tsx`), minus their regional first choices — this cell prints a
- * month name and a year, where a region would only change which calendar's month names are used and
- * the specification asks for the plain locale's.
+ * Intl locales for one of the family's four languages. Must be handed `sharedLocales.lang`, never
+ * `.language`: "english" / "arabic" are valid subtags Intl has no data for, so it silently resolves
+ * them to the runtime default. A list, not a tag, so Intl falls back on its own — Sorani (`ckb`) is
+ * patchy on older Android WebViews and Arabic is a better last resort there than English.
  */
 const INTL_LOCALES: Record<string, string[]> = {
   en: ['en'],
@@ -244,10 +190,7 @@ const INTL_LOCALES: Record<string, string[]> = {
 export const intlLocalesFor = (lang: string): string[] => INTL_LOCALES[lang] ?? INTL_LOCALES.en;
 
 /**
- * Month and year in the locale's words.
- *
- * The production date in every record is a first-of-month: it is a month-granularity fact, and
- * printing a day the record does not mean would be a claim. Tolerant of a full timestamp.
+ * Month and year: the record's date is a first-of-month, so printing a day would be a claim.
  */
 export const productionMonth = (raw: string | undefined, lang: string): string => {
   const value = normalise(raw);
@@ -264,13 +207,9 @@ export const productionMonth = (raw: string | undefined, lang: string): string =
 };
 
 /**
- * Tier 1 — the identity grid: the same eight titled slots for every vehicle, in every state. This is
- * the fixed structure, so the slots never come and go; only their values change, under a cover.
- *
- * `readable` false (no vehicle, an error, or a vehicle the distributor has no record of) empties
- * every cell, and the renderer decides whether an empty cell reads as a dash or as a blank: a dash
- * says "the record has nothing here", a blank says "there is no vehicle yet", and the two must not
- * be confused.
+ * Tier 1 — the identity grid: the same eight titled slots in every state, only their values change.
+ * `readable` false (no vehicle, an error, or no record) empties every cell; the renderer decides
+ * whether that reads as a dash ("nothing here") or a blank ("no vehicle yet").
  */
 export const exteriorColour = (record: SpecificationRecord | undefined): SpecColour => ({
   code: normalise(record?.identifiers?.color),
@@ -315,17 +254,12 @@ export const identityCells = (record: SpecificationRecord | undefined, locale: S
 };
 
 /**
- * Tier 2 — the details: the other twelve specification fields, in two groups, with every empty
- * field and every empty group dropped. This is the variable structure, so it lives in a
- * `.collapsible` and the mounts and unmounts happen while that region is shut.
+ * Tier 2 — the other twelve fields in two groups, empty fields and empty groups dropped. The
+ * variable structure, so it lives in a `.collapsible`. The summary row reads this same result, so
+ * its promise cannot drift from what opening it delivers.
  *
- * The summary row's names and count are read from this same result, so what the row promises cannot
- * drift from what opening it delivers.
- *
- * Coded values are rendered verbatim, after nothing but a trim: `side` reads `LHD` or `1`, `fuel`
- * reads `Petrol` or `P`, `class` reads `Sedan` or `P`. The panel is not a decoder and never guesses
- * — "LHD" expanded to "Left-hand drive" is a translation it cannot verify, and the feed that writes
- * `1` uses a coding it has never been told. A host whose feed is coded can make its feed say words.
+ * Coded values render verbatim: `side` reads `LHD` or `1`, `fuel` `Petrol` or `P`. The panel is not
+ * a decoder — expanding `1` would be a guess at a coding it has never been told.
  */
 export const detailGroups = (record: SpecificationRecord | undefined, locale: SpecificationLocale, readable: boolean): DetailGroup[] => {
   const spec = readable ? record?.vehicleSpecification : undefined;
@@ -370,9 +304,8 @@ export const detailGroups = (record: SpecificationRecord | undefined, locale: Sp
 };
 
 /**
- * What the summary row promises: the names of the groups that will actually render, and the count of
- * cells that will actually appear. The word is the locale's, composed with the figure — never a
- * suffix on a stem.
+ * What the row promises: the groups that will render and the count of cells that will appear. The
+ * plural word is the locale's, composed with the figure — never a suffix on a stem.
  */
 export const detailsSummary = (groups: DetailGroup[], locale: SpecificationLocale): { names: string; count: string } => {
   const count = groups.reduce((total, group) => total + group.cells.length, 0);
@@ -384,16 +317,12 @@ export const detailsSummary = (groups: DetailGroup[], locale: SpecificationLocal
 };
 
 /**
- * One labelled value, in the language's labelled-card form — used at every width, because a record's
- * fields are labelled values, not columns: a one-row table would be a form pretending to be a table.
+ * One labelled value, in the labelled-card form at every width: a record's fields are labelled
+ * values, not columns. `blank` is the idle case — the box is kept with a non-breaking space, since
+ * a dash would claim the record is empty for a vehicle that does not exist yet.
  *
- * `blank` is the idle case: the value keeps its box with a non-breaking space and its text pinned at
- * 0, because a dash beside a label would say "the record has nothing here" about a vehicle that does
- * not exist yet. A loaded vehicle with nothing in the slot gets the dash.
- *
- * `shift-skeleton` goes on this block and on nothing else — not the label, not the cell, not a
- * wrapper — and `resize-settle` beside it, so the block eases between the old value's height and the
- * new one while the cover is still up.
+ * `shift-skeleton` goes on this block and nothing else, with `resize-settle` beside it so the block
+ * eases between the old and new value's height while the cover is up.
  */
 const SpecCellView: FunctionalComponent<{ cell: SpecCell; blank: boolean; key?: string }> = ({ cell, blank }) => {
   const empty = cellIsEmpty(cell);
@@ -521,18 +450,8 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
           transition list would replace the other depending on source order. */}
       <div class="lookup-slide-clip">
         <div class="spec-under-head lookup-slide">
-          {/*
-            The notice is its own band, above the strip and the grid rather than inside the strip.
-            It used to be a layer of the strip's stack, which meant showing it REPLACED the
-            "Identity" caption -- the warning appeared to sit on top of the section it was about,
-            and the section lost its title for as long as the warning was up. A statement about the
-            whole record belongs above the record (owner, 2026-09-23).
-
-            A .collapsible, so it arrives and leaves by sliding rather than appearing: shut before
-            the first lookup and shut while one is in flight, open only once there is something to
-            say about the vehicle on screen. Its words stay rendered while it shuts, so it slides
-            away with them instead of blanking.
-          */}
+          {/* Its own band above the strip, not a layer inside it: as a layer it replaced the
+              "Identity" caption, so the section lost its title while the warning was up. */}
           <div class="spec-notice collapsible" data-open={notice.open ? 'true' : 'false'} data-tone={notice.tone} aria-hidden={notice.open ? null : 'true'}>
             <div class="collapsible-body">
               <p class="spec-notice-body" role="status">
@@ -564,15 +483,8 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
               details has no block at all and got there by sliding rather than by vanishing. */}
           <div class="spec-details collapsible" data-open={shellOpen ? 'true' : 'false'} data-empty={groups.length ? 'false' : 'true'} aria-hidden={shellOpen ? null : 'true'}>
             <div class="collapsible-body">
-              {/*
-                The whole row is the control, not just the mark at its end. The row is what the
-                reader is looking at -- the group names and the count are the promise the trigger
-                acts on -- and a 30px target beside a full-width row is a smaller thing to hit than
-                the thing it belongs to. The round mark stays exactly as it was, now painted by the
-                row's own states rather than carrying them itself.
-
-                Its words key off regionOpen, the same state aria-expanded reports.
-              */}
+              {/* The whole row is the control: the names and count are the promise it acts on, and
+                  a 30px mark is a smaller target than the row it belongs to. */}
               <button
                 type="button"
                 class="spec-details-summary"
@@ -587,10 +499,8 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
                   <span class="spec-details-count">{summary.count}</span>
                 </span>
 
-                {/* The language's outlined round mark, the SSC trace button's geometry and colours
-                    verbatim -- with a chevron instead of the question mark, which in this family
-                    means "why this status?". A span now: the row around it is the button, and a
-                    button inside a button is not a thing. */}
+                {/* The SSC trace button's geometry, with a chevron rather than the question mark,
+                    which here means "why this status?". A span: the row around it is the button. */}
                 <span class="spec-details-button" aria-hidden="true">
                   <ArrowIcon class="spec-details-chevron" />
                 </span>

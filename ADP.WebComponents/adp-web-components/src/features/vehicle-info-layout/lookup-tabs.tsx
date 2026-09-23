@@ -63,10 +63,8 @@ export const LookupTabs: FunctionalComponent<LookupTabsProps> = ({ active, panel
  *    the transition off, so the patch that puts the incoming tab in flow moves nothing on screen;
  *  - `afterSwitch` runs after the patch (componentDidRender): one forced reflow, then the target
  *    with the transition on;
- *  - `observe` watches the active panel's host with a ResizeObserver, and on a later resize it
- *    RELEASES the region rather than animating it: the panel is already animating that distance on
- *    the same clock, so a second height transition starting a frame later only made the shell trail
- *    its own content. While a switch is still settling the release waits for it.
+ *  - `observe` watches the active panel with a ResizeObserver and RELEASES the region on a resize
+ *    rather than animating it — the panel already animates that distance on the same clock.
  *
  * Nothing here gates input: the settle timer only releases the pinned height.
  */
@@ -232,19 +230,12 @@ export const createTabRegion = (region: () => HTMLElement | undefined) => {
         observedHeight = next;
 
         // Follow the panel, do not re-animate it. The panel resizes its own body on the same clock
-        // -- a value wrapping to a second line, a details block opening, a cover lifting -- and the
-        // observer only learns about it a frame later. Animating the region too put a
-        // second height transition on top of one already running, starting late, so the shell
-        // visibly trailed its own content: the composite looked slower than the same panel on its
-        // own page, which was the bug. Releasing instead leaves the region `height: auto`, so it
-        // tracks the content frame for frame and the panel's own motion is the only motion.
-        //
-        // A tab SWITCH still animates (beforeSwitch/afterSwitch): there the region really does move
-        // between two different panels' heights, and nothing else is animating that distance.
-        // Nothing to do in the common case: the region is already `auto` and following. Only a
-        // leftover pinned height from a finished switch needs clearing, and only once -- releasing
-        // on every tick cleared and restored the inline height dozens of times through a single
-        // resize, which is what made the shell stutter.
+        // and the observer only hears about it a frame later, so animating the region too put a
+        // second height transition on top of one already running and the shell trailed its content.
+        // `height: auto` tracks it frame for frame. A tab SWITCH still animates: there the region
+        // really does move between two panels' heights.
+        // Only a leftover pinned height from a finished switch needs clearing, and only once:
+        // releasing on every tick restored the inline height dozens of times and made it stutter.
         if (settleTimer || !el.style.height) return;
         release();
       });

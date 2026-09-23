@@ -33,16 +33,9 @@
   --violet-dark: #5f4887;
   --violet-tint: #f1ecf8;
   --shadow: 0 18px 45px rgba(27, 45, 61, 0.1), 0 2px 7px rgba(27, 45, 61, 0.06);
-  /* One duration for everything that appears, disappears or resizes, so a card settles as a
-     single movement instead of a sequence of unrelated ones. It is the only clock: a panel, the
-     wrapper, the composite's tab region and every primitive in lookup-motion.css read this and
-     nothing else, so there is one number to turn when the family feels fast or slow.
-
-     480ms (owner, 2026-09-22). It was 320ms when the family was written -- the value the design
-     language still documents -- and was raised to 820ms while the wrapper's transitions were being
-     tuned. At 820 a lookup read as slow: long enough that a reader waits on the card rather than
-     watches it settle. 480 keeps the movement legible as one settling motion while cutting the
-     wait by a third. Turning this one line moves everything together, which is the point. */
+  /* The only clock: everything that appears, disappears or resizes reads this and nothing else, so
+     a card settles as one movement and there is one number to turn. Was 320ms, then 820ms while
+     the wrapper was tuned, which read as waiting rather than settling. */
   --settle: 480ms;
 
   /* The two looping rhythms of a wait. They are not --settle: --settle is how long a change takes,

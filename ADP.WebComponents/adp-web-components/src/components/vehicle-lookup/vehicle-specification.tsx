@@ -19,24 +19,12 @@ import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, Language
 const DEFAULT_SETTLE_MS = 480;
 
 /**
- * The build record for a VIN: what this vehicle *is* — the model, the year, the grade, and the
- * codes a parts counter or a claim form asks for.
+ * The build record for a VIN: what this vehicle *is* — model, year, grade, and the codes a parts
+ * counter or a claim form asks for.
  *
- * The panel reads five sub-objects of the response and no others (`SpecificationRecord`): the VIN,
- * `isAuthorized`, `identifiers`, `vehicleVariantInfo` and `vehicleSpecification`. Warranty,
- * campaigns, service history, sales, paint readings, accessories and service menus are other
- * panels' questions; a value that would make this panel more useful but lives outside the five is
- * not this panel's to show.
- *
- * Two facts decide what it may say. `isAuthorized === false` means the distributor has no record of
- * the vehicle, so nothing in the response is the distributor's to assert and every value reads as a
- * dash. And an *empty* record is not a record: the evaluators build `identifiers` and
- * `vehicleSpecification` for every VIN, including ones they know nothing about, so the panel's
- * `hasRecords` counts values rather than objects.
- *
- * Every state change is a movement. The head's content leaves the band while a lookup is in flight
- * and returns on its new words, so nothing in the head is ever seen changing; the identity grid is
- * a fixed structure and never shuts, its values covered where they stand.
+ * It reads five sub-objects and no others (`SpecificationRecord`). Two facts decide what it may
+ * say: `isAuthorized === false` means the distributor has no record, so every value dashes; and an
+ * *empty* record is not a record, so `hasRecords` counts values rather than objects.
  */
 @Component({
   shadow: true,
@@ -55,9 +43,8 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   }
 
   /**
-   * A language change is a re-layout, not a state change: it awaits the two locale files and
-   * assigns `locale`, and it must never set a loading flag. Raising the covers, dropping the head
-   * or shutting a region for a change of words would say a lookup had happened.
+   * A re-layout, not a state change: never sets a loading flag. Covers or a dropped head would
+   * say a lookup had happened.
    */
   @Watch('language')
   async changeLanguage(newLanguage: LanguageKeys) {
@@ -119,10 +106,9 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   }
 
   /**
-   * A failure raised by the panel's own lookup arrives with the head already out of the band, so
-   * assigning at once *is* the arrive. A host calling this cold has a settled card on screen, so
-   * the error is entered the way every other state is — through the leave. Without it the red pill
-   * would mount into a summary row sitting at full opacity and the values would blank in place.
+   * The panel's own failure arrives with the head already out of the band, so assigning at once
+   * *is* the arrive. Called cold, the card is settled, so the error enters through the leave —
+   * otherwise the red pill mounts into a summary row at full opacity.
    */
   @Method()
   async setErrorMessage(message: ErrorKeys) {
@@ -162,10 +148,9 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   }
 
   /**
-   * Takes the head's content out of the band, raises the covers over the values, and resolves once
-   * they have settled — so the caller can swap the vehicle while nothing readable is on screen.
-   * Resolves at once when there is nothing to leave. A lookup started meanwhile takes over: the
-   * generation counter lets the newer call win without the older one flipping `leaving` back.
+   * Takes the head out of the band and raises the covers, resolving once settled, so the caller
+   * can swap the vehicle while nothing readable is on screen. The generation counter lets a newer
+   * lookup win without the older one flipping `leaving` back.
    */
   private async leave() {
     const generation = ++this.leaveGeneration;
@@ -193,9 +178,8 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   // #region Verdict
 
   /**
-   * Fires whenever the panel's verdict changes — including back to idle when the vehicle is
-   * cleared — so a composite that draws one card for several panels can colour its accent from the
-   * active one.
+   * Fires on every verdict change, idle included, so a composite can colour its accent from the
+   * active panel.
    */
   @Event() verdictChange: EventEmitter<VerdictState>;
 
@@ -213,12 +197,9 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   // #region The details block
 
   /**
-   * The one piece of panel state that is not a function of the response: whether the reader has the
-   * details expanded. Expanded on every load, so nothing is hidden from a reader who does not know
-   * the control exists — and a new vehicle does **not** reset it. A reader who folded the details
-   * away has said what they want to see, and re-opening the block under them on every VIN would
-   * undo that choice once a minute. Only `clearData()` resets it, where the panel is back to no
-   * vehicle at all.
+   * The one piece of state that is not a function of the response. Expanded on load, so nothing is
+   * hidden from a reader who does not know the control exists, and a new vehicle does **not** reset
+   * it — that would undo the reader's choice once a minute. Only `clearData()` resets it.
    */
   @State() detailsOpen: boolean = true;
 
@@ -227,9 +208,8 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   };
 
   /**
-   * The last vehicle's groups, kept while the block is shut so they slide away with it instead of
-   * blinking out on the frame the data changed. Dropped a settle after the block shut, while
-   * nothing is on screen.
+   * Kept while the block is shut so the groups slide away rather than blink out; dropped a settle
+   * later, while nothing is on screen.
    */
   private retainedGroups: DetailGroup[] = [];
   private retainTimer?: ReturnType<typeof setTimeout>;
@@ -262,27 +242,22 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   // #region Height
 
   /**
-   * Height changes here are CSS transitions inside this shadow root, which an enclosing
-   * <flexible-container> (the wrapper's tab strip) cannot see; it would keep clipping at the old
-   * height. So every render that moved something announces the change to those containers, and they
-   * stop clipping until it has settled.
+   * An enclosing <flexible-container> cannot see transitions inside this shadow root and would
+   * keep clipping at the old height, so every render that moved something announces it.
    */
   private heightAnnouncer?: ReturnType<typeof createHeightChangeAnnouncer>;
   private layoutSignature?: string;
   private valuesChanged = false;
 
   /**
-   * A value block is the same slot on every vehicle but not the same size: the exterior-colour cell
-   * wraps to a second line whenever a catalogue name resolves, the model-year cell whenever the
-   * record note appears. Without this the block's height would change in one frame under a cover
-   * that is about to lift on it.
+   * A value block is the same slot on every vehicle but not the same size — a name or a year note
+   * wraps to a second line. Without this the height changes in one frame under a lifting cover.
    */
   private resizeSettle = createResizeSettle(() => this.el.shadowRoot?.querySelectorAll<HTMLElement>('.spec-value') ?? []);
 
   /**
-   * Everything that can move the card's height, joined: the phase, the vehicle, every tier-1 value,
-   * the reader's disclosure, and the groups and cells that will render. A render that changes none
-   * of it announces nothing and pins no heights.
+   * Everything that can move the card's height, joined. A render that changes none of it announces
+   * nothing and pins no heights.
    */
   private signature(): string {
     const record = this.record();

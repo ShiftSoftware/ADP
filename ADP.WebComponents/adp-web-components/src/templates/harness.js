@@ -411,20 +411,12 @@ window.harness = function harness(options = {}) {
       return 'Live API responses use the server’s current time. Disconnect to use the generated Anchor or Custom choices.';
     },
 
-    /**
-     * The tags in force. On a composite page that is the active component's set;
-     * everywhere else it is the page's own `labels`. Never undefined, so callers
-     * can index it without a guard.
-     */
+    /** The tags in force: the active component's set on a composite, else the page's own. */
     get activeLabels() {
       return (config.componentLabels && config.componentLabels[this.activeComponent]) || config.labels;
     },
 
-    /**
-     * Which component's tags the rail is showing. A composite page sets this as
-     * its tab strip changes; a single-component page leaves it null and gets
-     * `config.labels`.
-     */
+    /** A composite sets this as its tab strip changes; elsewhere it stays null. */
     setActiveComponent(name) {
       // Only what the tags SAY changes. The rail is not rebuilt: which vehicles a page offers, and
       // in what order, is the page's own answer and is the same on every tab -- one VIN list for
@@ -432,11 +424,7 @@ window.harness = function harness(options = {}) {
       this.activeComponent = name;
     },
 
-    /**
-     * Why the rail is shorter than the environment. Two different cuts, and saying
-     * "no data" for the tagged-list one would be a lie: those vehicles have data,
-     * they just repeat a state the page already shows.
-     */
+    /** Two different cuts: "no data" would be a lie for the tagged-list one. */
     get hiddenExplanation() {
       return config.labelsOnly
         ? `${this.hidden} more in this environment — the list above is one vehicle per state`
@@ -444,12 +432,9 @@ window.harness = function harness(options = {}) {
     },
 
     /**
-     * How a tag is shown. A page whose rail keeps one tag set spells the tag out beside the VIN --
-     * it is the useful thing on screen and there is room for it. A page whose set changes under the
-     * reader (the composite, whose rail follows its tab strip) cannot: tags of different lengths
-     * make chips of different widths, so every tab change reflowed the rail and moved the page. It
-     * gets a fixed-width marker instead, with the words one hover away. Derived from
-     * `componentLabels`, because having one IS what makes the set change.
+     * A rail with one fixed tag set spells its tags out. One whose set changes under the reader
+     * cannot: tags of different lengths make chips of different widths, so every tab change
+     * reflowed the rail. That gets a fixed-width marker instead, words one hover away.
      */
     get tagsAsMarker() {
       return Boolean(config.componentLabels);
@@ -1020,13 +1005,8 @@ const FIXTURES = /* html */ `
   <div class="flex flex-col">
     <div class="flex flex-wrap gap-1.5" role="group" aria-label="Fixtures">
       <template x-for="item in fixtures" :key="item.value">
-        <!--
-          The tag's words live on the wrapper, not on the button, for two reasons. The native title
-          attribute waits about a second before it shows, which reads as the page being slow; the
-          kit's own tooltip comes up on hover with no delay. And the button clips its own overflow
-          so the marker below can sit flush in its rounded corner, which would clip a tooltip drawn
-          from it too.
-        -->
+        <!-- On the wrapper, not the button: the native title waits ~1s, and the button clips its
+             own overflow for the marker, which would clip a tooltip drawn from it. -->
         <span class="inline-flex" :class="{ 'tooltip tooltip-bottom': tagsAsMarker && item.note }" :data-tip="(tagsAsMarker && item.note) || null">
         <button
           type="button"
@@ -1037,14 +1017,8 @@ const FIXTURES = /* html */ `
           @click="run(item.value)"
         >
           <span x-text="item.label"></span>
-          <!--
-            A marker, not the tag's words. Spelling the tag out made every chip a different width,
-            so the rail reflowed each time the composite changed tab and the page jumped under the
-            reader. This is the same width on every chip: a band down the trailing edge, running
-            corner to corner because the button clips it to its own radius. It keeps the info blue
-            on the selected chip too -- the mark says "this vehicle is tagged for the component you
-            are looking at", which is as true when it is the one being shown.
-          -->
+          <!-- A band down the trailing edge, the same width on every chip, so changing tab cannot
+               reflow the rail. Blue on the selected chip too: the tag is still true there. -->
           <span
             x-show="tagsAsMarker && item.vin"
             class="absolute inset-y-0 end-0 w-3"
@@ -1053,12 +1027,8 @@ const FIXTURES = /* html */ `
             role="img"
           ></span>
 
-          <!--
-            The tag in words, for a rail that keeps one set. Weight and the theme's info blue, the
-            same #3071a9 the components use, so it reads as its own thing beside the mono VIN
-            rather than as dimmed noise. On the selected chip the ground is the brand gold, so it
-            inherits that chip's ink instead.
-          -->
+          <!-- The tag in words, for a rail that keeps one set. The theme's info blue, so it reads
+               as its own thing beside the mono VIN; on the selected chip it inherits that ink. -->
           <span
             x-show="!tagsAsMarker && item.note"
             class="font-sans font-medium"

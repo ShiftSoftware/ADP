@@ -21,20 +21,10 @@
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 @import '../../features/vehicle-info-layout/lookup-head.css';
 
-/* The panel is embedded at whatever width the host gives it, so its breakpoints read its own width
-   rather than the window's — the same :host as the two reference panels (vehicle-ssc.css lines
-   20-26). It replaces a legacy `all: initial !important` reset that predates the design language:
-   `all` covers `container-type` as well, so the inline-size container the wrapper declares on this
-   same :host (vehicle-info-layout.css line 20) was reset to `normal` and every @container rule in
-   this shadow root would have matched nothing. The reset also beat the `display: block` above it
-   (`all: initial` resolves display to `inline`), which is why the host has been an inline box.
-
-   Gone with it: the `font-family: var(--font-sans) !important` that restored what the reset had
-   just taken away, and the `*, :host * { font-family: inherit !important }` pair that forced it
-   onto every descendant. The face now arrives the way it does in the reference panels — the
-   wrapper's `.lookup-panel` / `.lookup-core` set it and everything under them inherits, and
-   `:host [dir='rtl']` switches it for an Arabic-script locale (vehicle-info-layout.css lines
-   62-85). A descendant that declared a face of its own would now keep it; none does. */
+/* Breakpoints read the panel's own width, not the window's — the same :host as the two reference
+   panels. This replaced a legacy `all: initial !important` reset, which also covered
+   `container-type` and so silently killed every @container rule in this shadow root (and resolved
+   display to `inline`). The font now inherits from the wrapper, as it does in the references. */
 :host {
   display: block;
   container-type: inline-size;
@@ -225,21 +215,10 @@
    in every state, so it never shuts and its values are covered where they stand.
    ------------------------------------------------------------------------------------------- */
 
-/* Two figures decide the grid, and § 3's Widths table gives both.
- *
- * The FLOOR is 180px: the longest tier-1 code in the fixtures is a 24-character katashiki-variant
- * at 13px/760, about 185px wide. `overflow-wrap: anywhere` on the value is the safety; the floor is
- * what keeps it from wrapping in the common case.
- *
- * The CEILING is --spec-columns: four above 960px, three to 720, two to 430, one below it. Plain
- * `auto-fill` at the floor honoured only the floor, and on the showcase's 1150px column it laid the
- * eight cells seven-up — a row of thin columns where the table says four, and the colour pair
- * stranded alone on a second row instead of read together (found 2026-09-22). The track's minimum
- * is therefore the LARGER of the floor and an equal share of the row, which caps `auto-fill` at the
- * share's count while still dropping to fewer tracks when the floor will not fit — a narrow
- * container in a host page never gets a cell squeezed under 180px to satisfy a count.
- *
- * 20 is the card's horizontal inset; the 12 in the share is the column gap below. */
+/* Two figures, both from § 3's Widths table. The FLOOR is 180px — the longest tier-1 code is about
+   185px wide. The CEILING is --spec-columns: `auto-fill` at the floor alone laid the eight cells
+   seven-up on a wide column. The track minimum is the LARGER of the two, which caps the count while
+   still dropping tracks when the floor will not fit. 20 is the card inset, 12 the column gap. */
 .spec-identity {
   --spec-columns: 4;
 

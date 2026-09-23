@@ -221,16 +221,13 @@
    Tab region (a composite) and the sliding region (every panel)
    ------------------------------------------------------------------------------------------- */
 
-/* At rest the region is as tall as the active tab, with NO height transition: its height is `auto`,
-   which cannot be interpolated, so a transition here never animated a resize — it let the box jump
-   to the panel's final height in one frame while the panel's own blocks were still easing down.
-   With `overflow: hidden` that reads as the shell clipping its content and a band of empty card
-   appearing under it. `auto` with no transition recomputes every frame instead, so the region
-   follows the panel's own motion exactly and the two are one movement.
+/* At rest the region is `auto` with NO height transition: `auto` cannot be interpolated, so a
+   transition here never animated a resize — it jumped to the final height while the panel's own
+   blocks were still easing, and `overflow: hidden` showed that as a band of empty card. `auto`
+   recomputes every frame and follows the panel exactly.
 
-   Through a SWITCH the region does move between two different panels' heights, and nothing else is
-   covering that distance — so createTabRegion pins an explicit height, marks the box, and the rule
-   below animates it. The mark is what scopes the transition to the only case that can use it. */
+   A SWITCH does move between two panels' heights, so createTabRegion pins one and marks the box;
+   the mark scopes the transition below to the only case that can use it. */
 .lookup-tabs {
   position: relative;
   overflow: hidden;
@@ -481,15 +478,12 @@
    The family's loading cover
    ---------------------------------------------------------------------------------------------
 
-   shift-skeleton.css is shared with the part-lookup components and still ships its own treatment:
-   a -45deg gradient sweeping out and back over two seconds between two greys about 5% apart --
-   moving, yet reading as static -- and a 500ms fade that is not the family's clock. Two panels had
-   each pasted the same correction into their own stylesheet; the other five kept the shared look,
-   so switching tab inside the composite changed how loading itself looked.
+   shift-skeleton.css is shared with part-lookup and ships its own treatment: a -45deg gradient
+   over two seconds and a 500ms fade, neither the family's. Two panels had pasted the same
+   correction locally and five kept the shared look, so changing tab changed how loading looked.
 
-   It belongs here instead: every panel in the family imports this file, and imports it AFTER the
-   shared one, so these rules win without !important and without touching part-lookup. One band of
-   light, left to right, on the family's own rhythm, and the cover fades on the family's clock. */
+   Here instead: every family panel imports this file, and imports it AFTER the shared one, so
+   these rules win without !important and without touching part-lookup. */
 .shift-skeleton::after {
   background-color: #dde1e6;
   background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
