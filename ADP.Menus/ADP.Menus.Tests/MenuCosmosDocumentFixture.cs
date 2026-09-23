@@ -1,8 +1,11 @@
 using System.Linq;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ADP.Menus.Sync.Replication;
 using ShiftSoftware.ADP.Menus.Generation;
+using ShiftSoftware.ADP.Models.Service.Cosmos;
 
 namespace ShiftSoftware.ADP.Menus.Tests;
 
@@ -39,6 +42,11 @@ internal static class MenuCosmosDocumentFixture
     /// <summary>Projects an already-built graph, for tests that mutate the graph first.</summary>
     internal static ServiceMenuDocuments From(MenuGraphFixture.Fixture fixture)
     {
+        // What the replication maps through in a host that registered no mapper: ADP.Menus.Data's own generated
+        // mapper, one per projection — the tests using this fixture run in parallel, and a mapper is not shared
+        // across threads.
+        var mapper = MenuCosmosDocuments.ResolveMapper(new ServiceCollection().BuildServiceProvider());
+
         var documents = new ServiceMenuDocuments
         {
             BasicModelCode = fixture.Variants.FirstOrDefault()?.Menu?.BasicModelCode,
@@ -53,19 +61,20 @@ internal static class MenuCosmosDocumentFixture
         {
             var brandId = variant.Menu?.VehicleModel?.BrandID;
 
-            documents.Variants.Add(MenuCosmosMappers.Map(
+            documents.Variants.Add(MenuCosmosDocuments.Variant(
+                mapper,
                 variant,
                 MenuReplicationReload.SelectLabourRateMapping(labourRateMappings, brandId, variant.LabourRate),
                 MenuReplicationReload.SelectBrandMapping(brandMappings, brandId)));
 
             foreach (var period in variant.PeriodicAvailabilities)
-                documents.Periods.Add(MenuCosmosMappers.Map(period));
+                documents.Periods.Add(MenuCosmosDocuments.Period(mapper, period));
 
             foreach (var labour in variant.LabourDetails)
-                documents.Labours.Add(MenuCosmosMappers.Map(labour));
+                documents.Labours.Add(MenuCosmosDocuments.Labour(mapper, labour));
 
             foreach (var item in variant.Items)
-                documents.Items.Add(MenuCosmosMappers.Map(item));
+                documents.Items.Add(MenuCosmosDocuments.Item(mapper, item));
         }
 
         return documents;

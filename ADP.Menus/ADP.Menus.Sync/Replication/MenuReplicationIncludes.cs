@@ -17,7 +17,8 @@ namespace ShiftSoftware.ADP.Menus.Sync.Replication;
 /// no code, an item with no replacement item, a period in the wrong partition because its variant's
 /// menu was never loaded. Keeping one definition per entity makes "the two paths agree" structural.
 ///
-/// Each shaper must cover exactly what the matching <see cref="MenuCosmosMappers"/> method reads, and
+/// Each shaper must cover exactly what the matching <see cref="MenuReplicationMapper"/> map (and, for the variant
+/// and the menu item, <see cref="MenuCosmosDocuments"/>) reads, and
 /// mirrors the export's own query (<c>MenuController.GenerateLinesAsync</c>) so the replicated
 /// documents describe the same graph the DMS export folds.
 /// </summary>

@@ -31,6 +31,11 @@ namespace ShiftSoftware.ADP.Menus.Sync.Extensions;
 /// nothing. That is the extension point that keeps the module usable both ways, matching
 /// <c>AddClaimableItemsReplication</c> and <c>AddWarrantyClaimsReplication</c>.
 ///
+/// <b>Every document is mapped through ShiftMapper</b> — the maps are <c>MenuReplicationMapper</c> in
+/// ADP.Menus.Data — and every call hands the pipeline a delegate into <see cref="MenuCosmosDocuments"/>, which
+/// resolves the mapper itself: the host's, which <c>AddMenuApiServices</c> has already given the maps, or failing
+/// that ADP.Menus.Data's own. So the host writes no mapping line.
+///
 /// Two framework behaviours shape everything below:
 ///
 ///  • Register each entity type EXACTLY ONCE. The framework keeps only the last registration per type,
@@ -84,7 +89,11 @@ public static class MenuReplicationExtensions
                 mapping: wrapper =>
                 {
                     var master = MenuReplicationReload.VariantMasterData<TDbContext>(wrapper);
-                    return MenuCosmosMappers.Map(wrapper.Entity, master.LabourRateMapping, master.BrandMapping);
+                    return MenuCosmosDocuments.Variant(
+                        MenuCosmosDocuments.ResolveMapper(wrapper.Services),
+                        wrapper.Entity,
+                        master.LabourRateMapping,
+                        master.BrandMapping);
                 });
 
         return options;
@@ -102,7 +111,7 @@ public static class MenuReplicationExtensions
                 NoSQLConstants.Containers.ServiceMenus,
                 partitionKeyLevel1Expression: document => document.BasicModelCode,
                 partitionKeyLevel2Expression: document => document.ItemType,
-                mapping: wrapper => MenuCosmosMappers.Map(wrapper.Entity));
+                mapping: wrapper => MenuCosmosDocuments.Period(MenuCosmosDocuments.ResolveMapper(wrapper.Services), wrapper.Entity));
 
         return options;
     }
@@ -119,7 +128,7 @@ public static class MenuReplicationExtensions
                 NoSQLConstants.Containers.ServiceMenus,
                 partitionKeyLevel1Expression: document => document.BasicModelCode,
                 partitionKeyLevel2Expression: document => document.ItemType,
-                mapping: wrapper => MenuCosmosMappers.Map(wrapper.Entity));
+                mapping: wrapper => MenuCosmosDocuments.Labour(MenuCosmosDocuments.ResolveMapper(wrapper.Services), wrapper.Entity));
 
         return options;
     }
@@ -144,7 +153,7 @@ public static class MenuReplicationExtensions
                 NoSQLConstants.Containers.ServiceMenus,
                 partitionKeyLevel1Expression: document => document.BasicModelCode,
                 partitionKeyLevel2Expression: document => document.ItemType,
-                mapping: wrapper => MenuCosmosMappers.Map(wrapper.Entity));
+                mapping: wrapper => MenuCosmosDocuments.Item(MenuCosmosDocuments.ResolveMapper(wrapper.Services), wrapper.Entity));
 
         return options;
     }
@@ -163,11 +172,11 @@ public static class MenuReplicationExtensions
             .Replicate<ServiceIntervalCosmosModel>(
                 NoSQLConstants.Containers.ServiceIntervals,
                 partitionKeyLevel1Expression: document => document.id,
-                mapping: wrapper => MenuCosmosMappers.Map(wrapper.Entity))
+                mapping: wrapper => MenuCosmosDocuments.Map(MenuCosmosDocuments.ResolveMapper(wrapper.Services), wrapper.Entity))
             .UpdateReference<MenuPeriodCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
                 (query, wrapper) => MenuReplicationFinders.PeriodsEmbeddingInterval(query, wrapper.Entity.ID),
-                (wrapper, document) => MenuCosmosMappers.ApplyTo(wrapper.Entity, document));
+                (wrapper, document) => MenuCosmosDocuments.ApplyTo(MenuCosmosDocuments.ResolveMapper(wrapper.Services), wrapper.Entity, document));
 
         return options;
     }
@@ -187,15 +196,15 @@ public static class MenuReplicationExtensions
             .Replicate<ServiceIntervalGroupCosmosModel>(
                 NoSQLConstants.Containers.ServiceIntervalGroups,
                 partitionKeyLevel1Expression: document => document.id,
-                mapping: wrapper => MenuCosmosMappers.Map(wrapper.Entity))
+                mapping: wrapper => MenuCosmosDocuments.Map(MenuCosmosDocuments.ResolveMapper(wrapper.Services), wrapper.Entity))
             .UpdateReference<MenuLabourCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
                 (query, wrapper) => MenuReplicationFinders.LabourDetailsEmbeddingIntervalGroup(query, wrapper.Entity.ID),
-                (wrapper, document) => MenuCosmosMappers.ApplyTo(wrapper.Entity, document))
+                (wrapper, document) => MenuCosmosDocuments.ApplyTo(MenuCosmosDocuments.ResolveMapper(wrapper.Services), wrapper.Entity, document))
             .UpdateReference<MenuItemCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
                 (query, wrapper) => MenuReplicationFinders.MenuItemsServingIntervalGroup(query, wrapper.Entity.ID),
-                (wrapper, document) => MenuCosmosMappers.ApplyTo(wrapper.Entity, document));
+                (wrapper, document) => MenuCosmosDocuments.ApplyTo(MenuCosmosDocuments.ResolveMapper(wrapper.Services), wrapper.Entity, document));
 
         return options;
     }
@@ -221,11 +230,11 @@ public static class MenuReplicationExtensions
             .Replicate<ReplacementItemCosmosModel>(
                 NoSQLConstants.Containers.ReplacementItems,
                 partitionKeyLevel1Expression: document => document.id,
-                mapping: wrapper => MenuCosmosMappers.Map(wrapper.Entity))
+                mapping: wrapper => MenuCosmosDocuments.Map(MenuCosmosDocuments.ResolveMapper(wrapper.Services), wrapper.Entity))
             .UpdateReference<MenuItemCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
                 (query, wrapper) => MenuReplicationFinders.MenuItemsEmbeddingReplacementItem(query, wrapper.Entity.ID),
-                (wrapper, document) => MenuCosmosMappers.ApplyTo(wrapper.Entity, document));
+                (wrapper, document) => MenuCosmosDocuments.ApplyTo(MenuCosmosDocuments.ResolveMapper(wrapper.Services), wrapper.Entity, document));
 
         return options;
     }
@@ -244,11 +253,11 @@ public static class MenuReplicationExtensions
             .Replicate<StandaloneReplacementItemGroupCosmosModel>(
                 NoSQLConstants.Containers.StandaloneReplacementItemGroups,
                 partitionKeyLevel1Expression: document => document.id,
-                mapping: wrapper => MenuCosmosMappers.Map(wrapper.Entity))
+                mapping: wrapper => MenuCosmosDocuments.Map(MenuCosmosDocuments.ResolveMapper(wrapper.Services), wrapper.Entity))
             .UpdateReference<MenuItemCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
                 (query, wrapper) => MenuReplicationFinders.MenuItemsEmbeddingStandaloneGroup(query, wrapper.Entity.ID),
-                (wrapper, document) => MenuCosmosMappers.ApplyTo(wrapper.Entity, document));
+                (wrapper, document) => MenuCosmosDocuments.ApplyTo(MenuCosmosDocuments.ResolveMapper(wrapper.Services), wrapper.Entity, document));
 
         return options;
     }
@@ -267,12 +276,12 @@ public static class MenuReplicationExtensions
             .Replicate<LabourRateMappingCosmosModel>(
                 NoSQLConstants.Containers.LabourRateMappings,
                 partitionKeyLevel1Expression: document => document.id,
-                mapping: wrapper => MenuCosmosMappers.Map(wrapper.Entity))
+                mapping: wrapper => MenuCosmosDocuments.Map(MenuCosmosDocuments.ResolveMapper(wrapper.Services), wrapper.Entity))
             .UpdateReference<MenuVariantCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
                 (query, wrapper) => MenuReplicationFinders.VariantsEmbeddingLabourRateMapping(
                     query, wrapper.Entity.BrandID, wrapper.Entity.LabourRate),
-                (wrapper, document) => MenuCosmosMappers.ApplyTo(wrapper.Entity, document));
+                (wrapper, document) => MenuCosmosDocuments.ApplyTo(MenuCosmosDocuments.ResolveMapper(wrapper.Services), wrapper.Entity, document));
 
         return options;
     }
@@ -287,11 +296,11 @@ public static class MenuReplicationExtensions
             .Replicate<BrandMappingCosmosModel>(
                 NoSQLConstants.Containers.BrandMappings,
                 partitionKeyLevel1Expression: document => document.id,
-                mapping: wrapper => MenuCosmosMappers.Map(wrapper.Entity))
+                mapping: wrapper => MenuCosmosDocuments.Map(MenuCosmosDocuments.ResolveMapper(wrapper.Services), wrapper.Entity))
             .UpdateReference<MenuVariantCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
                 (query, wrapper) => MenuReplicationFinders.VariantsEmbeddingBrandMapping(query, wrapper.Entity.BrandID),
-                (wrapper, document) => MenuCosmosMappers.ApplyTo(wrapper.Entity, document));
+                (wrapper, document) => MenuCosmosDocuments.ApplyTo(MenuCosmosDocuments.ResolveMapper(wrapper.Services), wrapper.Entity, document));
 
         return options;
     }

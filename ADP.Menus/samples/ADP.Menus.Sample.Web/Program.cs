@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using ShiftSoftware.ADP.Menus.Web.Extensions;
-using ShiftSoftware.ADP.Menus.Web.WebServices;
 using ShiftSoftware.ADP.Menus.Shared;
 using ShiftSoftware.ShiftBlazor.Extensions;
 using ShiftSoftware.ShiftBlazor.Services;
@@ -10,7 +9,6 @@ using ShiftSoftware.ShiftEntity.Core.Extensions;
 using ShiftSoftware.ShiftIdentity.Blazor;
 using ShiftSoftware.ShiftIdentity.Blazor.Extensions;
 using ShiftSoftware.ShiftIdentity.Blazor.Handlers;
-using ShiftSoftware.ShiftIdentity.Blazor.Services;
 using ShiftSoftware.ShiftIdentity.Core;
 using ShiftSoftware.ShiftIdentity.Dashboard.Blazor;
 using ShiftSoftware.ShiftIdentity.Dashboard.Blazor.Extensions;
@@ -62,10 +60,17 @@ builder.Services.AddShiftBlazor(config =>
     };
 });
 
+// The refresh token lives in a cookie on CookieDomain (the access token in local storage), so apps on the same
+// parent domain share the session.
 builder.Services.AddShiftIdentity(
     configuration.GetValue<string>("ShiftIdentity:AppName")!,
     shiftIdentityApiURL,
-    shiftIdentityFrontEndURL);
+    shiftIdentityFrontEndURL,
+    configure: o =>
+    {
+        o.RefreshTokenStorage = RefreshTokenStorage.Cookie;
+        o.CookieDomain = configuration.GetValue<string>("CookieDomain");
+    });
 
 builder.Services.AddShiftIdentityDashboardBlazor(x =>
 {
@@ -80,9 +85,6 @@ builder.Services.AddShiftIdentityDashboardBlazor(x =>
     x.Title = "ADP.Menus";
     x.DynamicTypeAuthActionExpander = () => Task.CompletedTask;
 });
-
-builder.Services.AddScoped<CookieService>();
-builder.Services.AddScoped<IIdentityStore, TokenStorageService>();
 
 builder.Services.AddTypeAuth(x =>
 {

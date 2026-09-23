@@ -65,49 +65,49 @@ public class MenuReplicationFunctions
     [Function(nameof(ReplicateMenuPeriodsTimer))]
     public Task ReplicateMenuPeriodsTimer([TimerTrigger(HourlySchedule)] TimerInfo timer)
         => RunTimerAsync((replication, connection, databaseId) =>
-            replication.ReplicateMenuPeriodAsync<MenuReplicationDB>(connection, databaseId));
+            replication.ReplicateMenuPeriodAsync(database, connection, databaseId));
 
     [Function(nameof(ReplicateMenuLabourDetailsTimer))]
     public Task ReplicateMenuLabourDetailsTimer([TimerTrigger(HourlySchedule)] TimerInfo timer)
         => RunTimerAsync((replication, connection, databaseId) =>
-            replication.ReplicateMenuLabourAsync<MenuReplicationDB>(connection, databaseId));
+            replication.ReplicateMenuLabourAsync(database, connection, databaseId));
 
     [Function(nameof(ReplicateMenuItemsTimer))]
     public Task ReplicateMenuItemsTimer([TimerTrigger(HourlySchedule)] TimerInfo timer)
         => RunTimerAsync((replication, connection, databaseId) =>
-            replication.ReplicateMenuItemAsync<MenuReplicationDB>(connection, databaseId));
+            replication.ReplicateMenuItemAsync(database, connection, databaseId));
 
     // ─────────────────────── master tables (own container each, plus fan-outs) ───────────────────────
 
     [Function(nameof(ReplicateServiceIntervalsTimer))]
     public Task ReplicateServiceIntervalsTimer([TimerTrigger(HourlySchedule)] TimerInfo timer)
         => RunTimerAsync((replication, connection, databaseId) =>
-            replication.ReplicateServiceIntervalAsync<MenuReplicationDB>(connection, databaseId));
+            replication.ReplicateServiceIntervalAsync(database, connection, databaseId));
 
     [Function(nameof(ReplicateServiceIntervalGroupsTimer))]
     public Task ReplicateServiceIntervalGroupsTimer([TimerTrigger(HourlySchedule)] TimerInfo timer)
         => RunTimerAsync((replication, connection, databaseId) =>
-            replication.ReplicateServiceIntervalGroupAsync<MenuReplicationDB>(connection, databaseId));
+            replication.ReplicateServiceIntervalGroupAsync(database, connection, databaseId));
 
     [Function(nameof(ReplicateReplacementItemsTimer))]
     public Task ReplicateReplacementItemsTimer([TimerTrigger(HourlySchedule)] TimerInfo timer)
         => RunTimerAsync((replication, connection, databaseId) =>
-            replication.ReplicateReplacementItemAsync<MenuReplicationDB>(connection, databaseId));
+            replication.ReplicateReplacementItemAsync(database, connection, databaseId));
 
     [Function(nameof(ReplicateStandaloneReplacementItemGroupsTimer))]
     public Task ReplicateStandaloneReplacementItemGroupsTimer([TimerTrigger(HourlySchedule)] TimerInfo timer)
         => RunTimerAsync((replication, connection, databaseId) =>
-            replication.ReplicateStandaloneReplacementItemGroupAsync<MenuReplicationDB>(connection, databaseId));
+            replication.ReplicateStandaloneReplacementItemGroupAsync(database, connection, databaseId));
 
     [Function(nameof(ReplicateLabourRateMappingsTimer))]
     public Task ReplicateLabourRateMappingsTimer([TimerTrigger(HourlySchedule)] TimerInfo timer)
         => RunTimerAsync((replication, connection, databaseId) =>
-            replication.ReplicateLabourRateMappingAsync<MenuReplicationDB>(connection, databaseId));
+            replication.ReplicateLabourRateMappingAsync(database, connection, databaseId));
 
     [Function(nameof(ReplicateBrandMappingsTimer))]
     public Task ReplicateBrandMappingsTimer([TimerTrigger(HourlySchedule)] TimerInfo timer)
         => RunTimerAsync((replication, connection, databaseId) =>
-            replication.ReplicateBrandMappingAsync<MenuReplicationDB>(connection, databaseId));
+            replication.ReplicateBrandMappingAsync(database, connection, databaseId));
 
     // ─────────────────────── on-demand: replicate EVERYTHING (full backfill) ───────────────────────
 
@@ -191,14 +191,14 @@ public class MenuReplicationFunctions
     }
 
     /// <summary>
-    /// Reads the same <c>ConnectionStrings:Cosmos</c> the sample API uses, so both halves of the sample
+    /// Reads the same <c>ConnectionStrings:ReplicationCosmos</c> the sample API replicates to, so both halves of the sample
     /// are configured in one place. A missing connection string means "replication off", exactly as it
     /// does there.
     /// </summary>
     private bool TryGetCosmos(out string connectionString, out string databaseId)
     {
         databaseId = MenuCosmosContainers.DatabaseName;
-        connectionString = configuration.GetConnectionString("Cosmos") ?? string.Empty;
+        connectionString = configuration.GetConnectionString("ReplicationCosmos") ?? string.Empty;
 
         return !string.IsNullOrWhiteSpace(connectionString);
     }

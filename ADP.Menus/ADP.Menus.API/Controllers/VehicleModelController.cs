@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using ShiftMapper;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
 using ShiftSoftware.ShiftEntity.Web;
@@ -24,16 +25,19 @@ public class VehicleModelController : ShiftEntitySecureControllerAsync<VehicleMo
 {
     private readonly VehicleModelRepository vehicleModelRepository;
     private readonly IHashIdService hashIdService;
+    private readonly IMapper mapper;
     private readonly MenuApiOptions options;
 
     public VehicleModelController(
             VehicleModelRepository vehicleModelRepository,
             IHashIdService hashIdService,
+            IMapper mapper,
             IOptions<MenuApiOptions> options
         ) : base(options.Value.EnableMenuActionTreeAuthorization ? MenuActionTree.VehicleModels : null)
     {
         this.vehicleModelRepository = vehicleModelRepository;
         this.hashIdService = hashIdService;
+        this.mapper = mapper;
         this.options = options.Value;
     }
 
@@ -61,48 +65,8 @@ public class VehicleModelController : ShiftEntitySecureControllerAsync<VehicleMo
         if (vehicleModel is null)
             return NotFound($"Can't find vehicle model");
 
-        var result = new VehicleModelMenuDTO
-        {
-            ReplacementItems = vehicleModel.ReplacementItemVehicleModels?.Where(x => !x.IsDeleted).Select(x => new MenuReplacementItemDTO
-            {
-                ID = x.ReplacementItemID.ToString(),
-                Name = x.ReplacementItem.Name,
-                Type = x.ReplacementItem.Type,
-                AllowMultiplePartNumbers = x.ReplacementItem.AllowMultiplePartNumbers,
-                StandaloneAllowedTime = x.StandaloneAllowedTime,
-                DefaultPartPriceMarginPercentage = x.DefaultPartPriceMarginPercentage,
-                DefaultParts = x.DefaultParts.Where(p => !p.IsDeleted).OrderBy(p => p.SortOrder).Select(p => new ReplacementItemDefaultPartDTO
-                {
-                    ID = p.ID,
-                    PartNumber = p.PartNumber,
-                    DefaultPeriodicQuantity = p.DefaultPeriodicQuantity,
-                    DefaultStandaloneQuantity = p.DefaultStandaloneQuantity
-                }).ToList(),
-                ReplacementItemVehicleModelID = x.ID,
-                StandaloneOperationCode = x.ReplacementItem.StandaloneOperationCode,
-                StandaloneLabourCode = x.ReplacementItem.StandaloneLabourCode,
-                StandaloneReplacementItemGroup = x.ReplacementItem?.StandaloneReplacementItemGroup is not null ?
-                    new ShiftEntitySelectDTO { Value = x.ReplacementItem?.StandaloneReplacementItemGroup?.ID.ToString()!, Text = x.ReplacementItem?.StandaloneReplacementItemGroup?.Name } :
-                    null,
-            }).ToList() ?? new(),
-            LabourRate = vehicleModel.LabourRate,
-            LabourRates = vehicleModel.LabourRates
-                .Where(x => !x.IsDeleted)
-                .Select(x => new Shared.DTOs.LabourRate.LabourRateByCountryDTO
-                {
-                    CountryID = x.CountryID,
-                    LabourRate = x.LabourRate
-                }).ToList(),
-            LabourDetails = vehicleModel.LabourDetails.Select(x => new LabourDetailsDTO
-            {
-                AllowedTime = x.AllowedTime,
-                Consumable = x.Consumable,
-                ServiceIntervalGroupID = x.ServiceIntervalGroupID.ToString()
-            }).ToList(),
-            BrandID = vehicleModel.BrandID.HasValue ? vehicleModel.BrandID.ToString() : null,
-            VehicleModelName = vehicleModel.Name,
-            VehicleModelID = vehicleModel.ID.ToString()
-        };
+        // Declared in ADP.Menus.Data's MenuMapper.
+        var result = mapper.Map<VehicleModel, VehicleModelMenuDTO>(vehicleModel);
 
         return Ok(result);
     }

@@ -978,7 +978,8 @@ there is no migration to perform — only provisioning (below).
 | File | Role |
 |---|---|
 | [`ServiceMenuCosmosModels.cs`](../ADP.Models/Models/Service/Cosmos/ServiceMenuCosmosModels.cs) | Layer 2 — 6 master documents + 4 `ServiceMenus` documents + owned parts/prices/labour rates |
-| [`MenuCosmosMappers.cs`](ADP.Menus.Data/Replication/MenuCosmosMappers.cs) | Manual EF → document projection (`Map`) + the fan-out appliers (`ApplyTo`) |
+| [`MenuReplicationMapper.cs`](ADP.Menus.Data/Mappers/MenuReplicationMapper.cs) | EF → document maps (ShiftMapper), in ADP.Menus.Data so `AddMenuApiServices` registers them with the module's other maps; the replication falls back to that assembly's own mapper in a host that registered none. Replaced the hand-written `MenuCosmosMappers.cs` on 2026-09-23 |
+| [`MenuCosmosDocuments.cs`](ADP.Menus.Sync/Replication/MenuCosmosDocuments.cs) | Puts the maps together: the `ServiceMenus` documents with their embedded master copies, and the fan-out appliers (`ApplyTo`) |
 | [`MenuReplicationReload.cs`](ADP.Menus.Data/Replication/MenuReplicationReload.cs) | Re-fetches each row with the navigations its projection needs; resolves the variant's master data |
 | [`MenuReplicationFinders.cs`](ADP.Menus.Data/Replication/MenuReplicationFinders.cs) | "Which documents embed this master row?" — the `UpdateReference` queries |
 | [`MenuCosmosContainers.cs`](ADP.Menus.Data/Replication/MenuCosmosContainers.cs) | The 7 containers and their partition keys — one declaration, read by hosts, the sample and the test |
@@ -1088,7 +1089,7 @@ Before first run the host must:
 
 [`ADP.Menus.Sample.API/Program.cs`](samples/ADP.Menus.Sample.API/Program.cs) is the worked example: it
 registers the trigger and provisions the containers at startup, both gated on
-`ConnectionStrings:Cosmos` being set, with provisioning failures logged rather than fatal so the sample
+`ConnectionStrings:ReplicationCosmos` being set, with provisioning failures logged rather than fatal so the sample
 still boots without an emulator.
 
 ### Known gaps, carried to step 2

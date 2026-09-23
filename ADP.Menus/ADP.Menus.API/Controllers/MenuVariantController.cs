@@ -44,20 +44,12 @@ public class MenuVariantController : ShiftEntitySecureControllerAsync<MenuVarian
         }
 
         var id = hashIdService.Decode<MenuDTO>(menuID);
-        var items = await (await repository.GetIQueryable(null, null, false, false))
+        var variants = (await repository.GetIQueryable(null, null, false, false))
             .Where(x => !x.IsDeleted && x.MenuID == id)
-            .OrderBy(x => x.Name)
-            .Select(x => new MenuVariantListDTO
-            {
-                ID = x.ID.ToString(),
-                MenuID = x.MenuID.ToString(),
-                Name = x.Name,
-                MenuPrefix = x.MenuPrefix,
-                MenuPostfix = x.MenuPostfix,
-                LabourRate = x.LabourRate,
-                HasStandaloneItems = x.HasStandaloneItems
-            })
-            .ToListAsync();
+            .OrderBy(x => x.Name);
+
+        // The repository's own list projection, so this endpoint and the variant grid agree on the shape.
+        var items = await repository.MapToList(variants).ToListAsync();
 
         return Ok(items);
     }

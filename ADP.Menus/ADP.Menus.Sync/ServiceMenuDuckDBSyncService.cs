@@ -1,7 +1,9 @@
 using DuckDB.NET.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ShiftMapper;
 using ShiftSoftware.ADP.Menus.Data.Entities;
+using ShiftSoftware.ADP.Menus.Data.Mappers;
 using ShiftSoftware.ADP.Models.Service.DuckDB;
 using ShiftSoftware.ADP.SyncAgent;
 using ShiftSoftware.ADP.SyncAgent.Configurations;
@@ -49,15 +51,21 @@ public class ServiceMenuDuckDBSyncService
     private const long MaxRetryCount = 3;
     private const long OperationTimeoutInSeconds = 600;
 
+    private readonly IMapper mapper;
     private readonly ILogger<ServiceMenuDuckDBSyncService>? logger;
 
+    /// <param name="mapper">
+    /// Maps each entity onto its row through the maps in <see cref="MenuDuckDBMapper"/>, which
+    /// <c>AddServiceMenuDuckDBSync</c> registers.
+    /// </param>
     /// <param name="logger">
     /// Optional. When present, every table's engine gets a <see cref="SyncEngineILogger"/> registered
     /// on it, so the engine's own narration — per action, per batch, per retry, exceptions included —
     /// comes through the host's logging like any other service.
     /// </param>
-    public ServiceMenuDuckDBSyncService(ILogger<ServiceMenuDuckDBSyncService>? logger = null)
+    public ServiceMenuDuckDBSyncService(IMapper mapper, ILogger<ServiceMenuDuckDBSyncService>? logger = null)
     {
+        this.mapper = mapper;
         this.logger = logger;
     }
 
@@ -73,64 +81,64 @@ public class ServiceMenuDuckDBSyncService
     // index on them would be maintenance paid for a scan that happens anyway.
 
     public Task<ServiceMenuTableSyncResult> SyncMenusAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<Menu, MenuDuckDBModel>(database, connection, ServiceMenuDuckDBTables.Menu, MenuDuckDBMappers.Map, fullReload, cancellationToken,
+        SyncTableAsync<Menu, MenuDuckDBModel>(database, connection, ServiceMenuDuckDBTables.Menu, fullReload, cancellationToken,
             [new() { Columns = row => row.BasicModelCode }]);
 
     public Task<ServiceMenuTableSyncResult> SyncVehicleModelsAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<VehicleModel, MenuVehicleModelDuckDBModel>(database, connection, ServiceMenuDuckDBTables.VehicleModel, MenuDuckDBMappers.Map, fullReload, cancellationToken);
+        SyncTableAsync<VehicleModel, MenuVehicleModelDuckDBModel>(database, connection, ServiceMenuDuckDBTables.VehicleModel, fullReload, cancellationToken);
 
     public Task<ServiceMenuTableSyncResult> SyncMenuVariantsAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<MenuVariant, MenuVariantDuckDBModel>(database, connection, ServiceMenuDuckDBTables.MenuVariant, MenuDuckDBMappers.Map, fullReload, cancellationToken,
+        SyncTableAsync<MenuVariant, MenuVariantDuckDBModel>(database, connection, ServiceMenuDuckDBTables.MenuVariant, fullReload, cancellationToken,
             [new() { Columns = row => row.MenuID }]);
 
     public Task<ServiceMenuTableSyncResult> SyncMenuVariantLabourRatesAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<MenuVariantLabourRate, MenuVariantLabourRateDuckDBModel>(database, connection, ServiceMenuDuckDBTables.MenuVariantLabourRate, MenuDuckDBMappers.Map, fullReload, cancellationToken,
+        SyncTableAsync<MenuVariantLabourRate, MenuVariantLabourRateDuckDBModel>(database, connection, ServiceMenuDuckDBTables.MenuVariantLabourRate, fullReload, cancellationToken,
             [new() { Columns = row => row.MenuVariantID }]);
 
     public Task<ServiceMenuTableSyncResult> SyncMenuPeriodsAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<MenuPeriodicAvailability, MenuPeriodicAvailabilityDuckDBModel>(database, connection, ServiceMenuDuckDBTables.MenuPeriodicAvailability, MenuDuckDBMappers.Map, fullReload, cancellationToken,
+        SyncTableAsync<MenuPeriodicAvailability, MenuPeriodicAvailabilityDuckDBModel>(database, connection, ServiceMenuDuckDBTables.MenuPeriodicAvailability, fullReload, cancellationToken,
             [new() { Columns = row => row.MenuVariantID }]);
 
     public Task<ServiceMenuTableSyncResult> SyncMenuLaboursAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<MenuLabourDetails, MenuLabourDetailsDuckDBModel>(database, connection, ServiceMenuDuckDBTables.MenuLabourDetails, MenuDuckDBMappers.Map, fullReload, cancellationToken,
+        SyncTableAsync<MenuLabourDetails, MenuLabourDetailsDuckDBModel>(database, connection, ServiceMenuDuckDBTables.MenuLabourDetails, fullReload, cancellationToken,
             [new() { Columns = row => row.MenuVariantID }]);
 
     public Task<ServiceMenuTableSyncResult> SyncMenuItemsAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<MenuItem, MenuItemDuckDBModel>(database, connection, ServiceMenuDuckDBTables.MenuItem, MenuDuckDBMappers.Map, fullReload, cancellationToken,
+        SyncTableAsync<MenuItem, MenuItemDuckDBModel>(database, connection, ServiceMenuDuckDBTables.MenuItem, fullReload, cancellationToken,
             [new() { Columns = row => row.MenuVariantID }]);
 
     public Task<ServiceMenuTableSyncResult> SyncMenuItemPartsAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<MenuItemPart, MenuItemPartDuckDBModel>(database, connection, ServiceMenuDuckDBTables.MenuItemPart, MenuDuckDBMappers.Map, fullReload, cancellationToken,
+        SyncTableAsync<MenuItemPart, MenuItemPartDuckDBModel>(database, connection, ServiceMenuDuckDBTables.MenuItemPart, fullReload, cancellationToken,
             [new() { Columns = row => row.MenuItemID }]);
 
     public Task<ServiceMenuTableSyncResult> SyncMenuItemPartCountryPricesAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<MenuItemPartCountryPrice, MenuItemPartCountryPriceDuckDBModel>(database, connection, ServiceMenuDuckDBTables.MenuItemPartCountryPrice, MenuDuckDBMappers.Map, fullReload, cancellationToken,
+        SyncTableAsync<MenuItemPartCountryPrice, MenuItemPartCountryPriceDuckDBModel>(database, connection, ServiceMenuDuckDBTables.MenuItemPartCountryPrice, fullReload, cancellationToken,
             [new() { Columns = row => row.MenuItemPartID }]);
 
     public Task<ServiceMenuTableSyncResult> SyncServiceIntervalsAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<ServiceInterval, ServiceIntervalDuckDBModel>(database, connection, ServiceMenuDuckDBTables.ServiceInterval, MenuDuckDBMappers.Map, fullReload, cancellationToken);
+        SyncTableAsync<ServiceInterval, ServiceIntervalDuckDBModel>(database, connection, ServiceMenuDuckDBTables.ServiceInterval, fullReload, cancellationToken);
 
     public Task<ServiceMenuTableSyncResult> SyncServiceIntervalGroupsAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<ServiceIntervalGroup, ServiceIntervalGroupDuckDBModel>(database, connection, ServiceMenuDuckDBTables.ServiceIntervalGroup, MenuDuckDBMappers.Map, fullReload, cancellationToken);
+        SyncTableAsync<ServiceIntervalGroup, ServiceIntervalGroupDuckDBModel>(database, connection, ServiceMenuDuckDBTables.ServiceIntervalGroup, fullReload, cancellationToken);
 
     public Task<ServiceMenuTableSyncResult> SyncReplacementItemsAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<ReplacementItem, ReplacementItemDuckDBModel>(database, connection, ServiceMenuDuckDBTables.ReplacementItem, MenuDuckDBMappers.Map, fullReload, cancellationToken);
+        SyncTableAsync<ReplacementItem, ReplacementItemDuckDBModel>(database, connection, ServiceMenuDuckDBTables.ReplacementItem, fullReload, cancellationToken);
 
     public Task<ServiceMenuTableSyncResult> SyncReplacementItemServiceIntervalGroupsAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<ReplacementItemServiceIntervalGroup, ReplacementItemServiceIntervalGroupDuckDBModel>(database, connection, ServiceMenuDuckDBTables.ReplacementItemServiceIntervalGroup, MenuDuckDBMappers.Map, fullReload, cancellationToken,
+        SyncTableAsync<ReplacementItemServiceIntervalGroup, ReplacementItemServiceIntervalGroupDuckDBModel>(database, connection, ServiceMenuDuckDBTables.ReplacementItemServiceIntervalGroup, fullReload, cancellationToken,
             [new() { Columns = row => row.ReplacementItemID }]);
 
     public Task<ServiceMenuTableSyncResult> SyncReplacementItemVehicleModelsAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<ReplacementItemVehicleModel, ReplacementItemVehicleModelDuckDBModel>(database, connection, ServiceMenuDuckDBTables.ReplacementItemVehicleModel, MenuDuckDBMappers.Map, fullReload, cancellationToken);
+        SyncTableAsync<ReplacementItemVehicleModel, ReplacementItemVehicleModelDuckDBModel>(database, connection, ServiceMenuDuckDBTables.ReplacementItemVehicleModel, fullReload, cancellationToken);
 
     public Task<ServiceMenuTableSyncResult> SyncStandaloneReplacementItemGroupsAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<StandaloneReplacementItemGroup, StandaloneReplacementItemGroupDuckDBModel>(database, connection, ServiceMenuDuckDBTables.StandaloneReplacementItemGroup, MenuDuckDBMappers.Map, fullReload, cancellationToken);
+        SyncTableAsync<StandaloneReplacementItemGroup, StandaloneReplacementItemGroupDuckDBModel>(database, connection, ServiceMenuDuckDBTables.StandaloneReplacementItemGroup, fullReload, cancellationToken);
 
     public Task<ServiceMenuTableSyncResult> SyncLabourRateMappingsAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<LabourRateMapping, LabourRateMappingDuckDBModel>(database, connection, ServiceMenuDuckDBTables.LabourRateMapping, MenuDuckDBMappers.Map, fullReload, cancellationToken);
+        SyncTableAsync<LabourRateMapping, LabourRateMappingDuckDBModel>(database, connection, ServiceMenuDuckDBTables.LabourRateMapping, fullReload, cancellationToken);
 
     public Task<ServiceMenuTableSyncResult> SyncBrandMappingsAsync(DbContext database, DuckDBConnection connection, bool fullReload = false, CancellationToken cancellationToken = default) =>
-        SyncTableAsync<BrandMapping, BrandMappingDuckDBModel>(database, connection, ServiceMenuDuckDBTables.BrandMapping, MenuDuckDBMappers.Map, fullReload, cancellationToken);
+        SyncTableAsync<BrandMapping, BrandMappingDuckDBModel>(database, connection, ServiceMenuDuckDBTables.BrandMapping, fullReload, cancellationToken);
 
     /// <summary>
     /// Syncs every menu table, reference tables first then the menu graph — the order is cosmetic
@@ -172,8 +180,9 @@ public class ServiceMenuDuckDBSyncService
     /// <summary>
     /// One engine pass for one table, adapters on BOTH sides: <see cref="EFCoreSyncDataSource{TSource, TDestination, TDbContext}"/>
     /// reads the source (keyset-paged over the entity's id, the watermark filter applied in its
-    /// <c>Query</c>), our mapper projects entity → row, and the DuckDB destination adapter creates
-    /// the table and stores the batches as keyed upserts. On a FULL pull (no watermark, or an explicit
+    /// <c>Query</c>), the table's map in <see cref="MenuDuckDBMapper"/> projects entity → row, and the
+    /// DuckDB destination adapter creates the table and stores the batches as keyed upserts. On a FULL
+    /// pull (no watermark, or an explicit
     /// full reload), rows whose ids left the source are pruned first — the hard-delete reconciler,
     /// which cannot come from the EF source because those rows no longer exist in SQL to be queried.
     /// </summary>
@@ -185,7 +194,6 @@ public class ServiceMenuDuckDBSyncService
         DbContext database,
         DuckDBConnection connection,
         string tableName,
-        Func<TEntity, TRow> map,
         bool fullReload,
         CancellationToken cancellationToken,
         IReadOnlyList<DuckDBIndexDefinition<TRow>>? indexes = null)
@@ -226,7 +234,7 @@ public class ServiceMenuDuckDBSyncService
         });
 
         engine.SetupMapping((entities, _) => new ValueTask<IEnumerable<TRow?>?>(
-            entities?.Select(entity => entity is null ? null : map(entity))));
+            entities?.Select(entity => entity is null ? null : mapper.Map<TEntity, TRow>(entity))));
 
         AttachSqlSource(engine, database, watermark);
 

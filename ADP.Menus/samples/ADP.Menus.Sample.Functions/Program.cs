@@ -56,11 +56,11 @@ var host = new HostBuilder()
         // says what to do about it rather than failing as an opaque DI error.
         services.AddSingleton(provider =>
         {
-            var connectionString = provider.GetRequiredService<IConfiguration>().GetConnectionString("Cosmos");
+            var connectionString = provider.GetRequiredService<IConfiguration>().GetConnectionString("ReplicationCosmos");
 
             if (string.IsNullOrWhiteSpace(connectionString))
                 throw new InvalidOperationException(
-                    "ConnectionStrings:Cosmos is not set, so the service-menu lookup cannot read. Set it in "
+                    "ConnectionStrings:ReplicationCosmos is not set, so the service-menu lookup cannot read. Set it in "
                     + "local.settings.json (the Azure Cosmos DB Emulator's endpoint and key are already there "
                     + "by default) and restart the host.");
 

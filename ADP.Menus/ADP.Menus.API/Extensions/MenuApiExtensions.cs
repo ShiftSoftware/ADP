@@ -36,10 +36,10 @@ public static class MenuApiExtensions
         services.RegisterShiftRepositories(typeof(Data.Marker).Assembly);
 
         // Register Menu's assemblies so the consumer doesn't have to. Only the data assembly needs
-        // registering now: the mappers are source-generated per repository triple and register
-        // themselves in ShiftEntityMapperRegistry from a module initializer, so there is nothing for
-        // the host to wire up — and RegisterShiftRepositories above validates, at startup, that every
-        // triple in this assembly actually resolves one.
+        // registering: RegisterShiftRepositories above also registers its generated ShiftMapper mapper —
+        // every repository triple's maps, with the customizations in Mappers/MenuMapper.cs — so there is
+        // nothing for the host to wire up, and it validates, at startup, that every triple in this
+        // assembly actually resolves one.
         services.Configure<ShiftEntityOptions>(o =>
         {
             o.AddDataAssembly(typeof(Data.Marker).Assembly);

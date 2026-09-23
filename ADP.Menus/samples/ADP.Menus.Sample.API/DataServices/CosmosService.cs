@@ -11,7 +11,7 @@ public class CosmosService : IMenuPartPriceService
 {
     private readonly CosmosClient client;
 
-    public CosmosService(CosmosClient client)
+    public CosmosService([FromKeyedServices(CosmosAccounts.PartPrice)] CosmosClient client)
     {
         this.client = client;
     }

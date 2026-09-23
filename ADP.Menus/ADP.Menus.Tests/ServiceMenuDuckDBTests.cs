@@ -32,7 +32,7 @@ namespace ShiftSoftware.ADP.Menus.Tests;
 ///
 /// <para>The test that matters most is DIFFERENTIAL, like this project's export-vs-lookup golden: the
 /// same entity graph served through the Cosmos path (projected by the production
-/// <c>MenuCosmosMappers</c>) and through the sync-then-join path must generate IDENTICAL menus —
+/// <c>MenuReplicationMapper</c>) and through the sync-then-join path must generate IDENTICAL menus —
 /// codes, descriptions, money. That comparison is what pins the reader's join-time assembly to the
 /// Cosmos projections' embed-time rules.</para>
 /// </summary>
@@ -73,7 +73,10 @@ public class ServiceMenuDuckDBTests
         /// <summary>The watermark each table's source attach was given, keyed by entity type name.</summary>
         internal Dictionary<string, DateTimeOffset?> ObservedWatermarks { get; } = new(StringComparer.Ordinal);
 
+        // ADP.Menus.Data's generated mapper, built outside a container — the same maps the registration
+        // hands the real service.
         internal StubSyncService(params MenuGraphFixture.Fixture[] fixtures)
+            : base(ShiftMapper.Mapper.Create(typeof(Data.Mappers.MenuDuckDBMapper).Assembly))
         {
             sources = CollectEntities(fixtures);
         }

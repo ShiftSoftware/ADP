@@ -102,7 +102,7 @@ GET {{host}}/api/menu/{{basicModelCode}}?freeFilter=PaidOnly
 
 ### PREREQUISITE: these need the CompanyData/Vehicles containers, which this sample does NOT provision —
 ### menu replication only fills the Services database. Against a menus-only emulator they answer 503 and
-### say so. Point ConnectionStrings:Cosmos at an account that also has vehicle data to run them.
+### say so. Point ConnectionStrings:ReplicationCosmos at an account that also has vehicle data to run them.
 
 ### The vehicle lookup with the model's service menu attached.
 ###

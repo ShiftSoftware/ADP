@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using ShiftMapper;
 using ShiftSoftware.ADP.Menus.API.Extensions;
 using ShiftSoftware.ADP.Menus.Data.DataServices;
 using ShiftSoftware.ADP.Menus.Data.Entities;
@@ -33,6 +34,7 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
     private readonly IMenuReportExporter reportExporter;
     private readonly IMenuCountryProvider countryProvider;
     private readonly IHashIdService hashIdService;
+    private readonly IMapper mapper;
     private readonly MenuApiOptions options;
 
     public MenuController(
@@ -46,6 +48,7 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
             IMenuReportExporter reportExporter,
             IMenuCountryProvider countryProvider,
             IHashIdService hashIdService,
+            IMapper mapper,
             IOptions<MenuApiOptions> options
         ) : base(options.Value.EnableMenuActionTreeAuthorization ? MenuActionTree.Menus : null)
     {
@@ -60,6 +63,7 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
         this.reportExporter = reportExporter;
         this.countryProvider = countryProvider;
         this.hashIdService = hashIdService;
+        this.mapper = mapper;
     }
 
     private async Task<(long countryId, decimal transferRate, bool usePrimaryLabourRate)> NormalizeCountryAndTransferRateAsync(long countryId, decimal transferRate)
@@ -499,7 +503,7 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
         return lines;
     }
 
-    private static List<StockPriceByCountryDTO> GetRetailPricesByCountry(MenuPartPrice stock, IEnumerable<long> countryIds)
+    private List<StockPriceByCountryDTO> GetRetailPricesByCountry(MenuPartPrice stock, IEnumerable<long> countryIds)
     {
         var ids = countryIds?.ToList() ?? [];
 
@@ -526,15 +530,11 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
         return result;
     }
 
-    private static List<StockUnitPriceDTO> MapUnitPrices(MenuPartCountryPrice? countryPrice)
+    // MenuPartUnitPrice → StockUnitPriceDTO is declared in ADP.Menus.Data's MenuMapper.
+    private List<StockUnitPriceDTO> MapUnitPrices(MenuPartCountryPrice? countryPrice)
     {
         return countryPrice?.UnitPrices?
-            .Select(unit => new StockUnitPriceDTO
-            {
-                UnitName = unit.UnitName,
-                Price = unit.Price,
-                IsDefault = unit.IsDefault,
-            })
+            .Select(unit => mapper.Map<MenuPartUnitPrice, StockUnitPriceDTO>(unit))
             .ToList() ?? [];
     }
 }

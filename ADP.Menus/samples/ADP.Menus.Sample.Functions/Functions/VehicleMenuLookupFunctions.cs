@@ -114,7 +114,7 @@ public class VehicleMenuLookupFunctions
             {
                 reason =
                     "The CompanyData/Vehicles containers this lookup reads are not provisioned. This sample only "
-                    + "provisions the menu containers — point ConnectionStrings:Cosmos at an account that has "
+                    + "provisions the menu containers — point ConnectionStrings:ReplicationCosmos at an account that has "
                     + "vehicle data, or use GET api/menu/{basicModelCode} instead, which needs only the menus.",
             })
             {

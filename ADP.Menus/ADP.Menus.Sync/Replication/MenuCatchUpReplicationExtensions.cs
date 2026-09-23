@@ -28,7 +28,8 @@ namespace ShiftSoftware.ADP.Menus.Sync.Replication;
 /// switch-on or after a container is rebuilt.</para>
 ///
 /// <para>Everything is shared with the trigger path and nothing is duplicated: the include graphs come
-/// from <see cref="MenuReplicationIncludes"/>, the projections from <see cref="MenuCosmosMappers"/>,
+/// from <see cref="MenuReplicationIncludes"/>, the projections from <see cref="MenuReplicationMapper"/> (put together
+/// by <see cref="MenuCosmosDocuments"/>),
 /// and the fan-out queries from <see cref="MenuReplicationFinders"/>. That is deliberate — two
 /// independently-written replication paths would drift, and the drift would be invisible until a
 /// lookup returned a wrong menu code.</para>
@@ -44,8 +45,9 @@ public static class MenuCatchUpReplicationExtensions
     /// master tables — whose fan-outs refresh the denormalized copies the earlier passes just wrote.
     /// </summary>
     /// <param name="database">
-    /// Used to pre-load the labour-rate and brand catalogues for the variant pass. See
-    /// <see cref="ReplicateMenuVariantAsync{TDbContext}"/> for why that one needs it.
+    /// The host's menus DbContext. The variant pass pre-loads the labour-rate and brand catalogues from it (see
+    /// <see cref="ReplicateMenuVariantAsync{TDbContext}"/>), and every pass resolves the host's ShiftMapper mapper
+    /// through it, once, before its first row.
     /// </param>
     public static async Task ReplicateAllAsync<TDbContext>(
         this CosmosDBReplication cosmos,
@@ -56,16 +58,16 @@ public static class MenuCatchUpReplicationExtensions
         where TDbContext : ShiftDbContext
     {
         await cosmos.ReplicateMenuVariantAsync<TDbContext>(database, connectionString, databaseId, updateAll);
-        await cosmos.ReplicateMenuPeriodAsync<TDbContext>(connectionString, databaseId, updateAll);
-        await cosmos.ReplicateMenuLabourAsync<TDbContext>(connectionString, databaseId, updateAll);
-        await cosmos.ReplicateMenuItemAsync<TDbContext>(connectionString, databaseId, updateAll);
+        await cosmos.ReplicateMenuPeriodAsync(database, connectionString, databaseId, updateAll);
+        await cosmos.ReplicateMenuLabourAsync(database, connectionString, databaseId, updateAll);
+        await cosmos.ReplicateMenuItemAsync(database, connectionString, databaseId, updateAll);
 
-        await cosmos.ReplicateServiceIntervalAsync<TDbContext>(connectionString, databaseId, updateAll);
-        await cosmos.ReplicateServiceIntervalGroupAsync<TDbContext>(connectionString, databaseId, updateAll);
-        await cosmos.ReplicateReplacementItemAsync<TDbContext>(connectionString, databaseId, updateAll);
-        await cosmos.ReplicateStandaloneReplacementItemGroupAsync<TDbContext>(connectionString, databaseId, updateAll);
-        await cosmos.ReplicateLabourRateMappingAsync<TDbContext>(connectionString, databaseId, updateAll);
-        await cosmos.ReplicateBrandMappingAsync<TDbContext>(connectionString, databaseId, updateAll);
+        await cosmos.ReplicateServiceIntervalAsync(database, connectionString, databaseId, updateAll);
+        await cosmos.ReplicateServiceIntervalGroupAsync(database, connectionString, databaseId, updateAll);
+        await cosmos.ReplicateReplacementItemAsync(database, connectionString, databaseId, updateAll);
+        await cosmos.ReplicateStandaloneReplacementItemGroupAsync(database, connectionString, databaseId, updateAll);
+        await cosmos.ReplicateLabourRateMappingAsync(database, connectionString, databaseId, updateAll);
+        await cosmos.ReplicateBrandMappingAsync(database, connectionString, databaseId, updateAll);
     }
 
     // ---- the ServiceMenus container ----------------------------------------------------------------
@@ -90,11 +92,13 @@ public static class MenuCatchUpReplicationExtensions
         // Both catalogues are small (a handful of rows per brand) and every variant consults them.
         var labourRateMappings = (await database.Set<LabourRateMapping>().AsNoTracking().ToListAsync()).AsQueryable();
         var brandMappings = (await database.Set<BrandMapping>().AsNoTracking().ToListAsync()).AsQueryable();
+        var mapper = MenuCosmosDocuments.ResolveMapper(database);
 
         await cosmos.SetUp<TDbContext, MenuVariant>(connectionString, databaseId, MenuReplicationIncludes.Variant)
             .Replicate<MenuVariantCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
-                variant => MenuCosmosMappers.Map(
+                variant => MenuCosmosDocuments.Variant(
+                    mapper,
                     variant,
                     MenuReplicationReload.SelectLabourRateMapping(
                         labourRateMappings, variant.Menu?.VehicleModel?.BrandID, variant.LabourRate),
@@ -104,22 +108,30 @@ public static class MenuCatchUpReplicationExtensions
     }
 
     public static Task ReplicateMenuPeriodAsync<TDbContext>(
-        this CosmosDBReplication cosmos, string connectionString, string databaseId, bool updateAll = false)
-        where TDbContext : ShiftDbContext =>
-        cosmos.SetUp<TDbContext, MenuPeriodicAvailability>(connectionString, databaseId, MenuReplicationIncludes.Period)
+        this CosmosDBReplication cosmos, TDbContext database, string connectionString, string databaseId, bool updateAll = false)
+        where TDbContext : ShiftDbContext
+    {
+        var mapper = MenuCosmosDocuments.ResolveMapper(database);
+
+        return cosmos.SetUp<TDbContext, MenuPeriodicAvailability>(connectionString, databaseId, MenuReplicationIncludes.Period)
             .Replicate<MenuPeriodCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
-                period => MenuCosmosMappers.Map(period))
+                period => MenuCosmosDocuments.Period(mapper, period))
             .RunAsync(updateAll);
+    }
 
     public static Task ReplicateMenuLabourAsync<TDbContext>(
-        this CosmosDBReplication cosmos, string connectionString, string databaseId, bool updateAll = false)
-        where TDbContext : ShiftDbContext =>
-        cosmos.SetUp<TDbContext, MenuLabourDetails>(connectionString, databaseId, MenuReplicationIncludes.Labour)
+        this CosmosDBReplication cosmos, TDbContext database, string connectionString, string databaseId, bool updateAll = false)
+        where TDbContext : ShiftDbContext
+    {
+        var mapper = MenuCosmosDocuments.ResolveMapper(database);
+
+        return cosmos.SetUp<TDbContext, MenuLabourDetails>(connectionString, databaseId, MenuReplicationIncludes.Labour)
             .Replicate<MenuLabourCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
-                labour => MenuCosmosMappers.Map(labour))
+                labour => MenuCosmosDocuments.Labour(mapper, labour))
             .RunAsync(updateAll);
+    }
 
     /// <summary>
     /// Menu items, with their parts and country prices embedded. This is the pass that repairs the
@@ -128,96 +140,124 @@ public static class MenuCatchUpReplicationExtensions
     /// Note it needs <c>updateAll: true</c> to do so: the item rows are not dirty.
     /// </summary>
     public static Task ReplicateMenuItemAsync<TDbContext>(
-        this CosmosDBReplication cosmos, string connectionString, string databaseId, bool updateAll = false)
-        where TDbContext : ShiftDbContext =>
-        cosmos.SetUp<TDbContext, MenuItem>(connectionString, databaseId, MenuReplicationIncludes.Item)
+        this CosmosDBReplication cosmos, TDbContext database, string connectionString, string databaseId, bool updateAll = false)
+        where TDbContext : ShiftDbContext
+    {
+        var mapper = MenuCosmosDocuments.ResolveMapper(database);
+
+        return cosmos.SetUp<TDbContext, MenuItem>(connectionString, databaseId, MenuReplicationIncludes.Item)
             .Replicate<MenuItemCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
-                item => MenuCosmosMappers.Map(item))
+                item => MenuCosmosDocuments.Item(mapper, item))
             .RunAsync(updateAll);
+    }
 
     // ---- master containers, each with its fan-outs -------------------------------------------------
 
     public static Task ReplicateServiceIntervalAsync<TDbContext>(
-        this CosmosDBReplication cosmos, string connectionString, string databaseId, bool updateAll = false)
-        where TDbContext : ShiftDbContext =>
-        cosmos.SetUp<TDbContext, ServiceInterval>(connectionString, databaseId)
+        this CosmosDBReplication cosmos, TDbContext database, string connectionString, string databaseId, bool updateAll = false)
+        where TDbContext : ShiftDbContext
+    {
+        var mapper = MenuCosmosDocuments.ResolveMapper(database);
+
+        return cosmos.SetUp<TDbContext, ServiceInterval>(connectionString, databaseId)
             .Replicate<ServiceIntervalCosmosModel>(
                 NoSQLConstants.Containers.ServiceIntervals,
-                interval => MenuCosmosMappers.Map(interval))
+                interval => MenuCosmosDocuments.Map(mapper, interval))
             .UpdateReference<MenuPeriodCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
                 (query, interval) => MenuReplicationFinders.PeriodsEmbeddingInterval(query, interval.ID),
-                (interval, document) => MenuCosmosMappers.ApplyTo(interval, document))
+                (interval, document) => MenuCosmosDocuments.ApplyTo(mapper, interval, document))
             .RunAsync(updateAll);
+    }
 
     public static Task ReplicateServiceIntervalGroupAsync<TDbContext>(
-        this CosmosDBReplication cosmos, string connectionString, string databaseId, bool updateAll = false)
-        where TDbContext : ShiftDbContext =>
-        cosmos.SetUp<TDbContext, ServiceIntervalGroup>(connectionString, databaseId, MenuReplicationIncludes.IntervalGroup)
+        this CosmosDBReplication cosmos, TDbContext database, string connectionString, string databaseId, bool updateAll = false)
+        where TDbContext : ShiftDbContext
+    {
+        var mapper = MenuCosmosDocuments.ResolveMapper(database);
+
+        return cosmos.SetUp<TDbContext, ServiceIntervalGroup>(connectionString, databaseId, MenuReplicationIncludes.IntervalGroup)
             .Replicate<ServiceIntervalGroupCosmosModel>(
                 NoSQLConstants.Containers.ServiceIntervalGroups,
-                group => MenuCosmosMappers.Map(group))
+                group => MenuCosmosDocuments.Map(mapper, group))
             .UpdateReference<MenuLabourCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
                 (query, group) => MenuReplicationFinders.LabourDetailsEmbeddingIntervalGroup(query, group.ID),
-                (group, document) => MenuCosmosMappers.ApplyTo(group, document))
+                (group, document) => MenuCosmosDocuments.ApplyTo(mapper, group, document))
             .UpdateReference<MenuItemCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
                 (query, group) => MenuReplicationFinders.MenuItemsServingIntervalGroup(query, group.ID),
-                (group, document) => MenuCosmosMappers.ApplyTo(group, document))
+                (group, document) => MenuCosmosDocuments.ApplyTo(mapper, group, document))
             .RunAsync(updateAll);
+    }
 
     public static Task ReplicateReplacementItemAsync<TDbContext>(
-        this CosmosDBReplication cosmos, string connectionString, string databaseId, bool updateAll = false)
-        where TDbContext : ShiftDbContext =>
-        cosmos.SetUp<TDbContext, Entities.ReplacementItem>(connectionString, databaseId, MenuReplicationIncludes.ReplacementItem)
+        this CosmosDBReplication cosmos, TDbContext database, string connectionString, string databaseId, bool updateAll = false)
+        where TDbContext : ShiftDbContext
+    {
+        var mapper = MenuCosmosDocuments.ResolveMapper(database);
+
+        return cosmos.SetUp<TDbContext, Entities.ReplacementItem>(connectionString, databaseId, MenuReplicationIncludes.ReplacementItem)
             .Replicate<ReplacementItemCosmosModel>(
                 NoSQLConstants.Containers.ReplacementItems,
-                replacementItem => MenuCosmosMappers.Map(replacementItem))
+                replacementItem => MenuCosmosDocuments.Map(mapper, replacementItem))
             .UpdateReference<MenuItemCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
                 (query, replacementItem) => MenuReplicationFinders.MenuItemsEmbeddingReplacementItem(query, replacementItem.ID),
-                (replacementItem, document) => MenuCosmosMappers.ApplyTo(replacementItem, document))
+                (replacementItem, document) => MenuCosmosDocuments.ApplyTo(mapper, replacementItem, document))
             .RunAsync(updateAll);
+    }
 
     public static Task ReplicateStandaloneReplacementItemGroupAsync<TDbContext>(
-        this CosmosDBReplication cosmos, string connectionString, string databaseId, bool updateAll = false)
-        where TDbContext : ShiftDbContext =>
-        cosmos.SetUp<TDbContext, StandaloneReplacementItemGroup>(connectionString, databaseId)
+        this CosmosDBReplication cosmos, TDbContext database, string connectionString, string databaseId, bool updateAll = false)
+        where TDbContext : ShiftDbContext
+    {
+        var mapper = MenuCosmosDocuments.ResolveMapper(database);
+
+        return cosmos.SetUp<TDbContext, StandaloneReplacementItemGroup>(connectionString, databaseId)
             .Replicate<StandaloneReplacementItemGroupCosmosModel>(
                 NoSQLConstants.Containers.StandaloneReplacementItemGroups,
-                group => MenuCosmosMappers.Map(group))
+                group => MenuCosmosDocuments.Map(mapper, group))
             .UpdateReference<MenuItemCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
                 (query, group) => MenuReplicationFinders.MenuItemsEmbeddingStandaloneGroup(query, group.ID),
-                (group, document) => MenuCosmosMappers.ApplyTo(group, document))
+                (group, document) => MenuCosmosDocuments.ApplyTo(mapper, group, document))
             .RunAsync(updateAll);
+    }
 
     public static Task ReplicateLabourRateMappingAsync<TDbContext>(
-        this CosmosDBReplication cosmos, string connectionString, string databaseId, bool updateAll = false)
-        where TDbContext : ShiftDbContext =>
-        cosmos.SetUp<TDbContext, LabourRateMapping>(connectionString, databaseId)
+        this CosmosDBReplication cosmos, TDbContext database, string connectionString, string databaseId, bool updateAll = false)
+        where TDbContext : ShiftDbContext
+    {
+        var mapper = MenuCosmosDocuments.ResolveMapper(database);
+
+        return cosmos.SetUp<TDbContext, LabourRateMapping>(connectionString, databaseId)
             .Replicate<LabourRateMappingCosmosModel>(
                 NoSQLConstants.Containers.LabourRateMappings,
-                mapping => MenuCosmosMappers.Map(mapping))
+                mapping => MenuCosmosDocuments.Map(mapper, mapping))
             .UpdateReference<MenuVariantCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
                 (query, mapping) => MenuReplicationFinders.VariantsEmbeddingLabourRateMapping(
                     query, mapping.BrandID, mapping.LabourRate),
-                (mapping, document) => MenuCosmosMappers.ApplyTo(mapping, document))
+                (mapping, document) => MenuCosmosDocuments.ApplyTo(mapper, mapping, document))
             .RunAsync(updateAll);
+    }
 
     public static Task ReplicateBrandMappingAsync<TDbContext>(
-        this CosmosDBReplication cosmos, string connectionString, string databaseId, bool updateAll = false)
-        where TDbContext : ShiftDbContext =>
-        cosmos.SetUp<TDbContext, BrandMapping>(connectionString, databaseId)
+        this CosmosDBReplication cosmos, TDbContext database, string connectionString, string databaseId, bool updateAll = false)
+        where TDbContext : ShiftDbContext
+    {
+        var mapper = MenuCosmosDocuments.ResolveMapper(database);
+
+        return cosmos.SetUp<TDbContext, BrandMapping>(connectionString, databaseId)
             .Replicate<BrandMappingCosmosModel>(
                 NoSQLConstants.Containers.BrandMappings,
-                mapping => MenuCosmosMappers.Map(mapping))
+                mapping => MenuCosmosDocuments.Map(mapper, mapping))
             .UpdateReference<MenuVariantCosmosModel>(
                 NoSQLConstants.Containers.ServiceMenus,
                 (query, mapping) => MenuReplicationFinders.VariantsEmbeddingBrandMapping(query, mapping.BrandID),
-                (mapping, document) => MenuCosmosMappers.ApplyTo(mapping, document))
+                (mapping, document) => MenuCosmosDocuments.ApplyTo(mapper, mapping, document))
             .RunAsync(updateAll);
+    }
 }

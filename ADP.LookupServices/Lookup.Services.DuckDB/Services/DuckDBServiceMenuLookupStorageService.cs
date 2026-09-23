@@ -22,7 +22,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services;
 /// reference data (intervals, groups, replacement items, mappings) and replication fans out updates
 /// to keep the copies fresh. Here the reference data lives once in its own tables and is joined at
 /// read time — always current as of the snapshot, with no copies to go stale. The assembly rules
-/// mirror <c>MenuCosmosMappers</c> (and the mapping-selection rules mirror
+/// mirror <c>MenuReplicationMapper</c> / <c>MenuCosmosDocuments</c> (and the mapping-selection rules mirror
 /// <c>MenuReplicationReload</c>) — the differential test that generates the same menu through both
 /// backends is what pins the two implementations together.</para>
 ///
@@ -153,7 +153,7 @@ public class DuckDBServiceMenuLookupStorageService : IServiceMenuLookupStorageSe
 
     /// <summary>
     /// One chunk of codes: the menu-graph tables are fetched with one <c>IN</c>-clause query each,
-    /// then assembled into per-code document sets. The assembly reproduces <c>MenuCosmosMappers</c>'
+    /// then assembled into per-code document sets. The assembly reproduces <c>MenuCosmosDocuments</c>'
     /// projections field for field — what Cosmos embeds at write time, this composes at read time.
     /// </summary>
     private async Task AssembleChunkAsync(
@@ -214,7 +214,7 @@ public class DuckDBServiceMenuLookupStorageService : IServiceMenuLookupStorageSe
             .ToDictionary(x => x.ID);
 
         // The replacement-item ↔ interval-group links, LIVE ones only — the one soft-delete filter,
-        // mirroring MenuCosmosMappers.IntervalGroupLinks: a link contributes only its group id to a
+        // mirroring MenuCosmosDocuments.MapIntervalGroups: a link contributes only its group id to a
         // flat list, so a deleted link that is projected would be indistinguishable from a live one.
         var liveGroupLinks = (await QueryByIdsAsync<ReplacementItemServiceIntervalGroupDuckDBModel>(
                 ServiceMenuDuckDBTables.ReplacementItemServiceIntervalGroup, "ReplacementItemID",
@@ -335,7 +335,7 @@ public class DuckDBServiceMenuLookupStorageService : IServiceMenuLookupStorageSe
                 VariantID = item.MenuVariantID,
                 StandaloneAllowedTime = item.StandaloneAllowedTime,
 
-                // About the LINK row, not the replacement item's own flag — MenuCosmosMappers.Map(MenuItem).
+                // About the LINK row, not the replacement item's own flag — MenuReplicationMapper's MenuItem map.
                 HasReplacementItem = link is not null,
                 ReplacementItemDeleted = link?.IsDeleted ?? false,
 

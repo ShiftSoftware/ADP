@@ -37,7 +37,7 @@
 	  lookup takes a hard dependency on this assembly, so anything added here is added to the lookup too.
 	-->
 	<ItemGroup>
-		<PackageReference Include="System.Text.Json" Version="10.0.10" />
+		<PackageReference Include="System.Text.Json" Version="10.0.12" />
 	</ItemGroup>
 
 	<!--

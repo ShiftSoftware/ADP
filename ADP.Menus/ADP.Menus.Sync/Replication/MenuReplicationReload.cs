@@ -95,7 +95,7 @@ public static class MenuReplicationReload
     /// <summary>
     /// The two master rows a variant document embeds: the labour-rate mapping for its (brand, primary
     /// labour rate) pair, and its brand's mapping. Either may be null; null is meaningful, and the
-    /// document records it as such (see <see cref="MenuCosmosMappers"/>).
+    /// document records it as such (see <see cref="MenuCosmosDocuments.Variant"/>).
     /// </summary>
     public readonly record struct MenuVariantMasterData(
         LabourRateMapping? LabourRateMapping,

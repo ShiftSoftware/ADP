@@ -25,12 +25,23 @@ builder.Services.AddDbContext<DB>(db =>
     db.UseSqlServer(builder.Configuration.GetConnectionString("SQLServer")));
 
 // ---------- Cosmos / Menu interface implementations ----------
-// Whether Cosmos is configured also gates the menu replication further down.
-var cosmosConnectionString = builder.Configuration.GetConnectionString("Cosmos");
-var cosmosIsConfigured = !string.IsNullOrWhiteSpace(cosmosConnectionString);
+// Two Cosmos accounts, configured separately, because they need not be the same one:
+//   ConnectionStrings:PartPriceCosmos   — where CosmosService READS part prices (CompanyData/Parts). Pointing
+//                                         it at a real account (user secrets) gives real prices while the
+//                                         menus stay local.
+//   ConnectionStrings:ReplicationCosmos — where the menu replication WRITES (the Services database). Gates
+//                                         the replication further down.
+// appsettings.Development.json points both at the emulator. Each client is keyed by its role, so nothing
+// can pick up the wrong one by type alone.
+var partPriceCosmosConnectionString = builder.Configuration.GetConnectionString(CosmosAccounts.PartPrice);
+var replicationCosmosConnectionString = builder.Configuration.GetConnectionString(CosmosAccounts.Replication);
+var replicationIsConfigured = !string.IsNullOrWhiteSpace(replicationCosmosConnectionString);
 
-if (cosmosIsConfigured)
-    builder.Services.AddSingleton(new CosmosClient(cosmosConnectionString));
+if (!string.IsNullOrWhiteSpace(partPriceCosmosConnectionString))
+    builder.Services.AddKeyedSingleton(CosmosAccounts.PartPrice, new CosmosClient(partPriceCosmosConnectionString));
+
+if (replicationIsConfigured)
+    builder.Services.AddKeyedSingleton(CosmosAccounts.Replication, new CosmosClient(replicationCosmosConnectionString));
 
 builder.Services.AddScoped<IMenuPartPriceService, CosmosService>();
 builder.Services.AddScoped<IMenuReportExporter, MenuReportExporter>();
@@ -177,14 +188,20 @@ builder.Services.AddMenuApiServices<DB>(mvcBuilder, options =>
 //
 // This call also enables EFCore.Triggered on DB — the after-save hook replication rides on — so the
 // AddDbContext above does not need to. Both option actions apply, whichever order they run in.
-if (cosmosIsConfigured)
+if (replicationIsConfigured)
 {
     builder.Services.AddShiftEntityCosmosDbReplicationTrigger<DB>(x =>
-        x.AddMenuReplications<DB>(x.Services.GetRequiredService<CosmosClient>()));
+        x.AddMenuReplications<DB>(x.Services.GetRequiredKeyedService<CosmosClient>(CosmosAccounts.Replication)));
 }
 
 // ---------- Consumer Todo repository ----------
 builder.Services.AddScoped<ShiftSoftware.ADP.Menus.Sample.API.Data.Repositories.TodoItemRepository>();
+
+// ---------- ShiftMapper ----------
+// Registers THIS assembly's generated mapper, which holds the Todo repository's maps. The menu and identity maps
+// need no line here — AddMenuApiServices and AddShiftIdentityDashboard register their own assemblies' — but this
+// one carries them too, re-generated here, and answers first.
+builder.Services.AddShiftMapper();
 
 // ---------- Development-only data import ----------
 // Sample scaffolding for loading a realistic dataset into the local sample database. The endpoints
@@ -273,7 +290,7 @@ const int MenuDatabaseThroughput = 25000;
 // checkout plus a running emulator is a working setup. Best effort by design: appsettings.Development
 // points at the emulator unconditionally, so a developer who does not have one running must still be
 // able to boot the sample.
-if (cosmosIsConfigured)
+if (replicationIsConfigured)
 {
     var cosmosLogger = app.Services.GetRequiredService<ILogger<Program>>();
 
@@ -294,7 +311,7 @@ if (cosmosIsConfigured)
         // for one that already exists, so raising it here does not re-scale an existing database —
         // change that one on the account.
         var report = await MenuCosmosProvisioning.EnsureContainersAsync(
-            app.Services.GetRequiredService<CosmosClient>(),
+            app.Services.GetRequiredKeyedService<CosmosClient>(CosmosAccounts.Replication),
             databaseThroughput: ThroughputProperties.CreateManualThroughput(MenuDatabaseThroughput),
             cancellationToken: provisioning.Token);
 
@@ -317,8 +334,8 @@ if (cosmosIsConfigured)
         cosmosLogger.LogWarning(
             exception,
             "Menu replication: could not provision the Cosmos containers. The sample will run, but menu "
-            + "changes will not reach Cosmos. Start the emulator (or point ConnectionStrings:Cosmos "
-            + "elsewhere) and restart.");
+            + "changes will not reach Cosmos. Start the emulator (or point "
+            + "ConnectionStrings:ReplicationCosmos elsewhere) and restart.");
     }
 }
 
