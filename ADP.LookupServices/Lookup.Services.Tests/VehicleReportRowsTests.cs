@@ -91,6 +91,15 @@ public sealed class VehicleReportRowsTests
     }
 
     [Fact]
+    public void ReportStatuses_MirrorEveryLifecycleStatus_ByNameAndCode()
+    {
+        // ServiceItem carries the lifecycle status into the report enum by its number, so a lifecycle
+        // status added without its report twin would be reported under whichever state holds that code.
+        foreach (var lifecycle in Enum.GetValues<VehcileServiceItemStatuses>())
+            Assert.Equal(lifecycle.ToString(), ((VehicleServiceItemReportStatuses)(int)lifecycle).ToString());
+    }
+
+    [Fact]
     public void TopLevel_IsOneRowWithTheLookupsHeadlineFields_AndEmptyStringsForWhatIsMissing()
     {
         var row = VehicleReportRows.TopLevel("JTDBR32E0X0000001", new VehicleLookupDTO
