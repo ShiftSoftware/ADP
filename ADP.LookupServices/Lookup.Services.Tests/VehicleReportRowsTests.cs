@@ -44,6 +44,52 @@ public sealed class VehicleReportRowsTests
         Assert.Empty(VehicleReportRows.ServiceItems("JTDBR32E0X0000001", null));
     }
 
+    [Theory]
+    [InlineData(VehcileServiceItemStatuses.Pending, VehicleServiceItemLockState.Locked, "locked", 5)]
+    [InlineData(VehcileServiceItemStatuses.Expired, VehicleServiceItemLockState.Locked, "locked", 5)]
+    [InlineData(VehcileServiceItemStatuses.Cancelled, VehicleServiceItemLockState.Locked, "locked", 5)]
+    [InlineData(VehcileServiceItemStatuses.Pending, VehicleServiceItemLockState.Missed, "missed", 6)]
+    [InlineData(VehcileServiceItemStatuses.Expired, VehicleServiceItemLockState.Missed, "missed", 6)]
+    [InlineData(VehcileServiceItemStatuses.Cancelled, VehicleServiceItemLockState.Missed, "missed", 6)]
+    public void ServiceItems_DisplayLockStateOverLifecycleStatus_WithoutMutatingLookup(
+        VehcileServiceItemStatuses lifecycle, VehicleServiceItemLockState lockState, string expectedStatus, int expectedCode)
+    {
+        var item = new VehicleServiceItemDTO
+        {
+            ServiceItemID = "1",
+            Status = lifecycle.ToString().ToLowerInvariant(),
+            StatusEnum = lifecycle,
+            Lock = new VehicleServiceItemLockDTO { State = lockState },
+            Claimable = false,
+        };
+        var lookup = new VehicleLookupDTO { ServiceItems = [item] };
+
+        var row = Assert.Single(VehicleReportRows.ServiceItems("VIN", lookup));
+
+        Assert.Equal(expectedStatus, row.Status);
+        Assert.Equal(expectedCode, (int)row.StatusEnum!.Value);
+        Assert.False(row.Claimable);
+        Assert.Null(row.ExpiresAt);
+        Assert.Equal(lifecycle, item.StatusEnum);
+        Assert.Equal(lifecycle.ToString().ToLowerInvariant(), item.Status);
+        Assert.Equal(lockState, item.Lock.State);
+    }
+
+    [Theory]
+    [InlineData(VehcileServiceItemStatuses.Processed, "processed", 0)]
+    [InlineData(VehcileServiceItemStatuses.Expired, "expired", 1)]
+    [InlineData(VehcileServiceItemStatuses.Pending, "pending", 2)]
+    [InlineData(VehcileServiceItemStatuses.Cancelled, "cancelled", 3)]
+    [InlineData(VehcileServiceItemStatuses.ActivationRequired, "activationRequired", 4)]
+    public void ServiceItems_WithoutLock_PreserveExistingStatusAndNumericCodes(
+        VehcileServiceItemStatuses lifecycle, string status, int expectedCode)
+    {
+        var row = VehicleReportRows.ServiceItem("VIN", new VehicleServiceItemDTO { Status = status, StatusEnum = lifecycle }, null);
+
+        Assert.Equal(status, row.Status);
+        Assert.Equal(expectedCode, (int)row.StatusEnum!.Value);
+    }
+
     [Fact]
     public void TopLevel_IsOneRowWithTheLookupsHeadlineFields_AndEmptyStringsForWhatIsMissing()
     {
@@ -69,28 +115,38 @@ public sealed class VehicleReportRowsTests
         var file = new ParquetReportFile<VehicleServiceItemReportModel>(path);
         await file.AppendAsync(
         [
-            new VehicleServiceItemReportModel { VIN = "A", ServiceItemId = "1", StatusEnum = VehcileServiceItemStatuses.Pending, ClaimDate = new DateTimeOffset(2024, 6, 1, 3, 0, 0, TimeSpan.FromHours(3)), Price = 12.5m },
+            new VehicleServiceItemReportModel { VIN = "A", ServiceItemId = "1", StatusEnum = VehicleServiceItemReportStatuses.Pending, ClaimDate = new DateTimeOffset(2024, 6, 1, 3, 0, 0, TimeSpan.FromHours(3)), Price = 12.5m },
             new VehicleServiceItemReportModel { VIN = "A", ServiceItemId = "2" },
         ]);
         await file.AppendAsync([]);                                         // nothing to add, nothing changes
-        await file.AppendAsync([new VehicleServiceItemReportModel { VIN = "B", ServiceItemId = "1" }]);
+        await file.AppendAsync(
+        [
+            VehicleReportRows.ServiceItem("B", new VehicleServiceItemDTO { ServiceItemID = "1", Status = "pending", StatusEnum = VehcileServiceItemStatuses.Pending, Lock = new VehicleServiceItemLockDTO { State = VehicleServiceItemLockState.Locked } }, null),
+            VehicleReportRows.ServiceItem("B", new VehicleServiceItemDTO { ServiceItemID = "2", Status = "expired", StatusEnum = VehcileServiceItemStatuses.Expired, Lock = new VehicleServiceItemLockDTO { State = VehicleServiceItemLockState.Missed } }, null),
+        ]);
         await file.CompleteAsync();
 
-        Assert.Equal(3, file.RowCount);
+        Assert.Equal(4, file.RowCount);
         using var connection = new DuckDBConnection("Data Source=:memory:");
         connection.Open();
         using var command = connection.CreateCommand();
-        command.CommandText = $"SELECT VIN, ServiceItemId, StatusEnum, ClaimDate, Price FROM read_parquet('{path.Replace('\\', '/')}')";
+        command.CommandText = $"SELECT * FROM read_parquet('{path.Replace('\\', '/')}')";
         using var reader = command.ExecuteReader();
-        var rows = new List<(string Vin, string Item, object Status, object Claim, object Price)>();
+        Assert.Equal(29, reader.FieldCount); // Display states add values, never report columns.
+        Assert.Equal(typeof(int), reader.GetFieldType(reader.GetOrdinal("StatusEnum")));
+        var rows = new List<(string Vin, string Item, object Status, object Claim, object Price, object StatusText)>();
         while (reader.Read())
-            rows.Add((reader.GetString(0), reader.GetString(1), reader.GetValue(2), reader.GetValue(3), reader.GetValue(4)));
+            rows.Add((reader.GetString(reader.GetOrdinal("VIN")), reader.GetString(reader.GetOrdinal("ServiceItemId")), reader["StatusEnum"], reader["ClaimDate"], reader["Price"], reader["Status"]));
 
-        Assert.Equal([("A", "1"), ("A", "2"), ("B", "1")], rows.Select(r => (r.Vin, r.Item)));
+        Assert.Equal([("A", "1"), ("A", "2"), ("B", "1"), ("B", "2")], rows.Select(r => (r.Vin, r.Item)));
         Assert.Equal((int)VehcileServiceItemStatuses.Pending, Convert.ToInt32(rows[0].Status));
         Assert.Equal(new DateTime(2024, 6, 1, 0, 0, 0), Assert.IsType<DateTime>(rows[0].Claim)); // the instant, in UTC
         Assert.Equal(12.5m, Convert.ToDecimal(rows[0].Price));
         Assert.IsType<DBNull>(rows[1].Status);
+        Assert.Equal("locked", rows[2].StatusText);
+        Assert.Equal(5, Convert.ToInt32(rows[2].Status));
+        Assert.Equal("missed", rows[3].StatusText);
+        Assert.Equal(6, Convert.ToInt32(rows[3].Status));
 
         File.Delete(path);
     }

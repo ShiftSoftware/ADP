@@ -14,8 +14,10 @@ public class VehicleServiceItemReportModel
     public int? GroupTabOrder { get; set; }
     public bool? GroupIsDefault { get; set; }
     public bool? GroupIsSequential { get; set; }
+    /// <summary>The displayed status: locked or missed when a lock is present, otherwise the lifecycle status.</summary>
     public string Status { get; set; }
-    public VehcileServiceItemStatuses? StatusEnum { get; set; }
+    /// <summary>The displayed status code; existing lifecycle codes 0–4 are preserved, with Locked = 5 and Missed = 6.</summary>
+    public VehicleServiceItemReportStatuses? StatusEnum { get; set; }
     public string Type { get; set; }
     public VehcileServiceItemTypes? TypeEnum { get; set; }
     public decimal? Price { get; set; }

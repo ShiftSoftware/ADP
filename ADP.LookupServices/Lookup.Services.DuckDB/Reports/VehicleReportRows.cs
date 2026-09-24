@@ -1,4 +1,5 @@
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
+using ShiftSoftware.ADP.Lookup.Services.Enums;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -38,6 +39,15 @@ public static class VehicleReportRows
 
     public static VehicleServiceItemReportModel ServiceItem(string vin, VehicleServiceItemDTO item, DateTime? freeServiceItemStartDate)
     {
+        // Match the claimable-item card: the lock state is the displayed status whenever present.
+        // Project both existing columns together without changing the DTO's lifecycle status.
+        var (status, statusEnum) = item?.Lock?.State switch
+        {
+            VehicleServiceItemLockState.Locked => ("locked", (VehicleServiceItemReportStatuses?)VehicleServiceItemReportStatuses.Locked),
+            VehicleServiceItemLockState.Missed => ("missed", (VehicleServiceItemReportStatuses?)VehicleServiceItemReportStatuses.Missed),
+            _ => (item?.Status ?? string.Empty, (VehicleServiceItemReportStatuses?)item?.StatusEnum),
+        };
+
         return new VehicleServiceItemReportModel
         {
             VIN = vin ?? string.Empty,
@@ -48,8 +58,8 @@ public static class VehicleReportRows
             GroupTabOrder = item?.Group?.TabOrder,
             GroupIsDefault = item?.Group?.IsDefault,
             GroupIsSequential = item?.Group?.IsSequential,
-            Status = item?.Status ?? string.Empty,
-            StatusEnum = item?.StatusEnum,
+            Status = status,
+            StatusEnum = statusEnum,
             Type = item?.Type ?? string.Empty,
             TypeEnum = item?.TypeEnum,
             Price = item?.Cost,
