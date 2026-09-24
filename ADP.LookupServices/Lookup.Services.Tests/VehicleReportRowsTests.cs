@@ -107,7 +107,7 @@ public sealed class VehicleReportRowsTests
             VIN = "JTDBR32E0X0000001",
             IsAuthorized = true,
             Warranty = new VehicleWarrantyDTO { HasActiveWarranty = true, WarrantyEndDate = new DateTime(2027, 1, 1) },
-        });
+        }, distributorCompanyID: null);
 
         Assert.Equal("JTDBR32E0X0000001", row.VIN);
         Assert.True(row.IsAuthorized);
@@ -115,6 +115,42 @@ public sealed class VehicleReportRowsTests
         Assert.Equal(new DateTime(2027, 1, 1), row.WarrantyEndDate);
         Assert.Equal(string.Empty, row.SaleCompanyName);
         Assert.Null(row.SaleBrokerId);
+    }
+
+    [Fact]
+    public void TopLevel_DistributorExtendedWarranty_SpansTheDistributorsOwnCoverage_AndNoOneElses()
+    {
+        var lookup = new VehicleLookupDTO
+        {
+            VIN = "JTDBR32E0X0000001",
+            Warranty = new VehicleWarrantyDTO
+            {
+                // The legacy pair is the latest-ending persisted entry, whoever provides it: here the other company's.
+                ExtendedWarrantyStartDate = new DateTime(2029, 2, 1),
+                ExtendedWarrantyEndDate = new DateTime(2031, 2, 1),
+                ExtendedWarranties =
+                [
+                    new VehicleExtendedWarrantyDTO { ID = "EARNED", ProviderCompanyID = "901", StartDate = new DateTime(2027, 2, 1), EndDate = new DateTime(2028, 2, 1) },
+                    new VehicleExtendedWarrantyDTO { ID = "PURCHASED", ProviderCompanyID = "901", StartDate = new DateTime(2028, 2, 1), EndDate = new DateTime(2030, 2, 1) },
+                    new VehicleExtendedWarrantyDTO { ID = "OTHER", ProviderCompanyID = "101", StartDate = new DateTime(2029, 2, 1), EndDate = new DateTime(2031, 2, 1) },
+                ],
+            },
+        };
+
+        var row = VehicleReportRows.TopLevel("JTDBR32E0X0000001", lookup, distributorCompanyID: 901);
+
+        Assert.Equal(new DateTime(2027, 2, 1), row.WarrantyDistributorExtendedStartDate);
+        Assert.Equal(new DateTime(2030, 2, 1), row.WarrantyDistributorExtendedEndDate);
+        Assert.Equal(new DateTime(2029, 2, 1), row.WarrantyExtendedStartDate);
+        Assert.Equal(new DateTime(2031, 2, 1), row.WarrantyExtendedEndDate);
+
+        // No distributor configured, or none of the coverage is its own: both columns stay empty.
+        foreach (var distributorCompanyID in new long?[] { null, 555 })
+        {
+            var empty = VehicleReportRows.TopLevel("JTDBR32E0X0000001", lookup, distributorCompanyID);
+            Assert.Null(empty.WarrantyDistributorExtendedStartDate);
+            Assert.Null(empty.WarrantyDistributorExtendedEndDate);
+        }
     }
 
     [Fact]

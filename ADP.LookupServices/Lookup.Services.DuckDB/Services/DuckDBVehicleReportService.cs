@@ -655,7 +655,7 @@ public class DuckDBVehicleReportService(
         return rows;
     }
 
-    private static List<VehicleLookupTopLevelReportModel> TransformTopLevelLookups(List<string> vinChunk, IEnumerable<VehicleLookupDTO> lookups)
+    private List<VehicleLookupTopLevelReportModel> TransformTopLevelLookups(List<string> vinChunk, IEnumerable<VehicleLookupDTO> lookups)
     {
         var rows = new List<VehicleLookupTopLevelReportModel>();
         foreach (var lookup in lookups)
@@ -729,8 +729,8 @@ public class DuckDBVehicleReportService(
     private static VehicleServiceHistoryPartReportModel CreateServiceHistoryPartRow(string vin, VehicleServiceHistoryDTO serviceHistoryEntry, VehiclePartDTO part) =>
         VehicleReportRows.ServiceHistoryPart(vin, serviceHistoryEntry, part);
 
-    private static VehicleLookupTopLevelReportModel CreateVehicleLookupTopLevelRow(string vin, VehicleLookupDTO lookup) =>
-        VehicleReportRows.TopLevel(vin, lookup);
+    private VehicleLookupTopLevelReportModel CreateVehicleLookupTopLevelRow(string vin, VehicleLookupDTO lookup) =>
+        VehicleReportRows.TopLevel(vin, lookup, vehicleLookupService.Options?.DistributorCompanyID);
 
     /// <summary>The service-items report's deduplication; lives in <see cref="VehicleReportRows"/>, kept here for callers that found it here.</summary>
     public static Dictionary<string, VehicleServiceItemDTO> BuildBestItemsByServiceId(IEnumerable<VehicleServiceItemDTO> items) =>
@@ -858,32 +858,34 @@ public class DuckDBVehicleReportService(
             Map(x => x.WarrantyHasExtendedWarranty).Index(35);
             Map(x => x.WarrantyExtendedStartDate).Index(36);
             Map(x => x.WarrantyExtendedEndDate).Index(37);
-            Map(x => x.WarrantyFreeServiceStartDate).Index(38);
+            Map(x => x.WarrantyDistributorExtendedStartDate).Index(38);
+            Map(x => x.WarrantyDistributorExtendedEndDate).Index(39);
+            Map(x => x.WarrantyFreeServiceStartDate).Index(40);
 
-            Map(x => x.VariantInfoModelCode).Index(39);
-            Map(x => x.VariantInfoSfx).Index(40);
-            Map(x => x.VariantInfoModelYear).Index(41);
+            Map(x => x.VariantInfoModelCode).Index(41);
+            Map(x => x.VariantInfoSfx).Index(42);
+            Map(x => x.VariantInfoModelYear).Index(43);
 
-            Map(x => x.VehicleSpecModelCode).Index(42);
-            Map(x => x.VehicleSpecModelYear).Index(43);
-            Map(x => x.VehicleSpecProductionDate).Index(44);
-            Map(x => x.VehicleSpecModelDescription).Index(45);
-            Map(x => x.VehicleSpecVariantDescription).Index(46);
-            Map(x => x.VehicleSpecClass).Index(47);
-            Map(x => x.VehicleSpecBodyType).Index(48);
-            Map(x => x.VehicleSpecEngine).Index(49);
-            Map(x => x.VehicleSpecCylinders).Index(50);
-            Map(x => x.VehicleSpecLightHeavyType).Index(51);
-            Map(x => x.VehicleSpecDoors).Index(52);
-            Map(x => x.VehicleSpecFuel).Index(53);
-            Map(x => x.VehicleSpecTransmission).Index(54);
-            Map(x => x.VehicleSpecSide).Index(55);
-            Map(x => x.VehicleSpecEngineType).Index(56);
-            Map(x => x.VehicleSpecTankCap).Index(57);
-            Map(x => x.VehicleSpecStyle).Index(58);
-            Map(x => x.VehicleSpecFuelLiter).Index(59);
-            Map(x => x.VehicleSpecExteriorColor).Index(60);
-            Map(x => x.VehicleSpecInteriorColor).Index(61);
+            Map(x => x.VehicleSpecModelCode).Index(44);
+            Map(x => x.VehicleSpecModelYear).Index(45);
+            Map(x => x.VehicleSpecProductionDate).Index(46);
+            Map(x => x.VehicleSpecModelDescription).Index(47);
+            Map(x => x.VehicleSpecVariantDescription).Index(48);
+            Map(x => x.VehicleSpecClass).Index(49);
+            Map(x => x.VehicleSpecBodyType).Index(50);
+            Map(x => x.VehicleSpecEngine).Index(51);
+            Map(x => x.VehicleSpecCylinders).Index(52);
+            Map(x => x.VehicleSpecLightHeavyType).Index(53);
+            Map(x => x.VehicleSpecDoors).Index(54);
+            Map(x => x.VehicleSpecFuel).Index(55);
+            Map(x => x.VehicleSpecTransmission).Index(56);
+            Map(x => x.VehicleSpecSide).Index(57);
+            Map(x => x.VehicleSpecEngineType).Index(58);
+            Map(x => x.VehicleSpecTankCap).Index(59);
+            Map(x => x.VehicleSpecStyle).Index(60);
+            Map(x => x.VehicleSpecFuelLiter).Index(61);
+            Map(x => x.VehicleSpecExteriorColor).Index(62);
+            Map(x => x.VehicleSpecInteriorColor).Index(63);
         }
     }
 

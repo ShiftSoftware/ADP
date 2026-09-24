@@ -44,7 +44,7 @@ public abstract class VehicleReport
         public string PartialPath { get; }
         public string FinalPath { get; }
         public abstract long RowCount { get; }
-        public abstract void Add(string vin, VehicleLookupDTO lookup);
+        public abstract void Add(string vin, VehicleLookupDTO lookup, LookupOptions options);
         public abstract Task FlushAsync();
         public abstract Task CompleteAsync();
     }
@@ -52,14 +52,17 @@ public abstract class VehicleReport
 
 public sealed class VehicleReport<TModel> : VehicleReport
 {
-    public VehicleReport(string name, string relativePath, VehicleLookupRequestOptions request, Func<string, VehicleLookupDTO, IEnumerable<TModel>> rows)
+    public VehicleReport(string name, string relativePath, VehicleLookupRequestOptions request, Func<string, VehicleLookupDTO, LookupOptions, IEnumerable<TModel>> rows)
         : base(name, relativePath, request)
     {
         Rows = rows ?? throw new ArgumentNullException(nameof(rows));
     }
 
-    /// <summary>One vehicle's rows, from its normalized VIN and its lookup — the same row builders the per-VIN report service uses.</summary>
-    public Func<string, VehicleLookupDTO, IEnumerable<TModel>> Rows { get; }
+    /// <summary>
+    /// One vehicle's rows, from its normalized VIN, its lookup and the options it was evaluated with —
+    /// the same row builders the per-VIN report service uses.
+    /// </summary>
+    public Func<string, VehicleLookupDTO, LookupOptions, IEnumerable<TModel>> Rows { get; }
 
     internal override Writer OpenWriter(string partialPath, string finalPath) => new TypedWriter(this, partialPath, finalPath);
 
@@ -78,7 +81,7 @@ public sealed class VehicleReport<TModel> : VehicleReport
 
         public override long RowCount => file.RowCount;
 
-        public override void Add(string vin, VehicleLookupDTO lookup) => buffer.AddRange(report.Rows(vin, lookup));
+        public override void Add(string vin, VehicleLookupDTO lookup, LookupOptions options) => buffer.AddRange(report.Rows(vin, lookup, options));
 
         public override async Task FlushAsync()
         {
@@ -97,7 +100,7 @@ public static class VehicleReports
 {
     public static readonly VehicleReport ServiceItems = new VehicleReport<VehicleServiceItemReportModel>(
         "vehicle-service-items-report", "ServiceItem/vehicle-service-items-report.parquet",
-        new VehicleLookupRequestOptions(), VehicleReportRows.ServiceItems);
+        new VehicleLookupRequestOptions(), (vin, lookup, _) => VehicleReportRows.ServiceItems(vin, lookup));
 
     /// <summary>
     /// The provisioning view of the service items: every vehicle the distributor has invoiced out, its items
@@ -109,11 +112,11 @@ public static class VehicleReports
     /// </summary>
     public static readonly VehicleReport ServiceItemsProvisioning = new VehicleReport<VehicleServiceItemReportModel>(
         "vehicle-service-items-provisioning-report", "ServiceItem/vehicle-service-items-provisioning-report.parquet",
-        new VehicleLookupRequestOptions { FreeServiceProvisioning = true }, VehicleReportRows.ServiceItems);
+        new VehicleLookupRequestOptions { FreeServiceProvisioning = true }, (vin, lookup, _) => VehicleReportRows.ServiceItems(vin, lookup));
 
     public static readonly VehicleReport TopLevel = new VehicleReport<VehicleLookupTopLevelReportModel>(
         "vehicle-top-level-report", "Vehicle/vehicle-top-level-report.parquet",
-        new VehicleLookupRequestOptions(), (vin, lookup) => new[] { VehicleReportRows.TopLevel(vin, lookup) });
+        new VehicleLookupRequestOptions(), (vin, lookup, options) => new[] { VehicleReportRows.TopLevel(vin, lookup, options?.DistributorCompanyID) });
 
     /// <summary>The three files of a host that publishes the provisioning view beside the dealer's view.</summary>
     public static IReadOnlyList<VehicleReport> All { get; } = new[] { ServiceItems, ServiceItemsProvisioning, TopLevel };
@@ -276,6 +279,10 @@ public static class VehicleReportRun
         }).ToArray();
 
         var failures = new FailureLedger(options.MaxFailedVehicles);
+        // The host's options, read back off the lookup services its factory builds, so the rows see the
+        // options the vehicles were evaluated with. Every worker builds its service from the same factory
+        // before evaluating anything, so the sink never runs before this is set.
+        LookupOptions lookupOptions = null;
         var promoted = false;
         try
         {
@@ -286,6 +293,7 @@ public static class VehicleReportRun
                 () =>
                 {
                     var lookup = options.Lookup(reference.ForWorker());
+                    lookupOptions ??= lookup.Options;
                     return async (aggregate, request) =>
                     {
                         try
@@ -304,7 +312,7 @@ public static class VehicleReportRun
                     if (failures.Contains(vin))
                         return;
                     for (var i = 0; i < writers.Length; i++)
-                        writers[i].Add(vin, lookups[variantOfReport[i]]);
+                        writers[i].Add(vin, lookups[variantOfReport[i]], lookupOptions);
                     if (++buffered >= options.FlushEvery)
                     {
                         foreach (var writer in writers)

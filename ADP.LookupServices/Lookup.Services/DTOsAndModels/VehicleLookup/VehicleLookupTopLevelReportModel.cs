@@ -47,6 +47,8 @@ public class VehicleLookupTopLevelReportModel
     public bool WarrantyHasExtendedWarranty { get; set; }
     public DateTime? WarrantyExtendedStartDate { get; set; }
     public DateTime? WarrantyExtendedEndDate { get; set; }
+    public DateTime? WarrantyDistributorExtendedStartDate { get; set; }
+    public DateTime? WarrantyDistributorExtendedEndDate { get; set; }
     public DateTime? WarrantyFreeServiceStartDate { get; set; }
 
     public string VariantInfoModelCode { get; set; }

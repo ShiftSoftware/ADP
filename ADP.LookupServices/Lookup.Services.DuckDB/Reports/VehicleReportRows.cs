@@ -205,8 +205,13 @@ public static class VehicleReportRows
         };
     }
 
-    /// <summary>The top-level report's one row for a vehicle.</summary>
-    public static VehicleLookupTopLevelReportModel TopLevel(string vin, VehicleLookupDTO lookup)
+    /// <summary>
+    /// The top-level report's one row for a vehicle. <paramref name="distributorCompanyID"/> is the
+    /// deployment's <c>LookupOptions.DistributorCompanyID</c>: the distributor's extended-warranty columns
+    /// run from the earliest start to the latest end of the coverage it provides, persisted and configured
+    /// alike, and stay empty without one.
+    /// </summary>
+    public static VehicleLookupTopLevelReportModel TopLevel(string vin, VehicleLookupDTO lookup, long? distributorCompanyID)
     {
         var identifiers = lookup?.Identifiers;
         var sale = lookup?.SaleInformation;
@@ -215,6 +220,12 @@ public static class VehicleReportRows
         var warranty = lookup?.Warranty;
         var variantInfo = lookup?.VehicleVariantInfo;
         var vehicleSpecification = lookup?.VehicleSpecification;
+
+        // An in-process lookup carries the provider as its plain company id; it is hashed only when the
+        // DTO is serialized.
+        var distributorExtendedWarranties = (warranty?.ExtendedWarranties ?? Enumerable.Empty<VehicleExtendedWarrantyDTO>())
+            .Where(x => long.TryParse(x?.ProviderCompanyID, out var providerCompanyID) && providerCompanyID == distributorCompanyID)
+            .ToList();
 
         return new VehicleLookupTopLevelReportModel
         {
@@ -261,6 +272,8 @@ public static class VehicleReportRows
             WarrantyHasExtendedWarranty = warranty?.HasExtendedWarranty ?? false,
             WarrantyExtendedStartDate = warranty?.ExtendedWarrantyStartDate,
             WarrantyExtendedEndDate = warranty?.ExtendedWarrantyEndDate,
+            WarrantyDistributorExtendedStartDate = distributorExtendedWarranties.Min(x => x.StartDate),
+            WarrantyDistributorExtendedEndDate = distributorExtendedWarranties.Max(x => x.EndDate),
             WarrantyFreeServiceStartDate = warranty?.FreeServiceStartDate,
 
             VariantInfoModelCode = variantInfo?.ModelCode ?? string.Empty,

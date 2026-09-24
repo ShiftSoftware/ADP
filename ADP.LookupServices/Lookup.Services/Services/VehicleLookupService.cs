@@ -39,6 +39,12 @@ public class VehicleLookupService
         this.serviceMenuLookupService = serviceMenuLookupService;
     }
 
+    /// <summary>
+    /// The options this service evaluates with. The vehicle reports read what a lookup does not carry —
+    /// the distributor's company — from here, so a report row agrees with the evaluation behind it.
+    /// </summary>
+    public LookupOptions Options => lookupOptions;
+
     public async Task<CompanyDataAggregateModel> GetAggregatedCompanyDataAsync(string vin)
     {
         return await vehicleLookupStorageService.GetAggregatedCompanyData(vin);

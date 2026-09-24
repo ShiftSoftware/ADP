@@ -106,6 +106,58 @@ public sealed class VehicleReportRunTests : IDisposable
         Assert.Equal(3, result.Files.Count);
     }
 
+    [Fact]
+    public async Task TheTopLevelReport_TakesTheDistributorFromTheOptionsTheVehiclesWereEvaluatedWith()
+    {
+        using (var connection = new DuckDBConnection($"Data Source={storePath}"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = """
+                CREATE TABLE data.ServingExtendedWarranty (id VARCHAR, VIN VARCHAR, CompanyID BIGINT, StartDate TIMESTAMP, EndDate TIMESTAMP, IsActive BOOLEAN, IsDeleted BOOLEAN, "_Deleted" BOOLEAN);
+                INSERT INTO data.ServingExtendedWarranty VALUES
+                    ('w1', 'VIN00000000000001', 5, TIMESTAMP '2028-01-01 00:00:00', TIMESTAMP '2029-01-01 00:00:00', true, false, false),
+                    ('w2', 'VIN00000000000001', 3, TIMESTAMP '2029-01-01 00:00:00', TIMESTAMP '2030-01-01 00:00:00', true, false, false);
+                """;
+            command.ExecuteNonQuery();
+        }
+
+        // The distributor is named nowhere but the host's options, which only its lookup factory holds.
+        await VehicleReportRun.RunAsync(new VehicleReportRun.Options
+        {
+            Source = BulkLookupSource.HawtaStore(storePath, [AggregateFamilies.VehicleEntry, AggregateFamilies.ExtendedWarranty]),
+            Lookup = storage => new VehicleLookupService(storage, null, null,
+                new LookupOptions { VehicleLookupStorageSource = Enums.StorageSources.DuckDB, DistributorCompanyID = 5 }, null),
+            OutputDirectory = outputDirectory,
+            Reports = [VehicleReports.TopLevel],
+            Degree = 2,
+        });
+
+        using var reader = new DuckDBConnection("Data Source=:memory:");
+        reader.Open();
+        using var query = reader.CreateCommand();
+        var topLevel = Path.Combine(outputDirectory, "Vehicle", "vehicle-top-level-report.parquet").Replace('\\', '/');
+        query.CommandText = $"""
+            SELECT VIN,
+                   strftime(WarrantyDistributorExtendedStartDate, '%Y-%m-%d'),
+                   strftime(WarrantyDistributorExtendedEndDate, '%Y-%m-%d'),
+                   strftime(WarrantyExtendedEndDate, '%Y-%m-%d')
+            FROM read_parquet('{topLevel}') ORDER BY VIN
+            """;
+        using var rows = query.ExecuteReader();
+        var read = new List<(string Vin, string? Start, string? End, string? LegacyEnd)>();
+        while (rows.Read())
+            read.Add((rows.GetString(0), Text(rows, 1), Text(rows, 2), Text(rows, 3)));
+
+        Assert.Equal(
+        [
+            ("VIN00000000000001", "2028-01-01", "2029-01-01", "2030-01-01"),    // the dealer's later entry stays out; the legacy end is it
+            ("VIN00000000000002", null, null, null),
+        ], read);
+
+        static string? Text(System.Data.IDataRecord record, int ordinal) => record.IsDBNull(ordinal) ? null : record.GetString(ordinal);
+    }
+
     /// <summary>
     /// A case production data has: an activation with no country, by a company with no
     /// entry of its own for the vehicle. The ownership evaluator refuses it rather than guess.
