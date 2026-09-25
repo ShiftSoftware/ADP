@@ -171,6 +171,56 @@ public class SqlViewSnapshotIngestorTests : IDisposable
     }
 
     [Fact]
+    public async Task AMissingContractColumn_UnderTheDispatcher_LeavesAFailedRunThatNamesIt()
+    {
+        // A dealer renames a view column. The read still works, so the source never fails as a
+        // fetch; staging then stops on the missing column, before the merge could record the run.
+        // The dispatcher records it, so the source shows up as failing and says why.
+        var table = new DataTable();
+        table.Columns.Add("LINEKEY", typeof(string));
+        table.Columns.Add("Code", typeof(string));   // "Quantity" renamed away in the view
+        table.Rows.Add("K1", "alpha");
+        table.Rows.Add("K2", "beta");
+        var options = OptionsFor(snapshot);
+        var outcomes = new List<SnapshotIngestOutcome>();
+
+        await SnapshotIngestDispatcher.RunAsync(
+            new SnapshotIngestDispatcherOptions
+            {
+                Store = snapshot.Store,
+                Sources =
+                [
+                    new SnapshotSource
+                    {
+                        Key = options.MergeOptions.Source,
+                        RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("LINEKEY"),
+                        Table = options.Table,
+                        Cadence = TimeSpan.FromMinutes(10),
+                        Fetch = context => SqlViewSnapshotIngestor.Fetch(
+                            () => new RecordingConnection(table.CreateDataReader()), options, context),
+                    },
+                ],
+            },
+            outcomes.Add,
+            TestContext.Current.CancellationToken);
+
+        Assert.Contains("Quantity", Assert.Single(outcomes).Failure!.Message);
+        Assert.Equal(0, snapshot.Scalar<long>("SELECT count(*) FROM data.\"Widget\""));
+        Assert.Equal("Failed:Exception", snapshot.Scalar<string>(
+            "SELECT \"Status\" FROM meta.SyncRuns WHERE \"Source\" = 'dms-view'"));
+        Assert.Contains("Quantity", snapshot.Scalar<string>(
+            "SELECT \"Error\" FROM meta.SyncRuns WHERE \"Source\" = 'dms-view'"));
+
+        // The read worked, brought back both rows, and is linked to the failed run.
+        Assert.Equal(1, snapshot.Scalar<long>(
+            """
+            SELECT count(*) FROM meta.FetchRuns f JOIN meta.SyncRuns s USING ("RunId")
+            WHERE f."Source" = 'dms-view' AND NOT f."Failed" AND f."RowsFetched" = 2
+              AND s."Status" = 'Failed:Exception'
+            """));
+    }
+
+    [Fact]
     public void ACancelledDrain_ThrowsRatherThanReturningAShortSet()
     {
         // Fetch-ahead's containment argument in one fact: a partial read never becomes a

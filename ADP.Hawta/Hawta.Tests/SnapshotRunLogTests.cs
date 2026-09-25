@@ -6,7 +6,7 @@ namespace ShiftSoftware.ADP.Hawta.Tests;
 /// <summary>
 /// The run-log exporter on its own: an in-memory write DB and a local run-log directory, no loop.
 /// What is pinned here is the file layout, row parity, the "nothing new" skip, the day rewrite, the
-/// since-boot filter, the error cap, the pump table and the write-DB prune. The blob half of the same code path is proven by the host
+/// since-boot filter, the error cap, the pump and fetch tables and the write-DB prune. The blob half of the same code path is proven by the host
 /// repository's run-log drill against a real emulator container, not here: this suite must run on
 /// any machine with nothing listening.
 /// </summary>
@@ -201,6 +201,47 @@ public sealed class SnapshotRunLogTests : IDisposable
         Assert.Equal("Published", Read($"SELECT \"Status\" FROM read_parquet('{Sql(publishRuns)}')"));
         // The source run that fed the publish rides beside it.
         Assert.Contains(result.FilesWritten, file => file.Contains(SnapshotRunLog.SyncRunsFolder));
+
+        // The publish table records the snapshot name itself. The file carries that one column,
+        // with the value the publisher recorded, and no second copy named "SnapshotName_1".
+        Assert.Equal(1, FileColumns(publishRuns).Count(column => column.StartsWith("SnapshotName", StringComparison.Ordinal)));
+        Assert.Equal(PublisherFixture.SnapshotName, Read($"SELECT \"SnapshotName\" FROM read_parquet('{Sql(publishRuns)}')"));
+    }
+
+    [Fact]
+    public void EveryFile_CarriesTheTablesOwnColumns_ThenEachProvenanceColumnOnce()
+    {
+        // All five run tables hold a row: a merge and a publish through the real code, then a
+        // cycle row, a pump row and a fetch row placed by hand, the way the loop and the
+        // dispatcher write them.
+        using var fx = new PublisherFixture();
+        fx.MergeWidgets(("W1", "alpha", 1));
+        Assert.Equal(SnapshotPublishStatus.Published, fx.Publish().Status);
+        InsertCycle("cycle-1", boot.AddSeconds(1), into: fx.Store);
+        InsertPump("cycle-1", "Widget", boot.AddSeconds(1), into: fx.Store);
+        InsertFetch("run-1", "sql-a", boot.AddSeconds(1), into: fx.Store);
+
+        var result = SnapshotRunLog.Flush(fx.Store, Options(), SnapshotName, BootId, boot, lastFlushedThrough: null);
+
+        // A provenance column that a table already has must not be added again. Both copies would
+        // survive the export, the second one renamed, so this compares the whole column list.
+        string[] provenance = ["SnapshotName", "BootId", "HostInstance", "PackageVersion", "FlushedAt"];
+        (string Table, string Folder)[] tables =
+        [
+            ("SyncRuns", SnapshotRunLog.SyncRunsFolder),
+            ("PublishRuns", SnapshotRunLog.PublishRunsFolder),
+            ("CycleRuns", SnapshotRunLog.CycleRunsFolder),
+            ("PumpRuns", SnapshotRunLog.PumpRunsFolder),
+            ("FetchRuns", SnapshotRunLog.FetchRunsFolder),
+        ];
+        Assert.Equal(tables.Length, result.FilesWritten.Count);
+        foreach (var (table, folder) in tables)
+        {
+            var file = Assert.Single(result.FilesWritten, f => f.Contains(folder));
+            var tableColumns = TableColumns(fx.Store, table);
+            string[] expected = [.. tableColumns, .. provenance.Where(column => !tableColumns.Contains(column))];
+            Assert.Equal(expected, FileColumns(file));
+        }
     }
 
     [Fact]
@@ -240,7 +281,8 @@ public sealed class SnapshotRunLogTests : IDisposable
     [Theory]
     [InlineData("meta.CycleRuns")]
     [InlineData("meta.PumpRuns")]
-    public void TheCycleAndPumpTables_AreAddedToAnExistingWriteDb_WithoutAVersionBump(string table)
+    [InlineData("meta.FetchRuns")]
+    public void ARunTableAddedLater_IsAddedToAnExistingWriteDb_WithoutAVersionBump(string table)
     {
         // A write DB from before the table existed: opened, the table dropped, closed. Reopening
         // must add it back on the same schema version and never call for a rebuild.
@@ -285,6 +327,33 @@ public sealed class SnapshotRunLogTests : IDisposable
     }
 
     [Fact]
+    public void FetchRuns_AreCopiedToo_UnderTheirOwnFolder_WithoutAnErrorColumn()
+    {
+        // Two reads placed by hand, the way the dispatcher writes them: one that fed a run, and
+        // one whose drain threw, so it has no run id.
+        var readStart = boot.AddSeconds(1);
+        InsertFetch("run-1", "sql-a", readStart, rowsFetched: 7, took: TimeSpan.FromSeconds(30));
+        InsertFetch(null, "sql-b", readStart.AddSeconds(2), rowsFetched: 2);
+
+        var result = Flush();
+
+        var file = Assert.Single(result.FilesWritten, f => f.Contains(SnapshotRunLog.FetchRunsFolder));
+        Assert.Equal(Path.Combine(root, SnapshotRunLog.FetchRunsFolder, DayOf(readStart), $"{BootId}.parquet"), file);
+        Assert.Equal(2, Count(file));
+        // Ordered by start time; the read's facts read back as written; the provenance beside them.
+        Assert.Equal("sql-a", Read($"SELECT \"Source\" FROM read_parquet('{Sql(file)}') LIMIT 1"));
+        Assert.Equal(30_000L, Convert.ToInt64(Read(
+            $"SELECT date_diff('millisecond', \"StartedAt\", \"FinishedAt\") FROM read_parquet('{Sql(file)}') WHERE \"Source\" = 'sql-a'")));
+        Assert.Equal(7L, Convert.ToInt64(Read($"SELECT \"RowsFetched\" FROM read_parquet('{Sql(file)}') WHERE \"RunId\" = 'run-1'")));
+        Assert.Equal(1L, Convert.ToInt64(Read($"SELECT count(*) FROM read_parquet('{Sql(file)}') WHERE \"Source\" = 'sql-b' AND \"RunId\" IS NULL")));
+        Assert.Equal(BootId, Read($"SELECT DISTINCT \"BootId\" FROM read_parquet('{Sql(file)}')"));
+        Assert.Equal(SnapshotName, Read($"SELECT DISTINCT \"SnapshotName\" FROM read_parquet('{Sql(file)}')"));
+        // A failed read's error is on its Failed:Fetch run, so this table has no Error column.
+        Assert.Equal(0L, Convert.ToInt64(Read($"SELECT count(*) FROM parquet_schema('{Sql(file)}') WHERE name = 'Error'")));
+        Assert.DoesNotContain(result.FilesWritten, f => f.Contains(SnapshotRunLog.SyncRunsFolder));
+    }
+
+    [Fact]
     public void Prune_DeletesFlushedRowsOfEarlierDays_AndKeepsToday_TheUnflushed_AndTheNewestPerSource()
     {
         // A fixed calendar: "today" is the 12th, and the last flush that wrote started at 23:30 on
@@ -309,6 +378,8 @@ public sealed class SnapshotRunLogTests : IDisposable
         InsertPublish("publish-today", twelfth);
         InsertPump("cycle-old", "Widget", tenth);
         InsertPump("cycle-today", "Widget", twelfth);
+        InsertFetch("a-old", "A", tenth);
+        InsertFetch("b-today", "B", twelfth);
         var newestBefore = snapshot.Store.ReadLatestRunPerSource().Select(run => $"{run.SourceKey} {run.StartedAt:O}").ToArray();
 
         var result = SnapshotRunLog.Prune(snapshot.Store, flushedThrough, today);
@@ -318,12 +389,15 @@ public sealed class SnapshotRunLogTests : IDisposable
         Assert.Equal(1L, result.RowsDeleted["meta.CycleRuns"]);
         Assert.Equal(1L, result.RowsDeleted["meta.PublishRuns"]);
         Assert.Equal(1L, result.RowsDeleted["meta.PumpRuns"]);
-        Assert.Equal(5, result.Total);
+        Assert.Equal(1L, result.RowsDeleted["meta.FetchRuns"]);
+        Assert.Equal(6, result.Total);
         Assert.Equal("a-newest,b-late,b-today,c-today",
             snapshot.Scalar<string>("SELECT string_agg(\"RunId\", ',' ORDER BY \"RunId\") FROM meta.SyncRuns"));
         Assert.Equal("cycle-today", snapshot.Scalar<string>("SELECT string_agg(\"CycleId\", ',') FROM meta.CycleRuns"));
         Assert.Equal("publish-today", snapshot.Scalar<string>("SELECT string_agg(\"PublishId\", ',') FROM meta.PublishRuns"));
         Assert.Equal("cycle-today", snapshot.Scalar<string>("SELECT string_agg(\"CycleId\", ',') FROM meta.PumpRuns"));
+        // A read keeps nothing back for the manifest: its row goes with its day, like the cycle's.
+        Assert.Equal("b-today", snapshot.Scalar<string>("SELECT string_agg(\"RunId\", ',') FROM meta.FetchRuns"));
         // What the publisher reads into the manifest is exactly what it read before.
         Assert.Equal(newestBefore, snapshot.Store.ReadLatestRunPerSource().Select(run => $"{run.SourceKey} {run.StartedAt:O}").ToArray());
 
@@ -363,6 +437,38 @@ public sealed class SnapshotRunLogTests : IDisposable
     private static string DayOf(DateTime value) =>
         SnapshotRunLog.PartitionPrefix + value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
 
+    /// <summary>
+    /// The columns stored in one file, in file order. Hive detection is off, because a single file
+    /// under a <c>date=</c> folder would otherwise gain a <c>date</c> column it does not store.
+    /// </summary>
+    private static string[] FileColumns(string parquet)
+    {
+        using var reader = new DuckDBConnection("Data Source=:memory:");
+        reader.Open();
+        return Names(reader, $"DESCRIBE SELECT * FROM read_parquet('{Sql(parquet)}', hive_partitioning = false)");
+    }
+
+    /// <summary>The columns of one run table in the write DB, in table order.</summary>
+    private static string[] TableColumns(SnapshotStore store, string table) =>
+        Names(store.Connection,
+            $"""
+            SELECT column_name FROM information_schema.columns
+            WHERE table_schema = 'meta' AND lower(table_name) = lower('{table}')
+            ORDER BY ordinal_position
+            """);
+
+    /// <summary>The first column of every row, as text.</summary>
+    private static string[] Names(DuckDBConnection connection, string sql)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        using var reader = command.ExecuteReader();
+        var names = new List<string>();
+        while (reader.Read())
+            names.Add(reader.GetString(0));
+        return [.. names];
+    }
+
     /// <summary>A run row placed by hand, the way the merge writes one but with a chosen start time.</summary>
     private void InsertRun(string runId, DateTime startedAt, string? error = null, string source = "test-source", DateTime? finishedAt = null) =>
         snapshot.Store.Execute(
@@ -373,9 +479,9 @@ public sealed class SnapshotRunLogTests : IDisposable
             """,
             runId, source, startedAt, finishedAt ?? startedAt.AddSeconds(1), error is null ? "Succeeded" : "Failed:Exception", error);
 
-    /// <summary>A cycle row placed by hand, with a chosen start time.</summary>
-    private void InsertCycle(string cycleId, DateTime startedAt) =>
-        snapshot.Store.Execute(
+    /// <summary>A cycle row placed by hand, with a chosen start time, in this suite's write DB unless another is named.</summary>
+    private void InsertCycle(string cycleId, DateTime startedAt, SnapshotStore? into = null) =>
+        (into ?? snapshot.Store).Execute(
             "INSERT INTO meta.CycleRuns (\"CycleId\", \"StartedAt\", \"FinishedAt\", \"Outcome\") VALUES (?, ?, ?, 'Ran')",
             cycleId, startedAt, startedAt.AddSeconds(1));
 
@@ -385,13 +491,25 @@ public sealed class SnapshotRunLogTests : IDisposable
             "INSERT INTO meta.PublishRuns (\"PublishId\", \"SnapshotName\", \"StartedAt\", \"FinishedAt\", \"Status\") VALUES (?, ?, ?, ?, 'Published')",
             publishId, SnapshotName, startedAt, startedAt.AddSeconds(1));
 
-    /// <summary>A pump row placed by hand, the way the loop writes one but with a chosen start time.</summary>
-    private void InsertPump(string cycleId, string table, DateTime startedAt, long rowsRead = 0, bool drained = true, string stopReason = "QueueEmpty") =>
-        snapshot.Store.Execute(
+    /// <summary>A pump row placed by hand, the way the loop writes one but with a chosen start time, in this suite's write DB unless another is named.</summary>
+    private void InsertPump(
+        string cycleId, string table, DateTime startedAt, long rowsRead = 0, bool drained = true, string stopReason = "QueueEmpty",
+        SnapshotStore? into = null) =>
+        (into ?? snapshot.Store).Execute(
             """
             INSERT INTO meta.PumpRuns
             ("CycleId", "Table", "StartedAt", "FinishedAt", "RowsRead", "Upserted", "Drained", "StopReason")
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             cycleId, table, startedAt, startedAt.AddSeconds(1), rowsRead, rowsRead, drained, stopReason);
+
+    /// <summary>A read's row placed by hand, the way the dispatcher writes one but with a chosen start time, in this suite's write DB unless another is named.</summary>
+    private void InsertFetch(
+        string? runId, string source, DateTime startedAt, long rowsFetched = 1, TimeSpan? took = null, SnapshotStore? into = null) =>
+        (into ?? snapshot.Store).Execute(
+            """
+            INSERT INTO meta.FetchRuns ("RunId", "Source", "StartedAt", "FinishedAt", "RowsFetched", "Failed")
+            VALUES (?, ?, ?, ?, ?, false)
+            """,
+            runId, source, startedAt, startedAt + (took ?? TimeSpan.FromSeconds(1)), rowsFetched);
 }

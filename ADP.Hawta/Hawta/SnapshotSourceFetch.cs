@@ -42,7 +42,9 @@ public sealed class SnapshotSourceFetchContext
 /// needing the store, and the drain should write the run record that says so; and <c>Faulted</c>
 /// — the fetch threw. Only the first two are values of this type: a fault is the exception
 /// itself, which the dispatcher catches on the worker and re-raises in registry order on the
-/// drain, exactly where the one-phase form would have raised it.</para>
+/// drain, exactly where the one-phase form would have raised it. A fetch that throws returns no
+/// value of this type, so it has no drain delegate to write its run record. The dispatcher's
+/// drain writes that record instead, as <c>Failed:Fetch</c>.</para>
 ///
 /// <para><b>Both cases carry a delegate the DRAIN runs</b>, and that is not a formality. Nine
 /// terminal paths across three ingestors end a run BEFORE the merge, and every one of them writes

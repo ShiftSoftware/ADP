@@ -88,8 +88,9 @@ public sealed record SnapshotRunLogPruneResult(
 /// <summary>
 /// Copies the engine's run history out of the write DB as parquet, so it can be read outside the
 /// process: <c>meta.SyncRuns</c> (every source run, including every skip and its reason),
-/// <c>meta.PublishRuns</c> (every publish attempt), <c>meta.CycleRuns</c> (every loop cycle) and
-/// <c>meta.PumpRuns</c> (every table's pump drain within a cycle).
+/// <c>meta.PublishRuns</c> (every publish attempt), <c>meta.CycleRuns</c> (every loop cycle),
+/// <c>meta.PumpRuns</c> (every table's pump drain within a cycle) and <c>meta.FetchRuns</c> (how
+/// long each read from a source took, for sources that read ahead of the merge).
 ///
 /// <para><b>Why it exists.</b> The write DB lives on instance-local disk and a host may delete it at
 /// every start, so the run history never left the process and was lost at every deploy. The
@@ -144,6 +145,9 @@ public static class SnapshotRunLog
     /// <summary>Folder for <c>meta.PumpRuns</c> under the run-log root.</summary>
     public const string PumpRunsFolder = "pump-runs";
 
+    /// <summary>Folder for <c>meta.FetchRuns</c> under the run-log root.</summary>
+    public const string FetchRunsFolder = "fetch-runs";
+
     /// <summary>The day folder's prefix. Hive style, so <c>read_parquet(…, hive_partitioning = true)</c> yields a <c>date</c> column and prunes on it.</summary>
     public const string PartitionPrefix = "date=";
 
@@ -157,19 +161,25 @@ public static class SnapshotRunLog
         typeof(SnapshotRunLog).Assembly.GetName().Version?.ToString() ?? "0.0.0";
 
     /// <summary>
-    /// The run tables the exporter copies: where each lands, the order its rows are written in, and
-    /// whether it carries an <c>Error</c> column to shorten. The pump table has none: a drain that
-    /// throws fails the cycle, and the cycle row carries that error.
+    /// The run tables the exporter copies: where each lands, the order its rows are written in,
+    /// whether it carries an <c>Error</c> column to shorten, and whether it already records the
+    /// snapshot name. The pump table has no <c>Error</c> column: a drain that throws fails the
+    /// cycle, and the cycle row carries that error. The fetch table has none either: a read that
+    /// threw has a <c>Failed:Fetch</c> run in <c>meta.SyncRuns</c>, and that row carries the
+    /// error. The publish table records the snapshot name itself, so the provenance column must
+    /// not add it a second time.
     /// </summary>
     private static readonly RunTable[] Tables =
     [
         new("meta.SyncRuns", SyncRunsFolder, ["StartedAt", "RunId"]),
-        new("meta.PublishRuns", PublishRunsFolder, ["StartedAt", "PublishId"]),
+        new("meta.PublishRuns", PublishRunsFolder, ["StartedAt", "PublishId"], RecordsSnapshotName: true),
         new("meta.CycleRuns", CycleRunsFolder, ["StartedAt", "CycleId"]),
         new("meta.PumpRuns", PumpRunsFolder, ["StartedAt", "CycleId", "Table"], HasErrorColumn: false),
+        new("meta.FetchRuns", FetchRunsFolder, ["StartedAt", "Source"], HasErrorColumn: false),
     ];
 
-    private sealed record RunTable(string QualifiedName, string Folder, string[] OrderBy, bool HasErrorColumn = true);
+    private sealed record RunTable(
+        string QualifiedName, string Folder, string[] OrderBy, bool HasErrorColumn = true, bool RecordsSnapshotName = false);
 
     /// <summary>
     /// A new boot id: the boot time in the publisher's timestamp form, then eight random hex
@@ -320,15 +330,23 @@ public static class SnapshotRunLog
         var columns = table.HasErrorColumn
             ? $"* REPLACE (left(\"Error\", {options.ErrorTextLimit}) AS \"Error\")"
             : "*";
+
+        // A table that already records the snapshot name keeps its own column, and the provenance
+        // column is left out. COPY does not reject a repeated column name: it writes the second
+        // one as "SnapshotName_1", and every reader then sees two columns for one fact.
+        var provenance = new List<string>();
+        if (!table.RecordsSnapshotName)
+            provenance.Add($"'{Sql(snapshotName)}' AS \"SnapshotName\"");
+        provenance.Add($"'{Sql(bootId)}' AS \"BootId\"");
+        provenance.Add($"{hostInstance} AS \"HostInstance\"");
+        provenance.Add($"'{Sql(PackageVersion)}' AS \"PackageVersion\"");
+        provenance.Add($"{Timestamp(flushedAt)} AS \"FlushedAt\"");
+
         store.Execute(
             $"""
             COPY (
                 SELECT {columns},
-                       '{Sql(snapshotName)}' AS "SnapshotName",
-                       '{Sql(bootId)}' AS "BootId",
-                       {hostInstance} AS "HostInstance",
-                       '{Sql(PackageVersion)}' AS "PackageVersion",
-                       {Timestamp(flushedAt)} AS "FlushedAt"
+                       {string.Join(", ", provenance)}
                 FROM {table.QualifiedName}
                 WHERE {predicate}
                 ORDER BY {orderBy}

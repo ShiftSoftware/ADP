@@ -113,7 +113,7 @@ public sealed class SnapshotAgentOptions
     /// <summary>
     /// The run-log exporter. Null keeps it off, the incumbent behaviour. When set, the loop copies
     /// the run tables (<c>meta.SyncRuns</c>, <c>meta.PublishRuns</c>, <c>meta.CycleRuns</c>,
-    /// <c>meta.PumpRuns</c>) to parquet on <see cref="SnapshotRunLogOptions.Cadence"/>, once more
+    /// <c>meta.PumpRuns</c>, <c>meta.FetchRuns</c>) to parquet on <see cref="SnapshotRunLogOptions.Cadence"/>, once more
     /// at shutdown, and never per cycle. Facts only, into a location of its own, never into the
     /// published set. A flush that fails is a warning, never a failed cycle. Once a day, after a
     /// cadence flush, the loop also prunes flushed rows of earlier days out of the write DB
@@ -436,8 +436,10 @@ public sealed class SnapshotAgentLoop : IDisposable
                     {
                         // The merge already wrote its Failed:Exception run record; the loop's job
                         // is to contain the failure so the other sources still run. A fetch that
-                        // threw wrote nothing at all — same as a source that threw before reaching
-                        // a merge has always done.
+                        // threw has a Failed:Fetch run record, and a drain that threw before its
+                        // merge a Failed:Exception one, both written by the dispatcher's drain. A
+                        // one-phase source that threw before reaching a merge wrote nothing, as
+                        // it always has.
                         sourceRuns.Add(new SnapshotAgentSourceRun(source.Key, null, exception));
                         Emit(SnapshotAgentEventLevel.Error, "Ingest crashed.", source.Key, exception);
                         return;
@@ -891,7 +893,10 @@ public sealed class SnapshotAgentLoop : IDisposable
     /// <summary>
     /// Writes the cycle's row in <c>meta.CycleRuns</c>: what the cycle did, as recorded facts.
     /// <c>SourcesRun</c> counts sources that reached a merge (their own outcome is in
-    /// <c>meta.SyncRuns</c>); <c>SourcesFailed</c> counts sources that crashed before one. Then one
+    /// <c>meta.SyncRuns</c>); <c>SourcesFailed</c> counts sources that crashed before one. A
+    /// source whose fetch crashed is counted as failed, and its <c>Failed:Fetch</c> row in
+    /// <c>meta.SyncRuns</c> names it; one whose drain crashed after a good fetch has a
+    /// <c>Failed:Exception</c> row. Then one
     /// row per pumped table in <c>meta.PumpRuns</c>: the facts the cycle row sums, and the ones a
     /// sum cannot keep. Only when the store is open, which it is not for a cycle that failed to
     /// open it. Contained: a row that cannot be written is a warning, and the cycle's own outcome

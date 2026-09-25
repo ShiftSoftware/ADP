@@ -382,6 +382,26 @@ public sealed class SnapshotStore : IDisposable
             )
             """);
 
+        // How long each read from a source took, for sources that read ahead of the merge. The
+        // times in meta.SyncRuns cover the merge only, and the read is most of a run's time. One
+        // row per read the drain reached: when it started and finished, the rows it brought back,
+        // and whether it threw. RunId is the meta.SyncRuns row the read fed. It is null only when
+        // no run record could be read or written. A read stopped by shutdown has no row.
+        // Written by the dispatcher's drain, copied out by the run log, never published. Same
+        // additive terms as meta.CycleRuns above. This table may be dropped once sources read
+        // through SQL Change Tracking instead of in full.
+        Execute(
+            """
+            CREATE TABLE IF NOT EXISTS meta.FetchRuns (
+                "RunId" VARCHAR,
+                "Source" VARCHAR NOT NULL,
+                "StartedAt" TIMESTAMP NOT NULL,
+                "FinishedAt" TIMESTAMP NOT NULL,
+                "RowsFetched" BIGINT NOT NULL DEFAULT 0,
+                "Failed" BOOLEAN NOT NULL DEFAULT false
+            )
+            """);
+
         // The source change gate's memory: what each file source looked like the last time its
         // merge SUCCEEDED. Additive, so an existing write DB gains it empty on the next open and
         // no schema-version bump (and therefore no forced cold-start rebuild) is needed — every
@@ -681,10 +701,12 @@ public sealed class SnapshotStore : IDisposable
     /// The newest run record per source, for publishing alongside the set it describes. Read at
     /// publish time, when no merge is in flight.
     ///
-    /// <para>A source that has never run has no entry, and that absence is the point: a source
-    /// crashing before it can stage anything writes no run record at all, so "never ran" and
-    /// "failing every tick" both present as an absent row — which a consumer must be able to tell
-    /// from a source that ran and found nothing.</para>
+    /// <para>A source that has never run has no entry. A source that reads ahead of its merge and
+    /// fails has a failure record: <c>Failed:Fetch</c> when its read threw, <c>Failed:Exception</c>
+    /// when what came after the read threw. A one-phase source that crashes before it can stage
+    /// anything still writes no run record at all, so for those sources "never ran" and "failing
+    /// every tick" both present as an absent row, which a consumer must be able to tell from a
+    /// source that ran and found nothing.</para>
     /// </summary>
     public IReadOnlyList<SourceRunSummary> ReadLatestRunPerSource()
     {

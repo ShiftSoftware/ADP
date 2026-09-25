@@ -254,6 +254,20 @@ public sealed class SnapshotAgentLoopTests : IDisposable
 
         // No hot-looping a dead source, exactly as a crashing one-phase source behaves.
         Assert.Same(SnapshotAgentCycle.Idle, await loop.RunCycleAsync(TestContext.Current.CancellationToken));
+
+        // The loop is idle now, so its store may be read. The crash is a run record, not silence,
+        // and the cycle still counts the source as failed rather than as run.
+        var store = loop.Store!;
+        Assert.Equal("Failed:Fetch", store.ExecuteScalar("SELECT \"Status\" FROM meta.SyncRuns WHERE \"Source\" = 'broken'"));
+        Assert.Equal("dealer box unreachable", store.ExecuteScalar("SELECT \"Error\" FROM meta.SyncRuns WHERE \"Source\" = 'broken'"));
+        Assert.Equal(1, Convert.ToInt32(store.ExecuteScalar("SELECT \"SourcesRun\" FROM meta.CycleRuns WHERE \"CycleId\" = ?", cycle.CycleId)));
+        Assert.Equal(1, Convert.ToInt32(store.ExecuteScalar("SELECT \"SourcesFailed\" FROM meta.CycleRuns WHERE \"CycleId\" = ?", cycle.CycleId)));
+
+        // Both reads are timed, each linked to its source's run record.
+        Assert.Equal(2L, Convert.ToInt64(store.ExecuteScalar(
+            "SELECT count(*) FROM meta.FetchRuns f JOIN meta.SyncRuns s USING (\"RunId\") WHERE f.\"Source\" = s.\"Source\"")));
+        Assert.Equal(true, store.ExecuteScalar("SELECT \"Failed\" FROM meta.FetchRuns WHERE \"Source\" = 'broken'"));
+        Assert.Equal(false, store.ExecuteScalar("SELECT \"Failed\" FROM meta.FetchRuns WHERE \"Source\" = 'healthy'"));
     }
 
     [Fact]

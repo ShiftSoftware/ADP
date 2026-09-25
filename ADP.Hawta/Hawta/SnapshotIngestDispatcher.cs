@@ -114,7 +114,11 @@ public sealed record SnapshotFetchProgress(
 
 /// <summary>One source's outcome, handed to the caller ON THE DRAIN THREAD, in registry order.</summary>
 /// <param name="Merge">Null when the source threw; see <paramref name="Failure"/>.</param>
-/// <param name="Failure">Null on success. A fetch fault surfaces here, at the source's registry position.</param>
+/// <param name="Failure">
+/// Null on success. A fetch fault surfaces here, at the source's registry position, and the drain
+/// has already written its <c>Failed:Fetch</c> run record by then. A two-phase source's drain
+/// fault has its <c>Failed:Exception</c> run record by then too.
+/// </param>
 /// <param name="Fetch">Wall time of the parallel half. Zero for a one-phase source.</param>
 /// <param name="Drain">Wall time of the serial half — for a one-phase source, the whole ingest.</param>
 public sealed record SnapshotIngestOutcome(
@@ -182,6 +186,23 @@ public static class SnapshotIngestDispatcher
     /// <see cref="SnapshotIngestOutcome.Failure"/>, so one bad source cannot decide the fate of
     /// the others. An exception from <paramref name="onDrained"/> is NOT contained — that is the
     /// caller's own assertion failing, and swallowing it would turn a drill into a pass.</para>
+    ///
+    /// <para>A fetch that throws is also RECORDED: the drain writes a <c>Failed:Fetch</c> row to
+    /// <c>meta.SyncRuns</c> with the fetch's own times and error. The fetch never reached its drain
+    /// delegate, which is where the source's run record is normally written, so without this row
+    /// the source would leave no trace. A fetch stopped by cancellation is not recorded.</para>
+    ///
+    /// <para>So is a drain that throws after a good fetch. The merge records its own failure before
+    /// it rethrows. A drain that throws before its merge, in staging for example, has written
+    /// nothing, and the dispatcher writes a <c>Failed:Exception</c> row for it with the drain's
+    /// times and error. A two-phase source therefore never fails without a run record. A one-phase
+    /// source that throws before its merge still writes nothing, as it always has.</para>
+    ///
+    /// <para>Every fetch the drain reaches, whether it succeeded or threw, also gets a row in
+    /// <c>meta.FetchRuns</c> with its own start and finish times, because the run record times only
+    /// the merge. That row carries the run id of the source's run record, which the drain learns
+    /// from the merge result or from the failure records above. Nothing is passed into the merge
+    /// for it. The run id is null only when no run record could be read or written.</para>
     /// </summary>
     public static async Task<SnapshotIngestReport> RunAsync(
         SnapshotIngestDispatcherOptions options,
@@ -234,6 +255,9 @@ public static class SnapshotIngestDispatcher
                 Exception? failure = null;
                 var fetchElapsed = TimeSpan.Zero;
                 var drainClock = new Stopwatch();
+                var drainStartedAt = default(DateTime);
+                FetchSlot? fetched = null;
+                string? fetchFailureRunId = null;
 
                 try
                 {
@@ -246,7 +270,7 @@ public static class SnapshotIngestDispatcher
                         // Awaited without WaitAsync(token) on purpose: abandoning a running worker
                         // would leave a thread filling a buffer nobody owns. Its own token check
                         // (one per row) is what makes it stop.
-                        var fetched = await slot.Task.ConfigureAwait(false);
+                        fetched = await slot.Task.ConfigureAwait(false);
                         fetchElapsed = fetched.Elapsed;
 
                         // The buffer is accounted until the drain is DONE with it — it is still in
@@ -260,6 +284,7 @@ public static class SnapshotIngestDispatcher
                             }
                             else
                             {
+                                drainStartedAt = DateTime.UtcNow;
                                 drainClock.Start();
                                 merge = fetched.Fetch!.Drain(context);
                                 drainClock.Stop();
@@ -280,6 +305,14 @@ public static class SnapshotIngestDispatcher
                             run.StoppedEarly = true;
                             break;
                         }
+
+                        // A fetch that threw never reached its drain delegate, and that delegate
+                        // is the only thing that writes this source's run record. So the drain
+                        // writes a Failed:Fetch record here instead, on its own thread like every
+                        // other run record. A shutdown never reaches this line (see above): stopping
+                        // is not a failure of the source.
+                        if (fetched.Failure is { } fetchFailure)
+                            fetchFailureRunId = RecordFetchFailure(options.Store, source, fetched, fetchFailure);
                     }
                     else
                     {
@@ -299,6 +332,21 @@ public static class SnapshotIngestDispatcher
                 }
 
                 drainClock.Stop();
+
+                if (fetched is not null)
+                {
+                    // The run id comes from the drain's result, or from the Failed:Fetch record
+                    // written above. A drain that threw after a good fetch has neither, so its
+                    // run record is found, or written if it has none.
+                    var runId = merge?.RunId ?? fetchFailureRunId;
+                    if (fetched.Failure is null && failure is not null)
+                        runId = RecordDrainFailure(options.Store, source, drainStartedAt, failure);
+
+                    // The read's own times, whatever the drain made of them. Written here, after
+                    // the catch, so a drain that threw still records how long its read took.
+                    RecordFetch(options.Store, source, fetched, runId);
+                }
+
                 run.SourcesDrained++;
                 onDrained(new SnapshotIngestOutcome(source, merge, failure, fetchElapsed, drainClock.Elapsed));
             }
@@ -311,12 +359,101 @@ public static class SnapshotIngestDispatcher
         return run.ToReport();
     }
 
-    /// <summary>A completed fetch, or the exception that replaced it. The task carrying this never faults.</summary>
+    /// <summary>
+    /// Writes the run record for a fetch that threw, and returns its run id. The record must never
+    /// hide the failure it describes, so a record that cannot be written is ignored and the run id
+    /// is null. The failure still reaches the caller through <see cref="SnapshotIngestOutcome.Failure"/>.
+    /// </summary>
+    private static string? RecordFetchFailure(SnapshotStore store, SnapshotSource source, FetchSlot fetched, Exception failure)
+    {
+        try
+        {
+            return SnapshotMerge.InsertFetchFailureRecord(
+                store, source, fetched.StartedAt, fetched.StartedAt + fetched.Elapsed, failure);
+        }
+        catch
+        {
+            // The same rule as the merge's own failure record: recording never masks the original failure.
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Makes sure a drain that threw after a good fetch has a run record, and returns its run id.
+    ///
+    /// <para>The drain may have written one already: the merge records its own failure as
+    /// <c>Failed:Exception</c> before it rethrows. The drain runs on this thread and nothing else
+    /// writes run records, so a record for this source that started after the drain did is that
+    /// one. A drain that threw before reaching the merge has none. Staging that stops on a renamed
+    /// view column is the usual case, and without a record here such a source would read and fail
+    /// every cycle and leave no run at all. So one is written, as <c>Failed:Exception</c>.</para>
+    ///
+    /// <para>The lookup compares system-clock times. A clock stepped back between the drain's
+    /// start and the merge's would hide the merge's record, and the run would then have two
+    /// failure records. As with the fetch failure record, nothing here may hide the failure: a
+    /// record that cannot be read or written is skipped, and the run id is null.</para>
+    /// </summary>
+    private static string? RecordDrainFailure(SnapshotStore store, SnapshotSource source, DateTime drainStartedAt, Exception failure)
+    {
+        try
+        {
+            // Cut to whole microseconds, the precision a run record's time is stored with, so a
+            // record the merge wrote after this instant can never compare as earlier than it.
+            var since = new DateTime(drainStartedAt.Ticks - drainStartedAt.Ticks % 10, DateTimeKind.Utc);
+            if (store.ExecuteScalar(
+                    """
+                    SELECT "RunId" FROM meta.SyncRuns
+                    WHERE "Source" = ? AND "StartedAt" >= ?
+                    ORDER BY "StartedAt" DESC, "RunId" DESC
+                    LIMIT 1
+                    """,
+                    source.Key, since) is string recorded)
+            {
+                return recorded;
+            }
+
+            return SnapshotMerge.InsertDrainFailureRecord(store, source, drainStartedAt, DateTime.UtcNow, failure);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Writes one row to <c>meta.FetchRuns</c>: when the read started and finished, how many rows it
+    /// brought back, whether it threw, and the run it fed. The run's own record in
+    /// <c>meta.SyncRuns</c> times only the merge. A row that cannot be written is skipped, because a
+    /// timing must never decide the fate of the run it describes.
+    /// </summary>
+    private static void RecordFetch(SnapshotStore store, SnapshotSource source, FetchSlot fetched, string? runId)
+    {
+        try
+        {
+            store.Execute(
+                """
+                INSERT INTO meta.FetchRuns ("RunId", "Source", "StartedAt", "FinishedAt", "RowsFetched", "Failed")
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                runId, source.Key, fetched.StartedAt, fetched.StartedAt + fetched.Elapsed,
+                fetched.AccountedRows, fetched.Failure is not null);
+        }
+        catch
+        {
+            // Skipped, as above: the run's outcome has already been decided and recorded.
+        }
+    }
+
+    /// <summary>
+    /// A completed fetch, or the exception that replaced it. The task carrying this never faults.
+    /// <see cref="StartedAt"/> is read from the system clock, like the times on every run record.
+    /// </summary>
     private sealed record FetchSlot(
         SnapshotSourceFetch? Fetch,
         Exception? Failure,
         TimeSpan Elapsed,
-        long AccountedRows);
+        long AccountedRows,
+        DateTime StartedAt);
 
     private sealed class Run
     {
@@ -477,13 +614,14 @@ public static class SnapshotIngestDispatcher
             {
                 // The thread itself could not be created. The slot MUST still complete or the
                 // drain waits on it forever.
-                completion.TrySetResult(new FetchSlot(null, exception, TimeSpan.Zero, 0));
+                completion.TrySetResult(new FetchSlot(null, exception, TimeSpan.Zero, 0, DateTime.UtcNow));
                 ReleaseWorker(group);
             }
         }
 
         private void Fetch(SnapshotSource source, TaskCompletionSource<FetchSlot> completion, string? group)
         {
+            var startedAt = DateTime.UtcNow;
             var elapsed = Stopwatch.StartNew();
             long reported = 0;
             long accounted = 0;
@@ -505,14 +643,14 @@ public static class SnapshotIngestDispatcher
                 // fetch that reported nothing is accounted in full right here.
                 Track(Interlocked.Add(ref bufferedRows, fetch.BufferedRows - reported));
                 accounted = fetch.BufferedRows;
-                completion.TrySetResult(new FetchSlot(fetch, null, elapsed.Elapsed, fetch.BufferedRows));
+                completion.TrySetResult(new FetchSlot(fetch, null, elapsed.Elapsed, fetch.BufferedRows, startedAt));
             }
             catch (Exception exception)
             {
                 // Nothing survives a faulted fetch, so nothing stays accounted for it.
                 failure = exception;
                 Interlocked.Add(ref bufferedRows, -reported);
-                completion.TrySetResult(new FetchSlot(null, exception, elapsed.Elapsed, 0));
+                completion.TrySetResult(new FetchSlot(null, exception, elapsed.Elapsed, 0, startedAt));
             }
             finally
             {

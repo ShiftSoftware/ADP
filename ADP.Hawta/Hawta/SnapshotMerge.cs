@@ -440,6 +440,56 @@ public static class SnapshotMerge
             StatusText(result.Status), error);
     }
 
+    /// <summary>
+    /// The status of a run whose fetch threw. It is not a <see cref="SnapshotMergeStatus"/>: no
+    /// merge ran, so no merge result ever carries it. Only <see cref="InsertFetchFailureRecord"/>
+    /// writes it.
+    /// </summary>
+    internal const string FetchFailedStatus = "Failed:Fetch";
+
+    /// <summary>
+    /// The run record for a source whose fetch threw. A source's run record is normally written by
+    /// the drain delegate that its fetch returns. A fetch that throws returns no delegate, so
+    /// nothing else writes the record. Without this row, a source that cannot be reached leaves no
+    /// trace in <c>meta.SyncRuns</c>.
+    ///
+    /// <para>The times are the fetch's own, so the row also says how long the source took to
+    /// fail: a connection timeout shows as its timeout. Nothing was staged, so every row count is
+    /// zero. The error is the exception's message, the same text the merge records when it
+    /// throws.</para>
+    /// </summary>
+    /// <returns>The run id of the row written.</returns>
+    internal static string InsertFetchFailureRecord(
+        SnapshotStore store, SnapshotSource source, DateTime startedAt, DateTime finishedAt, Exception failure) =>
+        InsertSourceFailureRecord(store, source, FetchFailedStatus, startedAt, finishedAt, failure);
+
+    /// <summary>
+    /// The run record for a source whose fetch worked but whose drain threw before any run record
+    /// was written. Staging that stops on a renamed view column is the usual case. The status is
+    /// the one this merge records when it throws, because a reader sees the same fact either way:
+    /// the rows were read and did not reach the snapshot. The times are the drain's own, and every
+    /// row count is zero.
+    /// </summary>
+    /// <returns>The run id of the row written.</returns>
+    internal static string InsertDrainFailureRecord(
+        SnapshotStore store, SnapshotSource source, DateTime startedAt, DateTime finishedAt, Exception failure) =>
+        InsertSourceFailureRecord(store, source, StatusText(SnapshotMergeStatus.Failed), startedAt, finishedAt, failure);
+
+    private static string InsertSourceFailureRecord(
+        SnapshotStore store, SnapshotSource source, string status, DateTime startedAt, DateTime finishedAt, Exception failure)
+    {
+        var runId = Guid.NewGuid().ToString("N");
+        store.Execute(
+            """
+            INSERT INTO meta.SyncRuns
+            ("RunId", "Source", "TargetTable", "StartedAt", "FinishedAt",
+             "RowsStaged", "RowsInserted", "RowsUpdated", "RowsTombstoned", "Status", "Error")
+            VALUES (?, ?, ?, ?, ?, 0, 0, 0, 0, ?, ?)
+            """,
+            runId, source.Key, source.Table.Name, startedAt, finishedAt, status, failure.Message);
+        return runId;
+    }
+
     private static string StatusText(SnapshotMergeStatus status) => status switch
     {
         SnapshotMergeStatus.Succeeded => "Succeeded",

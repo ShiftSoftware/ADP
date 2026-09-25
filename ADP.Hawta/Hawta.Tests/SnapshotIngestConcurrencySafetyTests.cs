@@ -428,11 +428,58 @@ public sealed class SnapshotIngestConcurrencySafetyTests : IDisposable
         Assert.Equal(3, report.SourcesDrained);
 
         // The faulted source never reached staging, so there is no half-populated staging table to
-        // sweep and no run record claiming it merged. Its two neighbours are unaffected.
+        // sweep and nothing merged. Its two neighbours are unaffected.
         Assert.Equal(6, snapshot.Scalar<long>(
             "SELECT count(*) FROM data.\"Widget\" WHERE \"_Deleted\" = false"));
-        Assert.Equal(0, snapshot.Scalar<long>(
+
+        // It is not silent, though. Its one run record says the fetch failed and why, with every
+        // row count at zero, so no reader can take it for a merge.
+        Assert.Equal(1, snapshot.Scalar<long>(
             "SELECT count(*) FROM meta.\"SyncRuns\" WHERE \"Source\" = 'broken'"));
+        Assert.Equal(1, snapshot.Scalar<long>(
+            """
+            SELECT count(*) FROM meta."SyncRuns"
+            WHERE "Source" = 'broken' AND "Status" = 'Failed:Fetch' AND "Error" = 'the dealer box refused'
+              AND "TargetTable" = 'Widget' AND "FinishedAt" >= "StartedAt"
+              AND "RowsStaged" = 0 AND "RowsInserted" = 0 AND "RowsUpdated" = 0 AND "RowsTombstoned" = 0
+            """));
+
+        // Its read is timed like any other: failed, no rows, and linked to that run record by the
+        // same times, so the time it took to fail is in both places.
+        Assert.Equal(1, snapshot.Scalar<long>(
+            """
+            SELECT count(*) FROM meta.FetchRuns f JOIN meta.SyncRuns s USING ("RunId")
+            WHERE f."Source" = 'broken' AND s."Status" = 'Failed:Fetch' AND f."Failed" AND f."RowsFetched" = 0
+              AND f."StartedAt" = s."StartedAt" AND f."FinishedAt" = s."FinishedAt"
+            """));
+        Assert.Equal(2, snapshot.Scalar<long>(
+            "SELECT count(*) FROM meta.FetchRuns WHERE \"Source\" LIKE 'ok-%' AND NOT \"Failed\" AND \"RowsFetched\" = 3"));
+    }
+
+    [Fact]
+    public async Task AFetchStoppedByShutdown_LeavesNoRunRecord()
+    {
+        // Stopping is not a failure of the source. The drain is already waiting on this fetch when
+        // the shutdown arrives, so the fetch's own cancellation exception is what reaches the drain.
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var fetchReleased = NewGate();
+
+        var run = SnapshotIngestDispatcher.RunAsync(
+            new SnapshotIngestDispatcherOptions
+            {
+                Store = snapshot.Store,
+                Sources = [Fetching("stopped", rows: 3, gate: fetchReleased.Task)],
+                Degree = 2,
+            },
+            _ => throw new InvalidOperationException("A stopped fetch must not reach the drain callback."),
+            cancellation.Token);
+
+        await cancellation.CancelAsync();
+        fetchReleased.TrySetResult();
+
+        Assert.True((await run).StoppedEarly);
+        Assert.Equal(0, snapshot.Scalar<long>("SELECT count(*) FROM meta.\"SyncRuns\""));
+        Assert.Equal(0, snapshot.Scalar<long>("SELECT count(*) FROM meta.FetchRuns"));
     }
 
     [Fact]
@@ -461,6 +508,91 @@ public sealed class SnapshotIngestConcurrencySafetyTests : IDisposable
 
         Assert.Equal("merge blew up", outcomes[0].Failure!.Message);
         Assert.Equal(4, outcomes[1].Merge!.RowsInserted);
+
+        // The drain threw before any merge could record the run, so the dispatcher recorded it:
+        // one Failed:Exception run with the drain's error and nothing merged.
+        Assert.Equal(1, snapshot.Scalar<long>(
+            "SELECT count(*) FROM meta.SyncRuns WHERE \"Source\" = 'explodes-on-drain'"));
+        Assert.Equal(1, snapshot.Scalar<long>(
+            """
+            SELECT count(*) FROM meta.SyncRuns
+            WHERE "Source" = 'explodes-on-drain' AND "Status" = 'Failed:Exception' AND "Error" = 'merge blew up'
+              AND "TargetTable" = 'Widget' AND "FinishedAt" >= "StartedAt"
+              AND "RowsStaged" = 0 AND "RowsInserted" = 0 AND "RowsUpdated" = 0 AND "RowsTombstoned" = 0
+            """));
+
+        // The read before the failed drain still has its row, linked to that run. The read itself
+        // did not fail.
+        Assert.Equal(1, snapshot.Scalar<long>(
+            """
+            SELECT count(*) FROM meta.FetchRuns f JOIN meta.SyncRuns s USING ("RunId")
+            WHERE f."Source" = 'explodes-on-drain' AND s."Status" = 'Failed:Exception'
+              AND NOT f."Failed" AND f."RowsFetched" = 1
+            """));
+        Assert.Equal(outcomes[1].Merge!.RunId, snapshot.Scalar<string>(
+            "SELECT \"RunId\" FROM meta.FetchRuns WHERE \"Source\" = 'survivor'"));
+    }
+
+    [Fact]
+    public async Task AMergeThatThrows_IsRecordedOnce_ByTheMergeItself()
+    {
+        // The merge records its own failure before it rethrows. Here it throws inside its
+        // transaction: the target table is marked as kept in a published copy that is not there,
+        // so loading it back fails. The dispatcher must find that record and not add a second.
+        snapshot.Store.MarkTableDeferred(
+            snapshot.Table.Name, "gone.json",
+            [Path.Combine(Path.GetTempPath(), $"hawta-missing-{Guid.NewGuid():N}.parquet")],
+            rowCount: 1, contentHashes: []);
+        var outcomes = new List<SnapshotIngestOutcome>();
+
+        await SnapshotIngestDispatcher.RunAsync(
+            new SnapshotIngestDispatcherOptions { Store = snapshot.Store, Sources = [Fetching("merge-throws", rows: 2)], Degree = 2 },
+            outcomes.Add,
+            TestContext.Current.CancellationToken);
+
+        Assert.NotNull(Assert.Single(outcomes).Failure);
+        var recorded = snapshot.Scalar<string>(
+            "SELECT \"RunId\" FROM meta.SyncRuns WHERE \"Source\" = 'merge-throws' AND \"Status\" = 'Failed:Exception'");
+        Assert.Equal(1, snapshot.Scalar<long>("SELECT count(*) FROM meta.SyncRuns WHERE \"Source\" = 'merge-throws'"));
+        Assert.Equal(recorded, snapshot.Scalar<string>("SELECT \"RunId\" FROM meta.FetchRuns WHERE \"Source\" = 'merge-throws'"));
+    }
+
+    [Fact]
+    public async Task ADrainFailure_IsNeverFiledUnderAnEarlierRunOfTheSameSource()
+    {
+        // The same source succeeds once, then its drain throws before the merge. The failure must
+        // get a record of its own, and its read must link to that one, not to the earlier success.
+        await RunAsync([Fetching("flaky", rows: 2)]);
+        var succeeded = snapshot.Scalar<string>("SELECT \"RunId\" FROM meta.SyncRuns WHERE \"Source\" = 'flaky'");
+
+        await SnapshotIngestDispatcher.RunAsync(
+            new SnapshotIngestDispatcherOptions
+            {
+                Store = snapshot.Store,
+                Sources =
+                [
+                    new SnapshotSource
+                    {
+                        Key = "flaky",
+                        SourceScope = "flaky",
+                        RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("Code"),
+                        Table = snapshot.Table,
+                        Cadence = TimeSpan.FromMinutes(5),
+                        Fetch = _ => SnapshotSourceFetch.Staged(3, _ => throw new InvalidOperationException("staging blew up")),
+                    },
+                ],
+            },
+            _ => { },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal("Failed:Exception,Succeeded", snapshot.Scalar<string>(
+            "SELECT string_agg(\"Status\", ',' ORDER BY \"Status\") FROM meta.SyncRuns WHERE \"Source\" = 'flaky'"));
+        var failed = snapshot.Scalar<string>(
+            "SELECT \"RunId\" FROM meta.SyncRuns WHERE \"Source\" = 'flaky' AND \"Status\" = 'Failed:Exception'");
+        Assert.Equal(succeeded, snapshot.Scalar<string>(
+            "SELECT \"RunId\" FROM meta.FetchRuns WHERE \"Source\" = 'flaky' AND \"RowsFetched\" = 2"));
+        Assert.Equal(failed, snapshot.Scalar<string>(
+            "SELECT \"RunId\" FROM meta.FetchRuns WHERE \"Source\" = 'flaky' AND \"RowsFetched\" = 3"));
     }
 
     [Fact]
@@ -514,6 +646,61 @@ public sealed class SnapshotIngestConcurrencySafetyTests : IDisposable
         // cadence due — which matters because the loop's `nextDue` is written from this callback.
         Assert.Equal(0, report.SourcesDrained);
         Assert.Empty(drained);
+    }
+
+    // ---- Read timings --------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EveryRead_IsTimedByItsOwnClock_AndLinkedToTheRunItFed()
+    {
+        // The run record times only the merge. The read's own times go in meta.FetchRuns, so a
+        // slow read shows as slow however quick its merge was.
+        var outcomes = new List<SnapshotIngestOutcome>();
+        var slowRead = NewGate();
+
+        var run = SnapshotIngestDispatcher.RunAsync(
+            new SnapshotIngestDispatcherOptions
+            {
+                Store = snapshot.Store,
+                Sources =
+                [
+                    Fetching("slow", rows: 3, gate: slowRead.Task),
+                    Inline("one-phase", rows: 2),
+                    Fetching("quick", rows: 4),
+                ],
+                Degree = 2,
+            },
+            outcomes.Add,
+            TestContext.Current.CancellationToken);
+
+        // A hold, not a wait for a condition: the read is kept open for at least 200 ms after it
+        // started, and the assertion below is a lower bound, so this cannot make the test flaky.
+        await WaitUntilAsync(() => started.Contains("slow"));
+        await Task.Delay(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
+        slowRead.SetResult();
+        await run;
+
+        // One row per read. A one-phase source reads inside its merge, so it has no row here.
+        Assert.Equal(2, snapshot.Scalar<long>("SELECT count(*) FROM meta.FetchRuns"));
+        Assert.Equal(0, snapshot.Scalar<long>("SELECT count(*) FROM meta.FetchRuns WHERE \"Source\" = 'one-phase'"));
+
+        // Each row carries the run id of the merge it fed, and the read began before that merge.
+        foreach (var (key, rows) in new[] { ("slow", 3L), ("quick", 4L) })
+        {
+            var runId = outcomes.Single(outcome => outcome.Source.Key == key).Merge!.RunId;
+            Assert.Equal(1, snapshot.Scalar<long>(
+                """
+                SELECT count(*) FROM meta.FetchRuns f JOIN meta.SyncRuns s USING ("RunId")
+                WHERE f."RunId" = ? AND f."Source" = ? AND s."Source" = ? AND s."Status" = 'Succeeded'
+                  AND f."RowsFetched" = ? AND NOT f."Failed"
+                  AND f."StartedAt" <= f."FinishedAt" AND f."StartedAt" < s."StartedAt"
+                """,
+                runId, key, key, rows));
+        }
+
+        // The held read took as long as it was held.
+        Assert.True(snapshot.Scalar<long>(
+            "SELECT epoch_us(\"FinishedAt\") - epoch_us(\"StartedAt\") FROM meta.FetchRuns WHERE \"Source\" = 'slow'") >= 199_000);
     }
 
     // ---- Mixed estates -------------------------------------------------------------------------
