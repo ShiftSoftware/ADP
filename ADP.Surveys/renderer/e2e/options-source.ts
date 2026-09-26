@@ -26,7 +26,7 @@ import { api, apiJson, assert, assertEq, sql, step } from './lib/util.js';
 const TAG = `e2e-src-${Date.now()}`;
 const CITY_BANK = `${TAG}-city`;
 const BRANCH_BANK = `${TAG}-branch`;
-const REF_API = 'https://tiq-identity-server.azurewebsites.net/api/public';
+const REF_API = 'https://example.test/api/public';
 
 let token = '';
 let surveyHashId = '';

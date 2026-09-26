@@ -18,7 +18,9 @@ public static class SampleSurveySeeder
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DB>();
 
-        foreach (var recipe in SampleSurveys.All)
+        var referenceApiBaseUrl = app.Configuration[SampleReferenceApi.BaseUrlSetting] ?? SampleReferenceApi.DefaultBaseUrl;
+
+        foreach (var recipe in SampleSurveys.All(referenceApiBaseUrl))
         {
             foreach (var bank in recipe.Banks)
                 await EnsureBankAsync(db, bank);

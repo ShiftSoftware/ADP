@@ -130,8 +130,10 @@ builder.Services.AddSurveysApiServices<DB>(mvcBuilder, options =>
     // their own colors/logo here; the logo is served from this app's wwwroot.
     options.DefaultBranding = new ShiftSoftware.ADP.Surveys.Shared.DTOs.BrandingDto
     {
-        PrimaryColor = "#EB0A1E",
-        LogoUrl = "http://localhost:5134/toyota-logo.png",
+        // ShiftSoftware's dark gold. The renderer also draws focus rings and selected
+        // borders in the primary colour, and the bright brand gold is too pale on white.
+        PrimaryColor = "#7A5D08",
+        LogoUrl = "http://localhost:5134/shift-full.png",
     };
 });
 
@@ -157,6 +159,10 @@ app.MapShiftIdentityDashboard();
 // RegisterShiftRepositories; this maps the routes. The Surveys module's controllers are
 // classic ShiftEntitySecureControllerAsync and stay on MapControllers().
 app.MapShiftEntityEndpoints<DB>();
+
+// Stand-in for a deployment's public reference API: the city and branch lists that the
+// "Sample: External API options" survey fetches in the respondent's browser.
+app.MapSampleReferenceApi();
 
 // ---------- Database create + identity seed (idempotent, dev-safe) ----------
 using (var scope = app.Services.CreateScope())

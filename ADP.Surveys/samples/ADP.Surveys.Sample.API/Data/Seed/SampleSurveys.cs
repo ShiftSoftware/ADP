@@ -20,7 +20,11 @@ namespace ShiftSoftware.ADP.Surveys.Sample.API.Data.Seed;
 /// </summary>
 public static class SampleSurveys
 {
-    public static IReadOnlyList<SampleSurveyRecipe> All { get; } = new[]
+    /// <param name="publicRefApiBase">
+    /// Base URL of the public reference API the external-options sample fetches from
+    /// (see <see cref="SampleReferenceApi"/>).
+    /// </param>
+    public static IReadOnlyList<SampleSurveyRecipe> All(string publicRefApiBase) => new[]
     {
         MinimalNps(),
         BranchingNavigation(),
@@ -28,7 +32,7 @@ public static class SampleSurveys
         MultiLocaleBranding(),
         ScreenTemplatesAndBank(),
         TriggerDriven(),
-        ExternalApiOptions(),
+        ExternalApiOptions(publicRefApiBase),
         Sf4PurchaseFollowUp.Recipe(),
     };
 
@@ -604,11 +608,11 @@ public static class SampleSurveys
     //        sourceParams override (services=auto-repair-and-maintenance);
     //      • a banked sourced dropdown used as-is (city list).
     //    All three branch questions share the `preferred_branch` BI column.
+    //    By default the endpoints are this sample's own stand-in
+    //    (SampleReferenceApi), so the sample calls no real deployment.
     // ──────────────────────────────────────────────────────────────────────
-    private static SampleSurveyRecipe ExternalApiOptions()
+    private static SampleSurveyRecipe ExternalApiOptions(string publicRefApiBase)
     {
-        const string PublicRefApiBase = "https://tiq-identity-server.azurewebsites.net/api/public";
-
         var cityBank = new BankRecipe(
             Key: "ref-city",
             Question: new DropdownQuestionDto
@@ -616,7 +620,7 @@ public static class SampleSurveys
                 Id = "ref-city",
                 Title = LocalizedString.From("en", "Which city are you in?"),
                 Placeholder = LocalizedString.From("en", "Select your city…"),
-                OptionsSource = new OptionsSourceDto { Url = $"{PublicRefApiBase}/city" },
+                OptionsSource = new OptionsSourceDto { Url = $"{publicRefApiBase}/city" },
             },
             BiColumn: "city",
             Tags: "reference,external");
@@ -631,7 +635,7 @@ public static class SampleSurveys
                 // No services filter at the bank — each referencing survey narrows
                 // via overrides.sourceParams, keeping one bank entry (and one BI
                 // column) across all variations.
-                OptionsSource = new OptionsSourceDto { Url = $"{PublicRefApiBase}/company-branch" },
+                OptionsSource = new OptionsSourceDto { Url = $"{publicRefApiBase}/company-branch" },
             },
             BiColumn: "preferred_branch",
             Tags: "reference,external");
@@ -687,7 +691,7 @@ public static class SampleSurveys
                                 BiColumn = "preferred_branch",
                                 OptionsSource = new OptionsSourceDto
                                 {
-                                    Url = $"{PublicRefApiBase}/company-branch",
+                                    Url = $"{publicRefApiBase}/company-branch",
                                     QueryParams = new() { ["services"] = "new-vehicle-sale" },
                                     NextScreen = "city",
                                 },
@@ -708,7 +712,7 @@ public static class SampleSurveys
                                 BiColumn = "preferred_branch",
                                 OptionsSource = new OptionsSourceDto
                                 {
-                                    Url = $"{PublicRefApiBase}/company-branch",
+                                    Url = $"{publicRefApiBase}/company-branch",
                                     QueryParams = new() { ["services"] = "body-and-paint" },
                                     NextScreen = "city",
                                 },

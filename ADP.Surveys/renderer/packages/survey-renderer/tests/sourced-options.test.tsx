@@ -5,7 +5,7 @@ import type { Survey } from '@shiftsoftware/survey-sdk';
 import { SurveyRenderer } from '../src/SurveyRenderer.js';
 import { clearSourcedOptionsCache } from '../src/questions/SourcedOptionsGate.js';
 
-const tiqBody = [
+const branchesBody = [
   { ID: 'b1', Name: 'Branch One' },
   { ID: 'b2', Name: 'Branch Two' },
 ];
@@ -48,7 +48,7 @@ describe('sourced options (optionsSource)', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('shows a loading state, renders fetched options, and routes taps via the source nextScreen', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(okJson(tiqBody));
+    const fetchMock = vi.fn().mockResolvedValue(okJson(branchesBody));
     vi.stubGlobal('fetch', fetchMock);
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(<SurveyRenderer schema={navListSchema()} onSubmit={onSubmit} />);
@@ -75,7 +75,7 @@ describe('sourced options (optionsSource)', () => {
     const fetchMock = vi
       .fn()
       .mockRejectedValueOnce(new Error('network down'))
-      .mockResolvedValue(okJson(tiqBody));
+      .mockResolvedValue(okJson(branchesBody));
     vi.stubGlobal('fetch', fetchMock);
     render(<SurveyRenderer schema={navListSchema()} onSubmit={vi.fn()} />);
 
@@ -89,7 +89,7 @@ describe('sourced options (optionsSource)', () => {
   });
 
   it('serves repeat mounts from the session cache (one fetch per url+locale)', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(okJson(tiqBody));
+    const fetchMock = vi.fn().mockResolvedValue(okJson(branchesBody));
     vi.stubGlobal('fetch', fetchMock);
     const first = render(<SurveyRenderer schema={navListSchema()} onSubmit={vi.fn()} />);
     await waitFor(() =>

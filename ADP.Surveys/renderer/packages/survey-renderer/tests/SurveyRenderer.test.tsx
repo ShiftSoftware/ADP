@@ -144,7 +144,7 @@ describe('SurveyRenderer', () => {
     const branded: Survey = {
       ...fixture(),
       branding: {
-        primaryColor: '#eb0a1e',
+        primaryColor: '#0f766e',
         secondaryColor: '#f4a300',
         logoUrl: 'https://brand.example/logo.png',
       },
@@ -152,9 +152,9 @@ describe('SurveyRenderer', () => {
     const { container } = render(<SurveyRenderer schema={branded} onSubmit={vi.fn()} />);
 
     const root = container.querySelector('.survey-root') as HTMLElement;
-    expect(root.style.getPropertyValue('--survey-primary')).toBe('#eb0a1e');
+    expect(root.style.getPropertyValue('--survey-primary')).toBe('#0f766e');
     expect(root.style.getPropertyValue('--survey-accent')).toBe('#f4a300');
-    // Toyota red is dark — contrast text must be white.
+    // A dark primary — contrast text must be white.
     expect(root.style.getPropertyValue('--survey-primary-contrast')).toBe('#ffffff');
     // Hover shade derived, darker than the base.
     expect(root.style.getPropertyValue('--survey-primary-hover')).not.toBe('');
