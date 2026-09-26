@@ -6,8 +6,8 @@ using ShiftSoftware.ADP.Models;
 using System.Text;
 
 var baseDir = AppContext.BaseDirectory;
-var modelFiles = Directory.GetFiles(Path.Combine(Path.GetFullPath(Path.Combine(baseDir, "../../../../../ADP.Models"))), "*.cs", SearchOption.AllDirectories);
-var lookupServiceFiles = Directory.GetFiles(Path.Combine(Path.GetFullPath(Path.Combine(baseDir, "../../../../../ADP.LookupServices"))), "*.cs", SearchOption.AllDirectories);
+var modelFiles = SourceFiles(Path.GetFullPath(Path.Combine(baseDir, "../../../../../ADP.Models")));
+var lookupServiceFiles = SourceFiles(Path.GetFullPath(Path.Combine(baseDir, "../../../../../ADP.LookupServices")));
 
 var allFiles = modelFiles.Concat(lookupServiceFiles);
 
@@ -130,6 +130,16 @@ foreach (var file in allFiles)
     File.WriteAllText(destinationPath, sb.ToString());
 }
 
+
+// Real sources only. bin/ and obj/, at any depth, hold build output (AssemblyInfo, GlobalUsings, test
+// entry points) that the projects building beside this one in a parallel solution build rewrite while
+// it runs, so reading them races that build — and none of it is [Docable]. Pruned, not filtered: the
+// walk never enters them.
+static IEnumerable<string> SourceFiles(string directory) =>
+    Directory.GetFiles(directory, "*.cs").Concat(
+        Directory.GetDirectories(directory)
+            .Where(d => Path.GetFileName(d).ToLowerInvariant() is not ("bin" or "obj"))
+            .SelectMany(SourceFiles));
 
 string EscapeMarkdown(string input) => input.Replace("|", "\\|");
 
