@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.Azure.Cosmos;
+﻿using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -20,16 +19,14 @@ public class TableSyncService<TEntity, TCosmos>
     private DbContext db;
     private readonly IServiceProvider serviceProvider;
     private readonly CosmosClient client;
-    private readonly IMapper mapper;
 
     // Create an instance of builder that exposes various extensions for adding resilience strategies
     private readonly ResiliencePipeline ResiliencePipeline;
 
-    public TableSyncService(IServiceProvider serviceProvider, CosmosClient client, IMapper mapper)
+    public TableSyncService(IServiceProvider serviceProvider, CosmosClient client)
     {
         this.serviceProvider = serviceProvider;
         this.client = client;
-        this.mapper = mapper;
 
         ResiliencePipeline = new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions()) // Upsert retry using the default options
@@ -42,9 +39,9 @@ public class TableSyncService<TEntity, TCosmos>
         string databaseId,
         string containerId,
         Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
+        Func<TEntity, ValueTask<TCosmos>> mapping,
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
-        Func<TEntity, ValueTask<TCosmos>>? mapping = null,
         ILogger? logger = null,
         Expression<Func<TEntity, object?>>? replicationDateProperty = null)
         where TDbContext : DbContext
@@ -90,9 +87,9 @@ public class TableSyncService<TEntity, TCosmos>
             databaseId,
             containerId,
             partitionKeyLevel1Expression,
+            mapping,
             partitionKeyLevel2Expression,
             partitionKeyLevel3Expression,
-            mapping,
             logger,
             replicationDateProperty);
     }
@@ -105,9 +102,9 @@ public class TableSyncService<TEntity, TCosmos>
         string databaseId,
         string containerId,
         Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
+        Func<TQueryResult, ValueTask<TCosmos>> mapping,
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
-        Func<TQueryResult, ValueTask<TCosmos>>? mapping = null,
         ILogger? logger = null,
         Expression<Func<TEntity, object?>>? replicationDateProperty = null)
         where TQueryResult : class
@@ -168,7 +165,7 @@ public class TableSyncService<TEntity, TCosmos>
         Func<TQueryResult, IEnumerable<object>> successKeys,
         string databaseId,
         string containerId,
-        Func<TQueryResult, ValueTask<TCosmos>>? mapping,
+        Func<TQueryResult, ValueTask<TCosmos>> mapping,
         Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression,
@@ -187,7 +184,7 @@ public class TableSyncService<TEntity, TCosmos>
 
                 await ResiliencePipeline.ExecuteAsync(async token =>
                 {
-                    var mappedItem = mapping is null ? mapper.Map<TCosmos>(x) : await mapping(x);
+                    var mappedItem = await mapping(x);
 
                     if (mappedItem is null)
                         return;
@@ -267,7 +264,7 @@ public class TableSyncService<TEntity, TCosmos, TDBContext> : TableSyncService<T
     where TCosmos : class
     where TDBContext : DbContext
 {
-    public TableSyncService(IServiceProvider serviceProvider, CosmosClient client, IMapper mapper) : base(serviceProvider, client, mapper)
+    public TableSyncService(IServiceProvider serviceProvider, CosmosClient client) : base(serviceProvider, client)
     {
     }
 
@@ -278,9 +275,9 @@ public class TableSyncService<TEntity, TCosmos, TDBContext> : TableSyncService<T
         string databaseId,
         string containerId,
         Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
+        Func<TQueryResult, ValueTask<TCosmos>> mapping,
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
-        Func<TQueryResult, ValueTask<TCosmos>>? mapping = null,
         ILogger? logger = null,
         Expression<Func<TEntity, object?>>? replicationDateProperty = null)
         where TQueryResult : class
@@ -293,9 +290,9 @@ public class TableSyncService<TEntity, TCosmos, TDBContext> : TableSyncService<T
             databaseId,
             containerId,
             partitionKeyLevel1Expression,
+            mapping,
             partitionKeyLevel2Expression,
             partitionKeyLevel3Expression,
-            mapping,
             logger,
             replicationDateProperty);
     }

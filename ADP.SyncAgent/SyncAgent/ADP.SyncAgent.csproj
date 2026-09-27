@@ -21,16 +21,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="AutoMapper" Version="14.0.0" />
-		<PackageReference Include="Azure.Storage.Blobs" Version="12.29.1" />
+		<PackageReference Include="Azure.Storage.Blobs" Version="12.29.2" />
 		<PackageReference Include="Azure.Storage.Files.Shares" Version="12.27.1" />
 		<PackageReference Include="CsvHelper" Version="33.1.0" />
 		<PackageReference Include="EFCore.BulkExtensions.SqlServer" Version="10.0.1" />
 		<PackageReference Include="LibGit2Sharp" Version="0.32.0" />
-		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.62.0" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
-		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.10" />
-		<PackageReference Include="Polly" Version="8.7.0" />
+		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.63.1" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.12" />
+		<PackageReference Include="Polly" Version="8.8.0" />
 		<PackageReference Include="DuckDB.NET.Data.Full" Version="1.5.5" />
 		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
 	</ItemGroup>

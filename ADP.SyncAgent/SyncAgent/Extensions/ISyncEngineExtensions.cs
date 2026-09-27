@@ -1,21 +1,20 @@
-﻿using AutoMapper;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 
 namespace ShiftSoftware.ADP.SyncAgent.Extensions;
 
 public static class ISyncEngineExtensions
 {
-    public static ISyncEngine<TSource, TDestination> UseAutoMapper<TSource, TDestination>(
-        this ISyncEngine<TSource, TDestination> syncService,
-        IMapper mapper)
-        where TSource : class, new()
-        where TDestination : class, new()
-    {
-        syncService.SetupMapping((x, y) => new(mapper.Map<IEnumerable<TDestination>>(x)));
+    //public static ISyncEngine<TSource, TDestination> UseAutoMapper<TSource, TDestination>(
+    //    this ISyncEngine<TSource, TDestination> syncService,
+    //    IMapper mapper)
+    //    where TSource : class, new()
+    //    where TDestination : class, new()
+    //{
+    //    syncService.SetupMapping((x, y) => new(mapper.Map<IEnumerable<TDestination>>(x)));
 
-        return syncService;
-    }
+    //    return syncService;
+    //}
 
 
     /// <summary>

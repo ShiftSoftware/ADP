@@ -133,30 +133,13 @@ public class SurveyInstanceWriteMapperGoldenTests
     }
 
     /// <summary>
-    /// Resolves the generated mapper out of the Data assembly by its closed interface rather than by
-    /// name. The generated type carries a content hash in its name
-    /// (<c>Generated_SurveyInstance_..._1a7b2898</c>) which changes whenever the mapper
-    /// configuration changes, so matching on the name would turn every legitimate edit into a
-    /// broken test.
+    /// The mapper <c>SurveyInstanceRepository</c> maps through, resolved the way a host resolves it.
+    /// The repository itself is the wrong target here - constructing it needs a DbContext, and it
+    /// would only forward to the very maps this golden is about. The write map it pins is the
+    /// triple's AUTOMATIC one: <c>Mappers/SurveysMapper.cs</c> customizes only the list map.
     /// </summary>
-    private static IShiftEntityMapper<Entities.SurveyInstance, Dtos.SurveyInstanceListDTO, Dtos.SurveyInstanceAdminDTO> ResolveMapper()
-    {
-        var closed = typeof(IShiftEntityMapper<Entities.SurveyInstance, Dtos.SurveyInstanceListDTO, Dtos.SurveyInstanceAdminDTO>);
-
-        // Two types in the assembly satisfy the closed interface: the generated mapper and
-        // SurveyInstanceRepository itself, since ShiftRepository implements IShiftEntityMapper by
-        // delegating to it. The repository is the wrong target here - constructing it needs a
-        // DbContext, and it would only forward to the very type this golden is about - so narrow to
-        // the generated-mappers namespace, which is stable even though the type name is not.
-        var type = Assert.Single(
-            typeof(Entities.SurveyInstance).Assembly.GetTypes(),
-            t => t is { IsAbstract: false, IsInterface: false }
-                 && t.Namespace == "ShiftSoftware.ShiftEntity.GeneratedMappers"
-                 && closed.IsAssignableFrom(t));
-
-        return (IShiftEntityMapper<Entities.SurveyInstance, Dtos.SurveyInstanceListDTO, Dtos.SurveyInstanceAdminDTO>)
-            Activator.CreateInstance(type, nonPublic: true)!;
-    }
+    private static IShiftEntityMapper<Entities.SurveyInstance, Dtos.SurveyInstanceListDTO, Dtos.SurveyInstanceAdminDTO> ResolveMapper() =>
+        ModuleMapper.For<Entities.SurveyInstance, Dtos.SurveyInstanceListDTO, Dtos.SurveyInstanceAdminDTO>();
 
     /// <summary>
     /// Value snapshot of every readable scalar property. Navigation properties and collections are

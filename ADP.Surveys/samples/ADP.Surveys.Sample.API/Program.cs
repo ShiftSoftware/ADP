@@ -31,7 +31,8 @@ builder.Services.AddShiftEntityPrint(x =>
 var mvcBuilder = builder.Services.AddControllers();
 
 // ---------- ShiftEntity Web (HashId, data assemblies) ----------
-// Mappers are source-generated and self-registering; nothing to hand over here.
+// No mapper to hand over: the Surveys and ShiftIdentity maps are compiled into their packages and registered
+// by AddSurveysApiServices and AddShiftIdentityDashboard. This sample declares none (see the csproj).
 mvcBuilder.AddShiftEntityWeb(x =>
 {
     x.AddDataAssembly(typeof(DB).Assembly);

@@ -1,13 +1,9 @@
-﻿    using AutoMapper;
-using LibGit2Sharp;
+﻿using LibGit2Sharp;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
-using Org.BouncyCastle.Utilities;
 using Polly;
 using Polly.Retry;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Text;
 
@@ -16,19 +12,16 @@ namespace ShiftSoftware.ADP.SyncAgent.Services;
 public class CSVSyncServiceFactory
 {
     private readonly CosmosClient cosmosClient;
-    private readonly IMapper mapper;
     private readonly IStorageService storageService;
     private readonly SyncAgentOptions options;
 
     public CSVSyncServiceFactory(
         CosmosClient cosmosClient,
-        IMapper mapper,
         IStorageService storageService,
         SyncAgentOptions options,
         IServiceProvider services)
     {
         this.cosmosClient = cosmosClient;
-        this.mapper = mapper;
         this.storageService = storageService;
         this.options = options;
         Services = services;
@@ -40,7 +33,7 @@ public class CSVSyncServiceFactory
         where TCSV : CacheableCSV
         where TCosmos : class
     {
-        return new CSVSyncService<TCSV, TCosmos>(storageService, options, cosmosClient, logger, syncProgressIndicator, mapper);
+        return new CSVSyncService<TCSV, TCosmos>(storageService, options, cosmosClient, logger, syncProgressIndicator);
     }
 }
 
@@ -65,22 +58,19 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
     private readonly CosmosClient cosmosClient;
     private readonly ILogger logger;
     private readonly ISyncProgressIndicator? syncProgressIndicator;
-    private readonly IMapper mapper;
 
     public CSVSyncService(
         IStorageService storageService,
         SyncAgentOptions options,
         CosmosClient cosmosClient,
         ILogger logger,
-        ISyncProgressIndicator? syncProgressIndicator,
-        IMapper mapper)
+        ISyncProgressIndicator? syncProgressIndicator)
     {
         this.storageService = storageService;
         this.options = options;
         this.cosmosClient = cosmosClient;
         this.logger = logger;
         this.syncProgressIndicator = syncProgressIndicator;
-        this.mapper = mapper;
         var tempFolder = Guid.NewGuid().ToString();
 
         WorkingDirectory = new DirectoryInfo(Path.Combine(options.CSVCompareWorkingDirectory, tempFolder));
@@ -165,9 +155,9 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         string databaseId,
         string containerId,
         Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
+        Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>> mapping,
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
-        Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
         Func<SyncAgentCosmosAction<TCosmos>, ValueTask<SyncAgentCosmosAction<TCosmos>?>>? cosmosAction = null,
         int? batchSize = null,
         int? retryCount = 0,
@@ -379,7 +369,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         string destinationRelativePath,
         string? destinationContainerOrShareName,
         string databaseId, string containerId,
-        Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping,
+        Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>> mapping,
         Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
@@ -445,7 +435,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             CosmosActionType actionType,
             string databaseId,
             string containerId,
-            Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping,
+            Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>> mapping,
             Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression,
@@ -556,10 +546,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                         cosmosTask,
                         "Start mapping CSV records to Cosmos Data Model.\r\n\r\n");
 
-                if (mapping is null)
-                    mappedRecords = mapper.Map<IEnumerable<TCosmos>>(records);
-                else
-                    mappedRecords = await mapping(records, actionType);
+
+                mappedRecords = await mapping(records, actionType);
 
                 if (cosmosAction is null)
                     items = mappedRecords.Select(x => new SyncAgentCosmosAction<TCosmos>(x, actionType, GetCancellationToken()));
@@ -762,8 +750,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 public class CSVSyncService<TCSV> : CSVSyncService<TCSV, TCSV>, IDisposable
     where TCSV : CacheableCSV
 {
-    public CSVSyncService(IStorageService storageService, SyncAgentOptions options, CosmosClient cosmosClient, ILogger logger, ISyncProgressIndicator syncProgressIndicator, IMapper mapper) :
-        base(storageService, options, cosmosClient, logger, syncProgressIndicator, mapper)
+    public CSVSyncService(IStorageService storageService, SyncAgentOptions options, CosmosClient cosmosClient, ILogger logger, ISyncProgressIndicator syncProgressIndicator) :
+        base(storageService, options, cosmosClient, logger, syncProgressIndicator)
     {
     }
 }

@@ -28,11 +28,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.10" />
-		<PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.10" />
-		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.10" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.12" />
+		<PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.12" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.12" />
 		<!-- Keep the same minimum framework as the other Surveys packages. -->
-		<PackageReference Include="ShiftSoftware.ShiftBlazor" Version="2026.8.24.1" />
+		<PackageReference Include="ShiftSoftware.ShiftBlazor" Version="2026.9.26.2" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -64,10 +64,7 @@
 	<!-- Inputs/Outputs rather than a hand-rolled timestamp comparison: MSBuild skips
 	     the target entirely when the bundle is newer than every source, so the body
 	     runs only when the copy is actually behind. -->
-	<Target Name="WarnIfShiftSurveyBundleIsStale" BeforeTargets="Build"
-	        Condition="Exists('$(MSBuildThisFileDirectory)..\renderer\packages\survey-renderer\src')"
-	        Inputs="@(ShiftSurveyRendererSource)"
-	        Outputs="$(MSBuildThisFileDirectory)wwwroot\js\shift-survey\shift-survey.js">
+	<Target Name="WarnIfShiftSurveyBundleIsStale" BeforeTargets="Build" Condition="Exists('$(MSBuildThisFileDirectory)..\renderer\packages\survey-renderer\src')" Inputs="@(ShiftSurveyRendererSource)" Outputs="$(MSBuildThisFileDirectory)wwwroot\js\shift-survey\shift-survey.js">
 		<Warning Text="shift-survey.js is older than the renderer source. The dashboard serves this checked-in copy, so renderer changes will not appear in it until you run: cd ADP.Surveys/renderer &amp;&amp; npm run sync:blazor" />
 	</Target>
 </Project>

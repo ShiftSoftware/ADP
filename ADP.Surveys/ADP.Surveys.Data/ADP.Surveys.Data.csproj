@@ -32,9 +32,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- This baseline supports generated mappers and hosts that still use AutoMapper.
-		     Build against it so the assemblies can also load in those hosts. -->
-		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.8.24.1" />
-		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.8.24.1" />
+		<!-- The minimum framework for the Surveys packages: the maps are ShiftMapper's
+		     (Mappers/SurveysMapper.cs). Hosts on an earlier framework, including those still
+		     on AutoMapper, stay on ADP 1.16.9, the last Surveys release built for them. -->
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.9.26.2" />
+		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.9.26.2" />
 	</ItemGroup>
 </Project>

@@ -271,18 +271,6 @@ public class AnalyticsSyncJob
 
 ---
 
-## Example 5: Using AutoMapper
-
-The Sync Agent integrates with [AutoMapper](https://automapper.org/) via the `UseAutoMapper` extension method:
-
-```csharp
-engine.UseAutoMapper(mapper);
-```
-
-This replaces the need for a manual `SetupMapping` call. The mapper will be used to transform `TSource` items into `TDestination` items automatically.
-
----
-
 ## Pipeline Triggers
 
 The Sync Agent does not dictate how pipelines are triggered. You can integrate it with any scheduling or event system:

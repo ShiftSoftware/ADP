@@ -47,7 +47,10 @@ public class FrameworkCompatibilityTests : IDisposable
     [Fact]
     public void SurveyAssembliesDoNotRequireANewerFrameworkThanTheDeclaredBaseline()
     {
-        var baseline = new Version(2026, 8, 24, 1);
+        // Raised from 2026.8.24.1 when the Survey maps moved to ShiftMapper, which that framework lacks
+        // and whose predecessor 2026.9.21.1 removed, and to 2026.9.26.2 with the rest of ADP. Hosts still
+        // on the old framework stay on ADP 1.16.9, the last Survey packages built for them.
+        var baseline = new Version(2026, 9, 26, 2);
         foreach (var assembly in new[] { typeof(Survey).Assembly, typeof(SurveyDto).Assembly, typeof(API.Controllers.SurveyController).Assembly })
         {
             var references = assembly.GetReferencedAssemblies().Where(reference =>

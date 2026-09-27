@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using ShiftSoftware.ADP.Surveys.Sample.Web;
 using ShiftSoftware.ADP.Surveys.Web.Extensions;
-using ShiftSoftware.ADP.Surveys.Web.WebServices;
 using ShiftSoftware.ShiftBlazor.Extensions;
 using ShiftSoftware.ShiftBlazor.Services;
 using ShiftSoftware.ShiftEntity.Core;
@@ -10,7 +9,6 @@ using ShiftSoftware.ShiftEntity.Core.Extensions;
 using ShiftSoftware.ShiftIdentity.Blazor;
 using ShiftSoftware.ShiftIdentity.Blazor.Extensions;
 using ShiftSoftware.ShiftIdentity.Blazor.Handlers;
-using ShiftSoftware.ShiftIdentity.Blazor.Services;
 using ShiftSoftware.ShiftIdentity.Core;
 using ShiftSoftware.ShiftIdentity.Dashboard.Blazor;
 using ShiftSoftware.ShiftIdentity.Dashboard.Blazor.Extensions;
@@ -60,10 +58,17 @@ builder.Services.AddShiftBlazor(config =>
     };
 });
 
+// The refresh token lives in a cookie on CookieDomain (the access token in local storage), so apps on the same
+// parent domain share the session.
 builder.Services.AddShiftIdentity(
     configuration.GetValue<string>("ShiftIdentity:AppName")!,
     shiftIdentityApiURL,
-    shiftIdentityFrontEndURL);
+    shiftIdentityFrontEndURL,
+    configure: o =>
+    {
+        o.RefreshTokenStorage = RefreshTokenStorage.Cookie;
+        o.CookieDomain = configuration.GetValue<string>("CookieDomain");
+    });
 
 // Internal hosting — the Sample.API hosts ShiftIdentity in-process (per Menus precedent).
 // For "real" consumers who run identity separately, switch to External.
@@ -73,9 +78,6 @@ builder.Services.AddShiftIdentityDashboardBlazor(x =>
     x.Title = "ADP.Surveys";
     x.DynamicTypeAuthActionExpander = () => Task.CompletedTask;
 });
-
-builder.Services.AddScoped<CookieService>();
-builder.Services.AddScoped<IIdentityStore, TokenStorageService>();
 
 builder.Services.AddTypeAuth(x =>
 {
