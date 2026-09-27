@@ -44,6 +44,7 @@ export function renderStructure(
       ...generaProps,
       props: {
         today: generaProps.props.today,
+        ...structureAppearance(generaProps.props),
         ...props,
         ...(fields && fields[name] ? fields[name] : {}),
         name,
@@ -58,4 +59,15 @@ export function renderStructure(
   }
 
   return false;
+}
+
+// Only keys the structure actually sets, so a structure without them renders the same DOM as before.
+export function structureAppearance(data?: Record<string, unknown>): Partial<Record<'appearance' | 'colorScheme' | 'size', string>> {
+  const shared: Partial<Record<'appearance' | 'colorScheme' | 'size', string>> = {};
+
+  if (typeof data?.appearance === 'string' && data.appearance) shared.appearance = data.appearance;
+  if (typeof data?.colorScheme === 'string' && data.colorScheme) shared.colorScheme = data.colorScheme;
+  if (typeof data?.size === 'string' && data.size) shared.size = data.size;
+
+  return shared;
 }

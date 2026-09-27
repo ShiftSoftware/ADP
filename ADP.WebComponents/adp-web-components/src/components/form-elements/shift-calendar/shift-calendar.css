@@ -1,0 +1,777 @@
+/* tailwind: off */
+@import '../../style/base.css';
+@import '../../style/appearances.css';
+
+/*
+  Every value: var(--shift-calendar-x, var(--shift-x, var(--_ap-x, <vanilla>))) — the host's variables
+  always win, then the appearance, then the vanilla baseline (the existing month-grid date picker).
+*/
+:host {
+  --_surface: var(--shift-calendar-surface, var(--shift-surface, var(--_ap-panel-surface, #ffffff)));
+  --_ink: var(--shift-calendar-ink, var(--shift-ink, var(--_ap-ink, #1e293b)));
+  --_muted: var(--shift-calendar-muted, var(--shift-ink-muted, var(--_ap-ink-muted, #64748b)));
+  --_disabled-ink: var(--shift-calendar-disabled-ink, var(--shift-ink-disabled, var(--_ap-ink-disabled, #cbd5e1)));
+  --_outside-ink: var(--shift-calendar-outside-ink, var(--shift-ink-disabled, var(--_ap-ink-disabled, #cbd5e1)));
+  --_line: var(--shift-calendar-line, var(--shift-line, var(--_ap-line, #e2e8f0)));
+  --_panel-line: var(--shift-calendar-panel-line, var(--_ap-panel-line, #e2e8f0));
+  --_cell-line: var(--shift-calendar-day-line, var(--_ap-cell-line, transparent));
+  --_accent: var(--shift-calendar-accent, var(--shift-accent, var(--_ap-accent, #1e293b)));
+  --_on-accent: var(--shift-calendar-on-accent, var(--shift-on-accent, var(--_ap-on-accent, #ffffff)));
+  --_accent-tint: var(--shift-calendar-accent-tint, var(--shift-accent-tint, var(--_ap-accent-tint, #f1f5f9)));
+  --_focus: var(--shift-calendar-focus-ring, var(--shift-focus, var(--_ap-focus, #1e293b)));
+  --_focus-width: var(--shift-calendar-focus-ring-width, var(--_ap-focus-width, 2px));
+  --_focus-offset: var(--shift-calendar-focus-ring-offset, var(--_ap-focus-offset, 2px));
+  --_halo: var(--shift-calendar-focus-halo, var(--_ap-focus-halo, transparent));
+  --_halo-width: var(--shift-calendar-focus-halo-width, var(--_ap-focus-halo-width, 0px));
+  --_focus-inner: var(--shift-calendar-focus-inner, var(--_ap-focus-inner, #ffffff));
+  --_day-ink: var(--shift-calendar-day-ink, var(--shift-ink, var(--_ap-ink, #1e293b)));
+  --_hover-bg: var(--shift-calendar-day-hover-bg, var(--_ap-hover-bg, #f1f5f9));
+  --_hover-line: var(--shift-calendar-day-hover-line, var(--shift-line-strong, var(--_ap-hover-line, #94a3b8)));
+  --_hover-ink: var(--shift-calendar-day-hover-ink, var(--_ap-hover-ink, #1e293b));
+  --_hover-scale: var(--shift-calendar-day-hover-scale, min(var(--_ap-hover-scale, 1.08), var(--_sz-hover-cap, 1.08)));
+  --_today-ring: var(--shift-calendar-today-ring, var(--_ap-today-ring, #64748b));
+  --_today-width: var(--shift-calendar-today-ring-width, var(--_ap-today-ring-width, 1px));
+  --_today-dot: var(--shift-calendar-today-dot, var(--_ap-today-dot, transparent));
+  --_today-stroke: var(--shift-calendar-today-mark-stroke, var(--_ap-today-stroke, 0px));
+  --_today-decoration: var(--shift-calendar-today-mark-decoration, var(--_ap-today-decoration, none));
+  --_blocked-decoration: var(--shift-calendar-blocked-decoration, var(--_ap-blocked-decoration, line-through));
+  --_blocked-opacity: var(--shift-calendar-blocked-opacity, var(--_ap-blocked-opacity, 1));
+  --_nav-ink: var(--shift-calendar-nav-ink, var(--shift-ink, var(--_ap-ink, #1e293b)));
+  --_nav-border: var(--shift-calendar-nav-border, var(--shift-line, var(--_ap-line, #e2e8f0)));
+  --_nav-hover: var(--shift-calendar-nav-hover-bg, var(--_ap-hover-bg, #f1f5f9));
+  --_heading-ink: var(--shift-calendar-heading-ink, var(--shift-ink, var(--_ap-ink, #1e293b)));
+  --_shadow: var(--shift-calendar-shadow, var(--shift-shadow-control, var(--_ap-shadow-control, none)));
+
+  --_tone-neutral-bg: var(--shift-calendar-tone-neutral-bg, var(--_ap-tone-neutral-bg, #e8ecef));
+  --_tone-neutral-ink: var(--shift-calendar-tone-neutral-ink, var(--_ap-tone-neutral-ink, #46535e));
+  --_tone-info-bg: var(--shift-calendar-tone-info-bg, var(--_ap-tone-info-bg, #e8f1f8));
+  --_tone-info-ink: var(--shift-calendar-tone-info-ink, var(--_ap-tone-info-ink, #275e8f));
+  --_tone-success-bg: var(--shift-calendar-tone-success-bg, var(--_ap-tone-success-bg, #e8f4ed));
+  --_tone-success-ink: var(--shift-calendar-tone-success-ink, var(--_ap-tone-success-ink, #216b44));
+  --_tone-warning-bg: var(--shift-calendar-tone-warning-bg, var(--_ap-tone-warning-bg, #fff7e6));
+  --_tone-warning-ink: var(--shift-calendar-tone-warning-ink, var(--_ap-tone-warning-ink, #8a5a12));
+  --_tone-danger-bg: var(--shift-calendar-tone-danger-bg, var(--_ap-tone-danger-bg, #fff1f0));
+  --_tone-danger-ink: var(--shift-calendar-tone-danger-ink, var(--_ap-tone-danger-ink, #9b2c2c));
+
+  --_radius: var(--shift-calendar-radius, var(--shift-radius-lg, var(--_ap-radius-lg, 12px)));
+  --_day-radius: var(--shift-calendar-day-radius, var(--shift-radius-sm, var(--_ap-radius-sm, 8px)));
+  --_title-radius: var(--shift-calendar-title-radius, var(--shift-radius-md, var(--_ap-radius-md, 8px)));
+  --_button-radius: var(--shift-calendar-button-radius, var(--shift-radius-md, var(--_ap-radius-md, 8px)));
+  --_badge-radius: var(--shift-calendar-badge-radius, 999px);
+  --_border-width: var(--shift-calendar-border-width, var(--shift-border-width, var(--_ap-border-width, 1px)));
+  --_panel-border-width: var(--shift-calendar-panel-border-width, var(--_ap-panel-border-width, 1px));
+
+  --_font-latin: var(--shift-calendar-font-family, var(--shift-font-family, var(--_ap-font, 'Nunito', system-ui, sans-serif)));
+  --_font-arabic: var(--shift-calendar-font-family-arabic, var(--shift-font-family-arabic, 'Noto Kufi Arabic', var(--_font-latin)));
+  --_font-size: var(--shift-calendar-font-size, var(--shift-font-size, calc(var(--_ap-font-size, 14px) + var(--_sz-font, 0px))));
+  --_heading-size: var(--shift-calendar-heading-font-size, calc(var(--shift-font-size, calc(var(--_ap-font-size, 14px) + var(--_sz-font, 0px))) + 1px));
+  --_heading-weight: var(--shift-calendar-heading-font-weight, 700);
+  --_weekday-size: var(--shift-calendar-weekday-font-size, calc(var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px))) - 1px));
+  --_weekday-weight: var(--shift-calendar-weekday-font-weight, 700);
+  --_weekday-transform: var(--shift-calendar-weekday-transform, none);
+  --_weekday-tracking: var(--shift-calendar-weekday-tracking, normal);
+  --_day-font-size: var(--shift-calendar-day-font-size, var(--shift-font-size, calc(var(--_ap-font-size, 14px) + var(--_sz-font, 0px))));
+  --_day-weight: var(--shift-calendar-day-font-weight, var(--shift-weight-strong, var(--_ap-weight-strong, 600)));
+  --_disabled-weight: var(--shift-calendar-disabled-font-weight, var(--shift-weight, var(--_ap-weight, 400)));
+  --_today-size: var(--shift-calendar-today-font-size, var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px))));
+  --_today-weight-button: var(--shift-calendar-today-font-weight, var(--shift-weight-strong, var(--_ap-weight-strong, 600)));
+  --_badge-size: var(--shift-calendar-badge-font-size, calc(10px + var(--_sz-font, 0px) / 2));
+  --_badge-weight: var(--shift-calendar-badge-font-weight, 700);
+  --_badge-line-height: var(--shift-calendar-badge-line-height, 12px);
+  --_line-height: var(--shift-calendar-line-height, 1.35);
+  --_heading-line-height: var(--shift-calendar-heading-line-height, 1.2);
+  --_weekday-line-height: var(--shift-calendar-weekday-line-height, calc(16px + var(--_sz-font, 0px)));
+
+  --_cell: var(--shift-calendar-day-size, var(--shift-cell-size, calc(var(--_ap-cell-size, 40px) * var(--_sz-control, 1))));
+  --_round: var(--shift-calendar-day-round, var(--_ap-cell-round, 0));
+  --_day-max-width: var(--shift-calendar-day-max-inline-size, none);
+  --_gap: var(--shift-calendar-gap, var(--shift-gap, calc(var(--_ap-gap, 4px) * var(--_sz-space, 1))));
+  --_nav-size: var(--shift-calendar-nav-size, var(--_sz-nav, 32px));
+  --_nav-icon: var(--shift-calendar-nav-icon-size, var(--_sz-icon, 16px));
+  --_today-icon: var(--shift-calendar-today-icon-size, calc(var(--_sz-icon, 16px) - 2px));
+  --_min-width: var(--shift-calendar-min-inline-size, var(--_sz-min-width, 300px));
+  --_max-width: var(--shift-calendar-max-inline-size, var(--_sz-width, 380px));
+  --_padding: var(--shift-calendar-padding, calc(12px * var(--_sz-space, 1)));
+  --_padding-top: var(--shift-calendar-padding-top, calc(12px * var(--_sz-space, 1)));
+  --_section-gap: var(--shift-calendar-section-gap, calc(8px * var(--_sz-space, 1)));
+  --_header-gap: var(--shift-calendar-header-gap, max(calc(8px * var(--_sz-space, 1)), calc(var(--_ring) + 2px)));
+  --_nav-gap: var(--shift-calendar-nav-gap, max(calc(4px * var(--_sz-space, 1)), calc(var(--_ring) + 2px)));
+  --_button-gap: var(--shift-calendar-button-gap, calc(6px * var(--_sz-space, 1)));
+  --_title-gap: var(--shift-calendar-title-gap, 2px);
+  --_title-padding: var(--shift-calendar-title-padding-inline, 2px);
+  --_today-padding: var(--shift-calendar-today-padding-inline, 10px);
+  --_weekday-padding: var(--shift-calendar-weekday-padding-block, 2px);
+  --_badge-padding: var(--shift-calendar-badge-padding-inline, 4px);
+  --_badge-inset: var(--shift-calendar-badge-inset, 3px);
+  --_badge-shift: var(--shift-calendar-badge-shift, 5px);
+  --_dot-size: var(--shift-calendar-today-dot-size, 4px);
+
+  --_settle: var(--shift-calendar-settle, var(--shift-settle, 480ms));
+  --_ease: var(--shift-calendar-ease, var(--shift-ease, ease));
+
+  /* Room around each grid for the focus ring and the hover scale, which the carousel's clip would cut. */
+  --_ring: max(calc(var(--_focus-width) + var(--_focus-offset)), var(--_halo-width), 2px);
+  --_weekday-row: calc(var(--_weekday-line-height) + var(--_weekday-padding) * 2);
+
+  display: block;
+  font-family: var(--_font-latin);
+  font-size: var(--_font-size);
+  line-height: var(--_line-height);
+  color: var(--_ink);
+}
+
+.cal-root {
+  --_dir: 1;
+  container: shift-calendar / inline-size;
+  inline-size: 100%;
+  max-inline-size: var(--_max-width);
+  /* Only lg and xl insist on their minimum; the smaller sizes give way to a narrow host. */
+  min-inline-size: min(var(--_min-width), max(100%, var(--_sz-min-floor, 0px)));
+  padding: var(--_padding-top) var(--_padding) var(--_padding);
+  display: flex;
+  flex-direction: column;
+  gap: var(--_section-gap);
+  font-family: var(--_font-latin);
+  color: var(--_ink);
+  background: var(--_surface);
+  border: var(--_panel-border-width) solid var(--_panel-line);
+  border-radius: var(--_radius);
+  box-shadow: var(--_shadow);
+  /* A host's typographic quirks must not leak in and move the grid. */
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: start;
+  white-space: normal;
+  word-spacing: normal;
+}
+
+.cal-root:lang(ar),
+.cal-root:lang(ckb) {
+  font-family: var(--_font-arabic);
+}
+
+.cal-root[dir='rtl'] {
+  --_dir: -1;
+}
+
+.cal-header {
+  display: flex;
+  align-items: center;
+  gap: var(--_header-gap);
+  block-size: var(--_nav-size);
+}
+
+.cal-title-band {
+  display: grid;
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  block-size: 100%;
+  margin-inline-start: calc(var(--_title-padding) * -1);
+  overflow: hidden;
+  overflow: clip;
+}
+
+.cal-title {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  gap: var(--_title-gap);
+  min-inline-size: 0;
+  block-size: 100%;
+}
+
+.cal-slot {
+  display: grid;
+  block-size: 100%;
+  min-inline-size: 0;
+  overflow: hidden;
+  overflow: clip;
+}
+
+.cal-slot-layer {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  block-size: 100%;
+}
+
+.cal-slot-layer[data-phase='enter'] {
+  animation: cal-title-enter var(--_settle) var(--_ease) both;
+}
+
+.cal-slot-layer[data-phase='leave'] {
+  animation: cal-title-leave var(--_settle) var(--_ease) both;
+}
+
+.cal-title-button,
+.cal-title-text {
+  display: inline-flex;
+  align-items: center;
+  block-size: 100%;
+  padding-inline: var(--_title-padding);
+  border-radius: var(--_title-radius);
+  color: var(--_heading-ink);
+  /* Shrinks a little only when the header would otherwise clip the longest month name. */
+  font-size: min(var(--_heading-size), 5.4cqi);
+  font-weight: var(--_heading-weight);
+  line-height: var(--_heading-line-height);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  user-select: none;
+  transition: background-color calc(var(--_settle) / 2) var(--_ease);
+}
+
+.cal-title-button:enabled:hover {
+  background-color: var(--_hover-bg);
+}
+
+.cal-title-button:disabled {
+  cursor: default;
+}
+
+.cal-title-button:focus-visible {
+  outline: var(--_focus-width) solid var(--_focus);
+  outline-offset: calc(var(--_focus-width) * -1);
+}
+
+.cal-nav {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--_nav-gap);
+}
+
+.cal-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--_button-gap);
+  block-size: var(--_nav-size);
+  min-inline-size: var(--_nav-size);
+  color: var(--_nav-ink);
+  border: var(--_border-width) solid var(--_nav-border);
+  border-radius: var(--_button-radius);
+  transition:
+    background-color calc(var(--_settle) / 2) var(--_ease),
+    border-color calc(var(--_settle) / 2) var(--_ease),
+    opacity calc(var(--_settle) / 2) var(--_ease);
+}
+
+.cal-button:enabled:hover {
+  background-color: var(--_nav-hover);
+}
+
+.cal-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.cal-button:focus-visible {
+  outline: var(--_focus-width) solid var(--_focus);
+  outline-offset: var(--_focus-offset);
+  box-shadow: 0 0 0 var(--_halo-width) var(--_halo);
+}
+
+/* Cells sit a gap apart, so their ring is drawn inside: the focus colour, then a contrasting band, readable on a filled cell too. */
+.cal-day:focus-visible,
+.cal-pick:focus-visible {
+  outline: none;
+  --_focus-shadow: inset 0 0 0 var(--_focus-width) var(--_focus), inset 0 0 0 max(calc(var(--_focus-width) * 2), var(--_halo-width)) var(--_focus-inner);
+}
+
+.cal-step-icon {
+  inline-size: var(--_nav-icon);
+  block-size: var(--_nav-icon);
+}
+
+.cal-root[dir='rtl'] .cal-step-icon {
+  transform: scaleX(-1);
+}
+
+.cal-today {
+  padding-inline: 0;
+}
+
+/* Hidden, Today keeps its room: the title and the month buttons never move, and it fades rather than vanishing. */
+.cal-today[data-hidden] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--_settle) var(--_ease),
+    visibility 0s linear var(--_settle);
+}
+
+.cal-today-icon {
+  inline-size: var(--_today-icon);
+  block-size: var(--_today-icon);
+}
+
+.cal-today-text {
+  display: none;
+  font-size: var(--_today-size);
+  font-weight: var(--_today-weight-button);
+  white-space: nowrap;
+}
+
+.cal-body {
+  display: grid;
+  block-size: calc(var(--_weekday-row) + var(--_section-gap) + var(--_cell) * 6 + var(--_gap) * 5);
+}
+
+.cal-view {
+  grid-area: 1 / 1;
+  min-block-size: 0;
+}
+
+.cal-view[data-phase='leave'] {
+  pointer-events: none;
+}
+
+.cal-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--_section-gap);
+  block-size: 100%;
+}
+
+.cal-weekdays,
+.cal-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--_gap);
+}
+
+.cal-weekday {
+  padding-block: var(--_weekday-padding);
+  text-align: center;
+  font-size: var(--_weekday-size);
+  font-weight: var(--_weekday-weight);
+  line-height: var(--_weekday-line-height);
+  letter-spacing: var(--_weekday-tracking);
+  text-transform: var(--_weekday-transform);
+  color: var(--_muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+}
+
+.cal-weekday-short {
+  display: none;
+}
+
+.cal-stage {
+  display: grid;
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow: hidden;
+  overflow: clip;
+  padding: var(--_ring);
+  margin: calc(var(--_ring) * -1);
+}
+
+.cal-page {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--_gap);
+  min-block-size: 0;
+}
+
+.cal-page[data-phase='leave'] {
+  pointer-events: none;
+}
+
+.cal-picker-row {
+  display: grid;
+  flex: 1 1 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--_gap);
+  min-block-size: 0;
+}
+
+.cal-title[data-phase='enter'] {
+  animation: cal-title-enter var(--_settle) var(--_ease) both;
+}
+
+.cal-title[data-phase='leave'] {
+  animation: cal-title-leave var(--_settle) var(--_ease) both;
+}
+
+/* Rolls through the band like the lookup head: dims only slightly, the clip takes it. */
+@keyframes cal-title-enter {
+  from {
+    opacity: 0.9;
+    transform: translateY(calc(var(--_offset, 0px) + 100%));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cal-title-leave {
+  from {
+    transform: translateY(var(--_offset, 0px));
+  }
+  to {
+    opacity: 0.9;
+    transform: translateY(-100%);
+  }
+}
+
+.cal-page[data-phase='enter'] {
+  animation: cal-page-enter var(--_settle) var(--_ease) both;
+}
+
+.cal-page[data-phase='leave'] {
+  animation: cal-page-leave var(--_settle) var(--_ease) both;
+}
+
+/* The two pages move as one strip, a page and the clip's padding apart. */
+@keyframes cal-page-enter {
+  from {
+    transform: translateX(calc(var(--_offset, 0px) + (100% + var(--_ring) * 2) * var(--_travel, 1) * var(--_dir)));
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes cal-page-leave {
+  from {
+    transform: translateX(var(--_offset, 0px));
+  }
+  to {
+    transform: translateX(calc((100% + var(--_ring) * 2) * var(--_travel, 1) * var(--_dir) * -1));
+  }
+}
+
+.cal-body[data-switching] {
+  overflow: hidden;
+  overflow: clip;
+}
+
+/* Opening a deeper view pushes the one on screen down through the clip; closing lifts it back. */
+.cal-view[data-shift='deeper'] {
+  --_view-from: -100%;
+  --_view-to: 100%;
+}
+
+.cal-view[data-shift='shallower'] {
+  --_view-from: 100%;
+  --_view-to: -100%;
+}
+
+.cal-view[data-phase='enter'] {
+  animation: cal-view-enter var(--_settle) var(--_ease) both;
+}
+
+.cal-view[data-phase='leave'] {
+  animation: cal-view-leave var(--_settle) var(--_ease) both;
+}
+
+@keyframes cal-view-enter {
+  from {
+    opacity: 0.9;
+    transform: translateY(var(--_view-from, -100%));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cal-view-leave {
+  to {
+    opacity: 0.9;
+    transform: translateY(var(--_view-to, 100%));
+  }
+}
+
+.cal-day,
+.cal-pick {
+  --_today-shadow: 0 0 transparent;
+  --_focus-shadow: 0 0 transparent;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 0;
+  border: var(--_border-width) solid transparent;
+  border-radius: var(--_day-radius);
+  color: var(--_day-ink);
+  font-size: var(--_day-font-size);
+  font-weight: var(--_day-weight);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: var(--_today-shadow), var(--_focus-shadow);
+  transition:
+    background-color calc(var(--_settle) / 2) var(--_ease),
+    border-color calc(var(--_settle) / 2) var(--_ease),
+    color calc(var(--_settle) / 2) var(--_ease),
+    transform calc(var(--_settle) / 2) var(--_ease),
+    box-shadow calc(var(--_settle) / 2) var(--_ease);
+}
+
+.cal-day {
+  justify-self: center;
+  /* A round cell is a circle no wider than its column, so it never reaches a neighbour in a narrow host. */
+  --_column: calc((100cqi - var(--_gap) * 6) / 7);
+  --_circle: min(var(--_cell), var(--_column));
+  inline-size: calc(100% - (100% - var(--_circle)) * var(--_round));
+  max-inline-size: var(--_day-max-width);
+  block-size: calc(var(--_cell) - (var(--_cell) - var(--_circle)) * var(--_round));
+  align-self: center;
+}
+
+.cal-pick {
+  text-align: center;
+  overflow-wrap: anywhere;
+  padding-inline: var(--_badge-padding);
+}
+
+.cal-day-number,
+.cal-pick-text {
+  line-height: 1;
+  transition: transform calc(var(--_settle) / 2) var(--_ease);
+}
+
+.cal-day[data-kind='open'],
+.cal-pick[data-kind='open'] {
+  border-color: var(--_cell-line);
+}
+
+.cal-day[data-kind='open']:hover,
+.cal-pick[data-kind='open']:hover {
+  border-color: var(--_hover-line);
+  background-color: var(--_hover-bg);
+  color: var(--_hover-ink);
+}
+
+/* Only day cells lift: a wide month or year cell scaled by the same factor would reach its neighbour across the gap. */
+.cal-day[data-kind='open']:hover {
+  transform: scale(var(--_hover-scale));
+}
+
+.cal-day[data-kind='open']:active {
+  transform: scale(calc(2 - var(--_hover-scale)));
+}
+
+.cal-day[aria-disabled='true'],
+.cal-pick[aria-disabled='true'] {
+  cursor: not-allowed;
+  color: var(--_disabled-ink);
+  font-weight: var(--_disabled-weight);
+}
+
+.cal-day[data-kind='closed'] {
+  opacity: var(--_blocked-opacity);
+}
+
+.cal-day[data-kind='closed'] .cal-day-number {
+  text-decoration: var(--_blocked-decoration);
+}
+
+.cal-day[data-outside] {
+  cursor: default;
+  color: var(--_outside-ink);
+}
+
+.cal-day[data-today],
+.cal-pick[data-today] {
+  --_today-shadow: inset 0 0 0 var(--_today-width) var(--_today-ring);
+  /* Bold by stroke, not weight, so marking today never changes a glyph's width. */
+  -webkit-text-stroke: var(--_today-stroke) currentColor;
+}
+
+.cal-day[data-today] .cal-day-number,
+.cal-pick[data-today] .cal-pick-text {
+  text-decoration: var(--_today-decoration);
+}
+
+.cal-day[data-today]::after,
+.cal-pick[data-today]::after {
+  content: '';
+  position: absolute;
+  inset-block-end: calc(var(--_dot-size) + 1px);
+  inset-inline-start: 50%;
+  inline-size: var(--_dot-size);
+  block-size: var(--_dot-size);
+  translate: calc(-50% * var(--_dir)) 0;
+  border-radius: 50%;
+  background: var(--_today-dot);
+}
+
+.cal-day.has-badge[data-today]::after {
+  inset-block-end: auto;
+  inset-block-start: var(--_badge-inset);
+}
+
+.cal-day[data-selected],
+.cal-pick[data-selected] {
+  --_today-shadow: 0 0 transparent;
+  background-color: var(--_accent);
+  border-color: var(--_accent);
+  color: var(--_on-accent);
+  -webkit-text-stroke: 0 transparent;
+}
+
+.cal-day[data-selected]:hover,
+.cal-pick[data-selected]:hover {
+  background-color: var(--_accent);
+  border-color: var(--_accent);
+  color: var(--_on-accent);
+}
+
+.cal-day[data-selected] .cal-day-number,
+.cal-pick[data-selected] .cal-pick-text {
+  text-decoration: none;
+}
+
+.cal-day[data-selected]::after,
+.cal-pick[data-selected]::after {
+  background: transparent;
+}
+
+.cal-day[data-selected][aria-disabled='true'] {
+  opacity: 0.55;
+}
+
+.cal-day.has-badge .cal-day-number {
+  transform: translateY(calc(var(--_badge-shift) * -1));
+}
+
+.cal-badge {
+  position: absolute;
+  inset-block-end: var(--_badge-inset);
+  inset-inline-start: 50%;
+  translate: calc(-50% * var(--_dir)) 0;
+  max-inline-size: calc(100% - var(--_badge-inset) * 2);
+  padding-inline: var(--_badge-padding);
+  border-radius: var(--_badge-radius);
+  font-size: var(--_badge-size);
+  font-weight: var(--_badge-weight);
+  line-height: var(--_badge-line-height);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  background: var(--_tone-bg);
+  color: var(--_tone-ink);
+  transition: opacity var(--_settle) var(--_ease);
+}
+
+.cal-badge[data-empty] {
+  opacity: 0;
+}
+
+.cal-badge[data-tone='neutral'] {
+  --_tone-bg: var(--_tone-neutral-bg);
+  --_tone-ink: var(--_tone-neutral-ink);
+}
+
+.cal-badge[data-tone='info'] {
+  --_tone-bg: var(--_tone-info-bg);
+  --_tone-ink: var(--_tone-info-ink);
+}
+
+.cal-badge[data-tone='success'] {
+  --_tone-bg: var(--_tone-success-bg);
+  --_tone-ink: var(--_tone-success-ink);
+}
+
+.cal-badge[data-tone='warning'] {
+  --_tone-bg: var(--_tone-warning-bg);
+  --_tone-ink: var(--_tone-warning-ink);
+}
+
+.cal-badge[data-tone='danger'] {
+  --_tone-bg: var(--_tone-danger-bg);
+  --_tone-ink: var(--_tone-danger-ink);
+}
+
+.cal-day[data-selected] .cal-badge {
+  background: var(--_on-accent);
+  color: var(--_accent);
+}
+
+.cal-root[data-busy] .cal-day[data-kind] {
+  opacity: 0.45;
+  cursor: progress;
+}
+
+.cal-sr {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.cal-root[data-today-label] .cal-today {
+  padding-inline: var(--_today-padding);
+}
+
+.cal-root[data-today-label] .cal-today-text {
+  display: inline;
+}
+
+/* An unseen copy of the title and the Today label, measured to decide whether the label fits. */
+.cal-measure {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 0;
+  block-size: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.cal-measure-title {
+  inline-size: max-content;
+}
+
+.cal-measure .cal-measure-today {
+  inline-size: max-content;
+  padding-inline: var(--_today-padding);
+}
+
+.cal-measure .cal-measure-today .cal-today-text {
+  display: inline;
+}
+
+@container shift-calendar (min-width: 340px) {
+  .cal-weekday-short {
+    display: inline;
+  }
+
+  .cal-weekday-narrow {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cal-title[data-phase],
+  .cal-slot-layer[data-phase],
+  .cal-page[data-phase],
+  .cal-view[data-phase] {
+    animation: none;
+  }
+
+  .cal-day,
+  .cal-pick,
+  .cal-day-number,
+  .cal-pick-text,
+  .cal-badge,
+  .cal-button,
+  .cal-title-button {
+    transition: none;
+  }
+}

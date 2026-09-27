@@ -1,0 +1,18 @@
+{
+  "calendar": "Calendar",
+  "previousMonth": "Previous month",
+  "nextMonth": "Next month",
+  "today": "Today",
+  "chooseMonth": "Choose month",
+  "chooseYear": "Choose year",
+  "previousYear": "Previous year",
+  "nextYear": "Next year",
+  "previousYears": "Previous 12 years",
+  "nextYears": "Next 12 years",
+  "dateLabel": "{weekday}, {day} {month} {year}",
+  "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+  "monthsInDate": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+  "weekdays": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+  "weekdaysShort": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  "weekdaysNarrow": ["S", "M", "T", "W", "T", "F", "S"]
+}

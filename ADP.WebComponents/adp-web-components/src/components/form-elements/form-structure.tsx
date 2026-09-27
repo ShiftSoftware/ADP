@@ -3,7 +3,7 @@ import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 import generalSchema from '~locales/general/type';
 
 import { ComponentLocale, getLocaleLanguage, getSharedLocal, LanguageKeys, sharedLocalesSchema } from '~features/multi-lingual';
-import { FormHook, FormElementMapper, FormElementMapperFunctionProps, FormElementStructure, renderStructure } from '~features/form-hook';
+import { FormHook, FormElementMapper, FormElementMapperFunctionProps, FormElementStructure, renderStructure, structureAppearance } from '~features/form-hook';
 import cn from '~lib/cn';
 import getCustomClassesForPortal from '~lib/get-custom-classes-for-portal';
 
@@ -63,7 +63,7 @@ export class FormStructure {
       isLoading: this.isLoading,
       language: this.language,
       locale: this.formLocale,
-      props: { isLoading: this.isLoading, form: this.form, today: this.today },
+      props: { isLoading: this.isLoading, form: this.form, today: this.today, ...structureAppearance(this.structure?.data) },
     };
 
     if (!this.structure) return <form-structure-error language={this.language} />;

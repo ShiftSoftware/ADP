@@ -24,6 +24,7 @@ ADP.WebComponents/adp-web-components/.stencil/
 ADP.WebComponents/adp-web-components/src/templates/harness.css
 ADP.WebComponents/adp-web-components/src/templates/vendor/
 ADP.WebComponents/adp-web-components/src/templates/catalog.json
+ADP.WebComponents/adp-web-components/src/templates/integration-manifest.json
 
 # The live example URLs for the ticket-forms page. Structure JSON and theme CSS
 # are fetched at runtime rather than vendored, so editing the remote file shows

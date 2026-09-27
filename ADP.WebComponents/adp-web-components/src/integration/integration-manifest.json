@@ -599,6 +599,479 @@
           "claim, completeClaim, activate, claimEndPoint, and document-upload settings are mutation integration features. They remain raw API metadata until their host contract is reviewed."
         ]
       }
+    },
+    {
+      "tag": "shift-calendar",
+      "modulePath": "dist/components/shift-calendar.js",
+      "wireContract": null,
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": [
+          "value",
+          "month",
+          "min",
+          "max",
+          "disabledDates",
+          "disabledWeekdays",
+          "enabledDates",
+          "isDateDisabled",
+          "dayMeta",
+          "today",
+          "language",
+          "weekStartsOn",
+          "numerals",
+          "label",
+          "disabled",
+          "busy",
+          "highlightToday",
+          "disableViews",
+          "appearance",
+          "colorScheme",
+          "showToday",
+          "size"
+        ],
+        "methods": ["setFocus"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
+        "owns": ["month grid rendering", "month and year views", "month navigation", "keyboard navigation", "single-date selection", "appearance and colour scheme"]
+      },
+      "api": {
+        "props": [
+          {
+            "name": "appearance",
+            "attribute": "appearance",
+            "type": "\"material\" | \"minimal\" | \"sharp\" | \"soft\" | \"vanilla\"",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "vanilla, material, soft, sharp or minimal. Unset renders vanilla. A form passes data.appearance (or the field’s own) through the structure."
+          },
+          {
+            "name": "busy",
+            "attribute": "busy",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "The host is loading data: days dim and cannot be selected, keyboard focus still moves. Sets aria-busy on the grid."
+          },
+          {
+            "name": "colorScheme",
+            "attribute": "color-scheme",
+            "type": "\"auto\" | \"dark\" | \"light\"",
+            "default": "'light'",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "light (default), dark, or auto (follows prefers-color-scheme; for hosts that are themselves dark-aware)."
+          },
+          {
+            "name": "dayMeta",
+            "attribute": "day-meta",
+            "type": "string | { [x: string]: CalendarDayMeta; }",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Per-day extras keyed by YYYY-MM-DD: { badge?: short text, tone?: neutral | info | success | warning | danger, description?: read with the date by screen readers }. Badge digits are written in the calendar’s numerals. Object or JSON string."
+          },
+          {
+            "name": "disableViews",
+            "attribute": "disable-views",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Turns the month and year views off; the header title becomes plain text. Off by default, because open-ended dates such as birthdates need the views."
+          },
+          {
+            "name": "disabled",
+            "attribute": "disabled",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "Nothing can be selected or navigated; no day is in the tab order."
+          },
+          {
+            "name": "disabledDates",
+            "attribute": "disabled-dates",
+            "type": "string | string[]",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Dates that cannot be chosen: an array or a comma, space or JSON-array string of YYYY-MM-DD."
+          },
+          {
+            "name": "disabledWeekdays",
+            "attribute": "disabled-weekdays",
+            "type": "number[] | string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Weekdays that cannot be chosen, 0 Sunday … 6 Saturday: [5, 6], \"5,6\", \"5 6\" or \"[5,6]\"."
+          },
+          {
+            "name": "enabledDates",
+            "attribute": "enabled-dates",
+            "type": "string | string[]",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Allow-list. When set (any array, even an empty one) only these dates can be chosen. Null, undefined or an empty string turns it off."
+          },
+          {
+            "name": "highlightToday",
+            "attribute": "highlight-today",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Marks today, the current month and the current year visually, in the appearance’s own way. Off by default: today then looks like any other day. aria-current=\"date\" is set on today either way."
+          },
+          {
+            "name": "isDateDisabled",
+            "type": "(date: string) => boolean",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "JS property only. (date) => boolean for any other rule; asked only about days no other rule blocked. A throw counts as disabled."
+          },
+          {
+            "name": "label",
+            "attribute": "label",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Accessible name for the calendar group (the field label when used in a form). Default: the localized word for calendar."
+          },
+          {
+            "name": "language",
+            "attribute": "language",
+            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"",
+            "default": "'en'",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "en, ar, ku or ru. Sets names, direction, default week start and digits."
+          },
+          {
+            "name": "max",
+            "attribute": "max",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Latest selectable date (inclusive). Navigation stops at its month."
+          },
+          {
+            "name": "min",
+            "attribute": "min",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Earliest selectable date (inclusive). Navigation stops at its month. A min after max makes the range empty (see the notes)."
+          },
+          {
+            "name": "month",
+            "attribute": "month",
+            "type": "string",
+            "default": null,
+            "mutable": true,
+            "required": false,
+            "reflect": true,
+            "description": "Month shown in the days view, as YYYY-MM. Settable; clamped to min/max. Opens on the value’s month, else today’s, else the nearest end of the range. Choosing a month or a year in the views moves it."
+          },
+          {
+            "name": "numerals",
+            "attribute": "numerals",
+            "type": "\"arab\" | \"latn\"",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "latn or arab. Default by language: Arabic-Indic digits for ar and ku, Latin for en and ru."
+          },
+          {
+            "name": "showToday",
+            "attribute": "show-today",
+            "type": "boolean",
+            "default": "true",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Shows the Today button. On by default. Off removes it; the title and the month buttons stay exactly where they were."
+          },
+          {
+            "name": "size",
+            "attribute": "size",
+            "type": "\"lg\" | \"md\" | \"sm\" | \"xl\" | \"xs\"",
+            "default": "'md'",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "xs, sm, md (default), lg or xl. Scales cells, type, gaps and default width (300–500px). md equals no size; lg and xl keep a larger minimum width."
+          },
+          {
+            "name": "today",
+            "attribute": "today",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "YYYY-MM-DD that stands in for today, through ~lib/clock. Empty: the reader’s local calendar date."
+          },
+          {
+            "name": "value",
+            "attribute": "value",
+            "type": "string",
+            "default": "''",
+            "mutable": true,
+            "required": false,
+            "reflect": true,
+            "description": "Selected date as YYYY-MM-DD, or empty. Updated when the user selects a day; a host may set it."
+          },
+          {
+            "name": "weekStartsOn",
+            "attribute": "week-starts-on",
+            "type": "number",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "First column, 0 Sunday … 6 Saturday. Default by language: en and ru Monday, ar and ku Saturday."
+          }
+        ],
+        "methods": [
+          { "name": "setFocus", "parameters": "() => Promise<void>", "returns": "Promise<void>", "description": "Moves focus to the item in the tab order of the current view." }
+        ],
+        "events": [
+          {
+            "name": "dateChange",
+            "type": "CalendarDateChangeDetail",
+            "description": "Detail { value: YYYY-MM-DD }. Fires on every user selection — a day, or the Today button when today is selectable — including re-selecting the current value; never for a disabled day or when a host sets value."
+          },
+          {
+            "name": "monthChange",
+            "type": "CalendarMonthChangeDetail",
+            "description": "Detail { month, firstDate, lastDate }. Fires whenever the days view shows another month, except when the host sets month. Use it to load that month’s data."
+          },
+          {
+            "name": "viewChange",
+            "type": "CalendarViewChangeDetail",
+            "description": "Detail { view: days | months | years }. Fires when the view changes. Switching views never changes value."
+          }
+        ],
+        "dependencies": [],
+        "parts": [
+          { "name": "root", "description": "The calendar box." },
+          { "name": "header", "description": "Row holding the month heading and the controls." },
+          { "name": "heading", "description": "The header title, rolling on every month and view change." },
+          { "name": "nav", "description": "The Today, previous and next buttons, at the end of the header." },
+          {
+            "name": "today",
+            "description": "Today button: selects today (value, dateChange) and shows its month; when today is disabled by a rule it only navigates and focuses. Its label shows whenever the header has room for it, otherwise the icon alone with the same accessible name. Disabled when today is outside min/max; removed with showToday false."
+          },
+          { "name": "prev", "description": "Previous month button." },
+          { "name": "next", "description": "Next month button." },
+          { "name": "grid", "description": "The role=grid element." },
+          { "name": "weekdays", "description": "Weekday header row." },
+          { "name": "weekday", "description": "One weekday heading." },
+          { "name": "week", "description": "One row of seven days." },
+          { "name": "day", "description": "Every day cell. State parts are added beside it: day-outside, day-selected, day-today, day-disabled, day-closed." },
+          { "name": "day-outside", "description": "A day of the neighbouring month (muted, not selectable)." },
+          { "name": "day-selected", "description": "The selected day." },
+          { "name": "day-today", "description": "Today, with highlightToday only." },
+          { "name": "day-disabled", "description": "Any day that cannot be selected." },
+          { "name": "day-closed", "description": "A day ruled out by disabledDates, disabledWeekdays or isDateDisabled (struck through)." },
+          { "name": "day-number", "description": "The day number inside a cell." },
+          { "name": "badge", "description": "The dayMeta badge inside a cell." },
+          {
+            "name": "month-button",
+            "description": "The month, after the year; opens the months view. Rolls only when the month changes. Disabled when min and max fall in the same month, or with disableViews."
+          },
+          {
+            "name": "year-button",
+            "description": "The year, first in the header (inline start in RTL); opens the years view. Rolls only when the year changes. Disabled when min and max fall in the same year, or with disableViews."
+          },
+          { "name": "months", "description": "The months view grid (3 × 4)." },
+          { "name": "month", "description": "A month in the months view. States beside it: month-selected, month-today, month-disabled." },
+          { "name": "month-selected", "description": "The month shown in the days view." },
+          { "name": "month-today", "description": "The current month, with highlightToday." },
+          { "name": "month-disabled", "description": "A month entirely outside min/max." },
+          { "name": "years", "description": "The years view grid (12 years)." },
+          { "name": "year", "description": "A year in the years view. States beside it: year-selected, year-today, year-disabled." },
+          { "name": "year-selected", "description": "The year shown in the days view." },
+          { "name": "year-today", "description": "The current year, with highlightToday." },
+          { "name": "year-disabled", "description": "A year entirely outside min/max." }
+        ],
+        "cssProperties": [
+          { "name": "--shift-calendar-accent", "default": "var(--shift-accent, var(--_ap-accent, #1e293b))", "description": "Colour · selected day fill" },
+          { "name": "--shift-calendar-accent-tint", "default": "var(--shift-accent-tint, var(--_ap-accent-tint, #f1f5f9))", "description": "Colour · soft accent wash" },
+          { "name": "--shift-calendar-badge-font-size", "default": "calc(10px + var(--_sz-font, 0px) / 2)", "description": "Type · badge size" },
+          { "name": "--shift-calendar-badge-font-weight", "default": "700", "description": "Type · badge weight" },
+          { "name": "--shift-calendar-badge-inset", "default": "3px", "description": "Spacing · badge distance from the cell edge" },
+          { "name": "--shift-calendar-badge-line-height", "default": "12px", "description": "Type · badge line height" },
+          { "name": "--shift-calendar-badge-padding-inline", "default": "4px", "description": "Spacing · badge padding" },
+          { "name": "--shift-calendar-badge-radius", "default": "999px", "description": "Shape · badge radius" },
+          { "name": "--shift-calendar-badge-shift", "default": "5px", "description": "Spacing · how far the number rises for a badge" },
+          {
+            "name": "--shift-calendar-blocked-decoration",
+            "default": "var(--_ap-blocked-decoration, line-through)",
+            "description": "Closed days · number decoration (e.g. line-through)"
+          },
+          { "name": "--shift-calendar-blocked-opacity", "default": "var(--_ap-blocked-opacity, 1)", "description": "Closed days · opacity" },
+          { "name": "--shift-calendar-border-width", "default": "var(--shift-border-width, var(--_ap-border-width, 1px))", "description": "Shape · cell and button border width" },
+          { "name": "--shift-calendar-button-gap", "default": "calc(6px * var(--_sz-space, 1))", "description": "Spacing · between icon and label in a button" },
+          { "name": "--shift-calendar-button-radius", "default": "var(--shift-radius-md, var(--_ap-radius-md, 8px))", "description": "Shape · header button radius" },
+          {
+            "name": "--shift-calendar-day-font-size",
+            "default": "var(--shift-font-size, calc(var(--_ap-font-size, 14px) + var(--_sz-font, 0px)))",
+            "description": "Type · day number size"
+          },
+          { "name": "--shift-calendar-day-font-weight", "default": "var(--shift-weight-strong, var(--_ap-weight-strong, 600))", "description": "Type · day number weight" },
+          { "name": "--shift-calendar-day-hover-bg", "default": "var(--_ap-hover-bg, #f1f5f9)", "description": "Colour · day background on hover" },
+          { "name": "--shift-calendar-day-hover-ink", "default": "var(--_ap-hover-ink, #1e293b)", "description": "Colour · day number on hover" },
+          { "name": "--shift-calendar-day-hover-line", "default": "var(--shift-line-strong, var(--_ap-hover-line, #94a3b8))", "description": "Colour · day outline on hover" },
+          { "name": "--shift-calendar-day-hover-scale", "default": "min(var(--_ap-hover-scale, 1.08), var(--_sz-hover-cap, 1.08))", "description": "Size · day lift on hover" },
+          { "name": "--shift-calendar-day-ink", "default": "var(--shift-ink, var(--_ap-ink, #1e293b))", "description": "Colour · day numbers" },
+          { "name": "--shift-calendar-day-line", "default": "var(--_ap-cell-line, transparent)", "description": "Colour · day cell outline at rest" },
+          { "name": "--shift-calendar-day-max-inline-size", "default": "none", "description": "Size · widest a day cell may get" },
+          { "name": "--shift-calendar-day-radius", "default": "var(--shift-radius-sm, var(--_ap-radius-sm, 8px))", "description": "Shape · day and month cell radius" },
+          { "name": "--shift-calendar-day-round", "default": "var(--_ap-cell-round, 0)", "description": "Shape · 1 makes day cells circles, 0 fills the column" },
+          {
+            "name": "--shift-calendar-day-size",
+            "default": "var(--shift-cell-size, calc(var(--_ap-cell-size, 40px) * var(--_sz-control, 1)))",
+            "description": "Size · day cell height"
+          },
+          { "name": "--shift-calendar-disabled-font-weight", "default": "var(--shift-weight, var(--_ap-weight, 400))", "description": "Type · unavailable day weight" },
+          { "name": "--shift-calendar-disabled-ink", "default": "var(--shift-ink-disabled, var(--_ap-ink-disabled, #cbd5e1))", "description": "Colour · unavailable days" },
+          { "name": "--shift-calendar-ease", "default": "var(--shift-ease, ease)", "description": "Motion · easing of every movement" },
+          { "name": "--shift-calendar-focus-halo", "default": "var(--_ap-focus-halo, transparent)", "description": "Colour · halo around a focused button" },
+          { "name": "--shift-calendar-focus-halo-width", "default": "var(--_ap-focus-halo-width, 0px)", "description": "Focus · halo width" },
+          { "name": "--shift-calendar-focus-inner", "default": "var(--_ap-focus-inner, #ffffff)", "description": "Colour · band inside a cell’s focus ring" },
+          { "name": "--shift-calendar-focus-ring", "default": "var(--shift-focus, var(--_ap-focus, #1e293b))", "description": "Colour · focus ring" },
+          { "name": "--shift-calendar-focus-ring-offset", "default": "var(--_ap-focus-offset, 2px)", "description": "Focus · gap between a button and its ring" },
+          { "name": "--shift-calendar-focus-ring-width", "default": "var(--_ap-focus-width, 2px)", "description": "Focus · ring width" },
+          { "name": "--shift-calendar-font-family", "default": "var(--shift-font-family, var(--_ap-font, 'Nunito', system-ui, sans-serif))", "description": "Type · Latin font" },
+          {
+            "name": "--shift-calendar-font-family-arabic",
+            "default": "var(--shift-font-family-arabic, 'Noto Kufi Arabic', var(--_font-latin))",
+            "description": "Type · Arabic and Kurdish font"
+          },
+          { "name": "--shift-calendar-font-size", "default": "var(--shift-font-size, calc(var(--_ap-font-size, 14px) + var(--_sz-font, 0px)))", "description": "Type · base size" },
+          { "name": "--shift-calendar-gap", "default": "var(--shift-gap, calc(var(--_ap-gap, 4px) * var(--_sz-space, 1)))", "description": "Spacing · between day cells" },
+          {
+            "name": "--shift-calendar-header-gap",
+            "default": "max(calc(8px * var(--_sz-space, 1)), calc(var(--_ring) + 2px))",
+            "description": "Spacing · between title and buttons"
+          },
+          {
+            "name": "--shift-calendar-heading-font-size",
+            "default": "calc(var(--shift-font-size, calc(var(--_ap-font-size, 14px) + var(--_sz-font, 0px))) + 1px)",
+            "description": "Type · title size"
+          },
+          { "name": "--shift-calendar-heading-font-weight", "default": "700", "description": "Type · title weight" },
+          { "name": "--shift-calendar-heading-ink", "default": "var(--shift-ink, var(--_ap-ink, #1e293b))", "description": "Colour · month and year title" },
+          { "name": "--shift-calendar-heading-line-height", "default": "1.2", "description": "Type · title line height" },
+          { "name": "--shift-calendar-ink", "default": "var(--shift-ink, var(--_ap-ink, #1e293b))", "description": "Colour · main text" },
+          { "name": "--shift-calendar-line", "default": "var(--shift-line, var(--_ap-line, #e2e8f0))", "description": "Colour · lines at rest" },
+          { "name": "--shift-calendar-line-height", "default": "1.35", "description": "Type · base line height" },
+          { "name": "--shift-calendar-max-inline-size", "default": "var(--_sz-width, 380px)", "description": "Size · default and widest width" },
+          { "name": "--shift-calendar-min-inline-size", "default": "var(--_sz-min-width, 300px)", "description": "Size · narrowest width" },
+          { "name": "--shift-calendar-muted", "default": "var(--shift-ink-muted, var(--_ap-ink-muted, #64748b))", "description": "Colour · weekday labels, secondary text" },
+          { "name": "--shift-calendar-nav-border", "default": "var(--shift-line, var(--_ap-line, #e2e8f0))", "description": "Colour · header button outline" },
+          { "name": "--shift-calendar-nav-gap", "default": "max(calc(4px * var(--_sz-space, 1)), calc(var(--_ring) + 2px))", "description": "Spacing · between header buttons" },
+          { "name": "--shift-calendar-nav-hover-bg", "default": "var(--_ap-hover-bg, #f1f5f9)", "description": "Colour · header button on hover" },
+          { "name": "--shift-calendar-nav-icon-size", "default": "var(--_sz-icon, 16px)", "description": "Size · arrow icon size" },
+          { "name": "--shift-calendar-nav-ink", "default": "var(--shift-ink, var(--_ap-ink, #1e293b))", "description": "Colour · header button icons" },
+          { "name": "--shift-calendar-nav-size", "default": "var(--_sz-nav, 32px)", "description": "Size · header button size" },
+          { "name": "--shift-calendar-on-accent", "default": "var(--shift-on-accent, var(--_ap-on-accent, #ffffff))", "description": "Colour · text on the selected day" },
+          {
+            "name": "--shift-calendar-outside-ink",
+            "default": "var(--shift-ink-disabled, var(--_ap-ink-disabled, #cbd5e1))",
+            "description": "Colour · days of the neighbouring months"
+          },
+          { "name": "--shift-calendar-padding", "default": "calc(12px * var(--_sz-space, 1))", "description": "Spacing · inside padding" },
+          { "name": "--shift-calendar-padding-top", "default": "calc(12px * var(--_sz-space, 1))", "description": "Spacing · padding above the header" },
+          { "name": "--shift-calendar-panel-border-width", "default": "var(--_ap-panel-border-width, 1px)", "description": "Shape · calendar outline width" },
+          { "name": "--shift-calendar-panel-line", "default": "var(--_ap-panel-line, #e2e8f0)", "description": "Colour · calendar outline" },
+          { "name": "--shift-calendar-radius", "default": "var(--shift-radius-lg, var(--_ap-radius-lg, 12px))", "description": "Shape · calendar corner radius" },
+          { "name": "--shift-calendar-section-gap", "default": "calc(8px * var(--_sz-space, 1))", "description": "Spacing · between header, weekdays and grid" },
+          { "name": "--shift-calendar-settle", "default": "var(--shift-settle, 480ms)", "description": "Motion · duration of every movement" },
+          { "name": "--shift-calendar-shadow", "default": "var(--shift-shadow-control, var(--_ap-shadow-control, none))", "description": "Effect · calendar shadow" },
+          { "name": "--shift-calendar-surface", "default": "var(--shift-surface, var(--_ap-panel-surface, #ffffff))", "description": "Colour · calendar background" },
+          { "name": "--shift-calendar-title-gap", "default": "2px", "description": "Spacing · between year and month" },
+          { "name": "--shift-calendar-title-padding-inline", "default": "2px", "description": "Spacing · title button padding" },
+          { "name": "--shift-calendar-title-radius", "default": "var(--shift-radius-md, var(--_ap-radius-md, 8px))", "description": "Shape · title button radius" },
+          { "name": "--shift-calendar-today-dot", "default": "var(--_ap-today-dot, transparent)", "description": "Colour · today’s dot (with highlightToday)" },
+          { "name": "--shift-calendar-today-dot-size", "default": "4px", "description": "Today · dot size" },
+          {
+            "name": "--shift-calendar-today-font-size",
+            "default": "var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px)))",
+            "description": "Type · Today button label size"
+          },
+          {
+            "name": "--shift-calendar-today-font-weight",
+            "default": "var(--shift-weight-strong, var(--_ap-weight-strong, 600))",
+            "description": "Type · Today button label weight"
+          },
+          { "name": "--shift-calendar-today-icon-size", "default": "calc(var(--_sz-icon, 16px) - 2px)", "description": "Size · Today icon size" },
+          { "name": "--shift-calendar-today-mark-decoration", "default": "var(--_ap-today-decoration, none)", "description": "Today · number decoration (e.g. underline)" },
+          { "name": "--shift-calendar-today-mark-stroke", "default": "var(--_ap-today-stroke, 0px)", "description": "Today · text stroke that bolds the number" },
+          { "name": "--shift-calendar-today-padding-inline", "default": "10px", "description": "Spacing · Today button padding" },
+          { "name": "--shift-calendar-today-ring", "default": "var(--_ap-today-ring, #64748b)", "description": "Colour · today’s ring (with highlightToday)" },
+          { "name": "--shift-calendar-today-ring-width", "default": "var(--_ap-today-ring-width, 1px)", "description": "Today · ring width" },
+          { "name": "--shift-calendar-tone-danger-bg", "default": "var(--_ap-tone-danger-bg, #fff1f0)", "description": "Badge · danger background" },
+          { "name": "--shift-calendar-tone-danger-ink", "default": "var(--_ap-tone-danger-ink, #9b2c2c)", "description": "Badge · danger text" },
+          { "name": "--shift-calendar-tone-info-bg", "default": "var(--_ap-tone-info-bg, #e8f1f8)", "description": "Badge · info background" },
+          { "name": "--shift-calendar-tone-info-ink", "default": "var(--_ap-tone-info-ink, #275e8f)", "description": "Badge · info text" },
+          { "name": "--shift-calendar-tone-neutral-bg", "default": "var(--_ap-tone-neutral-bg, #e8ecef)", "description": "Badge · neutral background" },
+          { "name": "--shift-calendar-tone-neutral-ink", "default": "var(--_ap-tone-neutral-ink, #46535e)", "description": "Badge · neutral text" },
+          { "name": "--shift-calendar-tone-success-bg", "default": "var(--_ap-tone-success-bg, #e8f4ed)", "description": "Badge · success background" },
+          { "name": "--shift-calendar-tone-success-ink", "default": "var(--_ap-tone-success-ink, #216b44)", "description": "Badge · success text" },
+          { "name": "--shift-calendar-tone-warning-bg", "default": "var(--_ap-tone-warning-bg, #fff7e6)", "description": "Badge · warning background" },
+          { "name": "--shift-calendar-tone-warning-ink", "default": "var(--_ap-tone-warning-ink, #8a5a12)", "description": "Badge · warning text" },
+          {
+            "name": "--shift-calendar-weekday-font-size",
+            "default": "calc(var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px))) - 1px)",
+            "description": "Type · weekday label size"
+          },
+          { "name": "--shift-calendar-weekday-font-weight", "default": "700", "description": "Type · weekday label weight" },
+          { "name": "--shift-calendar-weekday-line-height", "default": "calc(16px + var(--_sz-font, 0px))", "description": "Type · weekday label line height" },
+          { "name": "--shift-calendar-weekday-padding-block", "default": "2px", "description": "Spacing · weekday label padding" },
+          { "name": "--shift-calendar-weekday-tracking", "default": "normal", "description": "Type · weekday label letter spacing" },
+          { "name": "--shift-calendar-weekday-transform", "default": "none", "description": "Type · weekday label case" }
+        ]
+      },
+      "runtimeAssets": {
+        "locales": null,
+        "notes": [
+          "Takes calendar dates in and gives one out; it makes no requests. A host loads availability on monthChange and passes it back through enabledDates and dayMeta.",
+          "Month and weekday names and control labels are bundled for en, ar, ku and ru, so no locale file is fetched.",
+          "Rule precedence: range (min/max) → disabledDates → disabledWeekdays → not in enabledDates → isDateDisabled. The first rule that matches is the reason a day is blocked (data-reason on the cell). Rules only ever block: the allow-list never re-enables a day another rule blocked.",
+          "Disabled days are focusable but cannot be selected. Inside min/max, the arrow, Home/End and Page keys land on every day of the month, including disabled ones, which carry aria-disabled so a screen-reader user can discover them (the WAI-ARIA APG allows focusable disabled items in composite widgets). Enter and Space do nothing on them. Days of the neighbouring months and days outside min/max are never focused.",
+          "A min later than max is an empty range: every day is disabled, the month buttons, Today and the keyboard do not move, and the month stays where it opened unless the host sets month.",
+          "Appearance and colour scheme follow .shift form-appearances: every value resolves as --shift-calendar-x, then --shift-x, then the appearance, then the vanilla baseline, so host variables win in light and dark. The component never sets --shift-* itself.",
+          "Fonts: Nunito (vanilla, material, soft) or Manrope (sharp, minimal), with Noto Kufi Arabic first for ar and ku — all loaded by the package’s global script. Override with --shift-font-family and --shift-font-family-arabic.",
+          "The box never changes size: six rows always, a fixed header band, and the months and years views fill exactly the days view. Only another density (an appearance with a different cell size or gap) or another size resizes it.",
+          "Every movement — header roll, day carousel, view slide, year paging — runs on one clock: --shift-calendar-settle (or --shift-settle), 480ms by default; instant under prefers-reduced-motion."
+        ]
+      }
     }
   ]
 }

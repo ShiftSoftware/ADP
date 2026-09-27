@@ -41,4 +41,12 @@
   window.harnessTheme = { apply, current };
 
   apply(current());
+
+  // Before first paint, so a remembered docs rail does not shift the page.
+  try {
+    if (document.querySelector('meta[name="adp-docs-layout"]') && localStorage.getItem('adp-docs-sider-collapsed') === 'true')
+      document.documentElement.dataset.docsCollapsed = 'true';
+  } catch {
+    // Blocked storage just means the sidebar opens expanded.
+  }
 })();

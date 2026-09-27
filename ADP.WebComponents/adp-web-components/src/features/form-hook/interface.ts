@@ -5,6 +5,10 @@ import { FormHook } from '~features/form-hook/form-hook';
 
 import { LanguageKeys } from '~features/multi-lingual';
 
+export type FormAppearance = 'vanilla' | 'material' | 'soft' | 'sharp' | 'minimal';
+export type FormColorScheme = 'light' | 'dark' | 'auto';
+export type FormSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+
 export type FormElementStructureComponents<T> = {
   id?: string;
   step?: number;
@@ -13,6 +17,9 @@ export type FormElementStructureComponents<T> = {
   staticValue?: any;
   isHidden?: boolean;
   isDisabled?: boolean;
+  appearance?: FormAppearance;
+  colorScheme?: FormColorScheme;
+  size?: FormSize;
   children?: (FormElementStructureComponents<T> | T)[];
 } & (
   | {
@@ -35,7 +42,7 @@ export type Step = {
 
 export type FormElementStructure<T> = {
   steps?: Record<LanguageKeys, Step>[];
-  data?: Record<string, any>;
+  data?: Record<string, any> & { appearance?: FormAppearance; colorScheme?: FormColorScheme; size?: FormSize };
   requiredContext?: Record<string, boolean>;
 } & FormElementStructureComponents<T>;
 

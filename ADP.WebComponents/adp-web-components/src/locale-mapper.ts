@@ -6,6 +6,9 @@ const localeMapper = {
   "-": [
     "locales/"
   ],
+  "calendar": [
+    "locales/calendar/"
+  ],
   "errors": [
     "locales/errors/"
   ],

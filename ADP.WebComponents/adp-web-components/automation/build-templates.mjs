@@ -40,6 +40,14 @@ await copyFile(alpineSource, alpineTarget);
 
 console.log(`vendored ${path.relative(root, alpineTarget)}`);
 
+// The element pages render their API reference from the integration manifest, so the showcase
+// carries a copy beside catalog.json — on the dev server and on the released site alike.
+const manifestTarget = path.join(templates, 'integration-manifest.json');
+
+await copyFile(path.join(root, 'src', 'integration', 'integration-manifest.json'), manifestTarget);
+
+console.log(`copied ${path.relative(root, manifestTarget)}`);
+
 const catalog = await writeCatalog(root);
 
 console.log(`catalogued ${catalog.pages.length} demo pages across ${catalog.areas.length} areas`);

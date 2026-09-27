@@ -41,6 +41,8 @@
  * string, so anything computed has to compute itself.
  */
 
+import { mountDocsSidebar } from './docs-sidebar.js';
+
 /** The site root: this file is always <root>/templates/site-header.js. */
 const SITE_ROOT = new URL('../', import.meta.url);
 
@@ -61,12 +63,12 @@ const PATH_PREFIX = (() => {
 })();
 
 /*
- * The three product areas, in presentation order. Declared here rather than read
+ * The product areas, in presentation order. Declared here rather than read
  * from the catalog on purpose: a group with nothing published has no catalog
  * entry at all, and disappearing from the menu is a different message from "the
  * demo is pending".
  */
-const COMPONENT_GROUPS = ['vehicle-lookup', 'part-lookup', 'forms'];
+const COMPONENT_GROUPS = ['vehicle-lookup', 'part-lookup', 'forms', 'shift-components'];
 
 /**
  * Neither file the header reads is required to exist: the build stamp ships only
@@ -769,6 +771,8 @@ export function mountSiteHeader({ target = '[data-site-header]', alpineScope = t
   else document.body.prepend(...nodes);
 
   mounted = true;
+
+  mountDocsSidebar();
 
   const header = document.querySelector('header');
 

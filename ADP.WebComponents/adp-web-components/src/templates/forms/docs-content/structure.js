@@ -309,6 +309,35 @@ export const dataKeys = [
   },
 
   {
+    key: 'appearance',
+    type: "'vanilla' | 'material' | 'soft' | 'sharp' | 'minimal'",
+    summary:
+      'The visual style every field in the form wears. The form passes it to each field; a field node can set its own `appearance` to differ. Only fields that have adopted appearances use it (today: `shift-calendar`); the rest ignore it. Unrelated to `theme`.',
+    example: `{ "data": { "requestUrl": "https://example.invalid/api/tickets", "appearance": "soft" } }`,
+    absent: 'Nothing is passed; every field keeps the look it has always had.',
+    seeAlso: ['data → colorScheme', 'nodeProps → appearance'],
+  },
+
+  {
+    key: 'colorScheme',
+    type: "'light' | 'dark' | 'auto'",
+    summary:
+      'Light or dark for fields that have adopted appearances. `auto` follows the visitor’s system setting, so use it only on a page that is itself dark-aware. A field node can set its own `colorScheme`.',
+    example: `{ "data": { "requestUrl": "https://example.invalid/api/tickets", "appearance": "material", "colorScheme": "dark" } }`,
+    absent: 'Nothing is passed; adopting fields render light.',
+    seeAlso: ['data → appearance', 'nodeProps → colorScheme'],
+  },
+
+  {
+    key: 'size',
+    type: "'sm' | 'md' | 'lg' | 'xl'",
+    summary: 'Size for fields that have adopted appearances; `md` is the default size. A field node can set its own `size`.',
+    example: `{ "data": { "requestUrl": "https://example.invalid/api/tickets", "size": "lg" } }`,
+    absent: 'Nothing is passed; adopting fields render at `md`.',
+    seeAlso: ['data → appearance'],
+  },
+
+  {
     key: 'currentVehiclesApi',
     type: 'string',
     summary:
@@ -366,6 +395,22 @@ export const nodeProps = [
     absent: 'The mapper key is `name`.',
     warning:
       'TRAP 7 (the useful half). A new field NAME is fine — the value is collected by `getValues` and reaches the wire. A new field TYPE is impossible: `getFormMappers()` is called once at module scope in each form component, stored in a `const`, and passed down as a prop the host cannot set. There is no registry, no `extraMappers` prop, no custom-element escape hatch. A name invented this way is also unvalidated and permanently starred — see `requiredMechanics.exceptions`. Note also that `type` is destructured out by `renderStructure` and never forwarded, so you cannot use it to set an `<input type>`; use `inputProps` for that.',
+  },
+
+  {
+    prop: 'appearance',
+    appliesTo: 'field nodes',
+    summary: 'This field’s appearance, in place of `data.appearance`.',
+    example: `{ "name": "bookingDate", "appearance": "sharp" }`,
+    absent: 'The field takes `data.appearance`, if set.',
+  },
+
+  {
+    prop: 'colorScheme',
+    appliesTo: 'field nodes',
+    summary: 'This field’s colour scheme, in place of `data.colorScheme`.',
+    example: `{ "name": "bookingDate", "colorScheme": "dark" }`,
+    absent: 'The field takes `data.colorScheme`, if set.',
   },
 
   {

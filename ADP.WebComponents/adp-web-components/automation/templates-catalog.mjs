@@ -12,7 +12,8 @@ import path from 'node:path';
 export const CATALOG_FILE = 'catalog.json';
 
 const AREA_LABELS = {
-  'forms': 'Ticket forms',
+  'forms': 'Forms',
+  'shift-components': 'Shift Components',
   'part-lookup': 'Part lookup',
   'vehicle-lookup': 'Vehicle lookup',
   'production-host': 'Host integration',
@@ -21,7 +22,7 @@ const AREA_LABELS = {
 };
 
 /** Order areas deliberately rather than however the filesystem returns them. */
-const AREA_ORDER = ['vehicle-lookup', 'part-lookup', 'forms', 'root', 'production-host', 'prototypes'];
+const AREA_ORDER = ['vehicle-lookup', 'part-lookup', 'forms', 'shift-components', 'root', 'production-host', 'prototypes'];
 
 export async function writeCatalog(root) {
   const templates = path.join(root, 'src', 'templates');
