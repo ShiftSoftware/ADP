@@ -1,0 +1,12 @@
+{
+  "chooseDate": "Choose date",
+  "changeDate": "Change date, {date}",
+  "clear": "Clear",
+  "invalid": "Enter a date as {format}",
+  "tooEarly": "Choose {date} or later",
+  "tooLate": "Choose {date} or earlier",
+  "unavailable": "{date} can’t be chosen",
+  "day": "d",
+  "month": "m",
+  "year": "y"
+}

@@ -1,0 +1,12 @@
+{
+  "chooseDate": "Выберите дату",
+  "changeDate": "Изменить дату, {date}",
+  "clear": "Очистить",
+  "invalid": "Введите дату в формате {format}",
+  "tooEarly": "Выберите {date} или позже",
+  "tooLate": "Выберите {date} или раньше",
+  "unavailable": "Дату {date} выбрать нельзя",
+  "day": "д",
+  "month": "м",
+  "year": "г"
+}

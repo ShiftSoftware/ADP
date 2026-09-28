@@ -1,0 +1,491 @@
+/* tailwind: off */
+@import '../../style/base.css';
+@import '../../style/appearances.css';
+
+:host {
+  --_ink: var(--shift-booking-calendar-ink, var(--shift-ink, var(--_ap-ink, #1e293b)));
+  --_heading-ink: var(--shift-booking-calendar-heading-ink, var(--shift-ink, var(--_ap-ink, #1e293b)));
+  --_muted: var(--shift-booking-calendar-muted, var(--shift-ink-muted, var(--_ap-ink-muted, #64748b)));
+  --_danger: var(--shift-booking-calendar-danger, var(--shift-danger, var(--_ap-danger, #dc2626)));
+  --_line: var(--shift-booking-calendar-line, var(--shift-line, var(--_ap-line, #e2e8f0)));
+  --_hover-bg: var(--shift-booking-calendar-hover-bg, var(--_ap-hover-bg, #f1f5f9));
+  --_focus: var(--shift-booking-calendar-focus-ring, var(--shift-focus, var(--_ap-focus, #1e293b)));
+  --_focus-width: var(--shift-booking-calendar-focus-ring-width, var(--_ap-focus-width, 2px));
+  --_focus-offset: var(--shift-booking-calendar-focus-ring-offset, var(--_ap-focus-offset, 2px));
+  --_halo: var(--shift-booking-calendar-focus-halo, var(--_ap-focus-halo, transparent));
+  --_halo-width: var(--shift-booking-calendar-focus-halo-width, var(--_ap-focus-halo-width, 0px));
+
+  --_font-latin: var(--shift-booking-calendar-font-family, var(--shift-font-family, var(--_ap-font, 'Nunito', system-ui, sans-serif)));
+  --_font-arabic: var(--shift-booking-calendar-font-family-arabic, var(--shift-font-family-arabic, 'Noto Kufi Arabic', var(--_font-latin)));
+  --_font-size: var(--shift-booking-calendar-font-size, var(--shift-font-size, calc(var(--_ap-font-size, 14px) + var(--_sz-font, 0px))));
+  --_small-size: var(--shift-booking-calendar-status-font-size, var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px))));
+  --_label-size: var(--shift-booking-calendar-label-font-size, var(--shift-label-size, calc(var(--_ap-label-size, 12px) + var(--_sz-font, 0px))));
+  --_label-transform: var(--shift-booking-calendar-label-transform, var(--shift-label-transform, var(--_ap-label-transform, uppercase)));
+  --_label-tracking: var(--shift-booking-calendar-label-tracking, var(--shift-label-tracking, var(--_ap-label-tracking, 0.04em)));
+  --_label-weight: var(--shift-booking-calendar-label-font-weight, var(--shift-weight-strong, var(--_ap-label-weight, 600)));
+  --_status-weight: var(--shift-booking-calendar-status-font-weight, var(--shift-weight, var(--_ap-weight, 400)));
+  --_back-weight: var(--shift-booking-calendar-back-font-weight, var(--shift-weight-strong, var(--_ap-weight-strong, 600)));
+  --_line-height: var(--shift-booking-calendar-line-height, 1.4);
+
+  --_radius: var(--shift-booking-calendar-button-radius, var(--shift-radius-md, var(--_ap-radius-md, 8px)));
+  --_border-width: var(--shift-booking-calendar-border-width, var(--shift-border-width, var(--_ap-border-width, 1px)));
+  --_max-width: var(--shift-booking-calendar-max-inline-size, var(--_sz-width, 380px));
+  --_min-width: var(--shift-booking-calendar-min-inline-size, var(--_sz-min-width, 300px));
+  --_gap: var(--shift-booking-calendar-gap, calc(12px * var(--_sz-space, 1)));
+  --_status-height: var(--shift-booking-calendar-status-min-block-size, calc(32px * var(--_sz-control, 1)));
+  --_spinner: var(--shift-booking-calendar-spinner-size, var(--_sz-icon, 16px));
+  --_icon: var(--shift-booking-calendar-back-icon-size, var(--_sz-icon, 16px));
+  --_back-gap: var(--shift-booking-calendar-back-gap, calc(6px * var(--_sz-space, 1)));
+  --_back-padding: var(--shift-booking-calendar-back-padding-inline, 10px);
+
+  --_settle: var(--shift-booking-calendar-settle, var(--shift-settle, 480ms));
+  --_ease: var(--shift-booking-calendar-ease, var(--shift-ease, ease));
+
+  display: block;
+  font-family: var(--_font-latin);
+  font-size: var(--_font-size);
+  line-height: var(--_line-height);
+  color: var(--_ink);
+}
+
+.bc-root {
+  /* Named apart from the calendar's own privates, which it redefines inside its root. */
+  --_bc-dir: 1;
+  --_bc-settle: var(--_settle);
+  --_bc-ease: var(--_ease);
+  --_ring: max(calc(var(--_focus-width) + var(--_focus-offset)), var(--_halo-width), 2px);
+  display: flex;
+  flex-direction: column;
+  inline-size: 100%;
+  max-inline-size: var(--_max-width);
+  font-family: var(--_font-latin);
+  color: var(--_ink);
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: start;
+}
+
+.bc-root[dir='rtl'] {
+  --_bc-dir: -1;
+}
+
+.bc-root:lang(ar),
+.bc-root:lang(ckb) {
+  font-family: var(--_font-arabic);
+}
+
+.bc-label {
+  margin-block-end: calc(var(--_gap) * 0.66);
+  font-size: var(--_label-size);
+  font-weight: var(--_label-weight);
+  letter-spacing: var(--_label-tracking);
+  text-transform: var(--_label-transform);
+  color: var(--_ink);
+}
+
+.bc-root:lang(ar) .bc-label,
+.bc-root:lang(ckb) .bc-label {
+  letter-spacing: normal;
+}
+
+.bc-required {
+  margin-inline-start: 2px;
+  color: var(--_danger);
+  transition: opacity var(--_settle) var(--_ease);
+}
+
+.bc-required[data-hidden] {
+  opacity: 0;
+}
+
+/* One box for both views: the calendar sets its size, and the times view lies exactly on it. */
+.bc-box {
+  position: relative;
+  display: grid;
+  min-inline-size: min(var(--_min-width), max(100%, var(--_sz-min-floor, 0px)));
+}
+
+.bc-box shift-calendar::part(root) {
+  min-inline-size: 0;
+  max-inline-size: none;
+  overflow: hidden;
+  overflow: clip;
+}
+
+.bc-box shift-calendar::part(heading),
+.bc-box shift-calendar::part(nav) {
+  transition:
+    transform var(--_bc-settle) var(--_bc-ease),
+    opacity var(--_bc-settle) var(--_bc-ease);
+}
+
+.bc-box shift-calendar::part(grid) {
+  transition: transform var(--_bc-settle) var(--_bc-ease);
+}
+
+/* The month name and the nav roll up out of the header, like the calendar's own title. */
+.bc-box[data-view='times'] shift-calendar::part(heading),
+.bc-box[data-view='times'] shift-calendar::part(nav) {
+  opacity: 0.9;
+  transform: translateY(-100%);
+}
+
+/* Days and times travel as one strip, the panel's padding apart, toward the start. */
+.bc-box[data-view='times'] shift-calendar::part(grid) {
+  transform: translateX(calc((100% + var(--_f-travel, 12px)) * var(--_bc-dir) * -1));
+}
+
+/* The header clips the nav while it is away and lets go once it is back, so focus rings are not cut. */
+.bc-box shift-calendar::part(header) {
+  clip-path: inset(-50vh -50vw);
+  transition: clip-path 0s linear var(--_bc-settle);
+}
+
+.bc-box[data-view='times'] shift-calendar::part(header) {
+  clip-path: inset(0 -50vw);
+  transition: clip-path 0s;
+}
+
+.bc-times {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--_f-gap, 8px);
+  padding: var(--_f-padding, 12px);
+  border-style: solid;
+  border-color: transparent;
+  border-width: var(--_f-border, 1px);
+  border-radius: var(--_f-radius, 12px);
+  overflow: hidden;
+  overflow: clip;
+  container: bc-times / inline-size;
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0s linear var(--_settle);
+}
+
+.bc-box[data-view='times'] .bc-times {
+  visibility: visible;
+  pointer-events: auto;
+  transition: visibility 0s;
+}
+
+.bc-times-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--_f-head-gap, 8px);
+  block-size: var(--_f-head, 32px);
+}
+
+.bc-title-band {
+  display: grid;
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  block-size: 100%;
+  margin-inline-start: var(--_f-band, -2px);
+  overflow: hidden;
+  overflow: clip;
+}
+
+.bc-title {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  min-inline-size: 0;
+  block-size: 100%;
+  padding-inline: var(--_f-title-padding, 2px);
+  color: var(--_heading-ink);
+  font-family: var(--_f-title-font, inherit);
+  font-size: var(--_f-title-size, 15px);
+  font-weight: var(--_f-title-weight, 700);
+  line-height: var(--_f-title-line, 1.2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  opacity: 0.9;
+  transform: translateY(100%);
+  transition:
+    transform var(--_settle) var(--_ease),
+    opacity var(--_settle) var(--_ease);
+}
+
+.bc-title-day {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bc-slot {
+  display: grid;
+  flex: none;
+  block-size: 100%;
+  overflow: hidden;
+  overflow: clip;
+}
+
+.bc-slot-layer {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  block-size: 100%;
+}
+
+.bc-slot-layer[data-phase='enter'] {
+  animation: bc-roll-enter var(--_settle) var(--_ease) both;
+}
+
+.bc-slot-layer[data-phase='leave'] {
+  animation: bc-roll-leave var(--_settle) var(--_ease) both;
+}
+
+.bc-back-band {
+  display: flex;
+  flex: none;
+  block-size: 100%;
+  clip-path: inset(0 -50vw);
+  transition: clip-path 0s;
+}
+
+.bc-box[data-view='times'] .bc-back-band {
+  clip-path: inset(-50vh -50vw);
+  transition: clip-path 0s linear var(--_settle);
+}
+
+.bc-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--_back-gap);
+  block-size: 100%;
+  min-inline-size: var(--_f-head, 32px);
+  padding-inline: 0;
+  border: var(--_border-width) solid var(--_line);
+  border-radius: var(--_radius);
+  color: var(--_ink);
+  opacity: 0.9;
+  transform: translateY(100%);
+  transition:
+    transform var(--_settle) var(--_ease),
+    opacity var(--_settle) var(--_ease),
+    background-color calc(var(--_settle) / 2) var(--_ease);
+}
+
+.bc-back:hover {
+  background-color: var(--_hover-bg);
+}
+
+.bc-back:focus-visible {
+  outline: var(--_focus-width) solid var(--_focus);
+  outline-offset: var(--_focus-offset);
+  box-shadow: 0 0 0 var(--_halo-width) var(--_halo);
+}
+
+.bc-box[data-view='times'] .bc-title,
+.bc-box[data-view='times'] .bc-back {
+  opacity: 1;
+  transform: none;
+}
+
+.bc-back-icon {
+  inline-size: var(--_icon);
+  block-size: var(--_icon);
+}
+
+.bc-root[dir='rtl'] .bc-back-icon {
+  transform: scaleX(-1);
+}
+
+/* Shown by width alone, never by content, so the header never changes as a day or a time is chosen. */
+.bc-back-text {
+  display: none;
+  font-size: var(--_small-size);
+  font-weight: var(--_back-weight);
+  white-space: nowrap;
+}
+
+@container bc-times (min-width: 300px) {
+  .bc-back {
+    padding-inline: var(--_back-padding);
+  }
+
+  .bc-back-text {
+    display: inline;
+  }
+}
+
+.bc-times-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-block-size: 0;
+  transform: translateX(calc((100% + var(--_f-travel, 12px)) * var(--_bc-dir)));
+  transition: transform var(--_settle) var(--_ease);
+}
+
+.bc-box[data-view='times'] .bc-times-body {
+  transform: none;
+}
+
+/* A long day scrolls inside the box; the ring room keeps focus rings clear of the scroll clip. */
+.bc-times-scroll {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  padding: var(--_ring);
+  margin: calc(var(--_ring) * -1);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.bc-status {
+  display: grid;
+  align-items: center;
+  min-block-size: var(--_status-height);
+  margin-block-start: calc(var(--_gap) * 0.66);
+}
+
+/* Every message is always mounted in one cell, so the row is as tall as the tallest and never jumps. */
+.bc-message {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--_gap) * 0.66);
+  font-size: var(--_small-size);
+  font-weight: var(--_status-weight);
+  color: var(--_muted);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity calc(var(--_settle) - 60ms) var(--_ease),
+    visibility 0s linear var(--_settle);
+}
+
+.bc-message[data-active] {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--_settle) var(--_ease),
+    visibility 0s;
+}
+
+.bc-message[data-message='selected'] {
+  color: var(--_ink);
+}
+
+.bc-message[data-message='error'],
+.bc-message[data-message='invalid'] {
+  color: var(--_danger);
+}
+
+.bc-spinner {
+  inline-size: var(--_spinner);
+  block-size: var(--_spinner);
+  border: 2px solid color-mix(in srgb, var(--_muted) 30%, transparent);
+  border-block-start-color: var(--_muted);
+  border-radius: 50%;
+  animation: bc-spin 0.9s linear infinite;
+}
+
+.bc-message:not([data-active]) .bc-spinner {
+  animation-play-state: paused;
+}
+
+.bc-retry {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--_status-height);
+  padding-inline: calc(12px * var(--_sz-space, 1));
+  border: var(--_border-width) solid var(--_line);
+  border-radius: var(--_radius);
+  color: var(--_ink);
+  font-size: var(--_small-size);
+  font-weight: var(--_label-weight);
+  transition: background-color calc(var(--_settle) / 2) var(--_ease);
+}
+
+.bc-retry:hover {
+  background-color: var(--_hover-bg);
+}
+
+.bc-retry:focus-visible {
+  outline: var(--_focus-width) solid var(--_focus);
+  outline-offset: var(--_focus-offset);
+}
+
+.bc-sr {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* The status row grows with the retry button, so the error state keeps the same height as the others. */
+@media (pointer: coarse) {
+  .bc-status,
+  .bc-retry {
+    min-block-size: max(var(--_status-height), 44px);
+  }
+}
+
+@keyframes bc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* The calendar title's roll: dims only slightly, the clip takes it. */
+@keyframes bc-roll-enter {
+  from {
+    opacity: 0.9;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bc-roll-leave {
+  to {
+    opacity: 0.9;
+    transform: translateY(-100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bc-box shift-calendar::part(heading),
+  .bc-box shift-calendar::part(nav),
+  .bc-box shift-calendar::part(grid),
+  .bc-box shift-calendar::part(header),
+  .bc-times,
+  .bc-box[data-view='times'] .bc-times,
+  .bc-title,
+  .bc-back,
+  .bc-back-band,
+  .bc-box[data-view='times'] .bc-back-band,
+  .bc-times-body,
+  .bc-message,
+  .bc-message[data-active],
+  .bc-required,
+  .bc-retry {
+    transition: none;
+  }
+
+  .bc-box[data-view='times'] shift-calendar::part(header) {
+    transition: none;
+  }
+
+  .bc-slot-layer[data-phase],
+  .bc-spinner {
+    animation: none;
+  }
+}

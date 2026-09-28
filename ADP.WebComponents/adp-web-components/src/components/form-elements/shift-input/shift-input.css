@@ -1,0 +1,327 @@
+/* tailwind: off */
+@import '../../style/base.css';
+@import '../../style/appearances.css';
+
+/*
+  One field for every type: label, a control (prefix, input, clear, the type's adornments, suffix) and a
+  reserved support line that holds the hint or the error. Every value:
+  var(--shift-input-x, var(--shift-x, var(--_ap-x, <vanilla>))).
+*/
+:host {
+  --_font-latin: var(--shift-input-font-family, var(--shift-font-family, var(--_ap-font, 'Nunito', system-ui, sans-serif)));
+  --_font-arabic: var(--shift-input-font-family-arabic, var(--shift-font-family-arabic, 'Noto Kufi Arabic', var(--_font-latin)));
+  --_font-size: var(--shift-input-font-size, var(--shift-font-size, calc(var(--_ap-font-size, 14px) + var(--_sz-font, 0px))));
+  --_label-size: var(--shift-input-label-font-size, var(--shift-label-size, calc(var(--_ap-label-size, 12px) + var(--_sz-font, 0px))));
+  --_label-weight: var(--shift-input-label-font-weight, var(--_ap-label-weight, 600));
+  --_label-transform: var(--shift-input-label-transform, var(--shift-label-transform, var(--_ap-label-transform, uppercase)));
+  --_label-tracking: var(--shift-input-label-tracking, var(--shift-label-tracking, var(--_ap-label-tracking, 0.04em)));
+  --_label-ink: var(--shift-input-label-ink, var(--shift-ink, var(--_ap-label-ink, var(--_ap-ink, #1e293b))));
+  --_input-weight: var(--shift-input-font-weight, var(--shift-weight, var(--_ap-weight, 400)));
+  --_support-size: var(--shift-input-support-font-size, var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px))));
+  --_line-height: var(--shift-input-line-height, 1.4);
+
+  --_ink: var(--shift-input-ink, var(--shift-ink, var(--_ap-ink, #1e293b)));
+  --_muted: var(--shift-input-muted, var(--shift-ink-muted, var(--_ap-ink-muted, #64748b)));
+  --_disabled-ink: var(--shift-input-disabled-ink, var(--shift-ink-disabled, var(--_ap-ink-disabled, #cbd5e1)));
+  --_surface: var(--shift-input-surface, var(--shift-surface, var(--_ap-control-fill, var(--_ap-surface, #ffffff))));
+  --_disabled-surface: var(--shift-input-disabled-surface, var(--shift-surface-muted, var(--_ap-surface-muted, #f8fafc)));
+  --_line: var(--shift-input-line, var(--shift-line, var(--_ap-line, #e2e8f0)));
+  --_line-strong: var(--shift-input-line-strong, var(--shift-line-strong, var(--_ap-line-strong, #94a3b8)));
+  --_danger: var(--shift-input-danger, var(--shift-danger, var(--_ap-danger, #dc2626)));
+  --_focus: var(--shift-input-focus-ring, var(--shift-focus, var(--_ap-focus, #1e293b)));
+  --_focus-width: var(--shift-input-focus-ring-width, var(--_ap-focus-width, 2px));
+  --_focus-offset: var(--shift-input-focus-ring-offset, var(--_ap-focus-offset, 2px));
+  --_halo: var(--shift-input-focus-halo, var(--_ap-focus-halo, transparent));
+  --_halo-width: var(--shift-input-focus-halo-width, var(--_ap-focus-halo-width, 0px));
+  --_button-ink: var(--shift-input-button-ink, var(--shift-ink-muted, var(--_ap-ink-muted, #64748b)));
+  --_button-hover: var(--shift-input-button-hover-bg, var(--_ap-hover-bg, #f1f5f9));
+
+  --_border-width: var(--shift-input-border-width, var(--shift-border-width, var(--_ap-border-width, 1px)));
+  --_underline: var(--shift-input-underline-width, var(--_ap-control-underline, 0px));
+  --_radius: var(--shift-input-radius, var(--shift-radius-md, var(--_ap-radius-md, 8px)));
+  --_radius-end: var(--shift-input-radius-end, var(--_ap-control-radius-end, var(--_radius)));
+  --_focus-outline: var(--shift-input-focus-outline-width, var(--_ap-control-focus-outline, var(--_focus-width)));
+  --_button-radius: var(--shift-input-button-radius, var(--shift-radius-sm, var(--_ap-radius-sm, 8px)));
+  --_height: var(--shift-input-control-height, var(--shift-control-height, calc(var(--_ap-control-height, 44px) * var(--_sz-control, 1))));
+  --_padding: var(--shift-input-padding-inline, calc(12px * var(--_sz-space, 1)));
+  --_label-gap: var(--shift-input-label-gap, calc(6px * var(--_sz-space, 1)));
+  --_support-gap: var(--shift-input-support-gap, calc(4px * var(--_sz-space, 1)));
+  --_button: var(--shift-input-button-size, min(var(--_sz-nav, 32px), calc(var(--_height) - 8px)));
+  --_icon: var(--shift-input-icon-size, var(--_sz-icon, 16px));
+  --_actions-gap: var(--shift-input-button-gap, 2px);
+
+  --_settle: var(--shift-input-settle, var(--shift-settle, 320ms));
+  --_ease: var(--shift-input-ease, var(--shift-ease, cubic-bezier(0.2, 0, 0, 1)));
+
+  --_inset: calc((var(--_height) - var(--_button)) / 2);
+  --_underline-focus: calc(var(--_underline) * 2);
+
+  display: block;
+  font-family: var(--_font-latin);
+  font-size: var(--_font-size);
+  line-height: var(--_line-height);
+  color: var(--_ink);
+}
+
+/*
+  Proposed for appearances.css. The guide gives material and minimal no border ("controls use underline or fill"):
+  material is the filled text field (muted fill, square bottom, underline that thickens on focus), minimal an underline
+  with a muted label.
+*/
+:host([appearance='material']) {
+  --_ap-control-fill: var(--_ap-surface-muted);
+  --_ap-control-underline: 1px;
+  --_ap-control-radius-end: 0px;
+  --_ap-control-focus-outline: 0px;
+}
+
+:host([appearance='minimal']) {
+  --_ap-control-underline: 1px;
+  --_ap-control-radius-end: 0px;
+  --_ap-label-ink: var(--_ap-ink-muted);
+}
+
+.in-root {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--_font-latin);
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: start;
+}
+
+.in-root:lang(ar),
+.in-root:lang(ckb) {
+  font-family: var(--_font-arabic);
+}
+
+/* The label row slides open and shut (motion.md rule 7), so a label that comes or goes never pops. */
+.in-label-row {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--_settle) var(--_ease),
+    opacity var(--_settle) var(--_ease);
+}
+
+.in-label-row[data-open] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.in-label {
+  display: block;
+  min-block-size: 0;
+  overflow: hidden;
+  padding-block-end: var(--_label-gap);
+  color: var(--_label-ink);
+  font-size: var(--_label-size);
+  font-weight: var(--_label-weight);
+  line-height: var(--_line-height);
+  letter-spacing: var(--_label-tracking);
+  text-transform: var(--_label-transform);
+}
+
+.in-required {
+  margin-inline-start: 2px;
+  color: var(--_danger);
+  transition: opacity var(--_settle) var(--_ease);
+}
+
+/* Hidden, the mark keeps its room, so the label text never moves when required changes. */
+.in-required[data-hidden] {
+  opacity: 0;
+}
+
+.in-control {
+  display: flex;
+  align-items: center;
+  block-size: var(--_height);
+  color: var(--_ink);
+  background: var(--_surface);
+  border: var(--_border-width) solid var(--_line);
+  border-radius: var(--_radius) var(--_radius) var(--_radius-end) var(--_radius-end);
+  box-shadow: inset 0 calc(var(--_underline) * -1) 0 var(--_line-strong);
+  cursor: text;
+  transition:
+    border-color calc(var(--_settle) / 2) var(--_ease),
+    box-shadow calc(var(--_settle) / 2) var(--_ease),
+    background-color calc(var(--_settle) / 2) var(--_ease);
+}
+
+.in-root:not([data-disabled]) .in-control:hover {
+  border-color: var(--_line-strong);
+}
+
+.in-control[data-focused] {
+  outline: var(--_focus-outline) solid var(--_focus);
+  outline-offset: var(--_focus-offset);
+  box-shadow:
+    inset 0 calc(var(--_underline-focus) * -1) 0 var(--_focus),
+    0 0 0 var(--_halo-width) var(--_halo);
+}
+
+.in-root[data-invalid] .in-control {
+  border-color: var(--_danger);
+  box-shadow: inset 0 calc(var(--_underline) * -1) 0 var(--_danger);
+}
+
+.in-root[data-invalid] .in-control[data-focused] {
+  box-shadow:
+    inset 0 calc(var(--_underline-focus) * -1) 0 var(--_danger),
+    0 0 0 var(--_halo-width) var(--_halo);
+}
+
+.in-root[data-invalid] .in-control[data-focused] {
+  outline-color: var(--_danger);
+}
+
+.in-root[data-disabled] .in-control {
+  cursor: not-allowed;
+  background: var(--_disabled-surface);
+}
+
+.in-input {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  block-size: 100%;
+  margin: 0;
+  padding-block: 0;
+  padding-inline: var(--_padding);
+  color: inherit;
+  font: inherit;
+  font-weight: var(--_input-weight);
+  font-variant-numeric: tabular-nums;
+  background: transparent;
+  border: 0;
+  outline: none;
+  appearance: none;
+}
+
+.in-input::placeholder {
+  color: var(--_muted);
+  opacity: 1;
+}
+
+.in-input:disabled {
+  cursor: not-allowed;
+  color: var(--_disabled-ink);
+}
+
+.in-prefix,
+.in-suffix {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--_actions-gap);
+  color: var(--_muted);
+}
+
+.in-suffix {
+  padding-inline-end: var(--_inset);
+}
+
+::slotted([slot='prefix']) {
+  margin-inline-start: var(--_padding);
+}
+
+.in-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--_button);
+  block-size: var(--_button);
+  overflow: hidden;
+  color: var(--_button-ink);
+  border-radius: var(--_button-radius);
+  transition:
+    background-color calc(var(--_settle) / 2) var(--_ease),
+    color calc(var(--_settle) / 2) var(--_ease),
+    opacity var(--_settle) var(--_ease),
+    inline-size var(--_settle) var(--_ease),
+    visibility 0s;
+}
+
+.in-icon:enabled:hover {
+  color: var(--_ink);
+  background-color: var(--_button-hover);
+}
+
+.in-icon:focus-visible {
+  outline: var(--_focus-width) solid var(--_focus);
+  outline-offset: calc(var(--_focus-width) * -1);
+}
+
+.in-icon:disabled {
+  cursor: not-allowed;
+  color: var(--_disabled-ink);
+}
+
+.in-icon svg {
+  flex: 0 0 auto;
+  inline-size: var(--_icon);
+  block-size: var(--_icon);
+}
+
+/* Hidden, the clear button keeps its room: the text never moves when a value comes or goes. */
+.in-clear[data-hidden] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--_settle) var(--_ease),
+    inline-size var(--_settle) var(--_ease),
+    visibility 0s linear var(--_settle);
+}
+
+/* clearable off: the button's room closes with a movement rather than disappearing. */
+.in-clear[data-collapsed] {
+  inline-size: 0;
+}
+
+/* One reserved line for the hint or the error, which cross-fade in it: nothing below the field ever moves. */
+.in-support {
+  display: grid;
+  min-block-size: calc(var(--_support-size) * var(--_line-height));
+  margin-block-start: var(--_support-gap);
+  font-size: var(--_support-size);
+  line-height: var(--_line-height);
+}
+
+.in-hint,
+.in-error {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity var(--_settle) var(--_ease),
+    transform var(--_settle) var(--_ease);
+}
+
+.in-hint {
+  color: var(--_muted);
+}
+
+.in-error {
+  color: var(--_danger);
+}
+
+.in-hint[data-shown],
+.in-error[data-shown] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .in-label-row,
+  .in-required,
+  .in-control,
+  .in-icon,
+  .in-clear[data-hidden],
+  .in-hint,
+  .in-error {
+    transition: none;
+  }
+}

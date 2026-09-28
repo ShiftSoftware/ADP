@@ -799,6 +799,28 @@ html[lang='ku'] {
     transition: opacity calc(var(--sider-time) * 0.6) ease;
   }
 
+  .docs-sublist {
+    margin-block: 2px 0.25rem;
+    padding-inline-start: 0.75rem;
+    transition: padding-inline-start var(--sider-time) var(--sider-ease);
+  }
+
+  @media (min-width: 64rem) {
+    :root[data-docs-collapsed='true'] .docs-shell .docs-sublist {
+      padding-inline-start: 0;
+    }
+  }
+
+  .docs-family-self[aria-current] {
+    color: var(--sider-ink);
+    font-weight: 600;
+    background: none;
+  }
+
+  .docs-family-self[aria-current]:hover {
+    background: var(--sider-hover);
+  }
+
   .docs-sider :focus-visible {
     outline: 2px solid var(--sider-focus);
     outline-offset: -2px;

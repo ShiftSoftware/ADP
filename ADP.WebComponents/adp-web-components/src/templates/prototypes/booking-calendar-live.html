@@ -1,0 +1,555 @@
+<!doctype html>
+<!--
+  Booking calendar against the local seed (LIVE, unpublished).
+
+  Run a local identity service that serves the calendar and company-branch routes on :7071,
+  then `npm start` and open http://localhost:3000/templates/prototypes/booking-calendar-live.html
+
+  No form and no structure: the page loads the branch list, builds the ids for v1 or v2 from the chosen
+  branch and hands them to <shift-booking-calendar>. Every calendar request and every slotChange is logged.
+-->
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Booking calendar · local seed — adp-web-components</title>
+    <link rel="icon" href="/templates/assets/favicon.svg" type="image/svg+xml" />
+
+    <meta name="adp-publish" content="false" />
+
+    <script nomodule src="/build/shift-components.js"></script>
+    <script type="module" src="/build/shift-components.esm.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400..800&family=Noto+Kufi+Arabic:wght@100..900&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        color-scheme: light;
+        --page: #f1f5f9;
+        --card: #ffffff;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --line: #e2e8f0;
+        --code: #f8fafc;
+        font-family: 'Nunito', system-ui, sans-serif;
+      }
+
+      :root[data-scheme='dark'] {
+        color-scheme: dark;
+        --page: #020617;
+        --card: #0f172a;
+        --ink: #e2e8f0;
+        --muted: #94a3b8;
+        --line: #334155;
+        --code: #1e293b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--page);
+        color: var(--ink);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      main {
+        display: grid;
+        gap: 16px;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 24px 16px 48px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 22px;
+      }
+
+      h2 {
+        margin: 0 0 12px;
+        font-size: 15px;
+      }
+
+      p {
+        margin: 4px 0 0;
+        color: var(--muted);
+      }
+
+      .card {
+        min-width: 0;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--card);
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 4px;
+        min-width: 0;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .check {
+        display: flex;
+        align-items: center;
+        align-self: end;
+        gap: 6px;
+        min-height: 34px;
+      }
+
+      select,
+      input[type='date'],
+      button {
+        min-width: 0;
+        min-height: 34px;
+        padding: 4px 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--card);
+        color: var(--ink);
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .wide {
+        grid-column: 1 / -1;
+      }
+
+      .layout {
+        display: grid;
+        gap: 16px;
+      }
+
+      @media (min-width: 900px) {
+        .layout {
+          grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+          align-items: start;
+        }
+      }
+
+      dl {
+        display: grid;
+        grid-template-columns: max-content minmax(0, 1fr);
+        gap: 4px 12px;
+        margin: 0;
+      }
+
+      dt {
+        color: var(--muted);
+      }
+
+      dd {
+        margin: 0;
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+
+      ol {
+        display: grid;
+        gap: 6px;
+        max-height: 320px;
+        margin: 0;
+        padding: 0;
+        overflow: auto;
+        list-style: none;
+      }
+
+      li {
+        padding: 6px 8px;
+        border-radius: 6px;
+        background: var(--code);
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+
+      .log-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .status {
+        color: var(--muted);
+      }
+
+      .status[data-error] {
+        color: #dc2626;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Booking calendar · local seed</h1>
+        <p>Branches from the local <code>public/company-branch</code> route; the calendar calls the local v1 or v2 endpoint with the ids built for that version.</p>
+      </header>
+
+      <section class="card" aria-labelledby="setup-title">
+        <h2 id="setup-title">Branch</h2>
+        <div class="controls">
+          <label
+            >Branch list
+            <input id="brands" placeholder="brand code" />
+          </label>
+          <label class="wide"
+            >Branch
+            <select id="branch"></select>
+          </label>
+          <label
+            >Calendar API
+            <select id="version">
+              <option value="v1">v1 · Integration IDs</option>
+              <option value="v2">v2 · hash IDs</option>
+            </select>
+          </label>
+          <label
+            >Department
+            <select id="department"></select>
+          </label>
+          <label
+            >Brand
+            <select id="brand"></select>
+          </label>
+          <label
+            >Today (empty: local date)
+            <input type="date" id="today" />
+          </label>
+        </div>
+        <p class="status" id="branch-status" role="status"></p>
+      </section>
+
+      <section class="card" aria-labelledby="look-title">
+        <h2 id="look-title">Look</h2>
+        <div class="controls">
+          <label
+            >Appearance
+            <select id="appearance">
+              <option value="">vanilla (unset)</option>
+              <option>material</option>
+              <option>soft</option>
+              <option>sharp</option>
+              <option>minimal</option>
+            </select>
+          </label>
+          <label
+            >Colour scheme
+            <select id="scheme">
+              <option>light</option>
+              <option>dark</option>
+            </select>
+          </label>
+          <label
+            >Size
+            <select id="size">
+              <option>xs</option>
+              <option>sm</option>
+              <option selected>md</option>
+              <option>lg</option>
+              <option>xl</option>
+            </select>
+          </label>
+          <label
+            >Language
+            <select id="language">
+              <option value="en">English</option>
+              <option value="ar">العربية</option>
+              <option value="ku">کوردی</option>
+              <option value="ru">Русский</option>
+            </select>
+          </label>
+          <label
+            >Hour cycle
+            <select id="hour-cycle">
+              <option>h23</option>
+              <option>h12</option>
+            </select>
+          </label>
+          <label class="check"><input type="checkbox" id="slot-counts" /> Slot counts</label>
+        </div>
+      </section>
+
+      <div class="layout">
+        <section class="card" aria-label="Booking calendar">
+          <shift-booking-calendar id="booking" label="Booking"></shift-booking-calendar>
+        </section>
+
+        <div class="layout" style="grid-template-columns: minmax(0, 1fr)">
+          <section class="card" aria-labelledby="ids-title">
+            <h2 id="ids-title">Resolved</h2>
+            <dl>
+              <dt>calendar-api</dt>
+              <dd id="out-api"></dd>
+              <dt>calendar-api-version</dt>
+              <dd id="out-version"></dd>
+              <dt>company-id</dt>
+              <dd id="out-company"></dd>
+              <dt>branch-id</dt>
+              <dd id="out-branch"></dd>
+              <dt>department-id</dt>
+              <dd id="out-department"></dd>
+              <dt>brand-id</dt>
+              <dd id="out-brand"></dd>
+              <dt>Request</dt>
+              <dd><a id="out-url" target="_blank" rel="noopener"></a></dd>
+            </dl>
+          </section>
+
+          <section class="card" aria-labelledby="requests-title">
+            <div class="log-head">
+              <h2 id="requests-title">Calendar requests</h2>
+              <button type="button" data-clear="requests">Clear</button>
+            </div>
+            <ol id="requests"></ol>
+          </section>
+
+          <section class="card" aria-labelledby="events-title">
+            <div class="log-head">
+              <h2 id="events-title">slotChange</h2>
+              <button type="button" data-clear="events">Clear</button>
+            </div>
+            <ol id="events"></ol>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const IDENTITY = 'http://localhost:7071/api';
+      const ENDPOINTS = { v1: `${IDENTITY}/public/calendar`, v2: `${IDENTITY}/public/v2/calendar` };
+      const REQUEST_DAYS = 30;
+
+      const $ = id => document.getElementById(id);
+      const booking = $('booking');
+      const params = new URLSearchParams(location.search);
+
+      let branches = [];
+
+      // Same rule as branchIds() in ~lib/booking-availability, which the page cannot import from the build.
+      const branchIds = (branch, version) => {
+        if (!branch) return { companyId: '', branchId: '' };
+        const [company, id] = version === 'v2' ? [branch.CompanyId, branch.ID] : [branch.CompanyIntegrationId, branch.IntegrationId];
+        return { companyId: company == null ? '' : String(company), branchId: id == null ? '' : String(id) };
+      };
+
+      const pad = value => String(value).padStart(2, '0');
+      const localDate = date => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+      const addDays = (iso, days) => {
+        const [y, m, d] = iso.split('-').map(Number);
+        return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+      };
+
+      const fill = (select, items, selected) => {
+        select.replaceChildren(...items.map(({ value, label }) => new Option(label, value, false, value === selected)));
+      };
+
+      const currentBranch = () => branches.find(branch => branch.ID === $('branch').value);
+
+      const log = (list, text) => {
+        const item = document.createElement('li');
+        item.textContent = `${new Date().toLocaleTimeString('en-GB')}  ${text}`;
+        $(list).prepend(item);
+      };
+
+      const originalFetch = window.fetch.bind(window);
+      window.fetch = async (input, init) => {
+        const url = typeof input === 'string' ? input : input.url;
+        if (!url.includes('/calendar?')) return originalFetch(input, init);
+
+        try {
+          const response = await originalFetch(input, init);
+          const days = await response
+            .clone()
+            .json()
+            .then(body => (Array.isArray(body) ? `${body.length} days` : 'not a list'))
+            .catch(() => 'no JSON');
+          log('requests', `${response.status} · ${days} · ${url}`);
+          return response;
+        } catch (error) {
+          log('requests', `${error?.name === 'AbortError' ? 'cancelled' : 'network error'} · ${url}`);
+          throw error;
+        }
+      };
+
+      // The branch's own values come first; the rest let a tester ask for a department or brand the branch does not list.
+      function fillChoices(select, own, everything, { wanted, anyWanted, preferred }) {
+        const others = [...new Set(everything)].filter(value => !own.includes(value)).sort();
+        const known = [...own, ...others];
+        const selected = (anyWanted ? known : own).includes(wanted) ? wanted : preferred.find(value => own.includes(value)) ?? own[0] ?? others[0];
+        const group = (label, values) => {
+          const node = document.createElement('optgroup');
+          node.label = label;
+          node.append(...values.map(value => new Option(value, value, false, value === selected)));
+          return node;
+        };
+
+        select.replaceChildren(group('This branch', own), group('Other', others));
+        select.value = selected ?? '';
+      }
+
+      function fillBranchChoices(keep) {
+        const branch = currentBranch();
+        const ids = list => (list ?? []).map(item => item.IntegrationId).filter(Boolean);
+
+        fillChoices(
+          $('department'),
+          ids(branch?.Departments),
+          ['service-center', 'showroom', ...branches.flatMap(item => ids(item.Departments))],
+          { wanted: keep?.department ?? $('department').value, anyWanted: !!keep?.department, preferred: ['service-center', 'showroom'] },
+        );
+        fillChoices($('brand'), ids(branch?.Brands), branches.flatMap(item => ids(item.Brands)), {
+          wanted: keep?.brand ?? $('brand').value,
+          anyWanted: !!keep?.brand,
+          preferred: [$('brands').value],
+        });
+      }
+
+      function apply() {
+        const version = $('version').value;
+        const branch = currentBranch();
+        const { companyId, branchId } = branchIds(branch, version);
+        const target = {
+          calendarApi: ENDPOINTS[version],
+          calendarApiVersion: version,
+          companyId,
+          branchId,
+          departmentId: $('department').value,
+          brandId: $('brand').value,
+          today: $('today').value || undefined,
+        };
+
+        Object.assign(booking, target);
+
+        $('out-api').textContent = target.calendarApi;
+        $('out-version').textContent = version;
+        $('out-company').textContent = companyId || '—';
+        $('out-branch').textContent = branchId || '—';
+        $('out-department').textContent = target.departmentId || '—';
+        $('out-brand').textContent = target.brandId || '—';
+
+        const complete = companyId && branchId && target.departmentId && target.brandId;
+        const from = target.today || localDate(new Date());
+        const query = new URLSearchParams({ from, to: addDays(from, REQUEST_DAYS), companyId, branchId, departmentId: target.departmentId, brandId: target.brandId });
+        const url = complete ? `${target.calendarApi}?${query}` : '';
+
+        $('out-url').textContent = url || '— (an id is missing, the field stays idle)';
+        if (url) $('out-url').href = url;
+        else $('out-url').removeAttribute('href');
+
+        writeQuery();
+      }
+
+      function applyLook() {
+        const scheme = $('scheme').value;
+
+        booking.appearance = $('appearance').value || undefined;
+        booking.colorScheme = scheme;
+        booking.size = $('size').value;
+        booking.language = $('language').value;
+        booking.hourCycle = $('hour-cycle').value;
+        booking.slotCounts = $('slot-counts').checked;
+        document.documentElement.dataset.scheme = scheme;
+        writeQuery();
+      }
+
+      function writeQuery() {
+        const next = new URLSearchParams({
+          brands: $('brands').value,
+          branch: $('branch').value,
+          version: $('version').value,
+          department: $('department').value,
+          brand: $('brand').value,
+        });
+        for (const id of ['today', 'appearance', 'language']) if ($(id).value) next.set(id, $(id).value);
+        if ($('scheme').value !== 'light') next.set('scheme', $('scheme').value);
+        if ($('size').value !== 'md') next.set('size', $('size').value);
+        if ($('hour-cycle').value !== 'h23') next.set('hourCycle', $('hour-cycle').value);
+        if ($('slot-counts').checked) next.set('slotCounts', '1');
+        history.replaceState(null, '', `?${next}`);
+      }
+
+      async function loadBranches(keep) {
+        const url = `${IDENTITY}/public/company-branch?brands=${encodeURIComponent($('brands').value)}`;
+        const status = $('branch-status');
+
+        status.removeAttribute('data-error');
+        status.textContent = `Loading ${url} …`;
+        $('branch').disabled = true;
+
+        try {
+          const response = await originalFetch(url);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          branches = (await response.json()).slice().sort((a, b) => String(a.Name).localeCompare(String(b.Name)));
+          status.textContent = `${branches.length} branches from ${url}`;
+        } catch (error) {
+          branches = [];
+          status.setAttribute('data-error', '');
+          status.textContent = `Could not load ${url}: ${error.message}. Are the local Identity Functions running on 7071?`;
+        }
+
+        const wanted = keep?.branch ?? $('branch').value;
+        fill(
+          $('branch'),
+          branches.map(branch => ({ value: branch.ID, label: `${branch.Name} — ${branch.CompanyName} · IID ${branch.IntegrationId} · ${branch.ID}` })),
+          branches.some(branch => branch.ID === wanted) ? wanted : branches[0]?.ID,
+        );
+        $('branch').disabled = false;
+        fillBranchChoices(keep);
+        apply();
+      }
+
+      for (const [id, key] of [
+        ['version', 'version'],
+        ['today', 'today'],
+        ['appearance', 'appearance'],
+        ['scheme', 'scheme'],
+        ['size', 'size'],
+        ['language', 'language'],
+        ['hour-cycle', 'hourCycle'],
+      ]) {
+        if (params.has(key)) $(id).value = params.get(key);
+      }
+      if (params.has('brands')) $('brands').value = params.get('brands');
+      $('slot-counts').checked = params.get('slotCounts') === '1';
+
+      $('brands').addEventListener('change', () => loadBranches());
+      $('branch').addEventListener('change', () => {
+        fillBranchChoices();
+        apply();
+      });
+      for (const id of ['version', 'department', 'brand', 'today']) $(id).addEventListener('change', apply);
+      for (const id of ['appearance', 'scheme', 'size', 'language', 'hour-cycle', 'slot-counts']) $(id).addEventListener('change', applyLook);
+      for (const button of document.querySelectorAll('[data-clear]')) button.addEventListener('click', () => $(button.dataset.clear).replaceChildren());
+
+      booking.addEventListener('slotChange', event => log('events', JSON.stringify(event.detail)));
+
+      customElements.whenDefined('shift-booking-calendar').then(() => {
+        applyLook();
+        loadBranches({ branch: params.get('branch'), department: params.get('department'), brand: params.get('brand') });
+      });
+    </script>
+  </body>
+</html>

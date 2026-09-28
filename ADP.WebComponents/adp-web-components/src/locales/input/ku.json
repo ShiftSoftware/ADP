@@ -1,0 +1,12 @@
+{
+  "chooseDate": "بەروار هەڵبژێرە",
+  "changeDate": "گۆڕینی بەروار، {date}",
+  "clear": "سڕینەوە",
+  "invalid": "بەروار بەم شێوەیە بنووسە {format}",
+  "tooEarly": "{date} یان دواتر هەڵبژێرە",
+  "tooLate": "{date} یان پێشتر هەڵبژێرە",
+  "unavailable": "ناتوانرێت {date} هەڵبژێردرێت",
+  "day": "ڕ",
+  "month": "م",
+  "year": "س"
+}

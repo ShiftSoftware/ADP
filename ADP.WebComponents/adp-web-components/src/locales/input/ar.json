@@ -1,0 +1,12 @@
+{
+  "chooseDate": "اختر التاريخ",
+  "changeDate": "تغيير التاريخ، {date}",
+  "clear": "مسح",
+  "invalid": "أدخل التاريخ بالشكل {format}",
+  "tooEarly": "اختر {date} أو ما بعده",
+  "tooLate": "اختر {date} أو ما قبله",
+  "unavailable": "لا يمكن اختيار {date}",
+  "day": "ي",
+  "month": "ش",
+  "year": "س"
+}

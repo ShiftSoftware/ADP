@@ -1,0 +1,1556 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Day strip — adp-web-components</title>
+    <link rel="icon" href="/templates/assets/favicon.svg" type="image/svg+xml" />
+
+    <meta name="adp-publish" content="true" />
+    <meta
+      name="description"
+      content="shift-day-strip: a horizontal row of day cards for choosing one date, with the calendar's rules, five appearances, five sizes and light or dark."
+    />
+    <meta name="docs-family" content="calendar" />
+    <meta name="docs-family-order" content="5" />
+
+    <link rel="stylesheet" href="/templates/harness.css" />
+    <meta name="adp-docs-layout" content="true" />
+    <meta name="adp-docs-fonts" content="400 14px Nunito; 600 14px Nunito; 400 14px Manrope; 600 14px Manrope; 400 14px 'Noto Kufi Arabic'; 600 14px 'Noto Kufi Arabic'" />
+    <!-- The same sheet the package's loader injects (it skips a duplicate); declared here so the page waits for its faces instead of re-flowing when they swap in. -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;family=Noto+Kufi+Arabic:wght@100..900&amp;family=Nunito:ital,wght@0,200..1000;1,200..1000&amp;display=swap"
+    />
+
+    <script src="/templates/harness-theme.js"></script>
+    <script src="/templates/site-locales.js"></script>
+
+    <script nomodule src="/build/shift-components.js"></script>
+    <script type="module" src="/build/shift-components.esm.js"></script>
+
+    <script type="module" src="/templates/harness.js"></script>
+    <script type="module" src="/templates/api-reference.js"></script>
+    <script type="module">
+      import { highlight } from '../highlight.js';
+
+      const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const APPEARANCES = ['vanilla', 'material', 'soft', 'sharp', 'minimal'];
+      const SIZES = ['xs', 'sm', 'md', 'lg', 'xl'];
+      const CDN = version => `https://cdn.jsdelivr.net/npm/adp-web-components@${version}`;
+
+      const list = value =>
+        String(value || '')
+          .split(/[\s,]+/)
+          .map(entry => entry.trim())
+          .filter(Boolean);
+
+      // 'system' leaves data-theme off, so the strips follow the OS through color-scheme="auto".
+      const siteScheme = () => ({ 'harness': 'light', 'harness-dark': 'dark' })[document.documentElement.dataset.theme] ?? 'auto';
+      const siteLanguage = () => document.documentElement.lang || 'en';
+
+      const SNIPPETS = {
+        npm: { lang: 'Shell', code: () => 'npm install adp-web-components' },
+        npmImport: { lang: 'JavaScript', code: () => "import 'adp-web-components/components/shift-day-strip';" },
+        cdnLibrary: {
+          lang: 'HTML',
+          code: version => `<script type="module"\n  src="${CDN(version)}/dist/shift-components/shift-components.esm.js"><\/script>`,
+        },
+        cdnSingle: {
+          lang: 'HTML',
+          code: version =>
+            [
+              '<script type="module">',
+              `  import { loadComponent } from '${CDN(version)}/dist/host-loader.js';`,
+              '',
+              '  await loadComponent({',
+              `    moduleUrl: '${CDN(version)}/dist/components/shift-day-strip.js',`,
+              "    tag: 'shift-day-strip',",
+              `    packageVersion: '${version}',`,
+              '  });',
+              '<\/script>',
+            ].join('\n'),
+        },
+        tag: {
+          lang: 'HTML',
+          code: () =>
+            [
+              '<shift-day-strip id="visit" label="Visit day" min="2026-10-01" max="2026-10-31" disabled-weekdays="5"></shift-day-strip>',
+              '',
+              '<script type="module">',
+              "  document.getElementById('visit').addEventListener('dateChange', event => {",
+              '    console.log(event.detail.value);',
+              '  });',
+              '<\/script>',
+            ].join('\n'),
+        },
+        basic: { lang: 'HTML', code: () => '<shift-day-strip label="Pick a day"></shift-day-strip>' },
+        minmax: {
+          lang: 'HTML',
+          code: () =>
+            ['<shift-day-strip', '  min="2026-09-28"', '  max="2026-10-25"', '  disabled-weekdays="5,6"', '  disabled-dates="2026-10-06"', '></shift-day-strip>'].join('\n'),
+        },
+        availability: {
+          lang: 'JavaScript',
+          code: () =>
+            [
+              "const strip = document.querySelector('shift-day-strip');",
+              '',
+              'strip.busy = true;',
+              '',
+              'const days = await loadAvailability(); // [{ Date, Times }]',
+              '',
+              'strip.enabledDates = days.map(day => day.Date);',
+              'strip.dayMeta = Object.fromEntries(',
+              '  days.map(day => [day.Date, {',
+              '    badge: String(day.Times.length),',
+              "    tone: day.Times.length >= 8 ? 'success' : 'warning',",
+              '    description: `${day.Times.length} times available`,',
+              '  }]),',
+              ');',
+              'strip.caption = `${days.length} days available`;',
+              'strip.busy = false;',
+            ].join('\n'),
+        },
+        overrideHtml: { lang: 'HTML', code: () => '<shift-day-strip class="brand-strip" min="2026-09-27" value="2026-09-29"></shift-day-strip>' },
+        overrideCss: {
+          lang: 'CSS',
+          code: () =>
+            document
+              .getElementById('override-css')
+              .textContent.replace(/^\n+|\s+$/g, '')
+              .replace(/^ {6}/gm, ''),
+        },
+      };
+
+      document.addEventListener('alpine:init', () => {
+        const store = window.Alpine.store('dayStripDocs', { version: 'latest' });
+
+        fetch(new URL('../integration-manifest.json', window.location.href))
+          .then(response => (response.ok ? response.json() : null))
+          .then(data => {
+            if (data?.packageVersion) window.Alpine.store('dayStripDocs').version = data.packageVersion;
+          })
+          .catch(() => store);
+      });
+
+      const svg = paths =>
+        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+
+      const ICONS = {
+        'appearance': svg(
+          '<circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16" cy="10" r="1"/><path d="M12 21a3 3 0 0 1 0-6h3"/>',
+        ),
+        'light': svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+        'dark': svg('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'),
+        'auto': svg('<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>'),
+        'focus': svg('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>'),
+        'look-vanilla': svg('<rect x="4" y="4" width="16" height="16" rx="4"/>'),
+        'look-material': svg('<circle cx="12" cy="10" r="6" fill="currentColor"/><ellipse cx="12" cy="19.5" rx="6" ry="1.5" fill="currentColor" stroke="none" opacity=".35"/>'),
+        'look-soft': svg('<rect x="3" y="5" width="18" height="14" rx="7" fill="currentColor" fill-opacity=".3" stroke="none"/>'),
+        'look-sharp': svg('<rect x="4" y="4" width="16" height="16" stroke-width="3" stroke-linejoin="miter"/>'),
+        'look-minimal': svg('<path d="M4 17h16"/><path d="M8 11h8" opacity=".45"/>'),
+        'show': svg('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+        'code': svg('<path d="m8 7-5 5 5 5"/><path d="m16 7 5 5-5 5"/>'),
+        'reset': svg('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>'),
+      };
+
+      window.dayStripApiGroups = [
+        { label: 'Selection', props: ['value'] },
+        { label: 'Range & availability', props: ['min', 'max', 'disabledDates', 'disabledWeekdays', 'enabledDates', 'isDateDisabled', 'dayMeta', 'today'] },
+        { label: 'Display & behaviour', props: ['highlightToday', 'caption', 'disabled', 'busy', 'label'] },
+        { label: 'Appearance', props: ['appearance', 'colorScheme', 'size'] },
+        { label: 'Localization', props: ['language', 'numerals'] },
+      ];
+
+      const THEME_ROLES = [
+        { key: 'accent', label: 'Accent', variable: '--shift-accent', probe: '--_accent' },
+        { key: 'surface', label: 'Surface', variable: '--shift-surface', probe: '--_surface' },
+        { key: 'ink', label: 'Ink', variable: '--shift-ink', probe: '--_ink' },
+        { key: 'muted', label: 'Muted', variable: '--shift-ink-muted', probe: '--_muted' },
+        { key: 'line', label: 'Line', variable: '--shift-line', probe: '--_line' },
+        { key: 'focus', label: 'Focus', variable: '--shift-focus', probe: '--_focus' },
+      ];
+
+      const THEME_METRICS = [
+        { key: 'radius', label: 'Card radius', variable: '--shift-radius-sm', probe: '--_day-radius', min: 0, max: 24 },
+        { key: 'font', label: 'Font size', variable: '--shift-font-size', probe: '--_font-size', min: 11, max: 20 },
+        { key: 'cell', label: 'Density', variable: '--shift-cell-size', probe: '--_cell', min: 28, max: 56 },
+      ];
+
+      const toHex = value => {
+        const context = document.createElement('canvas').getContext('2d');
+
+        context.fillStyle = '#ffffff';
+        context.fillStyle = value.trim() || '#ffffff';
+
+        const colour = context.fillStyle;
+        const rgb = colour.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+
+        if (!rgb) return colour;
+        if (rgb[4] === '0') return '#ffffff';
+
+        return (
+          '#' +
+          rgb
+            .slice(1, 4)
+            .map(part => Number(part).toString(16).padStart(2, '0'))
+            .join('')
+        );
+      };
+
+      const toPixels = value => {
+        const probe = document.createElement('div');
+
+        probe.style.cssText = `position:absolute;visibility:hidden;width:${value.trim() || '0px'}`;
+        document.body.append(probe);
+
+        const width = probe.getBoundingClientRect().width;
+
+        probe.remove();
+        return Math.round(width);
+      };
+
+      const luminance = hex => {
+        const [r, g, b] = [1, 3, 5]
+          .map(index => parseInt(hex.slice(index, index + 2), 16) / 255)
+          .map(channel => (channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4));
+
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      };
+
+      window.themeBuilder = () => ({
+        roles: THEME_ROLES,
+        metrics: THEME_METRICS,
+        values: {},
+        touched: {},
+        copied: false,
+
+        init() {
+          customElements
+            .whenDefined('shift-day-strip')
+            .then(() => this.$refs.preview.componentOnReady?.())
+            .then(() => setTimeout(() => this.seed(), 50));
+          this.$watch('scheme', () => setTimeout(() => this.seed(), 50));
+          this.$watch('appearance', () => setTimeout(() => this.seed(), 50));
+        },
+
+        seed() {
+          const style = getComputedStyle(this.$refs.preview);
+
+          for (const role of THEME_ROLES) if (!this.touched[role.key]) this.values[role.key] = toHex(style.getPropertyValue(role.probe));
+
+          for (const metric of THEME_METRICS) {
+            if (!this.touched[metric.key]) this.values[metric.key] = Math.min(metric.max, Math.max(metric.min, toPixels(style.getPropertyValue(metric.probe))));
+          }
+        },
+
+        set(key, value) {
+          this.values[key] = value;
+          this.touched[key] = true;
+          this.paint();
+        },
+
+        get declarations() {
+          const lines = [];
+
+          for (const role of THEME_ROLES) {
+            if (!this.touched[role.key]) continue;
+            lines.push([role.variable, this.values[role.key]]);
+            if (role.key === 'accent') lines.push(['--shift-on-accent', luminance(this.values.accent) > 0.18 ? '#0f172a' : '#ffffff']);
+          }
+
+          for (const metric of THEME_METRICS) if (this.touched[metric.key]) lines.push([metric.variable, `${this.values[metric.key]}px`]);
+
+          return lines;
+        },
+
+        paint() {
+          const preview = this.$refs.preview;
+
+          for (const name of [...THEME_ROLES, ...THEME_METRICS].map(item => item.variable).concat('--shift-on-accent')) preview.style.removeProperty(name);
+          for (const [name, value] of this.declarations) preview.style.setProperty(name, value);
+        },
+
+        get css() {
+          const lines = this.declarations;
+
+          return lines.length ? `shift-day-strip {\n${lines.map(([name, value]) => `  ${name}: ${value};`).join('\n')}\n}` : '/* Change a colour or a size to generate CSS. */';
+        },
+
+        reset() {
+          this.touched = {};
+          this.paint();
+          this.seed();
+        },
+
+        async copy() {
+          try {
+            await navigator.clipboard.writeText(this.css);
+            this.copied = true;
+            setTimeout(() => (this.copied = false), 1600);
+          } catch {
+            this.copied = false;
+          }
+        },
+      });
+
+      const HOVER = window.matchMedia('(hover: hover)');
+
+      window.partsExplorer = () => ({
+        openPart: '',
+        previewPart: '',
+
+        preview(name, event) {
+          if (event?.pointerType === 'touch' || (event?.type === 'pointerenter' && !HOVER.matches)) return;
+          this.previewPart = name;
+          this.highlight();
+        },
+
+        endPreview() {
+          this.previewPart = '';
+          this.highlight();
+        },
+
+        init() {
+          customElements.whenDefined('shift-day-strip').then(() => {
+            this.$refs.demo.dayMeta = {
+              '2026-09-29': { badge: '3', tone: 'success', description: '3 times available' },
+              '2026-09-30': { badge: '1', tone: 'warning', description: '1 time available' },
+            };
+          });
+
+          const fromHash = decodeURIComponent(window.location.hash.slice(1)).replace(/^part-/, '');
+          this.$watch('parts', parts => {
+            if (!this.openPart && parts.some(part => part.name === fromHash)) this.toggle(fromHash);
+          });
+        },
+
+        tagsFor(part) {
+          return this.stateParts.has(part.name) ? ['state part'] : [];
+        },
+
+        toggle(name, button) {
+          this.openPart = this.openPart === name ? '' : name;
+          this.highlight();
+          if (this.openPart) window.history.replaceState(window.history.state, '', `#part-${name}`);
+          if (button) setTimeout(() => button.focus({ preventScroll: true }), 60);
+        },
+
+        highlight() {
+          let style = document.getElementById('parts-highlight');
+
+          if (!style) {
+            style = document.createElement('style');
+            style.id = 'parts-highlight';
+            document.head.append(style);
+          }
+
+          const shown = this.previewPart || this.openPart;
+
+          style.textContent = shown
+            ? `#parts-demo::part(${shown}) { outline: 2px solid var(--color-accent); outline-offset: -2px; background-image: linear-gradient(color-mix(in srgb, var(--color-accent) 22%, transparent), color-mix(in srgb, var(--color-accent) 22%, transparent)); }`
+            : '';
+        },
+      });
+
+      window.codeBlock = key => ({
+        copied: false,
+
+        get lang() {
+          return SNIPPETS[key].lang;
+        },
+
+        get code() {
+          return SNIPPETS[key].code(this.$store.dayStripDocs.version);
+        },
+
+        get html() {
+          return highlight(this.code, this.lang);
+        },
+
+        async copy() {
+          try {
+            await navigator.clipboard.writeText(this.code);
+            this.copied = true;
+            setTimeout(() => (this.copied = false), 1600);
+          } catch {
+            this.copied = false;
+          }
+        },
+      });
+
+      window.dayStripPage = () => ({
+        appearances: APPEARANCES,
+        sizes: SIZES,
+        appearance: 'vanilla',
+        scheme: siteScheme(),
+        language: siteLanguage(),
+
+        init() {
+          new MutationObserver(() => (this.scheme = siteScheme())).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+          window.addEventListener('site-locales:change', event => (this.language = event.detail.language));
+
+          // Strips inside x-if and x-for templates arrive after the first pass.
+          new MutationObserver(records => {
+            if (records.some(record => [...record.addedNodes].some(node => node.nodeType === 1 && (node.matches('shift-day-strip') || node.querySelector('shift-day-strip')))))
+              this.applyAll();
+          }).observe(this.$el, { childList: true, subtree: true });
+
+          this.$watch('appearance', () => this.applyAll());
+          this.$watch('scheme', () => this.applyAll());
+          this.$watch('language', () => this.applyAll());
+          customElements.whenDefined('shift-day-strip').then(() => {
+            this.applyAll();
+            this.preloadFonts();
+          });
+        },
+
+        // All three faces up front, so switching appearance never swaps a font in mid-way.
+        preloadFonts() {
+          const link = document.querySelector('link[href*="fonts.googleapis"]');
+          const load = () => ['Nunito', 'Manrope', '"Noto Kufi Arabic"'].forEach(face => document.fonts.load(`600 14px ${face}`));
+
+          if (link?.sheet) load();
+          else link?.addEventListener('load', load, { once: true });
+        },
+
+        siteT(key) {
+          return window.siteLocales?.t(this.language, key) ?? key;
+        },
+
+        icon(name) {
+          return ICONS[name] ?? '';
+        },
+
+        applyAll() {
+          document.querySelectorAll('shift-day-strip').forEach(strip => {
+            if (!strip.hasAttribute('data-fixed-appearance')) strip.appearance = this.appearance;
+            strip.colorScheme = strip.dataset.scheme || this.scheme;
+            strip.language = strip.dataset.language || this.language;
+          });
+        },
+      });
+
+      const PLAYGROUND = () => ({
+        value: '',
+        min: '',
+        max: '',
+        today: '',
+        label: '',
+        caption: '',
+        size: 'md',
+        scheme: siteScheme(),
+        numerals: '',
+        disabledWeekdays: [],
+        disabledDates: '',
+        allowListOn: false,
+        enabledDates: '',
+        badges: false,
+        vetoEvenDays: false,
+        highlightToday: false,
+        busy: false,
+        disabled: false,
+        language: siteLanguage(),
+      });
+
+      const GROUPS = [
+        { id: 'date', label: 'Date', fields: ['value', 'today', 'highlightToday'] },
+        { id: 'range', label: 'Range & availability', fields: ['min', 'max', 'disabledDates', 'disabledWeekdays', 'allowListOn', 'badges', 'vetoEvenDays'] },
+        { id: 'behaviour', label: 'Behaviour', fields: ['caption', 'disabled', 'busy', 'label'] },
+        { id: 'language', label: 'Language', fields: ['numerals'] },
+      ];
+
+      const stamp = () => {
+        const now = new Date();
+
+        return `${now.toTimeString().slice(0, 8)}.${String(now.getMilliseconds()).padStart(3, '0')}`;
+      };
+
+      window.playground = () => ({
+        weekdayNames: WEEKDAYS,
+        languages: window.siteLocales?.languages ?? [{ code: 'en', label: 'English' }],
+        languageTouched: false,
+        schemeTouched: false,
+        groupList: GROUPS,
+        openGroup: 'date',
+        stageView: 'preview',
+        consoleOpen: true,
+        copied: false,
+        events: [],
+        eventCount: 0,
+        form: PLAYGROUND(),
+
+        get siteDir() {
+          return window.siteLocales?.direction?.(this.language) ?? 'ltr';
+        },
+
+        toggleGroup(id) {
+          this.openGroup = this.openGroup === id ? '' : id;
+        },
+
+        summary(group) {
+          const defaults = PLAYGROUND();
+          const changed = group.fields.filter(field => JSON.stringify(this.form[field]) !== JSON.stringify(defaults[field])).length;
+
+          return changed ? `${changed} set` : '';
+        },
+
+        reset() {
+          this.form = { ...PLAYGROUND(), language: this.form.language, scheme: this.form.scheme };
+        },
+
+        log(name, detail) {
+          this.events.unshift({ id: ++this.eventCount, time: stamp(), name, detail });
+          if (this.events.length > 100) this.events.pop();
+        },
+
+        async init() {
+          const subject = document.querySelector('#subject');
+
+          window.addEventListener('site-locales:change', event => {
+            if (!this.languageTouched) this.form.language = event.detail.language;
+          });
+          window.addEventListener('docs:map-select', event => {
+            if (event.detail.id === 'playground-code') this.stageView = 'code';
+            if (event.detail.id === 'playground-preview') this.stageView = 'preview';
+          });
+          this.$watch('stageView', view => window.dispatchEvent(new CustomEvent('docs:map-pin', { detail: { id: `playground-${view}` } })));
+          this.$watch('scheme', scheme => {
+            if (!this.schemeTouched) this.form.scheme = scheme;
+          });
+
+          await customElements.whenDefined('shift-day-strip');
+          await subject.componentOnReady?.();
+
+          subject.addEventListener('dateChange', event => {
+            this.form.value = event.detail.value;
+            this.log('dateChange', JSON.stringify(event.detail));
+          });
+
+          this.apply();
+          this.$watch('form', () => this.apply());
+          this.$watch('appearance', () => this.apply());
+        },
+
+        apply() {
+          const subject = document.querySelector('#subject');
+          const form = this.form;
+
+          subject.appearance = this.appearance;
+          subject.today = form.today || undefined;
+          subject.min = form.min || undefined;
+          subject.max = form.max || undefined;
+          subject.value = form.value;
+          subject.label = form.label || undefined;
+          subject.caption = form.caption || undefined;
+          subject.dataset.language = form.language;
+          subject.language = form.language;
+          subject.size = form.size;
+          subject.dataset.scheme = form.scheme;
+          subject.colorScheme = form.scheme;
+          subject.numerals = form.numerals || undefined;
+          subject.disabledWeekdays = form.disabledWeekdays.map(Number);
+          subject.disabledDates = list(form.disabledDates);
+          subject.enabledDates = form.allowListOn ? list(form.enabledDates) : null;
+          subject.isDateDisabled = form.vetoEvenDays ? date => Number(date.slice(8)) % 2 === 0 : undefined;
+          subject.dayMeta = form.badges ? this.sampleMeta() : undefined;
+          subject.highlightToday = form.highlightToday;
+          subject.busy = form.busy;
+          subject.disabled = form.disabled;
+        },
+
+        get code() {
+          const form = this.form;
+          const attributes = [['appearance', this.appearance]];
+          const add = (name, value) => value !== '' && value !== undefined && value !== null && attributes.push([name, value]);
+
+          if (form.size !== 'md') add('size', form.size);
+          if (form.scheme !== 'light') add('color-scheme', form.scheme);
+          if (form.language !== 'en') add('language', form.language);
+          add('value', form.value);
+          add('min', form.min);
+          add('max', form.max);
+          add('today', form.today);
+          add('label', form.label);
+          add('caption', form.caption);
+          add('numerals', form.numerals);
+          add('disabled-dates', list(form.disabledDates).join(', '));
+          add('disabled-weekdays', form.disabledWeekdays.join(','));
+          if (form.allowListOn) attributes.push(['enabled-dates', list(form.enabledDates).join(', ')]);
+          for (const [flag, name] of [
+            ['highlightToday', 'highlight-today'],
+            ['disabled', 'disabled'],
+            ['busy', 'busy'],
+          ]) {
+            if (form[flag]) attributes.push([name, true]);
+          }
+
+          const tag = ['<shift-day-strip', ...attributes.map(([name, value]) => (value === true ? `  ${name}` : `  ${name}="${value}"`)), '></shift-day-strip>'].join('\n');
+          const script = [];
+
+          if (form.badges) script.push(`  strip.dayMeta = ${JSON.stringify(this.sampleMeta(), null, 2).replace(/\n/g, '\n  ')};`);
+          if (form.vetoEvenDays) script.push('  strip.isDateDisabled = date => Number(date.slice(8)) % 2 === 0;');
+
+          return script.length ? `${tag}\n\n<script type="module">\n  const strip = document.querySelector('shift-day-strip');\n\n${script.join('\n')}\n<\/script>` : tag;
+        },
+
+        get codeHtml() {
+          return highlight(this.code, 'html');
+        },
+
+        async copyCode() {
+          try {
+            await navigator.clipboard.writeText(this.code);
+            this.copied = true;
+            setTimeout(() => (this.copied = false), 1600);
+          } catch {
+            this.copied = false;
+          }
+        },
+
+        focusSubject() {
+          document.querySelector('#subject').setFocus();
+          this.log('setFocus', '()');
+        },
+
+        // Badges on every third day of the strip the subject is showing now.
+        sampleMeta() {
+          const meta = {};
+          const days = [...(document.querySelector('#subject').shadowRoot?.querySelectorAll('[role="option"]') ?? [])].map(card => card.dataset.date);
+
+          days.forEach((date, index) => {
+            if (index % 3) return;
+            const count = (index * 7) % 11;
+            meta[date] = { badge: String(count), tone: count >= 6 ? 'success' : count >= 3 ? 'warning' : 'danger', description: `${count} times available` };
+          });
+
+          return meta;
+        },
+      });
+
+      window.bookingExample = () => ({
+        data: null,
+        picked: '',
+
+        async init() {
+          const response = await fetch(new URL('calendar-availability.json', window.location.href));
+          this.data = await response.json();
+        },
+
+        get days() {
+          return this.data?.scenarios['late-opening'] ?? [];
+        },
+
+        get enabledDates() {
+          return this.days.map(day => day.Date);
+        },
+
+        get dayMeta() {
+          return Object.fromEntries(
+            this.days.map(day => [
+              day.Date,
+              { badge: String(day.Times.length), tone: day.Times.length >= 8 ? 'success' : 'warning', description: `${day.Times.length} times available` },
+            ]),
+          );
+        },
+
+        caption(language) {
+          const count = this.days.length;
+          const arabic = String(count).replace(/[0-9]/g, digit => String.fromCharCode(0x0660 + Number(digit)));
+          const text = { en: `${count} days available`, ar: `${arabic} يوماً متاحاً`, ku: `${arabic} ڕۆژی بەردەست`, ru: `Доступно дней: ${count}` };
+
+          return count ? (text[language] ?? text.en) : '';
+        },
+
+        get times() {
+          return this.days.find(day => day.Date === this.picked)?.Times.map(time => time.slice(11)) ?? [];
+        },
+      });
+    </script>
+    <script defer src="/templates/vendor/alpine.js"></script>
+
+    <style id="override-css">
+      .brand-strip {
+        --shift-accent: #0f766e;
+        --shift-on-accent: #ffffff;
+        --shift-focus: #0f766e;
+        --shift-radius-sm: 999px;
+      }
+
+      .brand-strip::part(month) {
+        font-weight: 700;
+      }
+    </style>
+
+    <style>
+      .docs-shell shift-day-strip:not(.hydrated) {
+        display: block;
+        min-height: 88px;
+      }
+
+      .studio-preview shift-day-strip {
+        width: min(100%, 560px);
+      }
+    </style>
+  </head>
+
+  <body class="wide-column bg-base-200 text-base-content min-h-screen">
+    <div data-site-header></div>
+
+    <div class="docs-shell" data-docs-layout>
+      <div class="docs-sider" id="docs-sider"></div>
+      <div class="docs-main">
+        <div class="docs-bar"></div>
+        <section
+          class="showcase"
+          dir="ltr"
+          x-data="harness({ subject: '#subject', mocks: null, connection: false, events: false, language: false, today: false, platforms: [{ label: '320', value: '320px' }, { label: '380', value: '380px' }, { label: 'Full', value: '100%' }] })"
+        >
+          <div class="showcase-brief">
+            <header class="showcase-title sr-only" data-doc-icon="calendar">
+              <h1>Day strip</h1>
+            </header>
+          </div>
+
+          <div class="showcase-stage @container flex flex-col gap-4" x-data="dayStripPage()">
+            <section
+              data-doc-tab="overview"
+              data-doc-label="Overview"
+              data-doc-icon="overview"
+              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
+            >
+              <header class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h2 class="text-3xl font-bold tracking-tight">Overview</h2>
+                  <p class="lede text-base-content/70 mt-2 max-w-[70ch]">
+                    <code>shift-day-strip</code> is a horizontal row of day cards for choosing one date: the calendar’s inputs and <code>dateChange</code>, laid out as a strip that
+                    scrolls. It makes no requests of its own.
+                  </p>
+                </div>
+                <div class="appearance-field">
+                  <span class="appearance-label" id="appearance-label-overview" x-text="siteT('docs.appearance')"></span>
+                  <div class="seg appearance-pick" role="radiogroup" aria-labelledby="appearance-label-overview">
+                    <template x-for="item in appearances" :key="item">
+                      <label
+                        ><input type="radio" name="appearance-overview" :value="item" x-model="appearance" /><span
+                          ><span x-html="icon('look-' + item)"></span><span class="capitalize" x-text="item"></span></span
+                      ></label>
+                    </template>
+                  </div>
+                </div>
+              </header>
+
+              <div class="frame max-w-[560px]" style="margin-inline: 0"><shift-day-strip label="Pick a day"></shift-day-strip></div>
+
+              <div class="grid gap-4 @2xl:grid-cols-2">
+                <div class="border-base-300 rounded-box border p-5">
+                  <h3 class="text-lg font-semibold">Use it for</h3>
+                  <ul class="text-base-content/75 mt-2 list-disc ps-5 text-sm">
+                    <li>A booking day from a short window, such as the next two weeks, with times chosen beneath it.</li>
+                    <li>Showing which days are open, with a count or status per day.</li>
+                  </ul>
+                </div>
+                <div class="border-base-300 rounded-box border p-5">
+                  <h3 class="text-lg font-semibold">Not for</h3>
+                  <ul class="text-base-content/75 mt-2 list-disc ps-5 text-sm">
+                    <li>Dates far away or open-ended, such as a birthdate; use <a class="link" href="shift-calendar.html">shift-calendar</a>.</li>
+                    <li>Date ranges or times of day.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <ul class="text-base-content/75 flex max-w-[70ch] list-disc flex-col gap-1 ps-5 text-sm">
+                <li>
+                  Five appearances (<code>vanilla</code>, <code>material</code>, <code>soft</code>, <code>sharp</code>, <code>minimal</code>), five sizes (<code>xs</code> to
+                  <code>xl</code>, <code>md</code> by default) and light or dark. Try them in the <a class="link" href="#playground">Playground</a>.
+                </li>
+                <li><code>language</code> (en, ar, ku, ru) sets the names, the direction and the digits.</li>
+              </ul>
+            </section>
+
+            <section
+              data-doc-tab="installation"
+              data-doc-label="Installation"
+              data-doc-icon="installation"
+              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
+            >
+              <header>
+                <h2 class="text-3xl font-bold tracking-tight">Installation</h2>
+                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">From npm or a CDN, then place the tag.</p>
+              </header>
+
+              <div class="flex max-w-[80ch] flex-col gap-2">
+                <h3 class="text-lg font-semibold">npm</h3>
+                <p class="text-base-content/70 text-sm">Install the package, then import the element once. The import registers <code>&lt;shift-day-strip&gt;</code>.</p>
+                <template x-for="key in ['npm', 'npmImport']" :key="key">
+                  <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock(key)">
+                    <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                      <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
+                      <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
+                    </figcaption>
+                    <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
+                  </figure>
+                </template>
+              </div>
+
+              <div class="flex max-w-[80ch] flex-col gap-2">
+                <h3 class="text-lg font-semibold">CDN</h3>
+                <p class="text-base-content/70 text-sm">
+                  The whole package in one module tag, or this element alone through the host loader. Pin the version you tested; one page loads one version.
+                </p>
+                <template x-for="key in ['cdnLibrary', 'cdnSingle']" :key="key">
+                  <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock(key)">
+                    <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                      <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
+                      <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
+                    </figcaption>
+                    <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
+                  </figure>
+                </template>
+              </div>
+
+              <div class="flex max-w-[80ch] flex-col gap-2">
+                <h3 class="text-lg font-semibold">The tag</h3>
+                <p class="text-base-content/70 text-sm">Attributes for plain values, properties for arrays, objects and functions. Listen for <code>dateChange</code>.</p>
+                <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock('tag')">
+                  <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                    <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
+                    <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
+                  </figcaption>
+                  <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
+                </figure>
+              </div>
+            </section>
+
+            <section
+              data-doc-tab="examples"
+              data-doc-label="Usage & examples"
+              data-doc-icon="examples"
+              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-10 border p-5 shadow-sm sm:p-8"
+            >
+              <header class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h2 class="text-3xl font-bold tracking-tight">Usage &amp; examples</h2>
+                  <p class="lede text-base-content/70 mt-2 max-w-[70ch]">Each example is live, with the code beside it. The appearance switch applies to all of them.</p>
+                </div>
+                <div class="appearance-field">
+                  <span class="appearance-label" id="appearance-label-examples" x-text="siteT('docs.appearance')"></span>
+                  <div class="seg appearance-pick" role="radiogroup" aria-labelledby="appearance-label-examples">
+                    <template x-for="item in appearances" :key="item">
+                      <label
+                        ><input type="radio" name="appearance-examples" :value="item" x-model="appearance" /><span
+                          ><span x-html="icon('look-' + item)"></span><span class="capitalize" x-text="item"></span></span
+                      ></label>
+                    </template>
+                  </div>
+                </div>
+              </header>
+
+              <a href="#playground" class="border-base-300 rounded-box hover:border-accent/50 flex flex-wrap items-baseline gap-x-3 gap-y-1 border p-5 transition-colors">
+                <h3 class="text-lg font-semibold">1 · Playground</h3>
+                <span class="text-base-content/70 text-sm">Every prop and the event log, in its own page.</span>
+              </a>
+
+              <article class="grid gap-3 @3xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)] @3xl:gap-6">
+                <div class="flex flex-col gap-1 @3xl:col-span-2">
+                  <h3 class="text-lg font-semibold">2 · The next 30 days</h3>
+                  <p class="text-base-content/70 text-sm">With no range, the strip shows 30 days from today.</p>
+                </div>
+                <div class="frame"><shift-day-strip label="Pick a day"></shift-day-strip></div>
+                <figure class="border-base-300 min-w-0 self-start overflow-hidden rounded-lg border" x-data="codeBlock('basic')">
+                  <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                    <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
+                    <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
+                  </figcaption>
+                  <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
+                </figure>
+              </article>
+
+              <article class="grid gap-3 @3xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)] @3xl:gap-6" x-data="bookingExample()">
+                <div class="flex flex-col gap-1 @3xl:col-span-2">
+                  <h3 class="text-lg font-semibold">3 · Availability with badges</h3>
+                  <p class="text-base-content/70 text-sm">Open days and time counts from data shaped like the calendar API, <code>[{ Date, Times }]</code>.</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <div class="frame">
+                    <shift-day-strip
+                      today="2026-09-27"
+                      x-effect="$el.enabledDates = enabledDates; $el.dayMeta = dayMeta; $el.caption = caption(language); $el.value = picked"
+                      @date-change.camel="picked = $event.detail.value"
+                    ></shift-day-strip>
+                  </div>
+                  <p class="text-base-content/70 min-h-4 text-xs tabular-nums" x-text="picked ? times.join(' · ') : ''"></p>
+                </div>
+                <figure class="border-base-300 min-w-0 self-start overflow-hidden rounded-lg border" x-data="codeBlock('availability')">
+                  <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                    <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
+                    <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
+                  </figcaption>
+                  <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
+                </figure>
+              </article>
+
+              <article class="grid gap-3 @3xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)] @3xl:gap-6">
+                <div class="flex flex-col gap-1 @3xl:col-span-2">
+                  <h3 class="text-lg font-semibold">4 · Min, max and disabled weekdays</h3>
+                  <p class="text-base-content/70 text-sm">28 September to 25 October, Fridays, Saturdays and 6 October closed.</p>
+                </div>
+                <div class="frame">
+                  <shift-day-strip today="2026-09-27" min="2026-09-28" max="2026-10-25" disabled-weekdays="5,6" disabled-dates="2026-10-06"></shift-day-strip>
+                </div>
+                <figure class="border-base-300 min-w-0 self-start overflow-hidden rounded-lg border" x-data="codeBlock('minmax')">
+                  <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                    <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
+                    <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
+                  </figcaption>
+                  <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
+                </figure>
+              </article>
+
+              <article class="grid gap-3 @3xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)] @3xl:gap-6">
+                <div class="flex flex-col gap-1 @3xl:col-span-2">
+                  <h3 class="text-lg font-semibold">5 · Host override</h3>
+                  <p class="text-base-content/70 text-sm">A few <code>--shift-*</code> variables and one <code>::part</code> rule win over every appearance, in light and dark.</p>
+                </div>
+                <div class="frame"><shift-day-strip class="brand-strip" today="2026-09-27" min="2026-09-27" value="2026-09-29"></shift-day-strip></div>
+                <div class="flex min-w-0 flex-col gap-3 self-start">
+                  <template x-for="key in ['overrideCss', 'overrideHtml']" :key="key">
+                    <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock(key)">
+                      <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                        <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
+                        <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
+                      </figcaption>
+                      <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
+                    </figure>
+                  </template>
+                </div>
+              </article>
+            </section>
+
+            <section
+              data-doc-tab="playground"
+              data-doc-label="Playground"
+              data-doc-icon="playground"
+              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-6 border p-5 shadow-sm sm:p-8"
+              x-data="playground()"
+            >
+              <header>
+                <h2 class="text-3xl font-bold tracking-tight">Playground</h2>
+                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">Every prop, live. The toolbar sets the look and the language; the inspector sets everything else.</p>
+              </header>
+
+              <div class="@container">
+                <div class="studio" :dir="siteDir">
+                  <div class="studio-toolbar" role="toolbar" aria-label="Preview">
+                    <fieldset class="seg">
+                      <legend class="sr-only">Appearance</legend>
+                      <template x-for="item in appearances" :key="item">
+                        <label :title="item"
+                          ><input type="radio" name="pg-appearance" :value="item" x-model="appearance" :aria-label="item" /><span
+                            ><span x-html="icon('look-' + item)"></span><span class="capitalize" x-text="item"></span></span
+                        ></label>
+                      </template>
+                    </fieldset>
+                    <fieldset class="seg">
+                      <legend class="sr-only">Size</legend>
+                      <template x-for="item in sizes" :key="item">
+                        <label><input type="radio" name="pg-size" :value="item" x-model="form.size" /><span x-text="item"></span></label>
+                      </template>
+                    </fieldset>
+                    <fieldset class="seg">
+                      <legend class="sr-only">Language</legend>
+                      <template x-for="item in languages" :key="item.code">
+                        <label :title="item.label"
+                          ><input type="radio" name="pg-language" :value="item.code" x-model="form.language" @change="languageTouched = true" /><span
+                            class="uppercase"
+                            x-text="item.code"
+                          ></span
+                        ></label>
+                      </template>
+                    </fieldset>
+                    <fieldset class="seg">
+                      <legend class="sr-only">Colour scheme</legend>
+                      <template x-for="item in ['light', 'dark', 'auto']" :key="item">
+                        <label :title="item"
+                          ><input type="radio" name="pg-scheme" :value="item" x-model="form.scheme" @change="schemeTouched = true" :aria-label="item" /><span
+                            x-html="icon(item)"
+                          ></span
+                        ></label>
+                      </template>
+                    </fieldset>
+                    <span class="studio-tools">
+                      <fieldset class="seg">
+                        <legend class="sr-only">View</legend>
+                        <label title="Preview"
+                          ><input type="radio" name="pg-view" value="preview" x-model="stageView" aria-label="Preview" /><span x-html="icon('show')"></span
+                        ></label>
+                        <label title="Code"><input type="radio" name="pg-view" value="code" x-model="stageView" aria-label="Code" /><span x-html="icon('code')"></span></label>
+                      </fieldset>
+                      <span class="tooltip tooltip-bottom" data-tip="setFocus()">
+                        <button type="button" class="studio-icon" aria-label="setFocus()" @click="focusSubject()" x-html="icon('focus')"></button>
+                      </span>
+                      <span class="tooltip tooltip-bottom" data-tip="Reset every prop">
+                        <button type="button" class="studio-icon" aria-label="Reset every prop" @click="reset()" x-html="icon('reset')"></button>
+                      </span>
+                    </span>
+                  </div>
+
+                  <div class="studio-canvas">
+                    <h3 class="sr-only" id="playground-preview">Preview</h3>
+                    <div class="studio-preview" x-show="stageView === 'preview'">
+                      <shift-day-strip id="subject" data-fixed-appearance></shift-day-strip>
+                    </div>
+                    <div class="studio-code" x-show="stageView === 'code'" x-cloak>
+                      <button type="button" class="btn btn-xs btn-ghost studio-copy" @click="copyCode()" x-text="copied ? 'Copied' : 'Copy'"></button>
+                      <pre class="code m-0 h-full overflow-auto rounded-none border-0 bg-transparent"><code x-html="codeHtml"></code></pre>
+                    </div>
+                  </div>
+
+                  <div class="studio-inspector">
+                    <div class="studio-inspector-scroll">
+                      <h3 class="studio-inspector-title" id="playground-properties">Properties</h3>
+                      <template x-for="group in groupList" :key="group.id">
+                        <div class="studio-group">
+                          <button
+                            type="button"
+                            class="studio-group-head"
+                            :aria-expanded="String(openGroup === group.id)"
+                            :aria-controls="'pg-' + group.id"
+                            @click="toggleGroup(group.id)"
+                          >
+                            <svg
+                              class="api-chevron h-3 w-3 shrink-0 opacity-60"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2.5"
+                              stroke-linecap="round"
+                              aria-hidden="true"
+                            >
+                              <path d="m9 6 6 6-6 6" />
+                            </svg>
+                            <span x-text="group.label"></span>
+                            <span class="studio-group-summary" x-text="summary(group)"></span>
+                          </button>
+                          <div class="api-row-body" :id="'pg-' + group.id" :data-open="String(openGroup === group.id)" x-effect="$el.inert = openGroup !== group.id">
+                            <div>
+                              <template x-if="group.id === 'date'">
+                                <div class="studio-rows">
+                                  <label class="studio-row"><span>value</span><input class="input input-xs input-bordered" type="date" x-model="form.value" /></label>
+                                  <label class="studio-row"><span>today</span><input class="input input-xs input-bordered" type="date" x-model="form.today" /></label>
+                                  <label class="studio-row"><span>highlightToday</span><input type="checkbox" class="toggle toggle-xs" x-model="form.highlightToday" /></label>
+                                </div>
+                              </template>
+                              <template x-if="group.id === 'range'">
+                                <div class="studio-rows">
+                                  <label class="studio-row"><span>min</span><input class="input input-xs input-bordered" type="date" x-model="form.min" /></label>
+                                  <label class="studio-row"><span>max</span><input class="input input-xs input-bordered" type="date" x-model="form.max" /></label>
+                                  <label class="studio-row"
+                                    ><span>disabledDates</span
+                                    ><input class="input input-xs input-bordered" type="text" x-model.debounce.300ms="form.disabledDates" placeholder="2026-10-06, …"
+                                  /></label>
+                                  <div class="studio-row" role="group" aria-label="disabledWeekdays">
+                                    <span>disabledWeekdays</span>
+                                    <span class="studio-days">
+                                      <template x-for="(name, index) in weekdayNames" :key="name">
+                                        <label :title="name"
+                                          ><input type="checkbox" :value="String(index)" x-model="form.disabledWeekdays" :aria-label="name" /><span x-text="name.charAt(0)"></span
+                                        ></label>
+                                      </template>
+                                    </span>
+                                  </div>
+                                  <label class="studio-row"><span>enabledDates</span><input type="checkbox" class="toggle toggle-xs" x-model="form.allowListOn" /></label>
+                                  <label class="studio-row studio-row-sub" x-show="form.allowListOn"
+                                    ><span class="sr-only">enabledDates list</span
+                                    ><input
+                                      class="input input-xs input-bordered w-full"
+                                      type="text"
+                                      x-model.debounce.300ms="form.enabledDates"
+                                      placeholder="2026-10-01, 2026-10-02"
+                                  /></label>
+                                  <label class="studio-row"
+                                    ><span>dayMeta <small>sample badges</small></span
+                                    ><input type="checkbox" class="toggle toggle-xs" x-model="form.badges"
+                                  /></label>
+                                  <label class="studio-row"
+                                    ><span>isDateDisabled <small>even days</small></span
+                                    ><input type="checkbox" class="toggle toggle-xs" x-model="form.vetoEvenDays"
+                                  /></label>
+                                </div>
+                              </template>
+                              <template x-if="group.id === 'behaviour'">
+                                <div class="studio-rows">
+                                  <label class="studio-row"
+                                    ><span>caption</span
+                                    ><input class="input input-xs input-bordered" type="text" x-model.debounce.300ms="form.caption" placeholder="15 days available"
+                                  /></label>
+                                  <label class="studio-row"><span>disabled</span><input type="checkbox" class="toggle toggle-xs" x-model="form.disabled" /></label>
+                                  <label class="studio-row"><span>busy</span><input type="checkbox" class="toggle toggle-xs" x-model="form.busy" /></label>
+                                  <label class="studio-row"
+                                    ><span>label</span><input class="input input-xs input-bordered" type="text" x-model.debounce.300ms="form.label" placeholder="Choose a day"
+                                  /></label>
+                                </div>
+                              </template>
+                              <template x-if="group.id === 'language'">
+                                <div class="studio-rows">
+                                  <label class="studio-row"
+                                    ><span>numerals</span
+                                    ><select class="select select-xs select-bordered" x-model="form.numerals">
+                                      <option value="">default</option>
+                                      <option value="latn">latn</option>
+                                      <option value="arab">arab</option>
+                                    </select></label
+                                  >
+                                  <p class="studio-hint">en and ru use Latin digits; ar and ku Arabic-Indic digits.</p>
+                                </div>
+                              </template>
+                            </div>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                  <div class="studio-console">
+                    <h3 class="studio-console-bar" id="playground-events">
+                      <button type="button" class="studio-console-toggle" :aria-expanded="String(consoleOpen)" aria-controls="pg-console" @click="consoleOpen = !consoleOpen">
+                        <svg
+                          class="api-chevron h-3 w-3 opacity-60"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2.5"
+                          stroke-linecap="round"
+                          aria-hidden="true"
+                        >
+                          <path d="m9 6 6 6-6 6" />
+                        </svg>
+                        <span data-map-label>Events</span>
+                        <span class="badge badge-xs badge-ghost font-mono tabular-nums" x-text="events.length"></span>
+                      </button>
+                      <button type="button" class="btn btn-xs btn-ghost ms-auto" @click="events = []" :disabled="!events.length">Clear</button>
+                    </h3>
+                    <div class="api-row-body" id="pg-console" :data-open="String(consoleOpen)" x-effect="$el.inert = !consoleOpen">
+                      <div>
+                        <ol class="studio-log" aria-live="polite" dir="ltr">
+                          <template x-if="!events.length">
+                            <li class="studio-log-empty">No events yet. Pick a day.</li>
+                          </template>
+                          <template x-for="entry in events" :key="entry.id">
+                            <li>
+                              <time x-text="entry.time"></time>
+                              <b :data-event="entry.name" x-text="entry.name"></b>
+                              <span x-text="entry.detail"></span>
+                            </li>
+                          </template>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+                  <h3 class="sr-only" id="playground-code" data-map-spy="off">Code</h3>
+                </div>
+              </div>
+            </section>
+
+            <section
+              data-doc-tab="theming"
+              data-doc-hash-prefix="part-"
+              data-doc-label="Theming"
+              data-doc-icon="theming"
+              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-6 border p-5 shadow-sm sm:p-8"
+              x-data="themeBuilder()"
+            >
+              <header class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h2 class="text-3xl font-bold tracking-tight">Theming</h2>
+                  <p class="lede text-base-content/70 mt-2 max-w-[70ch]">
+                    Every value resolves as <code>--shift-day-strip-*</code>, then <code>--shift-*</code>, then the appearance, then the <code>vanilla</code> baseline, so the
+                    variables you set win in light and dark.
+                  </p>
+                </div>
+                <div class="appearance-field">
+                  <span class="appearance-label" id="appearance-label-theming" x-text="siteT('docs.appearance')"></span>
+                  <div class="seg appearance-pick" role="radiogroup" aria-labelledby="appearance-label-theming">
+                    <template x-for="item in appearances" :key="item">
+                      <label
+                        ><input type="radio" name="appearance-theming" :value="item" x-model="appearance" /><span
+                          ><span x-html="icon('look-' + item)"></span><span class="capitalize" x-text="item"></span></span
+                      ></label>
+                    </template>
+                  </div>
+                </div>
+              </header>
+
+              <div class="grid items-start gap-6 @3xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
+                <div class="frame">
+                  <shift-day-strip
+                    id="theme-preview"
+                    today="2026-09-27"
+                    min="2026-09-27"
+                    value="2026-09-29"
+                    highlight-today
+                    x-ref="preview"
+                    label="Theme preview"
+                  ></shift-day-strip>
+                </div>
+
+                <div class="flex min-w-0 flex-col gap-5">
+                  <div class="flex flex-col gap-3">
+                    <h3 class="text-lg font-semibold">Colours</h3>
+                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      <template x-for="role in roles" :key="role.key">
+                        <label class="flex min-w-0 items-center gap-2">
+                          <input
+                            type="color"
+                            class="border-base-300 h-8 w-10 shrink-0 cursor-pointer rounded border bg-transparent p-0.5"
+                            :value="values[role.key]"
+                            :aria-label="role.label"
+                            @input="set(role.key, $event.target.value)"
+                          />
+                          <span class="min-w-0">
+                            <span class="block text-sm font-medium" x-text="role.label"></span>
+                            <span class="text-base-content/55 block truncate font-mono text-[11px]" x-text="touched[role.key] ? values[role.key] : 'appearance'"></span>
+                          </span>
+                        </label>
+                      </template>
+                    </div>
+                  </div>
+
+                  <div class="flex flex-col gap-3">
+                    <h3 class="text-lg font-semibold">Sizes</h3>
+                    <div class="grid gap-3 sm:grid-cols-3">
+                      <template x-for="metric in metrics" :key="metric.key">
+                        <label class="flex flex-col gap-1">
+                          <span class="flex items-baseline justify-between text-sm font-medium"
+                            ><span x-text="metric.label"></span><span class="text-base-content/60 font-mono text-xs" x-text="values[metric.key] + 'px'"></span
+                          ></span>
+                          <input
+                            type="range"
+                            class="range range-xs"
+                            :min="metric.min"
+                            :max="metric.max"
+                            step="1"
+                            :value="values[metric.key]"
+                            @input="set(metric.key, $event.target.value)"
+                          />
+                        </label>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <h3 class="text-lg font-semibold">Generated CSS</h3>
+                <figure class="border-base-300 max-w-[80ch] overflow-hidden rounded-lg border">
+                  <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                    <span class="text-base-content/55 font-mono text-[11px] uppercase">CSS</span>
+                    <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="reset()">Reset</button>
+                    <button type="button" class="btn btn-xs btn-ghost h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
+                  </figcaption>
+                  <pre class="code m-0 overflow-x-auto rounded-none border-0" x-text="css"></pre>
+                </figure>
+              </div>
+
+              <div class="flex flex-col gap-3" x-data="apiReference('shift-day-strip')">
+                <h3 class="text-lg font-semibold" id="theming-parts">Parts</h3>
+                <p class="text-base-content/70 max-w-[70ch] text-sm">
+                  For what variables cannot reach, style <code>::part()</code>. Open a part to see it highlighted in the strip; state parts sit beside their base part.
+                </p>
+
+                <div class="grid items-start gap-4 @3xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)]" x-data="partsExplorer()">
+                  <div class="frame min-w-0 @3xl:sticky @3xl:order-2 @3xl:top-[calc(var(--nav-h)+var(--docs-bar-h,0px)+1rem)]" style="margin-inline: 0">
+                    <shift-day-strip
+                      id="parts-demo"
+                      x-ref="demo"
+                      today="2026-09-27"
+                      min="2026-09-27"
+                      max="2026-10-20"
+                      value="2026-09-29"
+                      disabled-weekdays="5"
+                      disabled-dates="2026-09-28"
+                      caption="Caption"
+                      highlight-today
+                      label="Parts demo"
+                    ></shift-day-strip>
+                  </div>
+
+                  <ul class="border-base-300 divide-base-300 min-w-0 divide-y overflow-hidden rounded-lg border" @pointerleave="endPreview()">
+                    <template x-for="part in parts" :key="part.name">
+                      <li :id="'part-' + part.name">
+                        <button
+                          type="button"
+                          class="hover:bg-base-200/60 flex w-full cursor-pointer flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-2.5 text-start"
+                          :aria-expanded="String(openPart === part.name)"
+                          :aria-controls="'part-' + part.name + '-body'"
+                          @click="toggle(part.name, $el)"
+                          @pointerenter="preview(part.name, $event)"
+                          @focus="preview(part.name, $event)"
+                          @blur="endPreview()"
+                        >
+                          <code class="text-sm font-semibold" x-text="part.name"></code>
+                          <template x-for="tag in tagsFor(part)" :key="tag">
+                            <span class="text-base-content/55 font-mono text-[11px]" x-text="tag"></span>
+                          </template>
+                          <svg
+                            class="api-chevron ms-auto h-3 w-3 shrink-0 self-center opacity-60"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            aria-hidden="true"
+                          >
+                            <path d="m9 6 6 6-6 6" />
+                          </svg>
+                        </button>
+                        <div class="api-row-body" :id="'part-' + part.name + '-body'" :data-open="String(openPart === part.name)" x-effect="$el.inert = openPart !== part.name">
+                          <div>
+                            <div class="bg-base-200/40 border-base-300 flex flex-col gap-2 border-t px-4 py-3">
+                              <p class="text-sm" x-text="part.description"></p>
+                              <pre class="code m-0 text-xs" x-text="'shift-day-strip::part(' + part.name + ') {\n  /* … */\n}'"></pre>
+                            </div>
+                          </div>
+                        </div>
+                      </li>
+                    </template>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <section
+              data-doc-tab="dates"
+              data-doc-label="Dates & rules"
+              data-doc-icon="dates"
+              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
+            >
+              <header>
+                <h2 class="text-3xl font-bold tracking-tight">Dates &amp; rules</h2>
+                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">Which days appear, which can be chosen, and how the strip moves.</p>
+              </header>
+
+              <div class="flex max-w-[76ch] flex-col gap-2 text-sm">
+                <h3 class="text-lg font-semibold">Which days appear</h3>
+                <ul class="text-base-content/75 list-disc ps-5">
+                  <li><code>min</code> to <code>max</code>, every day a card; days a rule blocks stay, disabled.</li>
+                  <li>
+                    With <code>enabledDates</code> and a missing end, that end is the first or last listed date, even when another rule blocks that date; it then shows disabled.
+                  </li>
+                  <li>With neither, 30 days from today.</li>
+                  <li>At most 366 days, counted from the first; later days are not shown and cannot be chosen.</li>
+                </ul>
+              </div>
+
+              <div class="flex max-w-[76ch] flex-col gap-2 text-sm">
+                <h3 class="text-lg font-semibold">Which days can be chosen</h3>
+                <p class="text-base-content/75">The calendar’s rules, in the same order. Rules only block; the first that matches is the reason a day is closed:</p>
+                <ol class="text-base-content/75 list-decimal ps-5">
+                  <li><code>min</code> / <code>max</code></li>
+                  <li><code>disabledDates</code></li>
+                  <li><code>disabledWeekdays</code></li>
+                  <li><code>enabledDates</code>: when set, any day not in it.</li>
+                  <li><code>isDateDisabled(date)</code>: asked last, only about days nothing else blocked.</li>
+                </ol>
+              </div>
+
+              <div class="flex max-w-[76ch] flex-col gap-2 text-sm">
+                <h3 class="text-lg font-semibold">Scrolling</h3>
+                <ul class="text-base-content/75 list-disc ps-5">
+                  <li>The buttons move one visible page and are disabled at the ends; cards snap into place after a swipe.</li>
+                  <li>Focus and <code>value</code> scroll the strip only, never the page. The selected day is in view from the first paint.</li>
+                  <li>The edges fade only where more days continue.</li>
+                </ul>
+              </div>
+            </section>
+
+            <section
+              data-doc-tab="api"
+              data-doc-label="API reference"
+              data-doc-icon="api"
+              data-doc-hash-prefix="api-"
+              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-6 border p-5 shadow-sm sm:p-8"
+              x-data="apiReference('shift-day-strip', { groups: dayStripApiGroups, parts: false })"
+            >
+              <header>
+                <h2 class="text-3xl font-bold tracking-tight">API reference</h2>
+                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">
+                  Generated from the integration manifest<span x-show="packageVersion" x-text="' (' + packageVersion + ')'"></span>. Sizes run <code>xs</code> to <code>xl</code>;
+                  <code>language</code> also sets direction and the digits. Select a row for details.
+                </p>
+              </header>
+
+              <p class="text-base-content/60 text-sm" x-show="loading">Loading…</p>
+              <p class="text-error text-sm" x-show="error" x-text="error"></p>
+
+              <template x-if="component">
+                <div class="flex flex-col gap-6">
+                  <template x-for="group in groups" :key="group.id">
+                    <section>
+                      <h3 :id="group.id" class="text-lg font-semibold">
+                        <button
+                          type="button"
+                          class="hover:text-accent flex w-full cursor-pointer items-center gap-2 text-start transition-colors"
+                          :aria-expanded="String(!shut[group.id])"
+                          :aria-controls="group.id + '-body'"
+                          @click="toggleGroup(group)"
+                        >
+                          <span data-map-label x-text="group.label"></span>
+                          <span class="badge badge-sm badge-ghost font-normal tabular-nums" x-text="group.count ?? group.rows.length"></span>
+                          <svg
+                            class="api-chevron ms-auto h-3 w-3 shrink-0 opacity-60"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            aria-hidden="true"
+                          >
+                            <path d="m9 6 6 6-6 6" />
+                          </svg>
+                        </button>
+                      </h3>
+
+                      <div class="api-row-body" :id="group.id + '-body'" :data-open="String(!shut[group.id])" x-effect="$el.inert = !!shut[group.id]">
+                        <div>
+                          <input
+                            type="search"
+                            class="input input-bordered input-sm mt-2 max-w-xs"
+                            x-show="group.filterable"
+                            x-model="filter"
+                            placeholder="Filter by name…"
+                            aria-label="Filter CSS variables"
+                          />
+
+                          <template x-for="block in group.roles ?? [{ label: '', rows: group.rows }]" :key="group.id + block.label">
+                            <div>
+                              <p class="eyebrow text-neutral mt-3" x-show="block.label" x-text="block.label"></p>
+                              <ul class="border-base-300 divide-base-300 mt-2 divide-y overflow-hidden rounded-lg border">
+                                <template x-for="row in block.rows" :key="row.id">
+                                  <li :id="row.id">
+                                    <button
+                                      type="button"
+                                      class="hover:bg-base-200/60 flex w-full cursor-pointer flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-2.5 text-start"
+                                      :aria-expanded="String(!!open[row.id])"
+                                      :aria-controls="row.id + '-body'"
+                                      @click="toggle(row)"
+                                    >
+                                      <code class="text-sm font-semibold break-all" x-text="row.name"></code>
+                                      <template x-for="tag in row.tags" :key="tag">
+                                        <span class="text-base-content/55 font-mono text-[11px]" x-text="tag"></span>
+                                      </template>
+                                      <svg
+                                        class="api-chevron ms-auto h-3 w-3 shrink-0 self-center opacity-60"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2.5"
+                                        stroke-linecap="round"
+                                        aria-hidden="true"
+                                      >
+                                        <path d="m9 6 6 6-6 6" />
+                                      </svg>
+                                    </button>
+                                    <div class="api-row-body" :id="row.id + '-body'" :data-open="String(!!open[row.id])" x-effect="$el.inert = !open[row.id]">
+                                      <div>
+                                        <div class="bg-base-200/40 border-base-300 flex flex-col gap-2 border-t px-4 py-3">
+                                          <p class="text-sm" x-text="row.description"></p>
+                                          <p class="text-base-content/60 font-mono text-xs break-all" x-show="row.type && row.type.length > 32" x-text="row.type"></p>
+                                          <pre class="code m-0 text-xs whitespace-pre-wrap [overflow-wrap:anywhere]" x-show="row.example" x-text="row.example"></pre>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </li>
+                                </template>
+                              </ul>
+                            </div>
+                          </template>
+                        </div>
+                      </div>
+                    </section>
+                  </template>
+
+                  <p class="text-sm">Parts are explained with a live demo on the <a class="link" href="#theming-parts">Theming</a> page.</p>
+
+                  <section>
+                    <h3 id="api-notes" class="text-lg font-semibold">Behaviour notes</h3>
+                    <ul class="text-base-content/80 mt-2 flex max-w-[80ch] list-disc flex-col gap-1 ps-5 text-sm">
+                      <template x-for="note in notes" :key="note">
+                        <li x-text="note"></li>
+                      </template>
+                    </ul>
+                  </section>
+                </div>
+              </template>
+            </section>
+
+            <section
+              data-doc-tab="accessibility"
+              data-doc-label="Keyboard & accessibility"
+              data-doc-icon="accessibility"
+              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
+            >
+              <header>
+                <h2 class="text-3xl font-bold tracking-tight">Keyboard &amp; accessibility</h2>
+                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">A horizontal listbox with one roving tab stop and localized labels.</p>
+              </header>
+
+              <div class="flex max-w-[80ch] flex-col gap-2">
+                <h3 class="text-lg font-semibold">Keys</h3>
+                <div class="overflow-x-auto">
+                  <table class="table-sm table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Key</th>
+                        <th scope="col">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                      <tr>
+                        <td><kbd class="kbd kbd-sm">←</kbd> <kbd class="kbd kbd-sm">→</kbd></td>
+                        <td>Previous or next day (mirrored in RTL)</td>
+                      </tr>
+                      <tr>
+                        <td><kbd class="kbd kbd-sm">Home</kbd> <kbd class="kbd kbd-sm">End</kbd></td>
+                        <td>First or last day of the strip</td>
+                      </tr>
+                      <tr>
+                        <td><kbd class="kbd kbd-sm">Page Up</kbd> <kbd class="kbd kbd-sm">Page Down</kbd></td>
+                        <td>Back or forward by as many days as fit on screen</td>
+                      </tr>
+                      <tr>
+                        <td><kbd class="kbd kbd-sm">Enter</kbd> <kbd class="kbd kbd-sm">Space</kbd></td>
+                        <td>Select the day</td>
+                      </tr>
+                      <tr>
+                        <td><kbd class="kbd kbd-sm">Tab</kbd></td>
+                        <td>Moves between the page buttons and the strip; the strip is one tab stop</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="flex max-w-[80ch] flex-col gap-2">
+                <h3 class="text-lg font-semibold">Screen readers and contrast</h3>
+                <ul class="text-base-content/75 list-disc ps-5 text-sm">
+                  <li>
+                    A <code>role="listbox"</code> of options, not a radio group: the arrows move focus without choosing, as in the calendar, and Enter or Space chooses. The tab
+                    stop is the selected day, else today, else the first open day.
+                  </li>
+                  <li>Each card reads as its full date, with the <code>dayMeta</code> description; today carries <code>aria-current="date"</code>.</li>
+                  <li>Disabled days stay focusable with <code>aria-disabled</code>, so they can be discovered. <code>caption</code> describes the listbox.</li>
+                  <li>Every appearance meets WCAG AA for text and 3:1 for focus rings and the selected day, in light and dark. Motion is instant under reduced motion.</li>
+                </ul>
+              </div>
+            </section>
+          </div>
+
+          <div data-harness-rail x-cloak></div>
+        </section>
+      </div>
+      <aside class="docs-map"></aside>
+    </div>
+  </body>
+</html>

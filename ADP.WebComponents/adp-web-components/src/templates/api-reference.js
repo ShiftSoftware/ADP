@@ -264,6 +264,11 @@ window.apiReference = function apiReference(tag, options = {}) {
 
       for (const group of groups) if (group.roles) group.rows = group.roles.flatMap(role => role.rows);
 
+      // `options.idPrefix` keeps the ids apart when one page shows the API of two elements.
+      if (options.idPrefix) {
+        for (const item of groups.flatMap(group => [group, ...group.rows])) item.id = item.id.replace(/^api-/, `api-${options.idPrefix}`);
+      }
+
       return groups.filter(group => group.rows.length || group.filterable);
     },
   };

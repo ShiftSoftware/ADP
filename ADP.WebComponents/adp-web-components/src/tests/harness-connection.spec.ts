@@ -275,6 +275,7 @@ describe('public-demo Connection panel', () => {
     const prototypePages = relativePaths.filter(file => /^prototypes\/[^/]+\.html$/.test(file)).sort();
 
     expect(prototypePages).toEqual([
+      'prototypes/booking-calendar-live.html',
       'prototypes/branch-slot-picker-demo.html',
       'prototypes/extended-warranty-prototype-candidate.html',
       'prototypes/extended-warranty-prototype-original-rich.html',

@@ -111,6 +111,7 @@ function describe(relative, source) {
     kind: kind(relative, source),
     publish: publish(source),
     role: role(source),
+    ...family(source),
     tags: tags(source),
     harness: source.includes('/templates/harness.css'),
     legacy: legacy(source),
@@ -151,6 +152,15 @@ function role(source) {
   const match = source.match(/<meta[^>]+name=["']adp-role["'][^>]+content=["']([^"']+)["']/i);
 
   return match ? match[1] : undefined;
+}
+
+function family(source) {
+  const name = source.match(/<meta[^>]+name=["']docs-family["'][^>]+content=["']([^"']+)["']/i)?.[1];
+  if (!name) return {};
+
+  const order = Number(source.match(/<meta[^>]+name=["']docs-family-order["'][^>]+content=["']([^"']+)["']/i)?.[1]);
+
+  return { family: name, familyOrder: Number.isFinite(order) ? order : null };
 }
 
 function kind(relative, source) {

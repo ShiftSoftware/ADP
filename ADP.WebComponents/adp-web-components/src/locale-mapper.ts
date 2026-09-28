@@ -6,8 +6,14 @@ const localeMapper = {
   "-": [
     "locales/"
   ],
+  "booking": [
+    "locales/booking/"
+  ],
   "calendar": [
     "locales/calendar/"
+  ],
+  "input": [
+    "locales/input/"
   ],
   "errors": [
     "locales/errors/"
@@ -50,6 +56,9 @@ const localeMapper = {
   ],
   "partLookup.manufacturer": [
     "locales/partLookup/manufacturer/"
+  ],
+  "popover": [
+    "locales/popover/"
   ],
   "vehicleLookup.accessories": [
     "locales/vehicleLookup/accessories/"

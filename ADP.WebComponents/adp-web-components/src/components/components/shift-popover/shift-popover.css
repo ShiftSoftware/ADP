@@ -1,0 +1,142 @@
+/* tailwind: off */
+@import '../../style/base.css';
+@import '../../style/appearances.css';
+
+/*
+  The panel shift-popover portals onto <body>, holding the popover's content. It inherits nothing from the
+  page it is anchored in, so it wears the same appearance, colour scheme and size attributes as its popover.
+  Every value: var(--shift-popover-x, var(--shift-x, var(--_ap-x, <vanilla>))).
+*/
+:host {
+  --_surface: var(--shift-popover-surface, var(--shift-surface, var(--_ap-popover-surface, var(--_ap-panel-surface, #ffffff))));
+  --_line: var(--shift-popover-line, var(--_ap-panel-line, #e2e8f0));
+  --_border-width: var(--shift-popover-border-width, var(--_ap-panel-border-width, 1px));
+  --_radius: var(--shift-popover-radius, var(--shift-radius-lg, var(--_ap-radius-lg, 12px)));
+  --_shadow: var(--shift-popover-shadow, var(--shift-shadow-panel, var(--_ap-popover-shadow, var(--_ap-shadow-panel, 0 10px 30px -12px rgba(15, 23, 42, 0.25)))));
+  --_width: var(--shift-popover-width, max-content);
+  --_sheet-max-height: var(--shift-popover-sheet-max-block-size, 82dvh);
+  --_z: var(--shift-popover-z-index, 2000);
+  --_lift: var(--shift-popover-lift, 6px);
+  --_scale: var(--shift-popover-scale, 0.96);
+  --_settle: var(--shift-popover-settle, var(--shift-settle, 320ms));
+  --_ease: var(--shift-popover-ease, var(--shift-ease, cubic-bezier(0.2, 0, 0, 1)));
+
+  /* The host is the dialog (role, id, label) so aria-controls on a document anchor resolves; a box of no size, it takes no room. */
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--_z);
+  display: block;
+  inline-size: 0;
+  block-size: 0;
+}
+
+/* Proposed for appearances.css: minimal has no opaque surface or shadow for a floating panel (guide § The five appearances). */
+:host([appearance='minimal']) {
+  --_ap-popover-surface: #ffffff;
+  --_ap-popover-shadow: 0 8px 24px -12px rgba(15, 23, 42, 0.18);
+}
+
+:host([appearance='minimal'][color-scheme='dark']) {
+  --_ap-popover-surface: #0f172a;
+  --_ap-popover-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  :host([appearance='minimal'][color-scheme='auto']) {
+    --_ap-popover-surface: #0f172a;
+    --_ap-popover-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  }
+}
+
+.pop-panel {
+  position: fixed;
+  z-index: var(--_z);
+  top: var(--_top, 0px);
+  left: var(--_left, 0px);
+  inline-size: var(--_width);
+  max-inline-size: calc(100vw - 16px);
+  max-block-size: var(--_max-height, calc(100vh - 16px));
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--_surface);
+  border: var(--_border-width) solid var(--_line);
+  border-radius: var(--_radius);
+  box-shadow: var(--_shadow);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(calc(var(--_lift) * -1)) scale(var(--_scale));
+  transform-origin: top left;
+  /* Visibility waits for the fade, so a closing panel can still be seen but no longer tabbed into. */
+  transition:
+    opacity var(--_settle) var(--_ease),
+    transform var(--_settle) var(--_ease),
+    visibility 0s linear var(--_settle);
+}
+
+.pop-panel[dir='rtl'] {
+  transform-origin: top right;
+}
+
+.pop-panel[data-side='above'] {
+  transform: translateY(var(--_lift)) scale(var(--_scale));
+  transform-origin: bottom left;
+}
+
+.pop-panel[data-side='above'][dir='rtl'] {
+  transform-origin: bottom right;
+}
+
+.pop-panel[data-open] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+  transition:
+    opacity var(--_settle) var(--_ease),
+    transform var(--_settle) var(--_ease),
+    visibility 0s;
+}
+
+.pop-panel[data-sheet] {
+  top: auto;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  inline-size: auto;
+  max-inline-size: none;
+  max-block-size: var(--_sheet-max-height);
+  padding-block-end: env(safe-area-inset-bottom, 0px);
+  border-block-end-width: 0;
+  border-inline-width: 0;
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+  opacity: 1;
+  transform: translateY(100%);
+}
+
+.pop-panel[data-sheet][data-open] {
+  transform: none;
+}
+
+/*
+  The panel is the chrome; a calendar inside keeps its box and its size's width but draws none of its own.
+  Declared from the shadow tree, these lose to anything the page sets on the calendar.
+*/
+::slotted(shift-calendar) {
+  --shift-calendar-surface: transparent;
+  --shift-calendar-panel-border-width: 0px;
+  --shift-calendar-shadow: none;
+  display: block;
+  inline-size: var(--_sz-width, 380px);
+  max-inline-size: 100%;
+  margin-inline: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pop-panel,
+  .pop-panel[data-open] {
+    transition: none;
+  }
+}

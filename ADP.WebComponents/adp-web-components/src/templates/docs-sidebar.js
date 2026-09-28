@@ -97,6 +97,43 @@ function entryMarkup(entry) {
     </li>`;
 }
 
+const CATALOG = new URL('catalog.json', import.meta.url);
+
+const pageUrl = path => new URL(String(path).replace(/^\/templates\//, ''), import.meta.url);
+
+async function familyPages(name) {
+  try {
+    const response = await fetch(CATALOG);
+    const catalog = response.ok ? await response.json() : { pages: [] };
+
+    return catalog.pages.filter(page => page.family === name).sort((a, b) => (a.familyOrder ?? Infinity) - (b.familyOrder ?? Infinity) || a.title.localeCompare(b.title));
+  } catch {
+    return [];
+  }
+}
+
+function familyMarkup(name, pages, entries, title) {
+  const here = pages.find(page => pageUrl(page.path).pathname === window.location.pathname);
+  const listed = here ? pages : [{ path: '', title }];
+  const label = name.charAt(0).toUpperCase() + name.slice(1);
+
+  const item = page =>
+    page === here || !here
+      ? `
+    <li class="docs-family-page" data-family-current>
+      <a class="docs-item docs-family-self" href="${escape(page.path ? pageUrl(page.path).href : window.location.pathname)}" aria-current="page">${ICONS.component}<span class="docs-label">${escape(page.title)}</span></a>
+      <ul class="docs-list docs-sublist">${entries.map(entryMarkup).join('')}</ul>
+    </li>`
+      : `
+    <li class="docs-family-page">
+      <a class="docs-item" href="${escape(pageUrl(page.path).href)}">${ICONS.component}<span class="docs-label">${escape(page.title)}</span></a>
+    </li>`;
+
+  return `
+      <p class="docs-heading" data-t="docs.family.${escape(name)}" data-fallback="${escape(label)}"></p>
+      <ul class="docs-list docs-family">${listed.map(item).join('')}</ul>`;
+}
+
 const mapLabel = heading => (heading.querySelector('[data-map-label]') ?? heading).textContent.replace(/\s+/g, ' ').trim();
 
 let mounted = false;
@@ -117,6 +154,7 @@ export function mountDocsSidebar() {
   const title = showcase.querySelector('.showcase-title h1')?.textContent.trim() || document.title.split('—')[0].trim();
   const tag = showcase.querySelector('#subject')?.localName ?? '';
   const icon = ICONS[showcase.querySelector('[data-doc-icon]:not([data-doc-tab])')?.dataset.docIcon] ?? ICONS.component;
+  const family = document.querySelector('meta[name="docs-family"]')?.content.trim() ?? '';
 
   shell.dataset.drawer = 'closed';
 
@@ -128,9 +166,13 @@ export function mountDocsSidebar() {
         ${tag.includes('-') ? `<span class="docs-brand-tag">&lt;${escape(tag)}&gt;</span>` : ''}
       </span>
     </div>
-    <nav class="docs-nav">
+    <nav class="docs-nav">${
+      family
+        ? familyMarkup(family, [], entries, title)
+        : `
       <p class="docs-heading" data-t="docs.pages"></p>
-      <ul class="docs-list">${entries.map(entryMarkup).join('')}</ul>
+      <ul class="docs-list">${entries.map(entryMarkup).join('')}</ul>`
+    }
     </nav>`;
 
   shell.querySelector('.docs-bar').innerHTML = `
@@ -285,7 +327,7 @@ export function mountDocsSidebar() {
     syncTrigger();
 
     if (!focus) return;
-    if (open) (sider.querySelector('[aria-current]') ?? sider.querySelector('a'))?.focus({ preventScroll: true });
+    if (open) (sider.querySelector('[data-entry][aria-current]') ?? sider.querySelector('a'))?.focus({ preventScroll: true });
     else trigger.focus({ preventScroll: true });
   }
 
@@ -411,7 +453,16 @@ export function mountDocsSidebar() {
     .filter(Boolean);
   const fontsSettled = () =>
     Promise.race([Promise.all([...faces.map(face => document.fonts?.load(face).catch(() => null)), document.fonts?.ready]), new Promise(resolve => setTimeout(resolve, 3000))]);
-  const reveal = () => fontsSettled().then(() => requestAnimationFrame(() => (shell.dataset.mounted = 'true')));
+  // The family group is filled from the catalog before the shell shows, so the sidebar never grows after first paint.
+  const familyFilled = family
+    ? familyPages(family).then(pages => {
+        if (!pages.length) return;
+        nav.innerHTML = familyMarkup(family, pages, entries, title);
+        mark(current, 'page');
+        translate();
+      })
+    : Promise.resolve();
+  const reveal = () => Promise.all([fontsSettled(), familyFilled]).then(() => requestAnimationFrame(() => (shell.dataset.mounted = 'true')));
 
   if (window.Alpine?.version || !document.querySelector('[x-data]')) reveal();
   else document.addEventListener('alpine:initialized', reveal, { once: true });

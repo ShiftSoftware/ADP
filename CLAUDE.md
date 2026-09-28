@@ -27,10 +27,10 @@ ADP (Auto Distributor Platform) by ShiftSoftware. A multi-project .NET solution 
 > replaced, and older pages move to that layout when they are reworked. Read the relevant guide in full
 > before touching a form field or a docs page.
 >
-> **Forms:** v1 forms (structures without a `version` key) are **additive-only**: new field keys and new
-> optional props are fine; existing keys and existing structures must render and submit exactly as before,
-> proven by the v1 freeze snapshot test. Forms v2 (`"version": "2.0"`) is planned but not started. Read
-> `.shift/repos/adp/web-components/forms-v2/PLAN.md` before any forms work.
+> **Forms:** the current form logic is **untouched**: no edits to `src/components/forms/**`,
+> `src/features/form-hook/**`, `form-elements/form-*` or `form-elements/branch-*`, not even additive ones.
+> New `shift-*` components may use `form-hook` as it is. Forms v2 (`"version": "2.0"`) will be a separate
+> form component. Read `.shift/repos/adp/web-components/forms-v2/PLAN.md` before any forms work.
 
 ## Build & Test Commands
 

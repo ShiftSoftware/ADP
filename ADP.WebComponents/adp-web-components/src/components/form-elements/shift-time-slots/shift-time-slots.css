@@ -1,0 +1,266 @@
+/* tailwind: off */
+@import '../../style/base.css';
+@import '../../style/appearances.css';
+
+:host {
+  --_surface: var(--shift-time-slots-surface, var(--shift-surface, var(--_ap-surface, #ffffff)));
+  --_ink: var(--shift-time-slots-ink, var(--shift-ink, var(--_ap-ink, #1e293b)));
+  --_muted: var(--shift-time-slots-muted, var(--shift-ink-muted, var(--_ap-ink-muted, #64748b)));
+  --_disabled-ink: var(--shift-time-slots-disabled-ink, var(--shift-ink-disabled, var(--_ap-ink-disabled, #cbd5e1)));
+  --_line: var(--shift-time-slots-line, var(--shift-line, var(--_ap-line, #e2e8f0)));
+  --_hover-line: var(--shift-time-slots-hover-line, var(--shift-line-strong, var(--_ap-hover-line, #94a3b8)));
+  --_hover-bg: var(--shift-time-slots-hover-bg, var(--_ap-hover-bg, #f1f5f9));
+  --_hover-ink: var(--shift-time-slots-hover-ink, var(--_ap-hover-ink, #1e293b));
+  --_accent: var(--shift-time-slots-accent, var(--shift-accent, var(--_ap-accent, #1e293b)));
+  --_on-accent: var(--shift-time-slots-on-accent, var(--shift-on-accent, var(--_ap-on-accent, #ffffff)));
+  --_skeleton: var(--shift-time-slots-skeleton, var(--shift-accent-tint, var(--_ap-accent-tint, #f1f5f9)));
+  --_focus: var(--shift-time-slots-focus-ring, var(--shift-focus, var(--_ap-focus, #1e293b)));
+  --_focus-width: var(--shift-time-slots-focus-ring-width, var(--_ap-focus-width, 2px));
+  --_focus-offset: var(--shift-time-slots-focus-ring-offset, var(--_ap-focus-offset, 2px));
+  --_halo: var(--shift-time-slots-focus-halo, var(--_ap-focus-halo, transparent));
+  --_halo-width: var(--shift-time-slots-focus-halo-width, var(--_ap-focus-halo-width, 0px));
+  --_shadow: var(--shift-time-slots-shadow, var(--shift-shadow-control, var(--_ap-shadow-control, none)));
+  --_blocked-decoration: var(--shift-time-slots-blocked-decoration, var(--_ap-blocked-decoration, line-through));
+  --_blocked-opacity: var(--shift-time-slots-blocked-opacity, var(--_ap-blocked-opacity, 1));
+
+  --_radius: var(--shift-time-slots-radius, var(--shift-radius-sm, var(--_ap-radius-sm, 8px)));
+  --_border-width: var(--shift-time-slots-border-width, var(--shift-border-width, var(--_ap-border-width, 1px)));
+
+  --_font-latin: var(--shift-time-slots-font-family, var(--shift-font-family, var(--_ap-font, 'Nunito', system-ui, sans-serif)));
+  --_font-arabic: var(--shift-time-slots-font-family-arabic, var(--shift-font-family-arabic, 'Noto Kufi Arabic', var(--_font-latin)));
+  --_font-size: var(--shift-time-slots-font-size, var(--shift-font-size, calc(var(--_ap-font-size, 14px) + var(--_sz-font, 0px))));
+  --_empty-size: var(--shift-time-slots-empty-font-size, var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px))));
+  --_weight: var(--shift-time-slots-font-weight, var(--shift-weight, var(--_ap-weight, 400)));
+  --_selected-weight: var(--shift-time-slots-selected-font-weight, var(--shift-weight, var(--_ap-weight, 400)));
+  --_line-height: var(--shift-time-slots-line-height, 1.43);
+
+  --_chip-height: var(--shift-time-slots-chip-height, var(--shift-control-height, calc(var(--_ap-control-height, 44px) * var(--_sz-control, 1))));
+  --_min-column: var(--shift-time-slots-min-column, calc(84px * var(--_sz-control, 1)));
+  --_gap: var(--shift-time-slots-gap, var(--shift-gap, calc(var(--_ap-gap, 4px) * 2 * var(--_sz-space, 1))));
+  --_chip-padding: var(--shift-time-slots-chip-padding-inline, calc(8px * var(--_sz-space, 1)));
+  --_empty-padding: var(--shift-time-slots-empty-padding-block, calc(24px * var(--_sz-space, 1)));
+  --_rise: var(--shift-time-slots-rise-distance, 8px);
+
+  --_settle: var(--shift-time-slots-settle, var(--shift-settle, 480ms));
+  --_ease: var(--shift-time-slots-ease, var(--shift-ease, ease));
+
+  /* Room for the focus ring, which the frame's clip would otherwise cut. */
+  --_ring: max(calc(var(--_focus-width) + var(--_focus-offset)), var(--_halo-width), 2px);
+
+  display: block;
+  font-family: var(--_font-latin);
+  font-size: var(--_font-size);
+  line-height: var(--_line-height);
+  color: var(--_ink);
+}
+
+.ts-root {
+  inline-size: 100%;
+  font-family: var(--_font-latin);
+  color: var(--_ink);
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: start;
+}
+
+.ts-root:lang(ar),
+.ts-root:lang(ckb) {
+  font-family: var(--_font-arabic);
+}
+
+.ts-frame {
+  display: grid;
+  grid-template-rows: var(--_rows, auto);
+  padding: var(--_ring);
+  margin: calc(var(--_ring) * -1);
+  overflow: hidden;
+  overflow: clip;
+}
+
+.ts-frame[data-measured] {
+  transition: grid-template-rows var(--_settle) var(--_ease);
+}
+
+.ts-layer {
+  grid-area: 1 / 1;
+  align-self: start;
+  min-inline-size: 0;
+}
+
+.ts-layer[data-phase='leave'] {
+  pointer-events: none;
+  animation: ts-fade-out calc(var(--_settle) - 60ms) var(--_ease) both;
+}
+
+.ts-layer[data-phase='enter']:not([data-kind='times']) {
+  animation: ts-fade-in var(--_settle) var(--_ease) both;
+}
+
+/* auto-fill, not flex-wrap: a ragged last row reads as broken, and a fixed column count overflows at 320px. */
+.ts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--_min-column), 100%), 1fr));
+  gap: var(--_gap);
+}
+
+.ts-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--_chip-height);
+  min-inline-size: 0;
+  padding: 0 var(--_chip-padding);
+  border: var(--_border-width) solid var(--_line);
+  border-radius: var(--_radius);
+  background-color: var(--_surface);
+  color: var(--_ink);
+  box-shadow: var(--_shadow);
+  font-size: var(--_font-size);
+  font-weight: var(--_weight);
+  line-height: var(--_line-height);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color calc(var(--_settle) / 2) var(--_ease),
+    border-color calc(var(--_settle) / 2) var(--_ease),
+    color calc(var(--_settle) / 2) var(--_ease),
+    transform calc(var(--_settle) / 2) var(--_ease);
+}
+
+.ts-layer[data-phase='enter'] .ts-chip {
+  animation: ts-rise var(--_settle) cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.ts-chip:hover {
+  border-color: var(--_hover-line);
+  background-color: var(--_hover-bg);
+  color: var(--_hover-ink);
+}
+
+.ts-chip:active {
+  transform: scale(0.96);
+}
+
+.ts-chip:focus-visible {
+  outline: var(--_focus-width) solid var(--_focus);
+  outline-offset: var(--_focus-offset);
+  box-shadow: 0 0 0 var(--_halo-width) var(--_halo);
+}
+
+.ts-chip[data-selected],
+.ts-chip[data-selected]:hover {
+  border-color: var(--_accent);
+  background-color: var(--_accent);
+  color: var(--_on-accent);
+  font-weight: var(--_selected-weight);
+}
+
+.ts-chip[aria-disabled='true'] {
+  cursor: not-allowed;
+  color: var(--_disabled-ink);
+  opacity: var(--_blocked-opacity);
+  text-decoration: var(--_blocked-decoration);
+}
+
+.ts-chip[aria-disabled='true']:hover {
+  border-color: var(--_line);
+  background-color: var(--_surface);
+  color: var(--_disabled-ink);
+}
+
+.ts-chip[aria-disabled='true']:active {
+  transform: none;
+}
+
+.ts-skeleton {
+  cursor: default;
+  border-color: transparent;
+  background-color: var(--_skeleton);
+  background-image: linear-gradient(100deg, transparent 0%, color-mix(in srgb, var(--_ink) 7%, transparent) 50%, transparent 100%);
+  background-repeat: no-repeat;
+  background-size: 45% 100%;
+  box-shadow: none;
+  animation: ts-sheen 1.4s linear infinite;
+}
+
+.ts-layer[data-phase='enter'] .ts-skeleton {
+  animation: ts-sheen 1.4s linear infinite;
+}
+
+.ts-empty {
+  margin: 0;
+  padding-block: var(--_empty-padding);
+  text-align: center;
+  font-size: var(--_empty-size);
+  color: var(--_muted);
+}
+
+.ts-sr {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+@keyframes ts-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--_rise));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ts-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes ts-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes ts-sheen {
+  from {
+    background-position: -100% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+/* Dense appearances set a control height under 44px; a touch target never goes below it. */
+@media (pointer: coarse) {
+  .ts-chip {
+    min-block-size: max(var(--_chip-height), 44px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ts-frame[data-measured] {
+    transition: none;
+  }
+
+  .ts-layer[data-phase],
+  .ts-layer[data-phase='enter'] .ts-chip,
+  .ts-skeleton,
+  .ts-layer[data-phase='enter'] .ts-skeleton {
+    animation: none;
+  }
+
+  .ts-chip {
+    transition: none;
+  }
+}

@@ -295,7 +295,15 @@ export class ShiftCalendar {
   }
 
   @Method()
-  async setFocus() {
+  async setFocus(date?: string) {
+    const target = parseDate(date);
+
+    if (target && this.view === 'days' && monthOf(target) === this.month && isInRange(target, this.bounds) && target !== this.focusDate) {
+      this.focusDate = target;
+      this.pendingFocus = 'grid';
+      return;
+    }
+
     this.focusCell();
   }
 

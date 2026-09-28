@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="/templates/harness.css" />
     <meta name="adp-docs-layout" content="true" />
     <meta name="adp-docs-fonts" content="400 14px Nunito; 700 14px Nunito; 400 14px Manrope; 700 14px Manrope; 400 14px 'Noto Kufi Arabic'; 700 14px 'Noto Kufi Arabic'" />
+    <meta name="docs-family" content="calendar" />
+    <meta name="docs-family-order" content="1" />
     <!-- The same sheet the package's loader injects (it skips a duplicate); declared here so the page waits for its faces instead of re-flowing when they swap in. -->
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -1401,6 +1403,551 @@
                     </template>
                   </ul>
                 </div>
+              </div>
+            </section>
+
+            <section
+              data-doc-tab="dropdown"
+              data-doc-label="Dropdown"
+              data-doc-icon="calendar"
+              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-10 border p-5 shadow-sm sm:p-8"
+              x-data="calendarDropdownTab()"
+            >
+              <script>
+                // This tab's own helpers: the page's <head> is shared with other lanes, so they live here, before Alpine starts.
+                (() => {
+                  const iso = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                  const highlighter = import('../highlight.js');
+
+                  const SNIPPETS = {
+                    form: {
+                      lang: 'HTML',
+                      code: [
+                        '<form class="date-fields">',
+                        '  <shift-input type="date" label="Visit date" hint="Type a date or pick one."></shift-input>',
+                        '  <shift-input type="date" label="Appointment" is-required',
+                        '    min="2026-10-01" max="2026-12-31" disabled-weekdays="5"',
+                        '    hint="October to December 2026, Fridays closed."></shift-input>',
+                        '  <shift-input type="date" label="Delivery date" format="dd.MM.yyyy" min="2026-09-01"',
+                        '    open-on-control-click="false" hint="Typed as dd.mm.yyyy; the button opens the calendar."></shift-input>',
+                        '  <shift-input id="birthdate" type="date" label="Date of birth" month="1990-01"',
+                        '    hint="Up to today, back 100 years."></shift-input>',
+                        '</form>',
+                        '',
+                        '<script type="module">',
+                        "  const birthdate = document.getElementById('birthdate');",
+                        "  const iso = date => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');",
+                        '  const today = new Date();',
+                        '',
+                        '  birthdate.max = iso(today);',
+                        '  birthdate.min = iso(new Date(today.getFullYear() - 100, today.getMonth(), today.getDate()));',
+                        '<\/script>',
+                      ].join('\n'),
+                    },
+                    hostHtml: {
+                      lang: 'HTML',
+                      code: [
+                        '<div class="host-field">',
+                        '  <input id="booking-date" placeholder="dd/mm/yyyy" />',
+                        '  <button id="booking-date-button" type="button" aria-label="Open calendar">…</button>',
+                        '</div>',
+                        '',
+                        '<shift-popover id="booking-popover" anchor="#booking-date" appearance="material" label="Choose date" class="tickets-palette">',
+                        '  <shift-calendar id="booking-calendar"></shift-calendar>',
+                        '</shift-popover>',
+                        '',
+                        '<script type="module">',
+                        "  const input = document.getElementById('booking-date');",
+                        "  const popover = document.getElementById('booking-popover');",
+                        "  const calendar = document.getElementById('booking-calendar');",
+                        '',
+                        "  document.getElementById('booking-date-button').addEventListener('click', () => popover.toggle());",
+                        "  calendar.addEventListener('dateChange', event => {",
+                        "    input.value = event.detail.value.split('-').reverse().join('/');",
+                        '    popover.hide();',
+                        '  });',
+                        '<\/script>',
+                      ].join('\n'),
+                    },
+                    hostCss: {
+                      lang: 'CSS',
+                      code: [
+                        '/* The class travels to the portaled panel, so these reach it. */',
+                        '.tickets-palette {',
+                        '  --shift-accent: #594ae2;',
+                        '  --shift-focus: #594ae2;',
+                        '}',
+                      ].join('\n'),
+                    },
+                    blazor: {
+                      lang: 'HTML',
+                      code: [
+                        '@* Illustrative only: not a tested Tickets integration. *@',
+                        '@inject IJSRuntime JS',
+                        '',
+                        '<MudTextField T="string" @bind-Value="_text" InputId="booking-date" Label="Booking date"',
+                        '              Variant="Variant.Outlined" Adornment="Adornment.End"',
+                        '              AdornmentIcon="@Icons.Material.Filled.CalendarMonth" OnAdornmentClick="ToggleCalendar" />',
+                        '',
+                        '@* Keep the popover content static: it moves to <body> when the popover loads. *@',
+                        '<shift-popover id="booking-popover" anchor="#booking-date" appearance="material" label="Choose date" class="tickets-palette">',
+                        '    <shift-calendar id="booking-calendar"></shift-calendar>',
+                        '</shift-popover>',
+                        '',
+                        '@code {',
+                        '    string _text;',
+                        '    DotNetObjectReference<BookingDate> _self;',
+                        '',
+                        '    protected override async Task OnAfterRenderAsync(bool firstRender)',
+                        '    {',
+                        '        if (!firstRender) return;',
+                        '        _self = DotNetObjectReference.Create(this);',
+                        '        await JS.InvokeVoidAsync("bookingCalendar.attach", _self);',
+                        '    }',
+                        '',
+                        '    Task ToggleCalendar() => JS.InvokeVoidAsync("bookingCalendar.toggle").AsTask();',
+                        '',
+                        '    [JSInvokable]',
+                        '    public void OnDate(string value)',
+                        '    {',
+                        '        _text = string.Join("/", value.Split(\'-\').Reverse());',
+                        '        StateHasChanged();',
+                        '    }',
+                        '}',
+                      ].join('\n'),
+                    },
+                    blazorJs: {
+                      lang: 'JavaScript',
+                      code: [
+                        '// wwwroot/booking-calendar.js — illustrative',
+                        'window.bookingCalendar = {',
+                        '  attach(dotnet) {',
+                        "    document.getElementById('booking-calendar').addEventListener('dateChange', event => {",
+                        "      dotnet.invokeMethodAsync('OnDate', event.detail.value);",
+                        "      document.getElementById('booking-popover').hide();",
+                        '    });',
+                        '  },',
+                        "  toggle: () => document.getElementById('booking-popover').toggle(),",
+                        '};',
+                      ].join('\n'),
+                    },
+                  };
+
+                  window.dropdownCode = key => ({
+                    html: '',
+                    copied: false,
+                    lang: SNIPPETS[key].lang,
+
+                    async init() {
+                      const { highlight } = await highlighter;
+                      this.html = highlight(SNIPPETS[key].code, this.lang);
+                    },
+
+                    async copy() {
+                      try {
+                        await navigator.clipboard.writeText(SNIPPETS[key].code);
+                        this.copied = true;
+                        setTimeout(() => (this.copied = false), 1600);
+                      } catch {
+                        this.copied = false;
+                      }
+                    },
+                  });
+
+                  window.calendarDropdownTab = () => ({
+                    init() {
+                      this.$watch('appearance', () => this.apply());
+                      this.$watch('scheme', () => this.apply());
+                      this.$watch('language', () => this.apply());
+                      Promise.all([customElements.whenDefined('shift-input'), customElements.whenDefined('shift-popover')]).then(() => this.apply());
+                    },
+
+                    apply() {
+                      this.$el.querySelectorAll('shift-input, shift-popover').forEach(element => {
+                        if (!element.hasAttribute('data-fixed-appearance')) element.appearance = this.appearance;
+                        element.colorScheme = this.scheme;
+                        element.language = this.language;
+                      });
+                    },
+
+                    // The docs stage is fixed LTR; the stand-in app follows the site language, as a real host page would.
+                    get hostDir() {
+                      return window.siteLocales?.direction?.(this.language) ?? 'ltr';
+                    },
+
+                    get hostScheme() {
+                      if (this.scheme !== 'auto') return this.scheme;
+                      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                    },
+                  });
+
+                  window.dropdownForm = () => {
+                    const today = new Date();
+
+                    return {
+                      max: iso(today),
+                      min: iso(new Date(today.getFullYear() - 100, today.getMonth(), today.getDate())),
+
+                      check() {
+                        const field = this.$refs.appointment;
+                        field.errorMessage = field.value ? undefined : 'Choose an appointment date';
+                      },
+                    };
+                  };
+
+                  window.dropdownHost = () => ({
+                    text: '',
+
+                    init() {
+                      this.$nextTick(() => {
+                        const popover = this.$refs.popover;
+                        const calendar = this.$refs.calendar;
+
+                        this.$refs.button.addEventListener('click', () => popover.toggle());
+                        calendar.addEventListener('dateChange', event => {
+                          this.text = event.detail.value.split('-').reverse().join('/');
+                          popover.hide();
+                        });
+                      });
+                    },
+                  });
+                })();
+              </script>
+              <style>
+                .tickets-palette {
+                  --shift-accent: #594ae2;
+                  --shift-focus: #594ae2;
+                  --shift-accent-tint: rgba(89, 74, 226, 0.08);
+                }
+
+                .tickets-palette[color-scheme='dark'] {
+                  --shift-accent: #a79ff2;
+                  --shift-on-accent: #1b1a2e;
+                  --shift-focus: #a79ff2;
+                  --shift-accent-tint: rgba(167, 159, 242, 0.14);
+                }
+
+                /* A stand-in for a MudBlazor outlined text field with an end adornment: markup the package does not own. */
+                .host-app {
+                  --host-bg: #ffffff;
+                  --host-ink: rgba(0, 0, 0, 0.87);
+                  --host-muted: rgba(0, 0, 0, 0.6);
+                  --host-line: rgba(0, 0, 0, 0.23);
+                  --host-primary: #594ae2;
+                  min-width: 0;
+                  padding: 1.25rem 1rem 1rem;
+                  border-radius: 8px;
+                  background: var(--host-bg);
+                  color: var(--host-ink);
+                  font-family: Roboto, Helvetica, Arial, sans-serif;
+                }
+
+                .host-app[data-scheme='dark'] {
+                  --host-bg: #32333d;
+                  --host-ink: rgba(255, 255, 255, 0.87);
+                  --host-muted: rgba(255, 255, 255, 0.6);
+                  --host-line: rgba(255, 255, 255, 0.3);
+                  --host-primary: #a79ff2;
+                }
+
+                .host-field {
+                  position: relative;
+                  display: flex;
+                  align-items: center;
+                  max-width: 280px;
+                  height: 56px;
+                  border: 1px solid var(--host-line);
+                  border-radius: 4px;
+                }
+
+                .host-field:hover {
+                  border-color: var(--host-ink);
+                }
+
+                .host-field:focus-within {
+                  border-color: var(--host-primary);
+                  box-shadow: inset 0 0 0 1px var(--host-primary);
+                }
+
+                .host-field label {
+                  position: absolute;
+                  top: -9px;
+                  inset-inline-start: 10px;
+                  padding: 0 4px;
+                  background: var(--host-bg);
+                  color: var(--host-muted);
+                  font-size: 12px;
+                  line-height: 16px;
+                }
+
+                .host-field:focus-within label {
+                  color: var(--host-primary);
+                }
+
+                .host-field input {
+                  flex: 1;
+                  min-width: 0;
+                  height: 100%;
+                  padding: 0 14px;
+                  border: 0;
+                  outline: 0;
+                  background: transparent;
+                  color: var(--host-ink);
+                  font:
+                    16px/1.2 Roboto,
+                    Helvetica,
+                    Arial,
+                    sans-serif;
+                }
+
+                .host-field button {
+                  display: grid;
+                  place-items: center;
+                  width: 40px;
+                  height: 40px;
+                  margin-inline-end: 6px;
+                  border-radius: 50%;
+                  color: var(--host-muted);
+                }
+
+                .host-field button:hover {
+                  background: color-mix(in srgb, var(--host-ink) 8%, transparent);
+                }
+
+                .host-field button:focus-visible {
+                  outline: 2px solid var(--host-primary);
+                }
+
+                .host-field svg {
+                  width: 22px;
+                  height: 22px;
+                }
+              </style>
+
+              <header class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h2 class="text-3xl font-bold tracking-tight">Dropdown</h2>
+                  <p class="lede text-base-content/70 mt-2 max-w-[70ch]">
+                    The calendar in a pop-out: <code>shift-input type="date"</code> for a date field, or <code>shift-popover</code> around a calendar for any input you already
+                    have.
+                  </p>
+                </div>
+                <div class="appearance-field">
+                  <span class="appearance-label" id="appearance-label-dropdown" x-text="siteT('docs.appearance')"></span>
+                  <div class="seg appearance-pick" role="radiogroup" aria-labelledby="appearance-label-dropdown">
+                    <template x-for="item in appearances" :key="item">
+                      <label
+                        ><input type="radio" name="appearance-dropdown" :value="item" x-model="appearance" /><span
+                          ><span x-html="icon('look-' + item)"></span><span class="capitalize" x-text="item"></span></span
+                      ></label>
+                    </template>
+                  </div>
+                </div>
+              </header>
+
+              <article class="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3" x-data="dropdownForm()">
+                <div class="flex flex-col gap-1">
+                  <h3 class="text-lg font-semibold">1 · Date fields in a form</h3>
+                  <p class="text-base-content/70 text-sm">
+                    Four <code>shift-input type="date"</code> fields; each line under a field says what it shows. Check validates the form.
+                  </p>
+                </div>
+                <form class="frame grid min-w-0 grid-cols-[minmax(0,1fr)] gap-x-6 gap-y-3 @2xl:grid-cols-2" novalidate @submit.prevent="check()">
+                  <shift-input type="date" label="Visit date" hint="Type a date or pick one."></shift-input>
+                  <shift-input
+                    x-ref="appointment"
+                    type="date"
+                    label="Appointment"
+                    is-required
+                    today="2026-09-27"
+                    min="2026-10-01"
+                    max="2026-12-31"
+                    disabled-weekdays="5"
+                    hint="October to December 2026, Fridays closed."
+                    @value-change.camel="check()"
+                  ></shift-input>
+                  <shift-input
+                    type="date"
+                    label="Delivery date"
+                    format="dd.MM.yyyy"
+                    min="2026-09-01"
+                    open-on-control-click="false"
+                    hint="Typed as dd.mm.yyyy; the button opens the calendar."
+                  ></shift-input>
+                  <shift-input type="date" label="Date of birth" month="1990-01" hint="Up to today, back 100 years." x-effect="$el.min = min; $el.max = max"></shift-input>
+                  <div class="@2xl:col-span-2"><button type="submit" class="btn btn-sm">Check</button></div>
+                </form>
+                <figure class="border-base-300 min-w-0 overflow-hidden rounded-lg border" x-data="dropdownCode('form')">
+                  <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                    <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
+                    <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
+                  </figcaption>
+                  <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
+                </figure>
+              </article>
+
+              <article class="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3" id="dropdown-host">
+                <div class="flex flex-col gap-1">
+                  <h3 class="text-lg font-semibold">2 · Another app’s input</h3>
+                  <p class="text-base-content/70 text-sm">
+                    A plain input and button styled like a MudBlazor outlined field open <code>shift-popover</code> with a <code>shift-calendar</code>, in <code>material</code>.
+                  </p>
+                </div>
+                <div class="host-app" :data-scheme="hostScheme" :dir="hostDir" x-data="dropdownHost()">
+                  <div class="host-field">
+                    <label for="dropdown-booking-date">Booking date</label>
+                    <input id="dropdown-booking-date" placeholder="dd/mm/yyyy" autocomplete="off" :value="text" />
+                    <button type="button" x-ref="button" aria-label="Open calendar">
+                      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z" />
+                      </svg>
+                    </button>
+                  </div>
+                  <shift-popover x-ref="popover" anchor="#dropdown-booking-date" appearance="material" data-fixed-appearance label="Choose date" class="tickets-palette">
+                    <shift-calendar x-ref="calendar" data-fixed-appearance appearance="material" class="tickets-palette"></shift-calendar>
+                  </shift-popover>
+                </div>
+                <div class="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3 @3xl:grid-cols-2">
+                  <template x-for="key in ['hostHtml', 'hostCss']" :key="key">
+                    <figure class="border-base-300 min-w-0 self-start overflow-hidden rounded-lg border" x-data="dropdownCode(key)">
+                      <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                        <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
+                        <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
+                      </figcaption>
+                      <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
+                    </figure>
+                  </template>
+                </div>
+                <div class="flex min-w-0 flex-col gap-2">
+                  <h4 class="text-sm font-semibold">From Blazor through IJSRuntime <span class="badge badge-sm badge-warning ms-1 align-middle">Illustrative</span></h4>
+                  <template x-for="key in ['blazor', 'blazorJs']" :key="key">
+                    <figure class="border-base-300 min-w-0 overflow-hidden rounded-lg border" x-data="dropdownCode(key)">
+                      <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                        <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
+                        <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
+                      </figcaption>
+                      <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
+                    </figure>
+                  </template>
+                </div>
+              </article>
+
+              <div class="flex max-w-[80ch] min-w-0 flex-col gap-2">
+                <h3 class="text-lg font-semibold" id="dropdown-accessibility">Accessibility on a foreign input</h3>
+                <ul class="text-base-content/75 list-disc ps-5 text-sm">
+                  <li>
+                    <code>shift-popover</code> never sets or changes the anchor’s role. It adds <code>aria-haspopup="dialog"</code>, and <code>aria-controls</code> when the anchor
+                    is in the page’s own tree; <code>aria-expanded</code> only where the anchor’s role allows it (a button or a combobox).
+                  </li>
+                  <li>The dialog is named by <code>label</code>, else by the anchor’s own name through <code>aria-labelledby</code>, else “Pop-up” in its language.</li>
+                  <li>An input that manages its own ARIA, like a MudBlazor field, keeps it; <code>shift-input</code>’s date input is itself a combobox.</li>
+                </ul>
+              </div>
+
+              <div class="flex min-w-0 flex-col gap-6" x-data="apiReference('shift-popover', { idPrefix: 'popover-', parts: true })">
+                <h3 class="text-lg font-semibold" id="api-popover-element">
+                  <code>shift-popover</code> API<span class="text-base-content/60 text-sm font-normal" x-show="packageVersion" x-text="' ' + packageVersion"></span>
+                </h3>
+                <p class="text-base-content/60 text-sm" x-show="loading">Loading…</p>
+                <p class="text-error text-sm" x-show="error" x-text="error"></p>
+
+                <template x-if="component">
+                  <div class="flex flex-col gap-6">
+                    <template x-for="group in groups" :key="group.id">
+                      <section>
+                        <h4 :id="group.id" class="text-base font-semibold">
+                          <button
+                            type="button"
+                            class="hover:text-accent flex w-full cursor-pointer items-center gap-2 text-start transition-colors"
+                            :aria-expanded="String(!shut[group.id])"
+                            :aria-controls="group.id + '-body'"
+                            @click="toggleGroup(group)"
+                          >
+                            <span x-text="group.label"></span>
+                            <span class="badge badge-sm badge-ghost font-normal tabular-nums" x-text="group.count ?? group.rows.length"></span>
+                            <svg
+                              class="api-chevron ms-auto h-3 w-3 shrink-0 opacity-60"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2.5"
+                              stroke-linecap="round"
+                              aria-hidden="true"
+                            >
+                              <path d="m9 6 6 6-6 6" />
+                            </svg>
+                          </button>
+                        </h4>
+
+                        <div class="api-row-body" :id="group.id + '-body'" :data-open="String(!shut[group.id])" x-effect="$el.inert = !!shut[group.id]">
+                          <div>
+                            <input
+                              type="search"
+                              class="input input-bordered input-sm mt-2 max-w-xs"
+                              x-show="group.filterable"
+                              x-model="filter"
+                              placeholder="Filter by name…"
+                              aria-label="Filter CSS variables"
+                            />
+
+                            <template x-for="block in group.roles ?? [{ label: '', rows: group.rows }]" :key="group.id + block.label">
+                              <div>
+                                <p class="eyebrow text-neutral mt-3" x-show="block.label" x-text="block.label"></p>
+                                <ul class="border-base-300 divide-base-300 mt-2 divide-y overflow-hidden rounded-lg border">
+                                  <template x-for="row in block.rows" :key="row.id">
+                                    <li :id="row.id">
+                                      <button
+                                        type="button"
+                                        class="hover:bg-base-200/60 flex w-full cursor-pointer flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-2.5 text-start"
+                                        :aria-expanded="String(!!open[row.id])"
+                                        :aria-controls="row.id + '-body'"
+                                        @click="toggle(row)"
+                                      >
+                                        <code class="text-sm font-semibold break-all" x-text="row.name"></code>
+                                        <template x-for="tag in row.tags" :key="tag">
+                                          <span class="text-base-content/55 font-mono text-[11px]" x-text="tag"></span>
+                                        </template>
+                                        <svg
+                                          class="api-chevron ms-auto h-3 w-3 shrink-0 self-center opacity-60"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          stroke-width="2.5"
+                                          stroke-linecap="round"
+                                          aria-hidden="true"
+                                        >
+                                          <path d="m9 6 6 6-6 6" />
+                                        </svg>
+                                      </button>
+                                      <div class="api-row-body" :id="row.id + '-body'" :data-open="String(!!open[row.id])" x-effect="$el.inert = !open[row.id]">
+                                        <div>
+                                          <div class="bg-base-200/40 border-base-300 flex flex-col gap-2 border-t px-4 py-3">
+                                            <p class="text-sm" x-text="row.description"></p>
+                                            <p class="text-base-content/60 font-mono text-xs break-all" x-show="row.type && row.type.length > 32" x-text="row.type"></p>
+                                            <pre class="code m-0 text-xs whitespace-pre-wrap [overflow-wrap:anywhere]" x-show="row.example" x-text="row.example"></pre>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </li>
+                                  </template>
+                                </ul>
+                              </div>
+                            </template>
+                          </div>
+                        </div>
+                      </section>
+                    </template>
+
+                    <section>
+                      <h4 id="api-popover-notes" class="text-base font-semibold">Behaviour notes</h4>
+                      <ul class="text-base-content/80 mt-2 flex max-w-[80ch] list-disc flex-col gap-1 ps-5 text-sm">
+                        <template x-for="note in notes" :key="note">
+                          <li x-text="note"></li>
+                        </template>
+                      </ul>
+                    </section>
+                  </div>
+                </template>
               </div>
             </section>
 

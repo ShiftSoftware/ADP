@@ -1,0 +1,23 @@
+{
+  "times": "Times",
+  "noTimes": "No times available on this day",
+  "loadingTimes": "Loading times…",
+  "timesCount": "{count} times",
+  "am": "AM",
+  "pm": "PM",
+  "bookingCalendar": "Date and time",
+  "idle": "Choose a branch first",
+  "loading": "Loading available days…",
+  "empty": "No times available at this branch",
+  "error": "Couldn't load available times",
+  "retry": "Try again",
+  "pickDay": "Pick a day",
+  "pickTime": "Pick a time",
+  "selected": "{date} at {time}",
+  "dayTimes": "Times available: {count}",
+  "required": "Please choose a date and time",
+  "changeDate": "Change date",
+  "dayTitle": "{weekday}, {day} {month}",
+  "monthsShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  "timesOn": "Times on {date}"
+}

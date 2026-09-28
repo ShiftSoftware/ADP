@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "adp-web-components",
-  "packageVersion": "0.4.5",
+  "packageVersion": "0.4.6",
   "outputFamily": "per-component",
   "components": [
     {
@@ -857,7 +857,12 @@
           }
         ],
         "methods": [
-          { "name": "setFocus", "parameters": "() => Promise<void>", "returns": "Promise<void>", "description": "Moves focus to the item in the tab order of the current view." }
+          {
+            "name": "setFocus",
+            "parameters": "(date?: string) => Promise<void>",
+            "returns": "Promise<void>",
+            "description": "Moves focus to the item in the tab order of the current view."
+          }
         ],
         "events": [
           {
@@ -1070,6 +1075,1793 @@
           "Fonts: Nunito (vanilla, material, soft) or Manrope (sharp, minimal), with Noto Kufi Arabic first for ar and ku — all loaded by the package’s global script. Override with --shift-font-family and --shift-font-family-arabic.",
           "The box never changes size: six rows always, a fixed header band, and the months and years views fill exactly the days view. Only another density (an appearance with a different cell size or gap) or another size resizes it.",
           "Every movement — header roll, day carousel, view slide, year paging — runs on one clock: --shift-calendar-settle (or --shift-settle), 480ms by default; instant under prefers-reduced-motion."
+        ]
+      }
+    },
+    {
+      "tag": "shift-time-slots",
+      "modulePath": "dist/components/shift-time-slots.js",
+      "wireContract": null,
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": [
+          "times",
+          "value",
+          "disabledTimes",
+          "hourCycle",
+          "language",
+          "numerals",
+          "label",
+          "emptyText",
+          "loading",
+          "skeletonCount",
+          "disabled",
+          "appearance",
+          "colorScheme",
+          "size"
+        ],
+        "methods": ["setFocus"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
+        "owns": ["time grid rendering", "single-time selection", "keyboard navigation", "loading and empty presentation", "appearance and colour scheme"]
+      },
+      "api": {
+        "props": [
+          {
+            "name": "appearance",
+            "attribute": "appearance",
+            "type": "\"material\" | \"minimal\" | \"sharp\" | \"soft\" | \"vanilla\"",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "vanilla, material, soft, sharp or minimal. Unset renders vanilla."
+          },
+          {
+            "name": "colorScheme",
+            "attribute": "color-scheme",
+            "type": "\"auto\" | \"dark\" | \"light\"",
+            "default": "'light'",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "light (default), dark, or auto (follows prefers-color-scheme; for hosts that are themselves dark-aware)."
+          },
+          {
+            "name": "disabled",
+            "attribute": "disabled",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "No time can be chosen and none is in the tab order."
+          },
+          {
+            "name": "disabledTimes",
+            "attribute": "disabled-times",
+            "type": "string | string[]",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Times shown but not selectable, same shapes as times."
+          },
+          {
+            "name": "emptyText",
+            "attribute": "empty-text",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Text when there are no times. Default: a localized “no times available on this day”."
+          },
+          {
+            "name": "hourCycle",
+            "attribute": "hour-cycle",
+            "type": "\"h12\" | \"h23\"",
+            "default": "'h23'",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "h23 (default) shows 09:00 and 13:00; h12 shows 9:00 AM and 1:00 PM with the language’s own AM and PM."
+          },
+          {
+            "name": "label",
+            "attribute": "label",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Accessible name for the group. Default: the localized word for times."
+          },
+          {
+            "name": "language",
+            "attribute": "language",
+            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"",
+            "default": "'en'",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "en, ar, ku or ru. Sets direction, digits, the AM and PM words and the messages."
+          },
+          {
+            "name": "loading",
+            "attribute": "loading",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "Shows placeholders instead of times and sets aria-busy while the host loads the day."
+          },
+          {
+            "name": "numerals",
+            "attribute": "numerals",
+            "type": "\"arab\" | \"latn\"",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "latn or arab. Default by language: Arabic-Indic digits for ar and ku, Latin for en and ru."
+          },
+          {
+            "name": "size",
+            "attribute": "size",
+            "type": "\"lg\" | \"md\" | \"sm\" | \"xl\" | \"xs\"",
+            "default": "'md'",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "xs, sm, md (default), lg or xl. Scales the times, type and gaps. md equals no size."
+          },
+          {
+            "name": "skeletonCount",
+            "attribute": "skeleton-count",
+            "type": "number",
+            "default": "8",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "How many placeholders loading shows (1–48). Default 8, one to two rows in most hosts."
+          },
+          {
+            "name": "times",
+            "attribute": "times",
+            "type": "string | string[]",
+            "default": "[]",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "The day’s times as HH:mm: an array, or a comma, space or JSON-array string. Sorted and de-duplicated; anything else is ignored."
+          },
+          {
+            "name": "value",
+            "attribute": "value",
+            "type": "string",
+            "default": "''",
+            "mutable": true,
+            "required": false,
+            "reflect": true,
+            "description": "The chosen time, HH:mm, or empty. Set by a pick; a host may set it (no event). A value not in times selects nothing."
+          }
+        ],
+        "methods": [{ "name": "setFocus", "parameters": "() => Promise<void>", "returns": "Promise<void>", "description": "Moves focus to the time in the tab order." }],
+        "events": [
+          {
+            "name": "timeChange",
+            "type": "TimeChangeDetail",
+            "description": "Detail { value: HH:mm }. Fires on every pick, including the current value again; never for a disabled time or when a host sets value."
+          }
+        ],
+        "dependencies": [],
+        "parts": [
+          { "name": "root", "description": "The group (role=radiogroup)." },
+          { "name": "grid", "description": "The grid of times, or of placeholders while loading." },
+          { "name": "time", "description": "Every time. States beside it: time-selected, time-disabled." },
+          { "name": "time-selected", "description": "The chosen time." },
+          { "name": "time-disabled", "description": "A time that cannot be chosen." },
+          { "name": "skeleton", "description": "A loading placeholder." },
+          { "name": "empty", "description": "The message shown when there are no times." }
+        ],
+        "cssProperties": [
+          { "name": "--shift-time-slots-accent", "default": "var(--shift-accent, var(--_ap-accent, #1e293b))", "description": "Colour · selected time fill" },
+          {
+            "name": "--shift-time-slots-blocked-decoration",
+            "default": "var(--_ap-blocked-decoration, line-through)",
+            "description": "Disabled times · text decoration (e.g. line-through)"
+          },
+          { "name": "--shift-time-slots-blocked-opacity", "default": "var(--_ap-blocked-opacity, 1)", "description": "Disabled times · opacity" },
+          { "name": "--shift-time-slots-border-width", "default": "var(--shift-border-width, var(--_ap-border-width, 1px))", "description": "Shape · time border width" },
+          {
+            "name": "--shift-time-slots-chip-height",
+            "default": "var(--shift-control-height, calc(var(--_ap-control-height, 44px) * var(--_sz-control, 1)))",
+            "description": "Size · smallest time height (the touch target)"
+          },
+          { "name": "--shift-time-slots-chip-padding-inline", "default": "calc(8px * var(--_sz-space, 1))", "description": "Spacing · padding inside a time" },
+          { "name": "--shift-time-slots-disabled-ink", "default": "var(--shift-ink-disabled, var(--_ap-ink-disabled, #cbd5e1))", "description": "Colour · disabled times" },
+          { "name": "--shift-time-slots-ease", "default": "var(--shift-ease, ease)", "description": "Motion · easing of every movement" },
+          {
+            "name": "--shift-time-slots-empty-font-size",
+            "default": "var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px)))",
+            "description": "Type · empty message size"
+          },
+          { "name": "--shift-time-slots-empty-padding-block", "default": "calc(24px * var(--_sz-space, 1))", "description": "Spacing · space above and below the empty message" },
+          { "name": "--shift-time-slots-focus-halo", "default": "var(--_ap-focus-halo, transparent)", "description": "Colour · halo around a focused time" },
+          { "name": "--shift-time-slots-focus-halo-width", "default": "var(--_ap-focus-halo-width, 0px)", "description": "Focus · halo width" },
+          { "name": "--shift-time-slots-focus-ring", "default": "var(--shift-focus, var(--_ap-focus, #1e293b))", "description": "Colour · focus ring" },
+          { "name": "--shift-time-slots-focus-ring-offset", "default": "var(--_ap-focus-offset, 2px)", "description": "Focus · gap between a time and its ring" },
+          { "name": "--shift-time-slots-focus-ring-width", "default": "var(--_ap-focus-width, 2px)", "description": "Focus · ring width" },
+          { "name": "--shift-time-slots-font-family", "default": "var(--shift-font-family, var(--_ap-font, 'Nunito', system-ui, sans-serif))", "description": "Type · Latin font" },
+          {
+            "name": "--shift-time-slots-font-family-arabic",
+            "default": "var(--shift-font-family-arabic, 'Noto Kufi Arabic', var(--_font-latin))",
+            "description": "Type · Arabic and Kurdish font"
+          },
+          {
+            "name": "--shift-time-slots-font-size",
+            "default": "var(--shift-font-size, calc(var(--_ap-font-size, 14px) + var(--_sz-font, 0px)))",
+            "description": "Type · time size"
+          },
+          { "name": "--shift-time-slots-font-weight", "default": "var(--shift-weight, var(--_ap-weight, 400))", "description": "Type · time weight" },
+          { "name": "--shift-time-slots-gap", "default": "var(--shift-gap, calc(var(--_ap-gap, 4px) * 2 * var(--_sz-space, 1)))", "description": "Spacing · between times" },
+          { "name": "--shift-time-slots-hover-bg", "default": "var(--_ap-hover-bg, #f1f5f9)", "description": "Colour · time background on hover" },
+          { "name": "--shift-time-slots-hover-ink", "default": "var(--_ap-hover-ink, #1e293b)", "description": "Colour · time text on hover" },
+          { "name": "--shift-time-slots-hover-line", "default": "var(--shift-line-strong, var(--_ap-hover-line, #94a3b8))", "description": "Colour · time outline on hover" },
+          { "name": "--shift-time-slots-ink", "default": "var(--shift-ink, var(--_ap-ink, #1e293b))", "description": "Colour · time text" },
+          { "name": "--shift-time-slots-line", "default": "var(--shift-line, var(--_ap-line, #e2e8f0))", "description": "Colour · time outline at rest" },
+          { "name": "--shift-time-slots-line-height", "default": "1.43", "description": "Type · line height" },
+          { "name": "--shift-time-slots-min-column", "default": "calc(84px * var(--_sz-control, 1))", "description": "Size · narrowest column; as many columns as fit" },
+          { "name": "--shift-time-slots-muted", "default": "var(--shift-ink-muted, var(--_ap-ink-muted, #64748b))", "description": "Colour · empty message" },
+          { "name": "--shift-time-slots-on-accent", "default": "var(--shift-on-accent, var(--_ap-on-accent, #ffffff))", "description": "Colour · text on the selected time" },
+          { "name": "--shift-time-slots-radius", "default": "var(--shift-radius-sm, var(--_ap-radius-sm, 8px))", "description": "Shape · time radius" },
+          { "name": "--shift-time-slots-rise-distance", "default": "8px", "description": "Motion · how far arriving times rise" },
+          { "name": "--shift-time-slots-selected-font-weight", "default": "var(--shift-weight, var(--_ap-weight, 400))", "description": "Type · selected time weight" },
+          { "name": "--shift-time-slots-settle", "default": "var(--shift-settle, 480ms)", "description": "Motion · duration of every movement" },
+          { "name": "--shift-time-slots-shadow", "default": "var(--shift-shadow-control, var(--_ap-shadow-control, none))", "description": "Effect · time shadow" },
+          { "name": "--shift-time-slots-skeleton", "default": "var(--shift-accent-tint, var(--_ap-accent-tint, #f1f5f9))", "description": "Colour · loading placeholder fill" },
+          { "name": "--shift-time-slots-surface", "default": "var(--shift-surface, var(--_ap-surface, #ffffff))", "description": "Colour · time background" }
+        ]
+      },
+      "runtimeAssets": {
+        "locales": null,
+        "notes": [
+          "Takes the times of one day in and gives one out; it makes no requests. Times are HH:mm on a 24-hour clock whatever hourCycle shows.",
+          "Times sit in as many columns as fit (84px or wider at md), each at least 44px tall, so a narrow host gets fewer columns, never a scrollbar.",
+          "Selection follows Enter, Space or a click, not focus: arrows move focus only and pass over disabled times, so moving through the day with the keyboard never picks one. This is the documented difference from the WAI-ARIA radio group, where arrows also check.",
+          "When the times change, the outgoing grid fades while the incoming times rise one after another, and the height moves to the new row count on grid-template-rows. Loading shows skeletonCount placeholders the size of a time. Instant under prefers-reduced-motion.",
+          "Appearance and colour scheme follow .shift form-appearances: every value resolves as --shift-time-slots-x, then --shift-x, then the appearance, then the vanilla baseline. The component never sets --shift-* itself.",
+          "Fonts: Nunito (vanilla, material, soft) or Manrope (sharp, minimal), with Noto Kufi Arabic first for ar and ku, loaded by the package’s global script."
+        ]
+      }
+    },
+    {
+      "tag": "shift-booking-calendar",
+      "modulePath": "dist/components/shift-booking-calendar.js",
+      "wireContract": null,
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": [
+          "calendarApi",
+          "calendarApiVersion",
+          "companyId",
+          "branchId",
+          "departmentId",
+          "brandId",
+          "today",
+          "disabledWeekdays",
+          "disabledDates",
+          "slotCounts",
+          "hourCycle",
+          "name",
+          "form",
+          "label",
+          "isRequired",
+          "isDisabled",
+          "language",
+          "localization",
+          "defaultValue",
+          "wrapperId",
+          "wrapperClass",
+          "appearance",
+          "colorScheme",
+          "size"
+        ],
+        "methods": ["refresh", "setFocus"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
+        "owns": [
+          "branch availability request",
+          "month calendar of open days",
+          "times of the chosen day, in the same box",
+          "slot selection",
+          "form value and validation",
+          "appearance and colour scheme"
+        ]
+      },
+      "api": {
+        "props": [
+          {
+            "name": "appearance",
+            "attribute": "appearance",
+            "type": "\"material\" | \"minimal\" | \"sharp\" | \"soft\" | \"vanilla\"",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "vanilla, material, soft, sharp or minimal. Unset renders vanilla."
+          },
+          { "name": "branchId", "attribute": "branch-id", "type": "string", "default": null, "mutable": false, "required": false, "reflect": false, "description": "Branch id." },
+          {
+            "name": "brandId",
+            "attribute": "brand-id",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Brand Integration ID, one value."
+          },
+          {
+            "name": "calendarApi",
+            "attribute": "calendar-api",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Full URL of the calendar endpoint for calendarApiVersion, e.g. …/api/public/calendar (v1) or …/api/public/v2/calendar (v2)."
+          },
+          {
+            "name": "calendarApiVersion",
+            "attribute": "calendar-api-version",
+            "type": "\"v1\" | \"v2\"",
+            "default": "'v1'",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "v1 (default) or v2: which kind of company and branch id the endpoint takes. The host passes the matching ids; branchIds() in ~lib/booking-availability builds them from a company-branch record."
+          },
+          {
+            "name": "colorScheme",
+            "attribute": "color-scheme",
+            "type": "\"auto\" | \"dark\" | \"light\"",
+            "default": "'light'",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "light (default), dark, or auto (follows prefers-color-scheme; for hosts that are themselves dark-aware)."
+          },
+          {
+            "name": "companyId",
+            "attribute": "company-id",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Company id of the branch. The field stays idle until company, branch, department and brand are all set."
+          },
+          {
+            "name": "defaultValue",
+            "attribute": "default-value",
+            "type": "string",
+            "default": null,
+            "mutable": true,
+            "required": false,
+            "reflect": false,
+            "description": "A slot as YYYY-MM-DDTHH:mm: its day is chosen and that time marked when the branch has it; the field still opens on the days. Submitted as is until something is picked."
+          },
+          {
+            "name": "departmentId",
+            "attribute": "department-id",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Department Integration ID, e.g. showroom or service-center."
+          },
+          {
+            "name": "disabledDates",
+            "attribute": "disabled-dates",
+            "type": "string | string[]",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "One-off dates the deployment does not book, YYYY-MM-DD."
+          },
+          {
+            "name": "disabledWeekdays",
+            "attribute": "disabled-weekdays",
+            "type": "number[] | string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Weekdays the deployment never books, 0 Sunday … 6 Saturday, on top of what the endpoint returns."
+          },
+          {
+            "name": "form",
+            "type": "FormHook<unknown>",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "JS property only. The form hook; omit it standalone and listen to slotChange."
+          },
+          {
+            "name": "hourCycle",
+            "attribute": "hour-cycle",
+            "type": "\"h12\" | \"h23\"",
+            "default": "'h23'",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "h23 (default) or h12, for the times."
+          },
+          {
+            "name": "isDisabled",
+            "attribute": "is-disabled",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Nothing can be chosen."
+          },
+          {
+            "name": "isRequired",
+            "attribute": "is-required",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Required. A form hook’s own required rule applies as well."
+          },
+          {
+            "name": "label",
+            "attribute": "label",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Field label. A form’s localization label wins."
+          },
+          {
+            "name": "language",
+            "attribute": "language",
+            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"",
+            "default": "'en'",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "en, ar, ku or ru. Direction, names, digits and messages."
+          },
+          {
+            "name": "localization",
+            "type": "T",
+            "default": "{}",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Per-language label and require texts, as every form field takes."
+          },
+          {
+            "name": "name",
+            "attribute": "name",
+            "type": "string",
+            "default": "'bookingCalendar'",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "Field name in the form. Default bookingCalendar."
+          },
+          {
+            "name": "size",
+            "attribute": "size",
+            "type": "\"lg\" | \"md\" | \"sm\" | \"xl\" | \"xs\"",
+            "default": "'md'",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "xs, sm, md (default), lg or xl. Scales the times, type and gaps. md equals no size."
+          },
+          {
+            "name": "slotCounts",
+            "attribute": "slot-counts",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Shows each open day’s number of times as a badge."
+          },
+          {
+            "name": "today",
+            "attribute": "today",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "YYYY-MM-DD that stands in for today: the request starts here. Empty: the visitor’s local date."
+          },
+          {
+            "name": "wrapperClass",
+            "attribute": "wrapper-class",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Extra class on the field’s root."
+          },
+          {
+            "name": "wrapperId",
+            "attribute": "wrapper-id",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "id for the field’s root."
+          }
+        ],
+        "methods": [
+          {
+            "name": "refresh",
+            "parameters": "() => Promise<void>",
+            "returns": "Promise<void>",
+            "description": "Loads the branch again; the page cache still answers a request it already holds."
+          },
+          {
+            "name": "setFocus",
+            "parameters": "() => Promise<void>",
+            "returns": "Promise<void>",
+            "description": "Moves focus into the view on screen: the calendar's day, or the times."
+          }
+        ],
+        "events": [
+          {
+            "name": "slotChange",
+            "type": "BranchSlotSelection",
+            "description": "Detail { date: YYYY-MM-DD, raw: the endpoint’s text, value: YYYY-MM-DDTHH:mm }, identical to branch-slot-picker. Fires when a time is picked, and when a reopened day keeps the chosen time."
+          }
+        ],
+        "dependencies": ["shift-calendar", "shift-time-slots"],
+        "parts": [
+          { "name": "root", "description": "The field." },
+          { "name": "label", "description": "The field label." },
+          { "name": "required", "description": "The required mark." },
+          { "name": "box", "description": "The fixed box holding both views." },
+          { "name": "calendar", "description": "The shift-calendar element (the days view)." },
+          { "name": "times", "description": "The times view, laid over the calendar." },
+          { "name": "times-header", "description": "The times view's header." },
+          { "name": "times-heading", "description": "The chosen day in the header." },
+          { "name": "times-time", "description": "The chosen time beside the day." },
+          { "name": "back", "description": "The Change date button." },
+          { "name": "times-body", "description": "The region holding the times; scrolls when a day has many." },
+          { "name": "slots", "description": "The shift-time-slots element." },
+          { "name": "status", "description": "The row under the box: what to do next, the chosen slot, why there is nothing to choose, or the validation message." },
+          { "name": "status-text", "description": "The text in the status row. status-error sits beside it on the error message." },
+          { "name": "status-error", "description": "The load error text in the status row." },
+          { "name": "retry", "description": "The Try again button." },
+          { "name": "error", "description": "The validation message, in the status row." }
+        ],
+        "cssProperties": [
+          {
+            "name": "--shift-booking-calendar-back-font-weight",
+            "default": "var(--shift-weight-strong, var(--_ap-weight-strong, 600))",
+            "description": "Type · Change date label weight"
+          },
+          { "name": "--shift-booking-calendar-back-gap", "default": "calc(6px * var(--_sz-space, 1))", "description": "Spacing · between the chevron and the Change date label" },
+          { "name": "--shift-booking-calendar-back-icon-size", "default": "var(--_sz-icon, 16px)", "description": "Size · Change date chevron" },
+          { "name": "--shift-booking-calendar-back-padding-inline", "default": "10px", "description": "Spacing · Change date button side padding" },
+          {
+            "name": "--shift-booking-calendar-border-width",
+            "default": "var(--shift-border-width, var(--_ap-border-width, 1px))",
+            "description": "Shape · Change date and retry button border width"
+          },
+          {
+            "name": "--shift-booking-calendar-button-radius",
+            "default": "var(--shift-radius-md, var(--_ap-radius-md, 8px))",
+            "description": "Shape · Change date and retry button radius"
+          },
+          { "name": "--shift-booking-calendar-danger", "default": "var(--shift-danger, var(--_ap-danger, #dc2626))", "description": "Colour · required mark, errors" },
+          { "name": "--shift-booking-calendar-ease", "default": "var(--shift-ease, ease)", "description": "Motion · easing of the view switch and messages" },
+          { "name": "--shift-booking-calendar-focus-halo", "default": "var(--_ap-focus-halo, transparent)", "description": "Focus · halo colour around a focused button" },
+          { "name": "--shift-booking-calendar-focus-halo-width", "default": "var(--_ap-focus-halo-width, 0px)", "description": "Focus · halo width" },
+          {
+            "name": "--shift-booking-calendar-focus-ring",
+            "default": "var(--shift-focus, var(--_ap-focus, #1e293b))",
+            "description": "Colour · Change date and retry button focus ring"
+          },
+          { "name": "--shift-booking-calendar-focus-ring-offset", "default": "var(--_ap-focus-offset, 2px)", "description": "Focus · gap between a button and its ring" },
+          { "name": "--shift-booking-calendar-focus-ring-width", "default": "var(--_ap-focus-width, 2px)", "description": "Focus · ring width" },
+          {
+            "name": "--shift-booking-calendar-font-family",
+            "default": "var(--shift-font-family, var(--_ap-font, 'Nunito', system-ui, sans-serif))",
+            "description": "Type · Latin font"
+          },
+          {
+            "name": "--shift-booking-calendar-font-family-arabic",
+            "default": "var(--shift-font-family-arabic, 'Noto Kufi Arabic', var(--_font-latin))",
+            "description": "Type · Arabic and Kurdish font"
+          },
+          {
+            "name": "--shift-booking-calendar-font-size",
+            "default": "var(--shift-font-size, calc(var(--_ap-font-size, 14px) + var(--_sz-font, 0px)))",
+            "description": "Type · base size"
+          },
+          { "name": "--shift-booking-calendar-gap", "default": "calc(12px * var(--_sz-space, 1))", "description": "Spacing · between label, box and status row" },
+          { "name": "--shift-booking-calendar-heading-ink", "default": "var(--shift-ink, var(--_ap-ink, #1e293b))", "description": "Colour · the day in the times header" },
+          { "name": "--shift-booking-calendar-hover-bg", "default": "var(--_ap-hover-bg, #f1f5f9)", "description": "Colour · Change date and retry button on hover" },
+          { "name": "--shift-booking-calendar-ink", "default": "var(--shift-ink, var(--_ap-ink, #1e293b))", "description": "Colour · label and chosen slot" },
+          {
+            "name": "--shift-booking-calendar-label-font-size",
+            "default": "var(--shift-label-size, calc(var(--_ap-label-size, 12px) + var(--_sz-font, 0px)))",
+            "description": "Type · label size"
+          },
+          { "name": "--shift-booking-calendar-label-font-weight", "default": "var(--shift-weight-strong, var(--_ap-label-weight, 600))", "description": "Type · label weight" },
+          {
+            "name": "--shift-booking-calendar-label-tracking",
+            "default": "var(--shift-label-tracking, var(--_ap-label-tracking, 0.04em))",
+            "description": "Type · label letter spacing"
+          },
+          {
+            "name": "--shift-booking-calendar-label-transform",
+            "default": "var(--shift-label-transform, var(--_ap-label-transform, uppercase))",
+            "description": "Type · label case"
+          },
+          { "name": "--shift-booking-calendar-line", "default": "var(--shift-line, var(--_ap-line, #e2e8f0))", "description": "Colour · Change date and retry button outline" },
+          { "name": "--shift-booking-calendar-line-height", "default": "1.4", "description": "Type · base line height" },
+          { "name": "--shift-booking-calendar-max-inline-size", "default": "var(--_sz-width, 380px)", "description": "Size · default and widest width" },
+          { "name": "--shift-booking-calendar-min-inline-size", "default": "var(--_sz-min-width, 300px)", "description": "Size · declared minimum width" },
+          { "name": "--shift-booking-calendar-muted", "default": "var(--shift-ink-muted, var(--_ap-ink-muted, #64748b))", "description": "Colour · status messages" },
+          { "name": "--shift-booking-calendar-settle", "default": "var(--shift-settle, 480ms)", "description": "Motion · duration of the view switch and messages" },
+          { "name": "--shift-booking-calendar-spinner-size", "default": "var(--_sz-icon, 16px)", "description": "Size · loading spinner" },
+          {
+            "name": "--shift-booking-calendar-status-font-size",
+            "default": "var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px)))",
+            "description": "Type · status message size"
+          },
+          { "name": "--shift-booking-calendar-status-font-weight", "default": "var(--shift-weight, var(--_ap-weight, 400))", "description": "Type · status message weight" },
+          { "name": "--shift-booking-calendar-status-min-block-size", "default": "calc(32px * var(--_sz-control, 1))", "description": "Size · height of the status row" }
+        ]
+      },
+      "runtimeAssets": {
+        "locales": null,
+        "notes": [
+          "One request per branch, from today: the endpoint’s booking delay counts from the request’s from date, so the field never pages forward. The days shown are whatever the response holds; days without times are dropped.",
+          "calendarApiVersion picks the ids: v1 sends the branch’s Integration IDs, v2 its hash IDs, under the same query names. calendarApi must be that version’s endpoint. Default v1.",
+          "Responses are cached per branch, department, brand, version, language and day for the page’s lifetime; errors are not cached and nothing retries on its own. A stale request is cancelled when the branch changes.",
+          "The submitted value and the slotChange detail are exactly branch-slot-picker’s: value YYYY-MM-DDTHH:mm, detail { date, raw, value } with raw as the endpoint sent it.",
+          "States: idle (no branch yet), loading, ready, empty (no times at the branch) and error (with Try again). No day is chosen on load; the calendar opens on the month of the first open day. A new branch, or the ids going idle, returns to the days and clears the choice. Reopening a day keeps the chosen time when that day has it, otherwise clears it.",
+          "Two views in one box: picking an open day switches from the days to that day's times, the header rolling from the month to the day and the content sliding toward the start (mirrored in RTL). Change date or Escape reverses it. The box keeps the calendar's size in both views and every state; a long day scrolls inside it. Nothing below the field moves: the status row has a fixed height and also carries the validation message.",
+          "Inside the field the calendar always fills the box; --shift-booking-calendar-max-inline-size and -min-inline-size set its width.",
+          "appearance, colorScheme and size pass to the calendar and the times; host --shift-* variables reach both, since they inherit."
+        ]
+      }
+    },
+    {
+      "tag": "shift-popover",
+      "modulePath": "dist/components/shift-popover.js",
+      "wireContract": null,
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["anchor", "open", "label", "offset", "language", "appearance", "colorScheme", "size"],
+        "methods": ["show", "hide", "toggle"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
+        "owns": ["portaled panel holding the slotted content", "anchored positioning and bottom sheet", "dismissal and focus return", "appearance and colour scheme of the panel"]
+      },
+      "api": {
+        "props": [
+          {
+            "name": "anchor",
+            "attribute": "anchor",
+            "type": "HTMLElement | string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "The element the panel hangs from, or a CSS selector (looked up in the popover’s own tree, then the document). Any element on the page, including an input that is not ours."
+          },
+          {
+            "name": "appearance",
+            "attribute": "appearance",
+            "type": "\"material\" | \"minimal\" | \"sharp\" | \"soft\" | \"vanilla\"",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "vanilla, material, soft, sharp or minimal. Unset renders vanilla."
+          },
+          {
+            "name": "colorScheme",
+            "attribute": "color-scheme",
+            "type": "\"auto\" | \"dark\" | \"light\"",
+            "default": "'light'",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "light (default), dark, or auto (follows prefers-color-scheme; for hosts that are themselves dark-aware)."
+          },
+          {
+            "name": "label",
+            "attribute": "label",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Accessible name of the dialog. Without it the dialog is named after its anchor, else “Pop-up” in language."
+          },
+          {
+            "name": "language",
+            "attribute": "language",
+            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"",
+            "default": "'en'",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "en, ar, ku or ru. Language of the default dialog name."
+          },
+          {
+            "name": "offset",
+            "attribute": "offset",
+            "type": "number",
+            "default": "8",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Gap between the anchor and the panel, in pixels. 8 by default."
+          },
+          {
+            "name": "open",
+            "attribute": "open",
+            "type": "boolean",
+            "default": "false",
+            "mutable": true,
+            "required": false,
+            "reflect": true,
+            "description": "Whether the panel is open. Reflected and mutable. Set it, or use show(), hide() and toggle()."
+          },
+          {
+            "name": "size",
+            "attribute": "size",
+            "type": "\"lg\" | \"md\" | \"sm\" | \"xl\" | \"xs\"",
+            "default": "'md'",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "xs, sm, md (default), lg or xl. md equals no size."
+          }
+        ],
+        "methods": [
+          { "name": "hide", "parameters": "() => Promise<void>", "returns": "Promise<void>", "description": "Closes the panel. Focus inside the panel returns to the anchor." },
+          {
+            "name": "show",
+            "parameters": "(options?: PopoverShowOptions) => Promise<void>",
+            "returns": "Promise<void>",
+            "description": "Opens the panel and focuses the content. show({ focus: false }) leaves focus where it is. Called while open, it moves focus into the content."
+          },
+          {
+            "name": "toggle",
+            "parameters": "(options?: PopoverShowOptions) => Promise<void>",
+            "returns": "Promise<void>",
+            "description": "Opens or closes the panel. Ignored for the click that follows a pointer-down which just dismissed it."
+          }
+        ],
+        "events": [
+          {
+            "name": "openChange",
+            "type": "PopoverOpenChangeDetail",
+            "description": "Detail { open }. Fires whenever the panel opens or closes: by method, by attribute or by dismissal."
+          }
+        ],
+        "dependencies": ["shift-popover-panel", "shift-portal"],
+        "parts": [
+          { "name": "panel", "description": "The portaled panel. Style it as shift-popover-panel::part(panel), or through a class given to the popover." },
+          { "name": "sheet", "description": "State part beside panel while it is a bottom sheet (viewport under 600px)." }
+        ],
+        "cssProperties": [
+          { "name": "--shift-popover-border-width", "default": "var(--_ap-panel-border-width, 1px)", "description": "Shape · panel border width" },
+          { "name": "--shift-popover-ease", "default": "var(--shift-ease, cubic-bezier(0.2, 0, 0, 1))", "description": "Motion · easing of open and close" },
+          { "name": "--shift-popover-lift", "default": "6px", "description": "Motion · how far the panel travels as it opens" },
+          { "name": "--shift-popover-line", "default": "var(--_ap-panel-line, #e2e8f0)", "description": "Colour · panel border" },
+          { "name": "--shift-popover-radius", "default": "var(--shift-radius-lg, var(--_ap-radius-lg, 12px))", "description": "Shape · panel corner radius" },
+          { "name": "--shift-popover-scale", "default": "0.96", "description": "Motion · scale the panel grows from" },
+          { "name": "--shift-popover-settle", "default": "var(--shift-settle, 320ms)", "description": "Motion · duration of open and close" },
+          {
+            "name": "--shift-popover-shadow",
+            "default": "var(--shift-shadow-panel, var(--_ap-popover-shadow, var(--_ap-shadow-panel, 0 10px 30px -12px rgba(15, 23, 42, 0.25))))",
+            "description": "Colour · panel shadow"
+          },
+          { "name": "--shift-popover-sheet-max-block-size", "default": "82dvh", "description": "Size · tallest the bottom sheet may get" },
+          {
+            "name": "--shift-popover-surface",
+            "default": "var(--shift-surface, var(--_ap-popover-surface, var(--_ap-panel-surface, #ffffff)))",
+            "description": "Colour · panel background"
+          },
+          { "name": "--shift-popover-width", "default": "max-content", "description": "Size · panel width; the content’s own width by default" },
+          { "name": "--shift-popover-z-index", "default": "2000", "description": "Other · stacking order of the panel" }
+        ]
+      },
+      "runtimeAssets": {
+        "locales": null,
+        "notes": [
+          "The content is slotted: the children of shift-popover move into a shift-popover-panel element that shift-portal appends to <body>, so no overflow or stacking context on the page clips them. Keep references to your content elements; do not look them up inside the popover after it loads. Children added later move too.",
+          "The panel receives the popover’s appearance, color-scheme and size attributes and its classes. It inherits nothing from where the popover sits, so set --shift-* variables on :root or on a class you give the popover.",
+          "Positioning: below the anchor, aligned to its inline start (its right edge in RTL, from the anchor’s computed direction); above when there is no room below. It never covers the anchor: when neither side has room it takes the larger side and caps its height to it, and the content scrolls inside the panel. Shifted sideways to stay 8px inside the viewport; re-placed on scroll of any ancestor, on resize and when the anchor or the content resizes. It never scrolls the page. When the anchor scrolls out of sight the panel closes.",
+          "Under 600px of viewport width the panel is a bottom sheet: full width, at most 82dvh, sliding up from the bottom edge.",
+          "Dismissal: pointer-down outside the panel and the anchor, Escape (focus returns to the anchor), Tab out of the panel (Shift+Tab from its first control returns to the anchor; Tab from its last moves to the control after the anchor), focus moving to any element that is neither the anchor nor a popover panel, and hide() from the content, for example after a date is chosen.",
+          "Focus on open: content with a setFocus() method (shift-calendar has one) is asked to focus itself; otherwise the first control in the content gets focus. show({ focus: false }) leaves focus where it is.",
+          "Wire a separate trigger button to toggle(): the pointer-down on it closes an open panel and the click that follows is ignored, so the button closes rather than reopens.",
+          "A non-modal popup (WAI-ARIA APG): the body-level shift-popover-panel element is the role=dialog and carries the id. On the anchor the popover sets aria-haspopup=dialog, and aria-controls pointing at that id whenever the anchor is in the document tree (an anchor inside a shadow root gets none, because an IDREF cannot cross the shadow boundary). It never sets or changes the anchor’s role: aria-expanded is set only when the anchor’s role allows it (a button, a combobox, or an element whose implicit role is button), so a foreign input that manages its own ARIA, such as a MudBlazor field, keeps it. shift-input’s own date input is a combobox. What the popover set is removed when the anchor changes.",
+          "The dialog always has a name: label; else, when the anchor is in the document tree and has a name of its own, aria-labelledby. For a form control (input, textarea, select) it points at the control’s name sources, never at the control, whose value would become the name: its aria-labelledby ids, else its <label> elements, except that when any label wraps the control the dialog gets the labels’ text as aria-label, with the control’s own contribution left out; a control with only aria-label gives the dialog that text, refreshed on every show(). Any other anchor, such as a button, is referenced itself. Ids the popover adds are removed again on cleanup. Otherwise the anchor’s aria-label or label text; else the localized “Pop-up”.",
+          "Several popovers can be open at once. show() on one closes another only when both share the same anchor, and focus moving into another popover’s panel does not close this one. A pointer-down outside a panel and its anchor still closes it.",
+          "Open grows and fades from the anchor edge, the sheet slides up; closing reverses. One duration, --shift-popover-settle (or --shift-settle), 320ms by default; instant under prefers-reduced-motion. The panel is position: fixed and never shifts the page layout.",
+          "The panel draws the chrome: surface, border, radius and panel shadow from the appearance. A shift-calendar in it draws none of its own and takes its size’s width; the page can still override both. minimal has no opaque surface or panel shadow in appearances.css; the panel fills them from the form-appearances guide until the shared tokens carry them."
+        ]
+      }
+    },
+    {
+      "tag": "shift-input",
+      "modulePath": "dist/components/shift-input.js",
+      "wireContract": null,
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": [
+          "type",
+          "name",
+          "value",
+          "defaultValue",
+          "label",
+          "placeholder",
+          "hint",
+          "isRequired",
+          "isDisabled",
+          "readonly",
+          "clearable",
+          "autocomplete",
+          "inputmode",
+          "errorMessage",
+          "form",
+          "language",
+          "localization",
+          "appearance",
+          "colorScheme",
+          "size",
+          "format",
+          "openOnControlClick",
+          "month",
+          "min",
+          "max",
+          "enabledDates",
+          "disabledDates",
+          "disabledWeekdays",
+          "isDateDisabled",
+          "dayMeta",
+          "today",
+          "highlightToday",
+          "weekStartsOn",
+          "numerals",
+          "disableViews",
+          "showToday",
+          "busy"
+        ],
+        "methods": ["setFocus"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
+        "owns": [
+          "field rendering: label, control, prefix and suffix slots, clear, hint and error",
+          "typed entry per type",
+          "form field contract",
+          "type=\"date\": a shift-popover holding shift-calendar"
+        ]
+      },
+      "api": {
+        "props": [
+          {
+            "name": "appearance",
+            "attribute": "appearance",
+            "type": "\"material\" | \"minimal\" | \"sharp\" | \"soft\" | \"vanilla\"",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "vanilla, material, soft, sharp or minimal. Unset renders vanilla."
+          },
+          {
+            "name": "autocomplete",
+            "attribute": "autocomplete",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "The input’s autocomplete. Off by default."
+          },
+          {
+            "name": "busy",
+            "attribute": "busy",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "The host is loading availability: days dim and cannot be chosen. Passed to the calendar (type=\"date\")."
+          },
+          {
+            "name": "clearable",
+            "attribute": "clearable",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Shows a clear button while there is a value. Off by default."
+          },
+          {
+            "name": "colorScheme",
+            "attribute": "color-scheme",
+            "type": "\"auto\" | \"dark\" | \"light\"",
+            "default": "'light'",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "light (default), dark, or auto (follows prefers-color-scheme; for hosts that are themselves dark-aware)."
+          },
+          {
+            "name": "dayMeta",
+            "attribute": "day-meta",
+            "type": "string | { [x: string]: CalendarDayMeta; }",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Per-day badge, tone and description keyed by YYYY-MM-DD. Passed to the calendar (type=\"date\")."
+          },
+          {
+            "name": "defaultValue",
+            "attribute": "default-value",
+            "type": "string",
+            "default": null,
+            "mutable": true,
+            "required": false,
+            "reflect": false,
+            "description": "Initial value, and what reset() returns to."
+          },
+          {
+            "name": "disableViews",
+            "attribute": "disable-views",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Turns the calendar’s month and year views off. Passed to the calendar (type=\"date\")."
+          },
+          {
+            "name": "disabledDates",
+            "attribute": "disabled-dates",
+            "type": "string | string[]",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Dates that cannot be chosen or typed. Passed to the calendar (type=\"date\")."
+          },
+          {
+            "name": "disabledWeekdays",
+            "attribute": "disabled-weekdays",
+            "type": "number[] | string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Weekdays that cannot be chosen or typed, 0 Sunday … 6 Saturday. Passed to the calendar (type=\"date\")."
+          },
+          {
+            "name": "enabledDates",
+            "attribute": "enabled-dates",
+            "type": "string | string[]",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Allow-list of YYYY-MM-DD. Passed to the calendar (type=\"date\")."
+          },
+          {
+            "name": "errorMessage",
+            "attribute": "error-message",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "An error to show when used standalone. Typed-entry and form errors take precedence."
+          },
+          {
+            "name": "form",
+            "type": "FormHook<Record<string, unknown>>",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "The FormHook that owns the field. Omit it for standalone use and listen to valueChange."
+          },
+          {
+            "name": "format",
+            "attribute": "format",
+            "type": "string",
+            "default": "'dd/MM/yyyy'",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "type=\"date\": display and typing format. Default dd/MM/yyyy. Tokens d, dd, M, MM, yyyy in any order with any separators; anything else falls back to the default."
+          },
+          {
+            "name": "highlightToday",
+            "attribute": "highlight-today",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Marks today visually. Passed to the calendar (type=\"date\")."
+          },
+          {
+            "name": "hint",
+            "attribute": "hint",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "A line of help under the control, in the reserved support line. The error takes its place while there is one."
+          },
+          {
+            "name": "inputmode",
+            "attribute": "inputmode",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "The input’s inputmode. Default by type: text, or numeric for date."
+          },
+          {
+            "name": "isDateDisabled",
+            "type": "(date: string) => boolean",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "JS property only. (date) => boolean for any other rule. Passed to the calendar (type=\"date\")."
+          },
+          {
+            "name": "isDisabled",
+            "attribute": "is-disabled",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Disables the field."
+          },
+          {
+            "name": "isRequired",
+            "attribute": "is-required",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Marks the field required when used standalone; inside a form the schema decides."
+          },
+          {
+            "name": "label",
+            "attribute": "label",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Field label. Inside a form the structure’s localized label wins."
+          },
+          {
+            "name": "language",
+            "attribute": "language",
+            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"",
+            "default": "'en'",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "en, ar, ku or ru. Sets direction, labels and messages, and the calendar’s language."
+          },
+          {
+            "name": "localization",
+            "type": "{ hint?: string; unavailableMessage?: string; }",
+            "default": "{}",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Per-language overrides: { [lang]: { label, placeholder, hint, require, format, minMessage, maxMessage, unavailableMessage } }."
+          },
+          {
+            "name": "max",
+            "attribute": "max",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Latest date (inclusive), YYYY-MM-DD; later typed dates are refused. Passed to the calendar (type=\"date\")."
+          },
+          {
+            "name": "min",
+            "attribute": "min",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Earliest date (inclusive), YYYY-MM-DD; earlier typed dates are refused. Passed to the calendar (type=\"date\")."
+          },
+          {
+            "name": "month",
+            "attribute": "month",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Month the calendar opens on, YYYY-MM. Passed to the calendar (type=\"date\")."
+          },
+          {
+            "name": "name",
+            "attribute": "name",
+            "type": "string",
+            "default": "''",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "Field name, reflected so the form finds the field. Required inside a form."
+          },
+          {
+            "name": "numerals",
+            "attribute": "numerals",
+            "type": "\"arab\" | \"latn\"",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "latn or arab digits in the calendar. Passed to the calendar (type=\"date\")."
+          },
+          {
+            "name": "openOnControlClick",
+            "attribute": "open-on-control-click",
+            "type": "boolean",
+            "default": "true",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "type=\"date\": open the calendar when the input is clicked. On by default."
+          },
+          {
+            "name": "placeholder",
+            "attribute": "placeholder",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Input placeholder. Default for date: the format written with localized letters, e.g. dd/mm/yyyy."
+          },
+          {
+            "name": "readonly",
+            "attribute": "readonly",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "The value can be read and selected but not changed; no clear and no calendar."
+          },
+          {
+            "name": "showToday",
+            "attribute": "show-today",
+            "type": "boolean",
+            "default": "true",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Shows the calendar’s Today button. Passed to the calendar (type=\"date\")."
+          },
+          {
+            "name": "size",
+            "attribute": "size",
+            "type": "\"lg\" | \"md\" | \"sm\" | \"xl\" | \"xs\"",
+            "default": "'md'",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "xs, sm, md (default), lg or xl. md equals no size."
+          },
+          {
+            "name": "today",
+            "attribute": "today",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "YYYY-MM-DD that stands in for today. Passed to the calendar (type=\"date\")."
+          },
+          {
+            "name": "type",
+            "attribute": "type",
+            "type": "\"date\" | \"text\"",
+            "default": "'text'",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "text (default) or date. Reflected."
+          },
+          {
+            "name": "value",
+            "attribute": "value",
+            "type": "string",
+            "default": "''",
+            "mutable": true,
+            "required": false,
+            "reflect": true,
+            "description": "The committed value: text as typed, or YYYY-MM-DD for date. Reflected and mutable."
+          },
+          {
+            "name": "weekStartsOn",
+            "attribute": "week-starts-on",
+            "type": "number",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "First weekday column, 0 Sunday … 6 Saturday. Passed to the calendar (type=\"date\")."
+          }
+        ],
+        "methods": [{ "name": "setFocus", "parameters": "() => Promise<void>", "returns": "Promise<void>", "description": "Focuses the input." }],
+        "events": [
+          { "name": "inputBlur", "type": "void", "description": "The input lost focus, after typed text was read." },
+          { "name": "inputFocus", "type": "void", "description": "The input received focus." },
+          {
+            "name": "monthChange",
+            "type": "CalendarMonthChangeDetail",
+            "description": "type=\"date\": the calendar’s monthChange, forwarded. Detail { month, firstDate, lastDate }."
+          },
+          {
+            "name": "valueChange",
+            "type": "InputValueChangeDetail",
+            "description": "Detail { value }. Fires when the committed value changes: typed text read on blur or Enter, a day chosen, or cleared. Empty when typed text is refused."
+          }
+        ],
+        "dependencies": [],
+        "parts": [
+          { "name": "root", "description": "The field box." },
+          { "name": "label", "description": "The label." },
+          { "name": "required", "description": "The required mark inside the label." },
+          { "name": "control", "description": "The box holding prefix, input and suffix; carries the border and the focus ring." },
+          { "name": "prefix", "description": "The prefix slot’s box, before the input." },
+          { "name": "input", "description": "The text input. For type=\"date\" it is a combobox that opens the calendar." },
+          { "name": "suffix", "description": "The box after the input: clear, the type’s buttons and the suffix slot." },
+          { "name": "clear", "description": "The clear button." },
+          { "name": "calendar-button", "description": "type=\"date\": the button that opens the calendar." },
+          { "name": "hint", "description": "The hint, in the reserved support line." },
+          { "name": "error", "description": "The error, in the reserved support line." }
+        ],
+        "cssProperties": [
+          { "name": "--shift-input-border-width", "default": "var(--shift-border-width, var(--_ap-border-width, 1px))", "description": "Shape · control border width" },
+          { "name": "--shift-input-button-gap", "default": "2px", "description": "Spacing · between buttons in the suffix" },
+          { "name": "--shift-input-button-hover-bg", "default": "var(--_ap-hover-bg, #f1f5f9)", "description": "Colour · icon button on hover" },
+          { "name": "--shift-input-button-ink", "default": "var(--shift-ink-muted, var(--_ap-ink-muted, #64748b))", "description": "Colour · icon buttons" },
+          { "name": "--shift-input-button-radius", "default": "var(--shift-radius-sm, var(--_ap-radius-sm, 8px))", "description": "Shape · icon button radius" },
+          { "name": "--shift-input-button-size", "default": "min(var(--_sz-nav, 32px), calc(var(--_height) - 8px))", "description": "Size · icon button size" },
+          {
+            "name": "--shift-input-control-height",
+            "default": "var(--shift-control-height, calc(var(--_ap-control-height, 44px) * var(--_sz-control, 1)))",
+            "description": "Size · control height"
+          },
+          { "name": "--shift-input-danger", "default": "var(--shift-danger, var(--_ap-danger, #dc2626))", "description": "Colour · error border, message and required mark" },
+          { "name": "--shift-input-disabled-ink", "default": "var(--shift-ink-disabled, var(--_ap-ink-disabled, #cbd5e1))", "description": "Colour · text when disabled" },
+          {
+            "name": "--shift-input-disabled-surface",
+            "default": "var(--shift-surface-muted, var(--_ap-surface-muted, #f8fafc))",
+            "description": "Colour · control background when disabled"
+          },
+          { "name": "--shift-input-ease", "default": "var(--shift-ease, cubic-bezier(0.2, 0, 0, 1))", "description": "Motion · easing" },
+          { "name": "--shift-input-focus-halo", "default": "var(--_ap-focus-halo, transparent)", "description": "Colour · halo around the focused control" },
+          { "name": "--shift-input-focus-halo-width", "default": "var(--_ap-focus-halo-width, 0px)", "description": "Focus · halo width" },
+          {
+            "name": "--shift-input-focus-outline-width",
+            "default": "var(--_ap-control-focus-outline, var(--_focus-width))",
+            "description": "Focus · outline ring width (0 for material, whose underline shows focus)"
+          },
+          { "name": "--shift-input-focus-ring", "default": "var(--shift-focus, var(--_ap-focus, #1e293b))", "description": "Colour · focus ring" },
+          { "name": "--shift-input-focus-ring-offset", "default": "var(--_ap-focus-offset, 2px)", "description": "Focus · gap between the control and its ring" },
+          { "name": "--shift-input-focus-ring-width", "default": "var(--_ap-focus-width, 2px)", "description": "Focus · ring width" },
+          { "name": "--shift-input-font-family", "default": "var(--shift-font-family, var(--_ap-font, 'Nunito', system-ui, sans-serif))", "description": "Type · Latin font" },
+          {
+            "name": "--shift-input-font-family-arabic",
+            "default": "var(--shift-font-family-arabic, 'Noto Kufi Arabic', var(--_font-latin))",
+            "description": "Type · Arabic and Kurdish font"
+          },
+          {
+            "name": "--shift-input-font-size",
+            "default": "var(--shift-font-size, calc(var(--_ap-font-size, 14px) + var(--_sz-font, 0px)))",
+            "description": "Type · input text size"
+          },
+          { "name": "--shift-input-font-weight", "default": "var(--shift-weight, var(--_ap-weight, 400))", "description": "Type · input text weight" },
+          { "name": "--shift-input-icon-size", "default": "var(--_sz-icon, 16px)", "description": "Size · icon size" },
+          { "name": "--shift-input-ink", "default": "var(--shift-ink, var(--_ap-ink, #1e293b))", "description": "Colour · input text" },
+          {
+            "name": "--shift-input-label-font-size",
+            "default": "var(--shift-label-size, calc(var(--_ap-label-size, 12px) + var(--_sz-font, 0px)))",
+            "description": "Type · label size"
+          },
+          { "name": "--shift-input-label-font-weight", "default": "var(--_ap-label-weight, 600)", "description": "Type · label weight" },
+          { "name": "--shift-input-label-gap", "default": "calc(6px * var(--_sz-space, 1))", "description": "Spacing · between label and control" },
+          { "name": "--shift-input-label-ink", "default": "var(--shift-ink, var(--_ap-label-ink, var(--_ap-ink, #1e293b)))", "description": "Colour · label" },
+          { "name": "--shift-input-label-tracking", "default": "var(--shift-label-tracking, var(--_ap-label-tracking, 0.04em))", "description": "Type · label letter spacing" },
+          { "name": "--shift-input-label-transform", "default": "var(--shift-label-transform, var(--_ap-label-transform, uppercase))", "description": "Type · label case" },
+          { "name": "--shift-input-line", "default": "var(--shift-line, var(--_ap-line, #e2e8f0))", "description": "Colour · control border at rest" },
+          { "name": "--shift-input-line-height", "default": "1.4", "description": "Type · line height" },
+          {
+            "name": "--shift-input-line-strong",
+            "default": "var(--shift-line-strong, var(--_ap-line-strong, #94a3b8))",
+            "description": "Colour · control border on hover, and the underline"
+          },
+          { "name": "--shift-input-muted", "default": "var(--shift-ink-muted, var(--_ap-ink-muted, #64748b))", "description": "Colour · placeholder, hint and prefix/suffix text" },
+          { "name": "--shift-input-padding-inline", "default": "calc(12px * var(--_sz-space, 1))", "description": "Spacing · input padding" },
+          { "name": "--shift-input-radius", "default": "var(--shift-radius-md, var(--_ap-radius-md, 8px))", "description": "Shape · control radius" },
+          {
+            "name": "--shift-input-radius-end",
+            "default": "var(--_ap-control-radius-end, var(--_radius))",
+            "description": "Shape · bottom corner radius (0 for material and minimal)"
+          },
+          { "name": "--shift-input-settle", "default": "var(--shift-settle, 320ms)", "description": "Motion · duration of every change" },
+          {
+            "name": "--shift-input-support-font-size",
+            "default": "var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px)))",
+            "description": "Type · hint and error size"
+          },
+          { "name": "--shift-input-support-gap", "default": "calc(4px * var(--_sz-space, 1))", "description": "Spacing · between the control and the support line" },
+          {
+            "name": "--shift-input-surface",
+            "default": "var(--shift-surface, var(--_ap-control-fill, var(--_ap-surface, #ffffff)))",
+            "description": "Colour · control background"
+          },
+          {
+            "name": "--shift-input-underline-width",
+            "default": "var(--_ap-control-underline, 0px)",
+            "description": "Shape · underline width (material and minimal); doubled on focus"
+          }
+        ]
+      },
+      "runtimeAssets": {
+        "locales": null,
+        "notes": [
+          "One element, one type at a time: text and date now. Each type is a module (types/<type>) that says how a value is shown, how typed text is read back, and what the type adds to the control; a new type adds a module, not a change to the field.",
+          "A form field (FormElement): subscribes to form under name, reports value through getValue(), resets to defaultValue, takes required, disabled and error state from the form, and adds a check to the field’s schema that fails while typed text is refused. Standalone it stands on isRequired, isDisabled and errorMessage.",
+          "Typed text is read on blur and Enter, never while typing; valueChange fires when the committed value changes.",
+          "type=\"date\": value is YYYY-MM-DD or empty. The input shows it in format (default dd/MM/yyyy; tokens d, dd, M, MM, yyyy with any separators) and reads the format with any separators, eight digits in format order, or YYYY-MM-DD; Arabic-Indic digits are read as Latin. An impossible date, one outside min/max and one a rule closes leave the value empty and show a localized message; localization[language].format, .minMessage, .maxMessage ($minDate$, $maxDate$) and .unavailableMessage replace them.",
+          "type=\"date\": the calendar button, Alt+ArrowDown and a click in the input (openOnControlClick) open a shift-popover holding shift-calendar, anchored to the input. A click leaves focus in the input so typing continues; the button and Alt+ArrowDown move focus to the selected day, else today, else the first day that can be chosen. Choosing a day writes the value and closes; Escape closes without changing it.",
+          "type=\"date\": every shift-calendar prop passes through from one list (types/date/calendar-pass-through.ts): value, month, min, max, enabledDates, disabledDates, disabledWeekdays, isDateDisabled, dayMeta, today, highlightToday, weekStartsOn, numerals, disableViews, showToday, busy, disabled (from isDisabled), label, language, appearance, colorScheme, size.",
+          "The support line under the control is reserved in every state and holds the hint or the error, which cross-fade in it, so a message never moves anything below the field. A long message in a narrow field may wrap onto a second line.",
+          "Appearance, colour scheme, size and fonts as shift-calendar. The guide gives material and minimal no border: material is the filled text field (muted fill, square bottom corners, an underline that thickens and turns the focus colour on focus), minimal an underline with a muted label. These control tokens are local until appearances.css carries them. Classes on the field travel to its calendar panel."
+        ]
+      }
+    },
+    {
+      "tag": "shift-day-strip",
+      "modulePath": "dist/components/shift-day-strip.js",
+      "wireContract": null,
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": [
+          "value",
+          "min",
+          "max",
+          "disabledDates",
+          "disabledWeekdays",
+          "enabledDates",
+          "isDateDisabled",
+          "dayMeta",
+          "today",
+          "language",
+          "numerals",
+          "label",
+          "caption",
+          "disabled",
+          "busy",
+          "highlightToday",
+          "appearance",
+          "colorScheme",
+          "size"
+        ],
+        "methods": ["setFocus"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
+        "owns": ["day strip rendering", "strip scrolling and paging", "keyboard navigation", "single-date selection", "appearance and colour scheme"]
+      },
+      "api": {
+        "props": [
+          {
+            "name": "appearance",
+            "attribute": "appearance",
+            "type": "\"material\" | \"minimal\" | \"sharp\" | \"soft\" | \"vanilla\"",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "vanilla, material, soft, sharp or minimal. Unset renders vanilla. A form passes data.appearance (or the field’s own) through the structure."
+          },
+          {
+            "name": "busy",
+            "attribute": "busy",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "The host is loading data: cards dim and cannot be selected, keyboard focus still moves. Sets aria-busy on the listbox."
+          },
+          {
+            "name": "caption",
+            "attribute": "caption",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Short text above the strip, at its end, such as “15 days available”. Empty by default, and the row is shut. Content in the caption slot takes its place. The listbox is described by it."
+          },
+          {
+            "name": "colorScheme",
+            "attribute": "color-scheme",
+            "type": "\"auto\" | \"dark\" | \"light\"",
+            "default": "'light'",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "light (default), dark, or auto (follows prefers-color-scheme; for hosts that are themselves dark-aware)."
+          },
+          {
+            "name": "dayMeta",
+            "attribute": "day-meta",
+            "type": "string | { [x: string]: CalendarDayMeta; }",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Per-day extras keyed by YYYY-MM-DD: { badge?: short text, tone?: neutral | info | success | warning | danger, description?: read with the date by screen readers }. The badge sits beside the month label under the number. Object or JSON string."
+          },
+          {
+            "name": "disabled",
+            "attribute": "disabled",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "Nothing can be selected or paged with the buttons; no card is in the tab order."
+          },
+          {
+            "name": "disabledDates",
+            "attribute": "disabled-dates",
+            "type": "string | string[]",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Dates that cannot be chosen: an array or a comma, space or JSON-array string of YYYY-MM-DD. They stay visible, disabled."
+          },
+          {
+            "name": "disabledWeekdays",
+            "attribute": "disabled-weekdays",
+            "type": "number[] | string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Weekdays that cannot be chosen, 0 Sunday … 6 Saturday: [5, 6], \"5,6\", \"5 6\" or \"[5,6]\"."
+          },
+          {
+            "name": "enabledDates",
+            "attribute": "enabled-dates",
+            "type": "string | string[]",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Allow-list. When set (any array, even an empty one) only these dates can be chosen; without min or max it also sets the first or last day shown. Null, undefined or an empty string turns it off."
+          },
+          {
+            "name": "highlightToday",
+            "attribute": "highlight-today",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Marks today visually, in the appearance’s own way. Off by default; aria-current=\"date\" is set on today either way."
+          },
+          {
+            "name": "isDateDisabled",
+            "type": "(date: string) => boolean",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "JS property only. (date) => boolean for any other rule; asked only about days no other rule blocked. A throw counts as disabled."
+          },
+          {
+            "name": "label",
+            "attribute": "label",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Accessible name of the listbox (the field label when used in a form). Default: the localized “Choose a day”."
+          },
+          {
+            "name": "language",
+            "attribute": "language",
+            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"",
+            "default": "'en'",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "en, ar, ku or ru. Sets names, direction and digits."
+          },
+          {
+            "name": "max",
+            "attribute": "max",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Last day shown and latest selectable date (inclusive)."
+          },
+          {
+            "name": "min",
+            "attribute": "min",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "First day shown and earliest selectable date (inclusive)."
+          },
+          {
+            "name": "numerals",
+            "attribute": "numerals",
+            "type": "\"arab\" | \"latn\"",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "latn or arab. Default by language: Arabic-Indic digits for ar and ku, Latin for en and ru."
+          },
+          {
+            "name": "size",
+            "attribute": "size",
+            "type": "\"lg\" | \"md\" | \"sm\" | \"xl\" | \"xs\"",
+            "default": "'md'",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "xs, sm, md (default), lg or xl. Scales the cards, type, gaps and buttons. md equals no size."
+          },
+          {
+            "name": "today",
+            "attribute": "today",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "YYYY-MM-DD that stands in for today, through ~lib/clock. Empty: the reader’s local calendar date."
+          },
+          {
+            "name": "value",
+            "attribute": "value",
+            "type": "string",
+            "default": "''",
+            "mutable": true,
+            "required": false,
+            "reflect": true,
+            "description": "Selected date as YYYY-MM-DD, or empty. Updated when the user selects a day; a host may set it, and the strip scrolls to it."
+          }
+        ],
+        "methods": [
+          {
+            "name": "setFocus",
+            "parameters": "() => Promise<void>",
+            "returns": "Promise<void>",
+            "description": "Moves focus to the card in the tab order and scrolls the strip to it."
+          }
+        ],
+        "events": [
+          {
+            "name": "dateChange",
+            "type": "DayStripDateChangeDetail",
+            "description": "Detail { value: YYYY-MM-DD }. Fires on every user selection, including re-selecting the current value; never for a disabled day or when a host sets value."
+          }
+        ],
+        "dependencies": [],
+        "parts": [
+          { "name": "root", "description": "The whole strip: the caption row and the row of buttons and cards." },
+          { "name": "caption", "description": "The caption above the strip (caption prop or caption slot)." },
+          { "name": "prev", "description": "Previous-page button, at the inline start. Disabled at the start." },
+          { "name": "next", "description": "Next-page button, at the inline end. Disabled at the end." },
+          { "name": "viewport", "description": "The scrolling, snapping box that clips the cards and carries the edge fades." },
+          { "name": "list", "description": "The role=listbox row of cards." },
+          { "name": "day", "description": "Every day card. State parts are added beside it: day-selected, day-today, day-disabled, day-closed." },
+          { "name": "day-selected", "description": "The selected day." },
+          { "name": "day-today", "description": "Today, with highlightToday only." },
+          { "name": "day-disabled", "description": "Any day that cannot be selected." },
+          { "name": "day-closed", "description": "A day ruled out by disabledDates, disabledWeekdays or isDateDisabled (struck through in vanilla and sharp)." },
+          { "name": "weekday", "description": "The weekday abbreviation at the top of a card." },
+          { "name": "day-number", "description": "The day number." },
+          { "name": "month", "description": "The month label, on the first card and on each first of the month." },
+          { "name": "badge", "description": "The dayMeta badge, beside the month label." }
+        ],
+        "cssProperties": [
+          { "name": "--shift-day-strip-accent", "default": "var(--shift-accent, var(--_ap-accent, #1e293b))", "description": "Colour · selected card fill" },
+          { "name": "--shift-day-strip-badge-font-size", "default": "calc(10px + var(--_sz-font, 0px) / 2)", "description": "Type · badge size" },
+          { "name": "--shift-day-strip-badge-font-weight", "default": "700", "description": "Type · badge weight" },
+          { "name": "--shift-day-strip-badge-gap", "default": "3px", "description": "Spacing · between the month label and the badge" },
+          { "name": "--shift-day-strip-badge-line-height", "default": "12px", "description": "Type · badge line height" },
+          { "name": "--shift-day-strip-badge-radius", "default": "999px", "description": "Shape · badge radius" },
+          { "name": "--shift-day-strip-blocked-border-style", "default": "dashed", "description": "Shape · unavailable card border style (dashed by default)" },
+          {
+            "name": "--shift-day-strip-blocked-decoration",
+            "default": "var(--_ap-blocked-decoration, line-through)",
+            "description": "Type · closed day number decoration (e.g. line-through)"
+          },
+          { "name": "--shift-day-strip-blocked-opacity", "default": "var(--_ap-blocked-opacity, 1)", "description": "Colour · closed day opacity" },
+          { "name": "--shift-day-strip-border-width", "default": "var(--shift-border-width, var(--_ap-border-width, 1px))", "description": "Shape · card and button border width" },
+          {
+            "name": "--shift-day-strip-caption-font-size",
+            "default": "var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px)))",
+            "description": "Type · caption size"
+          },
+          { "name": "--shift-day-strip-caption-gap", "default": "calc(8px * var(--_sz-space, 1))", "description": "Spacing · between the caption and the cards" },
+          { "name": "--shift-day-strip-caption-ink", "default": "var(--shift-ink-muted, var(--_ap-ink-muted, #64748b))", "description": "Colour · caption text" },
+          {
+            "name": "--shift-day-strip-cell-size",
+            "default": "var(--shift-cell-size, calc(var(--_ap-cell-size, 40px) * var(--_sz-control, 1)))",
+            "description": "Size · density unit; a card is 1.45 of it wide"
+          },
+          {
+            "name": "--shift-day-strip-day-font-size",
+            "default": "calc(var(--shift-font-size, calc(var(--_ap-font-size, 14px) + var(--_sz-font, 0px))) * 1.5)",
+            "description": "Type · day number size"
+          },
+          { "name": "--shift-day-strip-day-font-weight", "default": "var(--shift-weight-strong, var(--_ap-weight-strong, 600))", "description": "Type · day number weight" },
+          { "name": "--shift-day-strip-day-hover-bg", "default": "var(--_ap-hover-bg, #f1f5f9)", "description": "Colour · card background on hover" },
+          { "name": "--shift-day-strip-day-hover-ink", "default": "var(--_ap-hover-ink, #1e293b)", "description": "Colour · card text on hover" },
+          { "name": "--shift-day-strip-day-hover-line", "default": "var(--shift-line-strong, var(--_ap-hover-line, #94a3b8))", "description": "Colour · card outline on hover" },
+          { "name": "--shift-day-strip-day-hover-scale", "default": "min(var(--_ap-hover-scale, 1.08), var(--_sz-hover-cap, 1.08))", "description": "Size · card lift on hover" },
+          { "name": "--shift-day-strip-day-line", "default": "var(--shift-line, var(--_ap-line, #e2e8f0))", "description": "Colour · card outline at rest" },
+          { "name": "--shift-day-strip-day-line-height", "default": "1.25", "description": "Type · day number line height" },
+          {
+            "name": "--shift-day-strip-day-padding-bottom",
+            "default": "calc((7px + var(--_touch, 0) * 1px) * var(--_sz-space, 1))",
+            "description": "Spacing · card padding below"
+          },
+          { "name": "--shift-day-strip-day-padding-inline", "default": "calc(4px * var(--_sz-space, 1))", "description": "Spacing · card padding at the sides" },
+          { "name": "--shift-day-strip-day-padding-top", "default": "calc((6px + var(--_touch, 0) * 2px) * var(--_sz-space, 1))", "description": "Spacing · card padding above" },
+          { "name": "--shift-day-strip-day-radius", "default": "var(--shift-radius-sm, var(--_ap-radius-sm, 8px))", "description": "Shape · card radius" },
+          { "name": "--shift-day-strip-day-row-gap", "default": "1px", "description": "Spacing · between the lines of a card" },
+          {
+            "name": "--shift-day-strip-day-shadow",
+            "default": "var(--shift-shadow-control, var(--_ap-shadow-control, none))",
+            "description": "Effect · card and button elevation"
+          },
+          { "name": "--shift-day-strip-day-surface", "default": "var(--shift-surface, var(--_ap-surface, #ffffff))", "description": "Colour · card background" },
+          { "name": "--shift-day-strip-day-width", "default": "calc(var(--_cell) * 1.45 + var(--_touch, 0) * 4px)", "description": "Size · card width" },
+          { "name": "--shift-day-strip-disabled-font-weight", "default": "var(--shift-weight, var(--_ap-weight, 400))", "description": "Type · unavailable day number weight" },
+          { "name": "--shift-day-strip-disabled-ink", "default": "var(--shift-ink-disabled, var(--_ap-ink-disabled, #cbd5e1))", "description": "Colour · unavailable days" },
+          {
+            "name": "--shift-day-strip-disabled-surface",
+            "default": "var(--shift-surface-muted, var(--_ap-surface-muted, #f8fafc))",
+            "description": "Colour · unavailable card background"
+          },
+          { "name": "--shift-day-strip-ease", "default": "var(--shift-ease, ease)", "description": "Motion · easing of every movement" },
+          {
+            "name": "--shift-day-strip-fade",
+            "default": "calc(12px * var(--_sz-space, 1))",
+            "description": "Size · edge fade width; a scrolled card comes to rest just inside it"
+          },
+          { "name": "--shift-day-strip-focus-halo", "default": "var(--_ap-focus-halo, transparent)", "description": "Colour · halo around a focused button" },
+          { "name": "--shift-day-strip-focus-halo-width", "default": "var(--_ap-focus-halo-width, 0px)", "description": "Focus · halo width" },
+          { "name": "--shift-day-strip-focus-inner", "default": "var(--_ap-focus-inner, #ffffff)", "description": "Colour · band inside a card’s focus ring" },
+          { "name": "--shift-day-strip-focus-ring", "default": "var(--shift-focus, var(--_ap-focus, #1e293b))", "description": "Colour · focus ring" },
+          { "name": "--shift-day-strip-focus-ring-offset", "default": "var(--_ap-focus-offset, 2px)", "description": "Focus · gap between a button and its ring" },
+          { "name": "--shift-day-strip-focus-ring-width", "default": "var(--_ap-focus-width, 2px)", "description": "Focus · ring width" },
+          { "name": "--shift-day-strip-font-family", "default": "var(--shift-font-family, var(--_ap-font, 'Nunito', system-ui, sans-serif))", "description": "Type · Latin font" },
+          {
+            "name": "--shift-day-strip-font-family-arabic",
+            "default": "var(--shift-font-family-arabic, 'Noto Kufi Arabic', var(--_font-latin))",
+            "description": "Type · Arabic and Kurdish font"
+          },
+          {
+            "name": "--shift-day-strip-font-size",
+            "default": "var(--shift-font-size, calc(var(--_ap-font-size, 14px) + var(--_sz-font, 0px)))",
+            "description": "Type · base size"
+          },
+          { "name": "--shift-day-strip-gap", "default": "calc(var(--shift-gap, var(--_ap-gap, 4px)) * 2 * var(--_sz-space, 1))", "description": "Spacing · between cards" },
+          { "name": "--shift-day-strip-ink", "default": "var(--shift-ink, var(--_ap-ink, #1e293b))", "description": "Colour · main text" },
+          {
+            "name": "--shift-day-strip-label-font-size",
+            "default": "calc(var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px))) - 2px)",
+            "description": "Type · weekday and month label size"
+          },
+          { "name": "--shift-day-strip-label-line-height", "default": "1.9", "description": "Type · weekday and month label line height" },
+          { "name": "--shift-day-strip-muted", "default": "var(--shift-ink-muted, var(--_ap-ink-muted, #64748b))", "description": "Colour · weekday and month labels" },
+          { "name": "--shift-day-strip-nav-border", "default": "var(--shift-line, var(--_ap-line, #e2e8f0))", "description": "Colour · previous/next button outline" },
+          { "name": "--shift-day-strip-nav-gap", "default": "calc(4px * var(--_sz-space, 1))", "description": "Spacing · between the buttons and the cards" },
+          { "name": "--shift-day-strip-nav-hover-bg", "default": "var(--_ap-hover-bg, #f1f5f9)", "description": "Colour · previous/next button on hover" },
+          { "name": "--shift-day-strip-nav-icon-size", "default": "var(--_sz-icon, 16px)", "description": "Size · arrow icon size" },
+          { "name": "--shift-day-strip-nav-ink", "default": "var(--shift-ink, var(--_ap-ink, #1e293b))", "description": "Colour · previous/next button icons" },
+          { "name": "--shift-day-strip-nav-radius", "default": "999px", "description": "Shape · previous/next button radius (round)" },
+          { "name": "--shift-day-strip-nav-size", "default": "var(--_sz-nav, 32px)", "description": "Size · previous/next button size" },
+          { "name": "--shift-day-strip-nav-surface", "default": "var(--shift-surface, var(--_ap-surface, #ffffff))", "description": "Colour · previous/next button background" },
+          { "name": "--shift-day-strip-on-accent", "default": "var(--shift-on-accent, var(--_ap-on-accent, #ffffff))", "description": "Colour · text on the selected card" },
+          { "name": "--shift-day-strip-settle", "default": "var(--shift-settle, 320ms)", "description": "Motion · duration of every movement" },
+          {
+            "name": "--shift-day-strip-shadow-room",
+            "default": "var(--_soft-shadow-room, var(--_lift-block))",
+            "description": "Spacing · room below the cards for their shadow (20px in soft, else the hover lift)"
+          },
+          { "name": "--shift-day-strip-today-dot", "default": "var(--_ap-today-dot, transparent)", "description": "Colour · today’s dot (with highlightToday)" },
+          { "name": "--shift-day-strip-today-dot-size", "default": "4px", "description": "Today · dot size" },
+          { "name": "--shift-day-strip-today-mark-decoration", "default": "var(--_ap-today-decoration, none)", "description": "Today · number decoration (e.g. underline)" },
+          { "name": "--shift-day-strip-today-mark-stroke", "default": "var(--_ap-today-stroke, 0px)", "description": "Today · text stroke that bolds the number" },
+          { "name": "--shift-day-strip-today-ring", "default": "var(--_ap-today-ring, #64748b)", "description": "Colour · today’s ring (with highlightToday)" },
+          { "name": "--shift-day-strip-today-ring-width", "default": "var(--_ap-today-ring-width, 1px)", "description": "Today · ring width" },
+          { "name": "--shift-day-strip-tone-danger-bg", "default": "var(--_ap-tone-danger-bg, #fff1f0)", "description": "Badge · danger background" },
+          { "name": "--shift-day-strip-tone-danger-ink", "default": "var(--_ap-tone-danger-ink, #9b2c2c)", "description": "Badge · danger text" },
+          { "name": "--shift-day-strip-tone-info-bg", "default": "var(--_ap-tone-info-bg, #e8f1f8)", "description": "Badge · info background" },
+          { "name": "--shift-day-strip-tone-info-ink", "default": "var(--_ap-tone-info-ink, #275e8f)", "description": "Badge · info text" },
+          { "name": "--shift-day-strip-tone-neutral-bg", "default": "var(--_ap-tone-neutral-bg, #e8ecef)", "description": "Badge · neutral background" },
+          { "name": "--shift-day-strip-tone-neutral-ink", "default": "var(--_ap-tone-neutral-ink, #46535e)", "description": "Badge · neutral text" },
+          { "name": "--shift-day-strip-tone-success-bg", "default": "var(--_ap-tone-success-bg, #e8f4ed)", "description": "Badge · success background" },
+          { "name": "--shift-day-strip-tone-success-ink", "default": "var(--_ap-tone-success-ink, #216b44)", "description": "Badge · success text" },
+          { "name": "--shift-day-strip-tone-warning-bg", "default": "var(--_ap-tone-warning-bg, #fff7e6)", "description": "Badge · warning background" },
+          { "name": "--shift-day-strip-tone-warning-ink", "default": "var(--_ap-tone-warning-ink, #8a5a12)", "description": "Badge · warning text" },
+          { "name": "--shift-day-strip-weekday-tracking", "default": "0.025em", "description": "Type · weekday letter spacing" },
+          { "name": "--shift-day-strip-weekday-transform", "default": "uppercase", "description": "Type · weekday case" }
+        ]
+      },
+      "runtimeAssets": {
+        "locales": null,
+        "notes": [
+          "The day-strip counterpart of shift-calendar: the same inputs, the same dateChange, a horizontal row of day cards instead of a month grid. It makes no requests and knows nothing about branches or times.",
+          "Which days appear: min to max. When enabledDates is set and an end of the range is missing, that end is the first or last enabled date; with neither, 30 days from today (or the 30 days ending at max, when max is before today). A min later than max shows no days.",
+          "At most 366 days are rendered, counted from the first day of the range. Later days are not shown and cannot be selected; a value among them selects no card.",
+          "Rule precedence is shift-calendar’s, through the same library: range (min/max) → disabledDates → disabledWeekdays → not in enabledDates → isDateDisabled. Blocked days stay visible as disabled cards (data-reason names the rule); rules only ever block.",
+          "Semantics: a horizontal listbox of options (WAI-ARIA APG listbox), not a radiogroup, because the arrow keys move focus without selecting and Enter or Space selects; a radiogroup checks the radio the arrows land on. One card is in the tab order (roving tabindex): the selected day, else today, else the first open day. Disabled days are focusable with aria-disabled so they can be discovered.",
+          "Moving focus, setting value and the previous/next buttons scroll the strip only, never the page or an overflow: hidden ancestor. On first render the selected card is placed without animation; later changes scroll smoothly (instantly under prefers-reduced-motion). Scrolling snaps per card; touch swipe and trackpad scroll natively.",
+          "The previous and next buttons scroll by one visible page and are disabled at the ends. The edge fades grow with the distance scrolled, so they appear only where content continues.",
+          "The strip’s height never changes with selection, month labels, badges, highlightToday or the colour scheme; only another size, another density (appearance), the caption row, or the phone layout below a 600px viewport (roomier cards, as in the booking prototype) changes it.",
+          "Appearance and colour scheme follow .shift form-appearances: every value resolves as --shift-day-strip-x, then --shift-x, then the appearance, then the vanilla baseline, so host variables win in light and dark. The component never sets --shift-* itself.",
+          "Fonts: Nunito (vanilla, material, soft) or Manrope (sharp, minimal), with Noto Kufi Arabic first for ar and ku — all loaded by the package’s global script. Override with --shift-font-family and --shift-font-family-arabic."
         ]
       }
     }

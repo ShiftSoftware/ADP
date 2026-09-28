@@ -1,0 +1,531 @@
+/* tailwind: off */
+@import '../../style/base.css';
+@import '../../style/appearances.css';
+
+:host {
+  --_surface: var(--shift-day-strip-day-surface, var(--shift-surface, var(--_ap-surface, #ffffff)));
+  --_disabled-surface: var(--shift-day-strip-disabled-surface, var(--shift-surface-muted, var(--_ap-surface-muted, #f8fafc)));
+  --_ink: var(--shift-day-strip-ink, var(--shift-ink, var(--_ap-ink, #1e293b)));
+  --_muted: var(--shift-day-strip-muted, var(--shift-ink-muted, var(--_ap-ink-muted, #64748b)));
+  --_disabled-ink: var(--shift-day-strip-disabled-ink, var(--shift-ink-disabled, var(--_ap-ink-disabled, #cbd5e1)));
+  --_line: var(--shift-day-strip-day-line, var(--shift-line, var(--_ap-line, #e2e8f0)));
+  --_accent: var(--shift-day-strip-accent, var(--shift-accent, var(--_ap-accent, #1e293b)));
+  --_on-accent: var(--shift-day-strip-on-accent, var(--shift-on-accent, var(--_ap-on-accent, #ffffff)));
+  --_focus: var(--shift-day-strip-focus-ring, var(--shift-focus, var(--_ap-focus, #1e293b)));
+  --_focus-width: var(--shift-day-strip-focus-ring-width, var(--_ap-focus-width, 2px));
+  --_focus-offset: var(--shift-day-strip-focus-ring-offset, var(--_ap-focus-offset, 2px));
+  --_halo: var(--shift-day-strip-focus-halo, var(--_ap-focus-halo, transparent));
+  --_halo-width: var(--shift-day-strip-focus-halo-width, var(--_ap-focus-halo-width, 0px));
+  --_focus-inner: var(--shift-day-strip-focus-inner, var(--_ap-focus-inner, #ffffff));
+  --_hover-bg: var(--shift-day-strip-day-hover-bg, var(--_ap-hover-bg, #f1f5f9));
+  --_hover-line: var(--shift-day-strip-day-hover-line, var(--shift-line-strong, var(--_ap-hover-line, #94a3b8)));
+  --_hover-ink: var(--shift-day-strip-day-hover-ink, var(--_ap-hover-ink, #1e293b));
+  --_hover-scale: var(--shift-day-strip-day-hover-scale, min(var(--_ap-hover-scale, 1.08), var(--_sz-hover-cap, 1.08)));
+  --_today-ring: var(--shift-day-strip-today-ring, var(--_ap-today-ring, #64748b));
+  --_today-width: var(--shift-day-strip-today-ring-width, var(--_ap-today-ring-width, 1px));
+  --_today-dot: var(--shift-day-strip-today-dot, var(--_ap-today-dot, transparent));
+  --_today-stroke: var(--shift-day-strip-today-mark-stroke, var(--_ap-today-stroke, 0px));
+  --_today-decoration: var(--shift-day-strip-today-mark-decoration, var(--_ap-today-decoration, none));
+  --_blocked-decoration: var(--shift-day-strip-blocked-decoration, var(--_ap-blocked-decoration, line-through));
+  --_blocked-opacity: var(--shift-day-strip-blocked-opacity, var(--_ap-blocked-opacity, 1));
+  --_blocked-border-style: var(--shift-day-strip-blocked-border-style, dashed);
+  --_shadow: var(--shift-day-strip-day-shadow, var(--shift-shadow-control, var(--_ap-shadow-control, none)));
+  --_nav-ink: var(--shift-day-strip-nav-ink, var(--shift-ink, var(--_ap-ink, #1e293b)));
+  --_nav-border: var(--shift-day-strip-nav-border, var(--shift-line, var(--_ap-line, #e2e8f0)));
+  --_nav-surface: var(--shift-day-strip-nav-surface, var(--shift-surface, var(--_ap-surface, #ffffff)));
+  --_nav-hover: var(--shift-day-strip-nav-hover-bg, var(--_ap-hover-bg, #f1f5f9));
+
+  --_tone-neutral-bg: var(--shift-day-strip-tone-neutral-bg, var(--_ap-tone-neutral-bg, #e8ecef));
+  --_tone-neutral-ink: var(--shift-day-strip-tone-neutral-ink, var(--_ap-tone-neutral-ink, #46535e));
+  --_tone-info-bg: var(--shift-day-strip-tone-info-bg, var(--_ap-tone-info-bg, #e8f1f8));
+  --_tone-info-ink: var(--shift-day-strip-tone-info-ink, var(--_ap-tone-info-ink, #275e8f));
+  --_tone-success-bg: var(--shift-day-strip-tone-success-bg, var(--_ap-tone-success-bg, #e8f4ed));
+  --_tone-success-ink: var(--shift-day-strip-tone-success-ink, var(--_ap-tone-success-ink, #216b44));
+  --_tone-warning-bg: var(--shift-day-strip-tone-warning-bg, var(--_ap-tone-warning-bg, #fff7e6));
+  --_tone-warning-ink: var(--shift-day-strip-tone-warning-ink, var(--_ap-tone-warning-ink, #8a5a12));
+  --_tone-danger-bg: var(--shift-day-strip-tone-danger-bg, var(--_ap-tone-danger-bg, #fff1f0));
+  --_tone-danger-ink: var(--shift-day-strip-tone-danger-ink, var(--_ap-tone-danger-ink, #9b2c2c));
+
+  --_day-radius: var(--shift-day-strip-day-radius, var(--shift-radius-sm, var(--_ap-radius-sm, 8px)));
+  --_nav-radius: var(--shift-day-strip-nav-radius, 999px);
+  --_badge-radius: var(--shift-day-strip-badge-radius, 999px);
+  --_border-width: var(--shift-day-strip-border-width, var(--shift-border-width, var(--_ap-border-width, 1px)));
+
+  --_font-latin: var(--shift-day-strip-font-family, var(--shift-font-family, var(--_ap-font, 'Nunito', system-ui, sans-serif)));
+  --_font-arabic: var(--shift-day-strip-font-family-arabic, var(--shift-font-family-arabic, 'Noto Kufi Arabic', var(--_font-latin)));
+  --_font-size: var(--shift-day-strip-font-size, var(--shift-font-size, calc(var(--_ap-font-size, 14px) + var(--_sz-font, 0px))));
+  --_number-size: var(--shift-day-strip-day-font-size, calc(var(--shift-font-size, calc(var(--_ap-font-size, 14px) + var(--_sz-font, 0px))) * 1.5));
+  --_number-weight: var(--shift-day-strip-day-font-weight, var(--shift-weight-strong, var(--_ap-weight-strong, 600)));
+  --_number-line: var(--shift-day-strip-day-line-height, 1.25);
+  --_small-size: var(--shift-day-strip-label-font-size, calc(var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px))) - 2px));
+  --_small-line: var(--shift-day-strip-label-line-height, 1.9);
+  --_weekday-tracking: var(--shift-day-strip-weekday-tracking, 0.025em);
+  --_weekday-transform: var(--shift-day-strip-weekday-transform, uppercase);
+  --_disabled-weight: var(--shift-day-strip-disabled-font-weight, var(--shift-weight, var(--_ap-weight, 400)));
+  --_caption-size: var(--shift-day-strip-caption-font-size, var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px))));
+  --_caption-ink: var(--shift-day-strip-caption-ink, var(--shift-ink-muted, var(--_ap-ink-muted, #64748b)));
+  --_badge-size: var(--shift-day-strip-badge-font-size, calc(10px + var(--_sz-font, 0px) / 2));
+  --_badge-weight: var(--shift-day-strip-badge-font-weight, 700);
+  --_badge-line-height: var(--shift-day-strip-badge-line-height, 12px);
+
+  --_cell: var(--shift-day-strip-cell-size, var(--shift-cell-size, calc(var(--_ap-cell-size, 40px) * var(--_sz-control, 1))));
+  --_day-width: var(--shift-day-strip-day-width, calc(var(--_cell) * 1.45 + var(--_touch, 0) * 4px));
+  --_day-padding-top: var(--shift-day-strip-day-padding-top, calc((6px + var(--_touch, 0) * 2px) * var(--_sz-space, 1)));
+  --_day-padding-bottom: var(--shift-day-strip-day-padding-bottom, calc((7px + var(--_touch, 0) * 1px) * var(--_sz-space, 1)));
+  --_day-padding-inline: var(--shift-day-strip-day-padding-inline, calc(4px * var(--_sz-space, 1)));
+  --_day-row-gap: var(--shift-day-strip-day-row-gap, 1px);
+  --_gap: var(--shift-day-strip-gap, calc(var(--shift-gap, var(--_ap-gap, 4px)) * 2 * var(--_sz-space, 1)));
+  --_nav-size: var(--shift-day-strip-nav-size, var(--_sz-nav, 32px));
+  --_nav-icon: var(--shift-day-strip-nav-icon-size, var(--_sz-icon, 16px));
+  --_nav-gap: var(--shift-day-strip-nav-gap, calc(4px * var(--_sz-space, 1)));
+  --_fade: var(--shift-day-strip-fade, calc(12px * var(--_sz-space, 1)));
+  --_caption-gap: var(--shift-day-strip-caption-gap, calc(8px * var(--_sz-space, 1)));
+  --_foot-gap: var(--shift-day-strip-badge-gap, 3px);
+  --_dot-size: var(--shift-day-strip-today-dot-size, 4px);
+
+  --_settle: var(--shift-day-strip-settle, var(--shift-settle, 320ms));
+  --_ease: var(--shift-day-strip-ease, var(--shift-ease, ease));
+
+  /* A 1px border is always allowed for, so appearances of one density share one height whatever their border. */
+  --_day-height: calc(
+    var(--_day-padding-top) + var(--_day-padding-bottom) + 2px + var(--_small-size) * var(--_small-line) * 2 + var(--_number-size) * var(--_number-line) + var(--_day-row-gap) * 2
+  );
+  /* Room inside the scroll clip for a card lifted by the largest hover scale (1.08), whichever appearance is on. */
+  --_lift-block: max(calc(var(--_day-height) * 0.04), 4px);
+  --_shadow-room: var(--shift-day-strip-shadow-room, var(--_soft-shadow-room, var(--_lift-block)));
+  --_lift-inline: calc(var(--_day-width) * 0.04);
+
+  display: block;
+  min-inline-size: 0;
+  font-family: var(--_font-latin);
+  font-size: var(--_font-size);
+  line-height: 1.35;
+  color: var(--_ink);
+}
+
+/* soft's control shadow (0 8px 24px -12px) reaches 20px below a card; the scroll clip must not cut it. */
+:host([appearance='soft']) {
+  --_soft-shadow-room: 20px;
+}
+
+/* The prototype's sheet layout: roomier cards on a phone. */
+@media (max-width: 599px) {
+  :host {
+    --_touch: 1;
+  }
+}
+
+.ds-root {
+  display: flex;
+  flex-direction: column;
+  inline-size: 100%;
+  font-family: var(--_font-latin);
+  color: var(--_ink);
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: start;
+  white-space: normal;
+  word-spacing: normal;
+}
+
+.ds-root:lang(ar),
+.ds-root:lang(ckb) {
+  font-family: var(--_font-arabic);
+}
+
+.ds-caption-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--_settle) var(--_ease),
+    opacity var(--_settle) var(--_ease);
+}
+
+.ds-caption-wrap[data-open] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.ds-caption-clip {
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+.ds-caption {
+  padding-block-end: var(--_caption-gap);
+  font-size: var(--_caption-size);
+  line-height: 1.35;
+  color: var(--_caption-ink);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  unicode-bidi: plaintext;
+}
+
+/* Physical, because plaintext resolves start and end from the caption's own text, not the strip's direction. */
+.ds-root[dir='rtl'] .ds-caption {
+  text-align: left;
+}
+
+.ds-row {
+  display: flex;
+  align-items: center;
+  gap: var(--_nav-gap);
+}
+
+.ds-nav {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--_nav-size);
+  block-size: var(--_nav-size);
+  color: var(--_nav-ink);
+  background-color: var(--_nav-surface);
+  border: var(--_border-width) solid var(--_nav-border);
+  border-radius: var(--_nav-radius);
+  box-shadow: var(--_shadow);
+  transition:
+    background-color calc(var(--_settle) / 2) var(--_ease),
+    border-color calc(var(--_settle) / 2) var(--_ease),
+    opacity calc(var(--_settle) / 2) var(--_ease);
+}
+
+.ds-root:not([data-settled]) .ds-nav {
+  transition: none;
+}
+
+.ds-nav:enabled:hover {
+  background-color: var(--_nav-hover);
+}
+
+.ds-nav:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+  box-shadow: none;
+}
+
+.ds-nav:focus-visible {
+  outline: var(--_focus-width) solid var(--_focus);
+  outline-offset: var(--_focus-offset);
+  box-shadow: 0 0 0 var(--_halo-width) var(--_halo);
+}
+
+.ds-nav-icon {
+  inline-size: var(--_nav-icon);
+  block-size: var(--_nav-icon);
+}
+
+.ds-root[dir='rtl'] .ds-nav-icon {
+  transform: scaleX(-1);
+}
+
+.ds-viewport {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  /* The strip takes the width it is given; its days must not size a grid or flex parent. */
+  contain: inline-size;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Extra shadow room is paint only: inside the clip, out of layout, and pointer-transparent because it overlaps what sits below. */
+  padding-block-end: calc(max(var(--_lift-block), var(--_shadow-room)) - var(--_lift-block));
+  margin-block-end: calc(var(--_lift-block) - max(var(--_lift-block), var(--_shadow-room)));
+  pointer-events: none;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--_fade);
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--_fade-left, 0px), #000 calc(100% - var(--_fade-right, 0px)), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--_fade-left, 0px), #000 calc(100% - var(--_fade-right, 0px)), transparent 100%);
+}
+
+.ds-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.ds-track {
+  pointer-events: auto;
+  display: flex;
+  gap: var(--_gap);
+  inline-size: max-content;
+  min-block-size: calc(var(--_day-height) + var(--_lift-block) * 2);
+  padding: var(--_lift-block) var(--_lift-inline);
+}
+
+.ds-track[data-phase='enter'] {
+  animation: ds-track-enter var(--_settle) var(--_ease) both;
+}
+
+@keyframes ds-track-enter {
+  from {
+    opacity: 0;
+  }
+}
+
+.ds-day {
+  --_today-shadow: 0 0 transparent;
+  --_focus-shadow: 0 0 transparent;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--_day-row-gap);
+  inline-size: var(--_day-width);
+  block-size: var(--_day-height);
+  padding: var(--_day-padding-top) var(--_day-padding-inline) var(--_day-padding-bottom);
+  border: var(--_border-width) solid var(--_line);
+  border-radius: var(--_day-radius);
+  background-color: var(--_surface);
+  color: var(--_ink);
+  box-shadow: var(--_today-shadow), var(--_focus-shadow);
+  scroll-snap-align: start;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color calc(var(--_settle) / 2) var(--_ease),
+    border-color calc(var(--_settle) / 2) var(--_ease),
+    color calc(var(--_settle) / 2) var(--_ease),
+    transform calc(var(--_settle) / 2) var(--_ease),
+    box-shadow calc(var(--_settle) / 2) var(--_ease);
+}
+
+/* The appearance's elevation lives apart from the focus and today rings: a 'none' in that list would drop them all. */
+.ds-day::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--_border-width) * -1);
+  z-index: -1;
+  border-radius: inherit;
+  box-shadow: var(--_shadow);
+  pointer-events: none;
+  transition: opacity calc(var(--_settle) / 2) var(--_ease);
+}
+
+.ds-day:focus-visible {
+  outline: none;
+  --_focus-shadow: inset 0 0 0 var(--_focus-width) var(--_focus), inset 0 0 0 max(calc(var(--_focus-width) * 2), var(--_halo-width)) var(--_focus-inner);
+}
+
+.ds-weekday,
+.ds-month {
+  max-inline-size: 100%;
+  overflow: hidden;
+  font-size: var(--_small-size);
+  line-height: var(--_small-line);
+  color: var(--_muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: color calc(var(--_settle) / 2) var(--_ease);
+}
+
+.ds-weekday {
+  letter-spacing: var(--_weekday-tracking);
+  text-transform: var(--_weekday-transform);
+}
+
+.ds-number {
+  position: relative;
+  font-size: var(--_number-size);
+  font-weight: var(--_number-weight);
+  line-height: var(--_number-line);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ds-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-inline-size: 100%;
+  block-size: calc(var(--_small-size) * var(--_small-line));
+}
+
+.ds-month {
+  flex: 0 1 auto;
+  min-inline-size: 0;
+}
+
+.ds-day[data-kind='open']:hover {
+  border-color: var(--_hover-line);
+  background-color: var(--_hover-bg);
+  color: var(--_hover-ink);
+  transform: scale(var(--_hover-scale));
+}
+
+.ds-day[data-kind='open']:active {
+  transform: scale(calc(2 - var(--_hover-scale)));
+}
+
+.ds-day[aria-disabled='true'] {
+  cursor: not-allowed;
+  border-style: var(--_blocked-border-style);
+  background-color: var(--_disabled-surface);
+  color: var(--_disabled-ink);
+}
+
+.ds-day[aria-disabled='true']::before {
+  opacity: 0;
+}
+
+.ds-day[aria-disabled='true'] .ds-number {
+  font-weight: var(--_disabled-weight);
+}
+
+.ds-day[aria-disabled='true'] .ds-weekday,
+.ds-day[aria-disabled='true'] .ds-month {
+  color: var(--_disabled-ink);
+}
+
+.ds-day[data-kind='closed'] {
+  opacity: var(--_blocked-opacity);
+}
+
+.ds-day[data-kind='closed'] .ds-number {
+  text-decoration: var(--_blocked-decoration);
+}
+
+.ds-day[data-today] {
+  --_today-shadow: inset 0 0 0 var(--_today-width) var(--_today-ring);
+}
+
+/* Bold by stroke, not weight, so marking today never changes a glyph's width. */
+.ds-day[data-today] .ds-number {
+  -webkit-text-stroke: var(--_today-stroke) currentColor;
+  text-decoration: var(--_today-decoration);
+}
+
+.ds-day[data-today] .ds-number::after {
+  content: '';
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-start: 50%;
+  inline-size: var(--_dot-size);
+  block-size: var(--_dot-size);
+  translate: -50% 0;
+  border-radius: 50%;
+  background: var(--_today-dot);
+}
+
+.ds-root[dir='rtl'] .ds-day[data-today] .ds-number::after {
+  translate: 50% 0;
+}
+
+.ds-day[data-selected] {
+  --_today-shadow: 0 0 transparent;
+  background-color: var(--_accent);
+  border-color: var(--_accent);
+  color: var(--_on-accent);
+}
+
+.ds-day[data-selected]:hover {
+  background-color: var(--_accent);
+  border-color: var(--_accent);
+  color: var(--_on-accent);
+}
+
+.ds-day[data-selected] .ds-number {
+  -webkit-text-stroke: 0 transparent;
+  text-decoration: none;
+}
+
+.ds-day[data-selected] .ds-weekday,
+.ds-day[data-selected] .ds-month {
+  color: var(--_on-accent);
+}
+
+.ds-day[data-selected] .ds-number::after {
+  background: transparent;
+}
+
+.ds-day[data-selected][aria-disabled='true'] {
+  opacity: 0.55;
+}
+
+.ds-badge {
+  flex: 0 0 auto;
+  max-inline-size: 100%;
+  padding-inline: 4px;
+  border-radius: var(--_badge-radius);
+  font-size: var(--_badge-size);
+  font-weight: var(--_badge-weight);
+  line-height: var(--_badge-line-height);
+  white-space: nowrap;
+  overflow: hidden;
+  background: var(--_tone-bg);
+  color: var(--_tone-ink);
+  transition: opacity var(--_settle) var(--_ease);
+}
+
+.ds-badge[data-empty] {
+  padding-inline: 0;
+  opacity: 0;
+}
+
+.ds-day.has-month.has-badge .ds-badge {
+  margin-inline-start: var(--_foot-gap);
+}
+
+.ds-badge[data-tone='neutral'] {
+  --_tone-bg: var(--_tone-neutral-bg);
+  --_tone-ink: var(--_tone-neutral-ink);
+}
+
+.ds-badge[data-tone='info'] {
+  --_tone-bg: var(--_tone-info-bg);
+  --_tone-ink: var(--_tone-info-ink);
+}
+
+.ds-badge[data-tone='success'] {
+  --_tone-bg: var(--_tone-success-bg);
+  --_tone-ink: var(--_tone-success-ink);
+}
+
+.ds-badge[data-tone='warning'] {
+  --_tone-bg: var(--_tone-warning-bg);
+  --_tone-ink: var(--_tone-warning-ink);
+}
+
+.ds-badge[data-tone='danger'] {
+  --_tone-bg: var(--_tone-danger-bg);
+  --_tone-ink: var(--_tone-danger-ink);
+}
+
+.ds-day[data-selected] .ds-badge {
+  background: var(--_on-accent);
+  color: var(--_accent);
+}
+
+.ds-root[data-busy] .ds-day {
+  opacity: 0.45;
+  cursor: progress;
+}
+
+.ds-sr {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-track[data-phase] {
+    animation: none;
+  }
+
+  .ds-caption-wrap,
+  .ds-nav,
+  .ds-day,
+  .ds-day::before,
+  .ds-weekday,
+  .ds-month,
+  .ds-badge {
+    transition: none;
+  }
+}
