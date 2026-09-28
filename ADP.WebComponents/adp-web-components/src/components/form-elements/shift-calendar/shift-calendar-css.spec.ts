@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const css = fs.readFileSync(path.resolve(__dirname, 'shift-calendar.css'), 'utf8');
+const css = fs.readFileSync(path.resolve(__dirname, 'shift-calendar.css'), 'utf8').replace(/\r\n/g, '\n');
 const hostBlock = css.match(/:host \{([\s\S]*?)\n\}/)[1];
 const privates = [...hostBlock.matchAll(/(--_[\w-]+):\s*([^;]+);/g)].map(([, name, value]) => ({ name, value: value.replace(/\s+/g, ' ') }));
 
