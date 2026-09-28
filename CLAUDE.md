@@ -26,6 +26,10 @@ ADP (Auto Distributor Platform) by ShiftSoftware. A multi-project .NET solution 
 > component page is a copy of `src/templates/shift-components/shift-calendar.html` with its content
 > replaced, and older pages move to that layout when they are reworked. Read the relevant guide in full
 > before touching a form field or a docs page.
+>
+> **Forms:** structures without a `version` key are **v1 and frozen** (bug fixes only, proven unchanged
+> by the v1 freeze snapshot test). New fields and structure features go to **v2** (`"version": "2.0"`).
+> Read `.shift/repos/adp/web-components/forms-v2/PLAN.md` before any forms work.
 
 ## Build & Test Commands
 
