@@ -20,6 +20,12 @@ ADP (Auto Distributor Platform) by ShiftSoftware. A multi-project .NET solution 
 > think applies — then `.shift/repos/adp/web-components/motion.md` and
 > `.shift/repos/adp/web-components/vehicle-lookup-invariants.md`, which it depends on. If a request
 > conflicts with the design language, say so before building.
+>
+> **Form fields** follow `.shift/guides/form-appearances.md` (appearances, dark mode, size, fonts).
+> **Docs pages** on the site follow `.shift/repos/adp/web-components/docs-page-layout.md`: every new
+> component page is a copy of `src/templates/shift-components/shift-calendar.html` with its content
+> replaced, and older pages move to that layout when they are reworked. Read the relevant guide in full
+> before touching a form field or a docs page.
 
 ## Build & Test Commands
 
