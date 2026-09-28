@@ -27,9 +27,10 @@ ADP (Auto Distributor Platform) by ShiftSoftware. A multi-project .NET solution 
 > replaced, and older pages move to that layout when they are reworked. Read the relevant guide in full
 > before touching a form field or a docs page.
 >
-> **Forms:** structures without a `version` key are **v1 and frozen** (bug fixes only, proven unchanged
-> by the v1 freeze snapshot test). New fields and structure features go to **v2** (`"version": "2.0"`).
-> Read `.shift/repos/adp/web-components/forms-v2/PLAN.md` before any forms work.
+> **Forms:** v1 forms (structures without a `version` key) are **additive-only**: new field keys and new
+> optional props are fine; existing keys and existing structures must render and submit exactly as before,
+> proven by the v1 freeze snapshot test. Forms v2 (`"version": "2.0"`) is planned but not started. Read
+> `.shift/repos/adp/web-components/forms-v2/PLAN.md` before any forms work.
 
 ## Build & Test Commands
 
