@@ -70,6 +70,9 @@ const PATH_PREFIX = (() => {
  */
 const COMPONENT_GROUPS = ['vehicle-lookup', 'part-lookup', 'forms', 'shift-components'];
 
+// Groups whose pages share one gallery page; the menus link to it instead of listing the pages.
+const GALLERY_GROUPS = new Set(['shift-components']);
+
 /**
  * Neither file the header reads is required to exist: the build stamp ships only
  * in a released site, and the catalog only after `npm start` or `npm run
@@ -113,6 +116,7 @@ export function siteHeader(extra = {}) {
       // The language can be changed from outside the header — a harness page's
       // rail goes through siteLocales.apply too — and the label has to follow.
       window.addEventListener('site-locales:change', event => (this.language = event.detail.language));
+      window.addEventListener('harness-theme:change', event => (this.theme = event.detail.theme));
 
       const [catalog, build] = await Promise.all([read(new URL('catalog.json', import.meta.url)), read(new URL('build-info.json', SITE_ROOT))]);
 
@@ -160,6 +164,7 @@ export function siteHeader(extra = {}) {
         label: this.t('groups.' + id),
         blurb: this.t('blurb.' + id),
         pages: this.catalog.pages.filter(page => page.area === id && page.publish !== false && this.matches(page)),
+        link: GALLERY_GROUPS.has(id) ? this.catalog.pages.find(page => page.area === id && page.kind === 'index' && page.publish !== false) : null,
       }));
     },
 
@@ -331,14 +336,24 @@ const MARKUP = /* html */ `
                       open. One: a link, because a disclosure revealing a single
                       item is a click for nothing. More: a closed disclosure.
                     -->
-                    <template x-if="!group.pages.length && !filter">
+                    <template x-if="group.link && (group.pages.length || !filter)">
+                      <a
+                        :href="site(group.link.path)"
+                        class="hover:bg-base-200 flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors"
+                        :class="group.pages.some(p => isCurrentPage(p.path)) && 'bg-primary/15 font-semibold'"
+                        :aria-current="isCurrentPage(group.link.path) ? 'page' : null"
+                        x-text="group.label"
+                      ></a>
+                    </template>
+
+                    <template x-if="!group.link && !group.pages.length && !filter">
                       <p class="flex items-center justify-between gap-2 px-3 py-2">
                         <span class="text-base-content/70 text-sm" x-text="group.label"></span>
                         <span class="badge badge-xs badge-outline shrink-0" x-text="t('components.soon')"></span>
                       </p>
                     </template>
 
-                    <template x-if="group.pages.length === 1">
+                    <template x-if="!group.link && group.pages.length === 1">
                       <a
                         :href="site(group.pages[0].path)"
                         class="hover:bg-base-200 flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors"
@@ -350,7 +365,7 @@ const MARKUP = /* html */ `
                       </a>
                     </template>
 
-                    <template x-if="group.pages.length > 1">
+                    <template x-if="!group.link && group.pages.length > 1">
                       <div>
                         <button
                           type="button"
@@ -603,14 +618,24 @@ const MARKUP = /* html */ `
 
             <template x-for="group in groups" :key="group.id">
               <div class="mb-1">
-                <template x-if="!group.pages.length && !filter">
+                <template x-if="group.link && (group.pages.length || !filter)">
+                  <a
+                    :href="site(group.link.path)"
+                    class="hover:bg-base-200 -mx-2 block rounded-lg px-2 py-2 text-sm"
+                    :class="group.pages.some(p => isCurrentPage(p.path)) && 'bg-primary/15 font-semibold'"
+                    :aria-current="isCurrentPage(group.link.path) ? 'page' : null"
+                    x-text="group.label"
+                  ></a>
+                </template>
+
+                <template x-if="!group.link && !group.pages.length && !filter">
                   <p class="flex items-center justify-between gap-2 py-2">
                     <span class="text-base-content/70 text-sm" x-text="group.label"></span>
                     <span class="badge badge-xs badge-outline shrink-0" x-text="t('components.soon')"></span>
                   </p>
                 </template>
 
-                <template x-if="group.pages.length === 1">
+                <template x-if="!group.link && group.pages.length === 1">
                   <a
                     :href="site(group.pages[0].path)"
                     class="hover:bg-base-200 -mx-2 block rounded-lg px-2 py-2 text-sm"
@@ -620,7 +645,7 @@ const MARKUP = /* html */ `
                   ></a>
                 </template>
 
-                <template x-if="group.pages.length > 1">
+                <template x-if="!group.link && group.pages.length > 1">
                   <div>
                     <button
                       type="button"

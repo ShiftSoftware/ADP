@@ -11,8 +11,8 @@
       name="description"
       content="shift-input: one form field for many types, text and date today, with label, hint, error, prefix and suffix, five appearances and light or dark."
     />
-    <meta name="docs-family" content="inputs" />
-    <meta name="docs-family-order" content="1" />
+    <meta name="docs-family" content="shift-components" />
+    <meta name="docs-family-order" content="3" />
 
     <link rel="stylesheet" href="/templates/harness.css" />
     <meta name="adp-docs-layout" content="true" />
@@ -42,7 +42,6 @@
       const APPEARANCES = ['vanilla', 'material', 'soft', 'sharp', 'minimal'];
       const SIZES = ['xs', 'sm', 'md', 'lg', 'xl'];
       const FORMATS = ['dd/MM/yyyy', 'dd.MM.yyyy', 'MM/dd/yyyy', 'yyyy-MM-dd', 'd/M/yyyy'];
-      const CDN = version => `https://cdn.jsdelivr.net/npm/adp-web-components@${version}`;
 
       const list = value =>
         String(value || '')
@@ -57,40 +56,6 @@
       const siteLanguage = () => document.documentElement.lang || 'en';
 
       const SNIPPETS = {
-        npm: { lang: 'Shell', code: () => 'npm install adp-web-components' },
-        npmImport: { lang: 'JavaScript', code: () => "import 'adp-web-components/components/shift-input';" },
-        cdnLibrary: {
-          lang: 'HTML',
-          code: version => `<script type="module"\n  src="${CDN(version)}/dist/shift-components/shift-components.esm.js"><\/script>`,
-        },
-        cdnSingle: {
-          lang: 'HTML',
-          code: version =>
-            [
-              '<script type="module">',
-              `  import { loadComponent } from '${CDN(version)}/dist/host-loader.js';`,
-              '',
-              '  await loadComponent({',
-              `    moduleUrl: '${CDN(version)}/dist/components/shift-input.js',`,
-              "    tag: 'shift-input',",
-              `    packageVersion: '${version}',`,
-              '  });',
-              '<\/script>',
-            ].join('\n'),
-        },
-        tag: {
-          lang: 'HTML',
-          code: () =>
-            [
-              '<shift-input id="full-name" name="fullName" label="Full name" hint="As on your ID"></shift-input>',
-              '',
-              '<script type="module">',
-              "  document.getElementById('full-name').addEventListener('valueChange', event => {",
-              '    console.log(event.detail.value);',
-              '  });',
-              '<\/script>',
-            ].join('\n'),
-        },
         text: { lang: 'HTML', code: () => '<shift-input label="Full name" hint="As on your ID" clearable></shift-input>' },
         required: {
           lang: 'HTML',
@@ -740,120 +705,6 @@
           </div>
 
           <div class="showcase-stage @container flex flex-col gap-4" x-data="inputPage()">
-            <section
-              data-doc-tab="overview"
-              data-doc-label="Overview"
-              data-doc-icon="overview"
-              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
-            >
-              <header class="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <h2 class="text-3xl font-bold tracking-tight">Overview</h2>
-                  <p class="lede text-base-content/70 mt-2 max-w-[70ch]">
-                    <code>shift-input</code> is the form field for typed values: one element, one <code>type</code> at a time. <code>text</code> and <code>date</code> today; more
-                    types arrive without changing the element.
-                  </p>
-                </div>
-                <div class="appearance-field">
-                  <span class="appearance-label" id="appearance-label-overview" x-text="siteT('docs.appearance')"></span>
-                  <div class="seg appearance-pick" role="radiogroup" aria-labelledby="appearance-label-overview">
-                    <template x-for="item in appearances" :key="item">
-                      <label
-                        ><input type="radio" name="appearance-overview" :value="item" x-model="appearance" /><span
-                          ><span x-html="icon('look-' + item)"></span><span class="capitalize" x-text="item"></span></span
-                      ></label>
-                    </template>
-                  </div>
-                </div>
-              </header>
-
-              <div class="frame grid max-w-[380px] gap-1" style="margin-inline: 0">
-                <shift-input label="Full name" hint="As on your ID"></shift-input>
-                <shift-input type="date" label="Visit date"></shift-input>
-              </div>
-
-              <div class="grid gap-4 @2xl:grid-cols-2">
-                <div class="border-base-300 rounded-box border p-5">
-                  <h3 class="text-lg font-semibold">Use it for</h3>
-                  <ul class="text-base-content/75 mt-2 list-disc ps-5 text-sm">
-                    <li>Text and date fields in a form, with a label, a hint and an error line.</li>
-                    <li>A date typed or picked from a pop-out calendar.</li>
-                  </ul>
-                </div>
-                <div class="border-base-300 rounded-box border p-5">
-                  <h3 class="text-lg font-semibold">Not for</h3>
-                  <ul class="text-base-content/75 mt-2 list-disc ps-5 text-sm">
-                    <li>Several lines of text, or picking from a list.</li>
-                    <li>A calendar that is always open; use <a class="link" href="shift-calendar.html">shift-calendar</a>.</li>
-                  </ul>
-                </div>
-              </div>
-
-              <ul class="text-base-content/75 flex max-w-[70ch] list-disc flex-col gap-1 ps-5 text-sm">
-                <li>
-                  Five appearances, five sizes and light or dark, like <code>shift-calendar</code>, so the two sit together. Try them in the
-                  <a class="link" href="#playground">Playground</a>.
-                </li>
-                <li>A form field: <code>name</code>, <code>form</code>, required, disabled and the error line work as in every other field.</li>
-              </ul>
-            </section>
-
-            <section
-              data-doc-tab="installation"
-              data-doc-label="Installation"
-              data-doc-icon="installation"
-              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
-            >
-              <header>
-                <h2 class="text-3xl font-bold tracking-tight">Installation</h2>
-                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">From npm or a CDN, then place the tag.</p>
-              </header>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">npm</h3>
-                <p class="text-base-content/70 text-sm">
-                  Install the package, then import the element once. The import registers <code>&lt;shift-input&gt;</code>, and for dates its calendar and pop-out.
-                </p>
-                <template x-for="key in ['npm', 'npmImport']" :key="key">
-                  <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock(key)">
-                    <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
-                      <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
-                      <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
-                    </figcaption>
-                    <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
-                  </figure>
-                </template>
-              </div>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">CDN</h3>
-                <p class="text-base-content/70 text-sm">
-                  The whole package in one module tag, or this element alone through the host loader. Pin the version you tested; one page loads one version.
-                </p>
-                <template x-for="key in ['cdnLibrary', 'cdnSingle']" :key="key">
-                  <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock(key)">
-                    <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
-                      <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
-                      <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
-                    </figcaption>
-                    <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
-                  </figure>
-                </template>
-              </div>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">The tag</h3>
-                <p class="text-base-content/70 text-sm">Attributes for plain values, properties for objects and functions. Listen for <code>valueChange</code>.</p>
-                <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock('tag')">
-                  <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
-                    <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
-                    <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
-                  </figcaption>
-                  <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
-                </figure>
-              </div>
-            </section>
-
             <section
               data-doc-tab="examples"
               data-doc-label="Usage & examples"
@@ -1512,76 +1363,6 @@
               </template>
             </section>
 
-            <section
-              data-doc-tab="accessibility"
-              data-doc-label="Keyboard & accessibility"
-              data-doc-icon="accessibility"
-              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
-            >
-              <header>
-                <h2 class="text-3xl font-bold tracking-tight">Keyboard &amp; accessibility</h2>
-                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">A native text input with a real label; the date calendar is a non-modal popup (WAI-ARIA APG).</p>
-              </header>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">Keys</h3>
-                <div class="overflow-x-auto">
-                  <table class="table-sm table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Key</th>
-                        <th scope="col">In the input</th>
-                        <th scope="col">In the date calendar</th>
-                      </tr>
-                    </thead>
-                    <tbody class="text-sm">
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Enter</kbd></td>
-                        <td>Read the typed text</td>
-                        <td>Choose the day and close; focus returns to the input</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Alt</kbd> + <kbd class="kbd kbd-sm">↓</kbd></td>
-                        <td>type="date": open the calendar and move into it</td>
-                        <td>—</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">↓</kbd></td>
-                        <td>type="date": move into the calendar when it is open</td>
-                        <td>Same weekday, next week</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Esc</kbd></td>
-                        <td>Close the calendar</td>
-                        <td>Close without changing the value (back one view first in the month and year views); focus returns to the input</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Tab</kbd></td>
-                        <td>To the clear and calendar buttons, then out; the calendar closes</td>
-                        <td>Through the calendar; from its last control out of it, closing it. Shift+Tab from its first returns to the input</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">Screen readers and focus</h3>
-                <ul class="text-base-content/75 list-disc ps-5 text-sm">
-                  <li>The label is a real <code>&lt;label&gt;</code>; the hint and the error are linked by <code>aria-describedby</code>, and the error is announced politely.</li>
-                  <li><code>aria-required</code> and <code>aria-invalid</code> follow the field; the required mark is decorative.</li>
-                  <li>
-                    type="date": the input is a <code>combobox</code> with <code>aria-haspopup="dialog"</code> and <code>aria-expanded</code>. The calendar is a
-                    <code>role="dialog"</code> on <code>&lt;body&gt;</code>; <code>aria-controls</code> is not set because an IDREF cannot cross the field’s shadow root.
-                  </li>
-                  <li>
-                    The calendar button is labelled “Choose date”, or “Change date” with the date. Focus on open goes to the selected day, else today, else the first day that can
-                    be chosen.
-                  </li>
-                  <li>Every appearance meets WCAG AA for text and 3:1 for focus rings, in light and dark. Motion is instant under reduced motion.</li>
-                </ul>
-              </div>
-            </section>
           </div>
 
           <div data-harness-rail x-cloak></div>

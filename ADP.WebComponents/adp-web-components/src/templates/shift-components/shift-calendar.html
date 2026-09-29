@@ -12,8 +12,8 @@
     <link rel="stylesheet" href="/templates/harness.css" />
     <meta name="adp-docs-layout" content="true" />
     <meta name="adp-docs-fonts" content="400 14px Nunito; 700 14px Nunito; 400 14px Manrope; 700 14px Manrope; 400 14px 'Noto Kufi Arabic'; 700 14px 'Noto Kufi Arabic'" />
-    <meta name="docs-family" content="calendar" />
-    <meta name="docs-family-order" content="1" />
+    <meta name="docs-family" content="shift-components" />
+    <meta name="docs-family-order" content="2" />
     <!-- The same sheet the package's loader injects (it skips a duplicate); declared here so the page waits for its faces instead of re-flowing when they swap in. -->
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -35,7 +35,6 @@
       const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const APPEARANCES = ['vanilla', 'material', 'soft', 'sharp', 'minimal'];
       const SIZES = ['xs', 'sm', 'md', 'lg', 'xl'];
-      const CDN = version => `https://cdn.jsdelivr.net/npm/adp-web-components@${version}`;
 
       const list = value =>
         String(value || '')
@@ -50,40 +49,6 @@
       const siteLanguage = () => document.documentElement.lang || 'en';
 
       const SNIPPETS = {
-        npm: { lang: 'Shell', code: () => 'npm install adp-web-components' },
-        npmImport: { lang: 'JavaScript', code: () => "import 'adp-web-components/components/shift-calendar';" },
-        cdnLibrary: {
-          lang: 'HTML',
-          code: version => `<script type="module"\n  src="${CDN(version)}/dist/shift-components/shift-components.esm.js"><\/script>`,
-        },
-        cdnSingle: {
-          lang: 'HTML',
-          code: version =>
-            [
-              '<script type="module">',
-              `  import { loadComponent } from '${CDN(version)}/dist/host-loader.js';`,
-              '',
-              '  await loadComponent({',
-              `    moduleUrl: '${CDN(version)}/dist/components/shift-calendar.js',`,
-              "    tag: 'shift-calendar',",
-              `    packageVersion: '${version}',`,
-              '  });',
-              '<\/script>',
-            ].join('\n'),
-        },
-        tag: {
-          lang: 'HTML',
-          code: () =>
-            [
-              '<shift-calendar id="appointment" label="Appointment date" min="2026-10-01" max="2026-12-31" disabled-weekdays="5"></shift-calendar>',
-              '',
-              '<script type="module">',
-              "  document.getElementById('appointment').addEventListener('dateChange', event => {",
-              '    console.log(event.detail.value);',
-              '  });',
-              '<\/script>',
-            ].join('\n'),
-        },
         minmax: {
           lang: 'HTML',
           code: () => ['<shift-calendar', '  min="2026-09-20"', '  max="2026-11-10"', '  disabled-weekdays="5"', '  disabled-dates="2026-10-06"', '></shift-calendar>'].join('\n'),
@@ -137,19 +102,6 @@
               .getElementById('override-css')
               .textContent.replace(/^\n+|\s+$/g, '')
               .replace(/^ {6}/gm, ''),
-        },
-        form: {
-          lang: 'JSON',
-          code: () =>
-            JSON.stringify(
-              {
-                data: { requestUrl: 'https://example.invalid/api/tickets', appearance: 'soft', colorScheme: 'auto', size: 'lg' },
-                tag: 'div',
-                children: [{ name: 'name' }, { name: 'email', appearance: 'sharp', size: 'md' }],
-              },
-              null,
-              2,
-            ),
         },
       };
 
@@ -806,115 +758,6 @@
           </div>
 
           <div class="showcase-stage @container flex flex-col gap-4" x-data="calendarPage()">
-            <section
-              data-doc-tab="overview"
-              data-doc-label="Overview"
-              data-doc-icon="overview"
-              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
-            >
-              <header class="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <h2 class="text-3xl font-bold tracking-tight">Overview</h2>
-                  <p class="lede text-base-content/70 mt-2 max-w-[70ch]">
-                    <code>shift-calendar</code> is an inline month calendar for choosing one date. The host passes dates in (a range, closed days, availability) and receives one
-                    date back through <code>dateChange</code>. It makes no requests of its own.
-                  </p>
-                </div>
-                <div class="appearance-field">
-                  <span class="appearance-label" id="appearance-label-overview" x-text="siteT('docs.appearance')"></span>
-                  <div class="seg appearance-pick" role="radiogroup" aria-labelledby="appearance-label-overview">
-                    <template x-for="item in appearances" :key="item">
-                      <label
-                        ><input type="radio" name="appearance-overview" :value="item" x-model="appearance" /><span
-                          ><span x-html="icon('look-' + item)"></span><span class="capitalize" x-text="item"></span></span
-                      ></label>
-                    </template>
-                  </div>
-                </div>
-              </header>
-
-              <div class="frame max-w-[380px]" style="margin-inline: 0"><shift-calendar label="Pick a date"></shift-calendar></div>
-
-              <div class="grid gap-4 @2xl:grid-cols-2">
-                <div class="border-base-300 rounded-box border p-5">
-                  <h3 class="text-lg font-semibold">Use it for</h3>
-                  <ul class="text-base-content/75 mt-2 list-disc ps-5 text-sm">
-                    <li>One date picked inline: a booking day, a birthdate, a date field in a form.</li>
-                    <li>Showing which days are open, with a count or status per day.</li>
-                  </ul>
-                </div>
-                <div class="border-base-300 rounded-box border p-5">
-                  <h3 class="text-lg font-semibold">Not for</h3>
-                  <ul class="text-base-content/75 mt-2 list-disc ps-5 text-sm">
-                    <li>Date ranges or times of day.</li>
-                    <li>A pop-up date input; the calendar is always open where it is placed.</li>
-                  </ul>
-                </div>
-              </div>
-
-              <ul class="text-base-content/75 flex max-w-[70ch] list-disc flex-col gap-1 ps-5 text-sm">
-                <li>
-                  Five appearances (<code>vanilla</code>, <code>material</code>, <code>soft</code>, <code>sharp</code>, <code>minimal</code>), five sizes (<code>xs</code> to
-                  <code>xl</code>, <code>md</code> by default) and light or dark. Try them in the <a class="link" href="#playground">Playground</a>.
-                </li>
-                <li><code>language</code> (en, ar, ku, ru) sets the names, the direction, the first weekday and the digits.</li>
-              </ul>
-            </section>
-
-            <section
-              data-doc-tab="installation"
-              data-doc-label="Installation"
-              data-doc-icon="installation"
-              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
-            >
-              <header>
-                <h2 class="text-3xl font-bold tracking-tight">Installation</h2>
-                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">From npm or a CDN, then place the tag.</p>
-              </header>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">npm</h3>
-                <p class="text-base-content/70 text-sm">Install the package, then import the element once. The import registers <code>&lt;shift-calendar&gt;</code>.</p>
-                <template x-for="key in ['npm', 'npmImport']" :key="key">
-                  <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock(key)">
-                    <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
-                      <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
-                      <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
-                    </figcaption>
-                    <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
-                  </figure>
-                </template>
-              </div>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">CDN</h3>
-                <p class="text-base-content/70 text-sm">
-                  The whole package in one module tag, or this element alone through the host loader. Pin the version you tested; one page loads one version.
-                </p>
-                <template x-for="key in ['cdnLibrary', 'cdnSingle']" :key="key">
-                  <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock(key)">
-                    <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
-                      <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
-                      <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
-                    </figcaption>
-                    <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
-                  </figure>
-                </template>
-              </div>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">The tag</h3>
-                <p class="text-base-content/70 text-sm">Attributes for plain values, properties for arrays, objects and functions. Listen for <code>dateChange</code>.</p>
-                <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock('tag')">
-                  <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
-                    <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
-                    <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
-                  </figcaption>
-                  <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
-                </figure>
-              </div>
-            </section>
-
             <section
               data-doc-tab="examples"
               data-doc-label="Usage & examples"
@@ -1952,55 +1795,6 @@
             </section>
 
             <section
-              data-doc-tab="dates"
-              data-doc-label="Dates & rules"
-              data-doc-icon="dates"
-              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
-            >
-              <header>
-                <h2 class="text-3xl font-bold tracking-tight">Dates &amp; rules</h2>
-                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">What goes in, what comes out, and which days can be chosen.</p>
-              </header>
-
-              <div class="flex max-w-[76ch] flex-col gap-2 text-sm">
-                <h3 class="text-lg font-semibold">Date strings</h3>
-                <p class="text-base-content/75">
-                  Dates go in and out as calendar dates, <code>YYYY-MM-DD</code>; months as <code>YYYY-MM</code>. No time or time zone travels with them. Today comes from the
-                  visitor’s clock; set <code>today</code> when the business day is decided elsewhere.
-                </p>
-              </div>
-
-              <div class="flex max-w-[76ch] flex-col gap-2 text-sm">
-                <h3 class="text-lg font-semibold">Which days can be chosen</h3>
-                <p class="text-base-content/75">Rules only block. The first that matches is the reason a day is closed:</p>
-                <ol class="text-base-content/75 list-decimal ps-5">
-                  <li><code>min</code> / <code>max</code>: outside the range, and navigation stops at their months.</li>
-                  <li><code>disabledDates</code></li>
-                  <li><code>disabledWeekdays</code></li>
-                  <li><code>enabledDates</code>: when set, any day not in it.</li>
-                  <li><code>isDateDisabled(date)</code>: asked last, only about days nothing else blocked.</li>
-                </ol>
-              </div>
-
-              <div class="flex max-w-[76ch] flex-col gap-2 text-sm">
-                <h3 class="text-lg font-semibold">Loading availability</h3>
-                <p class="text-base-content/75">
-                  On <code>monthChange</code>, fetch the month, set <code>busy</code> while it loads, then pass the open days as <code>enabledDates</code> and counts as
-                  <code>dayMeta</code>. See <a class="link" href="#examples">example 3</a>.
-                </p>
-              </div>
-
-              <div class="flex max-w-[76ch] flex-col gap-2 text-sm">
-                <h3 class="text-lg font-semibold">Views and the Today button</h3>
-                <ul class="text-base-content/75 list-disc ps-5">
-                  <li>The year and the month in the header open the years and months views. Switching views never changes <code>value</code>; it fires <code>viewChange</code>.</li>
-                  <li>Months and years wholly outside <code>min</code>/<code>max</code> are shown disabled. <code>disableViews</code> turns both views off.</li>
-                  <li>Today selects today when it can be chosen and always returns to its month. <code>showToday=false</code> removes the button.</li>
-                </ul>
-              </div>
-            </section>
-
-            <section
               data-doc-tab="api"
               data-doc-label="API reference"
               data-doc-icon="api"
@@ -2120,150 +1914,6 @@
               </template>
             </section>
 
-            <section
-              data-doc-tab="accessibility"
-              data-doc-label="Keyboard & accessibility"
-              data-doc-icon="accessibility"
-              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
-            >
-              <header>
-                <h2 class="text-3xl font-bold tracking-tight">Keyboard &amp; accessibility</h2>
-                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">The same grid pattern in every view, with localized labels.</p>
-              </header>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">Keys</h3>
-                <div class="overflow-x-auto">
-                  <table class="table-sm table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Key</th>
-                        <th scope="col">Days view</th>
-                        <th scope="col">Months and years views</th>
-                      </tr>
-                    </thead>
-                    <tbody class="text-sm">
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">←</kbd> <kbd class="kbd kbd-sm">→</kbd></td>
-                        <td>Previous or next day (mirrored in RTL)</td>
-                        <td>Previous or next item (mirrored in RTL)</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">↑</kbd> <kbd class="kbd kbd-sm">↓</kbd></td>
-                        <td>Same weekday, previous or next week</td>
-                        <td>Row above or below</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Home</kbd> <kbd class="kbd kbd-sm">End</kbd></td>
-                        <td>First or last day of the week</td>
-                        <td>First or last item of the row</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Page Up</kbd> <kbd class="kbd kbd-sm">Page Down</kbd></td>
-                        <td>Previous or next month</td>
-                        <td>Previous or next year; 12 years in the years view</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Shift</kbd> + <kbd class="kbd kbd-sm">Page Up</kbd> <kbd class="kbd kbd-sm">Page Down</kbd></td>
-                        <td>Previous or next year</td>
-                        <td>—</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Enter</kbd> <kbd class="kbd kbd-sm">Space</kbd></td>
-                        <td>Select the day</td>
-                        <td>Choose the month or year</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Esc</kbd></td>
-                        <td>—</td>
-                        <td>Back one view, changing nothing</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Tab</kbd></td>
-                        <td colspan="2">Moves between the header buttons and the grid; the grid is one tab stop</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">Screen readers and contrast</h3>
-                <ul class="text-base-content/75 list-disc ps-5 text-sm">
-                  <li>
-                    Each view is a <code>role="grid"</code> with one roving tab stop. Focus lands on the selected or current item when a view opens and returns to the header button
-                    when it closes.
-                  </li>
-                  <li>Today always carries <code>aria-current="date"</code>, whether or not <code>highlightToday</code> marks it visually.</li>
-                  <li>Disabled days stay focusable with <code>aria-disabled</code>, so they can be discovered; a <code>dayMeta</code> description is read with the date.</li>
-                  <li>Every button label and view heading is localized. <code>label</code> names the calendar group.</li>
-                  <li>Every appearance meets WCAG AA for text and 3:1 for focus rings and the selected day, in light and dark. Motion is instant under reduced motion.</li>
-                </ul>
-              </div>
-            </section>
-
-            <section
-              data-doc-tab="forms"
-              data-doc-label="Form integration"
-              data-doc-icon="forms"
-              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
-            >
-              <header>
-                <h2 class="text-3xl font-bold tracking-tight">Form integration</h2>
-                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">
-                  A form structure sets the look of every field it renders. A field’s own key wins over the structure’s, and host CSS wins over both.
-                </p>
-              </header>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">Structure keys</h3>
-                <div class="overflow-x-auto">
-                  <table class="table-sm table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Key</th>
-                        <th scope="col">Values</th>
-                        <th scope="col">Without it</th>
-                      </tr>
-                    </thead>
-                    <tbody class="text-sm">
-                      <tr>
-                        <td class="font-mono text-xs">data.appearance</td>
-                        <td class="font-mono text-xs">vanilla · material · soft · sharp · minimal</td>
-                        <td>Every field keeps its current look</td>
-                      </tr>
-                      <tr>
-                        <td class="font-mono text-xs">data.colorScheme</td>
-                        <td class="font-mono text-xs">light · dark · auto</td>
-                        <td>Light</td>
-                      </tr>
-                      <tr>
-                        <td class="font-mono text-xs">data.size</td>
-                        <td class="font-mono text-xs">xs · sm · md · lg · xl</td>
-                        <td><code>md</code></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">Example</h3>
-                <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock('form')">
-                  <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
-                    <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
-                    <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
-                  </figcaption>
-                  <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
-                </figure>
-                <ul class="text-base-content/75 mt-2 list-disc ps-5 text-sm">
-                  <li>Use <code>auto</code> only on a page that is itself dark-aware; a form embedded in a light page should stay <code>light</code>.</li>
-                  <li><code>data.theme</code> is unrelated: it names a CSS part for the host’s stylesheet.</li>
-                  <li>A calendar field type for structures is next; it will take these keys like every other field.</li>
-                </ul>
-                <p class="text-sm"><a class="link" href="../forms/ticket-forms.html">Forms: the full structure reference</a></p>
-              </div>
-            </section>
           </div>
 
           <div data-harness-rail x-cloak></div>

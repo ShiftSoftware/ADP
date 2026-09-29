@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Shift Components — adp-web-components</title>
+    <link rel="icon" href="/templates/assets/favicon.svg" type="image/svg+xml" />
+
+    <meta name="adp-publish" content="true" />
+    <meta name="description" content="Shift Components: every standalone element side by side, with one toolbar for size, theme, language and appearance." />
+
+    <link rel="stylesheet" href="/templates/harness.css" />
+    <meta name="adp-docs-layout" content="true" />
+    <meta name="adp-docs-fonts" content="400 14px Nunito; 700 14px Nunito; 400 14px Manrope; 700 14px Manrope; 400 14px 'Noto Kufi Arabic'; 700 14px 'Noto Kufi Arabic'" />
+    <meta name="docs-family" content="shift-components" />
+    <meta name="docs-family-order" content="1" />
+    <meta name="docs-family-label" content="Overview" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;family=Noto+Kufi+Arabic:wght@100..900&amp;family=Nunito:ital,wght@0,200..1000;1,200..1000&amp;display=swap"
+    />
+
+    <script src="/templates/harness-theme.js"></script>
+    <script src="/templates/site-locales.js"></script>
+
+    <script nomodule src="/build/shift-components.js"></script>
+    <script type="module" src="/build/shift-components.esm.js"></script>
+
+    <script type="module" src="/templates/harness.js"></script>
+    <script type="module">
+      const TAGS = ['shift-calendar', 'shift-input', 'shift-time-slots', 'shift-booking-calendar', 'shift-day-strip'];
+      const APPEARANCES = ['vanilla', 'material', 'soft', 'sharp', 'minimal'];
+      const SIZES = ['xs', 'sm', 'md', 'lg', 'xl'];
+
+      const siteScheme = () => ({ 'harness': 'light', 'harness-dark': 'dark' })[document.documentElement.dataset.theme] ?? 'auto';
+      const resolvedTheme = () => {
+        const scheme = siteScheme();
+
+        return scheme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : scheme;
+      };
+
+      const svg = paths =>
+        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+
+      const ICONS = {
+        'look-vanilla': svg('<rect x="4" y="4" width="16" height="16" rx="4"/>'),
+        'look-material': svg('<circle cx="12" cy="10" r="6" fill="currentColor"/><ellipse cx="12" cy="19.5" rx="6" ry="1.5" fill="currentColor" stroke="none" opacity=".35"/>'),
+        'look-soft': svg('<rect x="3" y="5" width="18" height="14" rx="7" fill="currentColor" fill-opacity=".3" stroke="none"/>'),
+        'look-sharp': svg('<rect x="4" y="4" width="16" height="16" stroke-width="3" stroke-linejoin="miter"/>'),
+        'look-minimal': svg('<path d="M4 17h16"/><path d="M8 11h8" opacity=".45"/>'),
+        'light': svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+        'dark': svg('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'),
+      };
+
+      window.galleryPage = () => ({
+        appearances: APPEARANCES,
+        sizes: SIZES,
+        languages: window.siteLocales.languages,
+        appearance: 'vanilla',
+        size: 'md',
+        scheme: siteScheme(),
+        theme: resolvedTheme(),
+        language: document.documentElement.lang || 'en',
+
+        init() {
+          new MutationObserver(() => {
+            this.scheme = siteScheme();
+            this.theme = resolvedTheme();
+          }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+          window.addEventListener('site-locales:change', event => (this.language = event.detail.language));
+
+          for (const key of ['appearance', 'size', 'scheme', 'language']) this.$watch(key, () => this.applyAll());
+          Promise.all(TAGS.map(tag => customElements.whenDefined(tag))).then(() => this.applyAll());
+        },
+
+        siteT(key) {
+          return window.siteLocales?.t(this.language, key) ?? key;
+        },
+
+        icon(name) {
+          return ICONS[name] ?? '';
+        },
+
+        setTheme(theme) {
+          window.harnessTheme.apply(theme);
+        },
+
+        setLanguage(code) {
+          window.siteLocales.apply(code);
+        },
+
+        applyAll() {
+          document.querySelectorAll(TAGS.join(',')).forEach(element => {
+            element.appearance = this.appearance;
+            element.size = this.size;
+            element.colorScheme = this.scheme;
+            element.language = this.language;
+          });
+        },
+      });
+    </script>
+    <script defer src="/templates/vendor/alpine.js"></script>
+
+    <style>
+      .gallery-card .frame {
+        margin-inline: 0;
+      }
+    </style>
+  </head>
+
+  <body class="wide-column bg-base-200 text-base-content min-h-screen">
+    <div data-site-header></div>
+
+    <div class="docs-shell" data-docs-layout>
+      <div class="docs-sider" id="docs-sider"></div>
+      <div class="docs-main">
+        <div class="docs-bar"></div>
+        <section class="showcase" dir="ltr" x-data="harness({ subject: false, mocks: null, connection: false, events: false, language: false, today: false })">
+          <div class="showcase-brief">
+            <header class="showcase-title sr-only" data-doc-icon="component">
+              <h1>Shift Components</h1>
+            </header>
+          </div>
+
+          <div class="showcase-stage @container flex flex-col gap-4" x-data="galleryPage()">
+            <section
+              data-doc-tab="overview"
+              data-doc-label="Overview"
+              data-doc-icon="overview"
+              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
+            >
+              <header>
+                <h2 class="text-3xl font-bold tracking-tight">Shift Components</h2>
+                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">
+                  Standalone elements a form or another app can embed. The toolbar drives every element on this page; each card links to the element's own page.
+                </p>
+              </header>
+
+              <div class="border-base-300 bg-base-200/40 rounded-box flex flex-wrap items-end gap-x-6 gap-y-4 border p-4">
+                <div class="appearance-field">
+                  <span class="appearance-label" id="gallery-size" x-text="siteT('docs.size')"></span>
+                  <div class="seg" role="radiogroup" aria-labelledby="gallery-size">
+                    <template x-for="item in sizes" :key="item">
+                      <label><input type="radio" name="gallery-size" :value="item" x-model="size" /><span x-text="item"></span></label>
+                    </template>
+                  </div>
+                </div>
+
+                <div class="appearance-field">
+                  <span class="appearance-label" id="gallery-theme" x-text="siteT('nav.theme')"></span>
+                  <div class="seg" role="radiogroup" aria-labelledby="gallery-theme">
+                    <template x-for="item in ['light', 'dark']" :key="item">
+                      <label
+                        ><input type="radio" name="gallery-theme" :value="item" :checked="theme === item" @change="setTheme(item)" /><span class="gap-1.5"
+                          ><span x-html="icon(item)"></span><span x-text="siteT('theme.' + item)"></span></span
+                      ></label>
+                    </template>
+                  </div>
+                </div>
+
+                <div class="appearance-field">
+                  <span class="appearance-label" id="gallery-language" x-text="siteT('nav.language')"></span>
+                  <div class="seg" role="radiogroup" aria-labelledby="gallery-language">
+                    <template x-for="item in languages" :key="item.code">
+                      <label
+                        ><input type="radio" name="gallery-language" :value="item.code" :checked="language === item.code" @change="setLanguage(item.code)" /><span
+                          :lang="item.code"
+                          x-text="item.label"
+                        ></span
+                      ></label>
+                    </template>
+                  </div>
+                </div>
+
+                <div class="appearance-field">
+                  <span class="appearance-label" id="gallery-appearance" x-text="siteT('docs.appearance')"></span>
+                  <div class="seg appearance-pick" role="radiogroup" aria-labelledby="gallery-appearance">
+                    <template x-for="item in appearances" :key="item">
+                      <label
+                        ><input type="radio" name="gallery-appearance" :value="item" x-model="appearance" /><span
+                          ><span x-html="icon('look-' + item)"></span><span class="capitalize" x-text="item"></span></span
+                      ></label>
+                    </template>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid gap-4 @3xl:grid-cols-2">
+                <article class="gallery-card border-base-300 rounded-box flex min-w-0 flex-col gap-4 border p-5">
+                  <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <h3 class="text-lg font-semibold">Calendar</h3>
+                    <a class="link link-hover text-accent text-sm" href="shift-calendar.html"><code>&lt;shift-calendar&gt;</code></a>
+                  </div>
+                  <div class="frame max-w-[380px]"><shift-calendar label="Pick a date"></shift-calendar></div>
+                </article>
+
+                <article class="gallery-card border-base-300 rounded-box flex min-w-0 flex-col gap-4 border p-5">
+                  <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <h3 class="text-lg font-semibold">Input</h3>
+                    <a class="link link-hover text-accent text-sm" href="shift-input.html"><code>&lt;shift-input&gt;</code></a>
+                  </div>
+                  <div class="frame grid max-w-[380px] gap-3">
+                    <shift-input label="Full name"></shift-input>
+                    <shift-input type="date" label="Visit date"></shift-input>
+                  </div>
+                </article>
+
+                <article class="gallery-card border-base-300 rounded-box flex min-w-0 flex-col gap-4 border p-5">
+                  <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <h3 class="text-lg font-semibold">Time slots</h3>
+                    <a class="link link-hover text-accent text-sm" href="shift-time-slots.html"><code>&lt;shift-time-slots&gt;</code></a>
+                  </div>
+                  <div class="frame max-w-[380px]">
+                    <shift-time-slots times="08:00, 09:00, 10:00, 11:00, 12:00, 13:00" disabled-times="09:00, 12:00" value="10:00"></shift-time-slots>
+                  </div>
+                </article>
+
+                <article class="gallery-card border-base-300 rounded-box flex min-w-0 flex-col gap-4 border p-5">
+                  <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <h3 class="text-lg font-semibold">Day strip</h3>
+                    <a class="link link-hover text-accent text-sm" href="shift-day-strip.html"><code>&lt;shift-day-strip&gt;</code></a>
+                  </div>
+                  <div class="frame"><shift-day-strip label="Pick a day"></shift-day-strip></div>
+                </article>
+
+                <article class="gallery-card border-base-300 rounded-box flex min-w-0 flex-col gap-4 border p-5 @3xl:col-span-2">
+                  <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <h3 class="text-lg font-semibold">Booking calendar</h3>
+                    <a class="link link-hover text-accent text-sm" href="shift-booking-calendar.html"><code>&lt;shift-booking-calendar&gt;</code></a>
+                  </div>
+                  <div class="frame">
+                    <shift-booking-calendar
+                      calendar-api="booking-availability.json"
+                      company-id="1"
+                      branch-id="42"
+                      department-id="service-center"
+                      brand-id="BRAND"
+                      today="2026-09-27"
+                    ></shift-booking-calendar>
+                  </div>
+                </article>
+              </div>
+            </section>
+          </div>
+
+          <div data-harness-rail x-cloak></div>
+        </section>
+      </div>
+      <aside class="docs-map"></aside>
+    </div>
+  </body>
+</html>

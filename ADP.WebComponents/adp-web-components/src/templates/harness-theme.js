@@ -32,6 +32,8 @@
     } catch {
       // Theme still applies for this page; it just will not survive navigation.
     }
+
+    window.dispatchEvent(new CustomEvent('harness-theme:change', { detail: { theme: resolved } }));
   }
 
   function current() {

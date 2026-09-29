@@ -43,7 +43,6 @@ export async function writeCatalog(root) {
   const counted = new Map();
 
   for (const page of pages) {
-    if (page.kind === 'index') continue;
     counted.set(page.area, (counted.get(page.area) ?? 0) + 1);
   }
 
@@ -53,7 +52,7 @@ export async function writeCatalog(root) {
   // a second copy of it in sync.
   const { name, version } = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
 
-  const listed = disambiguate(pages.filter(page => page.kind !== 'index'));
+  const listed = disambiguate(pages);
 
   const catalog = {
     package: { name, version },
@@ -160,7 +159,9 @@ function family(source) {
 
   const order = Number(source.match(/<meta[^>]+name=["']docs-family-order["'][^>]+content=["']([^"']+)["']/i)?.[1]);
 
-  return { family: name, familyOrder: Number.isFinite(order) ? order : null };
+  const label = source.match(/<meta[^>]+name=["']docs-family-label["'][^>]+content=["']([^"']+)["']/i)?.[1];
+
+  return { family: name, familyOrder: Number.isFinite(order) ? order : null, ...(label && { familyLabel: label }) };
 }
 
 function kind(relative, source) {

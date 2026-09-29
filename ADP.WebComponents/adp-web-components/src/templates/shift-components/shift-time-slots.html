@@ -15,8 +15,8 @@
     <link rel="stylesheet" href="/templates/harness.css" />
     <meta name="adp-docs-layout" content="true" />
     <meta name="adp-docs-fonts" content="400 14px Nunito; 700 14px Nunito; 400 14px Manrope; 700 14px Manrope; 400 14px 'Noto Kufi Arabic'; 700 14px 'Noto Kufi Arabic'" />
-    <meta name="docs-family" content="calendar" />
-    <meta name="docs-family-order" content="3" />
+    <meta name="docs-family" content="shift-components" />
+    <meta name="docs-family-order" content="4" />
     <!-- The same sheet the package's loader injects (it skips a duplicate); declared here so the page waits for its faces instead of re-flowing when they swap in. -->
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -37,7 +37,6 @@
 
       const APPEARANCES = ['vanilla', 'material', 'soft', 'sharp', 'minimal'];
       const SIZES = ['xs', 'sm', 'md', 'lg', 'xl'];
-      const CDN = version => `https://cdn.jsdelivr.net/npm/adp-web-components@${version}`;
       const DAY = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'];
       const SHORT_DAY = ['11:00', '12:00', '13:00'];
 
@@ -52,40 +51,6 @@
       const siteLanguage = () => document.documentElement.lang || 'en';
 
       const SNIPPETS = {
-        npm: { lang: 'Shell', code: () => 'npm install adp-web-components' },
-        npmImport: { lang: 'JavaScript', code: () => "import 'adp-web-components/components/shift-time-slots';" },
-        cdnLibrary: {
-          lang: 'HTML',
-          code: version => `<script type="module"\n  src="${CDN(version)}/dist/shift-components/shift-components.esm.js"><\/script>`,
-        },
-        cdnSingle: {
-          lang: 'HTML',
-          code: version =>
-            [
-              '<script type="module">',
-              `  import { loadComponent } from '${CDN(version)}/dist/host-loader.js';`,
-              '',
-              '  await loadComponent({',
-              `    moduleUrl: '${CDN(version)}/dist/components/shift-time-slots.js',`,
-              "    tag: 'shift-time-slots',",
-              `    packageVersion: '${version}',`,
-              '  });',
-              '<\/script>',
-            ].join('\n'),
-        },
-        tag: {
-          lang: 'HTML',
-          code: () =>
-            [
-              '<shift-time-slots id="times" label="Pick a time" times="08:00, 09:00, 10:00, 11:00"></shift-time-slots>',
-              '',
-              '<script type="module">',
-              "  document.getElementById('times').addEventListener('timeChange', event => {",
-              '    console.log(event.detail.value);',
-              '  });',
-              '<\/script>',
-            ].join('\n'),
-        },
         twelve: { lang: 'HTML', code: () => '<shift-time-slots\n  times="08:00, 09:00, 12:00, 13:00, 17:30"\n  hour-cycle="h12"\n></shift-time-slots>' },
         disabled: {
           lang: 'HTML',
@@ -613,117 +578,6 @@
 
           <div class="showcase-stage @container flex flex-col gap-4" x-data="timeSlotsPage()">
             <section
-              data-doc-tab="overview"
-              data-doc-label="Overview"
-              data-doc-icon="overview"
-              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
-            >
-              <header class="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <h2 class="text-3xl font-bold tracking-tight">Overview</h2>
-                  <p class="lede text-base-content/70 mt-2 max-w-[70ch]">
-                    <code>shift-time-slots</code> shows one day's times as a grid and gives back the one chosen through <code>timeChange</code>. The host passes the times in; it
-                    makes no requests of its own.
-                  </p>
-                </div>
-                <div class="appearance-field">
-                  <span class="appearance-label" id="appearance-label-overview" x-text="siteT('docs.appearance')"></span>
-                  <div class="seg appearance-pick" role="radiogroup" aria-labelledby="appearance-label-overview">
-                    <template x-for="item in appearances" :key="item">
-                      <label
-                        ><input type="radio" name="appearance-overview" :value="item" x-model="appearance" /><span
-                          ><span x-html="icon('look-' + item)"></span><span class="capitalize" x-text="item"></span></span
-                      ></label>
-                    </template>
-                  </div>
-                </div>
-              </header>
-
-              <div class="frame max-w-[380px]" style="margin-inline: 0">
-                <shift-time-slots label="Pick a time" times="08:00, 09:00, 10:00, 11:00, 12:00, 13:00, 14:00, 15:00"></shift-time-slots>
-              </div>
-
-              <div class="grid gap-4 @2xl:grid-cols-2">
-                <div class="border-base-300 rounded-box border p-5">
-                  <h3 class="text-lg font-semibold">Use it for</h3>
-                  <ul class="text-base-content/75 mt-2 list-disc ps-5 text-sm">
-                    <li>Choosing a time on a day already chosen: a booking, an appointment, a call back.</li>
-                    <li>Beside a calendar or a day strip, as the second half of a slot picker.</li>
-                  </ul>
-                </div>
-                <div class="border-base-300 rounded-box border p-5">
-                  <h3 class="text-lg font-semibold">Not for</h3>
-                  <ul class="text-base-content/75 mt-2 list-disc ps-5 text-sm">
-                    <li>Free time entry or durations.</li>
-                    <li>Times on several days at once.</li>
-                  </ul>
-                </div>
-              </div>
-
-              <ul class="text-base-content/75 flex max-w-[70ch] list-disc flex-col gap-1 ps-5 text-sm">
-                <li>
-                  Five appearances (<code>vanilla</code>, <code>material</code>, <code>soft</code>, <code>sharp</code>, <code>minimal</code>), five sizes (<code>xs</code> to
-                  <code>xl</code>, <code>md</code> by default) and light or dark. Try them in the <a class="link" href="#playground">Playground</a>.
-                </li>
-                <li><code>language</code> (en, ar, ku, ru) sets the direction, the digits and the AM and PM words.</li>
-              </ul>
-            </section>
-
-            <section
-              data-doc-tab="installation"
-              data-doc-label="Installation"
-              data-doc-icon="installation"
-              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
-            >
-              <header>
-                <h2 class="text-3xl font-bold tracking-tight">Installation</h2>
-                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">From npm or a CDN, then place the tag.</p>
-              </header>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">npm</h3>
-                <p class="text-base-content/70 text-sm">Install the package, then import the element once. The import registers <code>&lt;shift-time-slots&gt;</code>.</p>
-                <template x-for="key in ['npm', 'npmImport']" :key="key">
-                  <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock(key)">
-                    <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
-                      <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
-                      <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
-                    </figcaption>
-                    <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
-                  </figure>
-                </template>
-              </div>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">CDN</h3>
-                <p class="text-base-content/70 text-sm">
-                  The whole package in one module tag, or this element alone through the host loader. Pin the version you tested; one page loads one version.
-                </p>
-                <template x-for="key in ['cdnLibrary', 'cdnSingle']" :key="key">
-                  <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock(key)">
-                    <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
-                      <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
-                      <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
-                    </figcaption>
-                    <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
-                  </figure>
-                </template>
-              </div>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">The tag</h3>
-                <p class="text-base-content/70 text-sm">Attributes for plain values, properties for arrays. Listen for <code>timeChange</code>.</p>
-                <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock('tag')">
-                  <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
-                    <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
-                    <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
-                  </figcaption>
-                  <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
-                </figure>
-              </div>
-            </section>
-
-            <section
               data-doc-tab="examples"
               data-doc-label="Usage & examples"
               data-doc-icon="examples"
@@ -1184,43 +1038,6 @@
             </section>
 
             <section
-              data-doc-tab="times"
-              data-doc-label="Times & values"
-              data-doc-icon="dates"
-              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
-            >
-              <header>
-                <h2 class="text-3xl font-bold tracking-tight">Times &amp; values</h2>
-                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">What goes in, what comes out, and what the grid does when it changes.</p>
-              </header>
-
-              <div class="flex max-w-[76ch] flex-col gap-2 text-sm">
-                <h3 class="text-lg font-semibold">Time strings</h3>
-                <p class="text-base-content/75">
-                  Times go in and out as <code>HH:mm</code> on a 24-hour clock, with no date or time zone. <code>hourCycle</code> changes only the labels. Duplicates are merged,
-                  the list is sorted, and anything that is not a time is ignored.
-                </p>
-              </div>
-
-              <div class="flex max-w-[76ch] flex-col gap-2 text-sm">
-                <h3 class="text-lg font-semibold">Choosing</h3>
-                <ul class="text-base-content/75 list-disc ps-5">
-                  <li>A click, Enter or Space chooses a time and fires <code>timeChange</code>, even for the time already chosen.</li>
-                  <li><code>disabledTimes</code> and <code>disabled</code> block choosing. A <code>value</code> not in <code>times</code> chooses nothing.</li>
-                  <li>Setting <code>value</code> from the host fires nothing.</li>
-                </ul>
-              </div>
-
-              <div class="flex max-w-[76ch] flex-col gap-2 text-sm">
-                <h3 class="text-lg font-semibold">Changing the times</h3>
-                <p class="text-base-content/75">
-                  New times fade the old grid out and rise in one after another, while the height moves to the new number of rows. <code>loading</code> shows
-                  <code>skeletonCount</code> placeholders of the same size; an empty list shows <code>emptyText</code>. See <a class="link" href="#examples">example 4</a>.
-                </p>
-              </div>
-            </section>
-
-            <section
               data-doc-tab="api"
               data-doc-label="API reference"
               data-doc-icon="api"
@@ -1340,66 +1157,6 @@
               </template>
             </section>
 
-            <section
-              data-doc-tab="accessibility"
-              data-doc-label="Keyboard & accessibility"
-              data-doc-icon="accessibility"
-              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
-            >
-              <header>
-                <h2 class="text-3xl font-bold tracking-tight">Keyboard &amp; accessibility</h2>
-                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">A radio group with one tab stop, moved like a grid.</p>
-              </header>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">Keys</h3>
-                <div class="overflow-x-auto">
-                  <table class="table-sm table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Key</th>
-                        <th scope="col">Does</th>
-                      </tr>
-                    </thead>
-                    <tbody class="text-sm">
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">←</kbd> <kbd class="kbd kbd-sm">→</kbd></td>
-                        <td>Previous or next open time (mirrored in RTL)</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">↑</kbd> <kbd class="kbd kbd-sm">↓</kbd></td>
-                        <td>The open time above or below, by as many columns as fit</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Home</kbd> <kbd class="kbd kbd-sm">End</kbd></td>
-                        <td>First or last open time</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Enter</kbd> <kbd class="kbd kbd-sm">Space</kbd></td>
-                        <td>Choose the focused time</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Tab</kbd></td>
-                        <td>Into and out of the grid; the grid is one tab stop, on the chosen time or the first open one</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">Screen readers and contrast</h3>
-                <ul class="text-base-content/75 list-disc ps-5 text-sm">
-                  <li>
-                    The grid is a <code>role="radiogroup"</code> of <code>role="radio"</code> buttons with <code>aria-checked</code>. Unlike the WAI-ARIA radio group, arrows move
-                    focus without choosing, so moving through the day never books a time; Enter or Space chooses.
-                  </li>
-                  <li>Disabled times stay in the grid with <code>aria-disabled</code>, so a screen reader still reads them; arrows pass over them.</li>
-                  <li>While loading the group carries <code>aria-busy</code>; the count of times, the loading text or the empty text is announced politely.</li>
-                  <li>Every appearance meets WCAG AA for text and 3:1 for focus rings and the chosen time, in light and dark. Motion is instant under reduced motion.</li>
-                </ul>
-              </div>
-            </section>
           </div>
 
           <div data-harness-rail x-cloak></div>

@@ -15,8 +15,8 @@
     <link rel="stylesheet" href="/templates/harness.css" />
     <meta name="adp-docs-layout" content="true" />
     <meta name="adp-docs-fonts" content="400 14px Nunito; 700 14px Nunito; 400 14px Manrope; 700 14px Manrope; 400 14px 'Noto Kufi Arabic'; 700 14px 'Noto Kufi Arabic'" />
-    <meta name="docs-family" content="calendar" />
-    <meta name="docs-family-order" content="4" />
+    <meta name="docs-family" content="shift-components" />
+    <meta name="docs-family-order" content="5" />
     <!-- The same sheet the package's loader injects (it skips a duplicate); declared here so the page waits for its faces instead of re-flowing when they swap in. -->
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -51,7 +51,6 @@
       const APPEARANCES = ['vanilla', 'material', 'soft', 'sharp', 'minimal'];
       const SIZES = ['xs', 'sm', 'md', 'lg', 'xl'];
       const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      const CDN = version => `https://cdn.jsdelivr.net/npm/adp-web-components@${version}`;
       const DATA = {
         ready: 'booking-availability.json',
         empty: 'booking-availability-empty.json',
@@ -71,47 +70,6 @@
       const siteLanguage = () => document.documentElement.lang || 'en';
 
       const SNIPPETS = {
-        npm: { lang: 'Shell', code: () => 'npm install adp-web-components' },
-        npmImport: { lang: 'JavaScript', code: () => "import 'adp-web-components/components/shift-booking-calendar';" },
-        cdnLibrary: {
-          lang: 'HTML',
-          code: version => `<script type="module"\n  src="${CDN(version)}/dist/shift-components/shift-components.esm.js"><\/script>`,
-        },
-        cdnSingle: {
-          lang: 'HTML',
-          code: version =>
-            [
-              '<script type="module">',
-              `  import { loadComponent } from '${CDN(version)}/dist/host-loader.js';`,
-              '',
-              '  await loadComponent({',
-              `    moduleUrl: '${CDN(version)}/dist/components/shift-booking-calendar.js',`,
-              "    tag: 'shift-booking-calendar',",
-              `    packageVersion: '${version}',`,
-              '  });',
-              '<\/script>',
-            ].join('\n'),
-        },
-        tag: {
-          lang: 'HTML',
-          code: () =>
-            [
-              '<shift-booking-calendar',
-              '  id="booking"',
-              '  calendar-api="https://api.example.invalid/api/public/calendar"',
-              '  company-id="1"',
-              '  branch-id="42"',
-              '  department-id="service-center"',
-              '  brand-id="BRAND"',
-              '></shift-booking-calendar>',
-              '',
-              '<script type="module">',
-              "  document.getElementById('booking').addEventListener('slotChange', event => {",
-              '    console.log(event.detail.value); // 2026-10-01T09:00',
-              '  });',
-              '<\/script>',
-            ].join('\n'),
-        },
         states: {
           lang: 'HTML',
           code: () =>
@@ -726,125 +684,6 @@
 
           <div class="showcase-stage @container flex flex-col gap-4" x-data="bookingPage()">
             <section
-              data-doc-tab="overview"
-              data-doc-label="Overview"
-              data-doc-icon="overview"
-              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
-            >
-              <header class="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <h2 class="text-3xl font-bold tracking-tight">Overview</h2>
-                  <p class="lede text-base-content/70 mt-2 max-w-[70ch]">
-                    <code>shift-booking-calendar</code> is a form field that reads one branch's calendar, shows the open days on a month calendar and, once a day is picked, that day's times in the same box. It
-                    submits and emits exactly what <code>branch-slot-picker</code> does.
-                  </p>
-                </div>
-                <div class="appearance-field">
-                  <span class="appearance-label" id="appearance-label-overview" x-text="siteT('docs.appearance')"></span>
-                  <div class="seg appearance-pick" role="radiogroup" aria-labelledby="appearance-label-overview">
-                    <template x-for="item in appearances" :key="item">
-                      <label
-                        ><input type="radio" name="appearance-overview" :value="item" x-model="appearance" /><span
-                          ><span x-html="icon('look-' + item)"></span><span class="capitalize" x-text="item"></span></span
-                      ></label>
-                    </template>
-                  </div>
-                </div>
-              </header>
-
-              <div class="frame max-w-[380px]" style="margin-inline: 0">
-                <shift-booking-calendar
-                  calendar-api="booking-availability.json"
-                  company-id="1"
-                  branch-id="42"
-                  department-id="service-center"
-                  brand-id="BRAND"
-                  today="2026-09-27"
-                  label="Pick a slot"
-                ></shift-booking-calendar>
-              </div>
-
-              <div class="grid gap-4 @2xl:grid-cols-2">
-                <div class="border-base-300 rounded-box border p-5">
-                  <h3 class="text-lg font-semibold">Use it for</h3>
-                  <ul class="text-base-content/75 mt-2 list-disc ps-5 text-sm">
-                    <li>Booking a service, a test drive or a visit at the branch the visitor chose.</li>
-                    <li>A page of its own, or a form built on <code>form-hook</code>: it implements the field contract (<code>name</code>, <code>form</code>, <code>isRequired</code>, …).</li>
-                  </ul>
-                </div>
-                <div class="border-base-300 rounded-box border p-5">
-                  <h3 class="text-lg font-semibold">Not for</h3>
-                  <ul class="text-base-content/75 mt-2 list-disc ps-5 text-sm">
-                    <li>Dates with no branch calendar behind them; use <a class="link" href="shift-calendar.html">shift-calendar</a>.</li>
-                    <li>A compact field that opens a pop-over.</li>
-                  </ul>
-                </div>
-              </div>
-
-              <ul class="text-base-content/75 flex max-w-[70ch] list-disc flex-col gap-1 ps-5 text-sm">
-                <li>
-                  Five appearances, five sizes (<code>xs</code> to <code>xl</code>) and light or dark, passed to the calendar and the times. Try them in the
-                  <a class="link" href="#playground">Playground</a>.
-                </li>
-                <li>The examples on this page read data files shaped like the calendar API, not a live endpoint.</li>
-              </ul>
-            </section>
-
-            <section
-              data-doc-tab="installation"
-              data-doc-label="Installation"
-              data-doc-icon="installation"
-              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
-            >
-              <header>
-                <h2 class="text-3xl font-bold tracking-tight">Installation</h2>
-                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">From npm or a CDN, then place the tag.</p>
-              </header>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">npm</h3>
-                <p class="text-base-content/70 text-sm">Install the package, then import the element once. The import registers <code>&lt;shift-booking-calendar&gt;</code>.</p>
-                <template x-for="key in ['npm', 'npmImport']" :key="key">
-                  <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock(key)">
-                    <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
-                      <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
-                      <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
-                    </figcaption>
-                    <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
-                  </figure>
-                </template>
-              </div>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">CDN</h3>
-                <p class="text-base-content/70 text-sm">
-                  The whole package in one module tag, or this element alone through the host loader. Pin the version you tested; one page loads one version.
-                </p>
-                <template x-for="key in ['cdnLibrary', 'cdnSingle']" :key="key">
-                  <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock(key)">
-                    <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
-                      <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
-                      <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
-                    </figcaption>
-                    <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
-                  </figure>
-                </template>
-              </div>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">The tag</h3>
-                <p class="text-base-content/70 text-sm">The endpoint and the four ids as attributes. Listen for <code>slotChange</code>, or put it in a form.</p>
-                <figure class="border-base-300 overflow-hidden rounded-lg border" x-data="codeBlock('tag')">
-                  <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
-                    <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
-                    <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
-                  </figcaption>
-                  <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
-                </figure>
-              </div>
-            </section>
-
-            <section
               data-doc-tab="examples"
               data-doc-label="Usage & examples"
               data-doc-icon="examples"
@@ -1412,88 +1251,6 @@
             </section>
 
             <section
-              data-doc-tab="states"
-              data-doc-label="States & data"
-              data-doc-icon="dates"
-              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
-            >
-              <header>
-                <h2 class="text-3xl font-bold tracking-tight">States &amp; data</h2>
-                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">What the field asks the endpoint, what it shows, and what it gives back.</p>
-              </header>
-
-              <div class="flex max-w-[76ch] flex-col gap-2 text-sm">
-                <h3 class="text-lg font-semibold">The request</h3>
-                <p class="text-base-content/75">
-                  One <code>GET</code> per branch, from <code>today</code>, once company, branch, department and brand are all set. The response,
-                  <code>[{ Date, Times }]</code> with times like <code>2026-10-01 01:00 PM</code>, decides which days are open; days without times are left out. A branch already
-                  asked stays cached for the page.
-                </p>
-              </div>
-
-              <div class="flex max-w-[76ch] flex-col gap-2 text-sm">
-                <h3 class="text-lg font-semibold">v1 and v2</h3>
-                <p class="text-base-content/75">
-                  <code>calendarApiVersion</code> v1 sends the branch's Integration IDs, v2 its hash IDs, with the same query names. Point <code>calendarApi</code> at that
-                  version's endpoint and pass the ids of the version it expects.
-                </p>
-              </div>
-
-              <div class="flex max-w-[76ch] flex-col gap-2 text-sm">
-                <h3 class="text-lg font-semibold">States</h3>
-                <div class="overflow-x-auto">
-                  <table class="table-sm table">
-                    <thead>
-                      <tr>
-                        <th scope="col">State</th>
-                        <th scope="col">When</th>
-                        <th scope="col">Shows</th>
-                      </tr>
-                    </thead>
-                    <tbody class="text-sm">
-                      <tr>
-                        <td class="font-mono text-xs">idle</td>
-                        <td>An id is missing, usually no branch yet</td>
-                        <td>Every day closed, “Choose a branch first”</td>
-                      </tr>
-                      <tr>
-                        <td class="font-mono text-xs">loading</td>
-                        <td>The request is out</td>
-                        <td>The calendar dimmed, a spinner</td>
-                      </tr>
-                      <tr>
-                        <td class="font-mono text-xs">ready</td>
-                        <td>At least one day has times</td>
-                        <td>The month of the first open day; picking a day slides to its times, Change date slides back</td>
-                      </tr>
-                      <tr>
-                        <td class="font-mono text-xs">empty</td>
-                        <td>No day has times</td>
-                        <td>“No times available at this branch”</td>
-                      </tr>
-                      <tr>
-                        <td class="font-mono text-xs">error</td>
-                        <td>No answer, an HTTP error or a response that is not a list</td>
-                        <td>The message and Try again</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div class="flex max-w-[76ch] flex-col gap-2 text-sm">
-                <h3 class="text-lg font-semibold">The value</h3>
-                <ul class="text-base-content/75 list-disc ps-5">
-                  <li>
-                    The form receives <code>YYYY-MM-DDTHH:mm</code>; <code>slotChange</code> carries <code>{ date, raw, value }</code>, exactly as <code>branch-slot-picker</code>.
-                  </li>
-                  <li>Another branch returns to the days and clears the choice. Reopening a day keeps the time when that day has it, otherwise clears it.</li>
-                  <li>A missing value in a required form shows its message in the status row, which never changes height.</li>
-                </ul>
-              </div>
-            </section>
-
-            <section
               data-doc-tab="api"
               data-doc-label="API reference"
               data-doc-icon="api"
@@ -1613,80 +1370,6 @@
               </template>
             </section>
 
-            <section
-              data-doc-tab="accessibility"
-              data-doc-label="Keyboard & accessibility"
-              data-doc-icon="accessibility"
-              class="bg-base-100 border-base-300 rounded-box flex flex-col gap-8 border p-5 shadow-sm sm:p-8"
-            >
-              <header>
-                <h2 class="text-3xl font-bold tracking-tight">Keyboard &amp; accessibility</h2>
-                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">Two views in one box: the calendar's days, then the chosen day's times. Focus follows the view.</p>
-              </header>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">Keys</h3>
-                <div class="overflow-x-auto">
-                  <table class="table-sm table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Key</th>
-                        <th scope="col">Days view</th>
-                        <th scope="col">Times view</th>
-                      </tr>
-                    </thead>
-                    <tbody class="text-sm">
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">←</kbd> <kbd class="kbd kbd-sm">→</kbd></td>
-                        <td>Previous or next day (mirrored in RTL)</td>
-                        <td>Previous or next time (mirrored in RTL)</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">↑</kbd> <kbd class="kbd kbd-sm">↓</kbd></td>
-                        <td>Same weekday, previous or next week</td>
-                        <td>The time above or below</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Home</kbd> <kbd class="kbd kbd-sm">End</kbd></td>
-                        <td>First or last day of the week</td>
-                        <td>First or last time</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Page Up</kbd> <kbd class="kbd kbd-sm">Page Down</kbd></td>
-                        <td>Previous or next month</td>
-                        <td>—</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Enter</kbd> <kbd class="kbd kbd-sm">Space</kbd></td>
-                        <td>Choose the day; the times view opens and focus moves to its times</td>
-                        <td>Choose the time</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Escape</kbd></td>
-                        <td>Closes the month or year picker</td>
-                        <td>Back to the days, focus on the chosen day (same as Change date)</td>
-                      </tr>
-                      <tr>
-                        <td><kbd class="kbd kbd-sm">Tab</kbd></td>
-                        <td>The header buttons, then the grid (one tab stop)</td>
-                        <td>Change date, then the times (one tab stop)</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div class="flex max-w-[80ch] flex-col gap-2">
-                <h3 class="text-lg font-semibold">Screen readers and contrast</h3>
-                <ul class="text-base-content/75 list-disc ps-5 text-sm">
-                  <li>The field is a <code>role="group"</code> named by its label. The view that is not on screen is hidden and inert.</li>
-                  <li>Each view is announced when it opens: the times as “Times on Tuesday, 29 September 2026”, the days by their month.</li>
-                  <li>The status row is a polite live region: the loading, empty and error messages and the chosen slot are announced.</li>
-                  <li>Only the active message is exposed; the others stay mounted, hidden and inert, so the row never changes height.</li>
-                  <li>A validation error is announced as an alert. Every appearance meets WCAG AA in light and dark. Motion is instant under reduced motion.</li>
-                </ul>
-              </div>
-            </section>
           </div>
 
           <div data-harness-rail x-cloak></div>

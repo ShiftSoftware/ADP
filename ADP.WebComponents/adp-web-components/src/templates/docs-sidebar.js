@@ -113,20 +113,22 @@ async function familyPages(name) {
 }
 
 function familyMarkup(name, pages, entries, title) {
-  const here = pages.find(page => pageUrl(page.path).pathname === window.location.pathname);
+  const bare = pathname => pathname.replace(/(\/index)?(\.html)?\/?$/, '');
+  const here = pages.find(page => bare(pageUrl(page.path).pathname) === bare(window.location.pathname));
   const listed = here ? pages : [{ path: '', title }];
   const label = name.charAt(0).toUpperCase() + name.slice(1);
+  const pageLabel = page => page.familyLabel ?? page.title;
 
   const item = page =>
     page === here || !here
       ? `
     <li class="docs-family-page" data-family-current>
-      <a class="docs-item docs-family-self" href="${escape(page.path ? pageUrl(page.path).href : window.location.pathname)}" aria-current="page">${ICONS.component}<span class="docs-label">${escape(page.title)}</span></a>
-      <ul class="docs-list docs-sublist">${entries.map(entryMarkup).join('')}</ul>
+      <a class="docs-item docs-family-self" href="${escape(page.path ? pageUrl(page.path).href : window.location.pathname)}" aria-current="page">${ICONS.component}<span class="docs-label">${escape(pageLabel(page))}</span></a>
+      ${entries.length > 1 ? `<ul class="docs-list docs-sublist">${entries.map(entryMarkup).join('')}</ul>` : ''}
     </li>`
       : `
     <li class="docs-family-page">
-      <a class="docs-item" href="${escape(pageUrl(page.path).href)}">${ICONS.component}<span class="docs-label">${escape(page.title)}</span></a>
+      <a class="docs-item" href="${escape(pageUrl(page.path).href)}">${ICONS.component}<span class="docs-label">${escape(pageLabel(page))}</span></a>
     </li>`;
 
   return `
