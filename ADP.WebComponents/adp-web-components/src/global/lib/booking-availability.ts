@@ -197,3 +197,22 @@ export function createAvailabilityLoader(fetcher: Fetcher = (url, init) => fetch
 
   return { load, cancel };
 }
+
+const OFFSET = /^[+-](0\d|1[0-4]):[0-5]\d$/;
+
+export function localOffset(local: string): string {
+  const [date, time] = local.split('T');
+  const [year, month, day] = date.split('-').map(Number);
+  const [hours, minutes] = time.split(':').map(Number);
+  const east = -new Date(year, month - 1, day, hours, minutes).getTimezoneOffset();
+  const size = Math.abs(east);
+
+  return `${east < 0 ? '-' : '+'}${pad(Math.floor(size / 60))}:${pad(size % 60)}`;
+}
+
+// A slot is branch wall-clock time; receivers read a DateTimeOffset, so it leaves with an explicit offset.
+export function slotIso(local: string, utcOffset?: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(local || '')) return '';
+
+  return `${local}:00${utcOffset && OFFSET.test(utcOffset) ? utcOffset : localOffset(local)}`;
+}

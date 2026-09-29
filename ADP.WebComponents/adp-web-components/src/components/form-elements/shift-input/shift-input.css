@@ -314,7 +314,188 @@
   transform: none;
 }
 
+/* A picker owns the value: the control opens it rather than taking typed text. */
+.in-root[data-picker]:not([data-disabled]) .in-control,
+.in-root[data-picker]:not([data-disabled]) .in-input {
+  cursor: pointer;
+}
+
+.in-root[data-picker] .in-input {
+  caret-color: transparent;
+}
+
+/* The picker's loading mark keeps its room beside the icon, so the text never moves when it comes or goes. */
+.in-busy {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--_settle) var(--_ease);
+}
+
+.in-busy[data-shown] {
+  opacity: 1;
+}
+
+.in-spinner {
+  inline-size: calc(var(--_icon) - 2px);
+  block-size: calc(var(--_icon) - 2px);
+  border: 2px solid var(--_line);
+  border-block-start-color: var(--_button-ink);
+  border-radius: 50%;
+  animation: in-spin 0.8s linear infinite;
+}
+
+.in-busy:not([data-shown]) .in-spinner {
+  animation-play-state: paused;
+}
+
+@keyframes in-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.in-sr {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+  Inside a v1 form with no appearance chosen, the field wears the look of the form's own fields (form-inputs.css):
+  the page's font and ink, a 16px label in sentence case, a 1px slate-300 box with a 6px radius, a slate-600 border and
+  a soft ring on focus, red for an error, and a support line that overlays the gap below instead of reserving it.
+*/
+:host([data-look='form']) {
+  --_ap-font-size: 16px;
+  --_ap-font-size-sm: 12px;
+  --_ap-label-size: 16px;
+  --_ap-label-weight: 400;
+  --_ap-label-transform: none;
+  --_ap-label-tracking: normal;
+  --_ap-label-ink: currentColor;
+  --_ap-ink: currentColor;
+  --_ap-ink-muted: #9ca3af;
+  --_ap-weight: 400;
+  --_ap-surface: #ffffff;
+  --_ap-line: #cbd5e1;
+  --_ap-line-strong: #cbd5e1;
+  --_ap-focus: #475569;
+  --_ap-control-focus-outline: 0px;
+  --_ap-focus-halo: rgba(71, 85, 105, 0.25);
+  --_ap-focus-halo-width: 0.2rem;
+  --_ap-danger: #ef4444;
+  --_ap-radius-md: 6px;
+  --_ap-control-height: 44px;
+  /* The form's own fields change state over 300ms on Tailwind's default curve; the field moves on the same clock. */
+  --_look-change: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  color: inherit;
+  font-family: inherit;
+}
+
+:host([data-look='form']) .in-root,
+:host([data-look='form']) .in-root:lang(ar),
+:host([data-look='form']) .in-root:lang(ckb) {
+  font-family: inherit;
+}
+
+:host([data-look='form']) .in-label {
+  padding-block-end: 4px;
+  line-height: normal;
+}
+
+:host([data-look='form']) .in-required {
+  color: #dc2626;
+}
+
+:host([data-look='form']) .in-root {
+  position: relative;
+}
+
+:host([data-look='form']) .in-control {
+  block-size: auto;
+  transition:
+    border-color var(--_look-change),
+    box-shadow var(--_look-change);
+}
+
+:host([data-look='form']) .in-input {
+  padding-block: 6px;
+  line-height: normal;
+}
+
+:host([data-look='form']) .in-control[data-focused] {
+  border-color: var(--_focus);
+}
+
+:host([data-look='form']) .in-root[data-invalid] .in-control[data-focused] {
+  box-shadow: 0 0 0 var(--_halo-width) rgba(239, 68, 68, 0.25);
+}
+
+:host([data-look='form']) .in-root[data-disabled] .in-control {
+  background: var(--_surface);
+  opacity: 0.375;
+}
+
+:host([data-look='form']) .in-root[data-disabled] .in-input:disabled {
+  color: inherit;
+}
+
+/* The support line overlays the gap below, and its message drops in from under the control, as the form's own do. */
+:host([data-look='form']) .in-support {
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline: 0;
+  min-block-size: 0;
+  margin-block-start: 0;
+  padding-block-start: 1px;
+  overflow: hidden;
+  line-height: normal;
+}
+
+:host([data-look='form']) .in-hint,
+:host([data-look='form']) .in-error {
+  line-height: normal;
+  transform: translateY(-100%);
+  transition:
+    opacity var(--_look-change),
+    transform var(--_look-change);
+}
+
+:host([data-look='form']) .in-hint[data-shown],
+:host([data-look='form']) .in-error[data-shown] {
+  transform: none;
+}
+
+/*
+  An error holds its colour until it clears: hover, focus and an open popup keep their emphasis, in the error's hue.
+  Last and most specific on purpose, so no appearance's or look's hover or focus rule can take the border back.
+*/
+.in-root[data-invalid] .in-control,
+.in-root[data-invalid]:not([data-disabled]) .in-control:hover,
+:host .in-root[data-invalid] .in-control[data-focused] {
+  border-color: var(--_danger);
+}
+
+:host .in-root[data-invalid] .in-control[data-focused] {
+  outline-color: var(--_danger);
+  box-shadow:
+    inset 0 calc(var(--_underline-focus) * -1) 0 var(--_danger),
+    0 0 0 max(var(--_halo-width), 0.2rem) color-mix(in srgb, var(--_danger) 25%, transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .in-spinner {
+    animation: none;
+  }
+
+  .in-busy,
   .in-label-row,
   .in-required,
   .in-control,

@@ -1,5 +1,5 @@
 import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, h } from '@stencil/core';
-import { AnyObjectSchema } from 'yup';
+import { AnyObjectSchema, string } from 'yup';
 
 import type { LanguageKeys } from '~features/multi-lingual';
 import type { FormHook } from '~features/form-hook/form-hook';
@@ -15,13 +15,15 @@ import { DEFAULT_FORMAT } from './types/date/date-format';
 import { InputStrings, inputStrings } from './input-locale';
 import { INPUT_TYPES, ShiftInputType } from './types';
 import type { InputField, InputType } from './types/input-type';
+import { adoptPicker, pickerType, wirePicker } from './types/picker/picker-type';
 
 export interface InputValueChangeDetail {
   value: string;
 }
 
 /**
- * @part calendar-button - rendered by the date type module, so declared here for the docs.
+ * @part calendar-button - rendered by the date type and picker modules, so declared here for the docs.
+ * @slot picker - a headless picker (shift-calendar, shift-booking-calendar) the field opens in its popover.
  */
 @Component({
   shadow: { delegatesFocus: true },
@@ -80,6 +82,11 @@ export class ShiftInput implements FormElement, InputField {
   @State() expanded: boolean = false;
   @State() focused: boolean = false;
   @State() shownError: string = '';
+  @State() pickerEl: HTMLElement | null = null;
+  @State() pickerHint: string = '';
+  @State() pickerBusy: boolean = false;
+
+  pickerLabel = '';
 
   input?: HTMLInputElement;
   control?: HTMLElement;
@@ -87,6 +94,15 @@ export class ShiftInput implements FormElement, InputField {
   private settingValue = false;
   private shownLabel = '';
   private uid = Math.random().toString(36).slice(2, 10);
+  private childObserver?: MutationObserver;
+
+  connectedCallback() {
+    this.findPicker();
+    if (typeof MutationObserver === 'undefined' || this.childObserver) return;
+
+    this.childObserver = new MutationObserver(() => this.findPicker());
+    this.childObserver.observe(this.el, { childList: true });
+  }
 
   componentWillLoad() {
     this.form?.subscribe(this.name, this);
@@ -100,6 +116,10 @@ export class ShiftInput implements FormElement, InputField {
     this.module.mounted?.(this);
   }
 
+  componentDidRender() {
+    if (this.pickerEl) adoptPicker(this);
+  }
+
   componentWillRender() {
     const error = this.currentError();
     if (error && error !== this.shownError) this.shownError = error;
@@ -107,6 +127,8 @@ export class ShiftInput implements FormElement, InputField {
 
   disconnectedCallback() {
     this.form?.unsubscribe(this.name);
+    this.childObserver?.disconnect();
+    this.childObserver = undefined;
   }
 
   @Watch('value')
@@ -160,15 +182,40 @@ export class ShiftInput implements FormElement, InputField {
   }
 
   get module(): InputType {
+    if (this.pickerEl) return pickerType as InputType;
+
     return INPUT_TYPES[this.type] ?? INPUT_TYPES.text;
+  }
+
+  // With a picker the value is the picker's, so the field owns required itself; without one the form's own rule stands.
+  validate(): AnyObjectSchema {
+    if (!this.pickerEl) return undefined;
+
+    const required = (schema: ReturnType<typeof string>) => schema.required(`${this.name}-require`);
+
+    return string().when(`$${this.name}Required`, {
+      is: true,
+      then: required,
+      otherwise: schema => (this.isRequired ? required(schema) : schema.optional()),
+    }) as unknown as AnyObjectSchema;
+  }
+
+  private findPicker() {
+    const next = Array.from(this.el.children).find(child => child.getAttribute('slot') === 'picker') as HTMLElement | undefined;
+    if (!next || next === this.pickerEl) return;
+
+    this.pickerEl = next;
+    wirePicker(this);
+    this.text = this.module.display(this.value, this);
   }
 
   get strings(): InputStrings {
     return inputStrings(this.language);
   }
 
+  // A picker still loading has nothing to offer yet: the field waits, disabled, with the spinner by its icon.
   get fieldDisabled(): boolean {
-    return this.isDisabled || !!this.formState?.disabled;
+    return this.isDisabled || !!this.formState?.disabled || this.pickerBusy;
   }
 
   get fieldLabel(): string {
@@ -206,7 +253,11 @@ export class ShiftInput implements FormElement, InputField {
     const own = this.localization?.[language ?? this.language];
     const lookup = (key?: string) => (key ? getNestedValue(locale, key) || key : '');
     const message = state.errorMessage || '';
-    const errorTextMessage = (message.endsWith('-require') && own?.require) || (message.endsWith('-format') && own?.format) || locale?.[message] || message;
+    const errorTextMessage =
+      (message.endsWith('-require') && (own?.require || locale?.[message] || this.strings.required)) ||
+      (message.endsWith('-format') && own?.format) ||
+      locale?.[message] ||
+      message;
 
     return { label: own?.label || lookup(state.meta?.label), placeholder: own?.placeholder || lookup(state.meta?.placeholder), errorTextMessage };
   }
@@ -287,7 +338,7 @@ export class ShiftInput implements FormElement, InputField {
     // Kept while the label row collapses, so the text leaves with it instead of vanishing first.
     if (label) this.shownLabel = label;
     const placeholder = localised?.placeholder || this.ownLocalization?.placeholder || this.placeholder || this.module.placeholder(this);
-    const hint = this.ownLocalization?.hint || this.hint || '';
+    const hint = (this.pickerBusy ? '' : this.pickerHint) || this.ownLocalization?.hint || this.hint || '';
     const locale = calendarLocale(this.language);
     const disabled = this.fieldDisabled;
     const required = this.required;
@@ -298,13 +349,15 @@ export class ShiftInput implements FormElement, InputField {
     const errorId = `${inputId}-error`;
 
     return (
-      <Host translate="no">
+      <Host translate="no" data-look={this.form && !this.appearance ? 'form' : undefined}>
         <div
           class="in-root"
           part="root"
           dir={locale.direction}
           lang={locale.language === 'ku' ? 'ckb' : locale.language}
           data-type={this.type}
+          data-picker={this.pickerEl ? '' : undefined}
+          aria-busy={this.pickerBusy ? 'true' : undefined}
           data-disabled={disabled ? '' : undefined}
           data-invalid={error ? '' : undefined}
         >
@@ -334,7 +387,7 @@ export class ShiftInput implements FormElement, InputField {
               value={this.text}
               placeholder={placeholder}
               disabled={disabled}
-              readOnly={this.readonly}
+              readOnly={this.readonly || !!this.pickerEl}
               aria-invalid={error ? 'true' : undefined}
               aria-required={required ? 'true' : undefined}
               aria-describedby={`${hintId} ${errorId}`}
@@ -364,6 +417,10 @@ export class ShiftInput implements FormElement, InputField {
               <slot name="suffix" />
             </span>
           </div>
+
+          <span class="in-sr" aria-live="polite">
+            {this.pickerBusy ? this.pickerHint : ''}
+          </span>
 
           <div class="in-support">
             <div class="in-hint" part="hint" id={hintId} data-shown={hint && !error ? '' : undefined}>

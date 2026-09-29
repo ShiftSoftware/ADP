@@ -64,6 +64,7 @@ export class ShiftPopoverPanel {
         aria-hidden={this.open ? undefined : 'true'}
         inert={this.open ? undefined : true}
       >
+        <div class="pop-backdrop" part="backdrop" aria-hidden="true" data-open={this.open ? '' : undefined} data-sheet={this.sheet ? '' : undefined} />
         <div
           class="pop-panel"
           part={this.panelPart}

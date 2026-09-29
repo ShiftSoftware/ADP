@@ -139,10 +139,6 @@
   color: var(--_hover-ink);
 }
 
-.ts-chip:active {
-  transform: scale(0.96);
-}
-
 .ts-chip:focus-visible {
   outline: var(--_focus-width) solid var(--_focus);
   outline-offset: var(--_focus-offset);

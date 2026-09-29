@@ -66,7 +66,7 @@ const message = (page: SpecPage) => root(page).querySelector('.bc-message[data-a
 const box = (page: SpecPage) => root(page).querySelector('.bc-box');
 const times = (page: SpecPage) => root(page).querySelector('.bc-times');
 const view = (page: SpecPage) => box(page).getAttribute('data-view');
-const title = (page: SpecPage) => root(page).querySelector('.bc-title').textContent;
+const title = (page: SpecPage) => root(page).querySelector('.bc-title-line').textContent;
 const announced = (page: SpecPage) => root(page).querySelector('.bc-root > .bc-sr[aria-live]').textContent;
 const chip = (page: SpecPage, time: string) => slotsEl(page).shadowRoot.querySelector<HTMLButtonElement>(`.ts-layer[data-current] [data-time="${time}"]`);
 const dayCell = (page: SpecPage, date: string) => calendar(page).shadowRoot.querySelector<HTMLElement>(`.cal-view[data-current] .cal-page[data-current] [data-date="${date}"]`);
@@ -144,17 +144,32 @@ describe('states', () => {
     expect(calendar(page).busy).toBe(false);
     expectDays(page);
     expect(message(page).textContent).toBe('Pick a day');
-    expect(calendar(page).dayMeta).toBeUndefined();
+    expect(calendar(page).dayMeta).toEqual({
+      '2026-10-01': { badge: '4', tone: 'neutral', tooltip: '4 slots · 09:00 – 13:00', description: '4 slots · 09:00 – 13:00' },
+      '2026-10-03': { badge: '2', tone: 'warning', tooltip: '2 slots · 09:00 – 14:00', description: '2 slots · 09:00 – 14:00' },
+      '2026-10-04': { badge: '2', tone: 'warning', tooltip: '2 slots · 10:00 – 13:00', description: '2 slots · 10:00 – 13:00' },
+    });
   });
 
-  it('slot counts as badges when asked', async () => {
-    const { page } = await mount(`${TARGET} slot-counts="true"`);
+  it('the few-left tone, tooltips and counts follow their props; the summary respects the hour cycle', async () => {
+    const { page } = await mount(`${TARGET} few-slots="1" day-tooltips="false" hour-cycle="h12"`);
 
     expect(calendar(page).dayMeta).toEqual({
-      '2026-10-01': { badge: '4', tone: 'neutral', description: 'Times available: 4' },
-      '2026-10-03': { badge: '2', tone: 'neutral', description: 'Times available: 2' },
-      '2026-10-04': { badge: '2', tone: 'neutral', description: 'Times available: 2' },
+      '2026-10-01': { badge: '4', tone: 'neutral', description: '4 slots · 9:00 AM – 1:00 PM' },
+      '2026-10-03': { badge: '2', tone: 'neutral', description: '2 slots · 9:00 AM – 2:00 PM' },
+      '2026-10-04': { badge: '2', tone: 'neutral', description: '2 slots · 10:00 AM – 1:00 PM' },
     });
+
+    const quiet = await mount(`${TARGET} slot-counts="false"`);
+    expect(calendar(quiet.page).dayMeta['2026-10-01'].badge).toBeUndefined();
+  });
+
+  it('the times header carries the day’s summary; the calendar can hide Today', async () => {
+    const { page } = await mount(`${TARGET} show-today="false"`);
+
+    expect(calendar(page).showToday).toBe(false);
+    await pickDay(page, '2026-10-01');
+    expect(root(page).querySelector('.bc-title-summary').textContent).toBe('4 slots · 09:00 – 13:00');
   });
 
   it('empty: no times at this branch, in the same box', async () => {
@@ -164,6 +179,26 @@ describe('states', () => {
     expect(message(page).textContent).toBe('No times available at this branch');
     expectDays(page);
     expect(calendar(page).enabledDates).toEqual([]);
+  });
+
+  it('empty: a veil over the greyed month says so, with an illustration and a polite announcement; it can be turned off', async () => {
+    respond = ok([]);
+    const { page, el } = await mount(TARGET);
+    const veil = root(page).querySelector('.bc-empty');
+
+    expect(veil.hasAttribute('data-shown')).toBe(true);
+    expect(veil.querySelector('svg')).not.toBeNull();
+    expect(veil.textContent).toBe('No available slots');
+    expect(Array.from(root(page).querySelectorAll('.bc-sr[aria-live]')).map(node => node.textContent)).toContain('No available slots');
+    expect(calendar(page).disabled).toBe(false);
+
+    (el as unknown as { showEmptyState: boolean }).showEmptyState = false;
+    await settle(page);
+    expect(veil.hasAttribute('data-shown')).toBe(false);
+
+    respond = ok(DAYS);
+    const ready = await mount(TARGET.replace('branch-id="42"', 'branch-id="7"'));
+    expect(root(ready.page).querySelector('.bc-empty').hasAttribute('data-shown')).toBe(false);
   });
 
   it('error with retry', async () => {
@@ -199,10 +234,108 @@ describe('states', () => {
     const { page } = await mount(TARGET);
     const children = Array.from(box(page).children).map(node => node.tagName.toLowerCase() + (node.className ? `.${node.className}` : ''));
 
-    expect(children).toEqual(['shift-calendar', 'div.bc-times']);
+    expect(children).toEqual(['shift-calendar', 'div.bc-empty', 'div.bc-times']);
     expect(times(page).querySelector('shift-time-slots')).not.toBeNull();
     expect(root(page).querySelector('.bc-slots, .bc-collapsible, .bc-error')).toBeNull();
-    expect(Array.from(root(page).querySelector('.bc-root').children).map(node => node.className)).toEqual(['bc-label', 'bc-box', 'bc-sr', 'bc-status']);
+    expect(Array.from(root(page).querySelector('.bc-root').children).map(node => node.className)).toEqual(['bc-collapse', 'bc-box', 'bc-sr', 'bc-sr', 'bc-collapse']);
+  });
+
+  it('the label and the status line are off by default and slide open when asked for', async () => {
+    const { page, el } = await mount(TARGET);
+    const [label, status] = Array.from(root(page).querySelectorAll('.bc-root > .bc-collapse'));
+
+    expect(label.querySelector('.bc-label')).not.toBeNull();
+    expect(status.querySelector('.bc-status')).not.toBeNull();
+    for (const region of [label, status]) {
+      expect(region.hasAttribute('data-open')).toBe(false);
+      expect(region.getAttribute('aria-hidden')).toBe('true');
+    }
+
+    el.showLabel = true;
+    el.showStatus = true;
+    await settle(page);
+
+    for (const region of [label, status]) {
+      expect(region.hasAttribute('data-open')).toBe(true);
+      expect(region.getAttribute('aria-hidden')).toBeNull();
+    }
+  });
+});
+
+describe('picker contract', () => {
+  it('reports status for a host and the picked slot as ISO with an offset, complete on a time', async () => {
+    const statuses: string[] = [];
+    const changes: { value: string; label: string; complete: boolean }[] = [];
+    const page = await newSpecPage({ components: [ShiftBookingCalendar, ShiftCalendar, ShiftTimeSlots], html: '<div></div>' });
+    const el = page.doc.createElement('shift-booking-calendar') as HTMLShiftBookingCalendarElement;
+
+    el.addEventListener('pickerStatus', (event: CustomEvent<{ text: string }>) => statuses.push(event.detail.text));
+    el.addEventListener('pickerChange', (event: CustomEvent<{ value: string; label: string; complete: boolean }>) => changes.push(event.detail));
+    for (const [, name, value] of `${TARGET} utc-offset="+03:00"`.matchAll(/([\w-]+)="([^"]*)"/g)) el.setAttribute(name, value);
+    page.body.querySelector('div').appendChild(el);
+    await settle(page);
+
+    expect(statuses).toEqual(['Loading available days…', '']);
+
+    await pickDay(page, '2026-10-01');
+    expect(changes).toEqual([]);
+
+    await pickTime(page, '13:00');
+    expect(changes).toEqual([{ value: '2026-10-01T13:00:00+03:00', label: 'Thu, 1 Oct 2026, 13:00', complete: true }]);
+    expect(el.value).toBe('2026-10-01T13:00:00+03:00');
+
+    el.branchId = '43';
+    await settle(page);
+    expect(changes[changes.length - 1]).toEqual({ value: '', label: '', complete: false });
+  });
+
+  it('a host hears loading in words, and nothing while idle or empty (empty is said inside the picker)', async () => {
+    const heard = async (attributes: string) => {
+      const statuses: string[] = [];
+      const page = await newSpecPage({ components: [ShiftBookingCalendar, ShiftCalendar, ShiftTimeSlots], html: '<div></div>' });
+      const el = page.doc.createElement('shift-booking-calendar');
+
+      el.addEventListener('pickerStatus', (event: CustomEvent<{ text: string }>) => statuses.push(event.detail.text));
+      for (const [, name, value] of attributes.matchAll(/([\w-]+)="([^"]*)"/g)) el.setAttribute(name, value);
+      page.body.querySelector('div').appendChild(el);
+      await settle(page);
+
+      return statuses;
+    };
+
+    expect(await heard('company-id="1"')).toEqual([]);
+
+    respond = () => new Promise(() => undefined);
+    expect(await heard(TARGET)).toEqual(['Loading available days…']);
+
+    respond = ok([]);
+    expect((await heard(TARGET)).pop()).toBe('');
+  });
+
+  it('takes a value in: a slot the branch has is chosen and labelled, empty clears', async () => {
+    const changes: { value: string; label: string; complete: boolean }[] = [];
+    const { page, el } = await mount(`${TARGET} utc-offset="+03:00"`);
+
+    el.addEventListener('pickerChange', (event: CustomEvent<{ value: string; label: string; complete: boolean }>) => changes.push(event.detail));
+    el.value = '2026-10-03T14:00:00+03:00';
+    await settle(page);
+
+    expect(calendar(page).value).toBe('2026-10-03');
+    expect(changes).toEqual([{ value: '2026-10-03T14:00:00+03:00', label: 'Sat, 3 Oct 2026, 14:00', complete: false }]);
+
+    el.value = '';
+    await settle(page);
+    expect(calendar(page).value).toBe('');
+  });
+
+  it('the inner calendar’s own pickerChange never leaves the booking calendar', async () => {
+    const { page, el } = await mount(TARGET);
+    const seen: unknown[] = [];
+
+    el.addEventListener('pickerChange', event => seen.push((event as CustomEvent).detail));
+    await pickDay(page, '2026-10-01');
+
+    expect(seen).toEqual([]);
   });
 });
 
@@ -416,7 +549,9 @@ describe('selection', () => {
   });
 
   it('ids that arrive while idle keep the defaultValue', async () => {
-    const { page, el, field } = await mount('calendar-api="https://calendar.example/api/public/calendar" company-id="1" department-id="showroom" brand-id="BRAND" today="2026-09-28" default-value="2026-10-03T14:00"');
+    const { page, el, field } = await mount(
+      'calendar-api="https://calendar.example/api/public/calendar" company-id="1" department-id="showroom" brand-id="BRAND" today="2026-09-28" default-value="2026-10-03T14:00"',
+    );
 
     el.branchId = '42';
     await settle(page);
@@ -555,11 +690,14 @@ describe('field contract with form-hook as it is', () => {
   const NativeFormData = globalThis.FormData;
 
   // Node's FormData rejects mock-doc forms; the hook reads subscribed fields through getValue() anyway.
-  beforeAll(() => ((globalThis as unknown as { FormData: unknown }).FormData = class {
-    entries() {
-      return [][Symbol.iterator]();
-    }
-  }));
+  beforeAll(
+    () =>
+      ((globalThis as unknown as { FormData: unknown }).FormData = class {
+        entries() {
+          return [][Symbol.iterator]();
+        }
+      }),
+  );
   afterAll(() => (globalThis.FormData = NativeFormData));
 
   async function inForm(attributes: string) {

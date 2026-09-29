@@ -185,7 +185,7 @@
           "disabledWeekdays": "Weekdays that cannot be chosen, 0 Sunday … 6 Saturday: [5, 6], \"5,6\", \"5 6\" or \"[5,6]\".",
           "enabledDates": "Allow-list. When set (any array, even an empty one) only these dates can be chosen. Null, undefined or an empty string turns it off.",
           "isDateDisabled": "JS property only. (date) => boolean for any other rule; asked only about days no other rule blocked. A throw counts as disabled.",
-          "dayMeta": "Per-day extras keyed by YYYY-MM-DD: { badge?: short text, tone?: neutral | info | success | warning | danger, description?: read with the date by screen readers }. Badge digits are written in the calendar’s numerals. Object or JSON string.",
+          "dayMeta": "Per-day extras keyed by YYYY-MM-DD: { badge?: short text, tone?: neutral | info | success | warning | danger, tooltip?: text shown over the day on mouse hover or keyboard focus (never on touch), description?: read with the date by screen readers }. Badge digits are written in the calendar’s numerals. Object or JSON string.",
           "today": "YYYY-MM-DD that stands in for today, through ~lib/clock. Empty: the reader’s local calendar date.",
           "language": "en, ar, ku or ru. Sets names, direction, default week start and digits.",
           "weekStartsOn": "First column, 0 Sunday … 6 Saturday. Default by language: en and ru Monday, ar and ku Saturday.",
@@ -203,7 +203,8 @@
         "events": {
           "dateChange": "Detail { value: YYYY-MM-DD }. Fires on every user selection — a day, or the Today button when today is selectable — including re-selecting the current value; never for a disabled day or when a host sets value.",
           "monthChange": "Detail { month, firstDate, lastDate }. Fires whenever the days view shows another month, except when the host sets month. Use it to load that month’s data.",
-          "viewChange": "Detail { view: days | months | years }. Fires when the view changes. Switching views never changes value."
+          "viewChange": "Detail { view: days | months | years }. Fires when the view changes. Switching views never changes value.",
+          "pickerChange": "The headless picker contract. Detail { value: YYYY-MM-DD, label: the date in words, complete: true }. Fires with dateChange; a host (shift-input with the calendar in its picker slot, or a button with shift-popover) shows label and closes on complete."
         },
         "methods": {
           "setFocus": "Moves focus to the item in the tab order of the current view."
@@ -239,7 +240,8 @@
           "year": "A year in the years view. States beside it: year-selected, year-today, year-disabled.",
           "year-selected": "The year shown in the days view.",
           "year-today": "The current year, with highlightToday.",
-          "year-disabled": "A year entirely outside min/max."
+          "year-disabled": "A year entirely outside min/max.",
+          "tooltip": "The one tooltip over the hovered or keyboard-focused day."
         },
         "cssProperties": {
           "--shift-calendar-accent": "Colour · selected day fill",
@@ -261,7 +263,6 @@
           "--shift-calendar-day-hover-bg": "Colour · day background on hover",
           "--shift-calendar-day-hover-ink": "Colour · day number on hover",
           "--shift-calendar-day-hover-line": "Colour · day outline on hover",
-          "--shift-calendar-day-hover-scale": "Size · day lift on hover",
           "--shift-calendar-day-ink": "Colour · day numbers",
           "--shift-calendar-day-line": "Colour · day cell outline at rest",
           "--shift-calendar-day-max-inline-size": "Size · widest a day cell may get",
@@ -332,6 +333,10 @@
           "--shift-calendar-tone-success-ink": "Badge · success text",
           "--shift-calendar-tone-warning-bg": "Badge · warning background",
           "--shift-calendar-tone-warning-ink": "Badge · warning text",
+          "--shift-calendar-tooltip-font-size": "Type · tooltip size",
+          "--shift-calendar-tooltip-ink": "Colour · tooltip text",
+          "--shift-calendar-tooltip-radius": "Shape · tooltip radius",
+          "--shift-calendar-tooltip-surface": "Colour · tooltip background",
           "--shift-calendar-weekday-font-size": "Type · weekday label size",
           "--shift-calendar-weekday-font-weight": "Type · weekday label weight",
           "--shift-calendar-weekday-line-height": "Type · weekday label line height",
@@ -511,7 +516,11 @@
           "today": "YYYY-MM-DD that stands in for today: the request starts here. Empty: the visitor’s local date.",
           "disabledWeekdays": "Weekdays the deployment never books, 0 Sunday … 6 Saturday, on top of what the endpoint returns.",
           "disabledDates": "One-off dates the deployment does not book, YYYY-MM-DD.",
-          "slotCounts": "Shows each open day’s number of times as a badge.",
+          "slotCounts": "Shows each open day’s number of times as a badge under the number, in the warning tone when it has fewSlots or fewer. On by default.",
+          "utcOffset": "Offset for the picked slot's value, e.g. +03:00; the browser's offset for that time when unset.",
+          "value": "The picked slot as ISO with an offset (the picker contract). Settable: a slot the branch has is chosen, empty clears.",
+          "showLabel": "Shows the label above the calendar. Off by default; a host field shows its own.",
+          "showStatus": "Shows the status line under the calendar (idle, loading, empty, error, pick a day or a time, selected, invalid). Off by default; pickerStatus carries the same messages to a host.",
           "hourCycle": "h23 (default) or h12, for the times.",
           "name": "Field name in the form. Default bookingCalendar.",
           "form": "JS property only. The form hook; omit it standalone and listen to slotChange.",
@@ -525,13 +534,20 @@
           "wrapperClass": "Extra class on the field’s root.",
           "appearance": "vanilla, material, soft, sharp or minimal. Unset renders vanilla.",
           "colorScheme": "light (default), dark, or auto (follows prefers-color-scheme; for hosts that are themselves dark-aware).",
-          "size": "xs, sm, md (default), lg or xl. Scales the times, type and gaps. md equals no size."
+          "size": "xs, sm, md (default), lg or xl. Scales the times, type and gaps. md equals no size.",
+          "dayTooltips": "On mouse hover or keyboard focus, a day shows its count and its first and last time (e.g. 14 times · 7:30 AM – 10:30 PM); the same text is in its accessible description and in the times header. On by default.",
+          "fewSlots": "At or below this many times a day’s count badge takes the warning tone. Default 3.",
+          "showToday": "Shows the calendar’s Today button. On by default; a branch that never books today can turn it off.",
+          "showEmptyState": "When the branch has no times at all, a soft veil over the greyed month with an illustration and “No available slots”, announced politely. On by default; the header keeps working."
         },
         "events": {
-          "slotChange": "Detail { date: YYYY-MM-DD, raw: the endpoint’s text, value: YYYY-MM-DDTHH:mm }, identical to branch-slot-picker. Fires when a time is picked, and when a reopened day keeps the chosen time."
+          "slotChange": "Detail { date: YYYY-MM-DD, raw: the endpoint’s text, value: YYYY-MM-DDTHH:mm }, identical to branch-slot-picker. Fires when a time is picked, and when a reopened day keeps the chosen time.",
+          "pickerChange": "The headless picker contract. Detail { value: the slot as ISO with an offset (utcOffset, else the browser's), label: the localized day and time, complete }. complete is true when a time is picked; a preset resolved, a kept time or a cleared slot (branch changed, value emptied) fire with complete false.",
+          "pickerStatus": "Detail { text, busy }. The localized loading or failure message a host shows or announces (busy while loading); empty when ready, idle or empty — empty is shown inside the picker."
         },
         "methods": {
           "refresh": "Loads the branch again; the page cache still answers a request it already holds.",
+          "clear": "Clears the chosen day and time without reloading.",
           "setFocus": "Moves focus into the view on screen: the calendar's day, or the times."
         },
         "parts": {
@@ -551,7 +567,9 @@
           "status-text": "The text in the status row. status-error sits beside it on the error message.",
           "status-error": "The load error text in the status row.",
           "retry": "The Try again button.",
-          "error": "The validation message, in the status row."
+          "error": "The validation message, in the status row.",
+          "times-summary": "The day’s count and time range under the date in the times header.",
+          "empty": "The empty-state veil over the grid (illustration and message)."
         },
         "cssProperties": {
           "--shift-booking-calendar-back-font-weight": "Type · Change date label weight",
@@ -587,7 +605,9 @@
           "--shift-booking-calendar-spinner-size": "Size · loading spinner",
           "--shift-booking-calendar-status-font-size": "Type · status message size",
           "--shift-booking-calendar-status-font-weight": "Type · status message weight",
-          "--shift-booking-calendar-status-min-block-size": "Size · height of the status row"
+          "--shift-booking-calendar-status-min-block-size": "Size · height of the status row",
+          "--shift-booking-calendar-empty-veil": "Colour · the translucent layer over the greyed grid when there are no times",
+          "--shift-booking-calendar-empty-art-size": "Size · the empty-state illustration"
         }
       }
     },
@@ -637,9 +657,12 @@
         },
         "parts": {
           "panel": "The portaled panel. Style it as shift-popover-panel::part(panel), or through a class given to the popover.",
-          "sheet": "State part beside panel while it is a bottom sheet (viewport under 600px)."
+          "sheet": "State part beside panel while it is a bottom sheet (viewport under 600px).",
+          "backdrop": "The overlay behind a bottom sheet; tapping it closes the sheet. Sheet mode only."
         },
         "cssProperties": {
+          "--shift-popover-backdrop": "Colour · the overlay behind a bottom sheet (phones); dark in the dark scheme",
+          "--shift-popover-backdrop-blur": "Effect · how much the page behind a bottom sheet blurs; none where backdrop-filter is unsupported",
           "--shift-popover-border-width": "Shape · panel border width",
           "--shift-popover-ease": "Motion · easing of open and close",
           "--shift-popover-lift": "Motion · how far the panel travels as it opens",
@@ -934,7 +957,6 @@
           "--shift-day-strip-day-hover-bg": "Colour · card background on hover",
           "--shift-day-strip-day-hover-ink": "Colour · card text on hover",
           "--shift-day-strip-day-hover-line": "Colour · card outline on hover",
-          "--shift-day-strip-day-hover-scale": "Size · card lift on hover",
           "--shift-day-strip-day-line": "Colour · card outline at rest",
           "--shift-day-strip-day-line-height": "Type · day number line height",
           "--shift-day-strip-day-padding-bottom": "Spacing · card padding below",

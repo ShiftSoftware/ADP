@@ -20,7 +20,6 @@
   --_hover-bg: var(--shift-day-strip-day-hover-bg, var(--_ap-hover-bg, #f1f5f9));
   --_hover-line: var(--shift-day-strip-day-hover-line, var(--shift-line-strong, var(--_ap-hover-line, #94a3b8)));
   --_hover-ink: var(--shift-day-strip-day-hover-ink, var(--_ap-hover-ink, #1e293b));
-  --_hover-scale: var(--shift-day-strip-day-hover-scale, min(var(--_ap-hover-scale, 1.08), var(--_sz-hover-cap, 1.08)));
   --_today-ring: var(--shift-day-strip-today-ring, var(--_ap-today-ring, #64748b));
   --_today-width: var(--shift-day-strip-today-ring-width, var(--_ap-today-ring-width, 1px));
   --_today-dot: var(--shift-day-strip-today-dot, var(--_ap-today-dot, transparent));
@@ -90,7 +89,7 @@
   --_day-height: calc(
     var(--_day-padding-top) + var(--_day-padding-bottom) + 2px + var(--_small-size) * var(--_small-line) * 2 + var(--_number-size) * var(--_number-line) + var(--_day-row-gap) * 2
   );
-  /* Room inside the scroll clip for a card lifted by the largest hover scale (1.08), whichever appearance is on. */
+  /* Room inside the scroll clip for a card's focus ring and shadow, whichever appearance is on. */
   --_lift-block: max(calc(var(--_day-height) * 0.04), 4px);
   --_shadow-room: var(--shift-day-strip-shadow-room, var(--_soft-shadow-room, var(--_lift-block)));
   --_lift-inline: calc(var(--_day-width) * 0.04);
@@ -351,11 +350,6 @@
   border-color: var(--_hover-line);
   background-color: var(--_hover-bg);
   color: var(--_hover-ink);
-  transform: scale(var(--_hover-scale));
-}
-
-.ds-day[data-kind='open']:active {
-  transform: scale(calc(2 - var(--_hover-scale)));
 }
 
 .ds-day[aria-disabled='true'] {

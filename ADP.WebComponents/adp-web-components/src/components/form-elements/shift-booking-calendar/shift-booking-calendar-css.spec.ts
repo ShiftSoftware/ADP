@@ -49,8 +49,9 @@ describe('shift-booking-calendar.css', () => {
     expect(ruleBody('.bc-times-scroll')).toContain('overflow-y: auto');
   });
 
-  it('nothing in the field changes height: no collapsible, one fixed status row', () => {
-    expect(css).not.toMatch(/grid-template-rows/);
+  it('only the opt-in label and status slide; the box and the status row never change height', () => {
+    expect([...css.matchAll(/^([^\n{}]+)\{[^}]*grid-template-rows/gm)].map(([, selector]) => selector.trim())).toEqual(['.bc-collapse', '.bc-collapse[data-open]']);
+    expect(ruleBody('.bc-box')).not.toMatch(/block-size/);
     expect(css).not.toMatch(/\.bc-collapsible|\.bc-slots/);
     expect(ruleBody('.bc-message')).toContain('grid-area: 1 / 1');
     expect(ruleBody('.bc-status')).toContain('min-block-size: var(--_status-height)');

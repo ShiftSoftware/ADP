@@ -28,7 +28,6 @@
   --_hover-bg: var(--shift-calendar-day-hover-bg, var(--_ap-hover-bg, #f1f5f9));
   --_hover-line: var(--shift-calendar-day-hover-line, var(--shift-line-strong, var(--_ap-hover-line, #94a3b8)));
   --_hover-ink: var(--shift-calendar-day-hover-ink, var(--_ap-hover-ink, #1e293b));
-  --_hover-scale: var(--shift-calendar-day-hover-scale, min(var(--_ap-hover-scale, 1.08), var(--_sz-hover-cap, 1.08)));
   --_today-ring: var(--shift-calendar-today-ring, var(--_ap-today-ring, #64748b));
   --_today-width: var(--shift-calendar-today-ring-width, var(--_ap-today-ring-width, 1px));
   --_today-dot: var(--shift-calendar-today-dot, var(--_ap-today-dot, transparent));
@@ -105,11 +104,15 @@
   --_badge-inset: var(--shift-calendar-badge-inset, 3px);
   --_badge-shift: var(--shift-calendar-badge-shift, 5px);
   --_dot-size: var(--shift-calendar-today-dot-size, 4px);
+  --_tip-surface: var(--shift-calendar-tooltip-surface, var(--_ap-tooltip-surface, #1e293b));
+  --_tip-ink: var(--shift-calendar-tooltip-ink, var(--_ap-tooltip-ink, #f8fafc));
+  --_tip-size: var(--shift-calendar-tooltip-font-size, var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px))));
+  --_tip-radius: var(--shift-calendar-tooltip-radius, 6px);
 
   --_settle: var(--shift-calendar-settle, var(--shift-settle, 480ms));
   --_ease: var(--shift-calendar-ease, var(--shift-ease, ease));
 
-  /* Room around each grid for the focus ring and the hover scale, which the carousel's clip would cut. */
+  /* Room around each grid for the focus ring, which the carousel's clip would cut. */
   --_ring: max(calc(var(--_focus-width) + var(--_focus-offset)), var(--_halo-width), 2px);
   --_weekday-row: calc(var(--_weekday-line-height) + var(--_weekday-padding) * 2);
 
@@ -122,6 +125,7 @@
 
 .cal-root {
   --_dir: 1;
+  position: relative;
   container: shift-calendar / inline-size;
   inline-size: 100%;
   max-inline-size: var(--_max-width);
@@ -551,15 +555,6 @@
   color: var(--_hover-ink);
 }
 
-/* Only day cells lift: a wide month or year cell scaled by the same factor would reach its neighbour across the gap. */
-.cal-day[data-kind='open']:hover {
-  transform: scale(var(--_hover-scale));
-}
-
-.cal-day[data-kind='open']:active {
-  transform: scale(calc(2 - var(--_hover-scale)));
-}
-
 .cal-day[aria-disabled='true'],
 .cal-pick[aria-disabled='true'] {
   cursor: not-allowed;
@@ -697,6 +692,34 @@
   color: var(--_accent);
 }
 
+/* One tooltip for the grid, over the hovered or keyboard-focused day; it never takes room or a pointer. */
+.cal-tip {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 0;
+  left: 0;
+  max-inline-size: calc(100% - 8px);
+  padding: 4px 8px;
+  border-radius: var(--_tip-radius);
+  background: var(--_tip-surface);
+  color: var(--_tip-ink);
+  font-size: var(--_tip-size);
+  font-weight: 600;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(calc(var(--_tip-x, 0px) - 50%), var(--_tip-y, 0px));
+  transition:
+    opacity calc(var(--_settle) / 2) var(--_ease),
+    transform calc(var(--_settle) / 2) var(--_ease);
+}
+
+.cal-tip[data-shown] {
+  opacity: 1;
+}
+
 .cal-root[data-busy] .cal-day[data-kind] {
   opacity: 0.45;
   cursor: progress;
@@ -770,6 +793,7 @@
   .cal-day-number,
   .cal-pick-text,
   .cal-badge,
+  .cal-tip,
   .cal-button,
   .cal-title-button {
     transition: none;

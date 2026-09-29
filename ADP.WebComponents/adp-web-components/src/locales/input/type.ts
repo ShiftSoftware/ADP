@@ -11,6 +11,8 @@ const inputSchema = object({
   day: string().required().default(''),
   month: string().required().default(''),
   year: string().required().default(''),
+  open: string().required().default(''),
+  required: string().required().default(''),
 });
 
 export default inputSchema;

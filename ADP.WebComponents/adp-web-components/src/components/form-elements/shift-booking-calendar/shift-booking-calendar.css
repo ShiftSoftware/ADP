@@ -37,6 +37,8 @@
   --_icon: var(--shift-booking-calendar-back-icon-size, var(--_sz-icon, 16px));
   --_back-gap: var(--shift-booking-calendar-back-gap, calc(6px * var(--_sz-space, 1)));
   --_back-padding: var(--shift-booking-calendar-back-padding-inline, 10px);
+  --_empty-veil: var(--shift-booking-calendar-empty-veil, color-mix(in srgb, var(--shift-surface, var(--_ap-panel-surface, #ffffff)) 72%, transparent));
+  --_empty-art: var(--shift-booking-calendar-empty-art-size, calc(56px * var(--_sz-control, 1)));
 
   --_settle: var(--shift-booking-calendar-settle, var(--shift-settle, 480ms));
   --_ease: var(--shift-booking-calendar-ease, var(--shift-ease, ease));
@@ -72,6 +74,33 @@
 .bc-root:lang(ar),
 .bc-root:lang(ckb) {
   font-family: var(--_font-arabic);
+}
+
+/* The label and the status line are opt-in; switched on or off they slide rather than pop. */
+.bc-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows var(--_settle) var(--_ease),
+    opacity calc(var(--_settle) - 60ms) var(--_ease),
+    visibility 0s linear var(--_settle);
+}
+
+.bc-collapse[data-open] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows var(--_settle) var(--_ease),
+    opacity var(--_settle) var(--_ease),
+    visibility 0s;
+}
+
+.bc-collapse-body {
+  min-block-size: 0;
+  overflow: hidden;
 }
 
 .bc-label {
@@ -146,6 +175,48 @@
   transition: clip-path 0s;
 }
 
+/* No times at all: the month stays on screen, greyed, and a soft veil over its grid says so; the header keeps working. */
+.bc-empty {
+  position: absolute;
+  inset: var(--_f-top, 52px) 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(8px * var(--_sz-space, 1));
+  padding: var(--_gap);
+  border-end-start-radius: var(--_f-radius, 12px);
+  border-end-end-radius: var(--_f-radius, 12px);
+  background: var(--_empty-veil);
+  color: var(--_muted);
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--_settle) var(--_ease),
+    visibility 0s linear var(--_settle);
+}
+
+.bc-empty[data-shown] {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--_settle) var(--_ease),
+    visibility 0s;
+}
+
+.bc-empty-art {
+  inline-size: var(--_empty-art);
+  block-size: var(--_empty-art);
+}
+
+.bc-empty-text {
+  color: var(--_ink);
+  font-size: var(--_font-size);
+  font-weight: var(--_back-weight);
+}
+
 .bc-times {
   position: absolute;
   inset: 0;
@@ -165,7 +236,49 @@
   transition: visibility 0s linear var(--_settle);
 }
 
-.bc-box[data-view='times'] .bc-times {
+.bc-box[data-view='times'] /* No times at all: the month stays on screen, greyed, and a soft veil over its grid says so; the header keeps working. */
+.bc-empty {
+  position: absolute;
+  inset: var(--_f-top, 52px) 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(8px * var(--_sz-space, 1));
+  padding: var(--_gap);
+  border-end-start-radius: var(--_f-radius, 12px);
+  border-end-end-radius: var(--_f-radius, 12px);
+  background: var(--_empty-veil);
+  color: var(--_muted);
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--_settle) var(--_ease),
+    visibility 0s linear var(--_settle);
+}
+
+.bc-empty[data-shown] {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--_settle) var(--_ease),
+    visibility 0s;
+}
+
+.bc-empty-art {
+  inline-size: var(--_empty-art);
+  block-size: var(--_empty-art);
+}
+
+.bc-empty-text {
+  color: var(--_ink);
+  font-size: var(--_font-size);
+  font-weight: var(--_back-weight);
+}
+
+.bc-times {
   visibility: visible;
   pointer-events: auto;
   transition: visibility 0s;
@@ -192,8 +305,9 @@
 .bc-title {
   grid-area: 1 / 1;
   display: flex;
-  align-items: center;
-  gap: 0.35em;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
   min-inline-size: 0;
   block-size: 100%;
   padding-inline: var(--_f-title-padding, 2px);
@@ -211,10 +325,35 @@
     opacity var(--_settle) var(--_ease);
 }
 
+.bc-title-line {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
 .bc-title-day {
   min-inline-size: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* The day in words for anyone who cannot hover a day: its count and its first and last time. */
+.bc-title-summary {
+  max-inline-size: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--_muted);
+  font-size: calc(var(--_small-size) - 1px);
+  font-weight: var(--_status-weight);
+  line-height: 1.2;
+}
+
+/* The two smallest sizes have no room for a second line in the header band. */
+:host([size='xs']) .bc-title-summary,
+:host([size='sm']) .bc-title-summary {
+  display: none;
 }
 
 .bc-slot {
@@ -462,6 +601,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .bc-empty,
+  .bc-empty[data-shown],
+  .bc-collapse,
+  .bc-collapse[data-open],
   .bc-box shift-calendar::part(heading),
   .bc-box shift-calendar::part(nav),
   .bc-box shift-calendar::part(grid),

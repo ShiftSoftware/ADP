@@ -2,7 +2,7 @@
   "times": "Times",
   "noTimes": "No times available on this day",
   "loadingTimes": "Loading times…",
-  "timesCount": "{count} times",
+  "timesCount": "{count} slots",
   "am": "AM",
   "pm": "PM",
   "bookingCalendar": "Date and time",
@@ -14,10 +14,15 @@
   "pickDay": "Pick a day",
   "pickTime": "Pick a time",
   "selected": "{date} at {time}",
-  "dayTimes": "Times available: {count}",
+  "dayTimes": "Slots available: {count}",
   "required": "Please choose a date and time",
   "changeDate": "Change date",
   "dayTitle": "{weekday}, {day} {month}",
   "monthsShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-  "timesOn": "Times on {date}"
+  "timesOn": "Times on {date}",
+  "chooseSlot": "Choose a date and time",
+  "slotLabel": "{weekday}, {day} {month} {year}, {time}",
+  "timesCountOne": "1 slot",
+  "daySummary": "{count} · {from} – {to}",
+  "emptyTitle": "No available slots"
 }

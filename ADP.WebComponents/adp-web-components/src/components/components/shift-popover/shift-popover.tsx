@@ -21,6 +21,32 @@ const VIEWPORT_MARGIN = 8;
 
 const openByAnchor = new Map<HTMLElement, { hide: () => Promise<void> }>();
 
+// A bottom sheet holds the page still behind its backdrop; the scrollbar's width is kept as padding so nothing shifts.
+let scrollLocks = 0;
+let unlockPage: (() => void) | null = null;
+
+function lockPageScroll() {
+  if (scrollLocks++ > 0) return;
+
+  const root = document.documentElement;
+  const gap = window.innerWidth - root.clientWidth;
+  const before = { overflow: root.style.overflow, paddingRight: root.style.paddingRight };
+
+  root.style.overflow = 'hidden';
+  if (gap > 0) root.style.paddingRight = `${gap}px`;
+  unlockPage = () => {
+    root.style.overflow = before.overflow;
+    root.style.paddingRight = before.paddingRight;
+  };
+}
+
+function unlockPageScroll() {
+  if (scrollLocks === 0 || --scrollLocks > 0) return;
+
+  unlockPage?.();
+  unlockPage = null;
+}
+
 const parentOf = (node: Element): Element | null => node.parentElement ?? ((node.getRootNode() as ShadowRoot).host as Element | undefined) ?? null;
 
 function deepActiveElement(): Element | null {
@@ -104,6 +130,9 @@ const contains = (root: Node, node: Node): boolean => {
   return false;
 };
 
+/**
+ * @part backdrop - rendered by the portaled panel behind a bottom sheet, so declared here for the docs.
+ */
 @Component({
   shadow: true,
   tag: 'shift-popover',
@@ -140,6 +169,7 @@ export class ShiftPopover {
   private frame = 0;
   private listening = false;
   private pointerDismissed = false;
+  private scrollLocked = false;
   private focusNext = true;
   private readonly panelInTemplate = false;
 
@@ -158,6 +188,7 @@ export class ShiftPopover {
 
   disconnectedCallback() {
     this.sheetQuery?.removeEventListener?.('change', this.onSheetChange);
+    this.syncScrollLock(false);
     this.contentObserver?.disconnect();
     this.stopListening();
     this.releaseAnchor();
@@ -217,6 +248,7 @@ export class ShiftPopover {
     this.place();
     this.startListening();
     this.syncAria();
+    this.syncScrollLock();
     if (this.focusNext) this.focusToken++;
     this.focusNext = true;
     this.openChange.emit({ open: true });
@@ -230,7 +262,16 @@ export class ShiftPopover {
 
     this.stopListening();
     this.syncAria();
+    this.syncScrollLock();
     this.openChange.emit({ open: false });
+  }
+
+  private syncScrollLock(wanted = this.open && this.sheet) {
+    if (typeof document === 'undefined' || wanted === this.scrollLocked) return;
+
+    this.scrollLocked = wanted;
+    if (wanted) lockPageScroll();
+    else unlockPageScroll();
   }
 
   private resolveAnchor() {
@@ -395,10 +436,14 @@ export class ShiftPopover {
 
   private onSheetChange = (event: MediaQueryListEvent) => {
     this.sheet = event.matches;
+    this.syncScrollLock();
     if (this.open) this.schedule();
   };
 
   private within(path: EventTarget[]): boolean {
+    // The sheet's backdrop lives in the panel's shadow root, but a tap on it is a tap outside.
+    if ((path[0] as Element)?.classList?.contains('pop-backdrop')) return false;
+
     return (!!this.panel && path.includes(this.panel)) || (!!this.anchorEl && path.includes(this.anchorEl));
   }
 

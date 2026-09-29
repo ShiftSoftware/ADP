@@ -2,7 +2,7 @@
   "times": "Время",
   "noTimes": "В этот день нет свободного времени",
   "loadingTimes": "Загрузка времени…",
-  "timesCount": "Вариантов: {count}",
+  "timesCount": "Слотов: {count}",
   "am": "AM",
   "pm": "PM",
   "bookingCalendar": "Дата и время",
@@ -14,10 +14,15 @@
   "pickDay": "Выберите день",
   "pickTime": "Выберите время",
   "selected": "{date}, {time}",
-  "dayTimes": "Свободно: {count}",
+  "dayTimes": "Свободных слотов: {count}",
   "required": "Выберите дату и время",
   "changeDate": "Изменить дату",
   "dayTitle": "{weekday}, {day} {month}",
   "monthsShort": ["янв.", "февр.", "мар.", "апр.", "мая", "июн.", "июл.", "авг.", "сент.", "окт.", "нояб.", "дек."],
-  "timesOn": "Время на {date}"
+  "timesOn": "Время на {date}",
+  "chooseSlot": "Выберите дату и время",
+  "slotLabel": "{weekday}, {day} {month} {year}, {time}",
+  "timesCountOne": "1 слот",
+  "daySummary": "{count} · {from} – {to}",
+  "emptyTitle": "Нет свободных слотов"
 }

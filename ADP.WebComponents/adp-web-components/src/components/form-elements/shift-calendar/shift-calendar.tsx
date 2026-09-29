@@ -26,6 +26,7 @@ import {
   parseMonth,
   Weekday,
 } from '~lib/calendar-date';
+import type { PickerChangeDetail } from '~lib/picker';
 
 import { moveFocus } from './calendar-keyboard';
 import { CalendarLocale, CalendarNumerals, calendarLocale, dateLabel, formatDigits } from './calendar-locale';
@@ -53,6 +54,7 @@ export interface CalendarDayMeta {
   badge?: string;
   tone?: CalendarDayTone;
   description?: string;
+  tooltip?: string;
 }
 
 export type CalendarDayMetaMap = Record<string, CalendarDayMeta>;
@@ -166,6 +168,7 @@ export class ShiftCalendar {
   @Event({ bubbles: true, composed: true }) dateChange!: EventEmitter<CalendarDateChangeDetail>;
   @Event({ bubbles: true, composed: true }) monthChange!: EventEmitter<CalendarMonthChangeDetail>;
   @Event({ bubbles: true, composed: true }) viewChange!: EventEmitter<CalendarViewChangeDetail>;
+  @Event({ bubbles: true, composed: true }) pickerChange!: EventEmitter<PickerChangeDetail>;
 
   @State() view: CalendarView = 'days';
   @State() pageYear: number = 0;
@@ -177,6 +180,7 @@ export class ShiftCalendar {
   @State() leavingYear: SlotLeaving | null = null;
   @State() leavingMonthName: SlotLeaving | null = null;
   @State() leavingView: Snapshot | null = null;
+  @State() tip: { text: string; shown: boolean } = { text: '', shown: false };
 
   private shownMonth = '';
   private emitMonthChange = false;
@@ -204,6 +208,7 @@ export class ShiftCalendar {
 
   componentDidRender() {
     this.watchHeader();
+    this.placeTip();
 
     if (!this.pendingFocus) return;
 
@@ -536,6 +541,7 @@ export class ShiftCalendar {
 
     this.value = date;
     this.dateChange.emit({ value: date });
+    this.pickerChange.emit({ value: date, label: dateLabel(date, this.locale, this.digits), complete: true });
   }
 
   private page(step: 1 | -1) {
@@ -643,7 +649,54 @@ export class ShiftCalendar {
     this.pendingFocus = 'grid';
   }
 
+  private tipCell: HTMLElement | null = null;
+
+  private showTip(cell: HTMLElement | null) {
+    const text = cell?.dataset.date ? parseDayMeta(this.dayMeta)[cell.dataset.date]?.tooltip : '';
+    if (!cell || !text || cell.getAttribute('aria-disabled') === 'true') return this.hideTip();
+
+    this.tipCell = cell;
+    this.tip = { text: String(text), shown: true };
+  }
+
+  private hideTip() {
+    this.tipCell = null;
+    if (this.tip.shown) this.tip = { ...this.tip, shown: false };
+  }
+
+  // Above the cell, or below it when the root has no room above; kept inside the root so no clip cuts it.
+  private placeTip() {
+    const tip = this.el.shadowRoot?.querySelector<HTMLElement>('.cal-tip');
+    const rootEl = this.el.shadowRoot?.querySelector<HTMLElement>('.cal-root');
+    const cell = this.tipCell;
+    if (!tip || !rootEl || !cell || !this.tip.shown || !cell.isConnected) return;
+
+    const box = rootEl.getBoundingClientRect();
+    const at = cell.getBoundingClientRect();
+    const half = tip.offsetWidth / 2;
+    const x = Math.min(Math.max(at.left + at.width / 2 - box.left, half + 4), box.width - half - 4);
+    const below = at.top - box.top - tip.offsetHeight - 6 < 0;
+
+    tip.style.setProperty('--_tip-x', `${x}px`);
+    tip.style.setProperty('--_tip-y', `${below ? at.bottom - box.top + 6 : at.top - box.top - tip.offsetHeight - 6}px`);
+  }
+
+  // Mouse only: a tap selects, so touch never sees a tooltip it cannot dismiss.
+  private onGridPointerOver = (event: PointerEvent) => {
+    if (event.pointerType !== 'mouse') return;
+    this.showTip((event.target as HTMLElement)?.closest?.('.cal-day') as HTMLElement | null);
+  };
+
+  private onGridFocusIn = (event: FocusEvent) => {
+    const cell = (event.target as HTMLElement)?.closest?.('.cal-day') as HTMLElement | null;
+    if (cell?.matches?.(':focus-visible')) this.showTip(cell);
+    else this.hideTip();
+  };
+
+  private onGridLeave = () => this.hideTip();
+
   private onCellClick(date: string, rules: Availability) {
+    this.hideTip();
     if (this.disabled || monthOf(date) !== this.month || !isInRange(date, rules)) return;
 
     this.focusDate = date;
@@ -1002,10 +1055,21 @@ export class ShiftCalendar {
             </div>
           </div>
 
-          <div class="cal-body" data-switching={viewLeaving ? '' : undefined}>
+          <div
+            class="cal-body"
+            data-switching={viewLeaving ? '' : undefined}
+            onPointerOver={this.onGridPointerOver}
+            onPointerLeave={this.onGridLeave}
+            onFocusin={this.onGridFocusIn}
+            onFocusout={this.onGridLeave}
+          >
             {viewLeaving && this.renderView(viewLeaving, rules, meta, false)}
             {this.renderView(snapshot, rules, meta, true)}
           </div>
+
+          <span class="cal-tip" part="tooltip" aria-hidden="true" data-shown={this.tip.shown ? '' : undefined}>
+            {this.tip.text}
+          </span>
         </div>
       </Host>
     );

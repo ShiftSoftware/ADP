@@ -18,6 +18,8 @@
   --_z: var(--shift-popover-z-index, 2000);
   --_lift: var(--shift-popover-lift, 6px);
   --_scale: var(--shift-popover-scale, 0.96);
+  --_backdrop: var(--shift-popover-backdrop, rgba(15, 23, 42, 0.45));
+  --_backdrop-blur: var(--shift-popover-backdrop-blur, 4px);
   --_settle: var(--shift-popover-settle, var(--shift-settle, 320ms));
   --_ease: var(--shift-popover-ease, var(--shift-ease, cubic-bezier(0.2, 0, 0, 1)));
 
@@ -46,6 +48,43 @@
   :host([appearance='minimal'][color-scheme='auto']) {
     --_ap-popover-surface: #0f172a;
     --_ap-popover-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Behind a bottom sheet only: the page dims and softens as the sheet rises, and a tap on it is an outside tap. */
+.pop-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--_backdrop);
+  opacity: 0;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(0);
+  backdrop-filter: blur(0);
+  transition:
+    opacity var(--_settle) var(--_ease),
+    -webkit-backdrop-filter var(--_settle) var(--_ease),
+    backdrop-filter var(--_settle) var(--_ease);
+}
+
+.pop-backdrop[data-sheet] {
+  display: block;
+}
+
+.pop-backdrop[data-open] {
+  opacity: 1;
+  pointer-events: auto;
+  -webkit-backdrop-filter: blur(var(--_backdrop-blur));
+  backdrop-filter: blur(var(--_backdrop-blur));
+}
+
+:host([color-scheme='dark']) {
+  --_backdrop: var(--shift-popover-backdrop, rgba(2, 6, 23, 0.6));
+}
+
+@media (prefers-color-scheme: dark) {
+  :host([color-scheme='auto']) {
+    --_backdrop: var(--shift-popover-backdrop, rgba(2, 6, 23, 0.6));
   }
 }
 
@@ -110,8 +149,7 @@
   padding-block-end: env(safe-area-inset-bottom, 0px);
   border-block-end-width: 0;
   border-inline-width: 0;
-  border-end-start-radius: 0;
-  border-end-end-radius: 0;
+  border-radius: 0;
   opacity: 1;
   transform: translateY(100%);
 }
@@ -124,7 +162,8 @@
   The panel is the chrome; a calendar inside keeps its box and its size's width but draws none of its own.
   Declared from the shadow tree, these lose to anything the page sets on the calendar.
 */
-::slotted(shift-calendar) {
+::slotted(shift-calendar),
+::slotted(shift-booking-calendar) {
   --shift-calendar-surface: transparent;
   --shift-calendar-panel-border-width: 0px;
   --shift-calendar-shadow: none;
@@ -134,7 +173,18 @@
   margin-inline: auto;
 }
 
+/* A sheet is the width of the screen, so a picker in it is too: its grid, header, times and empty state spread across. */
+.pop-panel[data-sheet] ::slotted(shift-calendar),
+.pop-panel[data-sheet] ::slotted(shift-booking-calendar) {
+  --shift-calendar-max-inline-size: none;
+  --shift-booking-calendar-max-inline-size: none;
+  inline-size: 100%;
+  max-inline-size: none;
+  margin-inline: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .pop-backdrop,
   .pop-panel,
   .pop-panel[data-open] {
     transition: none;

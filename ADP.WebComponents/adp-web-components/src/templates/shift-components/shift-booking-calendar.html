@@ -53,6 +53,7 @@
       const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const DATA = {
         ready: 'booking-availability.json',
+        many: 'booking-availability-many.json',
         empty: 'booking-availability-empty.json',
         error: 'booking-availability-invalid.json',
         loading: 'booking-availability-hold.json',
@@ -74,11 +75,12 @@
           lang: 'HTML',
           code: () =>
             [
+              '<!-- the label and the status line are opt-in: show-label, show-status -->',
               '<!-- idle: an id is missing -->',
-              '<shift-booking-calendar calendar-api="…" company-id="1" department-id="showroom" brand-id="BRAND"></shift-booking-calendar>',
+              '<shift-booking-calendar show-label show-status calendar-api="…" company-id="1" department-id="showroom" brand-id="BRAND"></shift-booking-calendar>',
               '',
               '<!-- loading → ready, empty or error, from the endpoint -->',
-              '<shift-booking-calendar calendar-api="…" company-id="1" branch-id="42" department-id="showroom" brand-id="BRAND"></shift-booking-calendar>',
+              '<shift-booking-calendar show-label show-status calendar-api="…" company-id="1" branch-id="42" department-id="showroom" brand-id="BRAND"></shift-booking-calendar>',
             ].join('\n'),
         },
         counts: {
@@ -87,7 +89,6 @@
             [
               '<shift-booking-calendar',
               '  calendar-api="…" company-id="1" branch-id="42" department-id="showroom" brand-id="BRAND"',
-              '  slot-counts',
               '  hour-cycle="h12"',
               '></shift-booking-calendar>',
             ].join('\n'),
@@ -104,10 +105,55 @@
               '});',
             ].join('\n'),
         },
+        field: {
+          lang: 'HTML',
+          code: () =>
+            [
+              '<shift-input name="bookingDate" label="Date and time">',
+              '  <shift-booking-calendar',
+              '    slot="picker"',
+              '    calendar-api="…" company-id="1" branch-id="42" department-id="service-center" brand-id="BRAND"',
+              '    utc-offset="+03:00"',
+              '  ></shift-booking-calendar>',
+              '</shift-input>',
+              '',
+              '<!-- In a v1 form structure: { "name": "bookingDate", "type": "bookingCalendar", "calendarApi": "…", "departmentPreference": ["service-center"] } -->',
+            ].join('\n'),
+        },
+        empty: {
+          lang: 'HTML',
+          code: () =>
+            [
+              '<!-- The branch has no times: the month stays, greyed, under a message. show-empty-state="false" turns it off. -->',
+              '<shift-booking-calendar calendar-api="…" company-id="1" branch-id="42" department-id="service-center" brand-id="BRAND"></shift-booking-calendar>',
+            ].join('\n'),
+        },
+        trigger: {
+          lang: 'HTML',
+          code: () =>
+            [
+              '<button type="button" id="book">Book a time</button>',
+              '<shift-popover anchor="#book">',
+              '  <shift-booking-calendar calendar-api="…" company-id="1" branch-id="42" department-id="service-center" brand-id="BRAND"></shift-booking-calendar>',
+              '</shift-popover>',
+              '',
+              '<script type="module">',
+              "  const button = document.getElementById('book');",
+              "  const popover = document.querySelector('shift-popover');",
+              '',
+              "  button.addEventListener('click', () => popover.toggle());",
+              "  popover.addEventListener('pickerChange', ({ detail }) => {",
+              '    // { value: "2026-10-01T13:00:00+03:00", label: "Thu, 1 Oct 2026, 13:00", complete: true }',
+              '    if (detail.label) button.textContent = detail.label;',
+              '    if (detail.complete) popover.hide();',
+              '  });',
+              '<\/script>',
+            ].join('\n'),
+        },
         overrideHtml: {
           lang: 'HTML',
           code: () =>
-            '<shift-booking-calendar class="brand-booking" calendar-api="…" company-id="1" branch-id="42" department-id="showroom" brand-id="BRAND"></shift-booking-calendar>',
+            '<shift-booking-calendar class="brand-booking" show-label show-status calendar-api="…" company-id="1" branch-id="42" department-id="showroom" brand-id="BRAND"></shift-booking-calendar>',
         },
         overrideCss: {
           lang: 'CSS',
@@ -151,7 +197,11 @@
 
       window.bookingApiGroups = [
         { label: 'Branch & request', props: ['calendarApi', 'calendarApiVersion', 'companyId', 'branchId', 'departmentId', 'brandId', 'today'] },
-        { label: 'Days & times', props: ['disabledWeekdays', 'disabledDates', 'slotCounts', 'hourCycle', 'defaultValue'] },
+        {
+          label: 'Days & times',
+          props: ['disabledWeekdays', 'disabledDates', 'slotCounts', 'fewSlots', 'dayTooltips', 'showToday', 'hourCycle', 'defaultValue'],
+        },
+        { label: 'Picker', props: ['value', 'utcOffset', 'showLabel', 'showStatus', 'showEmptyState'] },
         { label: 'Form field', props: ['name', 'form', 'label', 'localization', 'isRequired', 'isDisabled', 'wrapperId', 'wrapperClass'] },
         { label: 'Appearance', props: ['appearance', 'colorScheme', 'size'] },
         { label: 'Localization', props: ['language'] },
@@ -459,7 +509,10 @@
         today: TODAY,
         disabledWeekdays: [],
         disabledDates: '',
-        slotCounts: false,
+        slotCounts: true,
+        dayTooltips: true,
+        fewSlots: 3,
+        showToday: true,
         hourCycle: 'h23',
         defaultValue: '',
         name: 'bookingCalendar',
@@ -469,6 +522,9 @@
         isDisabled: false,
         wrapperId: '',
         wrapperClass: '',
+        showLabel: false,
+        showStatus: false,
+        showEmptyState: true,
         size: 'md',
         scheme: siteScheme(),
         language: siteLanguage(),
@@ -476,8 +532,16 @@
 
       const GROUPS = [
         { id: 'request', label: 'Branch & request', fields: ['data', 'calendarApiVersion', 'companyId', 'branchId', 'departmentId', 'brandId', 'today'] },
-        { id: 'days', label: 'Days & times', fields: ['disabledWeekdays', 'disabledDates', 'slotCounts', 'hourCycle', 'defaultValue'] },
-        { id: 'field', label: 'Form field', fields: ['name', 'label', 'localizedLabel', 'isRequired', 'isDisabled', 'wrapperId', 'wrapperClass'] },
+        {
+          id: 'days',
+          label: 'Days & times',
+          fields: ['disabledWeekdays', 'disabledDates', 'slotCounts', 'fewSlots', 'dayTooltips', 'showToday', 'hourCycle', 'defaultValue'],
+        },
+        {
+          id: 'field',
+          label: 'Form field',
+          fields: ['name', 'label', 'localizedLabel', 'showLabel', 'showStatus', 'showEmptyState', 'isRequired', 'isDisabled', 'wrapperId', 'wrapperClass'],
+        },
       ];
 
       const stamp = () => {
@@ -485,6 +549,17 @@
 
         return `${now.toTimeString().slice(0, 8)}.${String(now.getMilliseconds()).padStart(3, '0')}`;
       };
+
+      window.triggerExample = () => ({
+        label: '',
+        value: '',
+
+        pick(detail) {
+          this.label = detail.label;
+          this.value = detail.value;
+          if (detail.complete) this.$refs.popover.hide();
+        },
+      });
 
       window.playground = () => ({
         weekdayNames: WEEKDAYS,
@@ -545,6 +620,8 @@
           await subject.componentOnReady?.();
 
           subject.addEventListener('slotChange', event => this.log('slotChange', JSON.stringify(event.detail)));
+          subject.addEventListener('pickerChange', event => this.log('pickerChange', JSON.stringify(event.detail)));
+          subject.addEventListener('pickerStatus', event => this.log('pickerStatus', JSON.stringify(event.detail)));
 
           this.apply();
           this.$watch('form', () => this.apply());
@@ -566,6 +643,12 @@
           subject.disabledWeekdays = form.disabledWeekdays.map(Number);
           subject.disabledDates = list(form.disabledDates);
           subject.slotCounts = form.slotCounts;
+          subject.dayTooltips = form.dayTooltips;
+          subject.fewSlots = Number(form.fewSlots);
+          subject.showToday = form.showToday;
+          subject.showLabel = form.showLabel;
+          subject.showStatus = form.showStatus;
+          subject.showEmptyState = form.showEmptyState;
           subject.hourCycle = form.hourCycle;
           subject.defaultValue = form.defaultValue || undefined;
           subject.name = form.name || 'bookingCalendar';
@@ -600,13 +683,19 @@
           add('disabled-weekdays', form.disabledWeekdays.join(','));
           add('disabled-dates', list(form.disabledDates).join(', '));
           if (form.hourCycle !== 'h23') add('hour-cycle', form.hourCycle);
+          if (!form.slotCounts) add('slot-counts', 'false');
+          if (!form.dayTooltips) add('day-tooltips', 'false');
+          if (!form.showEmptyState) add('show-empty-state', 'false');
+          if (Number(form.fewSlots) !== 3) add('few-slots', form.fewSlots);
+          if (!form.showToday) add('show-today', 'false');
           add('default-value', form.defaultValue);
           if (form.name !== 'bookingCalendar') add('name', form.name);
           add('label', form.label);
           add('wrapper-id', form.wrapperId);
           add('wrapper-class', form.wrapperClass);
           for (const [flag, name] of [
-            ['slotCounts', 'slot-counts'],
+            ['showLabel', 'show-label'],
+            ['showStatus', 'show-status'],
             ['isRequired', 'is-required'],
             ['isDisabled', 'is-disabled'],
           ]) {
@@ -715,7 +804,10 @@
               <article class="grid gap-3 @3xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)] @3xl:gap-6" x-data="statesExample()">
                 <div class="flex flex-col gap-1 @3xl:col-span-2">
                   <h3 class="text-lg font-semibold">2 · States</h3>
-                  <p class="text-base-content/70 text-sm">Switch the state: the box keeps its size in every state and view.</p>
+                  <p class="text-base-content/70 text-sm">
+                    Switch the state: the box keeps its size in every state and view. This one opts in to the label and the status line (<code>show-label</code>,
+                    <code>show-status</code>); both are off by default.
+                  </p>
                 </div>
                 <div class="flex min-w-0 flex-col gap-3">
                   <div class="seg self-start" role="radiogroup" aria-label="State" data-state-switch>
@@ -726,6 +818,8 @@
                   <div class="frame">
                     <shift-booking-calendar
                       id="states-demo"
+                      show-label
+                      show-status
                       company-id="1"
                       department-id="service-center"
                       brand-id="BRAND"
@@ -745,8 +839,11 @@
 
               <article class="grid gap-3 @3xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)] @3xl:gap-6">
                 <div class="flex flex-col gap-1 @3xl:col-span-2">
-                  <h3 class="text-lg font-semibold">3 · Slot counts and a 12-hour clock</h3>
-                  <p class="text-base-content/70 text-sm">Each open day shows how many times it has; times read 9:00 AM.</p>
+                  <h3 class="text-lg font-semibold">3 · A 12-hour clock</h3>
+                  <p class="text-base-content/70 text-sm">
+                    Each open day shows how many times it has (amber when three or fewer are left); hover or focus a day for its hours. Times read 9:00 AM. The default has no label
+                    and no status line.
+                  </p>
                 </div>
                 <div class="frame">
                   <shift-booking-calendar
@@ -756,7 +853,6 @@
                     department-id="service-center"
                     brand-id="BRAND"
                     today="2026-09-27"
-                    slot-counts
                     hour-cycle="h12"
                   ></shift-booking-calendar>
                 </div>
@@ -805,6 +901,8 @@
                 <div class="frame">
                   <shift-booking-calendar
                     class="brand-booking"
+                    show-label
+                    show-status
                     calendar-api="booking-availability.json"
                     company-id="1"
                     branch-id="42"
@@ -826,6 +924,99 @@
                   </template>
                 </div>
               </article>
+
+              <article class="grid gap-3 @3xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)] @3xl:gap-6" x-data="{ detail: '' }">
+                <div class="flex flex-col gap-1 @3xl:col-span-2">
+                  <h3 class="text-lg font-semibold">6 · In a shift-input</h3>
+                  <p class="text-base-content/70 text-sm">
+                    Put the calendar in the <code>picker</code> slot of a <code>shift-input</code>: the field opens it in its popover, shows the picked slot, submits its value (ISO
+                    with an offset), closes on a time and clears when the branch changes. Each day shows its count of times; hover or focus a day for its hours. This data has days
+                    with many times; the list scrolls inside the box.
+                  </p>
+                </div>
+                <div class="flex min-w-0 flex-col gap-2">
+                  <shift-input id="picker-field" name="bookingDate" label="Date and time" @value-change.camel="detail = JSON.stringify($event.detail)">
+                    <shift-booking-calendar
+                      slot="picker"
+                      calendar-api="booking-availability-many.json"
+                      company-id="1"
+                      branch-id="42"
+                      department-id="service-center"
+                      brand-id="BRAND"
+                      today="2026-09-27"
+                      utc-offset="+03:00"
+                      hour-cycle="h12"
+                    ></shift-booking-calendar>
+                  </shift-input>
+                  <p class="text-base-content/70 min-h-4 font-mono text-xs break-all" dir="ltr" x-text="detail"></p>
+                </div>
+                <figure class="border-base-300 min-w-0 self-start overflow-hidden rounded-lg border" x-data="codeBlock('field')">
+                  <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                    <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
+                    <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
+                  </figcaption>
+                  <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
+                </figure>
+              </article>
+
+              <article class="grid gap-3 @3xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)] @3xl:gap-6" x-data="triggerExample()">
+                <div class="flex flex-col gap-1 @3xl:col-span-2">
+                  <h3 class="text-lg font-semibold">7 · Any trigger</h3>
+                  <p class="text-base-content/70 text-sm">
+                    A button and a <code>shift-popover</code> hold the same calendar. <code>pickerChange</code> gives the value and its label; close on <code>complete</code>.
+                  </p>
+                </div>
+                <div class="flex min-w-0 flex-col gap-2">
+                  <button type="button" id="picker-trigger" class="btn btn-sm self-start" x-text="label || 'Book a time'" @click="$refs.popover.toggle()"></button>
+                  <shift-popover x-ref="popover" anchor="#picker-trigger" label="Book a time">
+                    <shift-booking-calendar
+                      calendar-api="booking-availability.json"
+                      company-id="1"
+                      branch-id="42"
+                      department-id="service-center"
+                      brand-id="BRAND"
+                      today="2026-09-27"
+                      @picker-change.camel="pick($event.detail)"
+                    ></shift-booking-calendar>
+                  </shift-popover>
+                  <p class="text-base-content/70 min-h-4 font-mono text-xs break-all" dir="ltr" x-text="value"></p>
+                </div>
+                <figure class="border-base-300 min-w-0 self-start overflow-hidden rounded-lg border" x-data="codeBlock('trigger')">
+                  <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                    <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
+                    <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
+                  </figcaption>
+                  <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
+                </figure>
+              </article>
+
+              <article class="grid gap-3 @3xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)] @3xl:gap-6">
+                <div class="flex flex-col gap-1 @3xl:col-span-2">
+                  <h3 class="text-lg font-semibold">8 · No available slots</h3>
+                  <p class="text-base-content/70 text-sm">
+                    A branch with no times keeps its month on screen, every day greyed, under a message; month navigation still works. <code>show-empty-state="false"</code> turns
+                    the message off.
+                  </p>
+                </div>
+                <div class="frame">
+                  <shift-booking-calendar
+                    id="empty-demo"
+                    calendar-api="booking-availability-empty.json"
+                    company-id="1"
+                    branch-id="42"
+                    department-id="service-center"
+                    brand-id="BRAND"
+                    today="2026-09-27"
+                  ></shift-booking-calendar>
+                </div>
+                <figure class="border-base-300 min-w-0 self-start overflow-hidden rounded-lg border" x-data="codeBlock('empty')">
+                  <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                    <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="lang"></span>
+                    <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copy()" x-text="copied ? 'Copied' : 'Copy'"></button>
+                  </figcaption>
+                  <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="html"></code></pre>
+                </figure>
+              </article>
             </section>
 
             <section
@@ -838,7 +1029,8 @@
               <header>
                 <h2 class="text-3xl font-bold tracking-tight">Playground</h2>
                 <p class="lede text-base-content/70 mt-2 max-w-[70ch]">
-                  Every prop, live. The toolbar sets the look and the language; the inspector sets everything else. <code>form</code> takes a form hook from script, so it is not set here.
+                  Every prop, live. The toolbar sets the look and the language; the inspector sets everything else. <code>form</code> takes a form hook from script, so it is not
+                  set here.
                 </p>
               </header>
 
@@ -989,6 +1181,11 @@
                                     ><input class="input input-xs input-bordered" type="text" x-model.debounce.300ms="form.disabledDates" placeholder="2026-10-06, …"
                                   /></label>
                                   <label class="studio-row"><span>slotCounts</span><input type="checkbox" class="toggle toggle-xs" x-model="form.slotCounts" /></label>
+                                  <label class="studio-row"><span>dayTooltips</span><input type="checkbox" class="toggle toggle-xs" x-model="form.dayTooltips" /></label>
+                                  <label class="studio-row"
+                                    ><span>fewSlots</span><input class="input input-xs input-bordered" type="number" min="0" x-model.number="form.fewSlots"
+                                  /></label>
+                                  <label class="studio-row"><span>showToday</span><input type="checkbox" class="toggle toggle-xs" x-model="form.showToday" /></label>
                                   <label class="studio-row"
                                     ><span>hourCycle</span
                                     ><select class="select select-xs select-bordered" x-model="form.hourCycle">
@@ -1012,6 +1209,9 @@
                                     ><span>localization <small>label, this language</small></span
                                     ><input class="input input-xs input-bordered" type="text" x-model.debounce.300ms="form.localizedLabel"
                                   /></label>
+                                  <label class="studio-row"><span>showLabel</span><input type="checkbox" class="toggle toggle-xs" x-model="form.showLabel" /></label>
+                                  <label class="studio-row"><span>showStatus</span><input type="checkbox" class="toggle toggle-xs" x-model="form.showStatus" /></label>
+                                  <label class="studio-row"><span>showEmptyState</span><input type="checkbox" class="toggle toggle-xs" x-model="form.showEmptyState" /></label>
                                   <label class="studio-row"><span>isRequired</span><input type="checkbox" class="toggle toggle-xs" x-model="form.isRequired" /></label>
                                   <label class="studio-row"><span>isDisabled</span><input type="checkbox" class="toggle toggle-xs" x-model="form.isDisabled" /></label>
                                   <label class="studio-row"
@@ -1369,7 +1569,6 @@
                 </div>
               </template>
             </section>
-
           </div>
 
           <div data-harness-rail x-cloak></div>

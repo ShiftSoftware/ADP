@@ -674,7 +674,7 @@
             "mutable": false,
             "required": false,
             "reflect": false,
-            "description": "Per-day extras keyed by YYYY-MM-DD: { badge?: short text, tone?: neutral | info | success | warning | danger, description?: read with the date by screen readers }. Badge digits are written in the calendar’s numerals. Object or JSON string."
+            "description": "Per-day extras keyed by YYYY-MM-DD: { badge?: short text, tone?: neutral | info | success | warning | danger, tooltip?: text shown over the day on mouse hover or keyboard focus (never on touch), description?: read with the date by screen readers }. Badge digits are written in the calendar’s numerals. Object or JSON string."
           },
           {
             "name": "disableViews",
@@ -876,6 +876,11 @@
             "description": "Detail { month, firstDate, lastDate }. Fires whenever the days view shows another month, except when the host sets month. Use it to load that month’s data."
           },
           {
+            "name": "pickerChange",
+            "type": "PickerChangeDetail",
+            "description": "The headless picker contract. Detail { value: YYYY-MM-DD, label: the date in words, complete: true }. Fires with dateChange; a host (shift-input with the calendar in its picker slot, or a button with shift-popover) shows label and closes on complete."
+          },
+          {
             "name": "viewChange",
             "type": "CalendarViewChangeDetail",
             "description": "Detail { view: days | months | years }. Fires when the view changes. Switching views never changes value."
@@ -922,7 +927,8 @@
           { "name": "year", "description": "A year in the years view. States beside it: year-selected, year-today, year-disabled." },
           { "name": "year-selected", "description": "The year shown in the days view." },
           { "name": "year-today", "description": "The current year, with highlightToday." },
-          { "name": "year-disabled", "description": "A year entirely outside min/max." }
+          { "name": "year-disabled", "description": "A year entirely outside min/max." },
+          { "name": "tooltip", "description": "The one tooltip over the hovered or keyboard-focused day." }
         ],
         "cssProperties": [
           { "name": "--shift-calendar-accent", "default": "var(--shift-accent, var(--_ap-accent, #1e293b))", "description": "Colour · selected day fill" },
@@ -952,7 +958,6 @@
           { "name": "--shift-calendar-day-hover-bg", "default": "var(--_ap-hover-bg, #f1f5f9)", "description": "Colour · day background on hover" },
           { "name": "--shift-calendar-day-hover-ink", "default": "var(--_ap-hover-ink, #1e293b)", "description": "Colour · day number on hover" },
           { "name": "--shift-calendar-day-hover-line", "default": "var(--shift-line-strong, var(--_ap-hover-line, #94a3b8))", "description": "Colour · day outline on hover" },
-          { "name": "--shift-calendar-day-hover-scale", "default": "min(var(--_ap-hover-scale, 1.08), var(--_sz-hover-cap, 1.08))", "description": "Size · day lift on hover" },
           { "name": "--shift-calendar-day-ink", "default": "var(--shift-ink, var(--_ap-ink, #1e293b))", "description": "Colour · day numbers" },
           { "name": "--shift-calendar-day-line", "default": "var(--_ap-cell-line, transparent)", "description": "Colour · day cell outline at rest" },
           { "name": "--shift-calendar-day-max-inline-size", "default": "none", "description": "Size · widest a day cell may get" },
@@ -1051,6 +1056,14 @@
           { "name": "--shift-calendar-tone-success-ink", "default": "var(--_ap-tone-success-ink, #216b44)", "description": "Badge · success text" },
           { "name": "--shift-calendar-tone-warning-bg", "default": "var(--_ap-tone-warning-bg, #fff7e6)", "description": "Badge · warning background" },
           { "name": "--shift-calendar-tone-warning-ink", "default": "var(--_ap-tone-warning-ink, #8a5a12)", "description": "Badge · warning text" },
+          {
+            "name": "--shift-calendar-tooltip-font-size",
+            "default": "var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px)))",
+            "description": "Type · tooltip size"
+          },
+          { "name": "--shift-calendar-tooltip-ink", "default": "var(--_ap-tooltip-ink, #f8fafc)", "description": "Colour · tooltip text" },
+          { "name": "--shift-calendar-tooltip-radius", "default": "6px", "description": "Shape · tooltip radius" },
+          { "name": "--shift-calendar-tooltip-surface", "default": "var(--_ap-tooltip-surface, #1e293b)", "description": "Colour · tooltip background" },
           {
             "name": "--shift-calendar-weekday-font-size",
             "default": "calc(var(--shift-font-size-sm, calc(var(--_ap-font-size-sm, 12px) + var(--_sz-font, 0px))) - 1px)",
@@ -1443,6 +1456,16 @@
             "description": "Company id of the branch. The field stays idle until company, branch, department and brand are all set."
           },
           {
+            "name": "dayTooltips",
+            "attribute": "day-tooltips",
+            "type": "boolean",
+            "default": "true",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "On mouse hover or keyboard focus, a day shows its count and its first and last time (e.g. 14 times · 7:30 AM – 10:30 PM); the same text is in its accessible description and in the times header. On by default."
+          },
+          {
             "name": "defaultValue",
             "attribute": "default-value",
             "type": "string",
@@ -1481,6 +1504,16 @@
             "required": false,
             "reflect": false,
             "description": "Weekdays the deployment never books, 0 Sunday … 6 Saturday, on top of what the endpoint returns."
+          },
+          {
+            "name": "fewSlots",
+            "attribute": "few-slots",
+            "type": "number",
+            "default": "3",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "At or below this many times a day’s count badge takes the warning tone. Default 3."
           },
           {
             "name": "form",
@@ -1561,6 +1594,46 @@
             "description": "Field name in the form. Default bookingCalendar."
           },
           {
+            "name": "showEmptyState",
+            "attribute": "show-empty-state",
+            "type": "boolean",
+            "default": "true",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "When the branch has no times at all, a soft veil over the greyed month with an illustration and “No available slots”, announced politely. On by default; the header keeps working."
+          },
+          {
+            "name": "showLabel",
+            "attribute": "show-label",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Shows the label above the calendar. Off by default; a host field shows its own."
+          },
+          {
+            "name": "showStatus",
+            "attribute": "show-status",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Shows the status line under the calendar (idle, loading, empty, error, pick a day or a time, selected, invalid). Off by default; pickerStatus carries the same messages to a host."
+          },
+          {
+            "name": "showToday",
+            "attribute": "show-today",
+            "type": "boolean",
+            "default": "true",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Shows the calendar’s Today button. On by default; a branch that never books today can turn it off."
+          },
+          {
             "name": "size",
             "attribute": "size",
             "type": "\"lg\" | \"md\" | \"sm\" | \"xl\" | \"xs\"",
@@ -1574,11 +1647,11 @@
             "name": "slotCounts",
             "attribute": "slot-counts",
             "type": "boolean",
-            "default": "false",
+            "default": "true",
             "mutable": false,
             "required": false,
             "reflect": false,
-            "description": "Shows each open day’s number of times as a badge."
+            "description": "Shows each open day’s number of times as a badge under the number, in the warning tone when it has fewSlots or fewer. On by default."
           },
           {
             "name": "today",
@@ -1589,6 +1662,26 @@
             "required": false,
             "reflect": false,
             "description": "YYYY-MM-DD that stands in for today: the request starts here. Empty: the visitor’s local date."
+          },
+          {
+            "name": "utcOffset",
+            "attribute": "utc-offset",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Offset for the picked slot's value, e.g. +03:00; the browser's offset for that time when unset."
+          },
+          {
+            "name": "value",
+            "attribute": "value",
+            "type": "string",
+            "default": "''",
+            "mutable": true,
+            "required": false,
+            "reflect": false,
+            "description": "The picked slot as ISO with an offset (the picker contract). Settable: a slot the branch has is chosen, empty clears."
           },
           {
             "name": "wrapperClass",
@@ -1612,6 +1705,7 @@
           }
         ],
         "methods": [
+          { "name": "clear", "parameters": "() => Promise<void>", "returns": "Promise<void>", "description": "Clears the chosen day and time without reloading." },
           {
             "name": "refresh",
             "parameters": "() => Promise<void>",
@@ -1626,6 +1720,16 @@
           }
         ],
         "events": [
+          {
+            "name": "pickerChange",
+            "type": "PickerChangeDetail",
+            "description": "The headless picker contract. Detail { value: the slot as ISO with an offset (utcOffset, else the browser's), label: the localized day and time, complete }. complete is true when a time is picked; a preset resolved, a kept time or a cleared slot (branch changed, value emptied) fire with complete false."
+          },
+          {
+            "name": "pickerStatus",
+            "type": "PickerStatusDetail",
+            "description": "Detail { text, busy }. The localized loading or failure message a host shows or announces (busy while loading); empty when ready, idle or empty — empty is shown inside the picker."
+          },
           {
             "name": "slotChange",
             "type": "BranchSlotSelection",
@@ -1650,7 +1754,9 @@
           { "name": "status-text", "description": "The text in the status row. status-error sits beside it on the error message." },
           { "name": "status-error", "description": "The load error text in the status row." },
           { "name": "retry", "description": "The Try again button." },
-          { "name": "error", "description": "The validation message, in the status row." }
+          { "name": "error", "description": "The validation message, in the status row." },
+          { "name": "times-summary", "description": "The day’s count and time range under the date in the times header." },
+          { "name": "empty", "description": "The empty-state veil over the grid (illustration and message)." }
         ],
         "cssProperties": [
           {
@@ -1673,6 +1779,12 @@
           },
           { "name": "--shift-booking-calendar-danger", "default": "var(--shift-danger, var(--_ap-danger, #dc2626))", "description": "Colour · required mark, errors" },
           { "name": "--shift-booking-calendar-ease", "default": "var(--shift-ease, ease)", "description": "Motion · easing of the view switch and messages" },
+          { "name": "--shift-booking-calendar-empty-art-size", "default": "calc(56px * var(--_sz-control, 1))", "description": "Size · the empty-state illustration" },
+          {
+            "name": "--shift-booking-calendar-empty-veil",
+            "default": "color-mix(in srgb, var(--shift-surface, var(--_ap-panel-surface, #ffffff)) 72%, transparent)",
+            "description": "Colour · the translucent layer over the greyed grid when there are no times"
+          },
           { "name": "--shift-booking-calendar-focus-halo", "default": "var(--_ap-focus-halo, transparent)", "description": "Focus · halo colour around a focused button" },
           { "name": "--shift-booking-calendar-focus-halo-width", "default": "var(--_ap-focus-halo-width, 0px)", "description": "Focus · halo width" },
           {
@@ -1866,9 +1978,20 @@
         "dependencies": ["shift-popover-panel", "shift-portal"],
         "parts": [
           { "name": "panel", "description": "The portaled panel. Style it as shift-popover-panel::part(panel), or through a class given to the popover." },
-          { "name": "sheet", "description": "State part beside panel while it is a bottom sheet (viewport under 600px)." }
+          { "name": "sheet", "description": "State part beside panel while it is a bottom sheet (viewport under 600px)." },
+          { "name": "backdrop", "description": "The overlay behind a bottom sheet; tapping it closes the sheet. Sheet mode only." }
         ],
         "cssProperties": [
+          {
+            "name": "--shift-popover-backdrop",
+            "default": "rgba(15, 23, 42, 0.45)",
+            "description": "Colour · the overlay behind a bottom sheet (phones); dark in the dark scheme"
+          },
+          {
+            "name": "--shift-popover-backdrop-blur",
+            "default": "4px",
+            "description": "Effect · how much the page behind a bottom sheet blurs; none where backdrop-filter is unsupported"
+          },
           { "name": "--shift-popover-border-width", "default": "var(--_ap-panel-border-width, 1px)", "description": "Shape · panel border width" },
           { "name": "--shift-popover-ease", "default": "var(--shift-ease, cubic-bezier(0.2, 0, 0, 1))", "description": "Motion · easing of open and close" },
           { "name": "--shift-popover-lift", "default": "6px", "description": "Motion · how far the panel travels as it opens" },
@@ -2348,7 +2471,7 @@
             "description": "Detail { value }. Fires when the committed value changes: typed text read on blur or Enter, a day chosen, or cleared. Empty when typed text is refused."
           }
         ],
-        "dependencies": [],
+        "dependencies": ["shift-popover"],
         "parts": [
           { "name": "root", "description": "The field box." },
           { "name": "label", "description": "The label." },
@@ -2756,7 +2879,6 @@
           { "name": "--shift-day-strip-day-hover-bg", "default": "var(--_ap-hover-bg, #f1f5f9)", "description": "Colour · card background on hover" },
           { "name": "--shift-day-strip-day-hover-ink", "default": "var(--_ap-hover-ink, #1e293b)", "description": "Colour · card text on hover" },
           { "name": "--shift-day-strip-day-hover-line", "default": "var(--shift-line-strong, var(--_ap-hover-line, #94a3b8))", "description": "Colour · card outline on hover" },
-          { "name": "--shift-day-strip-day-hover-scale", "default": "min(var(--_ap-hover-scale, 1.08), var(--_sz-hover-cap, 1.08))", "description": "Size · card lift on hover" },
           { "name": "--shift-day-strip-day-line", "default": "var(--shift-line, var(--_ap-line, #e2e8f0))", "description": "Colour · card outline at rest" },
           { "name": "--shift-day-strip-day-line-height", "default": "1.25", "description": "Type · day number line height" },
           {

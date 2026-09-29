@@ -205,6 +205,19 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
     return <branch-date-picker {...props} {...target} form={form} key={props?.name} language={language} calendarApi={props?.calendarApi} isDisabled={!hasBranch} />;
   },
 
+  bookingCalendar: ({ form, language, props }) => {
+    const { hasBranch, ...target } = resolveBranchTarget({ form, props });
+    const options = ['calendarApi', 'calendarApiVersion', 'utcOffset', 'hourCycle', 'today', 'disabledDates', 'disabledWeekdays', 'slotCounts', 'dayTooltips', 'fewSlots', 'showToday'];
+    // Only what the structure sets, so the calendar keeps its own defaults for the rest.
+    const picker = Object.fromEntries(options.filter(key => props?.[key] !== undefined).map(key => [key, props[key]]));
+
+    return (
+      <shift-input {...props} form={form} key={props?.name} language={language} isDisabled={!hasBranch}>
+        <shift-booking-calendar {...picker} {...target} slot="picker" key="picker" />
+      </shift-input>
+    );
+  },
+
   time: ({ language, props }) => {
     const fetcher: FormSelectFetcher = async (): Promise<FormSelectItem[]> => {
       const options: FormSelectItem[] = [];

@@ -8,5 +8,7 @@
   "unavailable": "{date} can’t be chosen",
   "day": "d",
   "month": "m",
-  "year": "y"
+  "year": "y",
+  "open": "Open",
+  "required": "This field is required"
 }

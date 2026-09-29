@@ -8,5 +8,7 @@
   "unavailable": "لا يمكن اختيار {date}",
   "day": "ي",
   "month": "ش",
-  "year": "س"
+  "year": "س",
+  "open": "فتح",
+  "required": "هذا الحقل مطلوب"
 }

@@ -8,9 +8,10 @@ import type { LanguageKeys } from '~features/multi-lingual';
 import { ChevronLeftIcon } from '~assets/chevron-left-icon';
 
 import '~lib/middleware';
-import { BookingAvailability, BookingDay, CalendarApiVersion, calendarApiVersion, createAvailabilityLoader, slotValue } from '~lib/booking-availability';
+import { BookingAvailability, BookingDay, CalendarApiVersion, calendarApiVersion, createAvailabilityLoader, slotIso, slotValue } from '~lib/booking-availability';
 import { blockReason, buildAvailability } from '~lib/calendar-availability';
 import { dateParts, monthOf, weekdayOf } from '~lib/calendar-date';
+import type { PickerChangeDetail, PickerStatusDetail } from '~lib/picker';
 
 import { y } from '../../forms/defaults/validation';
 import type { BranchSlotSelection } from '../branch-slot-picker';
@@ -26,6 +27,8 @@ const MESSAGES = ['idle', 'loading', 'empty', 'error', 'pickDay', 'pickTime', 's
 type Message = (typeof MESSAGES)[number];
 
 type Frame = Record<string, string>;
+
+const localSlot = (value: string) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.exec(value || '')?.[0] ?? '';
 
 @Component({
   shadow: { delegatesFocus: true },
@@ -48,8 +51,16 @@ export class ShiftBookingCalendar implements FormElement {
 
   @Prop() disabledWeekdays?: string | number[];
   @Prop() disabledDates?: string | string[];
-  @Prop() slotCounts: boolean = false;
+  @Prop() slotCounts: boolean = true;
+  @Prop() dayTooltips: boolean = true;
+  @Prop() fewSlots: number = 3;
+  @Prop() showToday: boolean = true;
   @Prop() hourCycle: HourCycle = 'h23';
+  @Prop() utcOffset?: string;
+  @Prop({ mutable: true }) value: string = '';
+  @Prop() showLabel: boolean = false;
+  @Prop() showStatus: boolean = false;
+  @Prop() showEmptyState: boolean = true;
 
   @Prop() label?: string;
   @Prop() wrapperId?: string;
@@ -65,6 +76,8 @@ export class ShiftBookingCalendar implements FormElement {
   @Prop({ reflect: true }) size: CalendarSize = 'md';
 
   @Event({ bubbles: true, composed: true }) slotChange!: EventEmitter<BranchSlotSelection>;
+  @Event({ bubbles: true, composed: true }) pickerChange!: EventEmitter<PickerChangeDetail>;
+  @Event({ bubbles: true, composed: true }) pickerStatus!: EventEmitter<PickerStatusDetail>;
 
   @State() status: BookingStatus = 'idle';
   @State() availability: BookingAvailability | null = null;
@@ -84,10 +97,28 @@ export class ShiftBookingCalendar implements FormElement {
   private observedRoot: HTMLElement | null = null;
   private labelId = `shift-booking-calendar-label-${Math.random().toString(36).slice(2, 10)}`;
   private titleId = `shift-booking-calendar-title-${Math.random().toString(36).slice(2, 10)}`;
+  private emitted = '';
+  private completing = false;
+  private statusText = '';
+  private detached = false;
+
+  connectedCallback() {
+    // A host that moves the picker (into a popover) disconnects it; a request cut off by the move is asked again.
+    if (!this.detached) return;
+    this.detached = false;
+    this.watchFrame();
+    if (this.status === 'loading') this.queueLoad();
+  }
 
   componentWillLoad() {
     this.form?.subscribe(this.name, this);
+    if (this.value) this.defaultValue = localSlot(this.value);
+    this.emitted = this.value;
     this.load();
+  }
+
+  componentDidLoad() {
+    this.emitStatus();
   }
 
   componentDidRender() {
@@ -109,6 +140,7 @@ export class ShiftBookingCalendar implements FormElement {
   }
 
   disconnectedCallback() {
+    this.detached = true;
     this.loader.cancel();
     this.form?.unsubscribe(this.name);
     clearTimeout(this.timeTimer);
@@ -142,9 +174,45 @@ export class ShiftBookingCalendar implements FormElement {
     }
   }
 
+  @Watch('status')
+  onStatusChange() {
+    this.emitStatus();
+  }
+
+  @Watch('language')
+  onLanguageChange() {
+    this.emitStatus();
+    if (this.emitted) this.emitPicker(true);
+  }
+
+  @Watch('selectedRaw')
+  onSelectionChange() {
+    this.emitPicker();
+  }
+
+  @Watch('value')
+  onValueChange(next: string) {
+    if ((next || '') === this.emitted) return;
+
+    this.emitted = next || '';
+    this.defaultValue = next ? localSlot(next) : '';
+    if (!next) {
+      this.selectedRaw = '';
+      this.selectedDate = '';
+      this.closeTimes();
+      return;
+    }
+    this.applyPreset();
+  }
+
   @Method()
   async refresh() {
     this.load();
+  }
+
+  @Method()
+  async clear() {
+    this.reset('');
   }
 
   @Method()
@@ -252,18 +320,64 @@ export class ShiftBookingCalendar implements FormElement {
 
     this.availability = outcome.availability;
 
-    const preset = this.defaultValue ? this.availability.days.find(day => this.defaultValue.startsWith(day.date) && this.isOpen(day.date)) : undefined;
-    const opening = preset ?? this.firstOpenDay();
-
-    if (!opening) {
+    if (!this.firstOpenDay()) {
       this.status = 'empty';
       return;
     }
 
+    this.applyPreset();
+    this.status = 'ready';
+  }
+
+  private applyPreset() {
+    if (!this.availability) return;
+
+    const preset = this.defaultValue ? this.availability.days.find(day => this.defaultValue.startsWith(day.date) && this.isOpen(day.date)) : undefined;
+    const opening = preset ?? this.firstOpenDay();
+
     this.selectedDate = preset?.date ?? '';
     this.selectedRaw = preset?.times.find(time => slotValue(time.raw) === this.defaultValue)?.raw ?? '';
-    this.month = monthOf(opening.date);
-    this.status = 'ready';
+    if (opening) this.month = monthOf(opening.date);
+    this.emitPicker(!!this.selectedRaw);
+  }
+
+  private emitPicker(force = false) {
+    const local = this.selectedRaw ? slotValue(this.selectedRaw) : '';
+    const value = slotIso(local, this.utcOffset);
+    const complete = this.completing;
+
+    this.completing = false;
+    if (value === this.emitted && !complete && !force) return;
+
+    this.emitted = value;
+    this.value = value;
+    this.pickerChange.emit({ value, label: this.slotLabel(local), complete });
+  }
+
+  private emitStatus() {
+    const strings = this.strings;
+    // Empty is said inside the picker, over its greyed month; a host's hint line only hears loading and failure.
+    const text = this.status === 'loading' || this.status === 'error' ? strings[this.status] : '';
+    if (text === this.statusText) return;
+
+    this.statusText = text;
+    this.pickerStatus.emit({ text, busy: this.status === 'loading' });
+  }
+
+  private slotLabel(local: string): string {
+    if (!local) return '';
+
+    const locale = this.locale;
+    const [date, time] = local.split('T');
+    const [year, month, day] = dateParts(date);
+
+    return fill(this.strings.slotLabel, {
+      weekday: locale.strings.weekdaysShort[weekdayOf(date)],
+      day: formatDigits(day, locale.numerals),
+      month: this.strings.monthsShort[month - 1],
+      year: formatDigits(year, locale.numerals),
+      time: formatTime(time, this.hourCycle, locale.numerals, this.strings),
+    });
   }
 
   private openTimes() {
@@ -309,6 +423,8 @@ export class ShiftBookingCalendar implements FormElement {
     this.openTimes();
   };
 
+  private stop = (event: Event) => event.stopPropagation();
+
   private onMonthChange = (event: CustomEvent<{ month: string }>) => {
     event.stopPropagation();
     this.month = event.detail.month;
@@ -322,6 +438,7 @@ export class ShiftBookingCalendar implements FormElement {
 
     const before = this.timeText();
 
+    this.completing = true;
     this.selectedRaw = time.raw;
     this.rollTime(before);
     this.commit(time.raw);
@@ -344,7 +461,15 @@ export class ShiftBookingCalendar implements FormElement {
   };
 
   private onTimesKeyDown = (event: KeyboardEvent) => {
-    if (event.key !== 'Escape' || this.view !== 'times') return;
+    // Focus moving between chips inside the slots' shadow root never reaches this tree as focusin, so a key that moved it reveals it here.
+    if (event.key !== 'Escape') {
+      requestAnimationFrame(() => {
+        const chip = this.slotsEl?.shadowRoot?.activeElement as HTMLElement | null;
+        if (chip?.classList?.contains('ts-chip')) this.reveal(chip, false);
+      });
+      return;
+    }
+    if (this.view !== 'times') return;
 
     event.preventDefault();
     event.stopPropagation();
@@ -436,6 +561,7 @@ export class ShiftBookingCalendar implements FormElement {
       '--_f-travel': panel.paddingLeft,
       '--_f-gap': panel.rowGap,
       '--_f-head': `${header.offsetHeight}px`,
+      '--_f-top': `${header.offsetTop + header.offsetHeight + (parseFloat(panel.rowGap) || 0)}px`,
       '--_f-head-gap': getComputedStyle(header).columnGap,
       '--_f-band': getComputedStyle(band).marginInlineStart,
       '--_f-title-font': heading.fontFamily,
@@ -453,13 +579,38 @@ export class ShiftBookingCalendar implements FormElement {
     for (const [name, value] of Object.entries(frame)) box.style.setProperty(name, value);
   }
 
-  private get dayMeta(): CalendarDayMetaMap | undefined {
-    if (!this.slotCounts || !this.availability) return undefined;
+  // "3 times · 9:00 AM – 2:00 PM": the day's count and its first and last time, for the tooltip, the description and the times header.
+  private daySummary(day: BookingDay | undefined): string {
+    if (!day?.times.length) return '';
 
     const strings = this.strings;
+    const numerals = this.locale.numerals;
+    const count = day.times.length;
+
+    return fill(strings.daySummary, {
+      count: fill(count === 1 ? strings.timesCountOne : strings.timesCount, { count: formatDigits(count, numerals) }),
+      from: formatTime(day.times[0].time, this.hourCycle, numerals, strings),
+      to: formatTime(day.times[count - 1].time, this.hourCycle, numerals, strings),
+    });
+  }
+
+  private get dayMeta(): CalendarDayMetaMap | undefined {
+    if (!this.availability) return undefined;
 
     return Object.fromEntries(
-      this.availability.days.map(day => [day.date, { badge: String(day.times.length), tone: 'neutral', description: fill(strings.dayTimes, { count: day.times.length }) }]),
+      this.availability.days.map(day => {
+        const summary = this.daySummary(day);
+
+        return [
+          day.date,
+          {
+            badge: this.slotCounts ? String(day.times.length) : undefined,
+            tone: day.times.length <= this.fewSlots ? 'warning' : 'neutral',
+            tooltip: this.dayTooltips ? summary : undefined,
+            description: summary,
+          },
+        ];
+      }),
     );
   }
 
@@ -523,6 +674,7 @@ export class ShiftBookingCalendar implements FormElement {
     const day = this.day;
     const fullDate = this.selectedDate ? dateLabel(this.selectedDate, locale, locale.numerals) : '';
     const timesLabel = fullDate ? fill(strings.timesOn, { date: fullDate }) : strings.times;
+    const empty = this.status === 'empty' && this.showEmptyState;
     const announcement = !this.announced ? '' : times ? timesLabel : this.month ? monthTitle(this.month, locale, locale.numerals) : '';
 
     return (
@@ -539,11 +691,15 @@ export class ShiftBookingCalendar implements FormElement {
           data-status={this.status}
           data-view={this.view}
         >
-          <div class="bc-label" part="label" id={this.labelId}>
-            {label}
-            <span class="bc-required" part="required" aria-hidden="true" data-hidden={isRequired ? undefined : ''}>
-              *
-            </span>
+          <div class="bc-collapse" data-open={this.showLabel ? '' : undefined} aria-hidden={this.showLabel ? undefined : 'true'}>
+            <div class="bc-collapse-body">
+              <div class="bc-label" part="label" id={this.labelId}>
+                {label}
+                <span class="bc-required" part="required" aria-hidden="true" data-hidden={isRequired ? undefined : ''}>
+                  *
+                </span>
+              </div>
+            </div>
           </div>
 
           <div class="bc-box" part="box" data-view={this.view}>
@@ -563,13 +719,26 @@ export class ShiftBookingCalendar implements FormElement {
               disabledDates={this.disabledDates}
               disabledWeekdays={this.disabledWeekdays}
               dayMeta={ready ? this.dayMeta : undefined}
+              showToday={this.showToday}
               busy={this.status === 'loading'}
               disabled={disabled}
               aria-hidden={times ? 'true' : undefined}
               inert={times ? true : undefined}
               onDateChange={this.onDateChange}
               onMonthChange={this.onMonthChange}
+              onPickerChange={this.stop}
             />
+
+            <div class="bc-empty" part="empty" aria-hidden="true" data-shown={empty ? '' : undefined}>
+              <svg class="bc-empty-art" viewBox="0 0 48 48" focusable="false">
+                <rect x="7" y="10" width="34" height="31" rx="5" fill="none" stroke="currentColor" stroke-width="2" />
+                <path d="M7 19h34M16 6v8M32 6v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <circle cx="24" cy="30" r="6" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.55" />
+                <path d="M24 27v3l2 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.55" />
+                <path d="M11 38 37 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+              <span class="bc-empty-text">{strings.emptyTitle}</span>
+            </div>
 
             <div
               class="bc-times"
@@ -584,8 +753,13 @@ export class ShiftBookingCalendar implements FormElement {
               <div class="bc-times-header" part="times-header">
                 <div class="bc-title-band">
                   <div class="bc-title" part="times-heading" id={this.titleId}>
-                    <span class="bc-title-day">{this.dayTitle(this.selectedDate)}</span>
-                    {this.renderTimeSlot()}
+                    <span class="bc-title-line">
+                      <span class="bc-title-day">{this.dayTitle(this.selectedDate)}</span>
+                      {this.renderTimeSlot()}
+                    </span>
+                    <span class="bc-title-summary" part="times-summary">
+                      {this.daySummary(day)}
+                    </span>
                   </div>
                 </div>
                 <div class="bc-back-band">
@@ -622,32 +796,39 @@ export class ShiftBookingCalendar implements FormElement {
           <span class="bc-sr" aria-live="polite">
             {announcement}
           </span>
+          <span class="bc-sr" aria-live="polite">
+            {empty ? strings.emptyTitle : ''}
+          </span>
 
-          <div class="bc-status" part="status" aria-live="polite">
-            {MESSAGES.map(message => (
-              <div
-                key={message}
-                class="bc-message"
-                data-message={message}
-                data-active={message === current ? '' : undefined}
-                aria-hidden={message === current ? undefined : 'true'}
-                inert={message === current ? undefined : true}
-              >
-                {message === 'loading' && <span class="bc-spinner" aria-hidden="true" />}
-                <span
-                  class={message === 'invalid' ? 'bc-message-text bc-error-text' : 'bc-message-text'}
-                  part={message === 'invalid' ? 'error' : message === 'error' ? 'status-text status-error' : 'status-text'}
-                  role={message === 'invalid' && message === current ? 'alert' : undefined}
-                >
-                  {this.messageText(message, errorText)}
-                </span>
-                {message === 'error' && (
-                  <button type="button" class="bc-retry" part="retry" onClick={() => this.load()}>
-                    {strings.retry}
-                  </button>
-                )}
+          <div class="bc-collapse" data-open={this.showStatus ? '' : undefined} aria-hidden={this.showStatus ? undefined : 'true'} inert={this.showStatus ? undefined : true}>
+            <div class="bc-collapse-body">
+              <div class="bc-status" part="status" aria-live="polite">
+                {MESSAGES.map(message => (
+                  <div
+                    key={message}
+                    class="bc-message"
+                    data-message={message}
+                    data-active={message === current ? '' : undefined}
+                    aria-hidden={message === current ? undefined : 'true'}
+                    inert={message === current ? undefined : true}
+                  >
+                    {message === 'loading' && <span class="bc-spinner" aria-hidden="true" />}
+                    <span
+                      class={message === 'invalid' ? 'bc-message-text bc-error-text' : 'bc-message-text'}
+                      part={message === 'invalid' ? 'error' : message === 'error' ? 'status-text status-error' : 'status-text'}
+                      role={message === 'invalid' && message === current ? 'alert' : undefined}
+                    >
+                      {this.messageText(message, errorText)}
+                    </span>
+                    {message === 'error' && (
+                      <button type="button" class="bc-retry" part="retry" onClick={() => this.load()}>
+                        {strings.retry}
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </Host>

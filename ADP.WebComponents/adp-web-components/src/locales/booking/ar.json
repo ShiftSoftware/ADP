@@ -2,7 +2,7 @@
   "times": "الأوقات",
   "noTimes": "لا توجد أوقات متاحة في هذا اليوم",
   "loadingTimes": "جارٍ تحميل الأوقات…",
-  "timesCount": "عدد الأوقات: {count}",
+  "timesCount": "{count} مواعيد",
   "am": "ص",
   "pm": "م",
   "bookingCalendar": "التاريخ والوقت",
@@ -14,10 +14,15 @@
   "pickDay": "اختر اليوم",
   "pickTime": "اختر الوقت",
   "selected": "{date}، الساعة {time}",
-  "dayTimes": "الأوقات المتاحة: {count}",
+  "dayTimes": "المواعيد المتاحة: {count}",
   "required": "الرجاء اختيار التاريخ والوقت",
   "changeDate": "تغيير التاريخ",
   "dayTitle": "{weekday}، {day} {month}",
   "monthsShort": ["كانون الثاني", "شباط", "آذار", "نيسان", "أيار", "حزيران", "تموز", "آب", "أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول"],
-  "timesOn": "الأوقات في {date}"
+  "timesOn": "الأوقات في {date}",
+  "chooseSlot": "اختر التاريخ والوقت",
+  "slotLabel": "{weekday}، {day} {month} {year}، {time}",
+  "timesCountOne": "موعد واحد",
+  "daySummary": "{count} · {from} – {to}",
+  "emptyTitle": "لا توجد مواعيد متاحة"
 }

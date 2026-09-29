@@ -26,7 +26,6 @@
   --_ap-focus-width: 2px;
   --_ap-focus-offset: 2px;
   --_ap-focus-halo-width: 0px;
-  --_ap-hover-scale: 1.08;
   --_ap-today-ring-width: 1px;
   --_ap-today-stroke: 0px;
   --_ap-today-decoration: none;
@@ -80,7 +79,6 @@
   --_ap-focus-width: 2px;
   --_ap-focus-offset: 2px;
   --_ap-focus-halo-width: 0px;
-  --_ap-hover-scale: 1;
   --_ap-today-ring-width: 1px;
   --_ap-today-stroke: 0px;
   --_ap-today-decoration: none;
@@ -134,7 +132,6 @@
   --_ap-focus-width: 1px;
   --_ap-focus-offset: 0px;
   --_ap-focus-halo-width: 4px;
-  --_ap-hover-scale: 1;
   --_ap-today-ring-width: 0px;
   --_ap-today-stroke: 0px;
   --_ap-today-decoration: none;
@@ -188,7 +185,6 @@
   --_ap-focus-width: 2px;
   --_ap-focus-offset: 0px;
   --_ap-focus-halo-width: 0px;
-  --_ap-hover-scale: 1;
   --_ap-today-ring-width: 0px;
   --_ap-today-stroke: 0.6px;
   --_ap-today-decoration: underline;
@@ -242,7 +238,6 @@
   --_ap-focus-width: 2px;
   --_ap-focus-offset: 2px;
   --_ap-focus-halo-width: 0px;
-  --_ap-hover-scale: 1;
   --_ap-today-ring-width: 0px;
   --_ap-today-stroke: 0px;
   --_ap-today-decoration: none;
@@ -600,7 +595,6 @@
   --_sz-width: 300px;
   --_sz-min-width: 260px;
   --_sz-min-floor: 0px;
-  --_sz-hover-cap: 1.04;
 }
 
 :host([size='sm']) {
@@ -612,7 +606,6 @@
   --_sz-width: 340px;
   --_sz-min-width: 280px;
   --_sz-min-floor: 0px;
-  --_sz-hover-cap: 1.08;
 }
 
 :host([size='md']) {
@@ -624,7 +617,6 @@
   --_sz-width: 380px;
   --_sz-min-width: 300px;
   --_sz-min-floor: 0px;
-  --_sz-hover-cap: 1.08;
 }
 
 :host([size='lg']) {
@@ -636,7 +628,6 @@
   --_sz-width: 440px;
   --_sz-min-width: 340px;
   --_sz-min-floor: 340px;
-  --_sz-hover-cap: 1.08;
 }
 
 :host([size='xl']) {
@@ -648,7 +639,6 @@
   --_sz-width: 500px;
   --_sz-min-width: 380px;
   --_sz-min-floor: 380px;
-  --_sz-hover-cap: 1.08;
 }
 
 @media (pointer: coarse) {

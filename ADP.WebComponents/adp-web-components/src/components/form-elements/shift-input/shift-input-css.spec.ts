@@ -76,3 +76,26 @@ describe('layout never shifts', () => {
     expect(rule(popover, '.pop-panel[data-open]')).not.toMatch(/display|position/);
   });
 });
+
+describe('shift-input.css error state', () => {
+  const css = read('shift-input.css');
+  const motion = css.indexOf('@media (prefers-reduced-motion: reduce)');
+  const lastRule = (selector: string) => css.lastIndexOf(selector);
+
+  it('error + hover keeps the error border, after every hover rule', () => {
+    const errorHover = lastRule('.in-root[data-invalid]:not([data-disabled]) .in-control:hover');
+
+    expect(errorHover).toBeGreaterThan(lastRule('.in-root:not([data-disabled]) .in-control:hover {'));
+    expect(errorHover).toBeLessThan(motion);
+    expect(css.slice(errorHover, css.indexOf('}', errorHover))).toContain('border-color: var(--_danger)');
+  });
+
+  it('error + focus (and so error + open, which focuses the control) keeps the error border and rings in the error hue', () => {
+    const errorFocus = lastRule(':host .in-root[data-invalid] .in-control[data-focused] {');
+
+    expect(errorFocus).toBeGreaterThan(lastRule(":host([data-look='form']) .in-control[data-focused] {"));
+    expect(errorFocus).toBeGreaterThan(lastRule('\n.in-control[data-focused] {'));
+    expect(css.slice(errorFocus, css.indexOf('}', errorFocus))).toMatch(/outline-color: var\(--_danger\);[\s\S]*color-mix\(in srgb, var\(--_danger\) 25%, transparent\)/);
+    expect(css).toContain(':host .in-root[data-invalid] .in-control[data-focused] {\n  border-color: var(--_danger);');
+  });
+});
