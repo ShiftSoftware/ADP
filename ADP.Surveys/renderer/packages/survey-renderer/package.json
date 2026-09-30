@@ -37,7 +37,8 @@
     "react-dom": "^18.2.0 || ^19.0.0"
   },
   "dependencies": {
-    "@shiftsoftware/survey-sdk": "^0.1.0"
+    "@shiftsoftware/survey-sdk": "^0.1.0",
+    "adp-web-components": "file:../../../../ADP.WebComponents/adp-web-components"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

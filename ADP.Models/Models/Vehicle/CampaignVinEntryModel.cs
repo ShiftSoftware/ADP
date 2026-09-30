@@ -33,6 +33,17 @@ public class CampaignVinEntryModel : IPartitionedItem, ICompanyProps
     public string CampaignUniqueReference { get; set; }
 
     /// <summary>
+    /// Optional menu/package code explicitly assigned to this VIN's activation.
+    /// Overrides the catalog/model-derived display code. When service consumption is
+    /// enabled, a nonblank code also restricts this activation's consumption to that package.
+    /// A blank code preserves the catalog consumption rule.
+    /// </summary>
+    public string PackageCode { get; set; }
+
+    /// <summary>Optional source audit warning when an approved import preserves a noncanonical identifier.</summary>
+    public string SourceIdentifierWarning { get; set; }
+
+    /// <summary>
     /// The date this entry was recorded. Used as the activation date for items with
     /// <see cref="Enums.ClaimableItemValidityMode.RelativeToActivation"/> validity.
     /// </summary>

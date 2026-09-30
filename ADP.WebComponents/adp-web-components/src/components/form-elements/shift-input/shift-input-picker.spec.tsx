@@ -20,7 +20,7 @@ const day = (date: string, ...times: string[]) => ({ Date: date, Times: times.ma
 const DAYS = [day('2026-10-01', '08:00 AM', '10:00 AM', '01:00 PM', '03:30 PM'), day('2026-10-03', '09:00 AM')];
 
 const TARGET =
-  'calendar-api="https://calendar.example/api/public/calendar" company-id="1" branch-id="42" department-id="service-center" brand-id="BRAND-A" today="2026-09-28" utc-offset="+03:00"';
+  'calendar-api="https://calendar.example/api/public/calendar" branch-id="Xr8pQ" department-id="service-center" brand-id="BRAND-A" today="2026-09-28" utc-offset="+03:00"';
 
 let requests: string[];
 
@@ -117,7 +117,7 @@ describe('slotIso', () => {
 
 describe('shift-input hosting a picker', () => {
   it('moves the picker into its popover, read-only, with no idle text', async () => {
-    const { page, picker } = await inForm('is-disabled="true"', 'calendar-api="https://calendar.example/api/public/calendar" company-id="1"');
+    const { page, picker } = await inForm('is-disabled="true"', 'calendar-api="https://calendar.example/api/public/calendar"');
 
     expect(picker.parentElement.tagName).not.toBe('SHIFT-INPUT');
     expect(picker.hasAttribute('slot')).toBe(false);
@@ -228,19 +228,19 @@ describe('shift-input hosting a picker', () => {
 
 describe('bookingCalendar mapper', () => {
   const branch = {
+    ID: 'Xr8pQ',
     IntegrationId: '42',
-    CompanyIntegrationId: '1',
     Departments: [{ IntegrationId: 'showroom' }, { IntegrationId: 'service-center' }],
     Brands: [{ IntegrationId: 'BRAND-A' }],
   };
   const formWith = (value: string) =>
-    ({ addWatcher: () => undefined, getValue: () => value, context: { companyBranchIdList: [{ value: 'b1', meta: branch }] } }) as unknown as FormHook<unknown>;
+    ({ addWatcher: () => undefined, getValue: () => value, context: { companyBranchIdList: [{ value: branch.ID, meta: branch }] } }) as unknown as FormHook<unknown>;
 
   type VNode = { $tag$: string; $attrs$: Record<string, unknown>; $children$: VNode[] };
 
   it('renders shift-input with a headless booking calendar fed by the selected branch', () => {
     const vnode = getFormMappers().bookingCalendar({
-      form: formWith('b1'),
+      form: formWith('Xr8pQ'),
       language: 'en',
       props: { name: 'bookingDate', calendarApi: 'https://calendar.example/api/public/calendar', departmentPreference: ['service-center'], utcOffset: '+03:00', showToday: false },
     }) as unknown as VNode;
@@ -251,8 +251,7 @@ describe('bookingCalendar mapper', () => {
     expect(picker.$tag$).toBe('shift-booking-calendar');
     expect(picker.$attrs$).toMatchObject({
       slot: 'picker',
-      companyId: '1',
-      branchId: '42',
+      branchId: 'Xr8pQ',
       departmentId: 'service-center',
       brandId: 'BRAND-A',
       utcOffset: '+03:00',

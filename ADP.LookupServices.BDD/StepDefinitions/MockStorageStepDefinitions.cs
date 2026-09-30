@@ -175,6 +175,8 @@ public class MockStorageStepDefinitions
                     ? DurationType.Months : null,
                 MaximumMileage = GetOptionalLong(row, "MaximumMileage"),
                 ProgramRole = programRole,
+                ServiceConsumption = row.ContainsKey("ServiceConsumption") && bool.TryParse(row["ServiceConsumption"], out var consume) && consume
+                    ? new ServiceConsumptionRule() : null,
                 PackageCode = GetOptionalString(row, "PackageCode"),
                 VehicleInspectionTypeID = GetOptionalLong(row, "VehicleInspectionTypeID"),
                 CampaignID = GetOptionalLong(row, "CampaignID"),

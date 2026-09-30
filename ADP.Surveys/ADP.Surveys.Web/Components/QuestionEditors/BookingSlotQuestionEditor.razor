@@ -1,0 +1,138 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components.QuestionEditors
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+@*
+    Editor for a bookingSlot question: which branch calendar the respondent picks a
+    preferred date and time from. The availability is fetched in the respondent's browser
+    by <shift-booking-calendar>, so the endpoint must be public and CORS-open.
+
+    The branch, department and brand are each a fixed value or a token. The branch is
+    normally {{answers.<branch question>}}, filled in the browser from the respondent's
+    earlier answer; {{recipient.*}} / {{candidate.*}} are filled when the survey is served.
+    The insert menu writes a token at the caret of whichever field was last focused, the
+    same mechanism as the options-source editor.
+*@
+
+<QuestionCommonFields Question="@Question"
+                      Locales="@Locales"
+                      ReadOnly="@ReadOnly"
+                      Changed="Changed" />
+
+<div class="qte-section" @ref="editorRoot">
+    <div class="qte-section__head">
+        <div class="qte-section__title">Branch calendar</div>
+        @if (!ReadOnly)
+        {
+            <TokenInsertMenu Scope="@Scope"
+                             PreferLabels="false"
+                             Tooltip="Insert an earlier answer or a variable into the focused field"
+                             OnInsert="InsertToken" />
+        }
+    </div>
+
+    <MudAlert Severity="Severity.Info" Dense="true" Class="my-2 bse-hint">
+        The respondent picks a day and a time from the branch's calendar. Availability is
+        fetched in their browser, so the endpoint must be public and CORS-open. The answer is
+        the branch's local time, <code>yyyy-MM-ddTHH:mm</code>: a preference, not a
+        reservation. Usually the branch is an earlier answer, e.g.
+        <code>@("{{answers.branch}}")</code>.
+    </MudAlert>
+
+    <MudTextField T="string"
+                  Label="Calendar endpoint"
+                  Value="@Question.CalendarApi"
+                  ValueChanged="@((string v) => OnChanged(() => Question.CalendarApi = v?.Trim() ?? ""))"
+                  ReadOnly="@ReadOnly"
+                  Placeholder="https://…/calendar"
+                  HelperText="The public calendar endpoint. It is called with from, to, branchId, departmentId and brandId."
+                  Class="mb-2" />
+
+    <div class="qte-row">
+        <MudTextField T="string"
+                      Label="Branch"
+                      Value="@Question.BranchId"
+                      ValueChanged="@((string v) => OnChanged(() => Question.BranchId = v?.Trim() ?? ""))"
+                      ReadOnly="@ReadOnly"
+                      Placeholder="@BranchPlaceholder"
+                      HelperText="Branch hash ID, or an earlier answer"
+                      Class="qte-num" />
+        <MudTextField T="string"
+                      Label="Department"
+                      Value="@Question.DepartmentId"
+                      ValueChanged="@((string v) => OnChanged(() => Question.DepartmentId = v?.Trim() ?? ""))"
+                      ReadOnly="@ReadOnly"
+                      Placeholder="service-center"
+                      HelperText="Department ID, or an earlier answer"
+                      Class="qte-num" />
+        <MudTextField T="string"
+                      Label="Brand"
+                      Value="@Question.BrandId"
+                      ValueChanged="@((string v) => OnChanged(() => Question.BrandId = v?.Trim() ?? ""))"
+                      ReadOnly="@ReadOnly"
+                      HelperText="Brand ID, or an earlier answer"
+                      Class="qte-num" />
+    </div>
+</div>
+
+<style>
+    .qte-section { margin-top: 14px; padding-top: 10px; border-top: 1px dashed #e0e5ec; }
+    .qte-section__title { font-size: 0.8rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .qte-section__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+    .qte-section__head .qte-section__title { margin-bottom: 0; }
+    .qte-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .qte-num { flex: 1 1 160px; min-width: 140px; }
+    .bse-hint { font-size: 0.8rem; }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public BookingSlotQuestionDto Question { get; set; } = default!;
+
+    [Parameter]
+    public List<string>? Locales { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    /// <summary>Absent on the question bank's form; the insert menu then doesn't render.</summary>
+    [CascadingParameter]
+    public PersonalizationScope? Scope { get; set; }
+
+    ElementReference editorRoot;
+    TokenInsertInterop? tokenInsert;
+
+    const string BranchPlaceholder = "{{answers.branch}}";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (ReadOnly || Scope is not { IsEmpty: false }) return;
+        tokenInsert ??= new TokenInsertInterop(JS);
+        await tokenInsert.TrackAsync(editorRoot);
+    }
+
+    Task InsertToken(string token) =>
+        tokenInsert?.InsertAsync(editorRoot, token) ?? Task.CompletedTask;
+
+    async Task OnChanged(Action mutation)
+    {
+        mutation();
+        await Changed.InvokeAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (tokenInsert is null) return;
+        await tokenInsert.DisposeAsync();
+        tokenInsert = null;
+    }
+}

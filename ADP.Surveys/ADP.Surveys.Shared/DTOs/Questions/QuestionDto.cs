@@ -24,6 +24,7 @@ namespace ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions;
 [JsonDerivedType(typeof(SignatureQuestionDto), "signature")]
 [JsonDerivedType(typeof(YesNoQuestionDto), "yesNo")]
 [JsonDerivedType(typeof(NavigationListQuestionDto), "navigationList")]
+[JsonDerivedType(typeof(BookingSlotQuestionDto), "bookingSlot")]
 public abstract class QuestionDto
 {
     [JsonPropertyName("id")]

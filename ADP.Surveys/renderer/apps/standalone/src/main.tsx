@@ -1,3 +1,4 @@
+import './library-fonts.js'; // first: see the file
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.js';

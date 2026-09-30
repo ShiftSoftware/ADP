@@ -9,7 +9,7 @@ import { BlazorInvokable, BlazorInvokableFunction, DotNetObjectReference, smartI
 import { ChevronLeftIcon } from '~assets/chevron-left-icon';
 
 import '~lib/middleware';
-import { BookingAvailability, BookingDay, CalendarApiVersion, calendarApiVersion, createAvailabilityLoader, slotValue } from '~lib/booking-availability';
+import { BookingAvailability, BookingDay, createAvailabilityLoader, isCompleteTarget, slotValue } from '~lib/booking-availability';
 import { blockReason, buildAvailability } from '~lib/calendar-availability';
 import { dateParts, monthOf, weekdayOf } from '~lib/calendar-date';
 import { formatPickerValue, readPickerValue, valueOffset } from '~lib/picker';
@@ -30,7 +30,7 @@ type Message = (typeof MESSAGES)[number];
 
 type Frame = Record<string, string>;
 
-const IDENTITY = ['companyId', 'branchId', 'departmentId', 'brandId'] as const;
+const IDENTITY = ['branchId', 'departmentId', 'brandId'] as const;
 
 type Identity = Record<(typeof IDENTITY)[number], string>;
 
@@ -46,8 +46,7 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   @Prop() form?: FormHook<unknown>;
 
   @Prop() calendarApi?: string;
-  @Prop() calendarApiVersion: CalendarApiVersion = 'v1';
-  @Prop() companyId?: string;
+  // The branch's hash ID.
   @Prop() branchId?: string;
   @Prop() departmentId?: string;
   @Prop() brandId?: string;
@@ -97,7 +96,7 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   private syncQueued = false;
   private loadWanted = false;
   private current = '';
-  private identity: Identity = { companyId: '', branchId: '', departmentId: '', brandId: '' };
+  private identity: Identity = { branchId: '', departmentId: '', brandId: '' };
   private valueTouched = false;
   private lastEmit = '\n';
   private pendingFocus: 'times' | 'day' | null = null;
@@ -161,8 +160,6 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   }
 
   @Watch('calendarApi')
-  @Watch('calendarApiVersion')
-  @Watch('companyId')
   @Watch('branchId')
   @Watch('departmentId')
   @Watch('brandId')
@@ -332,7 +329,7 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
     return Object.fromEntries(IDENTITY.map(key => [key, this[key] ? String(this[key]) : ''])) as Identity;
   }
 
-  // A host sets the ids, the version, the endpoint and the value one after another; one pass answers them all.
+  // A host sets the ids, the endpoint and the value one after another; one pass answers them all.
   private queueSync(load: boolean) {
     this.loadWanted ||= load;
     if (this.syncQueued) return;
@@ -369,14 +366,12 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   private async load() {
     const target = {
       url: this.calendarApi,
-      version: calendarApiVersion(this.calendarApiVersion),
-      companyId: this.companyId,
       branchId: this.branchId,
       departmentId: this.departmentId,
       brandId: this.brandId,
     };
 
-    if (!target.url || !target.companyId || !target.branchId || !target.departmentId || !target.brandId) {
+    if (!isCompleteTarget(target)) {
       this.loader.cancel();
       this.status = 'idle';
       this.availability = null;

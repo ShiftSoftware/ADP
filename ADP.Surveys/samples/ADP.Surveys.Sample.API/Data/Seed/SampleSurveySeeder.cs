@@ -20,7 +20,11 @@ public static class SampleSurveySeeder
 
         var referenceApiBaseUrl = app.Configuration[SampleReferenceApi.BaseUrlSetting] ?? SampleReferenceApi.DefaultBaseUrl;
 
-        foreach (var recipe in SampleSurveys.All(referenceApiBaseUrl))
+        var bookingDepartmentId = app.Configuration[SampleReferenceApi.BookingDepartmentSetting] ?? SampleReferenceApi.DefaultBookingDepartmentId;
+        var bookingBrandId = app.Configuration[SampleReferenceApi.BookingBrandSetting] ?? SampleReferenceApi.DefaultBookingBrandId;
+        var bookingCalendarUrl = app.Configuration[SampleReferenceApi.BookingCalendarSetting];
+
+        foreach (var recipe in SampleSurveys.All(referenceApiBaseUrl, bookingDepartmentId, bookingBrandId, bookingCalendarUrl))
         {
             foreach (var bank in recipe.Banks)
                 await EnsureBankAsync(db, bank);

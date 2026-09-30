@@ -461,6 +461,19 @@
                 AppendExternalHint(builder, q, 1000);
                 return;
 
+            // The branch's wall-clock time, with no offset: shown as it is, never converted.
+            case BookingSlotQuestionDto when value.ValueKind == JsonValueKind.String
+                                           && DateTime.TryParseExact(value.GetString(), BookingSlotQuestionDto.SlotFormat,
+                                               System.Globalization.CultureInfo.InvariantCulture,
+                                               System.Globalization.DateTimeStyles.None, out var slot):
+                builder.AddContent(0, slot.ToString("ddd d MMM yyyy, HH:mm", System.Globalization.CultureInfo.InvariantCulture));
+                builder.OpenElement(1, "span");
+                builder.AddAttribute(2, "class", "rad__external-hint");
+                builder.AddAttribute(3, "title", "A preferred slot from the branch's calendar, in the branch's local time. It is not a reservation.");
+                builder.AddContent(4, "(branch time)");
+                builder.CloseElement();
+                return;
+
             case SingleChoiceQuestionDto or DropdownQuestionDto or NavigationListQuestionDto
                 when value.ValueKind == JsonValueKind.String:
                 var optionId = value.GetString()!;

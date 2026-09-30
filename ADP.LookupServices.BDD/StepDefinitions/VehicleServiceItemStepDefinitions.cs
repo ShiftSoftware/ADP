@@ -8,6 +8,25 @@ namespace LookupServices.BDD.StepDefinitions;
 [Binding]
 public class VehicleServiceItemStepDefinitions
 {
+    [Given("service lookup time is {string}")]
+    public void GivenLookupTime(string value) => _context.Options.TimeProvider = new LookupClock(DateTimeOffset.Parse(value));
+
+    private sealed class LookupClock(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
+    }
+
+    [Then("service item {string} has service evidence dated {string} and no financial claim")]
+    public void ThenServiceEvidence(string id, string date)
+    {
+        var item = GetItem(id);
+        Assert.Equal(DateTime.Parse(date), item.ServiceConsumptionEvidence?.ServiceDate);
+        Assert.Null(item.ClaimDate);
+        Assert.Null(item.Cost);
+        Assert.False(item.Claimable);
+        Assert.Empty(_context.Aggregate.ItemClaims);
+    }
+
     private readonly Support.TestContext _context;
     private IEnumerable<VehicleServiceItemDTO>? _result;
     private bool _activationRequired;

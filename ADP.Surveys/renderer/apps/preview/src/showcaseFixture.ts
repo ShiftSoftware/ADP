@@ -113,6 +113,16 @@ export const showcaseSurvey: Survey = {
           title: { en: 'Signature — sign here', ar: 'توقيع — وقّع هنا' },
         },
         {
+          // Times come from the preview server's stand-in calendar (vite.config.ts).
+          type: 'bookingSlot',
+          id: 'visit',
+          title: { en: 'BookingSlot — preferred visit time', ar: 'موعد — وقت الزيارة المفضل' },
+          calendarApi: '/mock/calendar',
+          branchId: 'showcase-branch',
+          departmentId: 'service',
+          brandId: 'brand',
+        },
+        {
           type: 'navigationList',
           id: 'next',
           title: { en: 'NavigationList — next step', ar: 'قائمة تنقل — الخطوة التالية' },
