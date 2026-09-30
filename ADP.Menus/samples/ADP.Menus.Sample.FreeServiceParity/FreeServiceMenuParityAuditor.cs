@@ -10,43 +10,47 @@ namespace ShiftSoftware.ADP.Menus.Sample.FreeServiceParity;
 
 /// <summary>
 /// The audit itself. Each batch is one REAL bulk vehicle lookup — the service menu attached with
-/// <c>Include = true</c> and <c>FreeFilter = All</c>, so EVERY variant's generated lines are on the
-/// table — and the free service items and the menu being compared come out of the same
+/// <c>Include = true</c> and <c>FreeFilter = FreeOnly</c>, so only the variants flagged free are
+/// generated — and the free service items and the menu being compared come out of the same
 /// <c>VehicleLookupDTO</c>, produced by the same pipeline the deployment serves.
 ///
-/// <para><b>Scope: what is still on the table.</b> A VIN enters the comparison only when at least one
-/// of its FREE service items is <c>Pending</c>. A vehicle whose free entitlements have all been
-/// processed, expired or cancelled — and one carrying no free items at all — is skipped whole: no
-/// detail rows, no share of any total. Those are history, transcribed against older menu exports and
-/// often without a menu code, and nothing the menu side has to reproduce. On a VIN that IS in scope,
-/// EVERY free item is compared whatever its own status — its pending siblings say the record is
-/// current, so its spent ones are still evidence about the same transcription.</para>
+/// <para><b>Scope, in the order it is applied.</b>
+/// (1) <b>Invoice date</b> — when a date is given, a VIN whose sale invoice date is before it is
+/// skipped; a VIN with no invoice date stays in. (2) <b>Conditional items</b> — free items whose
+/// catalog entry carries eligibility conditions are set aside: they are offered by rule, not
+/// transcribed from the menu. (3) <b>Pending</b> — a VIN enters the comparison only when at least one
+/// of its remaining free items is <c>Pending</c>; one whose entitlements are all processed, expired or
+/// cancelled, or that carries none, is skipped whole. On a VIN that IS in scope every unconditional
+/// free item is compared, whatever its own status.</para>
 ///
-/// <para><b>One direction, one key.</b> Each FREE service item looks for its match among the model's
-/// generated menu lines by MENU CODE — the item's <c>PackageCode</c> is a hand transcription of the
-/// generated <c>Code</c>, and that equality is the parity being audited. The free-of-charge flag is
-/// not consulted (it is not authored yet), lines are not consumed (a catalog line can answer any
-/// number of entitlements), and menu lines no item points at are expected — the menu also prices paid
-/// work — so they are never counted against parity. After a code matches, the secondary properties
-/// (mileage, description, price) are compared and any disagreement is reported on the row, but a
-/// differing property never breaks the match.</para>
+/// <para><b>One direction, two properties.</b> Each free service item looks for a free menu line with
+/// its MENU CODE — the item's <c>PackageCode</c> is a hand transcription of the generated <c>Code</c> —
+/// and that line's service interval must be the item's MAXIMUM MILEAGE. Nothing else is compared.
+/// Lines are not consumed (a catalog line can answer any number of entitlements), and free menu lines
+/// no item points at are never counted against parity.</para>
 /// </summary>
 public class FreeServiceMenuParityAuditor(
     VehicleLookupService vehicleLookupService,
-    IVehicleReportService vehicleReportService)
+    IVehicleReportService vehicleReportService,
+    IVehicleLookupStorageService vehicleLookupStorageService)
 {
     /// <summary>
     /// Runs the audit over <paramref name="vins"/> (or every distinct VIN in the store when null,
     /// capped by <paramref name="distinctVinCount"/>), streaming detail rows to
     /// <paramref name="csvPath"/> and returning the totals and per-VIN summaries — for the VINs in
-    /// scope only; the ones with nothing pending survive as the report's skipped counts.
+    /// scope only; the rest survive as the report's skipped counts.
     /// </summary>
+    /// <param name="invoiceDateFrom">
+    /// Only VINs invoiced on or after this date (by date, time ignored), or never invoiced, are compared.
+    /// Null compares every VIN.
+    /// </param>
     public async Task<FreeServiceParityReportModel> ExportToCsvAsync(
         string csvPath,
         IEnumerable<string>? vins = null,
         int? distinctVinCount = null,
         int batchSize = 1000,
-        VehicleLookupRequestOptions? requestOptions = null)
+        VehicleLookupRequestOptions? requestOptions = null,
+        DateTime? invoiceDateFrom = null)
     {
         var allVins = vins?
             .Select(NormalizeVin)
@@ -58,11 +62,6 @@ public class FreeServiceMenuParityAuditor(
 
         var report = new FreeServiceParityReportModel { RequestedVinCount = allVins.Count };
 
-        if (allVins.Count == 0)
-            return report;
-
-        var effectiveOptions = BuildMenuLookupOptions(requestOptions);
-
         var outputDirectory = Path.GetDirectoryName(csvPath);
         if (!string.IsNullOrWhiteSpace(outputDirectory))
             Directory.CreateDirectory(outputDirectory);
@@ -71,13 +70,23 @@ public class FreeServiceMenuParityAuditor(
         using var csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture);
         csvWriter.Context.RegisterClassMap<FreeServiceParityRowModelCsvMap>();
 
+        // The header goes out even when nothing is compared, so an empty run still opens as a sheet.
+        csvWriter.WriteHeader<FreeServiceParityRowModel>();
+        await csvWriter.NextRecordAsync();
+
+        if (allVins.Count == 0)
+            return report;
+
+        var conditionalServiceItemIds = await LoadConditionalServiceItemIdsAsync();
+        var effectiveOptions = BuildMenuLookupOptions(requestOptions);
+
         for (var offset = 0; offset < allVins.Count; offset += batchSize)
         {
             var batch = allVins.GetRange(offset, Math.Min(batchSize, allVins.Count - offset));
             var lookups = await vehicleLookupService.LookupAsync(batch, effectiveOptions);
 
             var rows = new List<FreeServiceParityRowModel>();
-            Accumulate(report, lookups, rows);
+            Accumulate(report, lookups, rows, invoiceDateFrom?.Date, conditionalServiceItemIds);
 
             await csvWriter.WriteRecordsAsync(rows);
             await writer.FlushAsync();
@@ -87,10 +96,23 @@ public class FreeServiceMenuParityAuditor(
     }
 
     /// <summary>
+    /// The ids (as the lookup reports them — the catalog's <c>IntegrationID</c>) of every catalog
+    /// service item that carries eligibility conditions.
+    /// </summary>
+    private async Task<HashSet<string>> LoadConditionalServiceItemIdsAsync()
+    {
+        var catalog = await vehicleLookupStorageService.GetServiceItemsAsync(useCache: true);
+
+        return catalog
+            .Where(x => x.EligibilityConditions?.Any() == true && !string.IsNullOrWhiteSpace(x.IntegrationID))
+            .Select(x => x.IntegrationID.Trim())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// The options the audit's lookups run under: the caller's language, broker-stock preference and
-    /// menu country / transfer rate are honoured, the menu section is forced on — with the WHOLE menu,
-    /// every variant, because the item's code must be findable wherever it was transcribed from.
-    /// A fresh instance so the caller's options are never mutated.
+    /// menu country / transfer rate are honoured, the menu section is forced on — the FREE variants
+    /// only. A fresh instance so the caller's options are never mutated.
     /// </summary>
     private static VehicleLookupRequestOptions BuildMenuLookupOptions(VehicleLookupRequestOptions? source)
     {
@@ -102,7 +124,7 @@ public class FreeServiceMenuParityAuditor(
             ServiceMenuOptions = new VehicleServiceMenuRequestOptions
             {
                 Include = true,
-                FreeFilter = ServiceMenuFreeFilter.All,
+                FreeFilter = ServiceMenuFreeFilter.FreeOnly,
                 CountryID = source?.ServiceMenuOptions?.CountryID,
                 TransferRate = source?.ServiceMenuOptions?.TransferRate,
             },
@@ -112,7 +134,9 @@ public class FreeServiceMenuParityAuditor(
     private static void Accumulate(
         FreeServiceParityReportModel report,
         IEnumerable<VehicleLookupDTO> lookups,
-        List<FreeServiceParityRowModel> rowSink)
+        List<FreeServiceParityRowModel> rowSink,
+        DateTime? invoiceDateFrom,
+        HashSet<string> conditionalServiceItemIds)
     {
         foreach (var lookup in lookups ?? Enumerable.Empty<VehicleLookupDTO>())
         {
@@ -120,12 +144,26 @@ public class FreeServiceMenuParityAuditor(
             if (string.IsNullOrWhiteSpace(vin) || lookup is null)
                 continue;
 
-            var freeItems = CollectFreeItems(lookup.ServiceItems);
+            // (1) The invoice-date gate. A VIN with no invoice date has not been sold through the
+            // path that stamps one, which says nothing about its age — it stays in.
+            var invoiceDate = lookup.SaleInformation?.InvoiceDate;
 
-            // The scope gate. Nothing pending — every free item processed, expired or cancelled, or
-            // no free item at all — means the vehicle's entitlements are spent history, and the
-            // migration is not asked to reproduce them. Skip it before a single row is written, so
-            // the CSV and every number in the report describe the same live population.
+            if (invoiceDateFrom is not null && invoiceDate is not null && invoiceDate.Value.Date < invoiceDateFrom.Value)
+            {
+                report.SkippedVinCount++;
+                report.SkippedVinsInvoicedBeforeDate++;
+                continue;
+            }
+
+            // (2) Conditional items are set aside before the pending gate, so a VIN whose only
+            // pending entitlement is conditional has nothing transcribed to audit.
+            var allFreeItems = CollectFreeItems(lookup.ServiceItems);
+            var freeItems = allFreeItems.Where(x => !IsConditional(x, conditionalServiceItemIds)).ToList();
+            report.ExcludedConditionalFreeItems += allFreeItems.Count - freeItems.Count;
+
+            // (3) The pending gate. Nothing pending means the vehicle's entitlements are spent
+            // history, and the migration is not asked to reproduce them. Skip it before a single row
+            // is written, so the CSV and every number in the summary describe the same population.
             var pendingFreeItemCount = freeItems.Count(x => x.StatusEnum == VehcileServiceItemStatuses.Pending);
 
             if (pendingFreeItemCount == 0)
@@ -144,7 +182,7 @@ public class FreeServiceMenuParityAuditor(
             var menuStatus = lookup.ServiceMenu?.Status;
 
             var menuLines = menuStatus == VehicleServiceMenuStatus.Found
-                ? lookup.ServiceMenu.Services ?? new List<VehicleServiceMenuLineDTO>()
+                ? lookup.ServiceMenu?.Services ?? new List<VehicleServiceMenuLineDTO>()
                 : new List<VehicleServiceMenuLineDTO>();
 
             var basicModelCode = lookup.BasicModelCode ?? lookup.ServiceMenu?.BasicModelCode ?? string.Empty;
@@ -156,8 +194,11 @@ public class FreeServiceMenuParityAuditor(
                 MenuStatus = menuStatus,
                 FreeServiceItemCount = freeItems.Count,
                 PendingFreeServiceItemCount = pendingFreeItemCount,
-                MenuLineCount = menuLines.Count,
+                FreeMenuLineCount = menuLines.Count,
             };
+
+            FreeServiceParityRowModel Row(FreeServiceParityMatchResult result, VehicleServiceItemDTO item, VehicleServiceMenuLineDTO? line) =>
+                CreateRow(vin!, basicModelCode, invoiceDate, menuStatus, result, item, line);
 
             foreach (var item in freeItems)
             {
@@ -166,32 +207,43 @@ public class FreeServiceMenuParityAuditor(
                 if (string.IsNullOrEmpty(itemCode))
                 {
                     summary.ItemsWithoutMenuCodeCount++;
-                    rowSink.Add(CreateRow(vin!, basicModelCode, menuStatus, FreeServiceParityMatchResult.FreeItemWithoutMenuCode, string.Empty, item, null));
+                    rowSink.Add(Row(FreeServiceParityMatchResult.FreeItemWithoutMenuCode, item, null));
+                    continue;
+                }
+
+                if (menuLines.Count == 0)
+                {
+                    summary.ItemsWithoutFreeMenuCount++;
+                    rowSink.Add(Row(FreeServiceParityMatchResult.NoFreeMenu, item, null));
                     continue;
                 }
 
                 // Not consumed: a menu line is a catalog entry, and any number of entitlements may
                 // legitimately point at it.
-                var line = menuLines.FirstOrDefault(x => string.Equals(x.Code?.Trim(), itemCode, StringComparison.OrdinalIgnoreCase));
+                var sameCode = menuLines
+                    .Where(x => string.Equals(x.Code?.Trim(), itemCode, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
 
-                if (line is null)
+                if (sameCode.Count == 0)
                 {
                     summary.ItemsCodeUnmatchedCount++;
-                    rowSink.Add(CreateRow(vin!, basicModelCode, menuStatus, FreeServiceParityMatchResult.FreeItemCodeUnmatched, string.Empty, item, null));
+                    rowSink.Add(Row(FreeServiceParityMatchResult.FreeItemCodeUnmatched, item, null));
                     continue;
                 }
 
-                var differences = DescribePropertyDifferences(item, line);
+                // One code can be generated by more than one free variant; the pair holds when ANY of
+                // them carries the item's mileage. Otherwise the first is shown beside the item.
+                var line = sameCode.FirstOrDefault(x => MileageAgrees(item, x));
 
-                if (differences.Length == 0)
+                if (line is not null)
                 {
                     summary.MatchedCount++;
-                    rowSink.Add(CreateRow(vin!, basicModelCode, menuStatus, FreeServiceParityMatchResult.Matched, string.Empty, item, line));
+                    rowSink.Add(Row(FreeServiceParityMatchResult.Matched, item, line));
                 }
                 else
                 {
-                    summary.MatchedWithDifferencesCount++;
-                    rowSink.Add(CreateRow(vin!, basicModelCode, menuStatus, FreeServiceParityMatchResult.MatchedWithDifferences, differences, item, line));
+                    summary.MileageMismatchCount++;
+                    rowSink.Add(Row(FreeServiceParityMatchResult.MileageMismatch, item, sameCode[0]));
                 }
             }
 
@@ -200,11 +252,12 @@ public class FreeServiceMenuParityAuditor(
             report.VinCount++;
             report.TotalFreeServiceItems += summary.FreeServiceItemCount;
             report.TotalPendingFreeServiceItems += summary.PendingFreeServiceItemCount;
-            report.TotalMenuLines += summary.MenuLineCount;
+            report.TotalFreeMenuLines += summary.FreeMenuLineCount;
             report.TotalMatched += summary.MatchedCount;
-            report.TotalMatchedWithDifferences += summary.MatchedWithDifferencesCount;
+            report.TotalMileageMismatch += summary.MileageMismatchCount;
             report.TotalItemsWithoutMenuCode += summary.ItemsWithoutMenuCodeCount;
             report.TotalItemsCodeUnmatched += summary.ItemsCodeUnmatchedCount;
+            report.TotalItemsWithoutFreeMenu += summary.ItemsWithoutFreeMenuCount;
             report.OutcomeCounts[summary.Outcome] = report.OutcomeCounts.TryGetValue(summary.Outcome, out var count) ? count + 1 : 1;
             report.VinSummaries.Add(summary);
         }
@@ -232,43 +285,18 @@ public class FreeServiceMenuParityAuditor(
         return collected;
     }
 
-    /// <summary>
-    /// The secondary comparison on a code-matched pair. Menu codes carry the identity; these carry the
-    /// content — reported, never match-breaking. Cost is only compared when the item carries one.
-    /// </summary>
-    private static string DescribePropertyDifferences(VehicleServiceItemDTO item, VehicleServiceMenuLineDTO line)
-    {
-        var differences = new List<string>();
+    private static bool IsConditional(VehicleServiceItemDTO item, HashSet<string> conditionalServiceItemIds) =>
+        !string.IsNullOrWhiteSpace(item.ServiceItemID) && conditionalServiceItemIds.Contains(item.ServiceItemID.Trim());
 
-        if (item.MaximumMileage is not null && line.ServiceIntervalValueInMeter is not null
-            && item.MaximumMileage.Value != line.ServiceIntervalValueInMeter.Value)
-        {
-            differences.Add($"Mileage: {item.MaximumMileage.Value} != {line.ServiceIntervalValueInMeter.Value}");
-        }
-        else if ((item.MaximumMileage is null) != (line.ServiceIntervalValueInMeter is null))
-        {
-            differences.Add($"Mileage: {(object?)item.MaximumMileage ?? "none"} != {(object?)line.ServiceIntervalValueInMeter ?? "none"}");
-        }
-
-        var itemName = item.Name?.Trim();
-        var lineDescription = line.Description?.Trim();
-        if (!string.IsNullOrEmpty(itemName) && !string.IsNullOrEmpty(lineDescription)
-            && !string.Equals(itemName, lineDescription, StringComparison.OrdinalIgnoreCase))
-        {
-            differences.Add($"Description: '{itemName}' != '{lineDescription}'");
-        }
-
-        if (item.Cost is not null && item.Cost.Value != line.TotalPrice)
-            differences.Add($"Price: {item.Cost.Value.ToString(CultureInfo.InvariantCulture)} != {line.TotalPrice.ToString(CultureInfo.InvariantCulture)}");
-
-        return string.Join(" | ", differences);
-    }
+    /// <summary>The item's maximum mileage against the line's service interval; two absent values agree.</summary>
+    private static bool MileageAgrees(VehicleServiceItemDTO item, VehicleServiceMenuLineDTO line) =>
+        item.MaximumMileage == line.ServiceIntervalValueInMeter;
 
     private static FreeServiceParityVinOutcome ResolveOutcome(
         VehicleServiceMenuStatus? menuStatus,
         FreeServiceParityVinSummaryModel summary)
     {
-        // Every VIN reaching here carries at least one pending free item — the scope gate dropped the
+        // Every VIN reaching here carries at least one pending free item — the scope gates dropped the
         // rest — so there is always something to look up.
         switch (menuStatus)
         {
@@ -283,20 +311,21 @@ public class FreeServiceMenuParityAuditor(
                 return FreeServiceParityVinOutcome.MenuUnavailable;
         }
 
-        if (summary.ItemsWithoutMenuCodeCount > 0 || summary.ItemsCodeUnmatchedCount > 0)
-            return FreeServiceParityVinOutcome.Mismatch;
+        // Found, but the free filter left nothing: the model's menu has no variant flagged free.
+        if (summary.FreeMenuLineCount == 0)
+            return FreeServiceParityVinOutcome.NoFreeMenu;
 
-        return summary.MatchedWithDifferencesCount == 0
+        return summary.MatchedCount == summary.FreeServiceItemCount
             ? FreeServiceParityVinOutcome.Match
-            : FreeServiceParityVinOutcome.MatchWithDifferences;
+            : FreeServiceParityVinOutcome.Mismatch;
     }
 
     private static FreeServiceParityRowModel CreateRow(
         string vin,
         string basicModelCode,
+        DateTime? invoiceDate,
         VehicleServiceMenuStatus? menuStatus,
         FreeServiceParityMatchResult result,
-        string differences,
         VehicleServiceItemDTO item,
         VehicleServiceMenuLineDTO? line)
     {
@@ -304,15 +333,14 @@ public class FreeServiceMenuParityAuditor(
         {
             VIN = vin,
             BasicModelCode = basicModelCode,
+            InvoiceDate = invoiceDate,
             MenuStatus = menuStatus,
             MatchResult = result,
-            Differences = differences,
 
             ServiceItemId = item.ServiceItemID?.Trim() ?? string.Empty,
             ServiceItemName = item.Name ?? string.Empty,
             ItemMenuCode = item.PackageCode ?? string.Empty,
             ItemMaximumMileage = item.MaximumMileage,
-            ItemCost = item.Cost,
             ItemStatus = item.Status ?? string.Empty,
             ItemStatusEnum = item.StatusEnum,
             ItemClaimable = item.Claimable,
@@ -322,7 +350,6 @@ public class FreeServiceMenuParityAuditor(
 
             MenuVariantId = line?.VariantID,
             MenuVariantName = line?.VariantName ?? string.Empty,
-            MenuVariantIsFree = line?.IsFree,
             MenuLineKey = line?.LineKey ?? string.Empty,
             MenuLineCode = line?.Code ?? string.Empty,
             MenuLabourCode = line?.LabourCode ?? string.Empty,
@@ -330,17 +357,16 @@ public class FreeServiceMenuParityAuditor(
             MenuLineType = line?.LineType,
             MenuIsStandalone = line?.IsStandalone,
             MenuIntervalKm = line?.ServiceIntervalValueInMeter,
-            MenuTotalPrice = line?.TotalPrice,
         };
     }
 
     private static string? NormalizeVin(string? vin) => vin?.Trim()?.ToUpperInvariant();
 
     /// <summary>
-    /// Column order is for HUMAN reading: after the row's identity and verdict, every comparable pair
-    /// sits side by side — the item's value immediately left of the menu's value it was compared to
-    /// (code | code, mileage | interval, name | description, cost | price) — so a scan across two
-    /// adjacent cells IS the comparison. The single-sided context columns follow, item's then menu's.
+    /// Column order is for HUMAN reading: after the row's identity and verdict, the two compared pairs
+    /// sit side by side — the item's value immediately left of the menu's (code | code,
+    /// mileage | interval) — so a scan across two adjacent cells IS the comparison. The single-sided
+    /// context columns follow, item's then menu's.
     /// </summary>
     private sealed class FreeServiceParityRowModelCsvMap : ClassMap<FreeServiceParityRowModel>
     {
@@ -348,37 +374,34 @@ public class FreeServiceMenuParityAuditor(
         {
             Map(x => x.VIN).Index(0);
             Map(x => x.BasicModelCode).Index(1);
-            Map(x => x.MenuStatus).Index(2);
-            Map(x => x.MatchResult).Index(3);
-            Map(x => x.Differences).Index(4);
+            Map(x => x.InvoiceDate).Index(2).TypeConverterOption.Format("yyyy-MM-dd");
+            Map(x => x.MenuStatus).Index(3);
+            Map(x => x.MatchResult).Index(4);
 
             // ---- the compared pairs, side by side: item | menu ----
             Map(x => x.ItemMenuCode).Index(5);
             Map(x => x.MenuLineCode).Index(6);
             Map(x => x.ItemMaximumMileage).Index(7);
             Map(x => x.MenuIntervalKm).Index(8);
-            Map(x => x.ServiceItemName).Index(9);
-            Map(x => x.MenuDescription).Index(10);
-            Map(x => x.ItemCost).Index(11);
-            Map(x => x.MenuTotalPrice).Index(12);
 
             // ---- item-only context ----
-            Map(x => x.ServiceItemId).Index(13);
-            Map(x => x.ItemStatus).Index(14);
-            Map(x => x.ItemStatusEnum).Index(15);
-            Map(x => x.ItemClaimable).Index(16);
-            Map(x => x.ItemActivatedAt).Index(17);
-            Map(x => x.ItemExpiresAt).Index(18);
-            Map(x => x.ItemClaimDate).Index(19);
+            Map(x => x.ServiceItemId).Index(9);
+            Map(x => x.ServiceItemName).Index(10);
+            Map(x => x.ItemStatus).Index(11);
+            Map(x => x.ItemStatusEnum).Index(12);
+            Map(x => x.ItemClaimable).Index(13);
+            Map(x => x.ItemActivatedAt).Index(14);
+            Map(x => x.ItemExpiresAt).Index(15);
+            Map(x => x.ItemClaimDate).Index(16);
 
             // ---- menu-only context ----
-            Map(x => x.MenuVariantId).Index(20);
-            Map(x => x.MenuVariantName).Index(21);
-            Map(x => x.MenuVariantIsFree).Index(22);
-            Map(x => x.MenuLineKey).Index(23);
-            Map(x => x.MenuLabourCode).Index(24);
-            Map(x => x.MenuLineType).Index(25);
-            Map(x => x.MenuIsStandalone).Index(26);
+            Map(x => x.MenuDescription).Index(17);
+            Map(x => x.MenuVariantId).Index(18);
+            Map(x => x.MenuVariantName).Index(19);
+            Map(x => x.MenuLineKey).Index(20);
+            Map(x => x.MenuLabourCode).Index(21);
+            Map(x => x.MenuLineType).Index(22);
+            Map(x => x.MenuIsStandalone).Index(23);
         }
     }
 }

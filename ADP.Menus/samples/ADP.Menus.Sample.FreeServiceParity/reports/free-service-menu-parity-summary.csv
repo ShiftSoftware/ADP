@@ -1,0 +1,36 @@
+Section,Metric,Value
+Run,GeneratedAtUtc,2026-09-30 21:22
+Run,ElapsedSeconds,138
+Run,Database,DataSource=C:\mounts\adp-sync-agent-destination\company-data-write.duckdb;ACCESS_MODE=READ_ONLY
+Run,InvoiceDateFrom,(none - all VINs)
+Run,MenuVariants,FreeOnly
+Run,ConditionalFreeItems,excluded
+Run,ComparedProperties,MenuCode + Mileage
+Run,Language,en
+Run,Country,default
+Run,BrokerStockLookup,on
+Run,VinSource,store
+Run,Limit,(none)
+Scope,RequestedVins,235315
+Scope,SkippedInvoicedBeforeDate,0
+Scope,SkippedNoFreeItems,52031
+Scope,SkippedNonePending,115373
+Scope,NotAnsweredByLookup,0
+Scope,ComparedVins,67911
+VinOutcome,Match,0
+VinOutcome,Mismatch,0
+VinOutcome,NoFreeMenu,63311
+VinOutcome,MenuNotFound,4600
+VinOutcome,MenuUnavailable,0
+VinOutcome,MenuNotRegistered,0
+VinOutcome,NoBasicModelCode,0
+Items,FreeItemsCompared,652470
+Items,PendingFreeItemsCompared,347960
+Items,Matched,0
+Items,MileageMismatch,0
+Items,FreeItemCodeUnmatched,0
+Items,FreeItemWithoutMenuCode,5665
+Items,NoFreeMenu,646805
+Items,ExcludedConditionalFreeItems,99905
+Items,FreeItemsOnVinsWithNonePending,492260
+Items,FreeMenuLinesGenerated,0
