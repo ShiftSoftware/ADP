@@ -1,11 +1,8 @@
 import { addDays, localDate, parseDate } from './calendar-date';
 
-export type CalendarApiVersion = 'v1' | 'v2';
-
 export interface BookingTarget {
   url: string;
-  version?: CalendarApiVersion;
-  companyId: string;
+  // The branch's hash ID.
   branchId: string;
   departmentId: string;
   brandId: string;
@@ -33,13 +30,6 @@ export type BookingError = { kind: 'network' } | { kind: 'http'; status: number 
 
 export type BookingOutcome = { status: 'ready'; availability: BookingAvailability } | { status: 'empty' } | { status: 'error'; error: BookingError } | { status: 'cancelled' };
 
-export interface BranchRecord {
-  ID?: string | number;
-  IntegrationId?: string;
-  CompanyId?: string | number;
-  CompanyIntegrationId?: string;
-}
-
 export interface LoadOptions {
   today?: string;
   language?: string;
@@ -53,8 +43,6 @@ export const REQUEST_DAYS = 30;
 const SLOT = /^(\d{4}-\d{2}-\d{2})\s+(\d{1,2}):(\d{2})\s*([AaPp][Mm])$/;
 
 const pad = (value: number) => String(value).padStart(2, '0');
-
-export const calendarApiVersion = (value: unknown): CalendarApiVersion => (value === 'v2' ? 'v2' : 'v1');
 
 export function parseSlot(raw: unknown): { date: string; time: string } | null {
   if (typeof raw !== 'string') return null;
@@ -117,23 +105,18 @@ export function summarise(days: BookingDay[]): BookingAvailability | null {
   };
 }
 
-// v1 identifies a branch by Integration IDs, v2 by hash IDs; the query names are the same.
-export function branchIds(branch: BranchRecord | null | undefined, version: CalendarApiVersion = 'v1'): { companyId: string; branchId: string } {
-  if (!branch) return { companyId: '', branchId: '' };
-
-  const [company, id] = version === 'v2' ? [branch.CompanyId, branch.ID] : [branch.CompanyIntegrationId, branch.IntegrationId];
-
-  return { companyId: company === undefined || company === null ? '' : String(company), branchId: id === undefined || id === null ? '' : String(id) };
+// Everything the endpoint needs is present.
+export function isCompleteTarget(target: Partial<BookingTarget> | null | undefined): boolean {
+  return !!(target?.url && target.branchId && target.departmentId && target.brandId);
 }
 
 export function queryUrl(target: Partial<BookingTarget> | null | undefined, today?: string): string | null {
-  if (!target?.url || !target.companyId || !target.branchId || !target.departmentId || !target.brandId) return null;
+  if (!isCompleteTarget(target)) return null;
 
   const from = parseDate(today) ?? localDate();
   const query = new URLSearchParams({
     from,
     to: addDays(from, REQUEST_DAYS),
-    companyId: String(target.companyId),
     branchId: String(target.branchId),
     departmentId: String(target.departmentId),
     brandId: String(target.brandId),
@@ -144,7 +127,7 @@ export function queryUrl(target: Partial<BookingTarget> | null | undefined, toda
 
 const cache = new Map<string, BookingOutcome>();
 
-const cacheKey = (url: string, target: Partial<BookingTarget>, language: string) => `${calendarApiVersion(target.version)} ${language} ${url}`;
+const cacheKey = (url: string, language: string) => `${language} ${url}`;
 
 export function clearAvailabilityCache() {
   cache.clear();
@@ -165,7 +148,7 @@ export function createAvailabilityLoader(fetcher: Fetcher = (url, init) => fetch
     if (!url) return { status: 'cancelled' };
 
     const language = options.language || 'en';
-    const key = cacheKey(url, target, language);
+    const key = cacheKey(url, language);
     const cached = cache.get(key);
     if (cached) return cached;
 

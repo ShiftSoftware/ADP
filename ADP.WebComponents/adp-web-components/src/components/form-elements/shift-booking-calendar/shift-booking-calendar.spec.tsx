@@ -16,7 +16,7 @@ const day = (date: string, ...times: string[]) => ({ Date: date, Times: times.ma
 
 const DAYS = [day('2026-10-01', '09:00 AM', '10:00 AM', '12:00 PM', '01:00 PM'), day('2026-10-03', '09:00 AM', '02:00 PM'), day('2026-10-04', '10:00 AM', '01:00 PM')];
 
-const TARGET = 'calendar-api="https://calendar.example/api/public/calendar" company-id="1" branch-id="42" department-id="showroom" brand-id="BRAND" today="2026-09-28"';
+const TARGET = 'calendar-api="https://calendar.example/api/public/calendar" branch-id="Xr8pQ" department-id="showroom" brand-id="BRAND" today="2026-09-28"';
 
 type Respond = (url: string) => Promise<unknown>;
 
@@ -109,7 +109,7 @@ const expectTimes = (page: SpecPage) => {
 
 describe('states', () => {
   it('idle until every id is present: localized message, no request, days view', async () => {
-    const { page } = await mount('calendar-api="https://calendar.example/api/public/calendar" company-id="1" department-id="showroom" brand-id="BRAND"');
+    const { page } = await mount('calendar-api="https://calendar.example/api/public/calendar" department-id="showroom" brand-id="BRAND"');
 
     expect(root(page).querySelector('.bc-root').getAttribute('data-status')).toBe('idle');
     expect(message(page).getAttribute('data-message')).toBe('idle');
@@ -138,7 +138,7 @@ describe('states', () => {
 
     expect(requests).toHaveLength(1);
     expect(url.searchParams.get('from')).toBe('2026-09-28');
-    expect(url.searchParams.get('branchId')).toBe('42');
+    expect(url.searchParams.get('branchId')).toBe('Xr8pQ');
     expect(calendar(page).enabledDates).toEqual(['2026-10-01', '2026-10-03', '2026-10-04']);
     expect([calendar(page).min, calendar(page).max, calendar(page).value, calendar(page).month]).toEqual(['2026-10-01', '2026-10-04', '', '2026-10']);
     expect(calendar(page).busy).toBe(false);
@@ -197,7 +197,7 @@ describe('states', () => {
     expect(veil.hasAttribute('data-shown')).toBe(false);
 
     respond = ok(DAYS);
-    const ready = await mount(TARGET.replace('branch-id="42"', 'branch-id="7"'));
+    const ready = await mount(TARGET.replace('branch-id="Xr8pQ"', 'branch-id="Mn2vK"'));
     expect(root(ready.page).querySelector('.bc-empty').hasAttribute('data-shown')).toBe(false);
   });
 
@@ -303,7 +303,7 @@ describe('picker contract', () => {
       return statuses;
     };
 
-    expect(await heard('company-id="1"')).toEqual([]);
+    expect(await heard('department-id="showroom"')).toEqual([]);
 
     respond = () => new Promise(() => undefined);
     expect(await heard(TARGET)).toEqual(['Loading available days…']);
@@ -413,12 +413,12 @@ describe('value rules', () => {
   });
 
   it('a branch and a value set together are not a change; an id filled in later is not either', async () => {
-    const { page, el, changes } = await hosted('calendar-api="https://calendar.example/api/public/calendar" department-id="showroom" brand-id="BRAND-A" today="2026-09-28"');
+    const { page, el, changes } = await hosted('calendar-api="https://calendar.example/api/public/calendar" department-id="showroom" today="2026-09-28"');
 
-    el.branchId = '42';
+    el.branchId = 'Xr8pQ';
     el.value = '2026-10-03T14:00:00+03:00';
     await settle(page);
-    el.companyId = '1';
+    el.brandId = 'BRAND-A';
     await settle(page);
 
     expect(el.value).toBe('2026-10-03T14:00:00+03:00');
@@ -431,10 +431,9 @@ describe('value rules', () => {
     expect(el.value).toBe('2026-10-04T10:00:00+03:00');
   });
 
-  it('a later branch, company, department or brand change clears it, with value "" and complete false', async () => {
+  it('a later branch, department or brand change clears it, with value "" and complete false', async () => {
     for (const [prop, next] of [
       ['branchId', '43'],
-      ['companyId', '2'],
       ['departmentId', 'service-center'],
       ['brandId', 'BRAND-B'],
     ] as const) {
@@ -448,7 +447,7 @@ describe('value rules', () => {
     }
   });
 
-  it('the endpoint, version or today changing keeps it', async () => {
+  it('the endpoint or today changing keeps it', async () => {
     const { page, el } = await hosted(`${TARGET} value="2026-10-03T14:00:00+03:00"`);
 
     el.today = '2026-09-29';
@@ -694,10 +693,10 @@ describe('selection', () => {
 
   it('ids that arrive while idle keep the defaultValue', async () => {
     const { page, el, field } = await mount(
-      'calendar-api="https://calendar.example/api/public/calendar" company-id="1" department-id="showroom" brand-id="BRAND" today="2026-09-28" default-value="2026-10-03T14:00"',
+      'calendar-api="https://calendar.example/api/public/calendar" department-id="showroom" brand-id="BRAND" today="2026-09-28" default-value="2026-10-03T14:00"',
     );
 
-    el.branchId = '42';
+    el.branchId = 'Xr8pQ';
     await settle(page);
 
     expect(field.getValue()).toBe('2026-10-03T14:00');
@@ -718,17 +717,16 @@ describe('selection', () => {
     expectDays(page);
   });
 
-  it('ids, version and endpoint changed together send one request', async () => {
+  it('ids and endpoint changed together send one request', async () => {
     const { page, el } = await mount(TARGET);
 
-    el.calendarApiVersion = 'v2';
-    el.calendarApi = 'https://calendar.example/api/public/v2/calendar';
-    el.companyId = 'pW0G3';
-    el.branchId = 'KJemJ';
+    el.calendarApi = 'https://calendar.example/api/calendar';
+    el.branchId = 'Mn2vK';
+    el.departmentId = 'service-center';
     await settle(page);
 
     expect(requests).toHaveLength(2);
-    expect(requests[1]).toMatch(/^https:\/\/calendar\.example\/api\/public\/v2\/calendar\?.*companyId=pW0G3&branchId=KJemJ&/);
+    expect(requests[1]).toMatch(/^https:\/\/calendar\.example\/api\/calendar\?from=[^&]+&to=[^&]+&branchId=Mn2vK&departmentId=service-center&/);
   });
 
   it('defaultValue that is a time opens on the times of its day, with the time chosen', async () => {

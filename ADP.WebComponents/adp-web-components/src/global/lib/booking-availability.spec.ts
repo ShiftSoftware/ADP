@@ -1,18 +1,6 @@
-import {
-  BookingOutcome,
-  branchIds,
-  calendarApiVersion,
-  clearAvailabilityCache,
-  createAvailabilityLoader,
-  Fetcher,
-  parseDays,
-  parseSlot,
-  queryUrl,
-  REQUEST_DAYS,
-  slotValue,
-} from './booking-availability';
+import { BookingOutcome, clearAvailabilityCache, createAvailabilityLoader, Fetcher, parseDays, parseSlot, queryUrl, REQUEST_DAYS, slotValue } from './booking-availability';
 
-const TARGET = { url: 'https://calendar.example/api/public/calendar', companyId: '1', branchId: '42', departmentId: 'showroom', brandId: 'BRAND' };
+const TARGET = { url: 'https://calendar.example/api/public/calendar', branchId: 'Xr8pQ', departmentId: 'showroom', brandId: 'BRAND' };
 
 const reply = (payload: unknown, status = 200) => Promise.resolve({ ok: status >= 200 && status < 300, status, json: () => Promise.resolve(payload) } as Response);
 
@@ -112,23 +100,18 @@ describe('parseDays', () => {
 });
 
 describe('query', () => {
-  it('one window from today, same names in v1 and v2', () => {
+  it('one window from today', () => {
     const url = new URL(queryUrl(TARGET, '2026-09-28'));
 
     expect(url.origin + url.pathname).toBe(TARGET.url);
     expect(Object.fromEntries(url.searchParams)).toEqual({
       from: '2026-09-28',
       to: '2026-10-28',
-      companyId: '1',
-      branchId: '42',
+      branchId: 'Xr8pQ',
       departmentId: 'showroom',
       brandId: 'BRAND',
     });
     expect(REQUEST_DAYS).toBe(30);
-
-    const v2 = new URL(queryUrl({ ...TARGET, version: 'v2', url: 'https://calendar.example/api/public/v2/calendar', companyId: 'pW0G3', branchId: 'KJemJ' }, '2026-09-28'));
-    expect([...v2.searchParams.keys()]).toEqual([...url.searchParams.keys()]);
-    expect(v2.searchParams.get('companyId')).toBe('pW0G3');
   });
 
   it('appends to a URL that already has a query', () => {
@@ -146,20 +129,6 @@ describe('query', () => {
 
     expect(from).toBe(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
     expect(new URL(queryUrl(TARGET, 'not-a-date')).searchParams.get('from')).toBe(from);
-  });
-
-  it('branchIds: Integration IDs for v1, hashes for v2', () => {
-    const branch = { ID: 'KJemJ', IntegrationId: '42', CompanyId: 'pW0G3', CompanyIntegrationId: '1' };
-
-    expect(branchIds(branch)).toEqual({ companyId: '1', branchId: '42' });
-    expect(branchIds(branch, 'v1')).toEqual({ companyId: '1', branchId: '42' });
-    expect(branchIds(branch, 'v2')).toEqual({ companyId: 'pW0G3', branchId: 'KJemJ' });
-    expect(branchIds(undefined, 'v2')).toEqual({ companyId: '', branchId: '' });
-    expect(branchIds({ IntegrationId: '42' }, 'v1')).toEqual({ companyId: '', branchId: '42' });
-  });
-
-  it('calendarApiVersion defaults to v1', () => {
-    expect([calendarApiVersion('v2'), calendarApiVersion('v1'), calendarApiVersion(undefined), calendarApiVersion('V2')]).toEqual(['v2', 'v1', 'v1', 'v1']);
   });
 });
 
@@ -255,7 +224,7 @@ describe('loader', () => {
     expect(calls).toHaveLength(1);
     expect(results[1]).toBe(results[0]);
 
-    await createAvailabilityLoader(fetcher).load({ ...TARGET, version: 'v2' }, { today: '2026-09-28' });
+    await createAvailabilityLoader(fetcher).load({ ...TARGET, departmentId: 'service-center' }, { today: '2026-09-28' });
     await createAvailabilityLoader(fetcher).load(TARGET, { today: '2026-09-28', language: 'ku' });
     await createAvailabilityLoader(fetcher).load(TARGET, { today: '2026-09-29' });
     expect(calls).toHaveLength(4);

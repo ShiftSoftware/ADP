@@ -1362,8 +1362,6 @@
       "host": {
         "properties": [
           "calendarApi",
-          "calendarApiVersion",
-          "companyId",
           "branchId",
           "departmentId",
           "brandId",
@@ -1413,7 +1411,16 @@
             "reflect": true,
             "description": "vanilla, material, soft, sharp or minimal. Unset renders vanilla."
           },
-          { "name": "branchId", "attribute": "branch-id", "type": "string", "default": null, "mutable": false, "required": false, "reflect": false, "description": "Branch id." },
+          {
+            "name": "branchId",
+            "attribute": "branch-id",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "The branch’s hash ID. The field stays idle until branch, department and brand are all set."
+          },
           {
             "name": "brandId",
             "attribute": "brand-id",
@@ -1432,17 +1439,7 @@
             "mutable": false,
             "required": false,
             "reflect": false,
-            "description": "Full URL of the calendar endpoint for calendarApiVersion, e.g. …/api/public/calendar (v1) or …/api/public/v2/calendar (v2)."
-          },
-          {
-            "name": "calendarApiVersion",
-            "attribute": "calendar-api-version",
-            "type": "\"v1\" | \"v2\"",
-            "default": "'v1'",
-            "mutable": false,
-            "required": false,
-            "reflect": false,
-            "description": "v1 (default) or v2: which kind of company and branch id the endpoint takes. The host passes the matching ids; branchIds() in ~lib/booking-availability builds them from a company-branch record."
+            "description": "Full URL of the calendar endpoint. It is called with from, to, branchId, departmentId and brandId."
           },
           {
             "name": "changeCallback",
@@ -1463,16 +1460,6 @@
             "required": false,
             "reflect": true,
             "description": "light (default), dark, or auto (follows prefers-color-scheme; for hosts that are themselves dark-aware)."
-          },
-          {
-            "name": "companyId",
-            "attribute": "company-id",
-            "type": "string",
-            "default": null,
-            "mutable": false,
-            "required": false,
-            "reflect": false,
-            "description": "Company id of the branch. The field stays idle until company, branch, department and brand are all set."
           },
           {
             "name": "dayTooltips",
@@ -1700,7 +1687,7 @@
             "mutable": true,
             "required": false,
             "reflect": false,
-            "description": "The current value, written in valueFormat. Settable in ISO (any offset) or in valueFormat: a time the branch has is chosen; any other readable value is kept and labelled; empty clears. The calendar clears it itself only when the branch, company, department or brand changes after it was set."
+            "description": "The current value, written in valueFormat. Settable in ISO (any offset) or in valueFormat: a time the branch has is chosen; any other readable value is kept and labelled; empty clears. The calendar clears it itself only when the branch, department or brand changes after it was set."
           },
           {
             "name": "valueFormat",
@@ -1895,11 +1882,10 @@
         "locales": null,
         "notes": [
           "One request per branch, from today: the endpoint’s booking delay counts from the request’s from date, so the field never pages forward. The days shown are whatever the response holds; days without times are dropped.",
-          "calendarApiVersion picks the ids: v1 sends the branch’s Integration IDs, v2 its hash IDs, under the same query names. calendarApi must be that version’s endpoint. Default v1.",
-          "Responses are cached per branch, department, brand, version, language and day for the page’s lifetime; errors are not cached and nothing retries on its own. A stale request is cancelled when the branch changes.",
+          "Responses are cached per branch, department, brand, language and day for the page’s lifetime; errors are not cached and nothing retries on its own. A stale request is cancelled when the branch changes.",
           "The submitted value and the slotChange detail are exactly branch-slot-picker’s: value YYYY-MM-DDTHH:mm, detail { date, raw, value } with raw as the endpoint sent it.",
           "States: idle (no branch yet), loading, ready, empty (no times at the branch) and error (with Try again). No day is chosen on load; the calendar opens on the month of the first open day. Reopening a day keeps the chosen time when that day has it, otherwise clears it.",
-          "The calendar owns its value. A value that is not one of the branch's times (a past booking, or one made elsewhere) is kept and labelled, never cleared by the calendar. The value is cleared only when companyId, branchId, departmentId or brandId changes after it was set: an id filled in for the first time is not a change, and neither is a host setting an id and the value in the same pass (a record loaded into the form). calendarApi, calendarApiVersion and today changing keep it. A clear fires pickerChange with value \"\" and complete false.",
+          "The calendar owns its value. A value that is not one of the branch's times (a past booking, or one made elsewhere) is kept and labelled, never cleared by the calendar. The value is cleared only when branchId, departmentId or brandId changes after it was set: an id filled in for the first time is not a change, and neither is a host setting an id and the value in the same pass (a record loaded into the form). calendarApi and today changing keep it. A clear fires pickerChange with value \"\" and complete false.",
           "Hosting with your own input: <shift-popover anchor=\"#input\" placement=\"top\" appearance=\"material\" size=\"sm\"> around <shift-booking-calendar appearance=\"material\" size=\"sm\">. Toggle the popover on the input's click, show pickerChange's label in the input and store its value; the popover closes itself when a time is picked. The calendar stays a separate element because the popover carries its content onto <body> and the calendar's views live in its own shadow root; shift-input type picker is the one-element field for pages that use shift-input.",
           "Two views in one box: picking an open day switches from the days to that day's times, the header rolling from the month to the day and the content sliding toward the start (mirrored in RTL). Change date or Escape reverses it. The box keeps the calendar's size in both views and every state; a long day scrolls inside it. Nothing below the field moves: the status row has a fixed height and also carries the validation message.",
           "Inside the field the calendar always fills the box; --shift-booking-calendar-max-inline-size and -min-inline-size set its width.",
