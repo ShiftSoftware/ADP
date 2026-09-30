@@ -1,11 +1,12 @@
 import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import type { LanguageKeys } from '~features/multi-lingual';
+import type { PickerChangeDetail } from '~lib/picker';
 
 import '~lib/middleware';
 
 import { popoverStrings } from './popover-locale';
-import { placePanel, visiblePart, Box } from './popover-position';
+import { placePanel, visiblePart, Box, PopoverPlacement } from './popover-position';
 import type { PopoverAppearance, PopoverColorScheme, PopoverPanelHandlers, PopoverSize } from './shift-popover-panel';
 
 export interface PopoverOpenChangeDetail {
@@ -145,6 +146,7 @@ export class ShiftPopover {
   @Prop({ mutable: true, reflect: true }) open: boolean = false;
   @Prop() label?: string;
   @Prop() offset: number = 8;
+  @Prop({ reflect: true }) placement: PopoverPlacement = 'bottom';
   @Prop() language: LanguageKeys = 'en';
   @Prop({ reflect: true }) appearance?: PopoverAppearance;
   @Prop({ reflect: true }) colorScheme: PopoverColorScheme = 'light';
@@ -193,6 +195,11 @@ export class ShiftPopover {
     this.stopListening();
     this.releaseAnchor();
     this.panel?.remove();
+  }
+
+  @Watch('placement')
+  onPlacementChange() {
+    if (this.open) this.schedule();
   }
 
   @Watch('anchor')
@@ -425,6 +432,7 @@ export class ShiftPopover {
       offset: this.offset,
       margin: VIEWPORT_MARGIN,
       rtl: this.direction === 'rtl',
+      placement: this.placement === 'top' ? 'top' : 'bottom',
     });
 
     this.panel.style.setProperty('--_top', `${placement.top}px`);
@@ -473,7 +481,9 @@ export class ShiftPopover {
   private onKeyDown = (event: KeyboardEvent) => {
     if (event.key !== 'Escape' || event.defaultPrevented || !this.within(event.composedPath())) return;
 
+    // The Escape that closes the panel is spent: a dialog or page listening on window must not close as well.
     event.preventDefault();
+    event.stopPropagation();
     this.hide();
     this.focusAnchor();
   };
@@ -536,12 +546,18 @@ export class ShiftPopover {
     for (const node of Array.from(this.el.childNodes)) this.panel.appendChild(node);
   }
 
+  // A picker in the panel that reports a finished choice (pickerChange with complete) is done with it.
+  private onContentPick = (event: CustomEvent<PickerChangeDetail>) => {
+    if (event.detail?.complete && this.open) this.hide();
+  };
+
   private handlers: PopoverPanelHandlers = {
     keydown: event => this.onPanelKeyDown(event),
     focus: () => this.focusContent(),
     strayFocus: () => this.focusAnchor(),
     ready: panel => {
       this.panel = panel;
+      panel.addEventListener('pickerChange', this.onContentPick);
       this.adoptContent();
       if (typeof MutationObserver !== 'undefined') {
         this.contentObserver = new MutationObserver(() => this.adoptContent());

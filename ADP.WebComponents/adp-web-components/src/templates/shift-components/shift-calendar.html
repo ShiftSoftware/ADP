@@ -1295,7 +1295,7 @@
                         '  <button id="booking-date-button" type="button" aria-label="Open calendar">…</button>',
                         '</div>',
                         '',
-                        '<shift-popover id="booking-popover" anchor="#booking-date" appearance="material" label="Choose date" class="tickets-palette">',
+                        '<shift-popover id="booking-popover" anchor="#booking-date" placement="top" appearance="material" label="Choose date" class="tickets-palette">',
                         '  <shift-calendar id="booking-calendar"></shift-calendar>',
                         '</shift-popover>',
                         '',
@@ -1440,6 +1440,7 @@
 
                   window.dropdownHost = () => ({
                     text: '',
+                    placement: 'bottom',
 
                     init() {
                       this.$nextTick(() => {
@@ -1634,6 +1635,7 @@
                   <h3 class="text-lg font-semibold">2 · Another app’s input</h3>
                   <p class="text-base-content/70 text-sm">
                     A plain input and button styled like a MudBlazor outlined field open <code>shift-popover</code> with a <code>shift-calendar</code>, in <code>material</code>.
+                    <code>placement="top"</code> prefers the space above the field and opens below when only below has room; the bottom sheet under 600px is the same for both.
                   </p>
                 </div>
                 <div class="host-app" :data-scheme="hostScheme" :dir="hostDir" x-data="dropdownHost()">
@@ -1646,7 +1648,23 @@
                       </svg>
                     </button>
                   </div>
-                  <shift-popover x-ref="popover" anchor="#dropdown-booking-date" appearance="material" data-fixed-appearance label="Choose date" class="tickets-palette">
+                  <div class="mt-3 flex items-center gap-2 text-xs">
+                    <span>placement</span>
+                    <div class="flex gap-1">
+                      <template x-for="item in ['bottom', 'top']" :key="item">
+                        <button type="button" class="btn btn-xs" :class="placement === item ? 'btn-primary' : 'btn-ghost'" :aria-pressed="String(placement === item)" @click="placement = item" x-text="item"></button>
+                      </template>
+                    </div>
+                  </div>
+                  <shift-popover
+                    x-ref="popover"
+                    anchor="#dropdown-booking-date"
+                    :placement="placement"
+                    appearance="material"
+                    data-fixed-appearance
+                    label="Choose date"
+                    class="tickets-palette"
+                  >
                     <shift-calendar x-ref="calendar" data-fixed-appearance appearance="material" class="tickets-palette"></shift-calendar>
                   </shift-popover>
                 </div>

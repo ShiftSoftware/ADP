@@ -467,11 +467,12 @@
   transform: none;
 }
 
-/* A long day scrolls inside the box; the ring room keeps focus rings clear of the scroll clip. */
+/* A long day scrolls inside the box; the ring room keeps focus rings, and the extra end room raised chips' shadows, clear of the scroll clip. */
 .bc-times-scroll {
   flex: 1 1 auto;
   min-block-size: 0;
   padding: var(--_ring);
+  padding-block-end: calc(var(--_ring) + var(--shift-booking-calendar-scroll-end-room, 6px));
   margin: calc(var(--_ring) * -1);
   overflow-x: hidden;
   overflow-y: auto;

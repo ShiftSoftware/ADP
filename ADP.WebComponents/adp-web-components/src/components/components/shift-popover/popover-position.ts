@@ -17,20 +17,27 @@ export interface Placement {
   maxHeight: number | null;
 }
 
+export type PopoverPlacement = 'bottom' | 'top';
+
 export interface PlaceOptions {
   offset: number;
   margin: number;
   rtl: boolean;
+  placement?: PopoverPlacement;
 }
 
 const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(value, Math.max(low, high)));
 
-export function placePanel(anchor: Box, panel: Size, viewport: Size, { offset, margin, rtl }: PlaceOptions): Placement {
+export function placePanel(anchor: Box, panel: Size, viewport: Size, { offset, margin, rtl, placement = 'bottom' }: PlaceOptions): Placement {
   const roomBelow = Math.max(0, viewport.height - margin - (anchor.bottom + offset));
   const roomAbove = Math.max(0, anchor.top - offset - margin);
 
-  // Never over the anchor: without room on either side the panel takes the larger one and scrolls inside.
-  const side: Placement['side'] = panel.height <= roomBelow ? 'below' : panel.height <= roomAbove || roomAbove > roomBelow ? 'above' : 'below';
+  // placement is a preference: the other side when only it fits, and without room on either side the larger one, scrolling inside. Never over the anchor.
+  const preferred: Placement['side'] = placement === 'top' ? 'above' : 'below';
+  const other: Placement['side'] = preferred === 'above' ? 'below' : 'above';
+  const room = (side: Placement['side']) => (side === 'below' ? roomBelow : roomAbove);
+  const side: Placement['side'] =
+    panel.height <= room(preferred) ? preferred : panel.height <= room(other) ? other : room(other) > room(preferred) ? other : preferred;
   const height = Math.min(panel.height, side === 'below' ? roomBelow : roomAbove);
   const top = side === 'below' ? anchor.bottom + offset : anchor.top - offset - height;
   const left = clamp(rtl ? anchor.right - panel.width : anchor.left, margin, viewport.width - margin - panel.width);

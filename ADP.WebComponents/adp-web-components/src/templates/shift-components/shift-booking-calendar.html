@@ -132,21 +132,30 @@
           lang: 'HTML',
           code: () =>
             [
-              '<button type="button" id="book">Book a time</button>',
-              '<shift-popover anchor="#book">',
-              '  <shift-booking-calendar calendar-api="…" company-id="1" branch-id="42" department-id="service-center" brand-id="BRAND"></shift-booking-calendar>',
+              '<label for="booking-date">Booking date</label>',
+              '<input id="booking-date" readonly />',
+              '',
+              '<shift-popover id="booking-popover" anchor="#booking-date" placement="top" appearance="material" size="sm">',
+              '  <shift-booking-calendar',
+              '    appearance="material" size="sm"',
+              '    calendar-api="…" calendar-api-version="v2"',
+              '    company-id="pW0G3" branch-id="KJemJ" department-id="service-center" brand-id="BRAND-A"',
+              '    value-format="iso" value="2026-09-20T10:00:00+03:00"',
+              '  ></shift-booking-calendar>',
               '</shift-popover>',
               '',
               '<script type="module">',
-              "  const button = document.getElementById('book');",
-              "  const popover = document.querySelector('shift-popover');",
+              "  const input = document.getElementById('booking-date');",
+              "  const popover = document.getElementById('booking-popover');",
               '',
-              "  button.addEventListener('click', () => popover.toggle());",
+              "  input.addEventListener('click', () => popover.toggle());",
               "  popover.addEventListener('pickerChange', ({ detail }) => {",
-              '    // { value: "2026-10-01T13:00:00+03:00", label: "Thu, 1 Oct 2026, 13:00", complete: true }',
-              '    if (detail.label) button.textContent = detail.label;',
-              '    if (detail.complete) popover.hide();',
+              '    // { value: "2026-10-01T13:00:00+03:00", label: "Thu, 1 Oct 2026, 1:00 PM", complete: true }',
+              '    // On load it reports the label of the value it was given, even a past one; a branch change clears it with value "".',
+              '    input.value = detail.label;',
+              '    save(detail.value);',
               '  });',
+              '  // The popover closes itself when a time is picked.',
               '<\/script>',
             ].join('\n'),
         },
@@ -201,7 +210,7 @@
           label: 'Days & times',
           props: ['disabledWeekdays', 'disabledDates', 'slotCounts', 'fewSlots', 'dayTooltips', 'showToday', 'hourCycle', 'defaultValue'],
         },
-        { label: 'Picker', props: ['value', 'utcOffset', 'showLabel', 'showStatus', 'showEmptyState'] },
+        { label: 'Picker', props: ['value', 'valueFormat', 'utcOffset', 'showLabel', 'showStatus', 'showEmptyState'] },
         { label: 'Form field', props: ['name', 'form', 'label', 'localization', 'isRequired', 'isDisabled', 'wrapperId', 'wrapperClass'] },
         { label: 'Appearance', props: ['appearance', 'colorScheme', 'size'] },
         { label: 'Localization', props: ['language'] },
@@ -477,6 +486,10 @@
         },
 
         applyAll() {
+          document.querySelectorAll('shift-popover, shift-input').forEach(host => {
+            host.colorScheme = this.scheme;
+            host.language = this.language;
+          });
           document.querySelectorAll('shift-booking-calendar').forEach(booking => {
             if (!booking.hasAttribute('data-fixed-appearance')) booking.appearance = this.appearance;
             booking.colorScheme = booking.dataset.scheme || this.scheme;
@@ -515,6 +528,9 @@
         showToday: true,
         hourCycle: 'h23',
         defaultValue: '',
+        value: '',
+        valueFormat: 'iso',
+        utcOffset: '+03:00',
         name: 'bookingCalendar',
         label: '',
         localizedLabel: '',
@@ -537,6 +553,7 @@
           label: 'Days & times',
           fields: ['disabledWeekdays', 'disabledDates', 'slotCounts', 'fewSlots', 'dayTooltips', 'showToday', 'hourCycle', 'defaultValue'],
         },
+        { id: 'value', label: 'Value', fields: ['value', 'valueFormat', 'utcOffset'] },
         {
           id: 'field',
           label: 'Form field',
@@ -553,11 +570,12 @@
       window.triggerExample = () => ({
         label: '',
         value: '',
+        branch: '42',
+        format: 'iso',
 
         pick(detail) {
           this.label = detail.label;
           this.value = detail.value;
-          if (detail.complete) this.$refs.popover.hide();
         },
       });
 
@@ -574,6 +592,7 @@
         consoleOpen: true,
         copied: false,
         events: [],
+        appliedValue: undefined,
         eventCount: 0,
         form: PLAYGROUND(),
 
@@ -651,6 +670,12 @@
           subject.showEmptyState = form.showEmptyState;
           subject.hourCycle = form.hourCycle;
           subject.defaultValue = form.defaultValue || undefined;
+          subject.valueFormat = form.valueFormat || 'iso';
+          subject.utcOffset = form.utcOffset || undefined;
+          if (form.value !== this.appliedValue) {
+            this.appliedValue = form.value;
+            subject.value = form.value;
+          }
           subject.name = form.name || 'bookingCalendar';
           subject.label = form.label || undefined;
           subject.localization = form.localizedLabel ? { [form.language]: { label: form.localizedLabel } } : {};
@@ -689,6 +714,9 @@
           if (Number(form.fewSlots) !== 3) add('few-slots', form.fewSlots);
           if (!form.showToday) add('show-today', 'false');
           add('default-value', form.defaultValue);
+          add('value', form.value);
+          if (form.valueFormat !== 'iso') add('value-format', form.valueFormat);
+          if (form.utcOffset !== '+03:00') add('utc-offset', form.utcOffset);
           if (form.name !== 'bookingCalendar') add('name', form.name);
           add('label', form.label);
           add('wrapper-id', form.wrapperId);
@@ -961,21 +989,58 @@
 
               <article class="grid gap-3 @3xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)] @3xl:gap-6" x-data="triggerExample()">
                 <div class="flex flex-col gap-1 @3xl:col-span-2">
-                  <h3 class="text-lg font-semibold">7 · Any trigger</h3>
+                  <h3 class="text-lg font-semibold">7 · Your own input</h3>
                   <p class="text-base-content/70 text-sm">
-                    A button and a <code>shift-popover</code> hold the same calendar. <code>pickerChange</code> gives the value and its label; close on <code>complete</code>.
+                    A read-only input toggles a <code>shift-popover</code> with <code>placement="top"</code>. The calendar owns the value: it reports the label of the value it
+                    was given (kept even when it is not a time, like this past one), writes <code>value-format</code>, clears only when the branch changes, and the popover closes
+                    when a time is picked.
                   </p>
                 </div>
-                <div class="flex min-w-0 flex-col gap-2">
-                  <button type="button" id="picker-trigger" class="btn btn-sm self-start" x-text="label || 'Book a time'" @click="$refs.popover.toggle()"></button>
-                  <shift-popover x-ref="popover" anchor="#picker-trigger" label="Book a time">
+                <div class="flex min-w-0 flex-col gap-3">
+                  <div class="host-demo-field">
+                    <label for="picker-trigger" class="text-base-content/70 text-xs">Booking date</label>
+                    <input
+                      id="picker-trigger"
+                      class="input input-bordered input-sm w-full cursor-pointer"
+                      readonly
+                      :value="label"
+                      placeholder="Pick a day, then a time"
+                      @click="$refs.popover.toggle()"
+                      @keydown.enter.prevent="$refs.popover.toggle()"
+                    />
+                  </div>
+                  <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs" dir="ltr">
+                    <div class="flex items-center gap-2">
+                      <span>branch-id</span>
+                      <div class="flex flex-wrap gap-1">
+                        <template x-for="item in ['42', '43']" :key="item">
+                          <button type="button" class="btn btn-xs" :class="branch === item ? 'btn-primary' : 'btn-ghost border-base-300'" :aria-pressed="String(branch === item)" @click="branch = item" x-text="item"></button>
+                        </template>
+                      </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span>value-format</span>
+                      <div class="flex flex-wrap gap-1">
+                        <template x-for="item in ['iso', 'yyyy-MM-dd HH:mm', 'dd/MM/yyyy hh:mm tt']" :key="item">
+                          <button type="button" class="btn btn-xs font-mono" :class="format === item ? 'btn-primary' : 'btn-ghost border-base-300'" :aria-pressed="String(format === item)" @click="format = item" x-text="item"></button>
+                        </template>
+                      </div>
+                    </div>
+                  </div>
+                  <shift-popover x-ref="popover" anchor="#picker-trigger" placement="top" appearance="material" size="sm" label="Book a time">
                     <shift-booking-calendar
+                      data-fixed-appearance
+                      appearance="material"
+                      size="sm"
                       calendar-api="booking-availability.json"
                       company-id="1"
-                      branch-id="42"
+                      :branch-id="branch"
                       department-id="service-center"
-                      brand-id="BRAND"
+                      brand-id="BRAND-A"
                       today="2026-09-27"
+                      hour-cycle="h12"
+                      value="2026-09-20T10:00:00+03:00"
+                      :value-format="format"
                       @picker-change.camel="pick($event.detail)"
                     ></shift-booking-calendar>
                   </shift-popover>
@@ -1196,6 +1261,26 @@
                                   <label class="studio-row"
                                     ><span>defaultValue</span
                                     ><input class="input input-xs input-bordered" type="text" x-model.debounce.300ms="form.defaultValue" placeholder="2026-10-03T10:00"
+                                  /></label>
+                                </div>
+                              </template>
+                              <template x-if="group.id === 'value'">
+                                <div class="studio-rows">
+                                  <label class="studio-row"
+                                    ><span>value <small>ISO or valueFormat; kept when not a time</small></span
+                                    ><input class="input input-xs input-bordered" type="text" x-model.debounce.400ms="form.value" placeholder="2026-09-20T10:00:00+03:00" dir="ltr"
+                                  /></label>
+                                  <label class="studio-row"
+                                    ><span>valueFormat</span
+                                    ><select class="select select-xs select-bordered" x-model="form.valueFormat">
+                                      <option value="iso">iso</option>
+                                      <option value="yyyy-MM-dd HH:mm">yyyy-MM-dd HH:mm</option>
+                                      <option value="dd/MM/yyyy hh:mm tt">dd/MM/yyyy hh:mm tt</option>
+                                    </select></label
+                                  >
+                                  <label class="studio-row"
+                                    ><span>utcOffset</span
+                                    ><input class="input input-xs input-bordered" type="text" x-model.debounce.300ms="form.utcOffset" placeholder="+03:00" dir="ltr"
                                   /></label>
                                 </div>
                               </template>

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "adp-web-components",
-  "packageVersion": "0.4.6",
+  "packageVersion": "0.4.7",
   "outputFamily": "per-component",
   "components": [
     {
@@ -1333,6 +1333,11 @@
           { "name": "--shift-time-slots-selected-font-weight", "default": "var(--shift-weight, var(--_ap-weight, 400))", "description": "Type · selected time weight" },
           { "name": "--shift-time-slots-settle", "default": "var(--shift-settle, 480ms)", "description": "Motion · duration of every movement" },
           { "name": "--shift-time-slots-shadow", "default": "var(--shift-shadow-control, var(--_ap-shadow-control, none))", "description": "Effect · time shadow" },
+          {
+            "name": "--shift-time-slots-shadow-room",
+            "default": "6px",
+            "description": "Size · extra room under the last row so raised times keep their whole shadow (default 6px)"
+          },
           { "name": "--shift-time-slots-skeleton", "default": "var(--shift-accent-tint, var(--_ap-accent-tint, #f1f5f9))", "description": "Colour · loading placeholder fill" },
           { "name": "--shift-time-slots-surface", "default": "var(--shift-surface, var(--_ap-surface, #ffffff))", "description": "Colour · time background" }
         ]
@@ -1375,13 +1380,16 @@
           "language",
           "localization",
           "defaultValue",
+          "value",
+          "valueFormat",
+          "utcOffset",
           "wrapperId",
           "wrapperClass",
           "appearance",
           "colorScheme",
           "size"
         ],
-        "methods": ["refresh", "setFocus"],
+        "methods": ["refresh", "setFocus", "getValueLabel"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": [
           "branch availability request",
@@ -1671,7 +1679,7 @@
             "mutable": false,
             "required": false,
             "reflect": false,
-            "description": "Offset for the picked slot's value, e.g. +03:00; the browser's offset for that time when unset."
+            "description": "The branch's offset, e.g. +03:00: written into an ISO value, and the offset an ISO value in another offset is moved to when read. No default: when unset, ISO values carry no offset and are read as written."
           },
           {
             "name": "value",
@@ -1681,7 +1689,17 @@
             "mutable": true,
             "required": false,
             "reflect": false,
-            "description": "The picked slot as ISO with an offset (the picker contract). Settable: a slot the branch has is chosen, empty clears."
+            "description": "The current value, written in valueFormat. Settable in ISO (any offset) or in valueFormat: a time the branch has is chosen; any other readable value is kept and labelled; empty clears. The calendar clears it itself only when the branch, company, department or brand changes after it was set."
+          },
+          {
+            "name": "valueFormat",
+            "attribute": "value-format",
+            "type": "string",
+            "default": "'iso'",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "How value and pickerChange's value are written. iso (default): 2026-10-08T15:00:00, plus utcOffset when set (2026-10-08T15:00:00+03:00). Or a pattern of yyyy, MM, dd, HH, hh, mm, ss and tt (AM/PM), e.g. yyyy-MM-dd HH:mm."
           },
           {
             "name": "wrapperClass",
@@ -1707,6 +1725,12 @@
         "methods": [
           { "name": "clear", "parameters": "() => Promise<void>", "returns": "Promise<void>", "description": "Clears the chosen day and time without reloading." },
           {
+            "name": "getValueLabel",
+            "parameters": "() => Promise<string>",
+            "returns": "Promise<string>",
+            "description": "The localized display text of the current value, the same as pickerChange's label, also for a value that is not a time. For a host that attaches after the calendar has loaded."
+          },
+          {
             "name": "refresh",
             "parameters": "() => Promise<void>",
             "returns": "Promise<void>",
@@ -1723,7 +1747,7 @@
           {
             "name": "pickerChange",
             "type": "PickerChangeDetail",
-            "description": "The headless picker contract. Detail { value: the slot as ISO with an offset (utcOffset, else the browser's), label: the localized day and time, complete }. complete is true when a time is picked; a preset resolved, a kept time or a cleared slot (branch changed, value emptied) fire with complete false."
+            "description": "The headless picker contract. Detail { value: in valueFormat, label: the localized day and time, complete }. complete is true when a time is picked. With complete false it reports the label of a value the host set (on load too, and for a value that is not a time), a kept time on another day, a language or format change, and a clear after a branch, company, department or brand change (value \"\", label \"\")."
           },
           {
             "name": "pickerStatus",
@@ -1834,6 +1858,11 @@
           { "name": "--shift-booking-calendar-max-inline-size", "default": "var(--_sz-width, 380px)", "description": "Size · default and widest width" },
           { "name": "--shift-booking-calendar-min-inline-size", "default": "var(--_sz-min-width, 300px)", "description": "Size · declared minimum width" },
           { "name": "--shift-booking-calendar-muted", "default": "var(--shift-ink-muted, var(--_ap-ink-muted, #64748b))", "description": "Colour · status messages" },
+          {
+            "name": "--shift-booking-calendar-scroll-end-room",
+            "default": "6px",
+            "description": "Size · extra room at the end of the times list so the last row's shadow is not clipped (default 6px)"
+          },
           { "name": "--shift-booking-calendar-settle", "default": "var(--shift-settle, 480ms)", "description": "Motion · duration of the view switch and messages" },
           { "name": "--shift-booking-calendar-spinner-size", "default": "var(--_sz-icon, 16px)", "description": "Size · loading spinner" },
           {
@@ -1852,7 +1881,9 @@
           "calendarApiVersion picks the ids: v1 sends the branch’s Integration IDs, v2 its hash IDs, under the same query names. calendarApi must be that version’s endpoint. Default v1.",
           "Responses are cached per branch, department, brand, version, language and day for the page’s lifetime; errors are not cached and nothing retries on its own. A stale request is cancelled when the branch changes.",
           "The submitted value and the slotChange detail are exactly branch-slot-picker’s: value YYYY-MM-DDTHH:mm, detail { date, raw, value } with raw as the endpoint sent it.",
-          "States: idle (no branch yet), loading, ready, empty (no times at the branch) and error (with Try again). No day is chosen on load; the calendar opens on the month of the first open day. A new branch, or the ids going idle, returns to the days and clears the choice. Reopening a day keeps the chosen time when that day has it, otherwise clears it.",
+          "States: idle (no branch yet), loading, ready, empty (no times at the branch) and error (with Try again). No day is chosen on load; the calendar opens on the month of the first open day. Reopening a day keeps the chosen time when that day has it, otherwise clears it.",
+          "The calendar owns its value. A value that is not one of the branch's times (a past booking, or one made elsewhere) is kept and labelled, never cleared by the calendar. The value is cleared only when companyId, branchId, departmentId or brandId changes after it was set: an id filled in for the first time is not a change, and neither is a host setting an id and the value in the same pass (a record loaded into the form). calendarApi, calendarApiVersion and today changing keep it. A clear fires pickerChange with value \"\" and complete false.",
+          "Hosting with your own input: <shift-popover anchor=\"#input\" placement=\"top\" appearance=\"material\" size=\"sm\"> around <shift-booking-calendar appearance=\"material\" size=\"sm\">. Toggle the popover on the input's click, show pickerChange's label in the input and store its value; the popover closes itself when a time is picked. The calendar stays a separate element because the popover carries its content onto <body> and the calendar's views live in its own shadow root; shift-input type picker is the one-element field for pages that use shift-input.",
           "Two views in one box: picking an open day switches from the days to that day's times, the header rolling from the month to the day and the content sliding toward the start (mirrored in RTL). Change date or Escape reverses it. The box keeps the calendar's size in both views and every state; a long day scrolls inside it. Nothing below the field moves: the status row has a fixed height and also carries the validation message.",
           "Inside the field the calendar always fills the box; --shift-booking-calendar-max-inline-size and -min-inline-size set its width.",
           "appearance, colorScheme and size pass to the calendar and the times; host --shift-* variables reach both, since they inherit."
@@ -1865,7 +1896,7 @@
       "wireContract": null,
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["anchor", "open", "label", "offset", "language", "appearance", "colorScheme", "size"],
+        "properties": ["anchor", "open", "label", "offset", "placement", "language", "appearance", "colorScheme", "size"],
         "methods": ["show", "hide", "toggle"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["portaled panel holding the slotted content", "anchored positioning and bottom sheet", "dismissal and focus return", "appearance and colour scheme of the panel"]
@@ -1941,6 +1972,16 @@
             "required": false,
             "reflect": true,
             "description": "Whether the panel is open. Reflected and mutable. Set it, or use show(), hide() and toggle()."
+          },
+          {
+            "name": "placement",
+            "attribute": "placement",
+            "type": "\"bottom\" | \"top\"",
+            "default": "'bottom'",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "The preferred side. bottom (default): below the anchor, above when only above has room. top: above the anchor, below when only below has room. With room on neither side it takes the larger one and the content scrolls. The bottom sheet under 600px is the same for both."
           },
           {
             "name": "size",
@@ -2019,9 +2060,9 @@
         "notes": [
           "The content is slotted: the children of shift-popover move into a shift-popover-panel element that shift-portal appends to <body>, so no overflow or stacking context on the page clips them. Keep references to your content elements; do not look them up inside the popover after it loads. Children added later move too.",
           "The panel receives the popover’s appearance, color-scheme and size attributes and its classes. It inherits nothing from where the popover sits, so set --shift-* variables on :root or on a class you give the popover.",
-          "Positioning: below the anchor, aligned to its inline start (its right edge in RTL, from the anchor’s computed direction); above when there is no room below. It never covers the anchor: when neither side has room it takes the larger side and caps its height to it, and the content scrolls inside the panel. Shifted sideways to stay 8px inside the viewport; re-placed on scroll of any ancestor, on resize and when the anchor or the content resizes. It never scrolls the page. When the anchor scrolls out of sight the panel closes.",
-          "Under 600px of viewport width the panel is a bottom sheet: full width, at most 82dvh, sliding up from the bottom edge.",
-          "Dismissal: pointer-down outside the panel and the anchor, Escape (focus returns to the anchor), Tab out of the panel (Shift+Tab from its first control returns to the anchor; Tab from its last moves to the control after the anchor), focus moving to any element that is neither the anchor nor a popover panel, and hide() from the content, for example after a date is chosen.",
+          "Positioning, placement bottom (default): below the anchor, aligned to its inline start (its right edge in RTL, from the anchor’s computed direction); above when there is no room below. It never covers the anchor: when neither side has room it takes the larger side and caps its height to it, and the content scrolls inside the panel. Shifted sideways to stay 8px inside the viewport; re-placed on scroll of any ancestor, on resize and when the anchor or the content resizes. It never scrolls the page. When the anchor scrolls out of sight the panel closes. placement top is the mirror: above the anchor, below when only below has room, and the larger side when neither has.",
+          "Under 600px of viewport width the panel is a bottom sheet whatever the placement: full width, at most 82dvh, sliding up from the bottom edge.",
+          "Dismissal: pointer-down outside the panel and the anchor, Escape (focus returns to the anchor), Tab out of the panel (Shift+Tab from its first control returns to the anchor; Tab from its last moves to the control after the anchor), focus moving to any element that is neither the anchor nor a popover panel, a pickerChange with complete true from the content (a time or date picked in shift-booking-calendar or shift-calendar), and hide() from the content.",
           "Focus on open: content with a setFocus() method (shift-calendar has one) is asked to focus itself; otherwise the first control in the content gets focus. show({ focus: false }) leaves focus where it is.",
           "Wire a separate trigger button to toggle(): the pointer-down on it closes an open panel and the click that follows is ignored, so the button closes rather than reopens.",
           "A non-modal popup (WAI-ARIA APG): the body-level shift-popover-panel element is the role=dialog and carries the id. On the anchor the popover sets aria-haspopup=dialog, and aria-controls pointing at that id whenever the anchor is in the document tree (an anchor inside a shadow root gets none, because an IDREF cannot cross the shadow boundary). It never sets or changes the anchor’s role: aria-expanded is set only when the anchor’s role allows it (a button, a combobox, or an element whose implicit role is button), so a foreign input that manages its own ARIA, such as a MudBlazor field, keeps it. shift-input’s own date input is a combobox. What the popover set is removed when the anchor changes.",

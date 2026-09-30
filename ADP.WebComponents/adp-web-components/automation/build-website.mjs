@@ -187,11 +187,11 @@ await mkdir(outDir, { recursive: true });
 // no longer ships these files and can also lag the site commit.
 await cp(path.join(root, 'src', 'features', 'mocks', 'data', 'generated'), path.join(outDir, 'mocks', 'generated'), { recursive: true });
 
-// A `*.local.*` file is a developer's private override — gitignored, so it never
+// A `*.local.*` file or `*.local` folder is a developer's private override — gitignored, so it never
 // reaches CI, but it DOES sit in the working tree of the machine that runs this.
 // Copying one would publish whatever it holds, which is the opposite of why it is
 // kept out of the repo. Excluded here, and asserted absent from the output below.
-const isLocalOverride = source => /.local.[^.]+$/.test(path.basename(source));
+const isLocalOverride = source => /\.local(\.[^.]+)?$/.test(path.basename(source));
 
 // harness.src.css is the Tailwind input, not an asset; harness.css is its output.
 await cp(path.join(root, 'src', 'templates'), path.join(outDir, 'templates'), {
@@ -301,7 +301,7 @@ for (const style of entries.filter(entry => entry.isFile() && entry.name.endsWit
 // output — through a new copy step, a renamed pattern, a stale directory — the build
 // stops rather than publishing it.
 const leaked = (await readdir(outDir, { recursive: true, withFileTypes: true }))
-  .filter(entry => entry.isFile() && /.local.[^.]+$/.test(entry.name))
+  .filter(entry => /\.local(\.[^.]+)?$/.test(entry.name))
   .map(entry => path.relative(outDir, path.join(entry.parentPath ?? entry.path, entry.name)));
 
 if (leaked.length) fatal(`private override files reached the site: ${leaked.join(', ')}`);

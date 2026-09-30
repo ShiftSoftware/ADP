@@ -8,9 +8,10 @@ import type { LanguageKeys } from '~features/multi-lingual';
 import { ChevronLeftIcon } from '~assets/chevron-left-icon';
 
 import '~lib/middleware';
-import { BookingAvailability, BookingDay, CalendarApiVersion, calendarApiVersion, createAvailabilityLoader, slotIso, slotValue } from '~lib/booking-availability';
+import { BookingAvailability, BookingDay, CalendarApiVersion, calendarApiVersion, createAvailabilityLoader, slotValue } from '~lib/booking-availability';
 import { blockReason, buildAvailability } from '~lib/calendar-availability';
 import { dateParts, monthOf, weekdayOf } from '~lib/calendar-date';
+import { formatPickerValue, readPickerValue, valueOffset } from '~lib/picker';
 import type { PickerChangeDetail, PickerStatusDetail } from '~lib/picker';
 
 import { y } from '../../forms/defaults/validation';
@@ -28,7 +29,9 @@ type Message = (typeof MESSAGES)[number];
 
 type Frame = Record<string, string>;
 
-const localSlot = (value: string) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.exec(value || '')?.[0] ?? '';
+const IDENTITY = ['companyId', 'branchId', 'departmentId', 'brandId'] as const;
+
+type Identity = Record<(typeof IDENTITY)[number], string>;
 
 @Component({
   shadow: { delegatesFocus: true },
@@ -57,6 +60,7 @@ export class ShiftBookingCalendar implements FormElement {
   @Prop() showToday: boolean = true;
   @Prop() hourCycle: HourCycle = 'h23';
   @Prop() utcOffset?: string;
+  @Prop() valueFormat: string = 'iso';
   @Prop({ mutable: true }) value: string = '';
   @Prop() showLabel: boolean = false;
   @Prop() showStatus: boolean = false;
@@ -89,7 +93,12 @@ export class ShiftBookingCalendar implements FormElement {
   @State() announced: boolean = false;
 
   private loader = createAvailabilityLoader();
-  private loadQueued = false;
+  private syncQueued = false;
+  private loadWanted = false;
+  private current = '';
+  private identity: Identity = { companyId: '', branchId: '', departmentId: '', brandId: '' };
+  private valueTouched = false;
+  private lastEmit = '\n';
   private pendingFocus: 'times' | 'day' | null = null;
   private timeTimer?: ReturnType<typeof setTimeout>;
   private frameKey = '';
@@ -107,18 +116,20 @@ export class ShiftBookingCalendar implements FormElement {
     if (!this.detached) return;
     this.detached = false;
     this.watchFrame();
-    if (this.status === 'loading') this.queueLoad();
+    if (this.status === 'loading') this.queueSync(true);
   }
 
   componentWillLoad() {
     this.form?.subscribe(this.name, this);
-    if (this.value) this.defaultValue = localSlot(this.value);
-    this.emitted = this.value;
+    this.current = this.read(this.value) || this.read(this.defaultValue);
+    this.identity = this.ids();
+    this.emitted = this.value || '';
     this.load();
   }
 
   componentDidLoad() {
     this.emitStatus();
+    if (this.current) this.emitPicker();
   }
 
   componentDidRender() {
@@ -156,12 +167,8 @@ export class ShiftBookingCalendar implements FormElement {
   @Watch('brandId')
   @Watch('today')
   onTargetChange() {
-    // A preset belongs to the branch it was given with; ids arriving while idle are that branch.
-    if (this.status !== 'idle') this.defaultValue = '';
-    this.selectedRaw = '';
-    this.selectedDate = '';
     this.closeTimes();
-    this.queueLoad();
+    this.queueSync(true);
   }
 
   @Watch('disabledWeekdays')
@@ -182,11 +189,13 @@ export class ShiftBookingCalendar implements FormElement {
   @Watch('language')
   onLanguageChange() {
     this.emitStatus();
-    if (this.emitted) this.emitPicker(true);
+    this.emitPicker();
   }
 
-  @Watch('selectedRaw')
-  onSelectionChange() {
+  @Watch('valueFormat')
+  @Watch('utcOffset')
+  @Watch('hourCycle')
+  onFormatChange() {
     this.emitPicker();
   }
 
@@ -194,9 +203,16 @@ export class ShiftBookingCalendar implements FormElement {
   onValueChange(next: string) {
     if ((next || '') === this.emitted) return;
 
+    const local = this.read(next);
+
     this.emitted = next || '';
-    this.defaultValue = next ? localSlot(next) : '';
-    if (!next) {
+    this.valueTouched = true;
+    this.queueSync(false);
+    if (local === this.current) return;
+
+    this.current = local;
+    if (!local) {
+      this.lastEmit = '\n';
       this.selectedRaw = '';
       this.selectedDate = '';
       this.closeTimes();
@@ -216,6 +232,11 @@ export class ShiftBookingCalendar implements FormElement {
   }
 
   @Method()
+  async getValueLabel() {
+    return this.slotLabel(this.current);
+  }
+
+  @Method()
   async setFocus() {
     if (this.view === 'times') await this.slotsEl?.setFocus();
     else await this.calendarEl?.setFocus();
@@ -223,13 +244,15 @@ export class ShiftBookingCalendar implements FormElement {
 
   reset(newValue?: unknown) {
     this.defaultValue = (newValue as string) ?? '';
+    this.current = this.read(this.defaultValue);
     this.selectedRaw = '';
     this.selectedDate = '';
     this.closeTimes();
+    this.applyPreset();
   }
 
   getValue() {
-    return this.selectedRaw ? slotValue(this.selectedRaw) : this.defaultValue || '';
+    return this.current;
   }
 
   validate() {
@@ -274,15 +297,51 @@ export class ShiftBookingCalendar implements FormElement {
     return this.availability?.days.find(day => this.isOpen(day.date));
   }
 
-  // A form sets the ids, the version and the endpoint one after another; one request answers them all.
-  private queueLoad() {
-    if (this.loadQueued) return;
+  private read(value: string | undefined): string {
+    return readPickerValue(value || '', this.valueFormat, this.offset());
+  }
 
-    this.loadQueued = true;
+  // With no utc-offset set, a value that arrived with an offset keeps it.
+  private offset(): string | undefined {
+    return this.utcOffset || valueOffset(this.value) || undefined;
+  }
+
+  private ids(): Identity {
+    return Object.fromEntries(IDENTITY.map(key => [key, this[key] ? String(this[key]) : ''])) as Identity;
+  }
+
+  // A host sets the ids, the version, the endpoint and the value one after another; one pass answers them all.
+  private queueSync(load: boolean) {
+    this.loadWanted ||= load;
+    if (this.syncQueued) return;
+
+    this.syncQueued = true;
     queueMicrotask(() => {
-      this.loadQueued = false;
+      this.syncQueued = false;
+      this.checkIdentity();
+      if (!this.loadWanted) return;
+
+      this.loadWanted = false;
       this.load();
     });
+  }
+
+  // A value belongs to the branch it came with: an id that was set and then changes drops it, unless the host set the value in the same pass.
+  private checkIdentity() {
+    const next = this.ids();
+    const moved = IDENTITY.some(key => this.identity[key] && next[key] !== this.identity[key]);
+    const together = this.valueTouched;
+
+    this.identity = next;
+    this.valueTouched = false;
+    if (!moved || together || !this.current) return;
+
+    this.current = '';
+    this.defaultValue = '';
+    this.selectedRaw = '';
+    this.selectedDate = '';
+    this.closeTimes();
+    this.emitPicker();
   }
 
   private async load() {
@@ -305,6 +364,8 @@ export class ShiftBookingCalendar implements FormElement {
     }
 
     this.status = 'loading';
+    this.selectedRaw = '';
+    this.selectedDate = '';
     this.closeTimes();
 
     const outcome = await this.loader.load(target, { today: this.today, language: this.language });
@@ -329,29 +390,34 @@ export class ShiftBookingCalendar implements FormElement {
     this.status = 'ready';
   }
 
+  // The current value is shown and kept whether or not the branch has it as a time; a time it matches is chosen.
   private applyPreset() {
-    if (!this.availability) return;
+    if (this.availability) {
+      const current = this.current;
+      const preset = current ? this.availability.days.find(day => current.startsWith(day.date) && this.isOpen(day.date)) : undefined;
+      const opening = preset ?? this.firstOpenDay();
 
-    const preset = this.defaultValue ? this.availability.days.find(day => this.defaultValue.startsWith(day.date) && this.isOpen(day.date)) : undefined;
-    const opening = preset ?? this.firstOpenDay();
-
-    this.selectedDate = preset?.date ?? '';
-    this.selectedRaw = preset?.times.find(time => slotValue(time.raw) === this.defaultValue)?.raw ?? '';
-    if (opening) this.month = monthOf(opening.date);
-    this.emitPicker(!!this.selectedRaw);
+      this.selectedDate = preset?.date ?? '';
+      this.selectedRaw = preset?.times.find(time => slotValue(time.raw) === current)?.raw ?? '';
+      if (opening) this.month = monthOf(opening.date);
+      if (this.selectedRaw) this.view = 'times';
+    }
+    this.emitPicker();
   }
 
-  private emitPicker(force = false) {
-    const local = this.selectedRaw ? slotValue(this.selectedRaw) : '';
-    const value = slotIso(local, this.utcOffset);
+  private emitPicker() {
+    const value = formatPickerValue(this.current, this.valueFormat, this.offset());
+    const label = this.slotLabel(this.current);
     const complete = this.completing;
+    const key = `${value}\n${label}`;
 
     this.completing = false;
-    if (value === this.emitted && !complete && !force) return;
+    if (key === this.lastEmit && !complete) return;
 
+    this.lastEmit = key;
     this.emitted = value;
     this.value = value;
-    this.pickerChange.emit({ value, label: this.slotLabel(local), complete });
+    this.pickerChange.emit({ value, label, complete });
   }
 
   private emitStatus() {
@@ -418,6 +484,8 @@ export class ShiftBookingCalendar implements FormElement {
     this.selectedDate = date;
     if (raw !== this.selectedRaw) {
       this.selectedRaw = raw;
+      this.current = raw ? slotValue(raw) : '';
+      this.emitPicker();
       if (kept) this.commit(raw);
     }
     this.openTimes();
@@ -440,6 +508,8 @@ export class ShiftBookingCalendar implements FormElement {
 
     this.completing = true;
     this.selectedRaw = time.raw;
+    this.current = slotValue(time.raw);
+    this.emitPicker();
     this.rollTime(before);
     this.commit(time.raw);
   };

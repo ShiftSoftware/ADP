@@ -66,6 +66,29 @@ describe('panel', () => {
 });
 
 describe('open and close', () => {
+  it('placement is bottom by default and reflects top', async () => {
+    expect((await mount()).el.getAttribute('placement')).toBe('bottom');
+    expect((await mount('placement="top"')).el.placement).toBe('top');
+  });
+
+  it('closes when its content reports a finished pick, and only then', async () => {
+    const { page, el } = await mount();
+    const pick = (complete: boolean) =>
+      panelOf(page)
+        .querySelector('#inner')
+        .dispatchEvent(new (win(page).CustomEvent)('pickerChange', { bubbles: true, composed: true, detail: { value: 'x', label: 'x', complete } }));
+
+    await el.show();
+    await page.waitForChanges();
+    pick(false);
+    await page.waitForChanges();
+    expect(el.open).toBe(true);
+
+    pick(true);
+    await page.waitForChanges();
+    expect(el.open).toBe(false);
+  });
+
   it('show, hide and toggle fire openChange and reflect open', async () => {
     const { page, el, opens } = await mount();
 
@@ -178,6 +201,22 @@ describe('open and close', () => {
       .dispatchEvent(new (win(page).KeyboardEvent)('keydown', { key: 'Escape', bubbles: true, composed: true }));
     await page.waitForChanges();
     expect(el.open).toBe(false);
+  });
+
+  it('the Escape that closes it does not reach window, so a dialog around the anchor stays open', async () => {
+    const { page, el, anchor } = await mount();
+    const heard: string[] = [];
+
+    page.win.addEventListener('keydown', (event: KeyboardEvent) => heard.push(event.key));
+    await el.show({ focus: false });
+    await page.waitForChanges();
+    fire(page, anchor, 'keydown', { key: 'Escape' });
+    await page.waitForChanges();
+    expect(el.open).toBe(false);
+    expect(heard).toEqual([]);
+
+    fire(page, anchor, 'keydown', { key: 'Escape' });
+    expect(heard).toEqual(['Escape']);
   });
 
   it('focus moving to another element closes; into another popover’s panel it does not', async () => {

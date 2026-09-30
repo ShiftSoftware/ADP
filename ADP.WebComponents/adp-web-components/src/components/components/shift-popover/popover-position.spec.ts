@@ -34,6 +34,17 @@ describe('placePanel', () => {
     }
   });
 
+  it('placement top prefers above, opens below when only below fits, and takes the larger side when neither does', () => {
+    const top = { ...options, placement: 'top' as const };
+    const short = { width: 1280, height: 600 };
+
+    expect(placePanel(box(700, 300), panel, viewport, top)).toEqual({ top: 292, left: 300, side: 'above', maxHeight: null });
+    expect(placePanel(box(100, 300), panel, viewport, top)).toEqual({ top: 148, left: 300, side: 'below', maxHeight: null });
+    expect(placePanel(box(300, 300), panel, short, top)).toEqual({ top: 8, left: 300, side: 'above', maxHeight: 284 });
+    expect(placePanel(box(200, 300), panel, short, top)).toEqual({ top: 248, left: 300, side: 'below', maxHeight: 344 });
+    expect(placePanel(box(100, 300), panel, viewport, { ...options, placement: 'bottom' }).side).toBe('below');
+  });
+
   it('shifts to stay inside the viewport at either edge', () => {
     expect(placePanel(box(100, 1200, 60), panel, viewport, options).left).toBe(1280 - 8 - 380);
     expect(placePanel(box(100, -50), panel, viewport, options).left).toBe(8);

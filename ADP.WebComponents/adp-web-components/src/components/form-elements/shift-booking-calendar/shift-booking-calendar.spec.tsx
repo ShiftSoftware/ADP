@@ -339,6 +339,113 @@ describe('picker contract', () => {
   });
 });
 
+describe('value rules', () => {
+  type Change = { value: string; label: string; complete: boolean };
+
+  async function hosted(attributes: string) {
+    const changes: Change[] = [];
+    const page = await newSpecPage({ components: [ShiftBookingCalendar, ShiftCalendar, ShiftTimeSlots], html: '<div></div>' });
+    const el = page.doc.createElement('shift-booking-calendar') as HTMLShiftBookingCalendarElement;
+
+    el.addEventListener('pickerChange', (event: CustomEvent<Change>) => changes.push(event.detail));
+    for (const [, name, value] of attributes.matchAll(/([\w-]+)="([^"]*)"/g)) el.setAttribute(name, value);
+    page.body.querySelector('div').appendChild(el);
+    await settle(page);
+
+    return { page, el, changes };
+  }
+
+  it('a value that is not a time (past, or from elsewhere) is kept, labelled on load and never cleared by the picker', async () => {
+    const { page, el, changes } = await hosted(`${TARGET} value="2026-09-20T10:00:00+03:00"`);
+
+    expect(changes).toEqual([{ value: '2026-09-20T10:00:00+03:00', label: 'Sun, 20 Sep 2026, 10:00', complete: false }]);
+    expect(el.value).toBe('2026-09-20T10:00:00+03:00');
+    expect(calendar(page).value).toBeFalsy();
+    expect(await el.getValueLabel()).toBe('Sun, 20 Sep 2026, 10:00');
+
+    await pickDay(page, '2026-10-01');
+    expect(el.value).toBe('2026-09-20T10:00:00+03:00');
+    expect(changes).toHaveLength(1);
+  });
+
+  it('the label comes before the branch does, while the picker is idle', async () => {
+    const { el, changes } = await hosted('calendar-api="https://calendar.example/api/public/calendar" value="2026-10-03T14:00:00+03:00"');
+
+    expect(changes).toEqual([{ value: '2026-10-03T14:00:00+03:00', label: 'Sat, 3 Oct 2026, 14:00', complete: false }]);
+    expect(el.value).toBe('2026-10-03T14:00:00+03:00');
+  });
+
+  it('a branch and a value set together are not a change; an id filled in later is not either', async () => {
+    const { page, el, changes } = await hosted('calendar-api="https://calendar.example/api/public/calendar" department-id="showroom" brand-id="BRAND-A" today="2026-09-28"');
+
+    el.branchId = '42';
+    el.value = '2026-10-03T14:00:00+03:00';
+    await settle(page);
+    el.companyId = '1';
+    await settle(page);
+
+    expect(el.value).toBe('2026-10-03T14:00:00+03:00');
+    expect(slotsEl(page).value).toBe('14:00');
+    expect(changes.every(change => change.value)).toBe(true);
+
+    el.branchId = '43';
+    el.value = '2026-10-04T10:00:00+03:00';
+    await settle(page);
+    expect(el.value).toBe('2026-10-04T10:00:00+03:00');
+  });
+
+  it('a later branch, company, department or brand change clears it, with value "" and complete false', async () => {
+    for (const [prop, next] of [
+      ['branchId', '43'],
+      ['companyId', '2'],
+      ['departmentId', 'service-center'],
+      ['brandId', 'BRAND-B'],
+    ] as const) {
+      const { page, el, changes } = await hosted(`${TARGET} value="2026-09-20T10:00:00+03:00"`);
+
+      el[prop] = next;
+      await settle(page);
+
+      expect(el.value).toBe('');
+      expect(changes.at(-1)).toEqual({ value: '', label: '', complete: false });
+    }
+  });
+
+  it('the endpoint, version or today changing keeps it', async () => {
+    const { page, el } = await hosted(`${TARGET} value="2026-10-03T14:00:00+03:00"`);
+
+    el.today = '2026-09-29';
+    el.calendarApi = 'https://calendar.example/api/public/calendar?x=1';
+    await settle(page);
+
+    expect(el.value).toBe('2026-10-03T14:00:00+03:00');
+    expect(slotsEl(page).value).toBe('14:00');
+  });
+
+  it('value-format writes the value as a pattern, and reads it back or as ISO', async () => {
+    const { page, el, changes } = await hosted(`${TARGET} value-format="yyyy-MM-dd HH:mm" value="2026-10-03T14:00:00+03:00"`);
+
+    expect(changes.at(-1)).toEqual({ value: '2026-10-03 14:00', label: 'Sat, 3 Oct 2026, 14:00', complete: false });
+
+    await pickDay(page, '2026-10-01');
+    await pickTime(page, '13:00');
+    expect(changes.at(-1)).toEqual({ value: '2026-10-01 13:00', label: 'Thu, 1 Oct 2026, 13:00', complete: true });
+
+    el.value = '2026-10-04 10:00';
+    await settle(page);
+    expect(calendar(page).value).toBe('2026-10-04');
+    expect(slotsEl(page).value).toBe('10:00');
+  });
+
+  it('without utc-offset the ISO value carries no offset', async () => {
+    const { page, changes } = await hosted(TARGET);
+
+    await pickDay(page, '2026-10-01');
+    await pickTime(page, '09:00');
+    expect(changes.at(-1).value).toBe('2026-10-01T09:00:00');
+  });
+});
+
 describe('views', () => {
   it('an open day switches to its times: header, list, message and announcement', async () => {
     const { page, slots } = await mount(TARGET);
@@ -587,14 +694,13 @@ describe('selection', () => {
     expect(requests[1]).toMatch(/^https:\/\/calendar\.example\/api\/public\/v2\/calendar\?.*companyId=pW0G3&branchId=KJemJ&/);
   });
 
-  it('defaultValue opens on its day with its time chosen, in the days view', async () => {
+  it('defaultValue that is a time opens on the times of its day, with the time chosen', async () => {
     const { page, field } = await mount(`${TARGET} default-value="2026-10-03T14:00"`);
 
     expect(calendar(page).value).toBe('2026-10-03');
     expect(slotsEl(page).value).toBe('14:00');
     expect(field.getValue()).toBe('2026-10-03T14:00');
-    expectDays(page);
-    expect(message(page).getAttribute('data-message')).toBe('selected');
+    expectTimes(page);
   });
 
   it('disabled rules skip days; the month of the first open day opens', async () => {
