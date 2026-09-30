@@ -1,7 +1,9 @@
+import type { ServiceConsumptionEvidenceDTO } from './service-consumption-evidence-dto';
 import type { VehicleServiceItemGroup } from './vehicle-service-item-group';
 import type { VehicleItemWarning } from './vehicle-item-warning';
 import type { VehicleServiceItemLockDTO } from './vehicle-service-item-lock-dto';
 export type VehicleServiceItemDTO = {
+    serviceConsumptionEvidence?: ServiceConsumptionEvidenceDTO;
     group: VehicleServiceItemGroup;
     showDocumentUploader: boolean;
     warnings?: VehicleItemWarning[];

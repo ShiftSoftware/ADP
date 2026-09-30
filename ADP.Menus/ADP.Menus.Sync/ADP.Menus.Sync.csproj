@@ -38,7 +38,7 @@
 
 	<!-- The trigger and catch-up replication framework the SQL-to-Cosmos half builds on. -->
 	<ItemGroup>
-		<PackageReference Include="ShiftSoftware.ShiftEntity.CosmosDbReplication" Version="2026.9.26.2" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.CosmosDbReplication" Version="2026.9.30.2" />
 	</ItemGroup>
 
 	<!--

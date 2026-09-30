@@ -160,35 +160,35 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table540 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table549 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "BranchID",
                             "BrandID"});
-                table540.AddRow(new string[] {
+                table549.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2026-01-15",
                             "1",
                             "10",
                             "1"});
 #line 8
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table540, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table549, "Given ");
 #line hidden
-                global::Reqnroll.Table table541 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table550 = new global::Reqnroll.Table(new string[] {
                             "ServiceItemID",
                             "Name",
                             "BrandID",
                             "ActiveForMonths",
                             "MaximumMileage"});
-                table541.AddRow(new string[] {
+                table550.AddRow(new string[] {
                             "SI-001",
                             "Oil Change",
                             "1",
                             "24",
                             "10000"});
 #line 11
-  await testRunner.AndAsync("service items:", ((string)(null)), table541, "And ");
+  await testRunner.AndAsync("service items:", ((string)(null)), table550, "And ");
 #line hidden
 #line 14
   await testRunner.AndAsync("LookupOptions has signature validity duration of 30 minutes", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

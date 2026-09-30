@@ -178,10 +178,8 @@ steps:
  - script: dotnet test ADP.Surveys/ADP.Surveys.Shared.Tests --configuration Release
    displayName: 'ADP.Surveys schema tests'
 
- # No newer-host run until a framework newer than the Surveys minimum (2026.9.26.2) is published; then add
- # the same step with -p:SurveyHostFrameworkVersion=<that version>.
  - script: dotnet test ADP.Surveys/ADP.Surveys.Data.Tests --configuration Release
-   displayName: 'ADP.Surveys mapping on the minimum framework'
+   displayName: 'ADP.Surveys mapping tests'
 
  - script: dotnet test ADP.Menus/ADP.Menus.Tests
    displayName: 'ADP.Menus menu-code generation golden tests'

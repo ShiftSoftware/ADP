@@ -7,6 +7,8 @@ Represents a claimable service item offered through a Service Campaign.
 
 | Property | Summary |
 |----------|---------|
+| ServiceConsumption <div><strong>``ServiceConsumptionRule``</strong></div> | Optional lookup-only consumption rule, separate from offer eligibility. |
+| UseCampaignVinEntryPackageCode <div><strong>``bool``</strong></div> | For ManualVinEntry items, use the activation entry's PackageCode (including blank) instead of model-derived menus/costs, and let explicit entry membership satisfy model applicability. Other eligibility filters remain unchanged; a nonblank entry menu restricts enabled service consumption for that activation. Defaults false to preserve ordinary catalog behavior. |
 | Name <div><strong>``Dictionary<string, string>``</strong></div> | The multilingual name of the service item (keyed by language code). |
 | Photo <div><strong>``Dictionary<string, string>``</strong></div> | The multilingual photo URLs for the service item (keyed by language code). |
 | IsDeleted <div><strong>``bool``</strong></div> | Indicates whether this service item has been deleted. |

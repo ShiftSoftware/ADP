@@ -164,18 +164,18 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table741 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table750 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "RepairDate"});
-                table741.AddRow(new string[] {
+                table750.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "2024-03-15"});
 #line 17
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table741, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table750, "Given ");
 #line hidden
 #line 20
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -211,29 +211,29 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table742 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table751 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table742.AddRow(new string[] {
+                table751.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 27
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table742, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table751, "Given ");
 #line hidden
-                global::Reqnroll.Table table743 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table752 = new global::Reqnroll.Table(new string[] {
                             "ClaimStatus",
                             "RepairCompletionDate",
                             "DistributorComment"});
-                table743.AddRow(new string[] {
+                table752.AddRow(new string[] {
                             "Accepted",
                             "2024-04-01",
                             "Repair for SSC-001 done"});
 #line 30
- await testRunner.AndAsync("warranty claims:", ((string)(null)), table743, "And ");
+ await testRunner.AndAsync("warranty claims:", ((string)(null)), table752, "And ");
 #line hidden
 #line 33
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -269,29 +269,29 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table744 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table753 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table744.AddRow(new string[] {
+                table753.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 38
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table744, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table753, "Given ");
 #line hidden
-                global::Reqnroll.Table table745 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table754 = new global::Reqnroll.Table(new string[] {
                             "ClaimStatus",
                             "RepairCompletionDate",
                             "LaborCode"});
-                table745.AddRow(new string[] {
+                table754.AddRow(new string[] {
                             "Certified",
                             "2024-05-10",
                             "LAB001"});
 #line 41
- await testRunner.AndAsync("warranty claims:", ((string)(null)), table745, "And ");
+ await testRunner.AndAsync("warranty claims:", ((string)(null)), table754, "And ");
 #line hidden
 #line 44
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -324,29 +324,29 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table746 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table755 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table746.AddRow(new string[] {
+                table755.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 48
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table746, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table755, "Given ");
 #line hidden
-                global::Reqnroll.Table table747 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table756 = new global::Reqnroll.Table(new string[] {
                             "ClaimStatus",
                             "RepairCompletionDate",
                             "DistributorComment"});
-                table747.AddRow(new string[] {
+                table756.AddRow(new string[] {
                             "RejectedPermanently",
                             "2024-04-01",
                             "Repair for SSC-001"});
 #line 51
- await testRunner.AndAsync("warranty claims:", ((string)(null)), table747, "And ");
+ await testRunner.AndAsync("warranty claims:", ((string)(null)), table756, "And ");
 #line hidden
 #line 54
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -379,29 +379,29 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table748 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table757 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table748.AddRow(new string[] {
+                table757.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 60
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table748, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table757, "Given ");
 #line hidden
-                global::Reqnroll.Table table749 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table758 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "InvoiceDate",
                             "InvoiceStatus"});
-                table749.AddRow(new string[] {
+                table758.AddRow(new string[] {
                             "LAB001",
                             "2024-06-01",
                             "X"});
 #line 63
- await testRunner.AndAsync("labor lines:", ((string)(null)), table749, "And ");
+ await testRunner.AndAsync("labor lines:", ((string)(null)), table758, "And ");
 #line hidden
 #line 66
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -437,29 +437,29 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table750 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table759 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table750.AddRow(new string[] {
+                table759.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 71
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table750, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table759, "Given ");
 #line hidden
-                global::Reqnroll.Table table751 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table760 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "InvoiceDate",
                             "InvoiceStatus"});
-                table751.AddRow(new string[] {
+                table760.AddRow(new string[] {
                             "LAB001",
                             "2024-07-01",
                             "C"});
 #line 74
- await testRunner.AndAsync("labor lines:", ((string)(null)), table751, "And ");
+ await testRunner.AndAsync("labor lines:", ((string)(null)), table760, "And ");
 #line hidden
 #line 77
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -495,32 +495,32 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table752 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table761 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table752.AddRow(new string[] {
+                table761.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "AURCM"});
 #line 82
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table752, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table761, "Given ");
 #line hidden
 #line 85
  await testRunner.AndAsync("the SSC \"SSC-001\" labor code carries a trailing space", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table753 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table762 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "InvoiceDate",
                             "InvoiceStatus"});
-                table753.AddRow(new string[] {
+                table762.AddRow(new string[] {
                             "AURCM",
                             "2024-06-01",
                             "X"});
 #line 86
- await testRunner.AndAsync("labor lines:", ((string)(null)), table753, "And ");
+ await testRunner.AndAsync("labor lines:", ((string)(null)), table762, "And ");
 #line hidden
 #line 89
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -556,29 +556,29 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table754 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table763 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table754.AddRow(new string[] {
+                table763.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 94
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table754, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table763, "Given ");
 #line hidden
-                global::Reqnroll.Table table755 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table764 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "InvoiceDate",
                             "InvoiceStatus"});
-                table755.AddRow(new string[] {
+                table764.AddRow(new string[] {
                             "LAB001",
                             "2024-06-01",
                             "O"});
 #line 97
- await testRunner.AndAsync("labor lines:", ((string)(null)), table755, "And ");
+ await testRunner.AndAsync("labor lines:", ((string)(null)), table764, "And ");
 #line hidden
 #line 100
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -611,18 +611,18 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table756 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table765 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table756.AddRow(new string[] {
+                table765.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 106
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table756, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table765, "Given ");
 #line hidden
 #line 109
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -686,26 +686,26 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table757 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table766 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1",
                             "RepairDate"});
-                table757.AddRow(new string[] {
+                table766.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001",
                             "2024-03-15"});
-                table757.AddRow(new string[] {
+                table766.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-002",
                             "Seatbelt recall",
                             "LAB002",
                             ""});
 #line 119
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table757, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table766, "Given ");
 #line hidden
 #line 123
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -741,7 +741,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table758 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table767 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
@@ -749,7 +749,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "LaborCode2",
                             "PartNumber1",
                             "PartNumber2"});
-                table758.AddRow(new string[] {
+                table767.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
@@ -758,7 +758,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "PRT001",
                             "PRT002"});
 #line 128
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table758, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table767, "Given ");
 #line hidden
 #line 131
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -794,7 +794,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table759 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table768 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
@@ -810,7 +810,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "PartNumber4",
                             "PartNumber5",
                             "PartNumber6"});
-                table759.AddRow(new string[] {
+                table768.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
@@ -827,7 +827,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "PRT005",
                             "PRT006"});
 #line 136
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table759, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table768, "Given ");
 #line hidden
 #line 139
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -863,14 +863,14 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table760 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table769 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1",
                             "LaborCode2",
                             "PartNumber1"});
-                table760.AddRow(new string[] {
+                table769.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
@@ -878,7 +878,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "LAB002",
                             "PRT001"});
 #line 146
- await testRunner.GivenAsync("SSC affected vehicles in legacy numbered format:", ((string)(null)), table760, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles in legacy numbered format:", ((string)(null)), table769, "Given ");
 #line hidden
 #line 149
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -914,29 +914,29 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table761 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table770 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table761.AddRow(new string[] {
+                table770.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 154
- await testRunner.GivenAsync("SSC affected vehicles in legacy numbered format:", ((string)(null)), table761, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles in legacy numbered format:", ((string)(null)), table770, "Given ");
 #line hidden
-                global::Reqnroll.Table table762 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table771 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "InvoiceDate",
                             "InvoiceStatus"});
-                table762.AddRow(new string[] {
+                table771.AddRow(new string[] {
                             "LAB001",
                             "2024-06-01",
                             "X"});
 #line 157
- await testRunner.AndAsync("labor lines:", ((string)(null)), table762, "And ");
+ await testRunner.AndAsync("labor lines:", ((string)(null)), table771, "And ");
 #line hidden
 #line 160
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -972,36 +972,36 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table763 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table772 = new global::Reqnroll.Table(new string[] {
                             "Codes"});
-                table763.AddRow(new string[] {
+                table772.AddRow(new string[] {
                             "LAB001, LAB001A, LAB0010"});
 #line 167
- await testRunner.GivenAsync("interchangeable SSC labor codes:", ((string)(null)), table763, "Given ");
+ await testRunner.GivenAsync("interchangeable SSC labor codes:", ((string)(null)), table772, "Given ");
 #line hidden
-                global::Reqnroll.Table table764 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table773 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table764.AddRow(new string[] {
+                table773.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 170
- await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table764, "And ");
+ await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table773, "And ");
 #line hidden
-                global::Reqnroll.Table table765 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table774 = new global::Reqnroll.Table(new string[] {
                             "ClaimStatus",
                             "RepairCompletionDate",
                             "LaborCode"});
-                table765.AddRow(new string[] {
+                table774.AddRow(new string[] {
                             "Accepted",
                             "2024-05-10",
                             "LAB001A"});
 #line 173
- await testRunner.AndAsync("warranty claims:", ((string)(null)), table765, "And ");
+ await testRunner.AndAsync("warranty claims:", ((string)(null)), table774, "And ");
 #line hidden
 #line 176
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1040,36 +1040,36 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table766 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table775 = new global::Reqnroll.Table(new string[] {
                             "Codes"});
-                table766.AddRow(new string[] {
+                table775.AddRow(new string[] {
                             "LAB001, LAB001A"});
 #line 182
- await testRunner.GivenAsync("interchangeable SSC labor codes:", ((string)(null)), table766, "Given ");
+ await testRunner.GivenAsync("interchangeable SSC labor codes:", ((string)(null)), table775, "Given ");
 #line hidden
-                global::Reqnroll.Table table767 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table776 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table767.AddRow(new string[] {
+                table776.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 185
- await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table767, "And ");
+ await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table776, "And ");
 #line hidden
-                global::Reqnroll.Table table768 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table777 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "InvoiceDate",
                             "InvoiceStatus"});
-                table768.AddRow(new string[] {
+                table777.AddRow(new string[] {
                             "LAB001A",
                             "2024-06-01",
                             "X"});
 #line 188
- await testRunner.AndAsync("labor lines:", ((string)(null)), table768, "And ");
+ await testRunner.AndAsync("labor lines:", ((string)(null)), table777, "And ");
 #line hidden
 #line 191
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1108,36 +1108,36 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table769 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table778 = new global::Reqnroll.Table(new string[] {
                             "Codes"});
-                table769.AddRow(new string[] {
+                table778.AddRow(new string[] {
                             "LAB001, LAB001A"});
 #line 197
- await testRunner.GivenAsync("interchangeable SSC labor codes:", ((string)(null)), table769, "Given ");
+ await testRunner.GivenAsync("interchangeable SSC labor codes:", ((string)(null)), table778, "Given ");
 #line hidden
-                global::Reqnroll.Table table770 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table779 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table770.AddRow(new string[] {
+                table779.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001A"});
 #line 200
- await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table770, "And ");
+ await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table779, "And ");
 #line hidden
-                global::Reqnroll.Table table771 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table780 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "InvoiceDate",
                             "InvoiceStatus"});
-                table771.AddRow(new string[] {
+                table780.AddRow(new string[] {
                             "LAB001",
                             "2024-06-01",
                             "C"});
 #line 203
- await testRunner.AndAsync("labor lines:", ((string)(null)), table771, "And ");
+ await testRunner.AndAsync("labor lines:", ((string)(null)), table780, "And ");
 #line hidden
 #line 206
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1170,38 +1170,38 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table772 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table781 = new global::Reqnroll.Table(new string[] {
                             "Codes"});
-                table772.AddRow(new string[] {
+                table781.AddRow(new string[] {
                             "LAB001, LAB001A"});
-                table772.AddRow(new string[] {
+                table781.AddRow(new string[] {
                             "LAB001A, LAB001B"});
 #line 210
- await testRunner.GivenAsync("interchangeable SSC labor codes:", ((string)(null)), table772, "Given ");
+ await testRunner.GivenAsync("interchangeable SSC labor codes:", ((string)(null)), table781, "Given ");
 #line hidden
-                global::Reqnroll.Table table773 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table782 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table773.AddRow(new string[] {
+                table782.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 214
- await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table773, "And ");
+ await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table782, "And ");
 #line hidden
-                global::Reqnroll.Table table774 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table783 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "InvoiceDate",
                             "InvoiceStatus"});
-                table774.AddRow(new string[] {
+                table783.AddRow(new string[] {
                             "LAB001B",
                             "2024-06-01",
                             "X"});
 #line 217
- await testRunner.AndAsync("labor lines:", ((string)(null)), table774, "And ");
+ await testRunner.AndAsync("labor lines:", ((string)(null)), table783, "And ");
 #line hidden
 #line 220
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1234,47 +1234,47 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table775 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table784 = new global::Reqnroll.Table(new string[] {
                             "Codes"});
-                table775.AddRow(new string[] {
+                table784.AddRow(new string[] {
                             "LAB001, LAB001A"});
 #line 224
- await testRunner.GivenAsync("interchangeable SSC labor codes:", ((string)(null)), table775, "Given ");
+ await testRunner.GivenAsync("interchangeable SSC labor codes:", ((string)(null)), table784, "Given ");
 #line hidden
-                global::Reqnroll.Table table776 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table785 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table776.AddRow(new string[] {
+                table785.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 227
- await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table776, "And ");
+ await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table785, "And ");
 #line hidden
-                global::Reqnroll.Table table777 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table786 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "InvoiceDate",
                             "InvoiceStatus"});
-                table777.AddRow(new string[] {
+                table786.AddRow(new string[] {
                             "LAB001B",
                             "2024-06-01",
                             "X"});
 #line 230
- await testRunner.AndAsync("labor lines:", ((string)(null)), table777, "And ");
+ await testRunner.AndAsync("labor lines:", ((string)(null)), table786, "And ");
 #line hidden
-                global::Reqnroll.Table table778 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table787 = new global::Reqnroll.Table(new string[] {
                             "ClaimStatus",
                             "RepairCompletionDate",
                             "LaborCode"});
-                table778.AddRow(new string[] {
+                table787.AddRow(new string[] {
                             "Accepted",
                             "2024-05-10",
                             "LAB001B"});
 #line 233
- await testRunner.AndAsync("warranty claims:", ((string)(null)), table778, "And ");
+ await testRunner.AndAsync("warranty claims:", ((string)(null)), table787, "And ");
 #line hidden
 #line 236
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1307,25 +1307,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table779 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table788 = new global::Reqnroll.Table(new string[] {
                             "Codes"});
-                table779.AddRow(new string[] {
+                table788.AddRow(new string[] {
                             "LAB001, LAB001A"});
 #line 240
- await testRunner.GivenAsync("interchangeable SSC labor codes:", ((string)(null)), table779, "Given ");
+ await testRunner.GivenAsync("interchangeable SSC labor codes:", ((string)(null)), table788, "Given ");
 #line hidden
-                global::Reqnroll.Table table780 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table789 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table780.AddRow(new string[] {
+                table789.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 243
- await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table780, "And ");
+ await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table789, "And ");
 #line hidden
 #line 246
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1358,29 +1358,29 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table781 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table790 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table781.AddRow(new string[] {
+                table790.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 250
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table781, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table790, "Given ");
 #line hidden
-                global::Reqnroll.Table table782 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table791 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "InvoiceDate",
                             "InvoiceStatus"});
-                table782.AddRow(new string[] {
+                table791.AddRow(new string[] {
                             "lab001",
                             "2024-06-01",
                             "X"});
 #line 253
- await testRunner.AndAsync("labor lines:", ((string)(null)), table782, "And ");
+ await testRunner.AndAsync("labor lines:", ((string)(null)), table791, "And ");
 #line hidden
 #line 256
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1413,31 +1413,31 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table783 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table792 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1",
                             "RepairDate"});
-                table783.AddRow(new string[] {
+                table792.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001",
                             "2024-03-15"});
 #line 262
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table783, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table792, "Given ");
 #line hidden
-                global::Reqnroll.Table table784 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table793 = new global::Reqnroll.Table(new string[] {
                             "ClaimStatus",
                             "RepairCompletionDate",
                             "LaborCode"});
-                table784.AddRow(new string[] {
+                table793.AddRow(new string[] {
                             "Accepted",
                             "2024-04-01",
                             "LAB001"});
 #line 265
- await testRunner.AndAsync("warranty claims:", ((string)(null)), table784, "And ");
+ await testRunner.AndAsync("warranty claims:", ((string)(null)), table793, "And ");
 #line hidden
 #line 268
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1476,40 +1476,40 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table785 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table794 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table785.AddRow(new string[] {
+                table794.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 274
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table785, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table794, "Given ");
 #line hidden
-                global::Reqnroll.Table table786 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table795 = new global::Reqnroll.Table(new string[] {
                             "ClaimStatus",
                             "RepairCompletionDate",
                             "LaborCode"});
-                table786.AddRow(new string[] {
+                table795.AddRow(new string[] {
                             "Accepted",
                             "2024-04-01",
                             "LAB001"});
 #line 277
- await testRunner.AndAsync("warranty claims:", ((string)(null)), table786, "And ");
+ await testRunner.AndAsync("warranty claims:", ((string)(null)), table795, "And ");
 #line hidden
-                global::Reqnroll.Table table787 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table796 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "InvoiceDate",
                             "InvoiceStatus"});
-                table787.AddRow(new string[] {
+                table796.AddRow(new string[] {
                             "LAB001",
                             "2024-06-01",
                             "X"});
 #line 280
- await testRunner.AndAsync("labor lines:", ((string)(null)), table787, "And ");
+ await testRunner.AndAsync("labor lines:", ((string)(null)), table796, "And ");
 #line hidden
 #line 283
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1545,18 +1545,18 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table788 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table797 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table788.AddRow(new string[] {
+                table797.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 288
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table788, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table797, "Given ");
 #line hidden
 #line 291
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1592,18 +1592,18 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table789 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table798 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table789.AddRow(new string[] {
+                table798.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 298
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table789, "Given ");
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table798, "Given ");
 #line hidden
 #line 301
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1642,40 +1642,40 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 305
  await testRunner.GivenAsync("SSC evaluation tracing is requested", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table790 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table799 = new global::Reqnroll.Table(new string[] {
                             "Codes"});
-                table790.AddRow(new string[] {
+                table799.AddRow(new string[] {
                             "LAB001, LAB001A"});
 #line 306
- await testRunner.AndAsync("interchangeable SSC labor codes:", ((string)(null)), table790, "And ");
+ await testRunner.AndAsync("interchangeable SSC labor codes:", ((string)(null)), table799, "And ");
 #line hidden
-                global::Reqnroll.Table table791 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table800 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table791.AddRow(new string[] {
+                table800.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 309
- await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table791, "And ");
+ await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table800, "And ");
 #line hidden
-                global::Reqnroll.Table table792 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table801 = new global::Reqnroll.Table(new string[] {
                             "ClaimStatus",
                             "RepairCompletionDate",
                             "LaborCode"});
-                table792.AddRow(new string[] {
+                table801.AddRow(new string[] {
                             "Accepted",
                             "2024-05-10",
                             "LAB001A"});
-                table792.AddRow(new string[] {
+                table801.AddRow(new string[] {
                             "RejectedPermanently",
                             "2024-04-01",
                             "LAB001"});
 #line 312
- await testRunner.AndAsync("warranty claims:", ((string)(null)), table792, "And ");
+ await testRunner.AndAsync("warranty claims:", ((string)(null)), table801, "And ");
 #line hidden
 #line 316
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1722,36 +1722,36 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 323
  await testRunner.GivenAsync("SSC evaluation tracing is requested", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table793 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table802 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table793.AddRow(new string[] {
+                table802.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 324
- await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table793, "And ");
+ await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table802, "And ");
 #line hidden
-                global::Reqnroll.Table table794 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table803 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "InvoiceDate",
                             "InvoiceStatus",
                             "InvoiceNumber"});
-                table794.AddRow(new string[] {
+                table803.AddRow(new string[] {
                             "LAB001",
                             "2024-06-01",
                             "X",
                             "INV-1"});
-                table794.AddRow(new string[] {
+                table803.AddRow(new string[] {
                             "LAB999",
                             "2024-07-01",
                             "X",
                             "INV-2"});
 #line 327
- await testRunner.AndAsync("labor lines:", ((string)(null)), table794, "And ");
+ await testRunner.AndAsync("labor lines:", ((string)(null)), table803, "And ");
 #line hidden
 #line 331
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1793,48 +1793,48 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 337
  await testRunner.GivenAsync("SSC evaluation tracing is requested", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table795 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table804 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table795.AddRow(new string[] {
+                table804.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
 #line 338
- await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table795, "And ");
+ await testRunner.AndAsync("SSC affected vehicles:", ((string)(null)), table804, "And ");
 #line hidden
-                global::Reqnroll.Table table796 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table805 = new global::Reqnroll.Table(new string[] {
                             "ClaimStatus",
                             "RepairCompletionDate",
                             "LaborCode"});
-                table796.AddRow(new string[] {
+                table805.AddRow(new string[] {
                             "RejectedPermanently",
                             "2024-04-01",
                             "LAB001"});
-                table796.AddRow(new string[] {
+                table805.AddRow(new string[] {
                             "Accepted",
                             "2024-02-01",
                             "LAB999"});
 #line 341
- await testRunner.AndAsync("warranty claims:", ((string)(null)), table796, "And ");
+ await testRunner.AndAsync("warranty claims:", ((string)(null)), table805, "And ");
 #line hidden
-                global::Reqnroll.Table table797 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table806 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "InvoiceDate",
                             "InvoiceStatus"});
-                table797.AddRow(new string[] {
+                table806.AddRow(new string[] {
                             "LAB001",
                             "2024-06-01",
                             "O"});
-                table797.AddRow(new string[] {
+                table806.AddRow(new string[] {
                             "LAB999",
                             "2024-07-01",
                             "X"});
 #line 345
- await testRunner.AndAsync("labor lines:", ((string)(null)), table797, "And ");
+ await testRunner.AndAsync("labor lines:", ((string)(null)), table806, "And ");
 #line hidden
 #line 349
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");

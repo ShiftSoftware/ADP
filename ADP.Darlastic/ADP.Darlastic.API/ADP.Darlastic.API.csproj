@@ -43,7 +43,7 @@
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 		<!-- COMPATIBILITY FLOOR, not "the current version" — see the note in ADP.Darlastic.Data.csproj
 		     before changing either. -->
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Web" Version="2026.9.26.2" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Web" Version="2026.9.30.2" />
 		<PackageReference Include="ShiftSoftware.TypeAuth.AspNetCore" Version="1.6.30" />
 	</ItemGroup>
 

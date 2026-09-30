@@ -7,6 +7,7 @@ Represents a service item available for a vehicle — includes its type (free/pa
 
 | Property | Summary |
 |----------|---------|
+| ServiceConsumptionEvidence <div><strong>``ServiceConsumptionEvidenceDTO?``</strong></div> | Inferred service evidence, separate from persisted claim metadata and cost. |
 | Group <div><strong>``VehicleServiceItemGroup``</strong></div> | The [group](/generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceItemGroup.html) this service item belongs to (for UI tab grouping). |
 | ShowDocumentUploader <div><strong>``bool``</strong></div> | Whether to show a document uploader when claiming this item. |
 | Warnings <div><strong>``List<VehicleItemWarning>?``</strong></div> | A list of [warnings](/generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleItemWarning.html) to display before claiming this item. |
