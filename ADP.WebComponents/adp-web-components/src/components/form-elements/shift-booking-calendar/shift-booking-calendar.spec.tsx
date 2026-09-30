@@ -355,6 +355,43 @@ describe('value rules', () => {
     return { page, el, changes };
   }
 
+  it('a Blazor ref hears the current label when it attaches, then every change through change-callback', async () => {
+    const { page, el } = await hosted(`${TARGET} change-callback="OnPickerChange" value="2026-09-20T10:00:00+03:00"`);
+    const calls: unknown[][] = [];
+    await el.setBlazorRef({ invokeMethodAsync: async (name: string, ...args: unknown[]) => void calls.push([name, ...args]) });
+
+    expect(calls).toEqual([['OnPickerChange', '2026-09-20T10:00:00+03:00', 'Sun, 20 Sep 2026, 10:00', false]]);
+
+    await pickDay(page, '2026-10-01');
+    await pickTime(page, '13:00');
+    expect(calls.at(-1)).toEqual(['OnPickerChange', '2026-10-01T13:00:00+03:00', 'Thu, 1 Oct 2026, 13:00', true]);
+  });
+
+  it('a time kept on another day is only confirmed when clicked, and only the booking calendar reports picks', async () => {
+    const { page, changes } = await hosted(TARGET);
+
+    await pickDay(page, '2026-10-01');
+    await pickTime(page, '13:00');
+    await pickDay(page, '2026-10-04');
+    expect(changes.at(-1)).toMatchObject({ value: '2026-10-04T13:00:00', complete: false });
+
+    await pickTime(page, '13:00');
+    expect(changes.at(-1)).toMatchObject({ value: '2026-10-04T13:00:00', complete: true });
+    expect(changes.every(change => /T\d\d:\d\d:00/.test(change.value) || change.value === '')).toBe(true);
+  });
+
+  it('a function change-callback set after load hears the current label, then every change', async () => {
+    const { page, el } = await hosted(`${TARGET} value="2026-09-20T10:00:00+03:00"`);
+    const calls: unknown[][] = [];
+    el.changeCallback = (...args: unknown[]) => void calls.push(args);
+    await settle(page);
+
+    expect(calls).toEqual([['2026-09-20T10:00:00+03:00', 'Sun, 20 Sep 2026, 10:00', false]]);
+    await pickDay(page, '2026-10-01');
+    await pickTime(page, '13:00');
+    expect(calls.at(-1)).toEqual(['2026-10-01T13:00:00+03:00', 'Thu, 1 Oct 2026, 13:00', true]);
+  });
+
   it('a value that is not a time (past, or from elsewhere) is kept, labelled on load and never cleared by the picker', async () => {
     const { page, el, changes } = await hosted(`${TARGET} value="2026-09-20T10:00:00+03:00"`);
 

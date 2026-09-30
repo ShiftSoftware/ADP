@@ -13,6 +13,8 @@ export interface PopoverOpenChangeDetail {
   open: boolean;
 }
 
+export type PopoverTrigger = 'manual' | 'anchor';
+
 export interface PopoverShowOptions {
   focus?: boolean;
 }
@@ -151,6 +153,8 @@ export class ShiftPopover {
   @Prop({ reflect: true }) appearance?: PopoverAppearance;
   @Prop({ reflect: true }) colorScheme: PopoverColorScheme = 'light';
   @Prop({ reflect: true }) size: PopoverSize = 'md';
+  @Prop() trigger: PopoverTrigger = 'manual';
+  @Prop({ reflect: true }) disabled: boolean = false;
 
   @Event({ bubbles: true, composed: true }) openChange!: EventEmitter<PopoverOpenChangeDetail>;
 
@@ -162,6 +166,7 @@ export class ShiftPopover {
 
   private panel: HTMLElement | null = null;
   private anchorEl: HTMLElement | null = null;
+  private triggerEl: HTMLElement | null = null;
   private ariaAnchor: HTMLElement | null = null;
   private addedIds: HTMLElement[] = [];
   private panelId = `shift-popover-${Math.random().toString(36).slice(2, 10)}`;
@@ -194,6 +199,7 @@ export class ShiftPopover {
     this.contentObserver?.disconnect();
     this.stopListening();
     this.releaseAnchor();
+    this.unbindTrigger();
     this.panel?.remove();
   }
 
@@ -208,6 +214,16 @@ export class ShiftPopover {
     if (this.open) this.schedule();
   }
 
+  @Watch('trigger')
+  onTriggerChange() {
+    this.bindTrigger();
+  }
+
+  @Watch('disabled')
+  onDisabledChange(disabled: boolean) {
+    if (disabled && this.open) this.hide();
+  }
+
   @Watch('open')
   onOpenChange(open: boolean) {
     if (open) this.onOpen();
@@ -216,6 +232,7 @@ export class ShiftPopover {
 
   @Method()
   async show(options?: PopoverShowOptions) {
+    if (this.isDisabled()) return;
     const focus = options?.focus !== false;
 
     if (this.open) {
@@ -298,6 +315,7 @@ export class ShiftPopover {
 
     this.releaseAnchor();
     this.anchorEl = anchor;
+    this.bindTrigger();
     this.syncAria();
 
     if (this.open) this.observe();
@@ -315,6 +333,41 @@ export class ShiftPopover {
     this.nameFrom = { labelledBy: '', label: '' };
     this.unregister();
     this.ariaAnchor = null;
+  }
+
+  // With trigger anchor the popover opens itself from its anchor; a disabled popover, or an anchor whose control is disabled, stays shut.
+  private bindTrigger() {
+    const target = this.trigger === 'anchor' ? this.anchorEl : null;
+    if (target === this.triggerEl) return;
+
+    this.unbindTrigger();
+    this.triggerEl = target;
+    target?.addEventListener('click', this.onTriggerClick);
+    target?.addEventListener('keydown', this.onTriggerKey);
+  }
+
+  private unbindTrigger() {
+    this.triggerEl?.removeEventListener('click', this.onTriggerClick);
+    this.triggerEl?.removeEventListener('keydown', this.onTriggerKey);
+    this.triggerEl = null;
+  }
+
+  private onTriggerClick = () => {
+    if (!this.isDisabled()) this.toggle();
+  };
+
+  private onTriggerKey = (event: KeyboardEvent) => {
+    if (this.open || this.isDisabled() || !['Enter', ' ', 'ArrowDown'].includes(event.key)) return;
+    event.preventDefault();
+    this.show();
+  };
+
+  private isDisabled(): boolean {
+    if (this.disabled) return true;
+
+    const anchor = this.anchorEl;
+    const control = anchor?.matches('input, textarea, select, button') ? anchor : anchor?.querySelector('input, textarea, select');
+    return !!control && ((control as HTMLInputElement).disabled || control.getAttribute('aria-disabled') === 'true');
   }
 
   private registration = { hide: () => this.hide() };

@@ -19,6 +19,11 @@
         return;
       }
 
+      // A host can call before the component's code has loaded; wait for it rather than miss the call.
+      const tag = element.tagName.toLowerCase();
+      if (tag.includes('-') && !customElements.get(tag)) await customElements.whenDefined(tag);
+      await element['componentOnReady']?.();
+
       if (typeof element[functionName] !== 'function') {
         console.error(`Function "${functionName}" not found on the element.`);
         return;

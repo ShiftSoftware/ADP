@@ -480,13 +480,14 @@
           "value",
           "valueFormat",
           "utcOffset",
+          "changeCallback",
           "wrapperId",
           "wrapperClass",
           "appearance",
           "colorScheme",
           "size"
         ],
-        "methods": ["refresh", "setFocus", "getValueLabel"],
+        "methods": ["refresh", "setFocus", "getValueLabel", "setBlazorRef"],
         "owns": [
           "branch availability request",
           "month calendar of open days",
@@ -524,6 +525,7 @@
           "disabledDates": "One-off dates the deployment does not book, YYYY-MM-DD.",
           "slotCounts": "Shows each open day’s number of times as a badge under the number, in the warning tone when it has fewSlots or fewer. On by default.",
           "utcOffset": "The branch's offset, e.g. +03:00: written into an ISO value, and the offset an ISO value in another offset is moved to when read. No default: when unset, ISO values carry no offset and are read as written.",
+          "changeCallback": "Called on every pickerChange with (value, label, complete): a function, or the name of a [JSInvokable] method on the Blazor ref set by setBlazorRef. A function set after load, like setBlazorRef, is called once right away with the current value's label.",
           "valueFormat": "How value and pickerChange's value are written. iso (default): 2026-10-08T15:00:00, plus utcOffset when set (2026-10-08T15:00:00+03:00). Or a pattern of yyyy, MM, dd, HH, hh, mm, ss and tt (AM/PM), e.g. yyyy-MM-dd HH:mm.",
           "value": "The current value, written in valueFormat. Settable in ISO (any offset) or in valueFormat: a time the branch has is chosen; any other readable value is kept and labelled; empty clears. The calendar clears it itself only when the branch, company, department or brand changes after it was set.",
           "showLabel": "Shows the label above the calendar. Off by default; a host field shows its own.",
@@ -556,6 +558,7 @@
           "refresh": "Loads the branch again; the page cache still answers a request it already holds.",
           "clear": "Clears the chosen day and time without reloading.",
           "setFocus": "Moves focus into the view on screen: the calendar's day, or the times.",
+          "setBlazorRef": "Blazor hosts: pass a DotNetObjectReference (through the global blazorInvoke). changeCallback then names a method on it, and it is called once right away with the current value's label when there is one.",
           "getValueLabel": "The localized display text of the current value, the same as pickerChange's label, also for a value that is not a time. For a host that attaches after the calendar has loaded."
         },
         "parts": {
@@ -624,7 +627,7 @@
       "wireContract": null,
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["anchor", "open", "label", "offset", "placement", "language", "appearance", "colorScheme", "size"],
+        "properties": ["anchor", "open", "label", "offset", "trigger", "disabled", "placement", "language", "appearance", "colorScheme", "size"],
         "methods": ["show", "hide", "toggle"],
         "owns": ["portaled panel holding the slotted content", "anchored positioning and bottom sheet", "dismissal and focus return", "appearance and colour scheme of the panel"]
       },
@@ -651,6 +654,8 @@
           "open": "Whether the panel is open. Reflected and mutable. Set it, or use show(), hide() and toggle().",
           "label": "Accessible name of the dialog. Without it the dialog is named after its anchor, else “Pop-up” in language.",
           "offset": "Gap between the anchor and the panel, in pixels. 8 by default.",
+          "trigger": "manual (default): the host opens it with show() or toggle(). anchor: a click on the anchor toggles it, and Enter, Space or ArrowDown on it open it.",
+          "disabled": "Keeps it shut: closes it when set while open, and show(), toggle() and the anchor trigger do nothing. It is also shut while the anchor's input (the anchor itself, or the first input, textarea or select inside it) is disabled or aria-disabled.",
           "placement": "The preferred side. bottom (default): below the anchor, above when only above has room. top: above the anchor, below when only below has room. With room on neither side it takes the larger one and the content scrolls. The bottom sheet under 600px is the same for both.",
           "appearance": "vanilla, material, soft, sharp or minimal. Unset renders vanilla.",
           "colorScheme": "light (default), dark, or auto (follows prefers-color-scheme; for hosts that are themselves dark-aware).",

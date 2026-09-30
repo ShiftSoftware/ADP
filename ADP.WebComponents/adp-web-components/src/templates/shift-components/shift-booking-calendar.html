@@ -135,27 +135,17 @@
               '<label for="booking-date">Booking date</label>',
               '<input id="booking-date" readonly />',
               '',
-              '<shift-popover id="booking-popover" anchor="#booking-date" placement="top" appearance="material" size="sm">',
-              '  <shift-booking-calendar',
-              '    appearance="material" size="sm"',
-              '    calendar-api="…" calendar-api-version="v2"',
-              '    company-id="pW0G3" branch-id="KJemJ" department-id="service-center" brand-id="BRAND-A"',
-              '    value-format="iso" value="2026-09-20T10:00:00+03:00"',
-              '  ></shift-booking-calendar>',
+              '<shift-popover anchor="#booking-date" trigger="anchor" placement="top" appearance="material" size="sm">',
+              '  <shift-booking-calendar id="booking-calendar" appearance="material" size="sm"',
+              '    calendar-api="…" company-id="pW0G3" branch-id="KJemJ" department-id="service-center" brand-id="BRAND-A"',
+              '    value="2026-09-20T10:00:00+03:00"></shift-booking-calendar>',
               '</shift-popover>',
               '',
               '<script type="module">',
-              "  const input = document.getElementById('booking-date');",
-              "  const popover = document.getElementById('booking-popover');",
-              '',
-              "  input.addEventListener('click', () => popover.toggle());",
-              "  popover.addEventListener('pickerChange', ({ detail }) => {",
-              '    // { value: "2026-10-01T13:00:00+03:00", label: "Thu, 1 Oct 2026, 1:00 PM", complete: true }',
-              '    // On load it reports the label of the value it was given, even a past one; a branch change clears it with value "".',
-              '    input.value = detail.label;',
-              '    save(detail.value);',
-              '  });',
-              '  // The popover closes itself when a time is picked.',
+              "  document.getElementById('booking-calendar').changeCallback = (value, label) => {",
+              "    document.getElementById('booking-date').value = label;",
+              '    save(value);',
+              '  };',
               '<\/script>',
             ].join('\n'),
         },
@@ -991,7 +981,7 @@
                 <div class="flex flex-col gap-1 @3xl:col-span-2">
                   <h3 class="text-lg font-semibold">7 · Your own input</h3>
                   <p class="text-base-content/70 text-sm">
-                    A read-only input toggles a <code>shift-popover</code> with <code>placement="top"</code>. The calendar owns the value: it reports the label of the value it
+                    A read-only input opens a <code>shift-popover</code> with <code>trigger="anchor"</code> and <code>placement="top"</code>. The calendar owns the value: it reports the label of the value it
                     was given (kept even when it is not a time, like this past one), writes <code>value-format</code>, clears only when the branch changes, and the popover closes
                     when a time is picked.
                   </p>
@@ -1005,8 +995,6 @@
                       readonly
                       :value="label"
                       placeholder="Pick a day, then a time"
-                      @click="$refs.popover.toggle()"
-                      @keydown.enter.prevent="$refs.popover.toggle()"
                     />
                   </div>
                   <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs" dir="ltr">
@@ -1027,7 +1015,7 @@
                       </div>
                     </div>
                   </div>
-                  <shift-popover x-ref="popover" anchor="#picker-trigger" placement="top" appearance="material" size="sm" label="Book a time">
+                  <shift-popover x-ref="popover" anchor="#picker-trigger" trigger="anchor" placement="top" appearance="material" size="sm" label="Book a time">
                     <shift-booking-calendar
                       data-fixed-appearance
                       appearance="material"

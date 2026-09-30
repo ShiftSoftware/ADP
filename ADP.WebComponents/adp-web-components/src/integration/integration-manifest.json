@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "adp-web-components",
-  "packageVersion": "0.4.7",
+  "packageVersion": "0.4.9",
   "outputFamily": "per-component",
   "components": [
     {
@@ -1383,13 +1383,14 @@
           "value",
           "valueFormat",
           "utcOffset",
+          "changeCallback",
           "wrapperId",
           "wrapperClass",
           "appearance",
           "colorScheme",
           "size"
         ],
-        "methods": ["refresh", "setFocus", "getValueLabel"],
+        "methods": ["refresh", "setFocus", "getValueLabel", "setBlazorRef"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": [
           "branch availability request",
@@ -1442,6 +1443,16 @@
             "required": false,
             "reflect": false,
             "description": "v1 (default) or v2: which kind of company and branch id the endpoint takes. The host passes the matching ids; branchIds() in ~lib/booking-availability builds them from a company-branch record."
+          },
+          {
+            "name": "changeCallback",
+            "attribute": "change-callback",
+            "type": "((value: string, label: string, complete: boolean) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Called on every pickerChange with (value, label, complete): a function, or the name of a [JSInvokable] method on the Blazor ref set by setBlazorRef. A function set after load, like setBlazorRef, is called once right away with the current value's label."
           },
           {
             "name": "colorScheme",
@@ -1737,6 +1748,12 @@
             "description": "Loads the branch again; the page cache still answers a request it already holds."
           },
           {
+            "name": "setBlazorRef",
+            "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>",
+            "returns": "Promise<void>",
+            "description": "Blazor hosts: pass a DotNetObjectReference (through the global blazorInvoke). changeCallback then names a method on it, and it is called once right away with the current value's label when there is one."
+          },
+          {
             "name": "setFocus",
             "parameters": "() => Promise<void>",
             "returns": "Promise<void>",
@@ -1896,7 +1913,7 @@
       "wireContract": null,
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["anchor", "open", "label", "offset", "placement", "language", "appearance", "colorScheme", "size"],
+        "properties": ["anchor", "open", "label", "offset", "trigger", "disabled", "placement", "language", "appearance", "colorScheme", "size"],
         "methods": ["show", "hide", "toggle"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["portaled panel holding the slotted content", "anchored positioning and bottom sheet", "dismissal and focus return", "appearance and colour scheme of the panel"]
@@ -1932,6 +1949,16 @@
             "required": false,
             "reflect": true,
             "description": "light (default), dark, or auto (follows prefers-color-scheme; for hosts that are themselves dark-aware)."
+          },
+          {
+            "name": "disabled",
+            "attribute": "disabled",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "Keeps it shut: closes it when set while open, and show(), toggle() and the anchor trigger do nothing. It is also shut while the anchor's input (the anchor itself, or the first input, textarea or select inside it) is disabled or aria-disabled."
           },
           {
             "name": "label",
@@ -1992,6 +2019,16 @@
             "required": false,
             "reflect": true,
             "description": "xs, sm, md (default), lg or xl. md equals no size."
+          },
+          {
+            "name": "trigger",
+            "attribute": "trigger",
+            "type": "\"anchor\" | \"manual\"",
+            "default": "'manual'",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "manual (default): the host opens it with show() or toggle(). anchor: a click on the anchor toggles it, and Enter, Space or ArrowDown on it open it."
           }
         ],
         "methods": [

@@ -261,6 +261,93 @@ describe('open and close', () => {
   });
 });
 
+describe('trigger', () => {
+  const key = (page: SpecPage, target: Element, name: string) =>
+    target.dispatchEvent(new (win(page).KeyboardEvent)('keydown', { key: name, bubbles: true, composed: true, cancelable: true }));
+
+  it('manual (default): the anchor does not open it', async () => {
+    const { page, el, anchor } = await mount();
+
+    fire(page, anchor, 'click');
+    await page.waitForChanges();
+    expect(el.open).toBe(false);
+  });
+
+  it('anchor: a click toggles it, and Enter, Space or ArrowDown open it', async () => {
+    const { page, el, anchor } = await mount('trigger="anchor"');
+
+    fire(page, anchor, 'click');
+    await page.waitForChanges();
+    expect(el.open).toBe(true);
+
+    fire(page, anchor, 'click');
+    await page.waitForChanges();
+    expect(el.open).toBe(false);
+
+    for (const name of ['Enter', ' ', 'ArrowDown']) {
+      key(page, anchor, name);
+      await page.waitForChanges();
+      expect(el.open).toBe(true);
+      await el.hide();
+      await page.waitForChanges();
+    }
+
+    key(page, anchor, 'a');
+    await page.waitForChanges();
+    expect(el.open).toBe(false);
+  });
+
+  it('disabled keeps it shut, closes it when set while open, and blocks show()', async () => {
+    const { page, el, anchor } = await mount('trigger="anchor"');
+
+    await el.show();
+    await page.waitForChanges();
+    el.disabled = true;
+    await page.waitForChanges();
+    expect(el.open).toBe(false);
+
+    fire(page, anchor, 'click');
+    key(page, anchor, 'Enter');
+    await el.show();
+    await page.waitForChanges();
+    expect(el.open).toBe(false);
+  });
+
+  it('a disabled anchor control, or one inside a wrapping anchor, keeps it shut', async () => {
+    const { page, el, anchor } = await mount('trigger="anchor"');
+
+    anchor.disabled = true;
+    fire(page, anchor, 'click');
+    await page.waitForChanges();
+    expect(el.open).toBe(false);
+
+    const wrap = page.doc.createElement('div');
+    wrap.id = 'wrap';
+    wrap.innerHTML = '<input disabled />';
+    page.body.prepend(wrap);
+    el.anchor = '#wrap';
+    await page.waitForChanges();
+    fire(page, wrap, 'click');
+    await page.waitForChanges();
+    expect(el.open).toBe(false);
+
+    wrap.querySelector('input').disabled = false;
+    fire(page, wrap, 'click');
+    await page.waitForChanges();
+    expect(el.open).toBe(true);
+  });
+
+  it('switching back to manual stops listening to the anchor', async () => {
+    const { page, el, anchor } = await mount('trigger="anchor"');
+
+    el.trigger = 'manual';
+    await page.waitForChanges();
+    fire(page, anchor, 'click');
+    await page.waitForChanges();
+    expect(el.open).toBe(false);
+  });
+});
+
 describe('the dialog always has a name', () => {
   const nameOf = async (html: string, attributes = '') => {
     const page = await newSpecPage({ components: [ShiftPopover, ShiftPopoverPanel, ShiftPortal], html });

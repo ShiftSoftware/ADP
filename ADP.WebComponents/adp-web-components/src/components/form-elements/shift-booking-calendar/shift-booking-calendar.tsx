@@ -4,6 +4,7 @@ import { AnyObjectSchema, string } from 'yup';
 import { FormHook } from '~features/form-hook/form-hook';
 import { FormElement, FormInputLocalization, FormInputMeta, getInputLocalization } from '~features/form-hook';
 import type { LanguageKeys } from '~features/multi-lingual';
+import { BlazorInvokable, BlazorInvokableFunction, DotNetObjectReference, smartInvokable } from '~features/blazor-ref';
 
 import { ChevronLeftIcon } from '~assets/chevron-left-icon';
 
@@ -38,7 +39,7 @@ type Identity = Record<(typeof IDENTITY)[number], string>;
   tag: 'shift-booking-calendar',
   styleUrl: 'shift-booking-calendar.css',
 })
-export class ShiftBookingCalendar implements FormElement {
+export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   @Element() el!: HTMLElement;
 
   @Prop({ reflect: true }) name: string = 'bookingCalendar';
@@ -231,6 +232,27 @@ export class ShiftBookingCalendar implements FormElement {
     this.reset('');
   }
 
+  @State() blazorRef?: DotNetObjectReference;
+
+  @Prop() changeCallback?: BlazorInvokableFunction<(value: string, label: string, complete: boolean) => void>;
+
+  // A host that attaches after load still hears the current value's label once.
+  @Method()
+  async setBlazorRef(newBlazorRef: DotNetObjectReference) {
+    this.blazorRef = newBlazorRef;
+    await this.reportCurrent();
+  }
+
+  @Watch('changeCallback')
+  onChangeCallbackChange() {
+    if (typeof this.changeCallback === 'function') this.reportCurrent();
+  }
+
+  private async reportCurrent() {
+    const label = this.slotLabel(this.current);
+    if (label) await smartInvokable.bind(this)(this.changeCallback, formatPickerValue(this.current, this.valueFormat, this.offset()), label, false);
+  }
+
   @Method()
   async getValueLabel() {
     return this.slotLabel(this.current);
@@ -418,6 +440,7 @@ export class ShiftBookingCalendar implements FormElement {
     this.emitted = value;
     this.value = value;
     this.pickerChange.emit({ value, label, complete });
+    smartInvokable.bind(this)(this.changeCallback, value, label, complete);
   }
 
   private emitStatus() {
@@ -502,7 +525,14 @@ export class ShiftBookingCalendar implements FormElement {
     event.stopPropagation();
 
     const time = this.day?.times.find(item => item.time === event.detail.value);
-    if (!time || time.raw === this.selectedRaw) return;
+    if (!time) return;
+
+    // The time already shown (kept from the previous day) is confirmed by clicking it.
+    if (time.raw === this.selectedRaw) {
+      this.completing = true;
+      this.emitPicker();
+      return;
+    }
 
     const before = this.timeText();
 
