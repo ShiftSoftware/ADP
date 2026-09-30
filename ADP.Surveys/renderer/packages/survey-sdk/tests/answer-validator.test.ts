@@ -165,6 +165,13 @@ describe('validateAnswerValue', () => {
     expect(codes(q, 'not-a-date')).toEqual(['invalidDateTime']);
   });
 
+  it('bookingSlot accepts only yyyy-MM-ddTHH:mm (C#: Validate_BookingSlot_AcceptsOnlyWallClockMinutes)', () => {
+    const q = { type: 'bookingSlot', id: 'slot' };
+    expect(codes(q, '2026-10-07T09:00')).toEqual([]);
+    for (const bad of ['2026-10-07T09:00:00', '2026-10-07T09:00+03:00', '2026-02-30T09:00', '2026-10-07 09:00 AM', 42])
+      expect(codes(q, bad)).toEqual(['invalidBookingSlot']);
+  });
+
   // ── file / signature ──────────────────────────────────────────────────────
   it('file and signature must be non-empty strings', () => {
     expect(codes({ type: 'file', id: 'f' }, '')).toEqual(['empty']);

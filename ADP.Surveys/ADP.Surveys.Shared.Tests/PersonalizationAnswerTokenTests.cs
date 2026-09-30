@@ -262,6 +262,57 @@ public class PersonalizationAnswerTokenTests
             PersonalizationTokens.CollectAnswerReferences(survey).OrderBy(x => x, StringComparer.Ordinal));
     }
 
+    [Fact]
+    public void Substitute_FillsABookingQuestionsCalendarRequest_AndLeavesAnswerTokensForTheRenderer()
+    {
+        var survey = SurveyWith();
+        var question = new BookingSlotQuestionDto
+        {
+            Id = "slot",
+            Title = LocalizedString.From("en", "When suits you, {{candidate.name}}?"),
+            CalendarApi = "https://{{candidate.host}}/api/calendar",
+            BranchId = "{{answers.branch}}",
+            DepartmentId = "{{candidate.department}}",
+            BrandId = "{{candidate.brand|default brand}}",
+        };
+        survey.Screens.Add(new InlineScreenDto { Id = "s1", Questions = { QuestionEntryDto.FromInline(question) } });
+
+        PersonalizationTokens.Substitute(survey, Live(survey,
+            ("candidate.name", "Sam"), ("candidate.host", "id.example"), ("candidate.department", "service & parts")));
+
+        Assert.Equal("When suits you, Sam?", question.Title["en"]);
+        Assert.Equal("https://id.example/api/calendar", question.CalendarApi);
+        Assert.Equal("{{answers.branch}}", question.BranchId);
+        // Raw: the calendar component encodes the ids when it builds the query.
+        Assert.Equal("service & parts", question.DepartmentId);
+        Assert.Equal("default brand", question.BrandId);
+    }
+
+    [Fact]
+    public void CollectTokenNames_SeesABookingQuestionsCalendarRequest()
+    {
+        var survey = SurveyWith();
+        survey.Screens.Add(new InlineScreenDto
+        {
+            Id = "s1",
+            Questions =
+            {
+                QuestionEntryDto.FromInline(new BookingSlotQuestionDto
+                {
+                    Id = "slot",
+                    Title = LocalizedString.From("en", "Slot"),
+                    CalendarApi = "https://id.example/api/calendar",
+                    BranchId = "{{answers.branch}}",
+                    DepartmentId = "{{candidate.department}}",
+                    BrandId = "{{answers.brand}}",
+                }),
+            },
+        });
+
+        Assert.Equal(new[] { "answers.branch", "answers.brand", "candidate.department" },
+            PersonalizationTokens.CollectTokenNames(survey).OrderBy(x => x, StringComparer.Ordinal));
+    }
+
     // ─── Publish-time integrity ──────────────────────────────────────────────
 
     [Fact]
@@ -292,6 +343,15 @@ public class PersonalizationAnswerTokenTests
                             Title = LocalizedString.From("en", "City"),
                             OptionsSource = new OptionsSourceDto { Url = "https://api.example/cities?for={{answers.reigon}}" },
                         }),
+                        QuestionEntryDto.FromInline(new BookingSlotQuestionDto
+                        {
+                            Id = "slot",
+                            Title = LocalizedString.From("en", "Slot"),
+                            CalendarApi = "https://api.example/calendar",
+                            BranchId = "{{answers.brnach}}",
+                            DepartmentId = "service",
+                            BrandId = "brand",
+                        }),
                     },
                 },
             },
@@ -301,6 +361,7 @@ public class PersonalizationAnswerTokenTests
 
         Assert.Contains(errors, e => e.Path == "tokens.answers.nmae" && e.Message.Contains("'nmae'"));
         Assert.Contains(errors, e => e.Path == "tokens.answers.reigon");
+        Assert.Contains(errors, e => e.Path == "tokens.answers.brnach");
         Assert.DoesNotContain(errors, e => e.Path == "tokens.answers.name");
     }
 

@@ -9,8 +9,9 @@
   --survey-primary-hover: #1e40af;
   --survey-primary-contrast: #ffffff;
   --survey-accent: #f5b60c;
+  --survey-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--survey-font);
   color: #111;
   max-width: 640px;
   margin: 0 auto;
@@ -505,6 +506,17 @@
   display: flex;
   justify-content: flex-start;
   gap: 8px;
+}
+
+/* Booking slot: <shift-booking-calendar> reads the shared --shift-* tokens through
+ * its shadow root, so the survey's font and brand colour reach it from here. */
+.survey-question--booking-slot shift-booking-calendar {
+  --shift-font-family: var(--survey-font);
+  --shift-ink: #111;
+  --shift-accent: var(--survey-primary);
+  --shift-on-accent: var(--survey-primary-contrast);
+  --shift-focus: var(--survey-primary);
+  --shift-danger: #b42318;
 }
 
 /* Buttons */

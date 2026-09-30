@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json.Serialization;
 
 namespace ShiftSoftware.ADP.Surveys.Sample.API.Data.Seed;
@@ -19,6 +20,22 @@ public static class SampleReferenceApi
 
     /// <summary>This host's own endpoints, at the port in launchSettings.json.</summary>
     public const string DefaultBaseUrl = "http://localhost:5134/api/public";
+
+    /// <summary>
+    /// Department and brand the "Book a visit" sample reads calendars for. The stand-in
+    /// calendar ignores both; against a real deployment set them to its own values, the same
+    /// way as <see cref="BaseUrlSetting"/>.
+    /// </summary>
+    public const string BookingDepartmentSetting = "SampleSurveys:BookingDepartmentId";
+    public const string BookingBrandSetting = "SampleSurveys:BookingBrandId";
+    public const string DefaultBookingDepartmentId = "service-center";
+    public const string DefaultBookingBrandId = "BRAND";
+
+    /// <summary>
+    /// Full URL of the calendar the "Book a visit" sample reads. Unset, it is this host's
+    /// stand-in, <c>calendar</c> under the base URL.
+    /// </summary>
+    public const string BookingCalendarSetting = "SampleSurveys:BookingCalendarUrl";
 
     private static readonly ReferenceItem[] Cities =
     {
@@ -47,8 +64,32 @@ public static class SampleReferenceApi
             .Where(b => string.IsNullOrEmpty(services) || b.Services.Contains(services))
             .Select(b => new ReferenceItem(b.Id, b.Name)));
 
+        // Shape of a public calendar endpoint: the next days with hourly slots, starting two
+        // days out. One branch has no calendar, so the sample also shows the booking
+        // question's empty state.
+        group.MapGet("/calendar", (string? from, string? branchId) =>
+        {
+            if (string.IsNullOrEmpty(branchId) || branchId == "lakeshore-body-shop")
+                return Array.Empty<CalendarDay>();
+
+            var start = DateOnly.TryParseExact(from, "yyyy-MM-dd", out var parsed) ? parsed : DateOnly.FromDateTime(DateTime.Today);
+            return Enumerable.Range(2, 14)
+                .Select(start.AddDays)
+                .Where(day => day.DayOfWeek != DayOfWeek.Friday)
+                .Select(day => new CalendarDay(
+                    day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    new[] { 8, 9, 10, 11, 13, 14, 15 }
+                        .Select(hour => day.ToDateTime(new TimeOnly(hour, 0)).ToString("yyyy-MM-dd hh:mm tt", CultureInfo.InvariantCulture))
+                        .ToArray()))
+                .ToArray();
+        });
+
         return app;
     }
+
+    private sealed record CalendarDay(
+        [property: JsonPropertyName("Date")] string Date,
+        [property: JsonPropertyName("Times")] string[] Times);
 
     // Named explicitly so the wire shape does not depend on the host's JSON naming policy.
     private sealed record ReferenceItem(

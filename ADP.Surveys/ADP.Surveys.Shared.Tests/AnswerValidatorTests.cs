@@ -109,6 +109,28 @@ public class AnswerValidatorTests
         Assert.Contains(errors, e => e.Message.Contains("before minDate"));
     }
 
+    [Theory]
+    [InlineData("\"2026-10-07T09:00\"", true)]
+    [InlineData("\"2026-10-07T09:00:00\"", false)]
+    [InlineData("\"2026-10-07T09:00+03:00\"", false)]
+    [InlineData("\"2026-02-30T09:00\"", false)]
+    [InlineData("\"2026-10-07 09:00 AM\"", false)]
+    [InlineData("42", false)]
+    public void Validate_BookingSlot_AcceptsOnlyWallClockMinutes(string json, bool valid)
+    {
+        var q = new BookingSlotQuestionDto
+        {
+            Id = "slot",
+            Title = LocalizedString.From("en", "Slot"),
+            CalendarApi = "https://calendar.example/api/calendar",
+            BranchId = "{{answers.branch}}",
+            DepartmentId = "service-center",
+            BrandId = "BRAND",
+        };
+        var errors = AnswerValidator.Validate(SurveyWith(q), AnswerMap(("slot", json)));
+        Assert.Equal(valid, errors.Count == 0);
+    }
+
     [Fact]
     public void Validate_AllGood_NoErrors()
     {

@@ -54,6 +54,7 @@ import { DateTimeQuestion } from './questions/DateTimeQuestion.js';
 import { FileQuestion } from './questions/FileQuestion.js';
 import { SignatureQuestion } from './questions/SignatureQuestion.js';
 import { YesNoQuestion } from './questions/YesNoQuestion.js';
+import { BookingSlotQuestion } from './questions/BookingSlotQuestion.js';
 
 /** Map a constraint-validation code onto the locale's message templates.
  *  Codes without a dedicated template fall back to the generic string —
@@ -94,6 +95,7 @@ export const defaultRegistry: QuestionRegistry = {
   dropdown: DropdownQuestion,
   date: DateQuestion,
   dateTime: DateTimeQuestion,
+  bookingSlot: BookingSlotQuestion,
   file: FileQuestion,
   signature: SignatureQuestion,
   yesNo: YesNoQuestion,

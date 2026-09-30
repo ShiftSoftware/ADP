@@ -24,7 +24,17 @@ public static class SampleSurveys
     /// Base URL of the public reference API the external-options sample fetches from
     /// (see <see cref="SampleReferenceApi"/>).
     /// </param>
-    public static IReadOnlyList<SampleSurveyRecipe> All(string publicRefApiBase) => new[]
+    /// <param name="bookingDepartmentId">Department the booking sample's calendar is read for.</param>
+    /// <param name="bookingBrandId">Brand the booking sample's calendar is read for.</param>
+    /// <param name="bookingCalendarUrl">
+    /// Calendar the booking sample reads. Null: the stand-in, <c>calendar</c> under
+    /// <paramref name="publicRefApiBase"/>.
+    /// </param>
+    public static IReadOnlyList<SampleSurveyRecipe> All(
+        string publicRefApiBase,
+        string bookingDepartmentId = SampleReferenceApi.DefaultBookingDepartmentId,
+        string bookingBrandId = SampleReferenceApi.DefaultBookingBrandId,
+        string? bookingCalendarUrl = null) => new[]
     {
         MinimalNps(),
         BranchingNavigation(),
@@ -34,6 +44,7 @@ public static class SampleSurveys
         TriggerDriven(),
         ExternalApiOptions(publicRefApiBase),
         Sf4PurchaseFollowUp.Recipe(),
+        BookAVisit(publicRefApiBase, bookingCalendarUrl ?? $"{publicRefApiBase}/calendar", bookingDepartmentId, bookingBrandId),
     };
 
     // ──────────────────────────────────────────────────────────────────────
@@ -765,6 +776,74 @@ public static class SampleSurveys
             Banks: new[] { cityBank, branchBank },
             Templates: Array.Empty<TemplateRecipe>());
     }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // 8. Book a visit — a branch picked on one screen, then a preferred date
+    //    and time at that branch on the next. The bookingSlot question reads
+    //    the branch's calendar availability from the deployment's public
+    //    calendar endpoint; its branchId is the earlier answer, piped in with
+    //    {{answers.visit-branch}}. Department and brand are fixed here, but
+    //    either could be a token for an earlier answer too.
+    // ──────────────────────────────────────────────────────────────────────
+    private static SampleSurveyRecipe BookAVisit(string publicRefApiBase, string calendarUrl, string departmentId, string brandId) => new(
+        IntegrationId: "sample-book-a-visit",
+        Name: "Sample: Book a visit",
+        Draft: new SurveyDto
+        {
+            Title = LocalizedString.From("en", "Book a service visit"),
+            Locales = new() { "en" },
+            DefaultLocale = "en",
+            Screens =
+            {
+                new InlineScreenDto
+                {
+                    Id = "visit-branch-screen",
+                    Title = LocalizedString.From("en", "Where would you like to go?"),
+                    Questions =
+                    {
+                        QuestionEntryDto.FromInline(new DropdownQuestionDto
+                        {
+                            Id = "visit-branch",
+                            Title = LocalizedString.From("en", "Branch"),
+                            Placeholder = LocalizedString.From("en", "Select a branch…"),
+                            Required = true,
+                            BiColumn = "preferred_branch",
+                            OptionsSource = new OptionsSourceDto { Url = $"{publicRefApiBase}/company-branch" },
+                        })
+                    },
+                    NextScreen = "visit-slot-screen",
+                },
+                new InlineScreenDto
+                {
+                    Id = "visit-slot-screen",
+                    Title = LocalizedString.From("en", "When suits you at {{answers.visit-branch.label|the branch}}?"),
+                    Questions =
+                    {
+                        QuestionEntryDto.FromInline(new BookingSlotQuestionDto
+                        {
+                            Id = "visit-slot",
+                            Title = LocalizedString.From("en", "Preferred date and time"),
+                            Required = true,
+                            BiColumn = "preferred_slot",
+                            CalendarApi = calendarUrl,
+                            BranchId = "{{answers.visit-branch}}",
+                            DepartmentId = departmentId,
+                            BrandId = brandId,
+                        })
+                    },
+                    NextScreen = "visit-done",
+                },
+                new InlineScreenDto
+                {
+                    Id = "visit-done",
+                    Title = LocalizedString.From("en", "Thank you!"),
+                    Description = LocalizedString.From("en",
+                        "We'll confirm your visit to {{answers.visit-branch.label}} on {{answers.visit-slot.label}}."),
+                },
+            }
+        },
+        Banks: Array.Empty<BankRecipe>(),
+        Templates: Array.Empty<TemplateRecipe>());
 
     // ──────────────────────────────────────────────────────────────────────
     // 6. Trigger-driven — survey is delivered automatically when an upstream
