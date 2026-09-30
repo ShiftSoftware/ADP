@@ -5,6 +5,7 @@ using ShiftSoftware.ADP.Models.JsonConverters;
 using ShiftSoftware.ShiftEntity.Model;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -144,34 +145,51 @@ public class VehicleServiceItemDTO
 
     public string GenerateSignature(string vin, string secretKey)
     {
-        string stringToSign = string.Join(
-            ",",
-            vin.ToUpper(),
-            (int) this.TypeEnum,
-            this.ActivatedAt.ToString(ActivationAndExpiryDateFormat),
-            this.ExpiresAt?.ToString(ActivationAndExpiryDateFormat) ?? string.Empty,
-            (int) this.StatusEnum,
-            this.ModelCostID,
-            this.ServiceItemID,
-            this.PaidServiceInvoiceLineID,
-            this.ClaimingMethodEnum,
-            this.VehicleInspectionID,
-            this.Claimable,
-            this.SignatureExpiry.Ticks,
-            this.Cost,
-            this.CampaignID,
-            this.CampaignVinEntryID
-        );
-
         var keyBytes = Encoding.UTF8.GetBytes(secretKey);
 
-        var messageBytes = Encoding.UTF8.GetBytes(stringToSign);
+        var messageBytes = Encoding.UTF8.GetBytes(this.BuildStringToSign(vin));
 
         using var hmac = new HMACSHA256(keyBytes);
 
         var hash = hmac.ComputeHash(messageBytes);
 
         return Convert.ToBase64String(hash);
+    }
+
+    /// <summary>
+    /// The text that <see cref="GenerateSignature"/> signs. The lookup host signs it and the claim
+    /// endpoint checks it, and the two can run under different cultures. So every value is written
+    /// with the invariant culture. With the current culture, a cost of 1500.50 is written as
+    /// "1500,50" in many cultures, and a date gets a year such as 2569 in a culture whose calendar
+    /// is not Gregorian.
+    /// For a VIN in ASCII characters, the text is byte for byte the text that the earlier code
+    /// produced under en-US or the invariant culture, so signatures issued before this change still
+    /// verify.
+    /// </summary>
+    internal string BuildStringToSign(string vin)
+    {
+        var invariant = CultureInfo.InvariantCulture;
+
+        return string.Join(
+            ",",
+            vin.ToUpperInvariant(),
+            ((int) this.TypeEnum).ToString(invariant),
+            this.ActivatedAt.ToString(ActivationAndExpiryDateFormat, invariant),
+            this.ExpiresAt?.ToString(ActivationAndExpiryDateFormat, invariant) ?? string.Empty,
+            ((int) this.StatusEnum).ToString(invariant),
+            this.ModelCostID?.ToString(invariant),
+            this.ServiceItemID,
+            this.PaidServiceInvoiceLineID,
+            // The enum name, as before. The name of a defined value is the same in every culture.
+            this.ClaimingMethodEnum.ToString(),
+            this.VehicleInspectionID,
+            // "True" or "False" in every culture.
+            this.Claimable.ToString(),
+            this.SignatureExpiry.Ticks.ToString(invariant),
+            this.Cost?.ToString(invariant),
+            this.CampaignID?.ToString(invariant),
+            this.CampaignVinEntryID
+        );
     }
 
     public bool ValidateSignature(string vin, string secretKey)
