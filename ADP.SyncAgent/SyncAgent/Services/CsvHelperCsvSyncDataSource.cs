@@ -60,6 +60,7 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
             IgnoreBlankLines = false,
         });
 
+        Configurations?.ConfigureCsvContext?.Invoke(csvReader.Context);
         await foreach (var record in csvReader.GetRecordsAsync<TCSV>())
             records = records.Append(record);
 
@@ -73,6 +74,7 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
         {
             HasHeaderRecord = hasHeader
         });
+        Configurations?.ConfigureCsvContext?.Invoke(csvWriter.Context);
         await csvWriter.WriteRecordsAsync(items);
     }
 
@@ -103,6 +105,7 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
                 HasHeaderRecord = hasHeaderRecord,
                 IgnoreBlankLines = false,
             });
+            Configurations?.ConfigureCsvContext?.Invoke(this.csvReader.Context);
 
             return new(true);
         }
@@ -162,6 +165,7 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
             IgnoreBlankLines = false,
         });
 
+        Configurations?.ConfigureCsvContext?.Invoke(csv.Context);
         await foreach (var record in csv.EnumerateRecordsAsync(new TCSV()))
             count++;
 

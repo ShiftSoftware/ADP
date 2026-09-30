@@ -20,6 +20,14 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 [Docable]
 public class VehicleServiceItemDTO
 {
+    /// <summary>Inferred service evidence, separate from persisted claim metadata and cost.</summary>
+    public ServiceConsumptionEvidenceDTO? ServiceConsumptionEvidence { get; set; }
+
+    [DocIgnore]
+    [JsonIgnore]
+    [TypeScriptIgnore]
+    public ShiftSoftware.ADP.Models.Vehicle.ServiceConsumptionRule? ServiceConsumption { get; set; }
+
     private const string ActivationAndExpiryDateFormat = "yyyy-MM-dd";
 
     /// <summary>The <see cref="VehicleServiceItemGroup">group</see> this service item belongs to (for UI tab grouping).</summary>
