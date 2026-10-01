@@ -1,6 +1,6 @@
 Section,Metric,Value
-Run,GeneratedAtUtc,2026-09-30 22:00
-Run,ElapsedSeconds,269
+Run,GeneratedAtUtc,2026-10-01 08:37
+Run,ElapsedSeconds,285
 Run,Database,DataSource=C:\mounts\adp-sync-agent-destination\company-data-write.duckdb;ACCESS_MODE=READ_ONLY
 Run,InvoiceDateFrom,(none - all VINs)
 Run,MenuVariants,FreeOnly
@@ -14,23 +14,23 @@ Run,Limit,(none)
 Scope,RequestedVins,235315
 Scope,SkippedInvoicedBeforeDate,0
 Scope,SkippedNoFreeItems,52031
-Scope,SkippedNonePending,115373
+Scope,SkippedNonePending,115391
 Scope,NotAnsweredByLookup,0
-Scope,ComparedVins,67911
-VinOutcome,Match,0
-VinOutcome,Mismatch,0
-VinOutcome,NoFreeMenu,63311
-VinOutcome,MenuNotFound,4600
+Scope,ComparedVins,67893
+VinOutcome,Match,27149
+VinOutcome,Mismatch,37544
+VinOutcome,NoFreeMenu,2892
+VinOutcome,MenuNotFound,308
 VinOutcome,MenuUnavailable,0
 VinOutcome,MenuNotRegistered,0
 VinOutcome,NoBasicModelCode,0
-Items,FreeItemsCompared,652470
-Items,PendingFreeItemsCompared,347960
-Items,Matched,0
+Items,FreeItemsCompared,652326
+Items,PendingFreeItemsCompared,347873
+Items,Matched,518390
 Items,MileageMismatch,0
-Items,FreeItemCodeUnmatched,0
+Items,FreeItemCodeUnmatched,74336
 Items,FreeItemWithoutMenuCode,5665
-Items,NoFreeMenu,646805
+Items,NoFreeMenu,53935
 Items,ExcludedConditionalFreeItems,99905
-Items,FreeItemsOnVinsWithNonePending,492260
-Items,FreeMenuLinesGenerated,0
+Items,FreeItemsOnVinsWithNonePending,492404
+Items,FreeMenuLinesGenerated,653499
