@@ -29,8 +29,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="FluentValidation" Version="12.1.1" />
-		<!-- Keep the same minimum framework as the other Surveys packages. -->
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.9.26.2" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.9.30.2" />
 		<PackageReference Include="ShiftSoftware.TypeAuth.Core" Version="1.6.30" />
 	</ItemGroup>
 

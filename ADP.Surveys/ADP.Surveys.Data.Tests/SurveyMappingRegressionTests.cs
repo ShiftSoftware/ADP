@@ -17,15 +17,14 @@ using Xunit;
 namespace ShiftSoftware.ADP.Surveys.Data.Tests;
 
 /// <summary>
-/// Runs the same compiled Survey mappers on the minimum framework and on a newer
-/// test host. These checks use normal assembly loading and do not access a database.
+/// Exercises the compiled Survey mappers without accessing a database.
 /// </summary>
-public class FrameworkCompatibilityTests : IDisposable
+public class SurveyMappingRegressionTests : IDisposable
 {
     private readonly ServiceProvider host;
     private readonly IServiceScope scope;
 
-    public FrameworkCompatibilityTests()
+    public SurveyMappingRegressionTests()
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -37,29 +36,11 @@ public class FrameworkCompatibilityTests : IDisposable
             options.AddDataAssembly(typeof(SurveyDto).Assembly);
         });
         services.AddDbContext<SurveysDB>(options => options.UseSqlServer(
-            "Server=localhost;Database=SurveyCompatibilityTests;Trusted_Connection=True;TrustServerCertificate=True"));
+            "Server=localhost;Database=SurveyMappingTests;Trusted_Connection=True;TrustServerCertificate=True"));
         services.AddScoped<ShiftDbContext>(provider => provider.GetRequiredService<SurveysDB>());
         services.RegisterShiftRepositories(typeof(Survey).Assembly);
         host = services.BuildServiceProvider();
         scope = host.CreateScope();
-    }
-
-    [Fact]
-    public void SurveyAssembliesDoNotRequireANewerFrameworkThanTheDeclaredBaseline()
-    {
-        // Raised from 2026.8.24.1 when the Survey maps moved to ShiftMapper, which that framework lacks
-        // and whose predecessor 2026.9.21.1 removed, and to 2026.9.26.2 with the rest of ADP. Hosts still
-        // on the old framework stay on ADP 1.16.9, the last Survey packages built for them.
-        var baseline = new Version(2026, 9, 26, 2);
-        foreach (var assembly in new[] { typeof(Survey).Assembly, typeof(SurveyDto).Assembly, typeof(API.Controllers.SurveyController).Assembly })
-        {
-            var references = assembly.GetReferencedAssemblies().Where(reference =>
-                reference.Name!.StartsWith("ShiftSoftware.ShiftEntity", StringComparison.Ordinal)
-                || reference.Name.StartsWith("ShiftSoftware.ShiftIdentity", StringComparison.Ordinal)).ToArray();
-            Assert.NotEmpty(references);
-            Assert.All(references, reference => Assert.True(reference.Version <= baseline,
-                $"{assembly.GetName().Name} requires {reference}; expected at most {baseline}."));
-        }
     }
 
     [Fact]

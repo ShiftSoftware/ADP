@@ -28,7 +28,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.9.26.2" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.9.30.2" />
 	</ItemGroup>
 
 	<ItemGroup>

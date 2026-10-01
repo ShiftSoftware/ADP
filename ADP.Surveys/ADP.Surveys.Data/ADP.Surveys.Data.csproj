@@ -32,10 +32,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- The minimum framework for the Surveys packages: the maps are ShiftMapper's
-		     (Mappers/SurveysMapper.cs). Hosts on an earlier framework, including those still
-		     on AutoMapper, stay on ADP 1.16.9, the last Surveys release built for them. -->
-		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.9.26.2" />
-		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.9.26.2" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.9.30.2" />
+		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.9.30.2" />
 	</ItemGroup>
 </Project>
