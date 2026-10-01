@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.Cosmos;
+﻿using DuckDB.NET.Data;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -6,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
+using ShiftSoftware.ADP.Lookup.Services.DuckDB.Extensions;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Lookup.Services.Extensions;
 using ShiftSoftware.ADP.Menus.Sample.Functions;
@@ -74,12 +76,29 @@ var host = new HostBuilder()
         //
         // A host that wants menus WITHOUT the vehicle lookup calls AddServiceMenuLookup(…) instead; it takes
         // the same options action and registers only the menu half.
+        //
+        // ================================ LOOKUP STORAGE SWITCH ================================
+        // Where GET api/menu/{code} and GET api/vehicle/{vin} read from. Change ONLY this line:
+        //
+        //   StorageSources.DuckDB   — the DuckDB file at ConnectionStrings:DuckDB (opened read-only, per
+        //                             request). Hashed ids are decoded with HashIdSettings:Salt, which
+        //                             this project keeps in user secrets.
+        //   StorageSources.CosmosDB — the Cosmos account at ConnectionStrings:ReplicationCosmos. The
+        //                             vehicle half needs the CompanyData/Vehicles containers, which this
+        //                             sample does not provision; see VehicleMenuLookupFunctions.
+        //
+        // Everything that depends on the choice is in the "storage-specific registrations" block right
+        // after AddLookupService, and follows this value — nothing else needs commenting in or out.
+        // (GET api/menu-duckdb/{code} always reads DuckDB, whatever is chosen here.)
+        var lookupStorage = StorageSources.DuckDB;
+        // var lookupStorage = StorageSources.CosmosDB;
+        // =======================================================================================
+
         services.AddLookupService(options =>
         {
-            // The vehicle half reads CompanyData/Vehicles out of Cosmos. Required — without it
-            // IVehicleLookupStorageService is never registered and VehicleLookupService cannot resolve.
-            // Note this sample does not PROVISION those containers; see VehicleMenuLookupFunctions.
-            options.VehicleLookupStorageSource = StorageSources.CosmosDB;
+            // Cosmos: AddLookupService registers the Cosmos vehicle storage itself.
+            // DuckDB: it registers none — the DuckDB block below does.
+            options.VehicleLookupStorageSource = lookupStorage;
 
             // The menu half's own options, reached from this one call so a host cannot end up with the
             // menu lookup registered and silently running on defaults.
@@ -91,6 +110,52 @@ var host = new HostBuilder()
                 menu.DefaultCountryID = 0;
             };
         });
+
+        // ---------- storage-specific registrations (driven by lookupStorage above) ----------
+        if (lookupStorage == StorageSources.DuckDB)
+        {
+            // One read-only connection per scope — i.e. per request — and disposed with it, so a lookup
+            // never holds the file against POST api/duckdb-sync for longer than one request, and read-only
+            // refuses to CREATE a missing file, so an unsynced store fails loudly instead of answering
+            // "no menu".
+            services.AddScoped(provider =>
+            {
+                var connectionString = provider.GetRequiredService<IConfiguration>().GetConnectionString("DuckDB");
+
+                if (string.IsNullOrWhiteSpace(connectionString))
+                    connectionString = "DataSource=menus.duckdb";
+
+                if (!connectionString.Contains("ACCESS_MODE", StringComparison.OrdinalIgnoreCase))
+                    connectionString = connectionString.TrimEnd(';') + ";ACCESS_MODE=READ_ONLY";
+
+                var connection = new DuckDBConnection(connectionString);
+                connection.Open();
+                return connection;
+            });
+
+            // The DuckDB vehicle storage decodes company/branch/region/brand ids with the deployment's
+            // identity hash-id salt (HashIdSettings:Salt, in user secrets). Without one, ids are read as
+            // plain numbers.
+            services.AddShiftEntityHashId(hashIds =>
+            {
+                hashIds.RegisterHashId(false);
+
+                var salt = context.Configuration["HashIdSettings:Salt"];
+                if (!string.IsNullOrWhiteSpace(salt))
+                    hashIds.RegisterIdentityHashId(salt, context.Configuration.GetValue("HashIdSettings:MinHashLength", 5));
+            });
+
+            // The DuckDB vehicle storage (+ the vehicle report service) …
+            services.AddDuckDBLookupServices();
+
+            // … and the DuckDB menu storage, which REPLACES the Cosmos menu storage AddLookupService
+            // registers by default.
+            services.AddDuckDBServiceMenuLookup();
+        }
+
+        // CosmosDB needs nothing here: AddLookupService already registered the Cosmos vehicle storage
+        // (from VehicleLookupStorageSource) and the Cosmos menu storage (its default), both over the
+        // CosmosClient registered above.
     })
     .Build();
 
