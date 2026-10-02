@@ -186,7 +186,7 @@ public sealed class DuckDbCsvSyncDataSourceQueueTests : IDisposable
             Price = x.Price is null ? null : decimal.Parse(x.Price, CultureInfo.InvariantCulture),
             InvoiceDate = new DateTime(2026, 7, 15),
             Intermediary = new Intermediary { InvoiceNumber = "INV-1" },
-            Distributor = "TIQ",
+            Distributor = "DIST-1",
         }).Cast<VehicleRow?>()));
 
         using var conn = Db.Open(temp.File("dest.duckdb"));

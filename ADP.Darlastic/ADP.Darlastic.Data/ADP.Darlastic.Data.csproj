@@ -37,19 +37,20 @@
 		     compatibility contract. Set it to the newest package sitting on the build machine and
 		     every host that hasn't upgraded is silently excluded.
 
-		     Measured 2026-07-30: of the five candidate Toyota Iraq hosts, Customers was the most
-		     current at 2026.6.24.1 and NONE was on 2026.7.28.1 — so the previous floor excluded all
-		     of them. Referencing Darlastic from Customers failed restore outright (NU1605: "Detected
-		     package downgrade"), and raising Customers to match cascaded well past the Shift stack —
-		     TypeAuth, ASP.NET Core WebAssembly, the Azure Functions worker, libphonenumber — i.e. a
-		     dependency upgrade of the Tiq mobile-app backend in order to add a read-only internal
-		     browser.
+		     Measured 2026-07-30: one deployment had five candidate hosts. The host chosen for
+		     Darlastic was the most current of them, at 2026.6.24.1, and NONE was on 2026.7.28.1, so
+		     the previous floor excluded all of them. Referencing Darlastic from that host failed
+		     restore outright (NU1605: "Detected package downgrade"). Raising the host to match
+		     required upgrades well past the Shift stack: TypeAuth, ASP.NET Core WebAssembly, the
+		     Azure Functions worker, libphonenumber. That is a dependency upgrade of a mobile-app
+		     backend, only to add a read-only internal browser.
 
 		     2026.6.24.1 (with TypeAuth 1.6.25 in .Shared / .API) is the oldest pair VERIFIED to
 		     build: full ADP.sln green, 49/49 engine tests. Hosts above the floor still resolve their
-		     own higher version — TCA Tickets stays on 2026.7.28.1 — because a floor only ever widens.
-		     Lower it further only with a build to prove it; raise it only when Darlastic genuinely
-		     needs a newer API, deliberately, knowing that drops every host below the new floor. -->
+		     own higher version — a host in another deployment stays on 2026.7.28.1 — because a
+		     floor only ever widens. Lower it further only with a build to prove it; raise it only
+		     when Darlastic genuinely needs a newer API, deliberately, knowing that drops every host
+		     below the new floor. -->
 		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.9.30.2" />
 	</ItemGroup>
 </Project>

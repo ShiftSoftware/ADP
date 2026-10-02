@@ -444,10 +444,10 @@ public static class SnapshotRebuild
     ///
     /// <para><b>Exactly two statements touch the copy: the schema probe and the insert.</b> The
     /// contract checks below deliberately run AFTER the insert, against the local table, and that
-    /// ordering is a performance decision with a measured basis. Against a blob publish tier a
-    /// statement over a remote parquet costs a near-constant toll regardless of size — measured on
-    /// the TCA estate at roughly two seconds whether the file holds two rows or 1.4 million, because
-    /// the cost is round trips, not bytes. Validating the copy in place meant four openings per
+    /// ordering is a performance decision with a measured basis. Against a blob publish tier, a
+    /// statement over a remote parquet takes about the same time at any file size, because the
+    /// cost is round trips, not bytes. On one deployment it took about two seconds whether the
+    /// file held two rows or 1.4 million. Validating the copy in place meant four openings per
     /// table, and a caller that also footer-probed it first meant five; on a 21-table seed those
     /// were most of a three-minute cold start, spent asking a network about data that was about to
     /// be local anyway.</para>

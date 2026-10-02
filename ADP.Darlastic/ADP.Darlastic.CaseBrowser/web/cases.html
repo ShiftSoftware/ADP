@@ -320,9 +320,9 @@ const CAT_LABELS = {
   AutoMerged:      ["Auto-merged", "score ≥ 0.90 — unified into one identity"],
   // The corpus count here is the RAW band — every pair that scored 0.80–0.90. The work list is
   // smaller: pairs whose two records ended up in one identity anyway (via a third record) are
-  // dropped, because there is nothing left to ask. Measured on TIQ: 19,727 band → 13,355 queued,
-  // a 32% drop that matches the 2026-07-19 adversarial review exactly. Labelling the band as the
-  // queue overstates the steward's workload by a third.
+  // dropped, because there is nothing left to ask. Measured on one deployment: 19,727 band →
+  // 13,355 queued, a 32% drop that matches the 2026-07-19 adversarial review exactly. Labelling
+  // the band as the queue overstates the steward's workload by a third.
   StewardBand:     ["Steward band (0.80–0.90)", "every pair scored in the uncertain band. The steward QUEUE is smaller — pairs already merged transitively via a third record are dropped (~32%)"],
   NearMiss:        ["Near miss", "0.70–0.80 — kept separate, close"],
   ConflictVetoed:  ["Conflict-vetoed", "exact phone, but a hard rule HELD them apart — kept below auto-merge (name conflict / ID conflict)"],
