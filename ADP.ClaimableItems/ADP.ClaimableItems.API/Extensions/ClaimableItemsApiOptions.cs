@@ -8,7 +8,9 @@ public class ClaimableItemsApiOptions
     /// <summary>
     /// Optional absolute paths to consumer-supplied .frx templates replacing the module-embedded
     /// print defaults (the sanctioned rebranding hook). Leave the paths null (default) to print the
-    /// byte-frozen embedded templates.
+    /// embedded templates. They take the company name, logo and contact details from
+    /// <see cref="Cases.Shared.Printing.ICompanyInfoProvider"/>, so an override is needed only to
+    /// change other text or the layout.
     /// </summary>
     public ClaimableItemsReportOverrides ReportOverrides { get; set; } = new();
 

@@ -79,6 +79,13 @@ public static class WarrantyClaimsApiExtensions
         // pattern as the model-building contributor above). All-null = embedded defaults.
         services.AddSingleton(options.ReportOverrides);
 
+        // Data-layer consumer options, captured the same way: the claim printout and the manufacturer
+        // CSV export read the distributor code from this object.
+        services.AddSingleton(new Data.WarrantyClaimsDataOptions
+        {
+            DistributorCode = options.DistributorCode,
+        });
+
         mvcBuilder.AddApplicationPart(typeof(WarrantyClaimsApiExtensions).Assembly);
 
         return services;

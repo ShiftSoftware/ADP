@@ -28,9 +28,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- Byte-frozen FastReport templates (moved verbatim from the original host, Phase 3
-		     Slice 3.2). Embedded — extracted to a temp file at print time because ShiftEntity.Print
-		     only loads from a path today. Consumers rebrand via ClaimableItemsApiOptions.ReportOverrides. -->
+		<!-- FastReport templates moved from the original host (Phase 3 Slice 3.2). They hold no
+		     consumer branding: the print code fills in the company name, logo and contact details
+		     from the consumer's ICompanyInfoProvider. They are embedded, and extracted to a temp file
+		     at print time, because ShiftEntity.Print only loads from a path today. Consumers can
+		     replace a whole template via ClaimableItemsApiOptions.ReportOverrides. -->
 		<EmbeddedResource Include="Reports\ItemClaim.frx" />
 		<EmbeddedResource Include="Reports\ItemClaimCertificate.frx" />
 		<EmbeddedResource Include="Reports\ItemClaimInvoice.frx" />

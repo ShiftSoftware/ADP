@@ -124,7 +124,7 @@ public class WarrantyClaimManufacturerCSV
     [FieldCaption("FDIST")]
     [FieldQuoted(QuoteMode.OptionalForBoth)]
     [FieldConverter(typeof(WarrantyClaimManufacturerCSV_PadRightConverter), 5)]
-    public string? DistCode { get; set; } = "96157";
+    public string? DistCode { get; set; }
 
 
     [FieldCaption("TWCNO")]
@@ -148,7 +148,7 @@ public class WarrantyClaimManufacturerCSV
     [FieldCaption("CLMNT")]
     [FieldQuoted(QuoteMode.OptionalForBoth)]
     [FieldConverter(typeof(WarrantyClaimManufacturerCSV_PadRightConverter), 5)]
-    public string? ClaimantCode { get; set; } = "96157";
+    public string? ClaimantCode { get; set; }
 
     [FieldCaption("FRAN")]
     [FieldQuoted(QuoteMode.OptionalForBoth)]

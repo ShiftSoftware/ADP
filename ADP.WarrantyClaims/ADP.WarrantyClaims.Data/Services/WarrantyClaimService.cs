@@ -20,11 +20,13 @@ public class WarrantyClaimService
 {
     private readonly IUserClaimService? userClaimService;
     private readonly CosmosClient? cosmosClient;
+    private readonly WarrantyClaimsDataOptions? dataOptions;
 
-    public WarrantyClaimService(IUserClaimService? userClaimService = null, CosmosClient? cosmosClient = null)
+    public WarrantyClaimService(IUserClaimService? userClaimService = null, CosmosClient? cosmosClient = null, WarrantyClaimsDataOptions? dataOptions = null)
     {
         this.userClaimService = userClaimService;
         this.cosmosClient = cosmosClient;
+        this.dataOptions = dataOptions;
     }
 
     public void WarrantyLinesValidationAndTransformation(ActionTypes actionType, WarrantyClaim entity, WarrantyClaimDTO dto, bool isDistributor)
@@ -459,6 +461,10 @@ public class WarrantyClaimService
             //csvEntry.ClaimStatus = claim.ClaimStatus;
             //csvEntry.ManufacturerStatus = claim.ManufacturerStatus;
             csvEntry.Page = i + 1;
+
+            // FDIST and CLMNT both carry the host's distributor code (WarrantyClaimsApiOptions.DistributorCode).
+            csvEntry.DistCode = this.dataOptions?.DistributorCode;
+            csvEntry.ClaimantCode = this.dataOptions?.DistributorCode;
 
             csvEntry.ClaimNumber = claim.ClaimNumber;
             csvEntry.InvoiceNo = claim.InvoiceNo;

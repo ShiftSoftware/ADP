@@ -279,7 +279,7 @@ public class WarrantyCertificateRepository : ShiftRepository<ShiftDbContext, Cer
             .AddDataList("Table", "DataClaims", certificateClaims.Select(x => new
             {
                 No = no++,
-                // Pinned: the byte-frozen WarrantyCertificate/WarrantyInvoice frx bind [Table.TWCNo];
+                // Pinned: the embedded WarrantyCertificate/WarrantyInvoice frx bind [Table.TWCNo];
                 // the entity property renamed to ClaimNumber (Phase 3) but the frx-facing member
                 // name must not change.
                 TWCNo = x.ClaimNumber,

@@ -220,8 +220,9 @@ public class WarrantyClaimRepository :
     }
 
     // Moved verbatim from the original host's derived repository (Phase 3 Slice 3.2): only the frx
-    // source (embedded default / consumer override), the company info (ICompanyInfoProvider) and the
-    // date formatter (IPrintoutDateFormatter) go through the consumer seams now.
+    // source (embedded default / consumer override), the company info (ICompanyInfoProvider), the
+    // date formatter (IPrintoutDateFormatter) and the distributor code (WarrantyClaimsDataOptions) go
+    // through the consumer seams now.
     public override async Task<Stream> PrintAsync(string id)
     {
         var companyInfoProvider = PrintingServices.GetRequiredCompanyInfoProvider(this.db);
@@ -235,12 +236,17 @@ public class WarrantyClaimRepository :
 
         var distributorInfo = await companyInfoProvider.GetDistributorAsync("en");
 
+        var dataOptions = PrintingServices.GetService<WarrantyClaimsDataOptions>(this.db);
+
         return await new FastReportBuilder()
             .AddFastReportFile(WarrantyClaimsReports.WarrantyClaim(PrintingServices.GetService<WarrantyClaimsReportOverrides>(this.db)))
             .AddDataObject("C", new
             {
+                // WarrantyClaim.frx binds [C.DistCode]: the host's distributor code
+                // (WarrantyClaimsApiOptions.DistributorCode).
+                DistCode = dataOptions?.DistributorCode,
                 claim.InvoiceNo,
-                // Pinned: the byte-frozen WarrantyClaim.frx binds [C.TWCNo]; the entity property
+                // Pinned: the embedded WarrantyClaim.frx binds [C.TWCNo]; the entity property
                 // renamed to ClaimNumber (Phase 3) but the frx-facing member name must not change.
                 TWCNo = claim.ClaimNumber,
                 claim.DealerCode,
@@ -481,7 +487,7 @@ public class WarrantyClaimRepository :
             .AddDataList("Table", "DataClaims", claims.OrderBy(x => x.ID).Select(x => new
             {
                 No = no++,
-                // Pinned: the byte-frozen ManufacturerWarrantyInvoice.frx binds [Table.TWCNo].
+                // Pinned: the embedded ManufacturerWarrantyInvoice.frx binds [Table.TWCNo].
                 TWCNo = x.ClaimNumber,
                 Franchise = x.Franchise.Substring(0, 1),
                 RepairDate = printOutDateFormatter.GetFormattedDate(x.RepairDate),

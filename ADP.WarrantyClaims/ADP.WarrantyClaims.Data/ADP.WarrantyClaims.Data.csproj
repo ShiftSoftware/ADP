@@ -28,17 +28,19 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- Byte-frozen FastReport templates (moved verbatim from the original host, Phase 3
-		     Slice 3.2). Embedded — extracted to a temp file at print time because ShiftEntity.Print
-		     only loads from a path today. Consumers rebrand via WarrantyClaimsApiOptions.ReportOverrides. -->
+		<!-- FastReport templates moved from the original host (Phase 3 Slice 3.2). They hold no
+		     consumer branding: the print code fills in the company name, logo and contact details
+		     from the consumer's ICompanyInfoProvider. They are embedded, and extracted to a temp file
+		     at print time, because ShiftEntity.Print only loads from a path today. Consumers can
+		     replace a whole template via WarrantyClaimsApiOptions.ReportOverrides. -->
 		<EmbeddedResource Include="Reports\WarrantyClaim.frx" />
 		<EmbeddedResource Include="Reports\WarrantyCertificate.frx" />
 		<EmbeddedResource Include="Reports\WarrantyInvoice.frx" />
 		<EmbeddedResource Include="Reports\ManufacturerWarrantyInvoice.frx" />
-		<!-- The financial report moved in Phase 3 Slice 3.5 (D23) and is the ONE deliberately
-		     genericized template: its baked org labels/expressions were renamed to the module
-		     vocabulary (Distributor Margins / Manufacturer Payment / Claim #) rather than kept
-		     byte-frozen. Consumers rebrand via ReportOverrides.FinancialReportFrxPath. -->
+		<!-- The financial report moved in Phase 3 Slice 3.5 (D23). Like the templates above, it holds
+		     no consumer branding. In addition, its baked org labels/expressions were renamed to the
+		     module vocabulary (Distributor Margins / Manufacturer Payment / Claim #). Consumers rebrand
+		     via ReportOverrides.FinancialReportFrxPath. -->
 		<EmbeddedResource Include="Reports\FinancialReport.frx" />
 	</ItemGroup>
 
