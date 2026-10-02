@@ -362,6 +362,8 @@ public class ItemClaimCertificateRepository : ShiftRepository<ShiftDbContext, Ce
     // source (embedded default / consumer override), the company info (ICompanyInfoProvider), the
     // date formatter (IPrintoutDateFormatter) and the hashid decode type change — everything else,
     // including the Campaign printout templating, is byte-identical.
+    // One fix since the move: in invoice mode the report callback skips the objects that only the
+    // certificate template has. The original code did not skip them, so every invoice print failed.
     public override async Task<Stream> PrintAsync(string id)
     {
         var companyInfoProvider = PrintingServices.GetRequiredCompanyInfoProvider(this.db);
@@ -434,6 +436,11 @@ public class ItemClaimCertificateRepository : ShiftRepository<ShiftDbContext, Ce
                 (report.FindObject("TextFooterAddress") as FastReport.TextObject)!.Text = distributorInfo.Address;
                 (report.FindObject("TextFooterContactDetails") as FastReport.TextObject)!.Text = $"{distributorInfo.Phone}\r\n{distributorInfo.Website}";
 
+                // The objects below exist only in the certificate template: the campaign's header
+                // and body text, the sign and stamp band, and the Model / Katashiki column. The
+                // invoice template has none of them, so FindObject returns null for each one.
+                if (IsInvoiceMode)
+                    return;
 
                 (report.FindObject("CellHeading") as FastReport.TextObject)!.Text =
                 certificateCampaign?.CertificatePrintoutHeader?
