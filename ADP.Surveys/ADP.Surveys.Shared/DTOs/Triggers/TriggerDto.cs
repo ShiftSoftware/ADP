@@ -49,6 +49,15 @@ public class TriggerDto
     /// <summary>DI key resolved against registered <c>ISurveyChannel</c> implementations.</summary>
     [JsonPropertyName("channel")]
     public string Channel { get; set; } = "";
+
+    /// <summary>
+    /// Optional. Past it — counted from the event's own date — no instance is created and a
+    /// pending one is not sent. See <see cref="TriggerDeadlineDto"/>. Omitted from the JSON when
+    /// absent, so schemas published before it existed keep their exact serialized form.
+    /// </summary>
+    [JsonPropertyName("deadline")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public TriggerDeadlineDto? Deadline { get; set; }
 }
 
 /// <summary>
@@ -65,6 +74,11 @@ public class TriggerDtoValidator : AbstractValidator<TriggerDto>
             RuleFor(x => x.Filter!).SetValidator(new LogicConditionDtoValidator()));
 
         RuleFor(x => x.Schedule).NotNull().SetValidator(new TriggerScheduleDtoValidator());
+
+        RuleFor(x => x.Deadline!.Within)
+            .Must(s => TriggerDuration.TryParse(s, out var d) && d > TimeSpan.Zero)
+            .When(x => !string.IsNullOrEmpty(x.Deadline?.Within))
+            .WithMessage("Deadline 'within' must be a positive duration like '7d'.");
     }
 }
 
@@ -85,5 +99,7 @@ public class TriggerPublishValidator : AbstractValidator<TriggerDto>
         RuleFor(x => x.Channel).NotEmpty().WithMessage("Trigger channel is required.");
         RuleFor(x => x.Schedule.InitialDelay).NotEmpty()
             .WithMessage("Trigger schedule.initialDelay is required.");
+        When(x => x.Deadline is not null, () =>
+            RuleFor(x => x.Deadline!).SetValidator(new TriggerDeadlineDtoValidator()));
     }
 }
