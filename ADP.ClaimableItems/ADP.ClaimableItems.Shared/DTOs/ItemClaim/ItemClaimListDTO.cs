@@ -30,7 +30,10 @@ public class ItemClaimListDTO : ShiftEntityListDTO
 
     public string ClaimableItemID { get; set; } = default!;
     public string CampaignID { get; set; } = default!;
-    public string VehicleInspectionResultVehicleInspectionTypeID { get; set; } = default!;
+    // Nullable: it is null for every claim without an inspection (and always, in a consumer that does not fill it).
+    // As a non-nullable string it was implicitly [Required], so saving a certificate - whose form posts its claim
+    // lines back - failed model validation for any line without an inspection.
+    public string? VehicleInspectionResultVehicleInspectionTypeID { get; set; }
 
 
 

@@ -122,24 +122,30 @@ public class WarrantyClaimsMapper : ShiftMapperBase
             .ForMember(d => d.ReferenceWarrantyClaimNumber, opt => opt.MapFrom(e => e.ReferenceWarrantyClaim!.ClaimNumber));
 
         // ── DEALER ───────────────────────────────────────────────────────────────────────────────
-        // THE FIVE IGNORES BELOW ARE THE ONLY THING KEEPING DISTRIBUTOR-SIDE FIGURES OUT OF A DEALER'S RESPONSE.
+        // THE SIX IGNORES BELOW ARE THE ONLY THING KEEPING DISTRIBUTOR-SIDE FIGURES OUT OF A DEALER'S RESPONSE.
         //
         // DealerFinancialListDTO is declared `: DistributorFinancialListDTO { }` - an empty subclass - so on shape
-        // alone the two lists are the SAME DTO, and the entity carries a value for every one of these five columns.
+        // alone the two lists are the SAME DTO, and the entity carries a value for every one of these six columns.
         // Drop an ignore and the endpoint still returns 200 with the same response shape and no diagnostic; the only
         // symptom is dealers receiving the distributor's margin figures. DealerFinancialController's gate is weaker
         // than a bare CanRead and DealerFinancialRepository applies no row scoping, so the map is the whole control.
         //
         // The dealer map is the distributor map (IncludeBase: every member configured above, inherited) minus exactly
-        // these five - blanking too much is as wrong as blanking too little. Guarded by DealerFinancialExposureTests,
-        // which projects one claim through both maps and asserts they differ by exactly these five members.
+        // these six - blanking too much is as wrong as blanking too little. Guarded by DealerFinancialExposureTests,
+        // which projects one claim through both maps and asserts they differ by exactly these six members and the
+        // margin computed from one of them (DistributorMargin = TotalClaimAmountDistributor - TotalClaimAmount).
+        //
+        // TotalClaimAmountDistributor was the original host's sixth ignore, added to hide distributor data from
+        // dealers. The extraction carried only five, so dealers were served the distributor's total and margin until
+        // the sixth was restored.
         CreateMap<WarrantyClaim, DealerFinancialListDTO>()
             .IncludeBase<WarrantyClaim, DistributorFinancialListDTO>()
             .ForMember(d => d.DistComment1, opt => opt.Ignore())
             .ForMember(d => d.HourTotalDistributor, opt => opt.Ignore())
             .ForMember(d => d.LaborTotalAmountDistributor, opt => opt.Ignore())
             .ForMember(d => d.SubletTotalAmountDistributor, opt => opt.Ignore())
-            .ForMember(d => d.PartsTotalAmountDistributor, opt => opt.Ignore());
+            .ForMember(d => d.PartsTotalAmountDistributor, opt => opt.Ignore())
+            .ForMember(d => d.TotalClaimAmountDistributor, opt => opt.Ignore());
 
         // ── THE CLAIM LIST ───────────────────────────────────────────────────────────────────────
         CreateMap<WarrantyClaim, WarrantyClaimListDTO>()

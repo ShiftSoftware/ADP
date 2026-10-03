@@ -17,8 +17,8 @@ namespace ShiftSoftware.ADP.WarrantyClaims.Data.Repositories;
 /// <para>
 /// <c>DealerFinancialListDTO</c> is declared as <c>: DistributorFinancialListDTO { }</c> - an empty
 /// subclass. It adds nothing and removes nothing, so on shape alone the dealer list and the
-/// distributor list are the SAME DTO. The entity carries a value for every one of these five
-/// columns. What separates the two audiences is five <c>.ForMember(..., opt => opt.Ignore())</c> calls
+/// distributor list are the SAME DTO. The entity carries a value for every one of these six
+/// columns. What separates the two audiences is six <c>.ForMember(..., opt => opt.Ignore())</c> calls
 /// on the dealer list map, which otherwise inherits the distributor list map whole.
 /// </para>
 ///
@@ -40,13 +40,13 @@ namespace ShiftSoftware.ADP.WarrantyClaims.Data.Repositories;
 /// </para>
 ///
 /// <para>
-/// Guarded permanently by <c>DealerFinancialExposureTests</c>, which asserts all five come back null
-/// for a claim whose entity has all five populated.
+/// Guarded permanently by <c>DealerFinancialExposureTests</c>, which asserts all six (and the margin
+/// computed from them) come back null for a claim whose entity has all six populated.
 /// </para>
 /// </summary>
 public class DealerFinancialRepository : ShiftRepository<ShiftDbContext, WarrantyClaim, DealerFinancialListDTO, WarrantyClaimDTO>
 {
-    // The maps are in Mappers/WarrantyClaimsMapper.cs - the dealer list map is the distributor one minus the five
+    // The maps are in Mappers/WarrantyClaimsMapper.cs - the dealer list map is the distributor one minus the six
     // withheld members, by construction (IncludeBase).
     public DealerFinancialRepository(ShiftDbContext db) : base(db)
     {

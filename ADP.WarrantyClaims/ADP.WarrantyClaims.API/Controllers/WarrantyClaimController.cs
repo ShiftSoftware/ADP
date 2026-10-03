@@ -216,12 +216,11 @@ public class WarrantyClaimController : ShiftEntitySecureControllerAsync<Warranty
         this.repository.shouldIncludeSubletLines = true;
         this.repository.shouldIncludePartLines = true;
 
-        // skipAuthentication: the dissolved extras controller drove the CrudHandler directly (a plain
-        // ControllerBase has no controller-level action), so selection resolution never re-checked the
-        // WarrantyClaim CRUD node — the endpoint is gated by CsvExportAction above instead. Passing
-        // false would silently return an empty selection for users who hold WarrantyClaimCSV but not
-        // WarrantyClaim read — a behavior change this move must not make.
-        var claims = await this.GetSelectedEntitiesAsync(selectedItems, skipAuthentication: true);
+        // The selection is resolved under the controller's own WarrantyClaim action, as the original host
+        // resolved it: a user who holds the CSV export action but cannot read warranty claims gets an empty
+        // selection and exports nothing, so the export never stamps claims its user cannot read. Data-level
+        // access applies either way.
+        var claims = await this.GetSelectedEntitiesAsync(selectedItems);
 
         var userId = hashIdService.Decode<UserDTO>(this.User.Claims.First(x => x.Type == System.Security.Claims.ClaimTypes.NameIdentifier).Value);
 
