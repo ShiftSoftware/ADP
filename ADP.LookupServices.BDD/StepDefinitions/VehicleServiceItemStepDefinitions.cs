@@ -373,6 +373,24 @@ public class VehicleServiceItemStepDefinitions
         }
     }
 
+    [Then("service item {string} retains requirement evidence:")]
+    public void ThenServiceItemRetainsRequirementEvidence(string serviceItemId, DataTable dataTable)
+    {
+        var item = RequireItem(serviceItemId);
+        Assert.NotNull(item.Prerequisites);
+        Assert.Equal(dataTable.Rows.Count, item.Prerequisites.Count);
+        foreach (var row in dataTable.Rows)
+        {
+            var requirement = Assert.Single(item.Prerequisites, p => p.Mileage == long.Parse(row["Mileage"]));
+            Assert.Equal(row["Label"], requirement.Label);
+            Assert.True(requirement.Satisfied);
+            Assert.Equal(DateTime.Parse(row["InvoiceDate"]), requirement.Evidence!.InvoiceDate);
+            Assert.Equal(row["InvoiceNumber"], requirement.Evidence.InvoiceNumber);
+            Assert.Equal(row["JobNumber"], requirement.Evidence.JobNumber);
+            Assert.Equal(row["PackageCode"], requirement.Evidence.PackageCode);
+        }
+    }
+
     private static string? GetOptionalString(DataTableRow row, string column)
     {
         if (!row.ContainsKey(column))

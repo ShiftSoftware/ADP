@@ -102,6 +102,12 @@ public class VehicleServiceItemDTO
     /// </summary>
     public VehicleServiceItemLockDTO? Lock { get; set; }
 
+    /// <summary>
+    /// Expected service milestones and their evidence, retained after unlocking and claiming.
+    /// These are information about this item's requirements, never additional claimable items.
+    /// </summary>
+    public List<VehicleServiceItemPrerequisiteDTO>? Prerequisites { get; set; }
+
     [DocIgnore]
     [JsonIgnore]
     [TypeScriptIgnore]

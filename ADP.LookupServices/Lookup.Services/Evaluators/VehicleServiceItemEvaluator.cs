@@ -163,6 +163,7 @@ public partial class VehicleServiceItemEvaluator
             var modelCost = UsesEntryMenu(item) ? null : GetModelCost(item.ModelCosts, vehicle?.Katashiki, vehicle?.VariantCode);
             var dto = BuildFreeServiceItemDto(item, vehicle, languageCode, modelCost);
             dto.Lock = outcome?.ToLockDTO();
+            dto.Prerequisites = outcome?.Prerequisites.Count > 0 ? outcome.Prerequisites.ToList() : null;
             dto.UnlockedOn = outcome?.UnlockedOn;
             Trace.RecordFreeBuild(item, dto, modelCost, languageCode);
             yield return dto;
@@ -624,6 +625,12 @@ public partial class VehicleServiceItemEvaluator
         foreach (var item in matched)
         {
             var claimLine = companyDataAggregate.ItemClaims?.FirstOrDefault(t => t.ServiceItemID == item.IntegrationID);
+            // A historical claim remains visible even if a static filter now hides the definition.
+            // Read only its locking milestone clauses for explanatory evidence, never to re-decide
+            // the claim or to manufacture a completion from the claim date.
+            var requirements = new VehicleEligibilityConditionEvaluator(companyDataAggregate, options)
+                .Evaluate(item.EligibilityConditions?.Where(condition => condition?.WhenUnmet == EligibilityConditionUnmetBehavior.Lock))
+                .Prerequisites;
             var dto = new VehicleServiceItemDTO
             {
                 ServiceItemID = item.IntegrationID,
@@ -640,6 +647,7 @@ public partial class VehicleServiceItemEvaluator
                 InvoiceNumber = claimLine?.InvoiceNumber,
                 JobNumber = claimLine?.JobNumber,
                 MaximumMileage = item.MaximumMileage,
+                Prerequisites = requirements.Count > 0 ? requirements.ToList() : null,
             };
 
             if (claimLine.CompanyID is { } companyId && companyId != 0 && options.CompanyNameResolver is not null)

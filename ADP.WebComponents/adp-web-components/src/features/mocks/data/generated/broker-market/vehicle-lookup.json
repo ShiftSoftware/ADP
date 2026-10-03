@@ -1893,16 +1893,86 @@
               "mileage": 45000,
               "label": "45K",
               "satisfied": true,
-              "satisfiedOn": "2026-01-13T00:00:00"
+              "satisfiedOn": "2026-01-13T00:00:00",
+              "evidence": {
+                "invoiceDate": "2026-01-13T00:00:00",
+                "odometer": 44928,
+                "packageCode": "CHPVO74 45KS3",
+                "serviceCode": "PMS",
+                "laborCode": "8JU86I56",
+                "serviceDescription": "CARRY OUT 45,000 KM SERVICE",
+                "jobDescription": "CARRY OUT 45,000 KM SERVICE/Quality Control Completed/TAXI PROJECT",
+                "invoiceNumber": "58442491",
+                "jobNumber": "78500",
+                "lineID": "2-30-78500-58442491-3-W",
+                "companyID": 3,
+                "branchID": 27
+              }
             },
             {
               "mileage": 50000,
               "label": "50K",
               "satisfied": true,
-              "satisfiedOn": "2026-02-07T00:00:00"
+              "satisfiedOn": "2026-02-07T00:00:00",
+              "evidence": {
+                "invoiceDate": "2026-02-07T00:00:00",
+                "odometer": 49175,
+                "packageCode": "CHP JTY389 50K TAXI",
+                "serviceCode": "PML",
+                "laborCode": "8K39D5E",
+                "serviceDescription": "PM LIGHT SERVICE",
+                "jobDescription": "* TAXI PROJECT./PM LIGHT SERVICE/Quality Control Completed",
+                "invoiceNumber": "91798179",
+                "jobNumber": "45236",
+                "lineID": "2-32-45236-91798179-1-W",
+                "companyID": 3,
+                "branchID": 30
+              }
             }
           ]
         },
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": true,
+            "satisfiedOn": "2026-01-13T00:00:00",
+            "evidence": {
+              "invoiceDate": "2026-01-13T00:00:00",
+              "odometer": 44928,
+              "packageCode": "CHPVO74 45KS3",
+              "serviceCode": "PMS",
+              "laborCode": "8JU86I56",
+              "serviceDescription": "CARRY OUT 45,000 KM SERVICE",
+              "jobDescription": "CARRY OUT 45,000 KM SERVICE/Quality Control Completed/TAXI PROJECT",
+              "invoiceNumber": "58442491",
+              "jobNumber": "78500",
+              "lineID": "2-30-78500-58442491-3-W",
+              "companyID": 3,
+              "branchID": 27
+            }
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": true,
+            "satisfiedOn": "2026-02-07T00:00:00",
+            "evidence": {
+              "invoiceDate": "2026-02-07T00:00:00",
+              "odometer": 49175,
+              "packageCode": "CHP JTY389 50K TAXI",
+              "serviceCode": "PML",
+              "laborCode": "8K39D5E",
+              "serviceDescription": "PM LIGHT SERVICE",
+              "jobDescription": "* TAXI PROJECT./PM LIGHT SERVICE/Quality Control Completed",
+              "invoiceNumber": "91798179",
+              "jobNumber": "45236",
+              "lineID": "2-32-45236-91798179-1-W",
+              "companyID": 3,
+              "branchID": 30
+            }
+          }
+        ],
         "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
         "signature": "ZrQntTzFZ1k84kOFzvv6P/GESpMmmkrnn2rJ2TmkOM4=",
@@ -4363,6 +4433,18 @@
             }
           ]
         },
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": false
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": false
+          }
+        ],
         "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
         "signature": "6oculPsycNFh7FCpyj05lInZKjD192PDbFGGLo2JjUw=",
@@ -5960,6 +6042,18 @@
             }
           ]
         },
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": false
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": false
+          }
+        ],
         "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
         "signature": "K33LEMVIC8D0h02U5WwmTC41t0FS0rsuMsIWTBUcJkY=",
@@ -12515,6 +12609,18 @@
             }
           ]
         },
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": false
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": false
+          }
+        ],
         "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
         "signature": "ZhbguGifg1/JZl6GOxG48Cml9V8EGlKYM2RW7MB/5Yw=",
@@ -22812,7 +22918,21 @@
               "mileage": 45000,
               "label": "45K",
               "satisfied": true,
-              "satisfiedOn": "2026-05-11T00:00:00"
+              "satisfiedOn": "2026-05-11T00:00:00",
+              "evidence": {
+                "invoiceDate": "2026-05-11T00:00:00",
+                "odometer": 43821,
+                "packageCode": "CHP QFN375 45K",
+                "serviceCode": "PMS",
+                "laborCode": "5Y04DN",
+                "serviceDescription": "PM SUPER LIGHT SERVICE",
+                "jobDescription": "BG Engine Performance Restorat/Consumables/PM SUPER LIGHT SERVICE/Spring Campaign",
+                "invoiceNumber": "94053843",
+                "jobNumber": "40607",
+                "lineID": "1-62-40607-94053843-2-S",
+                "companyID": 2,
+                "branchID": 65
+              }
             },
             {
               "mileage": 50000,
@@ -22821,6 +22941,33 @@
             }
           ]
         },
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": true,
+            "satisfiedOn": "2026-05-11T00:00:00",
+            "evidence": {
+              "invoiceDate": "2026-05-11T00:00:00",
+              "odometer": 43821,
+              "packageCode": "CHP QFN375 45K",
+              "serviceCode": "PMS",
+              "laborCode": "5Y04DN",
+              "serviceDescription": "PM SUPER LIGHT SERVICE",
+              "jobDescription": "BG Engine Performance Restorat/Consumables/PM SUPER LIGHT SERVICE/Spring Campaign",
+              "invoiceNumber": "94053843",
+              "jobNumber": "40607",
+              "lineID": "1-62-40607-94053843-2-S",
+              "companyID": 2,
+              "branchID": 65
+            }
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": false
+          }
+        ],
         "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
         "signature": "eTKL3kr\u002BvymO6ynxTB02EM7cvkx0qhueX4yKMHQo61Q=",
@@ -31698,6 +31845,48 @@
         "serviceItemID": "14717",
         "maximumMileage": 55000,
         "claimable": true,
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": true,
+            "satisfiedOn": "2025-07-22T00:00:00",
+            "evidence": {
+              "invoiceDate": "2025-07-22T00:00:00",
+              "odometer": 45370,
+              "packageCode": "CHPCIC234 45KS3",
+              "serviceCode": "PMS",
+              "laborCode": "6JUIV66SI831",
+              "serviceDescription": "CARRY OUT 45,000 KM SERVICE",
+              "jobDescription": "BG PFI Fuel \u0026 Air Induction Cl/CARRY OUT 45,000 KM SERVICE/Quality Control Completed/WASHING",
+              "invoiceNumber": "19572965",
+              "jobNumber": "97874",
+              "lineID": "2-20-97874-19572965-1-W",
+              "companyID": 3,
+              "branchID": 28
+            }
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": true,
+            "satisfiedOn": "2025-09-18T00:00:00",
+            "evidence": {
+              "invoiceDate": "2025-09-18T00:00:00",
+              "odometer": 50842,
+              "packageCode": "CHPCIC234 50KS3",
+              "serviceCode": "PML",
+              "laborCode": "6EZJZ38SJ507",
+              "serviceDescription": "CARRY OUT 50,000 KM SERVICE",
+              "jobDescription": "CARRY OUT 50,000 KM SERVICE/Quality Control Completed",
+              "invoiceNumber": "89606774",
+              "jobNumber": "18306",
+              "lineID": "2-20-18306-89606774-1-W",
+              "companyID": 3,
+              "branchID": 28
+            }
+          }
+        ],
         "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
         "signature": "OR5FgRFQH8aXfRUE/Z79XcYW1TZgvwnFHXqJruVyQIk=",
@@ -33484,6 +33673,46 @@
         "serviceItemID": "14717",
         "maximumMileage": 55000,
         "claimable": true,
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": true,
+            "satisfiedOn": "2026-05-31T00:00:00",
+            "evidence": {
+              "invoiceDate": "2026-05-31T00:00:00",
+              "odometer": 45794,
+              "packageCode": "CHP JTY389 45K",
+              "serviceCode": "PMS",
+              "laborCode": "1X51K2M",
+              "serviceDescription": "PM SUPER LIGHT SERVICE",
+              "jobDescription": "Consumables/PM SUPER LIGHT SERVICE/Spring Campaign",
+              "invoiceNumber": "25361537",
+              "jobNumber": "17497",
+              "lineID": "1-57-17497-25361537-2-W",
+              "companyID": 2
+            }
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": true,
+            "satisfiedOn": "2026-07-05T00:00:00",
+            "evidence": {
+              "invoiceDate": "2026-07-05T00:00:00",
+              "odometer": 49715,
+              "packageCode": "CHP JTY389 50K",
+              "serviceCode": "PML",
+              "laborCode": "8K39D5E",
+              "serviceDescription": "PM LIGHT SERVICE",
+              "jobDescription": "Consumables/PM LIGHT SERVICE/Summer Campaign",
+              "invoiceNumber": "70328719",
+              "jobNumber": "33118",
+              "lineID": "1-57-33118-70328719-2-W",
+              "companyID": 2
+            }
+          }
+        ],
         "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
         "signature": "NiLC6YsmTsWoPDlRmfH5IHjI8DeLURDdn/kLDnptBKU=",
@@ -35907,6 +36136,18 @@
             }
           ]
         },
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": false
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": false
+          }
+        ],
         "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
         "signature": "Z3nTmiSXx18AAbw9JV\u002B1KVtRx5tmFjYuIuhYwfFfz80=",
@@ -37817,16 +38058,86 @@
               "mileage": 45000,
               "label": "45K",
               "satisfied": true,
-              "satisfiedOn": "2025-08-28T00:00:00"
+              "satisfiedOn": "2025-08-28T00:00:00",
+              "evidence": {
+                "invoiceDate": "2025-08-28T00:00:00",
+                "odometer": 45522,
+                "packageCode": "CHPD4Y 45KS3",
+                "serviceCode": "PMS",
+                "laborCode": "9VPS39G1",
+                "serviceDescription": "CARRY OUT 45,000 KM SERVICE",
+                "jobDescription": "CARRY OUT 45,000 KM SERVICE",
+                "invoiceNumber": "65421264",
+                "jobNumber": "30083",
+                "lineID": "8-11-30083-65421264-2-W",
+                "companyID": 7,
+                "branchID": 32
+              }
             },
             {
               "mileage": 50000,
               "label": "50K",
               "satisfied": true,
-              "satisfiedOn": "2025-09-16T00:00:00"
+              "satisfiedOn": "2025-09-16T00:00:00",
+              "evidence": {
+                "invoiceDate": "2025-09-16T00:00:00",
+                "odometer": 52538,
+                "packageCode": "CHPD4Y 50KS3",
+                "serviceCode": "PML",
+                "laborCode": "7DKL87Z2",
+                "serviceDescription": "CARRY OUT 50,000 KM SERVICE",
+                "jobDescription": "CARRY OUT 50,000 KM SERVICE",
+                "invoiceNumber": "44315537",
+                "jobNumber": "16998",
+                "lineID": "8-11-16998-44315537-2-W",
+                "companyID": 7,
+                "branchID": 32
+              }
             }
           ]
         },
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": true,
+            "satisfiedOn": "2025-08-28T00:00:00",
+            "evidence": {
+              "invoiceDate": "2025-08-28T00:00:00",
+              "odometer": 45522,
+              "packageCode": "CHPD4Y 45KS3",
+              "serviceCode": "PMS",
+              "laborCode": "9VPS39G1",
+              "serviceDescription": "CARRY OUT 45,000 KM SERVICE",
+              "jobDescription": "CARRY OUT 45,000 KM SERVICE",
+              "invoiceNumber": "65421264",
+              "jobNumber": "30083",
+              "lineID": "8-11-30083-65421264-2-W",
+              "companyID": 7,
+              "branchID": 32
+            }
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": true,
+            "satisfiedOn": "2025-09-16T00:00:00",
+            "evidence": {
+              "invoiceDate": "2025-09-16T00:00:00",
+              "odometer": 52538,
+              "packageCode": "CHPD4Y 50KS3",
+              "serviceCode": "PML",
+              "laborCode": "7DKL87Z2",
+              "serviceDescription": "CARRY OUT 50,000 KM SERVICE",
+              "jobDescription": "CARRY OUT 50,000 KM SERVICE",
+              "invoiceNumber": "44315537",
+              "jobNumber": "16998",
+              "lineID": "8-11-16998-44315537-2-W",
+              "companyID": 7,
+              "branchID": 32
+            }
+          }
+        ],
         "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
         "signature": "1nB9K1PBZTdu6YNtuJJ/XvZoZ\u002BhQCIgeJn7tWF4fSc8=",
@@ -39170,6 +39481,18 @@
             }
           ]
         },
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": false
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": false
+          }
+        ],
         "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
         "signature": "ncMfekq3WgDyEKEUatvAeU7iWt\u002B9QlIsLxhsuI3eK5c=",
@@ -40685,6 +41008,18 @@
             }
           ]
         },
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": false
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": false
+          }
+        ],
         "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
         "signature": "nU1Y4S4F0yZnE6on5NcDJtF1SvZz7nQPLXqAL868qPY=",
@@ -44236,6 +44571,18 @@
             }
           ]
         },
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": false
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": false
+          }
+        ],
         "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
         "signature": "2HjpZ8Aifl5gihD19J8KIzdtZLeMp7Vg2QOP90WiWvE=",
@@ -44989,6 +45336,18 @@
             }
           ]
         },
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": false
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": false
+          }
+        ],
         "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
         "signature": "tczjLkOktvtuo5RajgjfMAv/sYxZMZzfTghYLcJg7KY=",
@@ -45973,6 +46332,18 @@
             }
           ]
         },
+        "prerequisites": [
+          {
+            "mileage": 85000,
+            "label": "85K",
+            "satisfied": false
+          },
+          {
+            "mileage": 90000,
+            "label": "90K",
+            "satisfied": false
+          }
+        ],
         "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
         "signature": "5JIq3/AEaYST1RfuSvvfiiyhlrYy9kCO3jcmDwe6Lew=",

@@ -1,6 +1,5 @@
 import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
-import cn from '~lib/cn';
 import { scrollIntoContainerView } from '~lib/scroll-into-container-view';
 import { bindEscapeFallback, closeModalOverlay, demoteOverlay, openModalOverlay, promoteOverlayIfCaged } from '~lib/overlay';
 
@@ -168,6 +167,8 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   private popoverCloseTimeoutRef: ReturnType<typeof setTimeout>;
   private popoverHideTimeoutRef: ReturnType<typeof setTimeout>;
   private popoverSwapEndTimeoutRef: ReturnType<typeof setTimeout>;
+  private popoverOpenGeneration = 0;
+  private activeRequirement?: HTMLElement & { closeEvidence: () => Promise<void> };
 
   private progressBar: HTMLElement;
   private claimableItemsBox: HTMLElement;
@@ -435,7 +436,35 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   private static readonly POPOVER_SWAP_MS = 500;
   private static readonly TRACE_FADE_OUT_MS = 420;
 
+  private onRequirementVisibilityChange = (event: CustomEvent<boolean>) => {
+    const requirement = event.currentTarget as HTMLElement & { closeEvidence: () => Promise<void> };
+    if (!event.detail) {
+      if (this.activeRequirement === requirement) this.activeRequirement = undefined;
+      return;
+    }
+    if (this.activeRequirement && this.activeRequirement !== requirement) void this.activeRequirement.closeEvidence();
+    this.activeRequirement = requirement;
+
+    // One evidence surface at a time. Invalidate deferred benefit opens as well as the visible
+    // card; otherwise an earlier hover's animation frame can reopen it over milestone details.
+    this.popoverOpenGeneration++;
+    clearTimeout(this.popoverCloseTimeoutRef);
+    clearTimeout(this.popoverHideTimeoutRef);
+    clearTimeout(this.popoverSwapEndTimeoutRef);
+    this.showClaimableItemPopover = false;
+    this.popoverFadingOut = false;
+    this.popoverSwapping = false;
+    this.outgoingClaimItem = undefined;
+    this.popoverHideTimeoutRef = setTimeout(() => demoteOverlay(this.popoverEl), VehicleClaimableItems.POPOVER_FADE_OUT_MS);
+  };
+
   setClaimableItemPopover = (showPopover: boolean, claimableItem?: VehicleServiceItemDTO, anchorEl?: HTMLElement) => {
+    // Hovering an outgoing benefit card cannot revive it while milestone evidence is open.
+    if (showPopover && this.activeRequirement && (!anchorEl || !claimableItem)) return;
+    if (showPopover && anchorEl && claimableItem && this.activeRequirement) {
+      void this.activeRequirement.closeEvidence();
+      this.activeRequirement = undefined;
+    }
     clearTimeout(this.popoverCloseTimeoutRef);
     clearTimeout(this.popoverHideTimeoutRef);
 
@@ -462,6 +491,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
         return;
       }
 
+      const generation = ++this.popoverOpenGeneration;
       clearTimeout(this.popoverSwapEndTimeoutRef);
 
       if (wasActive) {
@@ -484,6 +514,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
         // adopt its opacity:0 starting style. Flipping in the first frame would skip the transition.
         requestAnimationFrame(() =>
           requestAnimationFrame(() => {
+            if (generation !== this.popoverOpenGeneration) return;
             this.popoverBodyContentHeight = this.measurePopoverContentHeight();
             this.popoverSwapping = false;
             this.measurePopoverHeight();
@@ -505,6 +536,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
         this.selectedClaimItem = claimableItem;
         this.updatePopoverLocation();
         requestAnimationFrame(() => {
+          if (generation !== this.popoverOpenGeneration) return;
           this.showClaimableItemPopover = true;
           // Non-modal, and only when an ancestor would otherwise clip it: a hover card that took the
           // top layer unconditionally would outrank the host's own toasts and nav for no reason, and
@@ -515,6 +547,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
       }
     } else {
       this.popoverCloseTimeoutRef = setTimeout(() => {
+        this.popoverOpenGeneration++;
         clearTimeout(this.popoverSwapEndTimeoutRef);
         this.showClaimableItemPopover = false;
         this.popoverFadingOut = true;
@@ -747,6 +780,9 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
   @Method()
   async claim(item: VehicleServiceItemDTO) {
+    // Requirement markers have no claimable flag or service-item identity. Keep that boundary at
+    // the public entry point too, including calls made by a host rather than by the benefit button.
+    if (!item?.claimable || item.lock || !item.serviceItemID) return;
     this.selectedClaimItem = item;
 
     this.claimForm.item = item;
@@ -880,36 +916,34 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
             )}
           </LookupHead>
           <div class="lookup-slide-clip">
-            <div dir="ltr" class={cn('lookup-slide relative flex items-center h-[320px] transition-all duration-300', { loading: this.isLoading || this.tabAnimationLoading })}>
+            <div dir="ltr" class={{ 'lookup-slide': true, 'claim-line-body': true, 'loading': this.isLoading || this.tabAnimationLoading }}>
               {/* Tabs container */}
-              <div dir={this.locale.sharedLocales.direction} class="absolute top-0 z-10 w-full pt-[16px]">
-                <div class={cn('duration-300', { 'translate-y-[-50%] opacity-0': hideTabs })}>
+              <div dir={this.locale.sharedLocales.direction} class="claim-tabs">
+                <div class={{ 'claim-tabs-motion': true, 'claim-tabs-hidden': hideTabs }}>
                   <shift-tabs activeTabLabel={this.activeTab} changeActiveTab={this.onActiveTabChange} tabs={tabs}></shift-tabs>
                 </div>
               </div>
 
               {/* Loading Component  */}
-              <div class={cn('absolute w-[calc(100%-60px)] left-[30px] progress-container-style opacity-0', { 'opacity-100': this.isLoading || this.tabAnimationLoading })}>
-                <div class="w-full h-full rounded-[4px] overflow-x-hidden absolute left-0 top-0">
-                  <div class="absolute opacity-0 bg-[#1a1a1a] w-[150%] h-full" />
-                  <div class="absolute h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)] lane-inc" />
-                  <div class="absolute h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)] lane-dec" />
+              <div class={{ 'progress-container-style': true, 'claim-loading-lane': true, 'claim-visible': this.isLoading || this.tabAnimationLoading }}>
+                <div class="claim-loading-clip">
+                  <div class="claim-loading-background" />
+                  <div class="lane-inc claim-loading-segment" />
+                  <div class="lane-dec claim-loading-segment" />
                 </div>
               </div>
 
               {/* Inactive items activation & Print functionality */}
               <div
                 dir={this.locale.sharedLocales.direction}
-                class={cn(
-                  'absolute w-[90%] z-10 pointer-events-none border opacity-0 translate-y-[-5px] scale-[70%] p-[25px] text-[16px] rounded-[6px] flex items-center justify-between left-1/2 -translate-x-1/2 h-10 bottom-[10px] transition duration-500',
-                  {
-                    'text-[#8a6d3b] bg-[#fcf8e3] border-[#faebcc]': !isBlockedBox,
-                    'text-[#58151c] bg-[#f7d7d8] border-[#f2aeb5]': isBlockedBox,
-                    'opacity-100 pointer-events-auto translate-y-0 scale-100': !this.isLoading && this.vehicleLookup && !this.tabAnimationLoading && showActivationBox,
-                  },
-                )}
+                class={{
+                  'claim-activation': true,
+                  'claim-activation-notice': !isBlockedBox,
+                  'claim-activation-blocked': isBlockedBox,
+                  'claim-activation-visible': !this.isLoading && this.vehicleLookup && !this.tabAnimationLoading && showActivationBox,
+                }}
               >
-                <span class="font-semibold">
+                <span class="claim-activation-message">
                   {this.showPrintBox
                     ? this.locale.successFulClaimMessage
                     : showActivationBlocked
@@ -919,51 +953,58 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
                 {showActionButton && (
                   <button class="claim-button" onClick={this.showPrintBox ? this.printLastClaimResponse : this.activateClaimItem}>
-                    {this.showPrintBox ? <PrintIcon class="size-[30px] duration-200" /> : <ActivationIcon class="size-[30px] duration-200" />}
+                    {this.showPrintBox ? <PrintIcon class="claim-action-icon" /> : <ActivationIcon class="claim-action-icon" />}
                     <span>{this.showPrintBox ? this.locale.print : this.locale.activateNow}</span>
                   </button>
                 )}
               </div>
 
-              <div class="claimable-items-box px-[30px] min-w-full relative overflow-x-scroll h-full overflow-y-hidden">
-                <div class="flex relative w-fit min-w-full items-center h-full [&_*]:shrink-0 gap-[250px] justify-between">
+              <div class="claimable-items-box">
+                <div class="claim-line-items">
                   {/* Lane */}
                   <div
-                    class={cn('progress-container-style progress-lane absolute overflow-hidden w-[calc(100%-0px)] translate-y-0 opacity-100', {
-                      'opacity-0': this.isLoading || this.tabAnimationLoading || isNoServicesAvailable || !this.vehicleLookup,
-                    })}
+                    class={{
+                      'progress-container-style': true,
+                      'progress-lane': true,
+                      'claim-invisible': this.isLoading || this.tabAnimationLoading || isNoServicesAvailable || !this.vehicleLookup,
+                    }}
                   >
                     {/* Progress lane */}
-                    <div part="progress-bar" class="progress-bar transition-all w-1/2 h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)]" />
+                    <div part="progress-bar" class="progress-bar" />
                   </div>
 
                   {/* Claim items */}
-                  <div class="ml-[-125px]" />
+                  <div class="claim-line-edge" />
 
-                  {serviceItems.map((item, idx) => (
+                  {serviceItems.map((item, idx) => [
+                    // Requirements are presentation siblings, never members of serviceItems. Keeping
+                    // them outside that collection protects progress, claim counts and cancellation.
+                    ...(item.prerequisites ?? item.lock?.prerequisites ?? [])
+                      .slice()
+                      .sort((a, b) => a.mileage - b.mileage)
+                      .map(prerequisite => (
+                        <vehicle-service-requirement
+                          prerequisite={prerequisite}
+                          locale={this.locale}
+                          busy={this.isLoading || this.tabAnimationLoading}
+                          onEvidenceVisibilityChange={this.onRequirementVisibilityChange}
+                        />
+                      )),
                     <ClaimableItem
                       item={item}
                       locale={this.locale}
                       setClaimableItemPopover={this.setClaimableItemPopover}
                       addStatusClass={!isAwaitingClaim(item) || firstAwaitingIndex === idx}
-                    />
-                  ))}
+                    />,
+                  ])}
 
-                  <div class="ml-[-125px]" />
+                  <div class="claim-line-edge" />
                 </div>
 
                 {/* Empty state */}
-                <div
-                  dir={this.locale.sharedLocales.direction}
-                  class={cn(
-                    'absolute top-0 left-0 pointer-events-none size-full box-content flex flex-col justify-center opacity-0 transition duration-500 items-center text-slate-700',
-                    {
-                      'opacity-100 scale-100': isNoServicesAvailable,
-                    },
-                  )}
-                >
-                  <EmptyTableIcon class="size-[90px]" />
-                  <div class="text-[22px]">{this.locale.sharedLocales.errors.noServiceAvailable}</div>
+                <div dir={this.locale.sharedLocales.direction} class={{ 'claim-empty': true, 'claim-empty-visible': isNoServicesAvailable }}>
+                  <EmptyTableIcon class="claim-empty-icon" />
+                  <div class="claim-empty-label">{this.locale.sharedLocales.errors.noServiceAvailable}</div>
                 </div>
               </div>
             </div>

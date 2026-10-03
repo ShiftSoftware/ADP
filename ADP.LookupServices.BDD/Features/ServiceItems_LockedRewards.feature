@@ -95,6 +95,10 @@ Scenario: A reward whose prerequisites are complete is offered normally
   Then service item "SI-REWARD" is in the result
   And service item "SI-REWARD" is offered
   And service item "SI-REWARD" is claimable
+  And service item "SI-REWARD" retains requirement evidence:
+    | Mileage | Label | InvoiceDate | InvoiceNumber | JobNumber | PackageCode    |
+    | 45000   | 45K   | 2026-02-01  | INV-1         | JOB-1     | PGM MDL100 45K |
+    | 50000   | 50K   | 2026-03-01  | INV-2         | JOB-2     | PGM MDL100 50K |
 
 # A reward is active for its three months from the service that earned it, not from a slot in a
 # schedule the customer has already driven past. The rolling slot here runs to 2026-10-15; the
@@ -381,6 +385,32 @@ Scenario: Locked outranks missed when both clauses fail
   When evaluating service items for "1FDKF37GXVEB34368" with language "en"
   Then service item "SI-REWARD" is "Locked"
 
+Scenario: A historical claim retains milestone evidence when an earlier condition now hides its definition
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name          | BrandID | ActiveForMonths | MaximumMileage | ProgramRole |
+    | SI-REWARD     | Return reward | 1       | 3               | 55000          | Reward      |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                      | Operator    | ValueMatch | Program | Qualifier | Selection | Values      | WhenUnmet |
+    | serviceItems.baseSchedule.maximumMileage   | Equals      |            |         |           |           | 40000       | Hide      |
+    | serviceHistory.laborLines.packageCode      | ContainsAll | Milestone  | PGM     | None      | All       | 45000,50000 | Lock      |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode    |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | PGM MDL100 45K |
+    | 1         | 10       | INV-2         | JOB-2               | 2026-03-01  | PGM MDL100 50K |
+  And item claims:
+    | ServiceItemID | ClaimDate  | CompanyID | InvoiceNumber | JobNumber |
+    | SI-REWARD     | 2026-04-01 | 1         | INV-R         | JOB-R     |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" has status "processed"
+  And service item "SI-REWARD" retains requirement evidence:
+    | Mileage | Label | InvoiceDate | InvoiceNumber | JobNumber | PackageCode    |
+    | 45000   | 45K   | 2026-02-01  | INV-1         | JOB-1     | PGM MDL100 45K |
+    | 50000   | 50K   | 2026-03-01  | INV-2         | JOB-2     | PGM MDL100 50K |
+
 # A customer who earned the reward, claimed it, and then carried on servicing their car has not
 # missed anything. Telling them so would be false.
 Scenario: A claim outranks a window that has since closed
@@ -407,3 +437,7 @@ Scenario: A claim outranks a window that has since closed
   Then service item "SI-REWARD" is in the result
   And service item "SI-REWARD" is offered
   And service item "SI-REWARD" has status "processed"
+  And service item "SI-REWARD" retains requirement evidence:
+    | Mileage | Label | InvoiceDate | InvoiceNumber | JobNumber | PackageCode    |
+    | 45000   | 45K   | 2026-02-01  | INV-1         | JOB-1     | PGM MDL100 45K |
+    | 50000   | 50K   | 2026-03-01  | INV-2         | JOB-2     | PGM MDL100 50K |

@@ -49,5 +49,16 @@
     "claim": "Claim",
     "claimFailed": "داواکارییەکە سەرکەوتوو نەبوو",
     "ok": "باشە"
-  }
+  },
+  "requiredService": "خزمەتگوزاری پێویست",
+  "requirementCompleted": "تەواوکراو",
+  "requirementNotClaimable": "داواکردنی ناکرێت",
+  "requirementInvoiceDate": "بەرواری پسووڵە",
+  "requirementOdometer": "پێوانەی کیلۆمەتر (کم)",
+  "requirementServiceCode": "کۆدی خزمەتگوزاری تۆمارکراو",
+  "requirementLaborCode": "کۆدی کار",
+  "requirementWork": "کاری تۆمارکراو",
+  "requirementJobDescription": "وەسفی کار",
+  "requirementAwaiting": "هیچ خزمەتگوزارییەکی گونجاو تۆمار نەکراوە.",
+  "requirementEvidenceUnavailable": "تەواوکردن تۆمارکراوە؛ وردەکاری بەردەست نییە."
 }

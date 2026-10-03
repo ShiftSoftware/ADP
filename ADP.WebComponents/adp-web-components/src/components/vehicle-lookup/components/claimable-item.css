@@ -1,25 +1,58 @@
 .claimable-item {
-  @apply size-0 relative [&_*]:transition [&_*]:duration-500;
+  position: relative;
+  width: 0px;
+  height: 0px;
+}
+
+.claimable-item * {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 500ms;
 }
 
 .loading .claimable-item {
-  @apply pointer-events-none;
+  pointer-events: none;
 }
 
 .claimable-item-container {
-  @apply relative flex items-center justify-center bg-slate-400 -translate-x-1/2 -translate-y-1/2;
+  position: relative;
+  display: flex;
+  transform: translate(-50%, -50%);
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(148 163 184 / 1);
 }
 
 .claimable-item-header {
-  @apply absolute bottom-full mb-[16px] flex flex-col justify-center [&_img]:duration-1000 [&_img]:size-[40px] items-center font-bold text-[16px] [&>div]:w-[220px] [&>div]:text-center;
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
 }
 
-.claimable-item-header:hover {
-  @apply [&_img]:rotate-[360deg] [&_img]:scale-[125%];
+.claimable-item-header > div {
+  width: 220px;
+  text-align: center;
+}
+
+.claimable-item-header img {
+  width: 40px;
+  height: 40px;
+  transition-duration: 1000ms;
+}
+
+.claimable-item-header:hover img {
+  transform: translate(0, 0) rotate(360deg) scaleX(125%) scaleY(125%);
 }
 
 .loading .claimable-item-header {
-  @apply opacity-0 scale-[70%] translate-y-[-5px];
+  transform: translate(0, -5px) scaleX(70%) scaleY(70%);
+  opacity: 0;
 }
 
 .claimable-item-header.load-animation {
@@ -39,11 +72,18 @@
 }
 
 .claimable-item-circle {
-  @apply size-[30px] border-[5px] border-double border-[#ececec] rounded-full bg-[#a1a1a1];
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  border-width: 5px;
+  border-style: double;
+  border-color: rgb(236 236 236 / 1);
+  background-color: rgb(161 161 161 / 1);
 }
 
 .loading .claimable-item-circle {
-  @apply opacity-0 scale-[150%];
+  transform: translate(0, 0) scaleX(150%) scaleY(150%);
+  opacity: 0;
 }
 
 .claimable-item-circle.load-animation {
@@ -63,11 +103,18 @@
 }
 
 .claimable-item-footer {
-  @apply absolute top-full mt-[8px] text-center w-[220px] font-medium text-[16px];
+  position: absolute;
+  top: 100%;
+  margin-top: 8px;
+  width: 220px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 500;
 }
 
 .loading .claimable-item-footer {
-  @apply opacity-0 translate-y-[10px] scale-[70%];
+  transform: translate(0, 10px) scaleX(70%) scaleY(70%);
+  opacity: 0;
 }
 
 .claimable-item-footer.load-animation {
@@ -89,35 +136,35 @@
 }
 
 .processed .claimable-item-circle {
-  @apply bg-[#3071a9];
+  background-color: rgb(48 113 169 / 1);
 }
 
 .processed .claimable-item-header {
-  @apply text-[#3071a9];
+  color: rgb(48 113 169 / 1);
 }
 
 .expired .claimable-item-circle {
-  @apply bg-[#282828];
+  background-color: rgb(40 40 40 / 1);
 }
 
 .expired .claimable-item-header {
-  @apply text-[#282828];
+  color: rgb(40 40 40 / 1);
 }
 
 .cancelled .claimable-item-circle {
-  @apply bg-[#a80000];
+  background-color: rgb(168 0 0 / 1);
 }
 
 .cancelled .claimable-item-header {
-  @apply text-[#a80000];
+  color: rgb(168 0 0 / 1);
 }
 
 .pending .claimable-item-circle {
-  @apply bg-[#00a300];
+  background-color: rgb(0 163 0 / 1);
 }
 
 .pending .claimable-item-header {
-  @apply text-[#00a300];
+  color: rgb(0 163 0 / 1);
 }
 
 .activationRequired .claimable-item-header {
@@ -128,29 +175,37 @@
    drained of colour; the difference between them is that one is still coming and one is over. */
 
 .claimable-item-lock-icon {
-  @apply size-[40px] flex items-center justify-center duration-1000;
+  display: flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  transition-duration: 1000ms;
 }
 
 .claimable-item-lock-icon svg {
-  @apply size-[30px];
+  width: 30px;
+  height: 30px;
 }
 
 .claimable-item-header:hover .claimable-item-lock-icon {
-  @apply scale-[125%];
+  transform: translate(0, 0) scaleX(125%) scaleY(125%);
 }
 
 .lock-Locked .claimable-item-circle {
-  @apply bg-[#bdbdbd] border-[#f2f2f2];
+  border-color: rgb(242 242 242 / 1);
+  background-color: rgb(189 189 189 / 1);
 }
 
 .lock-Locked .claimable-item-header {
-  @apply text-[#8d8d8d];
+  color: rgb(141 141 141 / 1);
 }
 
 .lock-Missed .claimable-item-circle {
-  @apply bg-[#c08a3e] border-[#f6ecdc];
+  border-color: rgb(246 236 220 / 1);
+  background-color: rgb(192 138 62 / 1);
 }
 
 .lock-Missed .claimable-item-header {
-  @apply text-[#a5701f];
+  color: rgb(165 112 31 / 1);
 }

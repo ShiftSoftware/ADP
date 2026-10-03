@@ -1,26 +1,21 @@
 .claimable-item-popover {
-  @apply opacity-0 fixed z-50 block w-fit pointer-events-none;
+  pointer-events: none;
+  position: fixed;
+  z-index: 50;
+  display: block;
+  width: fit-content;
+  opacity: 0;
   transition: opacity 0.5s ease;
 
   /* --popover-swap is set inline from POPOVER_SWAP_MS in vehicle-claimable-items.tsx, which is the
      single source of truth: the same number has to drive these transitions AND the timer that tears
      the outgoing layer down, and a duplicate here would drift from it silently. The fallback below
      only applies if the component never rendered a value. */
-
-  /* The claim voucher's palette, so a card and the popover that describes it read as one surface.
-     Kept local rather than imported — the voucher scopes its own to .claim-scrim, and this lives in
-     a different shadow root. */
-  --text: #1f2937;
-  --muted: #6b7280;
-  --hair: #ececec;
-  --tear: #d9d2c6;
-  --primary-dark: #275e8f;
-  --green: #2c8a58;
-  --green-tint: #e8f4ed;
 }
 
 .claimable-item-popover[aria-expanded='true'] {
-  @apply !opacity-100 !pointer-events-auto;
+  pointer-events: auto !important;
+  opacity: 1 !important;
   transition:
     top var(--popover-swap, 0.5s) ease,
     bottom var(--popover-swap, 0.5s) ease,
@@ -50,11 +45,14 @@
 }
 
 .popover-relative-container {
-  @apply relative w-fit;
+  position: relative;
+  width: fit-content;
 }
 
 .popover-body {
-  @apply relative z-10 bg-[#f9f9f9] border shadow border-[#dddddd] w-[540px] p-[20px] rounded-[5px] text-[#282828];
+  position: relative;
+  z-index: 10;
+  width: 540px;
   /* The body slides sideways when the card would otherwise run off the window edge. Two adjacent
      items can land on different offsets, so without this it jumps between them. */
   transition: transform var(--popover-swap, 0.5s) ease;
@@ -130,96 +128,48 @@
 }
 
 .popover-body button {
-  @apply py-[4px] flex justify-center w-[80%] m-auto [&_svg]:size-[30px] [&_svg]:!pointer-events-none;
+  margin: auto;
+  display: flex;
+  width: 80%;
+  justify-content: center;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.popover-body button svg {
+  pointer-events: none !important;
+  width: 30px;
+  height: 30px;
 }
 
 .popover-arrow-icon {
-  @apply bottom-[calc(100%-12px)] absolute z-50 left-1/2 -translate-x-1/2;
+  position: absolute;
+  bottom: calc(100% - 12px);
+  left: 50%;
+  z-index: 50;
+  transform: translate(-50%, 0);
 }
 
 .popover-arrow-icon.flipped {
-  @apply bottom-[12px] rotate-180 translate-y-full;
+  bottom: 12px;
+  transform: translate(-50%, 100%) rotate(180deg);
 }
 
 .popover-arrow-icon-svg {
-  @apply size-[40px] text-[#ddd] fill-[#f9f9f9] stroke-[0.5px];
+  width: 40px;
+  height: 40px;
+  fill: #f9f9f9;
+  stroke-width: 0.5px;
+  color: rgb(221 221 221 / 1);
 }
 
 .popover-arrow-bottom-line {
-  @apply h-[1.5px] absolute w-[30px] left-[4.5px] top-[27.75px] bg-[#f9f9f9];
-}
-
-/* ============ Specs — three to a row, as on the claim voucher ============
-   A label above its value, three across, is the difference between a card that fits under its item
-   and one that runs off the window. The same eight fields stacked were eight rows tall. */
-
-.popover-specs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  padding: 10px 0 12px;
-  border-bottom: 1.5px dashed var(--tear);
-}
-
-.popover-specs:first-child {
-  padding-top: 0;
-}
-
-/* A tear rule under the final row would be a line with nothing beneath it. When the lock block
-   follows, that row is no longer last and keeps its rule — which is exactly where one belongs. */
-.popover-specs:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.popover-spec {
-  min-width: 0;
-  padding-inline-end: 14px;
-}
-
-.popover-spec + .popover-spec {
-  border-inline-start: 1px solid var(--hair);
-  padding-inline-start: 14px;
-}
-
-/* 0.14em was buying separation that 9px could not get any other way. At 11px it only makes an
-   already long label longer, so the tracking comes back down as the size goes up. */
-.claimable-item-popover .lab {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  text-transform: uppercase;
-}
-
-/* One font throughout, inherited from the host via the blanket rule in vehicle-claimable-items.css.
-   These values were set in a monospace stack, which resolves to Consolas on Windows and costs
-   legibility at this size. Tabular figures keep them aligned down the column, which is the one
-   thing the mono stack was doing for them. */
-.claimable-item-popover .val {
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  margin-top: 3px;
-  color: var(--text);
-  overflow-wrap: anywhere;
-}
-
-.popover-spec.pkg {
-  grid-column: span 2;
-}
-
-/* Alone on its row it takes the whole width — there is nothing beside it to make room for. */
-.popover-spec.pkg.full {
-  grid-column: 1 / -1;
-}
-
-.popover-spec.pkg .val {
-  color: var(--primary-dark);
-  /* Reads as a code, but it is read constantly, so it follows the other values into the UI font
-     rather than staying in the mono stack for the sake of looking like a code. The extra tracking
-     is what mono was actually contributing here — space between characters — at a size that can
-     carry it. */
-  letter-spacing: 0.03em;
+  position: absolute;
+  left: 4.5px;
+  top: 27.75px;
+  height: 1.5px;
+  width: 30px;
+  background-color: rgb(249 249 249 / 1);
 }
 
 /* ============ Prerequisites ============
@@ -228,7 +178,9 @@
    needs to scroll. */
 
 .popover-lock {
-  @apply flex flex-col gap-[8px];
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding-top: 10px;
 }
 
@@ -241,11 +193,21 @@
 }
 
 .popover-lock-prerequisites {
-  @apply flex flex-wrap gap-[8px];
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .popover-prerequisite {
-  @apply flex items-center gap-[7px] rounded-[4px] border px-[9px] py-[5px];
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 4px;
+  border-width: 1px;
+  padding-left: 9px;
+  padding-right: 9px;
+  padding-top: 5px;
+  padding-bottom: 5px;
   border-color: var(--hair);
   color: var(--muted);
 }
@@ -264,11 +226,20 @@
 }
 
 .popover-prerequisite-mark {
-  @apply size-[15px] shrink-0 rounded-full border border-current flex items-center justify-center;
+  display: flex;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border-width: 1px;
+  border-color: currentColor;
 }
 
 .popover-prerequisite-mark svg {
-  @apply size-[10px];
+  width: 10px;
+  height: 10px;
 }
 
 .popover-prerequisite-date {

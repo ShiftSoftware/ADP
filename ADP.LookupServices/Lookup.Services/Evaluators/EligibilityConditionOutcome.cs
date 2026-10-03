@@ -27,10 +27,9 @@ internal sealed class EligibilityConditionOutcome
 
     /// <summary>
     /// The services this item waits on, satisfied or not, gathered from every locking milestone
-    /// clause. Carried whatever the item's state: an offered item has nothing to explain to a
-    /// customer — <see cref="ToLockDTO"/> still shows a block only for a locked or missed one — but
-    /// "which prerequisites did this rule read, and when were they met" is the question the trace
-    /// exists to answer, and it is at its least obvious precisely when everything passed.
+    /// clause. Retained in every state so completed requirements remain visible. The trace also
+    /// uses them to explain which prerequisites the rule read and when they were met.
+    /// <see cref="ToLockDTO"/> still returns a block only for a locked or missed item.
     /// </summary>
     internal IReadOnlyList<VehicleServiceItemPrerequisiteDTO> Prerequisites { get; }
 

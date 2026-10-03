@@ -238,20 +238,35 @@ internal sealed class VehicleEligibilityConditionEvaluator
         return completedOn;
     }
 
-    private void RecordPrerequisites(List<long> requiredMilestones, Dictionary<long, DateTime?> reached)
+    private void RecordPrerequisites(List<long> requiredMilestones, Dictionary<long, OrderLaborLineModel> reached)
     {
         prerequisites = prerequisites ?? new List<VehicleServiceItemPrerequisiteDTO>();
 
         foreach (var milestone in requiredMilestones)
         {
-            var satisfied = reached.TryGetValue(milestone, out var satisfiedOn);
+            var satisfied = reached.TryGetValue(milestone, out var line);
 
             prerequisites.Add(new VehicleServiceItemPrerequisiteDTO
             {
                 Mileage = milestone,
                 Label = FormatMilestoneLabel(milestone),
                 Satisfied = satisfied,
-                SatisfiedOn = satisfied ? satisfiedOn : null,
+                SatisfiedOn = line?.InvoiceDate,
+                Evidence = line is null ? null : new VehicleServiceItemPrerequisiteEvidenceDTO
+                {
+                    InvoiceDate = line.InvoiceDate,
+                    Odometer = line.Odometer,
+                    PackageCode = line.PackageCode,
+                    ServiceCode = line.ServiceCode,
+                    LaborCode = line.LaborCode,
+                    ServiceDescription = line.ServiceDescription,
+                    JobDescription = line.JobDescription,
+                    InvoiceNumber = line.InvoiceNumber,
+                    JobNumber = line.OrderDocumentNumber,
+                    LineID = line.LineID,
+                    CompanyID = line.CompanyID,
+                    BranchID = line.BranchID,
+                },
             });
         }
     }
@@ -343,12 +358,12 @@ internal sealed class VehicleEligibilityConditionEvaluator
     /// serviced twice, or split across two invoices, is one milestone reached — the number of lines
     /// carries no meaning here, and the earliest date is when the customer actually did it.
     /// </summary>
-    private Dictionary<long, DateTime?> CollectMilestones(
+    private Dictionary<long, OrderLaborLineModel> CollectMilestones(
         IEnumerable<VehicleServiceHistoryEvaluator.VehicleServiceHistoryInvoice> invoices,
         HashSet<string> programs,
         MilestoneQualifierFilter qualifier)
     {
-        var reached = new Dictionary<long, DateTime?>();
+        var reached = new Dictionary<long, OrderLaborLineModel>();
 
         foreach (var line in invoices.SelectMany(invoice =>
                      invoice.LaborLines ?? Enumerable.Empty<OrderLaborLineModel>()))
@@ -381,10 +396,10 @@ internal sealed class VehicleEligibilityConditionEvaluator
 
             var performedOn = line?.InvoiceDate;
 
-            if (!reached.TryGetValue(reading.Milestone, out var firstOn))
-                reached[reading.Milestone] = performedOn;
-            else if (performedOn is not null && (firstOn is null || performedOn < firstOn))
-                reached[reading.Milestone] = performedOn;
+            if (!reached.TryGetValue(reading.Milestone, out var firstLine))
+                reached[reading.Milestone] = line;
+            else if (performedOn is not null && (firstLine.InvoiceDate is null || performedOn < firstLine.InvoiceDate))
+                reached[reading.Milestone] = line;
         }
 
         return reached;

@@ -1,0 +1,77 @@
+/* Shared claim-line evidence surface: benefits and required services use the same visual grammar. */
+.claim-detail-surface {
+  --text: #1f2937;
+  --muted: #6b7280;
+  --hair: #ececec;
+  --tear: #d9d2c6;
+  --primary-dark: #275e8f;
+  --green: #2c8a58;
+  --green-tint: #e8f4ed;
+}
+
+.claim-detail-card {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background: #f9f9f9;
+  padding: 20px;
+  color: #282828;
+  box-shadow:
+    0 1px 3px 0 rgb(0 0 0 / 0.1),
+    0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.popover-specs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 10px 0 12px;
+  border-bottom: 1.5px dashed var(--tear);
+}
+
+.popover-specs:first-child {
+  padding-top: 0;
+}
+
+.popover-specs:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.popover-spec {
+  min-width: 0;
+  padding-inline-end: 14px;
+}
+
+.popover-spec + .popover-spec {
+  border-inline-start: 1px solid var(--hair);
+  padding-inline-start: 14px;
+}
+
+.claim-detail-surface .lab {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.claim-detail-surface .val {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  margin-top: 3px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.popover-spec.pkg {
+  grid-column: span 2;
+}
+
+.popover-spec.full {
+  grid-column: 1 / -1;
+}
+
+.popover-spec.pkg .val {
+  color: var(--primary-dark);
+  letter-spacing: 0.03em;
+}

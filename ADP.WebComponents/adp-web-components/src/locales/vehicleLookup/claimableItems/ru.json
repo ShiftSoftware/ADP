@@ -49,5 +49,16 @@
     "claim": "Claim",
     "claimFailed": "Не удалось активировать",
     "ok": "ОК"
-  }
+  },
+  "requiredService": "Обязательное ТО",
+  "requirementCompleted": "Выполнено",
+  "requirementNotClaimable": "Недоступно для заявки",
+  "requirementInvoiceDate": "Дата счёта",
+  "requirementOdometer": "Пробег (км)",
+  "requirementServiceCode": "Код записанной услуги",
+  "requirementLaborCode": "Код работы",
+  "requirementWork": "Записанные работы",
+  "requirementJobDescription": "Описание заказа",
+  "requirementAwaiting": "Подходящее ТО не зарегистрировано.",
+  "requirementEvidenceUnavailable": "Выполнение зарегистрировано; подробности недоступны."
 }

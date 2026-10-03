@@ -2,6 +2,7 @@ import type { ServiceConsumptionEvidenceDTO } from './service-consumption-eviden
 import type { VehicleServiceItemGroup } from './vehicle-service-item-group';
 import type { VehicleItemWarning } from './vehicle-item-warning';
 import type { VehicleServiceItemLockDTO } from './vehicle-service-item-lock-dto';
+import type { VehicleServiceItemPrerequisiteDTO } from './vehicle-service-item-prerequisite-dto';
 export type VehicleServiceItemDTO = {
     serviceConsumptionEvidence?: ServiceConsumptionEvidenceDTO;
     group: VehicleServiceItemGroup;
@@ -33,6 +34,7 @@ export type VehicleServiceItemDTO = {
     maximumMileage?: number;
     claimable: boolean;
     lock?: VehicleServiceItemLockDTO;
+    prerequisites?: VehicleServiceItemPrerequisiteDTO[];
     claimingMethodEnum: 'ClaimByScanningQRCode' | 'ClaimByEnteringInvoiceAndJobNumber';
     vehicleInspectionID: string;
     vehicleInspectionTypeID: string;

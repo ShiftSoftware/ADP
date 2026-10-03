@@ -1,0 +1,151 @@
+/* tailwind: off */
+@import '../style/base.css';
+@import '../style/lookup-tokens.css';
+@import './components/claim-detail-specs.css';
+
+:host {
+  display: block;
+  position: relative;
+  width: 0;
+  height: 0;
+  color: var(--violet-dark);
+  font-family: var(--font-sans);
+}
+:host([data-complete='true']) {
+  color: var(--green-dark);
+}
+[dir='rtl'] {
+  font-family: var(--font-arabic);
+}
+
+/* Zero-width anchors use the same lane pitch as benefits. The 20px outlined marker is
+   deliberately smaller than a benefit's 30px filled marker. Labels fit inside that pitch. */
+.requirement-trigger {
+  position: absolute;
+  left: -85px;
+  top: -57px;
+  width: 170px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  border-radius: 6px;
+  transition:
+    opacity var(--settle) ease,
+    transform var(--settle) ease;
+  animation: requirement-arrive var(--settle) ease;
+}
+@keyframes requirement-arrive {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+.requirement-trigger:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 3px;
+}
+.requirement-status {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px currentColor;
+  background: var(--paper);
+}
+.requirement-circle {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 22px;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 2px currentColor;
+  border-radius: 50%;
+  font-weight: 760;
+}
+.requirement-label {
+  margin-top: 14px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.requirement-role,
+.requirement-note {
+  color: var(--muted);
+  margin-top: 3px;
+}
+:host([data-busy='true']) .requirement-trigger {
+  opacity: 0;
+  transform: scale(0.7);
+  pointer-events: none;
+}
+
+.requirement-detail {
+  position: fixed;
+  z-index: 60;
+  inset: auto;
+  margin: 0;
+  width: min(540px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  container-type: inline-size;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--settle) ease,
+    visibility 0s var(--settle);
+}
+.requirement-detail[data-open='true'] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+.requirement-detail-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1.5px dashed var(--tear);
+}
+.requirement-detail-title {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.requirement-detail-status,
+.requirement-empty {
+  color: var(--muted);
+}
+/* A narrow host column needs the same treatment as a narrow viewport. Only the evidence
+   presentation stacks; the shared desktop grid and the claim popup stay unchanged. */
+@container (max-width: 399px) {
+  .requirement-detail .popover-specs {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .requirement-detail .popover-spec {
+    grid-column: 1 / -1;
+    padding-inline: 0;
+    border-inline-start: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .requirement-trigger,
+  .requirement-detail {
+    transition-duration: 0.01ms;
+    animation-duration: 0.01ms;
+  }
+}

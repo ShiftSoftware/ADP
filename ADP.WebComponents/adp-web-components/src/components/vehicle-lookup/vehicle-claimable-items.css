@@ -1,5 +1,7 @@
-@import '../style/shift-skeleton.css';
+/* tailwind: off */
+@import '../style/base.css';
 @import './components/claimable-item.css';
+@import './components/claim-detail-specs.css';
 @import './components/claimable-item-popover.css';
 @import './components/claimable-trace-modal.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
@@ -18,7 +20,15 @@
 }
 
 .progress-container-style {
-  @apply h-[10px] -translate-y-2 rounded-full transition duration-500 bg-[#f2f2f2] border border-[#ddd];
+  height: 10px;
+  transform: translate(0, -0.5rem);
+  border-radius: 9999px;
+  border-width: 1px;
+  border-color: rgb(221 221 221 / 1);
+  background-color: rgb(242 242 242 / 1);
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 500ms;
 }
 
 .loading .lane-inc {
@@ -54,7 +64,46 @@
 }
 
 .claim-button {
-  @apply active:[&_svg]:scale-[125%] active:bg-[#27ae60] [&_circle]:fill-[#2ecc71] hover:text-white hover:bg-[#2ecc71] hover:stroke-white hover:fill-white hover:[&_circle]:fill-white outline-none flex items-center gap-[3px] border border-[#27ae60] bg-transparent fill-[#27ae60] stroke-[#27ae60] text-[#27ae60]  rounded-[5px] cursor-pointer duration-200 font-bold px-[10px];
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  gap: 3px;
+  border-radius: 5px;
+  border-width: 1px;
+  border-color: rgb(39 174 96 / 1);
+  background-color: transparent;
+  fill: #27ae60;
+  stroke: #27ae60;
+  padding-left: 10px;
+  padding-right: 10px;
+  font-weight: 700;
+  color: rgb(39 174 96 / 1);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition-duration: 200ms;
+}
+
+.claim-button:hover {
+  background-color: rgb(46 204 113 / 1);
+  fill: #fff;
+  stroke: #fff;
+  color: rgb(255 255 255 / 1);
+}
+
+.claim-button:active {
+  background-color: rgb(39 174 96 / 1);
+}
+
+.claim-button circle {
+  fill: #2ecc71;
+}
+
+.claim-button circle:hover {
+  fill: #fff;
+}
+
+.claim-button svg:active {
+  transform: translate(0, 0) scaleX(125%) scaleY(125%);
 }
 
 .claim-button path {
@@ -63,4 +112,174 @@
 
 .claim-button:hover path {
   fill: #2ecc71;
+}
+
+/* Plain-CSS parity for the existing claim line; dimensions and timing are unchanged. */
+.claim-line-body {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 320px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.claim-tabs {
+  position: absolute;
+  top: 0;
+  z-index: 10;
+  width: 100%;
+  padding-top: 16px;
+}
+.claim-tabs-motion {
+  transition-duration: 0.3s;
+}
+.claim-tabs-hidden {
+  transform: translateY(-50%);
+  opacity: 0;
+}
+.claim-loading-lane {
+  position: absolute;
+  width: calc(100% - 60px);
+  left: 30px;
+  opacity: 0;
+}
+.claim-loading-lane.claim-visible {
+  opacity: 1;
+}
+.claim-loading-clip {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  overflow-x: hidden;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.claim-loading-background {
+  position: absolute;
+  opacity: 0;
+  background: #1a1a1a;
+  width: 150%;
+  height: 100%;
+}
+.claim-loading-segment {
+  position: absolute;
+  height: 100%;
+  background: linear-gradient(to bottom, #428bca 0%, #3071a9 100%);
+}
+.claim-activation {
+  position: absolute;
+  width: 90%;
+  z-index: 10;
+  pointer-events: none;
+  border: 1px solid #e5e7eb;
+  opacity: 0;
+  transform: translate(-50%, -5px) scale(0.7);
+  padding: 25px;
+  font-size: 16px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  left: 50%;
+  height: 2.5rem;
+  bottom: 10px;
+  transition:
+    color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.claim-activation-notice {
+  color: #8a6d3b;
+  background: #fcf8e3;
+  border-color: #faebcc;
+}
+.claim-activation-blocked {
+  color: #58151c;
+  background: #f7d7d8;
+  border-color: #f2aeb5;
+}
+.claim-activation-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0) scale(1);
+}
+.claim-activation-message {
+  font-weight: 600;
+}
+.claim-action-icon {
+  width: 30px;
+  height: 30px;
+  transition-duration: 0.2s;
+}
+.claimable-items-box {
+  padding: 0 30px;
+  min-width: 100%;
+  position: relative;
+  overflow-x: scroll;
+  height: 100%;
+  overflow-y: hidden;
+}
+.claim-line-items {
+  display: flex;
+  position: relative;
+  width: fit-content;
+  min-width: 100%;
+  align-items: center;
+  height: 100%;
+  gap: 250px;
+  justify-content: space-between;
+}
+.claim-line-items * {
+  flex-shrink: 0;
+}
+.progress-lane {
+  position: absolute;
+  overflow: hidden;
+  width: 100%;
+  transform: translateY(0);
+  opacity: 1;
+}
+.progress-lane.claim-invisible {
+  opacity: 0;
+}
+.progress-bar {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(to bottom, #428bca 0%, #3071a9 100%);
+}
+.claim-line-edge {
+  margin-left: -125px;
+}
+.claim-empty {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  box-sizing: content-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  opacity: 0;
+  transition:
+    color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  align-items: center;
+  color: #334155;
+}
+.claim-empty-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+.claim-empty-icon {
+  width: 90px;
+  height: 90px;
+}
+.claim-empty-label {
+  font-size: 22px;
 }

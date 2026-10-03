@@ -591,7 +591,7 @@
           { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
         ],
         "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
-        "dependencies": ["vehicle-item-claim-form", "shift-tabs"]
+        "dependencies": ["vehicle-item-claim-form", "shift-tabs", "vehicle-service-requirement"]
       },
       "runtimeAssets": {
         "locales": "dist/locales",
