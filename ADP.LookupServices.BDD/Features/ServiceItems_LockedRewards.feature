@@ -68,7 +68,9 @@ Scenario Outline: An unearned reward is locked, and a lapsed one is missed
     | part-way through the prerequisites   | PGM MDL100 45K |                |                | Locked |
     | prerequisites done out of order      | PGM MDL100 50K |                |                | Locked |
     | unrelated work only                  | BRAKE PADS     |                |                | Locked |
-    | one prerequisite and a later service | PGM MDL100 45K | PGM MDL100 55K |                | Locked |
+    | one prerequisite and a later service | PGM MDL100 45K | PGM MDL100 55K |                | Missed |
+    | reward service without prerequisites | PGM MDL100 55K |                |                | Missed |
+    | higher service without prerequisites | PGM MDL100 70K |                |                | Missed |
     | both prerequisites, then one further | PGM MDL100 45K | PGM MDL100 50K | PGM MDL100 55K | Missed |
     | both, then several further           | PGM MDL100 45K | PGM MDL100 50K | PGM MDL100 70K | Missed |
 
@@ -370,7 +372,7 @@ Scenario: A hiding condition outranks a locking one
 
 # Both clauses fail on an empty history — the maximum is null, which equals nothing. A customer who
 # has not started has not missed anything.
-Scenario: Locked outranks missed when both clauses fail
+Scenario: An empty history stays locked when the maximum clause fails
   Given vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
     | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
@@ -413,6 +415,39 @@ Scenario: A historical claim retains milestone evidence when an earlier conditio
 
 # A customer who earned the reward, claimed it, and then carried on servicing their car has not
 # missed anything. Telling them so would be false.
+Scenario Outline: A recorded reward claim wins even when prerequisite history is missing
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name          | BrandID | ActiveForMonths | MaximumMileage | ProgramRole |
+    | SI-REWARD     | Return reward | 1       | 3               | <Reward>       | Reward      |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                     | Operator    | ValueMatch | Program | Qualifier | Selection | Values           | WhenUnmet |
+    | serviceHistory.laborLines.packageCode      | ContainsAll | Milestone  | PGM     | None      | All       | <First>,<Second> | Lock      |
+    | serviceHistory.laborLines.maximumMilestone | Equals      |            | PGM     | None      |           | <Second>         | Miss      |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | <CodeA>     |
+    | 1         | 10       | INV-2         | JOB-2               | 2026-06-01  | <CodeB>     |
+  And item claims:
+    | ServiceItemID | ClaimDate  | CompanyID | InvoiceNumber | JobNumber |
+    | SI-REWARD     | 2026-04-01 | 1         | INV-R         | JOB-R     |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" is in the result
+  And service item "SI-REWARD" is offered
+  And service item "SI-REWARD" has status "processed"
+
+  Examples:
+    | Reward | First | Second | CodeA          | CodeB           |
+    | 55000  | 45000 | 50000  |                | PGM MDL100 55K  |
+    | 55000  | 45000 | 50000  | PGM MDL100 45K | PGM MDL100 70K  |
+    | 75000  | 65000 | 70000  |                | PGM MDL100 75K  |
+    | 75000  | 65000 | 70000  | PGM MDL100 65K | PGM MDL100 90K  |
+    | 95000  | 85000 | 90000  |                | PGM MDL100 95K  |
+    | 95000  | 85000 | 90000  | PGM MDL100 85K | PGM MDL100 110K |
+
 Scenario: A claim outranks a window that has since closed
   Given vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |

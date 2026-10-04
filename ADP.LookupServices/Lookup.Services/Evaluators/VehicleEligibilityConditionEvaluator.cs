@@ -65,13 +65,14 @@ internal sealed class VehicleEligibilityConditionEvaluator
         milestoneNearMisses = null;
 
         var state = EligibilityConditionState.Met;
+        var missedMilestoneCeiling = false;
 
         foreach (var condition in conditions ?? Enumerable.Empty<EligibilityConditionModel>())
         {
             if (condition is null)
                 return Hidden();
 
-            if (MatchesCondition(condition, baseScheduleMaximumMileage))
+            if (MatchesCondition(condition, baseScheduleMaximumMileage, out var exceedsMilestoneCeiling))
                 continue;
 
             switch (condition.WhenUnmet)
@@ -84,9 +85,10 @@ internal sealed class VehicleEligibilityConditionEvaluator
                     break;
 
                 case EligibilityConditionUnmetBehavior.Miss:
-                    // Locked outranks missed however the conditions are ordered: a customer who has
-                    // not finished their prerequisites has missed nothing, even though the clause
-                    // about going too far is failing at the same time — it fails on a null maximum.
+                    // A failed equality alone does not prove the window was passed: the maximum
+                    // can be absent or below the ceiling. Only a recognized higher milestone can
+                    // override missing prerequisites, after all hiding conditions are checked.
+                    missedMilestoneCeiling |= exceedsMilestoneCeiling;
                     if (state != EligibilityConditionState.Locked)
                         state = EligibilityConditionState.Missed;
                     break;
@@ -95,6 +97,9 @@ internal sealed class VehicleEligibilityConditionEvaluator
                     return Hidden();
             }
         }
+
+        if (missedMilestoneCeiling)
+            state = EligibilityConditionState.Missed;
 
         // An item that ended up eligible can still have passed over codes on the way, and those are
         // the same evidence — a rule that reached its answer through half its history is worth
@@ -123,13 +128,17 @@ internal sealed class VehicleEligibilityConditionEvaluator
             ? EligibilityConditionOutcome.Hidden
             : new EligibilityConditionOutcome(EligibilityConditionState.Hidden, null, milestoneNearMisses);
 
-    private bool MatchesCondition(EligibilityConditionModel condition, long? baseScheduleMaximumMileage)
+    private bool MatchesCondition(
+        EligibilityConditionModel condition,
+        long? baseScheduleMaximumMileage,
+        out bool exceedsMilestoneCeiling)
     {
+        exceedsMilestoneCeiling = false;
         if (string.Equals(condition.Field, ServiceHistoryPackageCodeField, StringComparison.Ordinal))
             return MatchesServiceHistoryCondition(condition);
 
         if (string.Equals(condition.Field, ServiceHistoryMaximumMilestoneField, StringComparison.Ordinal))
-            return MatchesMaximumMilestoneCondition(condition);
+            return MatchesMaximumMilestoneCondition(condition, out exceedsMilestoneCeiling);
 
         if (string.Equals(condition.Field, BaseScheduleMaximumMileageField, StringComparison.Ordinal))
             return MatchesBaseScheduleMaximumMileageCondition(condition, baseScheduleMaximumMileage);
@@ -292,8 +301,11 @@ internal sealed class VehicleEligibilityConditionEvaluator
     /// a vehicle that has not started must be told apart from one that has finished.
     /// </para>
     /// </summary>
-    private bool MatchesMaximumMilestoneCondition(EligibilityConditionModel condition)
+    private bool MatchesMaximumMilestoneCondition(
+        EligibilityConditionModel condition,
+        out bool exceedsMilestoneCeiling)
     {
+        exceedsMilestoneCeiling = false;
         var values = condition.Values?.ToList();
         if (condition.Operator != EligibilityConditionOperator.Equals ||
             condition.ValueMatch != EligibilityConditionValueMatch.Exact ||
@@ -312,7 +324,12 @@ internal sealed class VehicleEligibilityConditionEvaluator
             .ToList();
 
         var reached = CollectMilestones(invoices, programs, qualifier);
-        return reached.Count > 0 && reached.Keys.Max() == requiredMilestone;
+        if (reached.Count == 0)
+            return false;
+
+        var maximum = reached.Keys.Max();
+        exceedsMilestoneCeiling = maximum > requiredMilestone;
+        return maximum == requiredMilestone;
     }
 
     /// <summary>
