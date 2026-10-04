@@ -18,6 +18,9 @@ namespace ShiftSoftware.ADP.Lookup.Services;
 [Docable]
 public class LookupOptions
 {
+    /// <summary>Optional historical visit policy. Unconfigured hosts retain strict catalog evaluation.</summary>
+    public ServiceRewardToleranceOptions? ServiceRewardTolerance { get; set; }
+
     /// <summary>Resolver delegate that converts a multilingual image dictionary to a resolved image URL for service items.</summary>
     public Func<LookupOptionResolverModel<Dictionary<string,string>>, ValueTask<string?>>? ServiceItemImageUrlResolver { get; set; }
     /// <summary>A dictionary mapping brand IDs to their standard warranty period in years.</summary>

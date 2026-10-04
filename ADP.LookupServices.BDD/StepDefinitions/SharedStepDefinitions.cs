@@ -382,6 +382,8 @@ public class SharedStepDefinitions
                 ClaimDate = row.ContainsKey("ClaimDate") && !string.IsNullOrWhiteSpace(row["ClaimDate"])
                     ? new DateTimeOffset(DateTime.Parse(row["ClaimDate"]), TimeSpan.Zero) : default,
                 JobNumber = GetOptionalString(row, "JobNumber"),
+                Cost = row.ContainsKey("Cost") && !string.IsNullOrWhiteSpace(row["Cost"])
+                    ? decimal.Parse(row["Cost"], System.Globalization.CultureInfo.InvariantCulture) : 0,
                 InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),
                 CompanyID = GetOptionalLong(row, "CompanyID"),
                 PackageCode = GetOptionalString(row, "PackageCode"),

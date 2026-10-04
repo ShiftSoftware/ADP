@@ -6,7 +6,7 @@ using Xunit;
 namespace LookupServices.BDD.StepDefinitions;
 
 [Binding]
-public class VehicleServiceItemStepDefinitions
+public partial class VehicleServiceItemStepDefinitions
 {
     [Given("service lookup time is {string}")]
     public void GivenLookupTime(string value) => _context.Options.TimeProvider = new LookupClock(DateTimeOffset.Parse(value));
@@ -52,6 +52,12 @@ public class VehicleServiceItemStepDefinitions
 
         var evaluator = new VehicleServiceItemEvaluator(
             _context.StorageService, _context.Aggregate, _context.Options, _context.ServiceProvider);
+
+        if (_context.Options.ServiceRewardTolerance is not null)
+        {
+            _historicalTrace = new(vin);
+            evaluator.Trace = _historicalTrace;
+        }
 
         var (serviceItems, activationRequired) = await evaluator.Evaluate(
             vehicle, ownership, _freeServiceStartDate, language, _context.SaleInformation?.Broker);

@@ -7,6 +7,7 @@ The main configuration class for the lookup services.
 
 | Property | Summary |
 |----------|---------|
+| ServiceRewardTolerance <div><strong>``ServiceRewardToleranceOptions?``</strong></div> | Optional historical visit policy. Unconfigured hosts retain strict catalog evaluation. |
 | ServiceItemImageUrlResolver <div><strong>``Func<LookupOptionResolverModel<Dictionary<string,string>>, ValueTask<string?>>?``</strong></div> | Resolver delegate that converts a multilingual image dictionary to a resolved image URL for service items. |
 | BrandStandardWarrantyPeriodsInYears <div><strong>``Dictionary<long?, int>``</strong></div> | A dictionary mapping brand IDs to their standard warranty period in years. |
 | ExtendedWarrantyDefinitions <div><strong>``List<ExtendedWarrantyDefinitionModel>``</strong></div> | Configured extended-warranty definitions evaluated against vehicle lookup data. Each definition uses the same declarative condition contract as service-item eligibility. Empty by default, preserving existing host behaviour until explicitly configured. |

@@ -262,6 +262,64 @@ flowchart TB
     class X1,X2,X3,X4 fail
 ```
 
+#### Historical visit tolerance
+
+`LookupOptions.ServiceRewardTolerance` optionally replaces a selected reward's two
+milestone prerequisites and maximum-milestone condition with a sequence of maintenance
+jobs. It is disabled unless the host configures it. Extended-warranty conditions and
+items outside the configured cohort keep strict catalog evaluation.
+
+The host sets `ServiceItemIDs` (integration IDs), `StartsBefore`, and `TerminalPrograms`.
+The existing calculated free-service start, including applicable date shifts, must be
+strictly before `StartsBefore`. A display date for an unactivated vehicle does not count.
+Return visits can occur after that cutoff.
+
+The catalog must describe a reward with two distinct, all-history, locking milestone
+prerequisites above the eligible base schedule cap, followed by an equality ceiling at
+the second prerequisite. The reward mileage must be above that ceiling. All other
+catalog conditions and static filters still apply.
+
+Counting starts after the recorded invoice date of the recognized last standard service
+at the schedule cap, in one of `TerminalPrograms`. It does not require a claim, use claim
+submission time, or infer eligibility from an odometer. Missing or conflicting last
+standard service evidence retains strict evaluation and adds a diagnostic to the service
+item trace. Undated qualifying work, incomplete job identity, or an unsupported policy
+shape also retains strict evaluation rather than guessing.
+
+Only complete invoices from the existing history reader participate. Jobs are grouped by
+VIN, company, branch and job number; multiple invoices count once. The first recorded
+labor invoice date for the job dates its visit. The first two qualifying jobs satisfy the
+expected labels in ascending order; a third makes the unclaimed reward Missed. The
+prerequisite's `SatisfiedOn` records the job date, while `Evidence` retains the actual
+qualifying line, including its package, work codes and invoice date.
+
+Periodic packages use the prerequisite's existing program and qualifier filters.
+`IsAdditionalQualifyingWork` lets the host recognize other maintenance, such as oil work
+without a menu code. Classification should use reviewed work identifiers. Categories,
+descriptions, additives and wash work alone must not establish qualification. An
+unrelated line does not veto genuine maintenance in the same job.
+
+`HighPackageBehavior` applies only inside tolerant evaluation:
+
+| Setting | Recognized package above the catalog ceiling |
+| --- | --- |
+| `ImmediateMiss` (default) | Immediately makes the unclaimed reward Missed; that job cannot satisfy an earlier prerequisite. |
+| `CountInSequence` | Counts as ordinary qualifying work; the strict immediate-miss condition is suppressed. |
+
+Actual claims retain precedence. The item's existing duration starts from the second
+qualifying job; repeated invoices do not renew it. Validity overrides move dates only
+after eligibility is earned. No credit-note or reversal policy is introduced.
+
+`AreDuplicateJobs` is an optional host confirmation for known duplicate source records.
+The default never merges different company/branch jobs. A host exception should require
+matching vehicle, job, invoice and work evidence; matching dates alone are insufficient.
+
+Executable behavior is covered by `ADP.LookupServices.BDD/Features/ServiceItems_HistoricalRewards.feature`
+and `ServiceItems_HistoricalRewardLifecycle.feature`. Both use synthetic histories and
+the normal service-item evaluator. From the repository root, run
+`dotnet test ADP.LookupServices.BDD` for the full suite, or add
+`--filter Category=historical-rewards` for the historical-reward scenarios.
+
 ### Cost Share
 
 Free and promotional items carry a **distributor / dealer split** that must total 100%. When the dealer claims the item, the split determines who is invoiced and who absorbs which portion. Typical configurations are *100/0* (fully distributor-funded), *0/100* (dealer-funded), or shared (e.g. *30/70*).

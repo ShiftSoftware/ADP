@@ -90,7 +90,7 @@ public partial class VehicleServiceItemEvaluator
         long? baseScheduleMaximumMileage;
 
         using (Trace.Stage("BaseScheduleCap"))        baseScheduleMaximumMileage = DeriveBaseScheduleMaximumMileage(serviceItems, vehicle, ownership, freeServiceStartDate);
-        using (Trace.Stage("Eligibility"))            result.AddRange(BuildEligibleFreeItems(serviceItems, vehicle, ownership, freeServiceStartDate, languageCode, baseScheduleMaximumMileage));
+        using (Trace.Stage("Eligibility"))            result.AddRange(BuildEligibleFreeItems(serviceItems, vehicle, ownership, freeServiceStartDate, languageCode, baseScheduleMaximumMileage, !showingInactivatedItems));
         using (Trace.Stage("PaidItems"))              result.AddRange(BuildPaidItems(languageCode));
         using (Trace.Stage("WarrantyRollingExpiry"))  ApplyWarrantyRollingExpiry(result, freeServiceStartDate);
         using (Trace.Stage("InspectionExpansion"))    ApplyVehicleInspectionExpansion(result);
@@ -152,9 +152,10 @@ public partial class VehicleServiceItemEvaluator
         VehicleOwnership ownership,
         DateTime? freeServiceStartDate,
         string languageCode,
-        long? baseScheduleMaximumMileage)
+        long? baseScheduleMaximumMileage,
+        bool hasCalculatedStart)
     {
-        var eligible = FilterEligibleServiceItems(serviceItems, vehicle, ownership, freeServiceStartDate, baseScheduleMaximumMileage)
+        var eligible = FilterEligibleServiceItems(serviceItems, vehicle, ownership, freeServiceStartDate, baseScheduleMaximumMileage, hasCalculatedStart)
             .OrderByDescending(x => x.Item.MaximumMileage.HasValue)
             .ThenBy(x => x.Item.MaximumMileage);
 
@@ -885,7 +886,8 @@ public partial class VehicleServiceItemEvaluator
         VehicleEntryModel vehicle,
         VehicleOwnership ownership,
         DateTime? freeServiceStartDate,
-        long? baseScheduleMaximumMileage)
+        long? baseScheduleMaximumMileage,
+        bool hasCalculatedStart)
     {
         var staticStage = EvaluateStaticItemEligibility(item, vehicle, ownership, freeServiceStartDate);
         if (staticStage != EligibilityRejectionStage.None)
@@ -894,8 +896,13 @@ public partial class VehicleServiceItemEvaluator
         // The static filters answer with facts about the vehicle — its brand, its market, its owner —
         // and an item failing one of those was never this customer's to see. Only the custom
         // conditions can produce something worth showing unclaimable.
-        var outcome = new VehicleEligibilityConditionEvaluator(companyDataAggregate, options, Trace.IsEnabled)
-            .Evaluate(item.EligibilityConditions, baseScheduleMaximumMileage);
+        var evaluator = new VehicleEligibilityConditionEvaluator(companyDataAggregate, options, Trace.IsEnabled);
+        var outcome = evaluator.EvaluateTolerance(item, baseScheduleMaximumMileage, hasCalculatedStart ? freeServiceStartDate : null,
+            options.ServiceRewardTolerance, out var toleranceDiagnostic);
+        if (toleranceDiagnostic is not null)
+            Trace.Note($"Item {item.IntegrationID}: {toleranceDiagnostic}" +
+                (outcome is null ? " Strict catalog evaluation retained." : ""));
+        outcome ??= evaluator.Evaluate(item.EligibilityConditions, baseScheduleMaximumMileage);
 
         var stage = outcome.State switch
         {
@@ -1013,14 +1020,15 @@ public partial class VehicleServiceItemEvaluator
         VehicleEntryModel vehicle,
         VehicleOwnership ownership,
         DateTime? freeServiceStartDate,
-        long? baseScheduleMaximumMileage)
+        long? baseScheduleMaximumMileage,
+        bool hasCalculatedStart)
     {
         Trace.RecordEligibilityInputCount(serviceItems?.Count() ?? 0);
         Trace.RecordMilestoneReader(options?.ServiceMilestones?.GetResolver());
 
         foreach (var item in serviceItems ?? Enumerable.Empty<ServiceItemModel>())
         {
-            var (stage, outcome) = EvaluateItemEligibility(item, vehicle, ownership, freeServiceStartDate, baseScheduleMaximumMileage);
+            var (stage, outcome) = EvaluateItemEligibility(item, vehicle, ownership, freeServiceStartDate, baseScheduleMaximumMileage, hasCalculatedStart);
             Trace.RecordEligibilityDecision(item, stage, vehicle, ownership, outcome?.Prerequisites, outcome?.MilestoneNearMisses, outcome?.UnlockedOn);
 
             // Locked and missed items pass this point carrying their reason. Everything else that

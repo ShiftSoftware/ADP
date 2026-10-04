@@ -16,7 +16,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 /// Evaluates the closed declarative condition grammar shared by service-item and
 /// extended-warranty eligibility. Unsupported fields or invalid condition shapes fail closed.
 /// </summary>
-internal sealed class VehicleEligibilityConditionEvaluator
+internal sealed partial class VehicleEligibilityConditionEvaluator
 {
     internal const string ServiceHistoryPackageCodeField = "serviceHistory.laborLines.packageCode";
     internal const string ServiceHistoryMaximumMilestoneField = "serviceHistory.laborLines.maximumMilestone";

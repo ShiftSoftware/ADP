@@ -22912,7 +22912,7 @@
         "maximumMileage": 55000,
         "claimable": false,
         "lock": {
-          "state": "Locked",
+          "state": "Missed",
           "prerequisites": [
             {
               "mileage": 45000,
@@ -36122,7 +36122,7 @@
         "maximumMileage": 55000,
         "claimable": false,
         "lock": {
-          "state": "Locked",
+          "state": "Missed",
           "prerequisites": [
             {
               "mileage": 45000,
@@ -44557,7 +44557,7 @@
         "maximumMileage": 55000,
         "claimable": false,
         "lock": {
-          "state": "Locked",
+          "state": "Missed",
           "prerequisites": [
             {
               "mileage": 45000,
