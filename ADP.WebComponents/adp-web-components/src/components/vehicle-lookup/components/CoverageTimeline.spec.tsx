@@ -5,7 +5,7 @@ import timelineLocale from '../../../locales/vehicleLookup/warrantyTimeline/en.j
 import standardDealerVehicleLookup from '../../../features/mocks/data/generated/standard-dealer/vehicle-lookup.json';
 import type { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
-import CoverageTimeline, { panelVerdict } from './CoverageTimeline';
+import CoverageTimeline, { panelVerdict, parseHiddenFields, saleDates } from './CoverageTimeline';
 
 const SNAPSHOT = '2027-06-01';
 
@@ -436,5 +436,116 @@ describe('CoverageTimeline', () => {
     expect(bands[2].getAttribute('aria-label')).toContain('City Auto');
     expect(page.body.textContent).not.toContain('EW-ZT8P9NAL1LG988010');
     expect(page.body.querySelector('.total-coverage strong')?.textContent).toBe('5 years');
+  });
+  describe('saleDates', () => {
+    const sold = { saleInformation: { invoiceDate: '2025-06-20T00:00:00', warrantyActivationDate: '2025-06-23' } } as VehicleLookupDTO;
+    const dates = (vehicle: Partial<VehicleLookupDTO> | undefined, isAuthorized: boolean | undefined = true, hidden: string[] = []) =>
+      saleDates(vehicle as VehicleLookupDTO, isAuthorized, hidden, timelineLocale);
+
+    it('opens on both dates, trimmed to the calendar date', () => {
+      expect(dates(sold)).toEqual({
+        open: true,
+        items: [
+          { key: 'invoiceDate', label: timelineLocale.invoiceDate, value: '2025-06-20' },
+          { key: 'warrantyActivationDate', label: timelineLocale.warrantyActivationDate, value: '2025-06-23' },
+        ],
+      });
+    });
+
+    it('opens on either date alone and keeps the other item with no value', () => {
+      const invoiceOnly = dates({ saleInformation: { invoiceDate: '2024-01-15' } } as Partial<VehicleLookupDTO>);
+      expect(invoiceOnly.open).toBe(true);
+      expect(invoiceOnly.items.map(item => item.value)).toEqual(['2024-01-15', '']);
+
+      const activationOnly = dates({ saleInformation: { warrantyActivationDate: '2026-02-21' } } as Partial<VehicleLookupDTO>);
+      expect(activationOnly.open).toBe(true);
+      expect(activationOnly.items.map(item => item.value)).toEqual(['', '2026-02-21']);
+    });
+
+    it('stays shut with neither date, and before any vehicle', () => {
+      expect(dates({ saleInformation: {} } as Partial<VehicleLookupDTO>).open).toBe(false);
+      expect(dates({} as Partial<VehicleLookupDTO>).open).toBe(false);
+      expect(dates(undefined, undefined).open).toBe(false);
+    });
+
+    it('reads nothing from a vehicle the distributor has no record of', () => {
+      const unauthorized = dates(sold, false);
+      expect(unauthorized.open).toBe(false);
+      expect(unauthorized.items.every(item => item.value === '')).toBe(true);
+    });
+
+    it('drops a hidden item entirely', () => {
+      expect(dates(sold, true, ['invoiceDate']).items.map(item => item.key)).toEqual(['warrantyActivationDate']);
+      expect(dates(sold, true, ['warrantyActivationDate']).items.map(item => item.key)).toEqual(['invoiceDate']);
+    });
+
+    it('stays shut when the only date on file is hidden, and when both are', () => {
+      expect(dates({ saleInformation: { invoiceDate: '2024-01-15' } } as Partial<VehicleLookupDTO>, true, ['invoiceDate']).open).toBe(false);
+
+      const none = dates(sold, true, ['invoiceDate', 'warrantyActivationDate']);
+      expect(none).toEqual({ open: false, items: [] });
+    });
+
+    it('parses hiddenFields like the sale panel: comma separated, trimmed, exact', () => {
+      expect(parseHiddenFields(' invoiceDate , warrantyActivationDate')).toEqual(['invoiceDate', 'warrantyActivationDate']);
+      expect(saleDates(sold, true, parseHiddenFields('InvoiceDate'), timelineLocale).items).toHaveLength(2);
+      expect(saleDates(sold, true, parseHiddenFields(''), timelineLocale).items).toHaveLength(2);
+    });
+  });
+
+  describe('sale dates line', () => {
+    const lineOf = (page: { body: HTMLElement }) => page.body.querySelector('.warranty-dates');
+
+    it('sits between the chips and the rail, open on a vehicle with a date', async () => {
+      const page = await renderTimeline({ saleInformation: { invoiceDate: '2024-01-15' } } as Partial<VehicleLookupDTO>);
+      const line = lineOf(page);
+
+      expect(line?.previousElementSibling?.classList.contains('journey-head')).toBe(true);
+      expect(line?.nextElementSibling?.classList.contains('timeline-shell')).toBe(true);
+      expect(line?.getAttribute('data-open')).toBe('true');
+      expect(line?.hasAttribute('aria-hidden')).toBe(false);
+
+      const values = [...line!.querySelectorAll('bdi.warranty-date-value')];
+      expect(values.map(value => value.textContent)).toEqual(['2024-01-15', '—']);
+      expect(values.every(value => value.getAttribute('dir') === 'ltr')).toBe(true);
+      expect(line?.querySelectorAll('.warranty-dates-sep')).toHaveLength(1);
+    });
+
+    it('is shut and aria-hidden before a lookup', async () => {
+      const line = lineOf(await renderTimeline(undefined));
+
+      expect(line?.getAttribute('data-open')).toBe('false');
+      expect(line?.getAttribute('aria-hidden')).toBe('true');
+    });
+
+    it('renders no separator beside a lone item', async () => {
+      const page = await newSpecPage({
+        components: [],
+        template: () => (
+          <CoverageTimeline
+            vehicleInformation={{ saleInformation: { invoiceDate: '2024-01-15', warrantyActivationDate: '2024-01-18' } } as VehicleLookupDTO}
+            locale={timelineLocale}
+            isAuthorized={true}
+            today={SNAPSHOT}
+            hiddenFields={['warrantyActivationDate']}
+          />
+        ),
+      });
+
+      expect(page.body.querySelectorAll('.warranty-date')).toHaveLength(1);
+      expect(page.body.querySelector('.warranty-date')?.getAttribute('data-field')).toBe('invoiceDate');
+      expect(page.body.querySelector('.warranty-dates-sep')).toBeNull();
+    });
+
+    it('keeps the outgoing items while it shuts', async () => {
+      const retained = [{ key: 'invoiceDate' as const, label: timelineLocale.invoiceDate, value: '2023-03-03' }];
+      const page = await newSpecPage({
+        components: [],
+        template: () => <CoverageTimeline vehicleInformation={undefined} locale={timelineLocale} isAuthorized={undefined} today={SNAPSHOT} retainedDates={retained} />,
+      });
+
+      expect(lineOf(page)?.getAttribute('data-open')).toBe('false');
+      expect(lineOf(page)?.textContent).toContain('2023-03-03');
+    });
   });
 });

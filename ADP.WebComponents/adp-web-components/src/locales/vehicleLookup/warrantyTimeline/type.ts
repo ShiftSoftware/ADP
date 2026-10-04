@@ -24,6 +24,8 @@ const warrantyTimelineSchema = yupTypeMapper([
   'awaitingBrokerInvoice',
   'awaitingEndCustomerSale',
   'awaitingActivation',
+  'invoiceDate',
+  'warrantyActivationDate',
 ]);
 
 export default warrantyTimelineSchema;

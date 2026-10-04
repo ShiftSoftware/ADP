@@ -1,52 +1,473 @@
-@import '../style/shift-card.css';
+/* tailwind: off */
+/*
+ * Vehicle sale information — the stylesheet for <vehicle-sale-information>, in the component design
+ * language. The card is the wrapper's; this file styles what is inside it. The head names the dealer,
+ * the fixed tier (the Sale grid and the end customer) loads its values in place, and the variable
+ * tier (the supply chain) is a recessed band that slides.
+ */
+
+/* Never lookup-motion.css directly: the wrapper imports it, and a second import loses its @keyframes. */
+@import '../style/base.css';
+@import '../style/lookup-tokens.css';
 @import '../style/shift-skeleton.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 @import '../../features/vehicle-info-layout/lookup-head.css';
 
 :host {
   display: block;
-  all: initial !important;
-  /* The family's face (lookup-tokens.css); the wrapper's root switches it for an rtl locale. */
-  font-family: var(--font-sans) !important;
+  container-type: inline-size;
+  container-name: sale-panel;
+  --lead-height: 38px;
+  /* The chain's marker column: a 10px disc centred on a 2px rail. */
+  --leg-marker: 22px;
+  --leg-pad: 10px;
 }
 
-*,
-:host * {
-  font-family: inherit !important;
+.sale-card,
+.sale-card *,
+.sale-card *::before,
+.sale-card *::after {
+  box-sizing: border-box;
 }
 
-.card {
+.sale-card {
+  position: relative;
+  width: 100%;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Head
+   ------------------------------------------------------------------------------------------- */
+
+.sale-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+}
+
+.sale-main {
+  display: flex;
+  flex: 1 1 0;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  min-width: 0;
+  align-items: baseline;
+}
+
+.sale-title {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: clamp(15px, 2.6cqw, 17px);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.sale-title-label {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.sale-title-value,
+.sale-title-name {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.sale-branch-slot {
+  flex: 1 1 0;
+  min-width: 0;
+  transition: opacity var(--settle) ease;
+}
+
+.sale-branch-slot[data-empty='true'] {
+  opacity: 0;
+}
+
+/* Pins the text while its slot fades out: nested opacities would ghost it back. */
+.sale-branch-slot[data-empty='true'] .sale-branch {
+  opacity: 0;
+}
+
+/* One line, so the band stays 58px for every vehicle; the full name is in the title attribute. */
+.sale-branch {
+  display: block;
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A configuration change that rewrites the head takes the family's leave without the lookup's spinner. */
+.sale-card[data-head='leaving'] .lookup-head-content {
+  opacity: 0;
+  transform: translateY(calc(var(--head-leave-travel) * 120%));
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Notice and strip
+   ------------------------------------------------------------------------------------------- */
+
+.sale-notice-body {
+  display: flex;
   gap: 8px;
-  display: flex;
-  flex-shrink: 0;
-  padding: 8px 12px;
-  border: 1px solid;
   align-items: center;
-  border-radius: 12px;
-  @apply text-slate-900 border-slate-300 bg-slate-100;
+  margin: 0;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.3;
 }
 
-.card p {
-  margin: 0px;
-  height: 25px;
-  flex: 1 1 0%;
+/* Top rule only: the strip below brings its own. */
+.sale-notice[data-tone='neutral'] .sale-notice-body {
+  color: var(--amber-dark);
+  background: var(--amber-tint);
+  box-shadow: inset 0 1px 0 rgba(183, 121, 31, 0.22);
+}
+
+.notice-icon {
+  display: block;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+}
+
+.sale-lead {
   display: flex;
-  font-size: 16px;
+  min-height: var(--lead-height);
   align-items: center;
-  padding-inline-start: 8px;
+  padding: 6px 20px;
+  background: var(--paper-soft);
+  box-shadow:
+    inset 0 1px 0 var(--line),
+    inset 0 -1px 0 var(--line);
 }
 
-.card p.no-padding {
-  padding-left: 4px;
+.sale-lead-caption-label,
+.sale-cell-label,
+.sale-leg-role {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 
-.card img {
-  width: 25px;
-  height: 25px;
+/* ---------------------------------------------------------------------------------------------
+   Fixed tier: the Sale grid and the end customer
+   ------------------------------------------------------------------------------------------- */
+
+/* The larger of a floor and an equal share: auto-fill can neither exceed the count nor squeeze a cell below the floor. */
+.sale-grid {
+  --sale-columns: 4;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(max(160px, (100% - (var(--sale-columns) - 1) * 12px) / var(--sale-columns)), 1fr));
+  gap: 10px 12px;
+  padding: 12px 20px 14px;
 }
 
-.warning-card {
-  color: #8a6d3b;
-  background: #fcf8e3;
-  border-color: #faebcc !important;
+.sale-cell {
+  min-width: 0;
+}
+
+.sale-cell-label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.sale-value {
+  display: block;
+  width: 100%;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.sale-value[data-role='code'] {
+  color: var(--ink);
+  font-weight: 760;
+  letter-spacing: 0.01em;
+}
+
+.sale-value[data-role='figure'] {
+  color: var(--date-ink);
+  font-weight: 600;
+}
+
+.sale-value[data-role='word'] {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.sale-value[data-role='statement'],
+.sale-value[data-role='empty'] {
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.sale-value-content {
+  display: block;
+  unicode-bidi: isolate;
+  transition: opacity var(--settle) ease;
+}
+
+/* Before any lookup the box is kept with a non-breaking space; the pin is on the text so the cover still comes up. */
+.sale-value-content[data-empty='true'] {
+  opacity: 0;
+}
+
+.sale-value-note {
+  display: block;
+  margin-top: 2px;
+  color: var(--date-ink);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.sale-group {
+  display: block;
+  padding: 4px 20px 16px;
+}
+
+.sale-group-label {
+  display: block;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  box-shadow: inset 0 -1px 0 var(--line-soft);
+}
+
+.sale-ec-grid {
+  --sale-columns: 3;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(max(160px, (100% - (var(--sale-columns) - 1) * 12px) / var(--sale-columns)), 1fr));
+  gap: 10px 12px;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Variable tier: the supply chain
+   ------------------------------------------------------------------------------------------- */
+
+/* Recessed and ruled on top only: the card's border is its bottom edge. */
+.sale-legs {
+  background: var(--paper-soft);
+  box-shadow: inset 0 1px 0 var(--line);
+}
+
+.sale-legs-band {
+  padding: 12px 20px;
+}
+
+.sale-leg-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Fixed proportions, so the columns line up across legs whatever each one carries. */
+.sale-leg {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px 12px;
+  padding-block: var(--leg-pad);
+}
+
+.sale-card[data-layout='standard'] .sale-leg + .sale-leg {
+  border-top: 1px solid var(--line-soft);
+}
+
+.sale-card[data-layout='chain'] .sale-leg {
+  grid-template-columns: var(--leg-marker) minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* Negative lines, so a hidden first cell leaves its column empty with or without the marker column. */
+.sale-leg-cell[data-column='1'] {
+  grid-column: -3 / span 1;
+  grid-row: 1;
+}
+
+.sale-leg-cell[data-column='2'] {
+  grid-column: -2 / span 1;
+  grid-row: 1;
+}
+
+.sale-leg-party {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  grid-row: 1;
+}
+
+.sale-card[data-layout='chain'] .sale-leg-party {
+  grid-column: 2;
+}
+
+.sale-leg-party .sale-value[data-role='word'] {
+  font-weight: 600;
+}
+
+.sale-leg-sub {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* The disc sits level with the role label (11px at 1.2). */
+.sale-leg-marker {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: center;
+  width: 10px;
+  height: 10px;
+  margin-top: 2px;
+  background: var(--paper);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--muted);
+}
+
+/* The rail runs from under this leg's disc to the next leg's disc. */
+.sale-card[data-layout='chain'] .sale-leg::before {
+  position: absolute;
+  inset-inline-start: calc((var(--leg-marker) - 2px) / 2);
+  top: calc(var(--leg-pad) + 14px);
+  bottom: calc(-1 * (var(--leg-pad) + 2px));
+  width: 2px;
+  background: var(--line);
+  content: '';
+}
+
+.sale-card[data-layout='chain'] .sale-leg:last-child::before {
+  content: none;
+}
+
+.sale-chain-end {
+  margin: 0;
+  padding-block: 4px 2px;
+  padding-inline-start: calc(var(--leg-marker) + 12px);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Narrow panels, widest first
+   ------------------------------------------------------------------------------------------- */
+
+@container sale-panel (max-width: 960px) {
+  .sale-grid {
+    --sale-columns: 3;
+  }
+}
+
+@container sale-panel (max-width: 720px) {
+  .sale-head {
+    padding: 14px 14px 10px;
+  }
+
+  /* nowrap: a wrapping column sizes to its widest child and clips a long title. */
+  .sale-main {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 2px;
+    align-items: stretch;
+  }
+
+  .sale-branch-slot {
+    flex: 0 0 auto;
+  }
+
+  .sale-branch {
+    min-height: 1.2em;
+  }
+
+  .sale-notice-body {
+    padding: 8px 14px;
+  }
+
+  .sale-lead {
+    padding: 6px 14px;
+  }
+
+  .sale-grid {
+    --sale-columns: 2;
+
+    padding: 12px 14px 14px;
+  }
+
+  .sale-ec-grid {
+    --sale-columns: 2;
+  }
+
+  .sale-group {
+    padding: 4px 14px 14px;
+  }
+
+  .sale-legs-band {
+    padding: 10px 14px;
+  }
+
+  /* The party takes the row; the two cells share the row under it. */
+  .sale-leg {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .sale-card[data-layout='chain'] .sale-leg {
+    grid-template-columns: var(--leg-marker) minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .sale-leg-party,
+  .sale-card[data-layout='chain'] .sale-leg-party {
+    grid-column: -3 / -1;
+  }
+
+  .sale-leg-cell[data-column='1'],
+  .sale-leg-cell[data-column='2'] {
+    grid-row: 2;
+  }
+}
+
+@container sale-panel (max-width: 430px) {
+  .sale-head {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sale-card[data-head='leaving'] .lookup-head-content {
+    transform: none;
+  }
 }

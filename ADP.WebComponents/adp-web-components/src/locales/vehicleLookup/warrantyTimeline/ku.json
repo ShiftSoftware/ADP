@@ -21,5 +21,7 @@
   "warrantyNotStarted": "گەرەنتی دەستی پێنەکردووە",
   "awaitingBrokerInvoice": "هێشتا فاتورەی ئەم ئۆتۆمبێلە نەکراوە لەلایەن ئەم هاوبەشە بازرگانییە متمانەپێکراوەی خوارەوە: ",
   "awaitingEndCustomerSale": "ئەم ئۆتۆمبێلە هێشتا بە کڕیارێک نەفرۆشراوە.",
-  "awaitingActivation": "گەرەنتی ئەم ئۆتۆمبێلە هێشتا چالاک نەکراوە."
+  "awaitingActivation": "گەرەنتی ئەم ئۆتۆمبێلە هێشتا چالاک نەکراوە.",
+  "invoiceDate": "بەرواری فاتورە",
+  "warrantyActivationDate": "چالاککردنی گەرەنتی"
 }

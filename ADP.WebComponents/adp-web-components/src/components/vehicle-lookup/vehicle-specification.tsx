@@ -102,6 +102,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   @Method()
   async fetchVin(newData: VehicleLookupDTO | string, headers: any = {}) {
     this.leaveGeneration++;
+    this.leaving = false;
     await setVehicleLookupData(this, newData, headers);
   }
 
@@ -112,14 +113,14 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
    */
   @Method()
   async setErrorMessage(message: ErrorKeys) {
-    if (!this.isLoading) await this.leave();
+    if (!this.isLoading && !(await this.leave())) return;
     setVehicleLookupErrorState(this, message);
   }
 
   /** Back to "no vehicle": the head leaves the band and the covers come up, then the panel is emptied unseen. */
   @Method()
   async clearData() {
-    await this.leave();
+    if (!(await this.leave())) return;
     this.emptyPanel();
     // The panel is back to no vehicle, so it is back to its default. It resets while the details
     // block is shut, so nothing on screen moves for it and the next vehicle arrives expanded.
@@ -152,10 +153,10 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
    * can swap the vehicle while nothing readable is on screen. The generation counter lets a newer
    * lookup win without the older one flipping `leaving` back.
    */
-  private async leave() {
+  private async leave(): Promise<boolean> {
     const generation = ++this.leaveGeneration;
 
-    if (!this.vehicleLookup && !this.isError) return;
+    if (!this.vehicleLookup && !this.isError) return true;
 
     clearTimeout(this.networkTimeoutRef);
     this.abortController?.abort();
@@ -163,7 +164,9 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
 
     await new Promise(resolve => setTimeout(resolve, this.settleMs()));
 
-    if (generation === this.leaveGeneration) this.leaving = false;
+    if (generation !== this.leaveGeneration) return false;
+    this.leaving = false;
+    return true;
   }
 
   private emptyPanel() {

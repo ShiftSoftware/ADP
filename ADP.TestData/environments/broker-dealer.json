@@ -405,6 +405,29 @@
       "PaidServiceInvoices": [],
       "FreeServiceItemExcludedVINs": [],
       "VehicleInspections": []
+    },
+    "ZW8FL4NBXS6659473": {
+      "VehicleEntries": [
+        {
+          "VIN": "ZW8FL4NBXS6659473",
+          "BrandID": 1
+        }
+      ],
+      "InitialOfficialVINs": [],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
+      "Accessories": [],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
     }
   },
   "BrokerInitialVehicles": [

@@ -36,7 +36,18 @@ type Props = {
   vehicleInformation?: VehicleLookupDTO;
   /** Overrides the snapshot date. Supplied by tests so rendered positions are deterministic. */
   today?: string;
+  hiddenFields?: readonly string[];
+  retainedDates?: SaleDateItem[];
+  datesShut?: boolean;
 };
+
+export type SaleDateField = 'invoiceDate' | 'warrantyActivationDate';
+
+export type SaleDateItem = { key: SaleDateField; label: string; value: string };
+
+export type SaleDates = { open: boolean; items: SaleDateItem[] };
+
+const SALE_DATE_FIELDS: SaleDateField[] = ['invoiceDate', 'warrantyActivationDate'];
 
 const TONE_STANDARD: Tone = {
   base: 'var(--green)',
@@ -57,6 +68,22 @@ const toTimestamp = (isoDate: string) => Date.parse(`${isoDate}T00:00:00Z`);
 
 /** DTO dates are serialized as yyyy-MM-dd, but tolerate a full timestamp. */
 const asDate = (value?: string) => (value || '').slice(0, 10);
+
+export const parseHiddenFields = (hiddenFields?: string) => (hiddenFields || '').split(',').map(field => field.trim());
+
+export const saleDates = (
+  vehicleInformation: VehicleLookupDTO | undefined,
+  isAuthorized: boolean | undefined,
+  hidden: readonly string[],
+  locale: Pick<TimelineLocale, SaleDateField>,
+): SaleDates => {
+  const readable = !!vehicleInformation && isAuthorized !== false;
+  const sale = readable ? vehicleInformation.saleInformation : undefined;
+
+  const items = SALE_DATE_FIELDS.filter(key => !hidden.includes(key)).map(key => ({ key, label: locale[key], value: asDate(sale?.[key]) }));
+
+  return { open: readable && items.some(item => item.value), items };
+};
 
 const clampPercentage = (value: number) => Math.min(100, Math.max(0, value));
 
@@ -364,8 +391,37 @@ const StatusBadge = ({ state, text }: { state: BadgeState; text: string }) => {
   );
 };
 
-export default function CoverageTimeline({ vehicleInformation, locale, isAuthorized, today }: Props) {
+const SaleDatesLine = ({ dates, retained, shut }: { dates: SaleDates; retained?: SaleDateItem[]; shut?: boolean }) => {
+  const open = dates.open && !shut;
+  const shown = dates.open || !retained?.length ? dates.items : retained;
+
+  return (
+    <div class="warranty-dates collapsible" data-open={open ? 'true' : 'false'} aria-hidden={open ? null : 'true'}>
+      <div class="collapsible-body">
+        <p class="warranty-dates-line">
+          {shown.map((item, index) => [
+            index > 0 && ' ',
+            <span class="warranty-date" data-field={item.key}>
+              {index > 0 && (
+                <span class="warranty-dates-sep" aria-hidden="true">
+                  {'· '}
+                </span>
+              )}
+              <span class="warranty-date-label">{item.label}</span>{' '}
+              <bdi class="warranty-date-value" dir="ltr">
+                {item.value || '—'}
+              </bdi>
+            </span>,
+          ])}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default function CoverageTimeline({ vehicleInformation, locale, isAuthorized, today, hiddenFields = [], retainedDates, datesShut }: Props) {
   const snapshot = clockToday(today);
+  const dates = saleDates(vehicleInformation, isAuthorized, hiddenFields, locale);
   const coverages = buildCoverages(vehicleInformation, locale);
   const hasCoverage = coverages.length > 0;
 
@@ -442,6 +498,8 @@ export default function CoverageTimeline({ vehicleInformation, locale, isAuthori
             <StatusBadge state={verdict(isAuthorized)} text={isAuthorized ? locale.authorized : locale.unauthorized} />
             <StatusBadge state={verdict(hasActiveWarranty)} text={hasActiveWarranty ? locale.activeWarranty : locale.notActiveWarranty} />
           </div>
+
+          <SaleDatesLine dates={dates} retained={retainedDates} shut={datesShut} />
 
           <div class="timeline-shell" data-empty={hasCoverage ? 'false' : 'true'} aria-hidden={hasCoverage ? null : 'true'}>
             <div class="timeline shift-skeleton" role="group" aria-label={locale.warrantyCoverage}>

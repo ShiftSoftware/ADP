@@ -792,5 +792,31 @@
       }
     ],
     "basicModelCode": "AXAH54"
+  },
+  "ZW8FL4NBXS6659473": {
+    "vin": "ZW8FL4NBXS6659473",
+    "identifiers": {
+      "vin": "ZW8FL4NBXS6659473",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "intermediaries": []
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": false,
+      "startState": "AwaitingActivation",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": []
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {},
+    "vehicleSpecification": {},
+    "serviceItems": [],
+    "accessories": []
   }
 }

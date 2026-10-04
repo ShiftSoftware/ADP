@@ -21,5 +21,7 @@
   "warrantyNotStarted": "Warranty has not started",
   "awaitingBrokerInvoice": "This Vehicle is not yet Invoiced by the following Trusted Business Partner: ",
   "awaitingEndCustomerSale": "This Vehicle has not been sold to a customer yet.",
-  "awaitingActivation": "This Vehicle's Warranty has not been activated yet."
+  "awaitingActivation": "This Vehicle's Warranty has not been activated yet.",
+  "invoiceDate": "Invoice date",
+  "warrantyActivationDate": "Warranty activation"
 }

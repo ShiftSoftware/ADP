@@ -1,15 +1,19 @@
-import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, forceUpdate, h } from '@stencil/core';
+
+import { createHeightChangeAnnouncer } from '~lib/flexible-parents';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import warrantyTimelineSchema from '~locales/vehicleLookup/warrantyTimeline/type';
 
-import CoverageTimeline, { panelVerdict } from './components/CoverageTimeline';
+import CoverageTimeline, { panelVerdict, parseHiddenFields, SaleDateItem, saleDates } from './components/CoverageTimeline';
 
 import { VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
+
+const DEFAULT_SETTLE_MS = 480;
 
 /**
  * Warranty coverage as a single dated rail: the standard warranty followed by every
@@ -35,6 +39,7 @@ export class VehicleWarrantyTimeline implements MultiLingual, VehicleInfoLayoutI
   };
 
   async componentWillLoad() {
+    this.appliedHiddenFields = parseHiddenFields(this.hiddenFields);
     await this.changeLanguage(this.language);
   }
 
@@ -116,6 +121,82 @@ export class VehicleWarrantyTimeline implements MultiLingual, VehicleInfoLayoutI
 
   // #endregion
 
+  // #region Sale dates
+
+  @Prop() hiddenFields: string = '';
+
+  @State() appliedHiddenFields: string[] = [];
+  @State() datesShut = false;
+
+  private reconfigureGeneration = 0;
+  private retainedDates: SaleDateItem[] = [];
+  private retainTimer?: ReturnType<typeof setTimeout>;
+
+  private settleMs(): number {
+    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(this.el).getPropertyValue('--settle') : '';
+    const parsed = parseFloat(raw);
+    return (Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_SETTLE_MS) + 40;
+  }
+
+  private dates() {
+    return saleDates(this.vehicleLookup, this.vehicleLookup?.isAuthorized, this.appliedHiddenFields, this.locale);
+  }
+
+  @Watch('hiddenFields')
+  async onHiddenFieldsChange(newValue: string) {
+    const next = parseHiddenFields(newValue);
+    const current = this.appliedHiddenFields;
+    if (next.length === current.length && next.every(field => current.includes(field))) return;
+
+    const generation = ++this.reconfigureGeneration;
+
+    if (this.dates().open) {
+      this.datesShut = true;
+      await new Promise(resolve => setTimeout(resolve, this.settleMs()));
+      if (generation !== this.reconfigureGeneration) return;
+    }
+
+    this.appliedHiddenFields = next;
+    this.datesShut = false;
+  }
+
+  private retainDates(open: boolean, items: SaleDateItem[]) {
+    if (open) {
+      this.retainedDates = items;
+      clearTimeout(this.retainTimer);
+      this.retainTimer = undefined;
+      return;
+    }
+
+    if (this.retainedDates.length && !this.retainTimer) {
+      this.retainTimer = setTimeout(() => {
+        this.retainTimer = undefined;
+        this.retainedDates = [];
+        forceUpdate(this);
+      }, this.settleMs());
+    }
+  }
+
+  private heightAnnouncer?: ReturnType<typeof createHeightChangeAnnouncer>;
+  private datesShown?: boolean;
+
+  private announceDatesHeight() {
+    const shown = this.dates().open && !this.datesShut && !this.isLoading;
+    const changed = this.datesShown !== undefined && this.datesShown !== shown;
+    this.datesShown = shown;
+    if (!changed) return;
+
+    this.heightAnnouncer ??= createHeightChangeAnnouncer(this.el);
+    this.heightAnnouncer.announce(this.settleMs() + 80);
+  }
+
+  disconnectedCallback() {
+    clearTimeout(this.retainTimer);
+    this.heightAnnouncer?.dispose();
+  }
+
+  // #endregion
+
   // #region Verdict
 
   /**
@@ -136,6 +217,7 @@ export class VehicleWarrantyTimeline implements MultiLingual, VehicleInfoLayoutI
 
   componentDidRender() {
     this.announceVerdict();
+    this.announceDatesHeight();
   }
 
   // #endregion
@@ -150,6 +232,9 @@ export class VehicleWarrantyTimeline implements MultiLingual, VehicleInfoLayoutI
     });
     this.currentVerdict = verdict;
 
+    const dates = this.dates();
+    this.retainDates(dates.open, dates.items);
+
     return (
       <Host translate="no">
         <VehicleInfoLayout
@@ -160,7 +245,15 @@ export class VehicleWarrantyTimeline implements MultiLingual, VehicleInfoLayoutI
           header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
         >
-          <CoverageTimeline vehicleInformation={this.vehicleLookup} locale={this.locale} isAuthorized={this.vehicleLookup?.isAuthorized} today={this.today} />
+          <CoverageTimeline
+            vehicleInformation={this.vehicleLookup}
+            locale={this.locale}
+            isAuthorized={this.vehicleLookup?.isAuthorized}
+            today={this.today}
+            hiddenFields={this.appliedHiddenFields}
+            retainedDates={this.retainedDates}
+            datesShut={this.datesShut}
+          />
         </VehicleInfoLayout>
       </Host>
     );

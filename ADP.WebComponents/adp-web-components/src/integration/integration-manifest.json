@@ -136,7 +136,7 @@
       "wireContract": "adp.vehicle-sale-information.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "hiddenFields", "queryString"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "hiddenFields", "queryString", "showSupplyChain"],
         "methods": ["fetchVin"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["lookup request", "response handling", "loading and error state", "sale information rendering"]
@@ -175,18 +175,26 @@
             "required": false
           },
           { "name": "queryString", "attribute": "query-string", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "showSupplyChain", "attribute": "show-supply-chain", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "today", "attribute": "today", "type": "string", "default": null, "mutable": false, "required": false }
         ],
         "methods": [
+          { "name": "clearData", "parameters": "() => Promise<void>", "returns": "Promise<void>" },
           { "name": "fetchVin", "parameters": "(newData: VehicleLookupDTO | string, headers?: any) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setBlazorRef", "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
         ],
         "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
-        "dependencies": ["flexible-container"]
+        "dependencies": []
       },
-      "runtimeAssets": { "locales": "dist/locales", "notes": ["The host may use hiddenFields to apply its approved presentation policy."] }
+      "runtimeAssets": {
+        "locales": "dist/locales",
+        "notes": [
+          "The host may use hiddenFields to apply its approved presentation policy.",
+          "showSupplyChain (default false) shows the sale as an ordered chain of legs: distributor, intermediaries, dealer, broker, end customer. Inside vehicle-lookup the host passes it through childrenProps, like showTrace."
+        ]
+      }
     },
     {
       "tag": "vehicle-accessories",
@@ -468,7 +476,7 @@
       "wireContract": "adp.vehicle-warranty-timeline.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "hiddenFields", "queryString"],
         "methods": ["fetchVin"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["lookup request", "response handling", "loading and error state", "warranty coverage rendering"]
@@ -487,6 +495,7 @@
             "required": false
           },
           { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "hiddenFields", "attribute": "hidden-fields", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
@@ -518,7 +527,13 @@
         "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
         "dependencies": []
       },
-      "runtimeAssets": { "locales": "dist/locales", "notes": ["Warranty coverage only. Campaign rendering, reCAPTCHA and unauthorized campaign lookup belong to vehicle-ssc."] }
+      "runtimeAssets": {
+        "locales": "dist/locales",
+        "notes": [
+          "Warranty coverage only. Campaign rendering, reCAPTCHA and unauthorized campaign lookup belong to vehicle-ssc.",
+          "The host may use hiddenFields (invoiceDate, warrantyActivationDate) to hide the sale dates shown above the rail."
+        ]
+      }
     },
     {
       "tag": "vehicle-claimable-items",

@@ -432,6 +432,22 @@ describe('vehicle-specification', () => {
     expect(shadow(page).querySelector('.lookup-summary .status-badge')?.classList.contains('is-negative')).toBe(true);
   });
 
+  it('lets a lookup started during a clear win, and settles on it', async () => {
+    const page = await newPage(brokerMarketMocks);
+    const owner = page.rootInstance as VehicleSpecification;
+
+    await owner.fetchVin(RICH_VIN);
+    await page.waitForChanges();
+
+    await Promise.all([owner.clearData(), owner.fetchVin('ZS8AJAYC9P6174790')]);
+    await page.waitForChanges();
+
+    expect(owner.vehicleLookup?.vin).toBe('ZS8AJAYC9P6174790');
+    expect(owner.isLoading).toBe(false);
+    expect((owner as unknown as { leaving: boolean }).leaving).toBe(false);
+    expect(shadow(page).querySelector('.spec-card')?.getAttribute('data-phase')).toBe('settled');
+  });
+
   it('renders nothing from the sub-objects outside the barrier', async () => {
     const page = await newPage();
 

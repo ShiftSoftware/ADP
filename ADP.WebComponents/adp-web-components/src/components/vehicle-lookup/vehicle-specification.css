@@ -521,8 +521,10 @@
   /* Below the stacking breakpoint the grade takes a line of its own under the title, reserved
      whether or not the vehicle has one (an empty grade renders a non-breaking space), so at this
      width too the band never resizes between vehicles. */
+  /* nowrap: a wrapping column sizes to its widest child and clips a long title. */
   .spec-main {
     flex-direction: column;
+    flex-wrap: nowrap;
     gap: 2px;
     align-items: stretch;
   }
@@ -559,6 +561,7 @@
 @container spec-panel (max-width: 430px) {
   .spec-head {
     flex-direction: column;
+    flex-wrap: nowrap;
     align-items: stretch;
   }
 }

@@ -324,6 +324,157 @@
       "PaidServiceInvoices": [],
       "FreeServiceItemExcludedVINs": [],
       "VehicleInspections": []
+    },
+    "ZT8WA9PD8T6621184": {
+      "VehicleEntries": [
+        {
+          "VIN": "ZT8WA9PD8T6621184",
+          "InvoiceDate": "2026-03-10",
+          "InvoiceNumber": "31870264",
+          "WarrantyActivationDate": "2026-03-14",
+          "CompanyID": 10,
+          "BranchID": 100,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "72310QX202601",
+          "Katashiki": "QFN480R-PBXTVA",
+          "ExteriorColorCode": "Q23",
+          "InteriorColorCode": "LA20",
+          "ModelYear": 2026,
+          "Distributor": {
+            "InvoiceNumber": "95120447",
+            "InvoiceDate": "2026-03-02"
+          }
+        }
+      ],
+      "InitialOfficialVINs": [
+        {
+          "VIN": "ZT8WA9PD8T6621184",
+          "CompanyID": 5
+        }
+      ],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
+      "Accessories": [],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
+    },
+    "ZU8MC2VH8T6636219": {
+      "VehicleEntries": [
+        {
+          "VIN": "ZU8MC2VH8T6636219",
+          "InvoiceNumber": "55120938",
+          "CompanyID": 5,
+          "BranchID": 500,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "50127RD202601",
+          "Katashiki": "DKZD22F-HWQLM",
+          "ExteriorColorCode": "254",
+          "InteriorColorCode": "26",
+          "ModelYear": 2026
+        },
+        {
+          "VIN": "ZU8MC2VH8T6636219",
+          "InvoiceDate": "2026-04-02",
+          "CompanyID": 7,
+          "BranchID": 700,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "50127RD202601",
+          "Katashiki": "DKZD22F-HWQLM",
+          "ExteriorColorCode": "254",
+          "InteriorColorCode": "26",
+          "ModelYear": 2026
+        },
+        {
+          "VIN": "ZU8MC2VH8T6636219",
+          "InvoiceDate": "2026-04-09",
+          "InvoiceNumber": "90331472",
+          "CompanyID": 10,
+          "BranchID": 100,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "50127RD202601",
+          "Katashiki": "DKZD22F-HWQLM",
+          "ExteriorColorCode": "254",
+          "InteriorColorCode": "26",
+          "ModelYear": 2026
+        }
+      ],
+      "InitialOfficialVINs": [
+        {
+          "VIN": "ZU8MC2VH8T6636219",
+          "CompanyID": 5
+        }
+      ],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
+      "Accessories": [],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
+    },
+    "ZV8KS6EX6T6648350": {
+      "VehicleEntries": [
+        {
+          "VIN": "ZV8KS6EX6T6648350",
+          "InvoiceDate": "2026-02-16",
+          "InvoiceNumber": "UNKNOWN",
+          "CustomerAccountNumber": "0",
+          "CustomerID": " ",
+          "CompanyID": 10,
+          "BranchID": 100,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "72310QX202601",
+          "Katashiki": "QFN480R-PBXTVA",
+          "ExteriorColorCode": "Q23",
+          "InteriorColorCode": "LA20",
+          "ModelYear": 2026,
+          "Distributor": {
+            "InvoiceNumber": "N/A",
+            "InvoiceDate": "2026-02-09"
+          }
+        }
+      ],
+      "InitialOfficialVINs": [
+        {
+          "VIN": "ZV8KS6EX6T6648350",
+          "CompanyID": 5
+        }
+      ],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
+      "Accessories": [],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
     }
   },
   "BrokerInitialVehicles": [],

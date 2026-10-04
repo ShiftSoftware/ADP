@@ -6,9 +6,13 @@ import {
   type SubmissionMeta,
   type SurveySubmission,
 } from '@shiftsoftware/survey-sdk';
-import { SurveyRenderer } from '@shiftsoftware/survey-renderer';
+import { SurveyRenderer, defaultRegistry } from '@shiftsoftware/survey-renderer';
+import { bookingQuestion } from './BookingQuestion.js';
 import { ErrorState } from './ErrorState.js';
-import { isAgentMode, resolveLocale } from './config.js';
+import { isAgentMode, resolveBookingTarget, resolveLocale } from './config.js';
+
+const bookingTarget = resolveBookingTarget();
+const registry = bookingTarget ? { ...defaultRegistry, dateTime: bookingQuestion(bookingTarget) } : undefined;
 
 export function SurveyRoute({ publicId, apiBase }: { publicId: string; apiBase: string }) {
   const locale = useMemo(() => resolveLocale(), []);
@@ -88,6 +92,7 @@ export function SurveyRoute({ publicId, apiBase }: { publicId: string; apiBase: 
       // surveys on the same device don't clobber each other, and revisiting the
       // same URL restores mid-flow answers.
       resumeKey={publicId}
+      {...(registry ? { registry } : {})}
       {...(locale ? { locale } : {})}
     />
   );

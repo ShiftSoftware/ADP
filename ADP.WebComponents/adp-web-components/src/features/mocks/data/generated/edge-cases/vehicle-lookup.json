@@ -367,5 +367,216 @@
     "serviceItems": [],
     "accessories": [],
     "basicModelCode": "FZP502K"
+  },
+  "ZT8WA9PD8T6621184": {
+    "vin": "ZT8WA9PD8T6621184",
+    "identifiers": {
+      "vin": "ZT8WA9PD8T6621184",
+      "variant": "72310QX202601",
+      "katashiki": "QFN480R-PBXTVA",
+      "color": "Q23",
+      "trim": "LA20",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Meridia",
+      "companyID": "10",
+      "companyName": "Sample Dealer",
+      "branchID": "100",
+      "branchName": "Main Showroom",
+      "invoiceDate": "2026-03-10",
+      "warrantyActivationDate": "2026-03-14",
+      "invoiceNumber": "31870264",
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Sample Distributor",
+        "invoiceNumber": "95120447",
+        "invoiceDate": "2026-03-02"
+      },
+      "intermediaries": []
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": true,
+      "warrantyStartDate": "2026-03-14",
+      "warrantyEndDate": "2029-03-14",
+      "startState": "Started",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": [],
+      "freeServiceStartDate": "2026-03-14"
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {
+      "modelCode": "72310",
+      "sfx": "QX",
+      "modelYear": 2026
+    },
+    "vehicleSpecification": {
+      "modelCode": "72310",
+      "modelYear": 2026,
+      "modelDescription": "ORINTA HEV",
+      "variantDescription": "2.5 HEV / Platinum",
+      "class": "Passenger",
+      "bodyType": "Wagon",
+      "engine": "2.5L A25A-FXS",
+      "cylinders": "4",
+      "lightHeavyType": "Light",
+      "doors": "5",
+      "fuel": "Hybrid",
+      "transmission": "e-CVT",
+      "side": "RHD",
+      "engineType": "Gasoline Hybrid",
+      "tankCap": "55",
+      "style": "Estate"
+    },
+    "serviceItems": [],
+    "accessories": [],
+    "basicModelCode": "QFN480"
+  },
+  "ZU8MC2VH8T6636219": {
+    "vin": "ZU8MC2VH8T6636219",
+    "identifiers": {
+      "vin": "ZU8MC2VH8T6636219",
+      "variant": "50127RD202601",
+      "katashiki": "DKZD22F-HWQLM",
+      "color": "254",
+      "trim": "26",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Meridia",
+      "companyID": "10",
+      "companyName": "Sample Dealer",
+      "branchID": "100",
+      "branchName": "Main Showroom",
+      "invoiceDate": "2026-04-09",
+      "invoiceNumber": "90331472",
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Sample Distributor",
+        "branchID": "500",
+        "branchName": "Distributor HQ",
+        "invoiceNumber": "55120938"
+      },
+      "intermediaries": [
+        {
+          "companyID": "7",
+          "companyName": "Regional Importer",
+          "branchID": "700",
+          "branchName": "Importer Hub",
+          "invoiceDate": "2026-04-02"
+        }
+      ]
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": true,
+      "warrantyStartDate": "2026-04-09",
+      "warrantyEndDate": "2029-04-09",
+      "startState": "Started",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": [],
+      "freeServiceStartDate": "2026-04-09"
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {
+      "modelCode": "50127",
+      "sfx": "RD",
+      "modelYear": 2026
+    },
+    "vehicleSpecification": {
+      "modelCode": "50127",
+      "modelYear": 2026,
+      "modelDescription": "VELDIN",
+      "variantDescription": "1.8 / Base",
+      "cylinders": " 0 ",
+      "doors": " 0 ",
+      "fuel": "Petrol",
+      "tankCap": " 0 "
+    },
+    "serviceItems": [],
+    "accessories": [],
+    "basicModelCode": "DKZD22F"
+  },
+  "ZV8KS6EX6T6648350": {
+    "vin": "ZV8KS6EX6T6648350",
+    "identifiers": {
+      "vin": "ZV8KS6EX6T6648350",
+      "variant": "72310QX202601",
+      "katashiki": "QFN480R-PBXTVA",
+      "color": "Q23",
+      "trim": "LA20",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Meridia",
+      "companyID": "10",
+      "companyName": "Sample Dealer",
+      "branchID": "100",
+      "branchName": "Main Showroom",
+      "customerAccountNumber": "0",
+      "customerID": " ",
+      "invoiceDate": "2026-02-16",
+      "invoiceNumber": "UNKNOWN",
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Sample Distributor",
+        "invoiceNumber": "N/A",
+        "invoiceDate": "2026-02-09"
+      },
+      "intermediaries": []
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": true,
+      "warrantyStartDate": "2026-02-16",
+      "warrantyEndDate": "2029-02-16",
+      "startState": "Started",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": [],
+      "freeServiceStartDate": "2026-02-16"
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {
+      "modelCode": "72310",
+      "sfx": "QX",
+      "modelYear": 2026
+    },
+    "vehicleSpecification": {
+      "modelCode": "72310",
+      "modelYear": 2026,
+      "modelDescription": "ORINTA HEV",
+      "variantDescription": "2.5 HEV / Platinum",
+      "class": "Passenger",
+      "bodyType": "Wagon",
+      "engine": "2.5L A25A-FXS",
+      "cylinders": "4",
+      "lightHeavyType": "Light",
+      "doors": "5",
+      "fuel": "Hybrid",
+      "transmission": "e-CVT",
+      "side": "RHD",
+      "engineType": "Gasoline Hybrid",
+      "tankCap": "55",
+      "style": "Estate"
+    },
+    "serviceItems": [],
+    "accessories": [],
+    "basicModelCode": "QFN480"
   }
 }

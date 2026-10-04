@@ -31,12 +31,26 @@
       dir="ltr"
       x-data="harness({
         mocks: 'vehicle-lookup',
-        labels: {
-          ZS8WJEXK206451985: 'no sale on record',
-          ZV9LMW6D75T151181: 'not in distributor records',
-          UNKNOWN_VIN_12345: 'not in distributor records',
+        labelsOnly: true,
+        labels: window.harnessTags('vehicle-sale-information'),
+        /* Under labelsOnly the tags decide membership, so the empty-record and no-sale vehicles stay listed; this only answers if that is switched off. */
+        has: vehicle => {
+          if (vehicle?.isAuthorized === false) return true;
+
+          const sale = vehicle?.saleInformation ?? {};
+          const value = raw => String(raw ?? '').trim();
+          const legFields = leg => [leg?.companyName, leg?.branchName, leg?.invoiceNumber, leg?.invoiceDate, leg?.cityName];
+          const customer = sale.endCustomer ?? {};
+          const broker = sale.broker ?? {};
+
+          return [
+            sale.companyName, sale.branchName, sale.countryName, sale.cityName, sale.invoiceNumber, sale.invoiceDate,
+            sale.warrantyActivationDate, sale.customerAccountNumber, sale.customerID,
+            broker.brokerName, broker.nonOfficialBrokerName, broker.invoiceNumber, broker.invoiceDate, broker.cityName,
+            ...legFields(sale.distributor), ...(sale.intermediaries ?? []).flatMap(legFields),
+            customer.id, customer.name, customer.phone, customer.idNumber,
+          ].some(raw => value(raw) !== '');
         },
-        has: vehicle => Boolean(vehicle?.saleInformation),
         events: false,
       })"
     >
@@ -51,8 +65,27 @@
         <aside class="showcase-about border-base-300 border-t border-dashed pt-5">
           <p class="eyebrow text-neutral">About this page</p>
           <p class="lede text-base-content/70 mt-2 text-sm">
-            Who sold the vehicle, when, and through which intermediaries. Like the specification page, this one is wired the Blazor way — <code>setBlazorRef</code> plus callbacks
-            named as attribute strings.
+            Who sold the vehicle and when: the selling dealer and branch in the head, then the invoice, the dates, the broker and the end customer below it — every field the lookup
+            carries, each shown exactly as it was sent.
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
+            <strong class="text-accent">Supply chain</strong> turns on <code>show-supply-chain</code>: the same record read as the road the vehicle took — distributor,
+            intermediaries, dealer, broker, end customer — each leg with its own invoice number and date. A leg the record does not have is simply not drawn. Off, the panel still
+            shows all of it in its standard layout.
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
+            A missing end customer is missing data, not a verdict: the host may not look customers up, the customer may not be in its records, or a broker has not completed its
+            invoice yet. The one thing the panel does derive is broker stock — a broker with no invoice holds the vehicle, and it says so.
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
+            Each fixture chip says which state it reaches. <strong class="text-accent">Empty</strong> clears the panel back to idle and <strong class="text-accent">Error</strong>
+            raises one on a settled card. Switch the Environment control in the rail to reach another environment's vehicles. The page starts on
+            <strong class="text-accent">Show all</strong> so every field is visible; <strong class="text-accent">Host default</strong> puts back the fields a host hides unless it
+            says otherwise.
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
+            This page deliberately consumes the component the way a Blazor host does — through <code>setBlazorRef</code> and callbacks named as attribute strings — rather than by
+            assigning functions to the props.
           </p>
         </aside>
       </div>
@@ -61,6 +94,30 @@
       <div class="showcase-stage flex flex-col gap-3" :dir="dir">
         <!-- Generated fixtures. This page has no field of its own — the chips are the search — so they get a dashed card above the component. -->
         <div data-harness-fixtures class="card border-base-300 bg-base-100 border border-dashed p-3" x-cloak></div>
+
+        <!-- Host configuration, not harness chrome: what a host sets on the element. -->
+        <div
+          class="card border-base-300 bg-base-100 flex flex-row flex-wrap items-center gap-x-6 gap-y-2 border p-3"
+          x-data="{ supplyChain: false, fields: 'all' }"
+          x-effect="window.saleInformationControls.apply({ supplyChain, fields })"
+        >
+          <label class="flex cursor-pointer items-center gap-2 text-sm">
+            <input type="checkbox" class="toggle toggle-sm toggle-primary" x-model="supplyChain" />
+            Supply chain
+          </label>
+
+          <div class="flex items-center gap-2 text-sm">
+            <span class="eyebrow text-neutral" id="hidden-fields-label">Hidden fields</span>
+            <div class="join" role="group" aria-labelledby="hidden-fields-label">
+              <button type="button" class="btn btn-xs join-item" :class="fields === 'all' && 'btn-active'" :aria-pressed="fields === 'all'" @click="fields = 'all'">
+                Show all
+              </button>
+              <button type="button" class="btn btn-xs join-item" :class="fields === 'default' && 'btn-active'" :aria-pressed="fields === 'default'" @click="fields = 'default'">
+                Host default
+              </button>
+            </div>
+          </div>
+        </div>
 
         <!-- No card of the page's own around the component: the component draws the design language's card itself. -->
         <div class="frame">
@@ -98,13 +155,33 @@
 
       // `setBlazorRef` is a @Method, so it does not exist until the element has
       // upgraded — and this classic script runs before the deferred component module.
-      customElements.whenDefined('vehicle-sale-information').then(async () => {
+      const ready = customElements.whenDefined('vehicle-sale-information').then(async () => {
         const subject = document.querySelector('#subject');
 
         await subject.componentOnReady?.();
 
         subject.setBlazorRef({ invokeMethodAsync: (name, ...args) => blazorCallbacks[name]?.(...args) });
+
+        // Read before any control writes it: the component's own default is the "Host default" preset.
+        return { subject, hostDefault: subject.hiddenFields };
       });
+
+      window.saleInformationControls = {
+        async apply({ supplyChain, fields }) {
+          const { subject, hostDefault } = await ready;
+          const hiddenFields = fields === 'all' ? '' : hostDefault;
+
+          if (subject.showSupplyChain !== supplyChain) {
+            subject.showSupplyChain = supplyChain;
+            report('show-supply-chain', String(supplyChain));
+          }
+
+          if (subject.hiddenFields !== hiddenFields) {
+            subject.hiddenFields = hiddenFields;
+            report('hidden-fields', hiddenFields === '' ? '(none)' : hiddenFields);
+          }
+        },
+      };
     </script>
   </body>
 </html>

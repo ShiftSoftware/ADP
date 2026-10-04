@@ -47,3 +47,19 @@ export function isAgentMode(): boolean {
   if (typeof window === 'undefined') return false;
   return new URLSearchParams(window.location.search).get('mode') === 'agent';
 }
+
+/** `?booking=1` renders every dateTime question as a `<shift-booking-calendar>`.
+ *  Without `calendarApi` it reads the static sample slots in `public/booking-availability.json`. */
+export function resolveBookingTarget() {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('booking') !== '1') return null;
+  return {
+    calendarApi: params.get('calendarApi') ?? '/booking-availability.json',
+    calendarApiVersion: params.get('calendarApiVersion') === 'v2' ? ('v2' as const) : ('v1' as const),
+    companyId: params.get('companyId') ?? '1',
+    branchId: params.get('branchId') ?? '42',
+    departmentId: params.get('departmentId') ?? 'service-center',
+    brandId: params.get('brandId') ?? 'BRAND',
+  };
+}

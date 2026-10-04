@@ -442,6 +442,37 @@
   margin-bottom: 8px;
 }
 
+/* Padding, not margin, so the gap to the rail closes with the line. */
+.warranty-dates-line {
+  margin: 0;
+  padding: 0 2px 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.warranty-date {
+  white-space: nowrap;
+}
+
+.warranty-date-value {
+  color: var(--date-ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Out-specifies the primitive's open state: the line is variable content and shuts in flight. */
+.loading .warranty-dates[data-open='true'] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows var(--settle) ease,
+    opacity var(--settle) ease,
+    visibility 0s linear var(--settle);
+}
+
 /* The rail sizes itself to the panel. It carries no minimum width and never scrolls: a rail you
    have to drag sideways to read defeats the point of drawing the whole contract at once, and the
    parts that cannot survive the squeeze — crowded axis dates — are dropped rather than pushed
@@ -812,6 +843,9 @@
     gap: 6px;
     margin-bottom: 6px;
     padding-inline: 4px;
+  }
+  .warranty-dates-line {
+    padding: 0 6px 6px;
   }
   .status-badge {
     min-height: 28px;
