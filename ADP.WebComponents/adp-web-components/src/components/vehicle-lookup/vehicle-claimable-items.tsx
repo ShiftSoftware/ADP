@@ -538,8 +538,8 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
         requestAnimationFrame(() => {
           if (generation !== this.popoverOpenGeneration) return;
           this.showClaimableItemPopover = true;
-          // Non-modal, and only when an ancestor would otherwise clip it: a hover card that took the
-          // top layer unconditionally would outrank the host's own toasts and nav for no reason, and
+          // Non-modal, and only when an ancestor clips it or isolates it below the panel border:
+          // taking the top layer unconditionally would outrank the host's own toasts and nav, and
           // a modal one would inert the very cards it is meant to be hovered between.
           promoteOverlayIfCaged(this.popoverEl);
           requestAnimationFrame(() => this.measurePopoverHeight());
