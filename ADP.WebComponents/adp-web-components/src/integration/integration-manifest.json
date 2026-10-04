@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "adp-web-components",
-  "packageVersion": "0.4.11",
+  "packageVersion": "0.4.12",
   "outputFamily": "per-component",
   "components": [
     {
@@ -1904,6 +1904,7 @@
         "locales": null,
         "notes": [
           "One request per branch, from today: the endpoint’s booking delay counts from the request’s from date, so the field never pages forward. The days shown are whatever the response holds; days without times are dropped.",
+          "In a v1 form structure (type bookingCalendar) departmentPreference lists the departments it may book, in order (default [\"showroom\"]). A branch with none of them is not bookable: the field is disabled and its hint says so (booking locale branchUnavailable, or the node’s localization[lang].branchUnavailable). It never falls back to another department, whose hours would look bookable but be the wrong ones. The older bookingSlot and bookingDate fields still fall back to the branch’s first department.",
           "Responses are cached per branch, department, brand, language and day for the page’s lifetime; errors are not cached and nothing retries on its own. A stale request is cancelled when the branch changes.",
           "The submitted value and the slotChange detail are exactly branch-slot-picker’s: value YYYY-MM-DDTHH:mm, detail { date, raw, value } with raw as the endpoint sent it.",
           "States: idle (no branch yet), loading, ready, empty (no times at the branch) and error (with Try again). No day is chosen on load; the calendar opens on the month of the first open day. Reopening a day keeps the chosen time when that day has it, otherwise clears it.",

@@ -24,6 +24,7 @@ const bookingSchema = object({
   timesOn: string().required().default(''),
   chooseSlot: string().required().default(''),
   labelFormat: string().required().default(''),
+  branchUnavailable: string().required().default(''),
   timesCountOne: string().required().default(''),
   daySummary: string().required().default(''),
   emptyTitle: string().required().default(''),

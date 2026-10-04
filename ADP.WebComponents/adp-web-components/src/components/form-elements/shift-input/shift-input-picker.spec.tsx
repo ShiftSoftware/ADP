@@ -292,6 +292,30 @@ describe('bookingCalendar mapper', () => {
     expect(vnode.$children$[0].$attrs$).toMatchObject({ branchId: '' });
   });
 
+  it('books only a listed department: a branch without one is disabled, loads nothing and says why', () => {
+    const render = (props: Record<string, unknown>) =>
+      getFormMappers().bookingCalendar({
+        form: formWith('Xr8pQ'),
+        language: 'en',
+        props: { name: 'bookingDate', departmentPreference: ['quick-service-center'], ...props },
+      }) as unknown as VNode;
+    const vnode = render({});
+
+    expect(vnode.$attrs$).toMatchObject({ isDisabled: true, hint: 'Online booking isn’t available at this branch' });
+    expect(vnode.$children$[0].$attrs$).toMatchObject({ branchId: '', departmentId: '' });
+    expect(render({ localization: { en: { branchUnavailable: 'Call the branch to book' } } }).$attrs$).toMatchObject({ hint: 'Call the branch to book' });
+  });
+
+  it('the older bookingDate field still falls back to the branch’s first department', () => {
+    const vnode = getFormMappers().bookingDate({
+      form: formWith('Xr8pQ'),
+      language: 'en',
+      props: { name: 'bookingDate', departmentPreference: ['quick-service-center'] },
+    }) as unknown as VNode;
+
+    expect(vnode.$attrs$).toMatchObject({ departmentId: 'showroom', isDisabled: false });
+  });
+
   it('passes mobileSheet from the structure to shift-input, and leaves it unset otherwise', () => {
     const render = (props: Record<string, unknown>) =>
       getFormMappers().bookingCalendar({ form: formWith('Xr8pQ'), language: 'en', props: { name: 'bookingDate', ...props } }) as unknown as VNode;

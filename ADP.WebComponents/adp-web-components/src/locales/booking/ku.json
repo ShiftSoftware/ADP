@@ -22,6 +22,7 @@
   "timesOn": "کاتەکان لە {date}",
   "chooseSlot": "بەروار و کات هەڵبژێرە",
   "labelFormat": "dی MMMM، H:mm",
+  "branchUnavailable": "حجزکردنی ئۆنلاین لەم لقە بەردەست نییە",
   "timesCountOne": "یەک کات",
   "daySummary": "{count} · {from} – {to}",
   "emptyTitle": "هیچ کاتێکی بەردەست نییە"

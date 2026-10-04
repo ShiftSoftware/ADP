@@ -22,6 +22,7 @@
   "timesOn": "Время на {date}",
   "chooseSlot": "Выберите дату и время",
   "labelFormat": "d MMM, HH:mm",
+  "branchUnavailable": "Онлайн-запись в этот филиал недоступна",
   "timesCountOne": "1 слот",
   "daySummary": "{count} · {from} – {to}",
   "emptyTitle": "Нет свободных слотов"

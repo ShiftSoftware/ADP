@@ -6,6 +6,7 @@ import { format, isBefore, isEqual } from 'date-fns';
 import { decodeTimeOffset } from '~lib/decode-time-offset';
 import { populateItems } from '~lib/populate-items';
 import { now } from '~lib/clock';
+import { bookingStrings } from '../../form-elements/shift-time-slots/time-slots';
 
 /**
  * Resolves the four ids the calendar endpoint needs from the branch the
@@ -16,7 +17,7 @@ import { now } from '~lib/clock';
  * the branch's own list rather than being hardcoded: asking a branch for a
  * department it does not have returns an empty calendar.
  */
-const resolveBranchTarget = ({ form, props }) => {
+const resolveBranchTarget = ({ form, props, anyDepartment = true }) => {
   form.addWatcher('companyBranchId');
 
   const branchValue = form?.getValue('companyBranchId');
@@ -26,7 +27,8 @@ const resolveBranchTarget = ({ form, props }) => {
   const brands: string[] = (branch?.Brands ?? []).map(b => b.IntegrationId).filter(Boolean);
 
   const preference: string[] = props?.departmentPreference ?? ['showroom'];
-  const departmentId = preference.find(d => departments.includes(d)) ?? departments[0] ?? '';
+  const preferred = preference.find(d => departments.includes(d)) ?? '';
+  const departmentId = anyDepartment ? preferred || departments[0] || '' : preferred;
 
   return {
     hasBranch: !!branch,
@@ -210,8 +212,11 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
    * the branch's hash ID; department and brand resolve from the branch record as above.
    */
   bookingCalendar: ({ form, language, props }) => {
-    const { hasBranch, departmentId, brandId } = resolveBranchTarget({ form, props });
-    const branchId = hasBranch ? String(form.getValue('companyBranchId')) : '';
+    // Only the listed departments: another department's hours would look bookable but be the wrong ones.
+    const { hasBranch, departmentId, brandId } = resolveBranchTarget({ form, props, anyDepartment: false });
+    const bookable = hasBranch && !!departmentId;
+    const branchId = bookable ? String(form.getValue('companyBranchId')) : '';
+    const unavailable = hasBranch && !bookable ? props?.localization?.[language]?.branchUnavailable || bookingStrings(language).branchUnavailable : '';
     const options = [
       'calendarApi',
       'utcOffset',
@@ -230,7 +235,7 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
     const picker = Object.fromEntries(options.filter(key => props?.[key] !== undefined).map(key => [key, props[key]]));
 
     return (
-      <shift-input {...props} form={form} key={props?.name} language={language} isDisabled={!hasBranch}>
+      <shift-input {...props} form={form} key={props?.name} language={language} isDisabled={!bookable} hint={unavailable || props?.hint}>
         <shift-booking-calendar {...picker} branchId={branchId} departmentId={departmentId} brandId={brandId} slot="picker" key="picker" />
       </shift-input>
     );

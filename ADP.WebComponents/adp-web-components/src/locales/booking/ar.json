@@ -22,6 +22,7 @@
   "timesOn": "الأوقات في {date}",
   "chooseSlot": "اختر التاريخ والوقت",
   "labelFormat": "d MMMM، H:mm",
+  "branchUnavailable": "الحجز الإلكتروني غير متاح في هذا الفرع",
   "timesCountOne": "موعد واحد",
   "daySummary": "{count} · {from} – {to}",
   "emptyTitle": "لا توجد مواعيد متاحة"

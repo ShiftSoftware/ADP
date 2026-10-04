@@ -22,6 +22,7 @@
   "timesOn": "Times on {date}",
   "chooseSlot": "Choose a date and time",
   "labelFormat": "d MMM, HH:mm",
+  "branchUnavailable": "Online booking isn’t available at this branch",
   "timesCountOne": "1 slot",
   "daySummary": "{count} · {from} – {to}",
   "emptyTitle": "No available slots"
