@@ -17,11 +17,11 @@
   "dayTimes": "المواعيد المتاحة: {count}",
   "required": "الرجاء اختيار التاريخ والوقت",
   "changeDate": "تغيير التاريخ",
-  "dayTitle": "{weekday}، {day} {month}",
+  "dayTitle": "d MMMM",
   "monthsShort": ["كانون الثاني", "شباط", "آذار", "نيسان", "أيار", "حزيران", "تموز", "آب", "أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول"],
   "timesOn": "الأوقات في {date}",
   "chooseSlot": "اختر التاريخ والوقت",
-  "slotLabel": "{weekday}، {day} {month} {year}، {time}",
+  "labelFormat": "d MMMM، H:mm",
   "timesCountOne": "موعد واحد",
   "daySummary": "{count} · {from} – {to}",
   "emptyTitle": "لا توجد مواعيد متاحة"

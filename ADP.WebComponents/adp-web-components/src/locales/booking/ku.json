@@ -17,11 +17,11 @@
   "dayTimes": "کاتە بەردەستەکان: {count}",
   "required": "تکایە بەروار و کات هەڵبژێرە",
   "changeDate": "گۆڕینی بەروار",
-  "dayTitle": "{weekday}، {day}ی {month}",
+  "dayTitle": "dی MMMM",
   "monthsShort": ["کانوونی دووەم", "شوبات", "ئازار", "نیسان", "ئایار", "حوزەیران", "تەمووز", "ئاب", "ئەیلوول", "تشرینی یەکەم", "تشرینی دووەم", "کانوونی یەکەم"],
   "timesOn": "کاتەکان لە {date}",
   "chooseSlot": "بەروار و کات هەڵبژێرە",
-  "slotLabel": "{weekday}، {day}ی {month} {year}، {time}",
+  "labelFormat": "dی MMMM، H:mm",
   "timesCountOne": "یەک کات",
   "daySummary": "{count} · {from} – {to}",
   "emptyTitle": "هیچ کاتێکی بەردەست نییە"

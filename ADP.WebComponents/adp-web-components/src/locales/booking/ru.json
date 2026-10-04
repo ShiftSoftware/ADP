@@ -17,11 +17,11 @@
   "dayTimes": "Свободных слотов: {count}",
   "required": "Выберите дату и время",
   "changeDate": "Изменить дату",
-  "dayTitle": "{weekday}, {day} {month}",
+  "dayTitle": "EEE, d MMM",
   "monthsShort": ["янв.", "февр.", "мар.", "апр.", "мая", "июн.", "июл.", "авг.", "сент.", "окт.", "нояб.", "дек."],
   "timesOn": "Время на {date}",
   "chooseSlot": "Выберите дату и время",
-  "slotLabel": "{weekday}, {day} {month} {year}, {time}",
+  "labelFormat": "d MMM, HH:mm",
   "timesCountOne": "1 слот",
   "daySummary": "{count} · {from} – {to}",
   "emptyTitle": "Нет свободных слотов"

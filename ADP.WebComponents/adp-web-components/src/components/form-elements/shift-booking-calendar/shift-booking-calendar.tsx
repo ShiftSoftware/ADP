@@ -11,8 +11,9 @@ import { ChevronLeftIcon } from '~assets/chevron-left-icon';
 import '~lib/middleware';
 import { BookingAvailability, BookingDay, createAvailabilityLoader, isCompleteTarget, slotValue } from '~lib/booking-availability';
 import { blockReason, buildAvailability } from '~lib/calendar-availability';
-import { dateParts, monthOf, weekdayOf } from '~lib/calendar-date';
+import { monthOf } from '~lib/calendar-date';
 import { formatPickerValue, readPickerValue, valueOffset } from '~lib/picker';
+import { formatSlotLabel } from '~lib/slot-label';
 import type { PickerChangeDetail, PickerStatusDetail } from '~lib/picker';
 
 import { y } from '../../forms/defaults/validation';
@@ -59,6 +60,8 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   @Prop() fewSlots: number = 3;
   @Prop() showToday: boolean = true;
   @Prop() hourCycle: HourCycle = 'h23';
+  @Prop() labelFormat?: string | Partial<Record<LanguageKeys, string>>;
+  @Prop() dayTitleFormat?: string | Partial<Record<LanguageKeys, string>>;
   @Prop() utcOffset?: string;
   @Prop() valueFormat: string = 'iso';
   @Prop({ mutable: true }) value: string = '';
@@ -166,6 +169,8 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   @Watch('today')
   onTargetChange() {
     this.closeTimes();
+    // Busy at once, not on the queued load: a host that enables its field in this same pass must not paint it enabled first.
+    if (isCompleteTarget({ url: this.calendarApi, branchId: this.branchId, departmentId: this.departmentId, brandId: this.brandId })) this.status = 'loading';
     this.queueSync(true);
   }
 
@@ -193,6 +198,8 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   @Watch('valueFormat')
   @Watch('utcOffset')
   @Watch('hourCycle')
+  @Watch('labelFormat')
+  @Watch('dayTitleFormat')
   onFormatChange() {
     this.emitPicker();
   }
@@ -451,17 +458,18 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   private slotLabel(local: string): string {
     if (!local) return '';
 
-    const locale = this.locale;
-    const [date, time] = local.split('T');
-    const [year, month, day] = dateParts(date);
+    const fallback = this.strings.labelFormat;
 
-    return fill(this.strings.slotLabel, {
-      weekday: locale.strings.weekdaysShort[weekdayOf(date)],
-      day: formatDigits(day, locale.numerals),
-      month: this.strings.monthsShort[month - 1],
-      year: formatDigits(year, locale.numerals),
-      time: formatTime(time, this.hourCycle, locale.numerals, this.strings),
-    });
+    return this.formatted(local, this.labelFormat, this.hourCycle === 'h12' ? fallback.replace(/H{1,2}:mm/, 'h:mm a') : fallback);
+  }
+
+  private formatted(local: string, given: string | Partial<Record<LanguageKeys, string>> | undefined, fallback: string): string {
+    const locale = this.locale;
+    const strings = this.strings;
+    const pattern = typeof given === 'string' ? given : given?.[locale.language];
+    const names = { ...locale.strings, monthsShort: strings.monthsShort, am: strings.am, pm: strings.pm };
+
+    return formatSlotLabel(local, pattern || fallback, fallback, names, text => formatDigits(text, locale.numerals));
   }
 
   private openTimes() {
@@ -613,16 +621,7 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   }
 
   private dayTitle(date: string): string {
-    if (!date) return '';
-
-    const locale = this.locale;
-    const [, month, day] = dateParts(date);
-
-    return fill(this.strings.dayTitle, {
-      weekday: locale.strings.weekdaysShort[weekdayOf(date)],
-      day: formatDigits(day, locale.numerals),
-      month: this.strings.monthsShort[month - 1],
-    });
+    return date ? this.formatted(date, this.dayTitleFormat, this.strings.dayTitle) : '';
   }
 
   // The times view sits exactly on the calendar's panel, header and body, whatever appearance, size or host overrides set them to.

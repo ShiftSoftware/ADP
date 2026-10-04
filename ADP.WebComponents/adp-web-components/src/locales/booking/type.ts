@@ -23,7 +23,7 @@ const bookingSchema = object({
   monthsShort: array().of(string().required()).length(12).required().default([]),
   timesOn: string().required().default(''),
   chooseSlot: string().required().default(''),
-  slotLabel: string().required().default(''),
+  labelFormat: string().required().default(''),
   timesCountOne: string().required().default(''),
   daySummary: string().required().default(''),
   emptyTitle: string().required().default(''),

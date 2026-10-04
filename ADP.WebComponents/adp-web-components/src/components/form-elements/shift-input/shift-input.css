@@ -199,6 +199,10 @@
   appearance: none;
 }
 
+.in-root[data-picker] .in-input {
+  text-overflow: ellipsis;
+}
+
 .in-input::placeholder {
   color: var(--_muted);
   opacity: 1;
@@ -367,9 +371,78 @@
 }
 
 /*
-  Inside a v1 form with no appearance chosen, the field wears the look of the form's own fields (form-inputs.css):
-  the page's font and ink, a 16px label in sentence case, a 1px slate-300 box with a 6px radius, a slate-600 border and
-  a soft ring on focus, red for an error, and a support line that overlays the gap below instead of reserving it.
+  Inside a v1 form the field behaves like the form's own fields (form-inputs.css), whatever its appearance: red-500
+  for an error, their focus ring, a disabled control dimmed as a whole, and a support line that overlays the gap below instead of
+  reserving it, its message dropping in from under the control.
+*/
+:host([data-in-form]) {
+  --_ap-danger: #ef4444;
+  --_ap-control-focus-outline: 0px;
+  --_ap-focus-halo: rgba(71, 85, 105, 0.25);
+  --_ap-focus-halo-width: 0.2rem;
+  /* The form's own fields change state over 300ms on Tailwind's default curve; the field moves on the same clock. */
+  --_look-change: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:host([data-in-form]) .in-required {
+  color: #dc2626;
+}
+
+:host([data-in-form]) .in-root {
+  position: relative;
+}
+
+:host([data-in-form]) .in-control {
+  transition:
+    border-color var(--_look-change),
+    box-shadow var(--_look-change);
+}
+
+:host([data-in-form]) .in-control[data-focused] {
+  border-color: var(--_focus);
+}
+
+:host([data-in-form]) .in-root[data-invalid] .in-control[data-focused] {
+  box-shadow: 0 0 0 var(--_halo-width) rgba(239, 68, 68, 0.25);
+}
+
+:host([data-in-form]) .in-root[data-disabled] .in-control {
+  background: var(--_surface);
+  opacity: 0.375;
+}
+
+:host([data-in-form]) .in-root[data-disabled] .in-input:disabled {
+  color: inherit;
+}
+
+:host([data-in-form]) .in-support {
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline: 0;
+  min-block-size: 0;
+  margin-block-start: 0;
+  padding-block-start: 1px;
+  overflow: hidden;
+  line-height: normal;
+}
+
+:host([data-in-form]) .in-hint,
+:host([data-in-form]) .in-error {
+  line-height: normal;
+  transform: translateY(-100%);
+  transition:
+    opacity var(--_look-change),
+    transform var(--_look-change);
+}
+
+:host([data-in-form]) .in-hint[data-shown],
+:host([data-in-form]) .in-error[data-shown] {
+  transform: none;
+}
+
+/*
+  With no appearance chosen it also wears their look: the page's font and ink, a 16px label in sentence case, a 1px
+  slate-300 box with a 6px radius, and a slate-600 border on focus.
 */
 :host([data-look='form']) {
   --_ap-font-size: 16px;
@@ -386,14 +459,8 @@
   --_ap-line: #cbd5e1;
   --_ap-line-strong: #cbd5e1;
   --_ap-focus: #475569;
-  --_ap-control-focus-outline: 0px;
-  --_ap-focus-halo: rgba(71, 85, 105, 0.25);
-  --_ap-focus-halo-width: 0.2rem;
-  --_ap-danger: #ef4444;
   --_ap-radius-md: 6px;
   --_ap-control-height: 44px;
-  /* The form's own fields change state over 300ms on Tailwind's default curve; the field moves on the same clock. */
-  --_look-change: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 
   color: inherit;
   font-family: inherit;
@@ -410,67 +477,13 @@
   line-height: normal;
 }
 
-:host([data-look='form']) .in-required {
-  color: #dc2626;
-}
-
-:host([data-look='form']) .in-root {
-  position: relative;
-}
-
 :host([data-look='form']) .in-control {
   block-size: auto;
-  transition:
-    border-color var(--_look-change),
-    box-shadow var(--_look-change);
 }
 
 :host([data-look='form']) .in-input {
   padding-block: 6px;
   line-height: normal;
-}
-
-:host([data-look='form']) .in-control[data-focused] {
-  border-color: var(--_focus);
-}
-
-:host([data-look='form']) .in-root[data-invalid] .in-control[data-focused] {
-  box-shadow: 0 0 0 var(--_halo-width) rgba(239, 68, 68, 0.25);
-}
-
-:host([data-look='form']) .in-root[data-disabled] .in-control {
-  background: var(--_surface);
-  opacity: 0.375;
-}
-
-:host([data-look='form']) .in-root[data-disabled] .in-input:disabled {
-  color: inherit;
-}
-
-/* The support line overlays the gap below, and its message drops in from under the control, as the form's own do. */
-:host([data-look='form']) .in-support {
-  position: absolute;
-  inset-block-start: 100%;
-  inset-inline: 0;
-  min-block-size: 0;
-  margin-block-start: 0;
-  padding-block-start: 1px;
-  overflow: hidden;
-  line-height: normal;
-}
-
-:host([data-look='form']) .in-hint,
-:host([data-look='form']) .in-error {
-  line-height: normal;
-  transform: translateY(-100%);
-  transition:
-    opacity var(--_look-change),
-    transform var(--_look-change);
-}
-
-:host([data-look='form']) .in-hint[data-shown],
-:host([data-look='form']) .in-error[data-shown] {
-  transform: none;
 }
 
 /*

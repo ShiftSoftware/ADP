@@ -212,7 +212,20 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
   bookingCalendar: ({ form, language, props }) => {
     const { hasBranch, departmentId, brandId } = resolveBranchTarget({ form, props });
     const branchId = hasBranch ? String(form.getValue('companyBranchId')) : '';
-    const options = ['calendarApi', 'utcOffset', 'hourCycle', 'today', 'disabledDates', 'disabledWeekdays', 'slotCounts', 'dayTooltips', 'fewSlots', 'showToday'];
+    const options = [
+      'calendarApi',
+      'utcOffset',
+      'hourCycle',
+      'labelFormat',
+      'dayTitleFormat',
+      'today',
+      'disabledDates',
+      'disabledWeekdays',
+      'slotCounts',
+      'dayTooltips',
+      'fewSlots',
+      'showToday',
+    ];
     // Only what the structure sets, so the calendar keeps its own defaults for the rest.
     const picker = Object.fromEntries(options.filter(key => props?.[key] !== undefined).map(key => [key, props[key]]));
 

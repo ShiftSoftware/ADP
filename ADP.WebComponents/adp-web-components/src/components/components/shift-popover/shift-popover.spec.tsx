@@ -475,3 +475,55 @@ describe('focus on open', () => {
     expect(setFocus).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('mobile sheet', () => {
+  const screen = (width: number) => (popover: HTMLShiftPopoverElement) => {
+    (popover.ownerDocument.defaultView as unknown as { matchMedia: unknown }).matchMedia = () => ({
+      matches: width < 600,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    });
+  };
+
+  const opened = async (attributes: string, width: number) => {
+    const mounted = await mount(attributes, screen(width));
+    await mounted.el.show();
+    await mounted.page.waitForChanges();
+    return mounted;
+  };
+
+  it('off by default: a phone-width screen keeps the anchored panel, with no backdrop and no scroll lock', async () => {
+    const { page } = await opened('', 390);
+
+    expect(box(page).hasAttribute('data-sheet')).toBe(false);
+    expect(box(page).getAttribute('part')).toBe('panel');
+    expect(page.doc.documentElement.style.overflow).toBe('');
+  });
+
+  it('mobile-sheet: a bottom sheet under 600px, which locks the page while open', async () => {
+    const { page, el } = await opened('mobile-sheet="true"', 390);
+
+    expect(box(page).hasAttribute('data-sheet')).toBe(true);
+    expect(box(page).getAttribute('part')).toBe('panel sheet');
+    expect(page.doc.documentElement.style.overflow).toBe('hidden');
+
+    await el.hide();
+    await page.waitForChanges();
+    expect(page.doc.documentElement.style.overflow).toBe('');
+  });
+
+  it('mobile-sheet: still anchored from 600px up', async () => {
+    const { page } = await opened('mobile-sheet="true"', 800);
+
+    expect(box(page).hasAttribute('data-sheet')).toBe(false);
+  });
+
+  it('turning mobileSheet off while open turns the sheet back into the anchored panel', async () => {
+    const { page, el } = await opened('mobile-sheet="true"', 390);
+
+    el.mobileSheet = false;
+    await page.waitForChanges();
+    expect(box(page).hasAttribute('data-sheet')).toBe(false);
+    expect(page.doc.documentElement.style.overflow).toBe('');
+  });
+});

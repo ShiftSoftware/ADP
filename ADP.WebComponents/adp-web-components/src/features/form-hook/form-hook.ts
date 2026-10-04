@@ -170,6 +170,12 @@ export class FormHook<T> {
     return this.getValues<T>()[name];
   };
 
+  // What the field shows, for a field that formats its value (a picked slot shows its label, not its ISO value).
+  getDisplayValue = <T>(name: keyof T) => {
+    const field = this.subscribers.find(sub => sub.name === name)?.context;
+    return field?.getDisplayValue?.() || this.getValue<T>(name);
+  };
+
   getValues = <T>(): T => {
     const formDom = this.context.el.shadowRoot || this.context.el;
 

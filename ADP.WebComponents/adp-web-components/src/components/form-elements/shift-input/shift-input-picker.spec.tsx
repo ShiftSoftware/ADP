@@ -127,6 +127,28 @@ describe('shift-input hosting a picker', () => {
     expect(requests).toEqual([]);
   });
 
+  it('keeps the focused look while its popover is open, though focus is inside the picker', async () => {
+    const { page } = await inForm('');
+    const control = () => field(page).querySelector('.in-control');
+
+    expect(control().hasAttribute('data-focused')).toBe(false);
+
+    (field(page).querySelector('.in-calendar-button') as HTMLButtonElement).click();
+    await settle(page);
+    expect(control().hasAttribute('data-focused')).toBe(true);
+
+    await (field(page).querySelector('shift-popover') as HTMLShiftPopoverElement).hide();
+    await settle(page);
+    expect(control().hasAttribute('data-focused')).toBe(false);
+  });
+
+  it('hands mobile-sheet to its popover, off by default', async () => {
+    const popover = (page: SpecPage) => field(page).querySelector('shift-popover') as HTMLShiftPopoverElement;
+
+    expect(popover((await inForm('')).page).mobileSheet).toBe(false);
+    expect(popover((await inForm('mobile-sheet="true"')).page).mobileSheet).toBe(true);
+  });
+
   it('reads required from the form context, blocks an empty submit, and submits the picked slot as ISO with an offset', async () => {
     const { page, hook, submitted } = await inForm('', TARGET, { bookingDate: true });
 
@@ -142,7 +164,8 @@ describe('shift-input hosting a picker', () => {
 
     await pick(page, '2026-10-01', '13:00');
 
-    expect(text(page)).toBe('Thu, 1 Oct 2026, 13:00');
+    expect(text(page)).toBe('1 Oct, 13:00');
+    expect(hook.getDisplayValue('bookingDate' as never)).toBe('1 Oct, 13:00');
     expect(hook.getInputState('bookingDate').isError).toBe(false);
 
     hook.submit();
@@ -267,5 +290,13 @@ describe('bookingCalendar mapper', () => {
 
     expect(vnode.$attrs$).toMatchObject({ isDisabled: true });
     expect(vnode.$children$[0].$attrs$).toMatchObject({ branchId: '' });
+  });
+
+  it('passes mobileSheet from the structure to shift-input, and leaves it unset otherwise', () => {
+    const render = (props: Record<string, unknown>) =>
+      getFormMappers().bookingCalendar({ form: formWith('Xr8pQ'), language: 'en', props: { name: 'bookingDate', ...props } }) as unknown as VNode;
+
+    expect(render({ mobileSheet: true }).$attrs$).toMatchObject({ mobileSheet: true });
+    expect(render({}).$attrs$).not.toHaveProperty('mobileSheet');
   });
 });

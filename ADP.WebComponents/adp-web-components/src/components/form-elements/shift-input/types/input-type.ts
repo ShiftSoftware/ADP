@@ -14,6 +14,7 @@ export interface InputField {
   readonly fieldDisabled: boolean;
   readonly readonly: boolean;
   readonly fieldLabel: string;
+  readonly mobileSheet: boolean;
   readonly control?: HTMLElement;
   readonly input?: HTMLInputElement;
   expanded: boolean;

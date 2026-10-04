@@ -17,11 +17,11 @@
   "dayTimes": "Slots available: {count}",
   "required": "Please choose a date and time",
   "changeDate": "Change date",
-  "dayTitle": "{weekday}, {day} {month}",
+  "dayTitle": "EEE, d MMM",
   "monthsShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
   "timesOn": "Times on {date}",
   "chooseSlot": "Choose a date and time",
-  "slotLabel": "{weekday}, {day} {month} {year}, {time}",
+  "labelFormat": "d MMM, HH:mm",
   "timesCountOne": "1 slot",
   "daySummary": "{count} · {from} – {to}",
   "emptyTitle": "No available slots"
