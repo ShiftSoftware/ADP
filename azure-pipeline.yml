@@ -3,6 +3,9 @@ trigger:
     include:
     - release-nuget-*
 
+# PR runs disabled: production must only ever be reached by a manual run (see .shift/guides/pipeline-pr-triggers.md)
+pr: none
+
 pool:
   vmImage: ubuntu-22.04
   

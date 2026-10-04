@@ -23,6 +23,9 @@ trigger:
     include:
       - release-website-*
 
+# PR runs disabled: production must only ever be reached by a manual run (see .shift/guides/pipeline-pr-triggers.md)
+pr: none
+
 variables:
   - group: Deployment
 
@@ -46,10 +49,12 @@ steps:
     workingDirectory: ADP.WebComponents/adp-web-components
 
   - script: npm run release -- --version=$(PACKAGE_VERSION) --wait=600 --site-url=https://adp.shift.software
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
     displayName: 'Build the site against the published package'
     workingDirectory: ADP.WebComponents/adp-web-components
 
   - script: npx --yes wrangler@4 deploy
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
     displayName: 'Deploy to Cloudflare'
     workingDirectory: ADP.WebComponents/adp-web-components
     env:
