@@ -517,6 +517,35 @@
   --shift-on-accent: var(--survey-primary-contrast);
   --shift-focus: var(--survey-primary);
   --shift-danger: #b42318;
+  --shift-ink-muted: #667085;
+  --shift-line: #d0d5dd;
+  --shift-line-strong: var(--survey-primary);
+  --shift-accent-tint: color-mix(in srgb, var(--survey-primary) 12%, #fff);
+  --shift-font-size: 1rem;
+  --shift-font-size-sm: 0.875rem;
+  --shift-weight-strong: 600;
+  --shift-radius-lg: 8px;
+  --shift-radius-md: 8px;
+  --shift-radius-sm: 8px;
+
+  --shift-booking-calendar-max-inline-size: none;
+  --shift-calendar-max-inline-size: none;
+  --shift-calendar-panel-line: #d0d5dd;
+  --shift-calendar-padding: 16px;
+  --shift-calendar-padding-top: 16px;
+  --shift-calendar-day-size: 48px;
+  --shift-calendar-nav-size: 40px;
+  --shift-calendar-day-hover-bg: #f5f7fa;
+  --shift-calendar-weekday-font-size: 0.8rem;
+  --shift-calendar-tone-neutral-bg: var(--shift-accent-tint);
+  --shift-calendar-tone-neutral-ink: var(--survey-primary);
+  --shift-time-slots-hover-bg: #f5f7fa;
+  --shift-time-slots-selected-font-weight: 600;
+  --shift-time-slots-min-column: 96px;
+}
+
+.survey-question--booking-slot shift-booking-calendar::part(times-summary) {
+  display: none;
 }
 
 /* Buttons */

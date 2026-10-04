@@ -21,6 +21,8 @@ type BookingCalendarElement = HTMLElement & {
   label?: string;
   isRequired?: boolean;
   showStatus?: boolean;
+  showToday?: boolean;
+  hourCycle?: 'h12' | 'h23';
   defaultValue?: string;
 };
 
@@ -87,6 +89,9 @@ export function BookingSlotQuestion({ question }: QuestionProps) {
     // Loading, the failure with its Try again, and the pick-a-day hint. Off by default, for
     // hosts that show their own; the survey has none.
     el.showStatus = true;
+    // Bookings start days out, so Today is never pickable.
+    el.showToday = false;
+    el.hourCycle = 'h12';
     el.defaultValue = picks.get(id) === target ? value : '';
   }, [calendarApi, branchId, departmentId, brandId, language, label, required]); // eslint-disable-line react-hooks/exhaustive-deps
 
