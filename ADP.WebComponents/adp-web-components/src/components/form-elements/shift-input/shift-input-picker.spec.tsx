@@ -306,6 +306,23 @@ describe('bookingCalendar mapper', () => {
     expect(render({ localization: { en: { branchUnavailable: 'Call the branch to book' } } }).$attrs$).toMatchObject({ hint: 'Call the branch to book' });
   });
 
+  it('with services, books any branch and leaves the department to the endpoint unless one is set', () => {
+    const render = (props: Record<string, unknown>) =>
+      getFormMappers().bookingCalendar({
+        form: formWith('Xr8pQ'),
+        language: 'en',
+        props: { name: 'bookingDate', departmentPreference: ['quick-service-center'], ...props },
+      }) as unknown as VNode;
+
+    const vnode = render({ services: 'auto-repair-and-maintenance' });
+    expect(vnode.$attrs$).toMatchObject({ isDisabled: false });
+    expect(vnode.$children$[0].$attrs$).toMatchObject({ branchId: 'Xr8pQ', departmentId: '', services: 'auto-repair-and-maintenance', brandId: 'BRAND-A' });
+
+    expect(render({ services: ['auto-repair-and-maintenance', 'parts-counter-sale'] }).$children$[0].$attrs$).toMatchObject({ services: 'auto-repair-and-maintenance,parts-counter-sale' });
+    expect(render({ services: 'auto-repair-and-maintenance', departmentId: 'showroom' }).$children$[0].$attrs$).toMatchObject({ departmentId: 'showroom' });
+    expect(render({}).$children$[0].$attrs$.services).toBeUndefined();
+  });
+
   it('the older bookingDate field still falls back to the branch’s first department', () => {
     const vnode = getFormMappers().bookingDate({
       form: formWith('Xr8pQ'),

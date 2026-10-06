@@ -5,6 +5,8 @@ export interface BookingTarget {
   // The branch's hash ID.
   branchId: string;
   departmentId: string;
+  // Service Integration IDs, comma separated; asked for when there is no department.
+  services?: string;
   brandId: string;
 }
 
@@ -107,7 +109,7 @@ export function summarise(days: BookingDay[]): BookingAvailability | null {
 
 // Everything the endpoint needs is present.
 export function isCompleteTarget(target: Partial<BookingTarget> | null | undefined): boolean {
-  return !!(target?.url && target.branchId && target.departmentId && target.brandId);
+  return !!(target?.url && target.branchId && (target.departmentId || target.services) && target.brandId);
 }
 
 export function queryUrl(target: Partial<BookingTarget> | null | undefined, today?: string): string | null {
@@ -118,7 +120,7 @@ export function queryUrl(target: Partial<BookingTarget> | null | undefined, toda
     from,
     to: addDays(from, REQUEST_DAYS),
     branchId: String(target.branchId),
-    departmentId: String(target.departmentId),
+    ...(target.departmentId ? { departmentId: String(target.departmentId) } : { services: String(target.services) }),
     brandId: String(target.brandId),
   });
 

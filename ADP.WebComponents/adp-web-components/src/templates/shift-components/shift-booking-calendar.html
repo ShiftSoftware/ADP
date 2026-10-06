@@ -114,7 +114,7 @@
               '  ></shift-booking-calendar>',
               '</shift-input>',
               '',
-              '<!-- In a v1 form structure: { "name": "bookingDate", "type": "bookingCalendar", "calendarApi": "…", "departmentPreference": ["service-center"] } -->',
+              '<!-- In a v1 form structure: { "name": "bookingDate", "type": "bookingCalendar", "calendarApi": "…/v2/calendar", "services": "auto-repair-and-maintenance" }, or "departmentPreference": ["service-center"] for one department -->',
             ].join('\n'),
         },
         empty: {
@@ -192,7 +192,7 @@
       };
 
       window.bookingApiGroups = [
-        { label: 'Branch & request', props: ['calendarApi', 'branchId', 'departmentId', 'brandId', 'today'] },
+        { label: 'Branch & request', props: ['calendarApi', 'branchId', 'departmentId', 'services', 'brandId', 'today'] },
         {
           label: 'Days & times',
           props: ['disabledWeekdays', 'disabledDates', 'slotCounts', 'fewSlots', 'dayTooltips', 'showToday', 'hourCycle', 'defaultValue'],
@@ -503,6 +503,7 @@
         data: 'ready',
         branchId: 'Xr8pQ',
         departmentId: 'service-center',
+        services: '',
         brandId: 'BRAND',
         today: TODAY,
         disabledWeekdays: [],
@@ -532,7 +533,7 @@
       });
 
       const GROUPS = [
-        { id: 'request', label: 'Branch & request', fields: ['data', 'branchId', 'departmentId', 'brandId', 'today'] },
+        { id: 'request', label: 'Branch & request', fields: ['data', 'branchId', 'departmentId', 'services', 'brandId', 'today'] },
         {
           id: 'days',
           label: 'Days & times',
@@ -640,6 +641,7 @@
           subject.calendarApi = DATA[form.data];
           subject.branchId = form.branchId;
           subject.departmentId = form.departmentId;
+          subject.services = form.services;
           subject.brandId = form.brandId;
           subject.today = form.today || undefined;
           subject.disabledWeekdays = form.disabledWeekdays.map(Number);
@@ -684,6 +686,7 @@
           add('calendar-api', DATA[form.data]);
           add('branch-id', form.branchId);
           add('department-id', form.departmentId);
+          add('services', form.services);
           add('brand-id', form.brandId);
           add('today', form.today);
           add('disabled-weekdays', form.disabledWeekdays.join(','));
@@ -1184,6 +1187,10 @@
                                   /></label>
                                   <label class="studio-row"
                                     ><span>departmentId</span><input class="input input-xs input-bordered" type="text" x-model.debounce.300ms="form.departmentId"
+                                  /></label>
+                                  <label class="studio-row"
+                                    ><span>services <small>used when departmentId is empty</small></span
+                                    ><input class="input input-xs input-bordered" type="text" x-model.debounce.300ms="form.services"
                                   /></label>
                                   <label class="studio-row"
                                     ><span>brandId</span><input class="input input-xs input-bordered" type="text" x-model.debounce.300ms="form.brandId"

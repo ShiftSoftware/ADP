@@ -31,7 +31,7 @@ type Message = (typeof MESSAGES)[number];
 
 type Frame = Record<string, string>;
 
-const IDENTITY = ['branchId', 'departmentId', 'brandId'] as const;
+const IDENTITY = ['branchId', 'departmentId', 'services', 'brandId'] as const;
 
 type Identity = Record<(typeof IDENTITY)[number], string>;
 
@@ -50,6 +50,7 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   // The branch's hash ID.
   @Prop() branchId?: string;
   @Prop() departmentId?: string;
+  @Prop() services?: string;
   @Prop() brandId?: string;
   @Prop() today?: string;
 
@@ -99,7 +100,7 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   private syncQueued = false;
   private loadWanted = false;
   private current = '';
-  private identity: Identity = { branchId: '', departmentId: '', brandId: '' };
+  private identity: Identity = { branchId: '', departmentId: '', services: '', brandId: '' };
   private valueTouched = false;
   private lastEmit = '\n';
   private pendingFocus: 'times' | 'day' | null = null;
@@ -165,12 +166,13 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   @Watch('calendarApi')
   @Watch('branchId')
   @Watch('departmentId')
+  @Watch('services')
   @Watch('brandId')
   @Watch('today')
   onTargetChange() {
     this.closeTimes();
     // Busy at once, not on the queued load: a host that enables its field in this same pass must not paint it enabled first.
-    if (isCompleteTarget({ url: this.calendarApi, branchId: this.branchId, departmentId: this.departmentId, brandId: this.brandId })) this.status = 'loading';
+    if (isCompleteTarget(this.target())) this.status = 'loading';
     this.queueSync(true);
   }
 
@@ -370,13 +372,18 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
     this.emitPicker();
   }
 
-  private async load() {
-    const target = {
+  private target() {
+    return {
       url: this.calendarApi,
       branchId: this.branchId,
       departmentId: this.departmentId,
+      services: this.services,
       brandId: this.brandId,
     };
+  }
+
+  private async load() {
+    const target = this.target();
 
     if (!isCompleteTarget(target)) {
       this.loader.cancel();

@@ -123,6 +123,20 @@ describe('query', () => {
     expect(queryUrl(null)).toBeNull();
   });
 
+  it('services stands in for the department; a department wins when both are set', () => {
+    const params = (target: object) => Object.fromEntries(new URL(queryUrl({ ...TARGET, ...target }, '2026-09-28')).searchParams);
+
+    expect(params({ departmentId: '', services: 'auto-repair-and-maintenance,parts-counter-sale' })).toEqual({
+      from: '2026-09-28',
+      to: '2026-10-28',
+      branchId: 'Xr8pQ',
+      services: 'auto-repair-and-maintenance,parts-counter-sale',
+      brandId: 'BRAND',
+    });
+    expect(params({ services: 'auto-repair-and-maintenance' })).not.toHaveProperty('services');
+    expect(queryUrl({ ...TARGET, departmentId: '', services: '' }, '2026-09-28')).toBeNull();
+  });
+
   it('today falls back to the local date', () => {
     const from = new URL(queryUrl(TARGET)).searchParams.get('from');
     const now = new Date();
