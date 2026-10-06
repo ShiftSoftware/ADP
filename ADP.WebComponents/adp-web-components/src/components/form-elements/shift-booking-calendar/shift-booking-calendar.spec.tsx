@@ -738,6 +738,14 @@ describe('selection', () => {
     expect(requests[1]).toMatch(/^https:\/\/calendar\.example\/api\/calendar\?from=[^&]+&to=[^&]+&branchId=Mn2vK&departmentId=service-center&/);
   });
 
+  it('services without a department loads that service’s calendar', async () => {
+    const { page } = await mount('calendar-api="https://calendar.example/api/public/v2/calendar" branch-id="Xr8pQ" services="auto-repair-and-maintenance" brand-id="BRAND" today="2026-09-28"');
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatch(/&branchId=Xr8pQ&services=auto-repair-and-maintenance&brandId=BRAND$/);
+    expect(calendar(page).month).toBe('2026-10');
+  });
+
   it('defaultValue that is a time opens on the times of its day, with the time chosen', async () => {
     const { page, field } = await mount(`${TARGET} default-value="2026-10-03T14:00"`);
 

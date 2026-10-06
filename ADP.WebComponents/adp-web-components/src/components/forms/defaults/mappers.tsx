@@ -213,8 +213,11 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
    */
   bookingCalendar: ({ form, language, props }) => {
     // Only the listed departments: another department's hours would look bookable but be the wrong ones.
-    const { hasBranch, departmentId, brandId } = resolveBranchTarget({ form, props, anyDepartment: false });
-    const bookable = hasBranch && !!departmentId;
+    const { hasBranch, departmentId: listed, brandId } = resolveBranchTarget({ form, props, anyDepartment: false });
+    // With services the endpoint merges that service's departments itself, so only an explicit departmentId still applies.
+    const services = [props?.services ?? []].flat().join(',');
+    const departmentId = services ? props?.departmentId ?? '' : listed;
+    const bookable = hasBranch && !!(departmentId || services);
     const branchId = bookable ? String(form.getValue('companyBranchId')) : '';
     const unavailable = hasBranch && !bookable ? props?.localization?.[language]?.branchUnavailable || bookingStrings(language).branchUnavailable : '';
     const options = [
@@ -236,7 +239,7 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
 
     return (
       <shift-input {...props} form={form} key={props?.name} language={language} isDisabled={!bookable} hint={unavailable || props?.hint}>
-        <shift-booking-calendar {...picker} branchId={branchId} departmentId={departmentId} brandId={brandId} slot="picker" key="picker" />
+        <shift-booking-calendar {...picker} branchId={branchId} departmentId={departmentId} services={services || undefined} brandId={brandId} slot="picker" key="picker" />
       </shift-input>
     );
   },
