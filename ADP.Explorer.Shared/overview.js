@@ -1,19 +1,12 @@
 (() => {
   'use strict';
-  const explanations = {
-    collect: ['↓', 'Collect & stage', 'Collect from the systems that know.', 'This example brings dealer views, file feeds, app tables and document sources into one ingestion flow. Hawta schedules each source and limits parallel fetching to keep the work bounded.'],
-    snapshot: ['≡', 'Reconcile the snapshot', 'Keep the changes. Skip the repeated work.', 'Hawta compares incoming records with its DuckDB snapshot and merges changes in sets. Unchanged file feeds can skip the read, while the snapshot preserves what each source said.'],
-    serving: ['⇢', 'Shape for consumers', 'Keep the source. Build a useful view.', 'Serving projections turn source-shaped tables into ADP models. Consumers share those prepared views; the original source tables remain available alongside them.'],
-    cosmos: ['↗', 'Cosmos DB', 'Deliver changes to application lookups.', 'Hawta replicates changes from source or serving tables for the data families it owns. App-owned records keep their existing replication path, so every family has one Cosmos writer.'],
-    publish: ['↗', 'Versioned Parquet', 'Give reporting a consistent picture.', 'Hawta publishes a versioned set of source and serving tables in its output directory. Reports, analytics and health checks can read that committed set. The host configures storage delivery, independently of Cosmos serving.']
-  };
+  const {explanations, routes: connections} = window.ExplorerOverview;
   const diagram = document.querySelector('.diagram');
   const svg = document.querySelector('.connections');
   const routesGroup = document.querySelector('.routes');
   const packetsGroup = document.querySelector('.packets');
   const stageButtons = [...document.querySelectorAll('[data-stage]')];
   const toggle = document.getElementById('toggle');
-  const themeToggle = document.getElementById('theme-toggle');
   const overviewInspector = document.getElementById('overview-inspector');
   const overviewInspectorToggle = document.getElementById('overview-inspector-toggle');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -55,18 +48,6 @@
     if (event.key === 'Escape' && window.innerWidth <= 850 && document.body.dataset.view === 'overview' && overviewInspector.dataset.open === 'true') setOverviewInspector(false, true);
   });
 
-  function updateThemeControl() {
-    const dark = document.documentElement.dataset.theme === 'dark';
-    themeToggle.setAttribute('aria-label', 'Switch to ' + (dark ? 'light' : 'dark') + ' theme');
-    document.getElementById('theme-label').textContent = dark ? 'Light theme' : 'Dark theme';
-  }
-  themeToggle.addEventListener('click', () => {
-    const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = theme;
-    try { localStorage.setItem('hawta-demo-theme', theme); } catch { /* Saving is optional. */ }
-    updateThemeControl();
-  });
-
   function svgElement(name, attributes) {
     const element = document.createElementNS('http://www.w3.org/2000/svg', name);
     for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
@@ -82,8 +63,8 @@
     return {x: bounds.left - base.left + bounds.width / 2 + offset, y: bounds.top - base.top};
   }
 
-  function connect(from, to, index, directSource = false) {
-    const vertical = window.innerWidth <= 850;
+  function connect(from, to, index, directSource = false, forceVertical = false) {
+    const vertical = forceVertical || window.innerWidth <= 850;
     const start = anchor(from, vertical ? 'bottom' : 'right');
     const end = anchor(to, vertical ? 'top' : 'left', to === 'collect' ? (index - 1.5) * (vertical ? 22 : 11) : 0);
     const distance = vertical ? Math.max(25, Math.abs(end.y - start.y) * .48) : Math.max(20, Math.abs(end.x - start.x) * .48);
@@ -107,11 +88,7 @@
     routesGroup.replaceChildren();
     packetsGroup.replaceChildren();
     routes = [];
-    ['dms', 'feeds', 'apps', 'logs'].forEach((id, index) => connect(id, 'collect', index));
-    connect('serving', 'cosmos', 0);
-    connect('snapshot', 'cosmos', 3, true);
-    connect('snapshot', 'publish', 1, true);
-    connect('serving', 'publish', 2);
+    connections.forEach(connection => connect(...connection));
     animatePackets();
   }
 
@@ -134,7 +111,7 @@
     toggle.setAttribute('aria-label', playing ? 'Pause motion' : 'Resume motion');
     document.getElementById('toggle-text').textContent = playing ? 'Pause motion' : 'Resume motion';
     document.getElementById('toggle-symbol').textContent = playing ? 'Ⅱ' : '▶';
-    document.dispatchEvent(new CustomEvent('hawta:motion-state', {detail: {playing}}));
+    document.dispatchEvent(new CustomEvent('explorer:motion-state', {detail: {playing}}));
   }
   toggle.addEventListener('click', () => {
     playing = !playing;
@@ -142,7 +119,7 @@
     previous = null;
     playbackState();
   });
-  window.HawtaMotion = {
+  window.ExplorerMotion = {
     isPlaying: () => playing,
     toggle: () => toggle.click(),
     pause: () => { if (playing) toggle.click(); },
@@ -175,7 +152,6 @@
   }
 
   selectStage('collect');
-  updateThemeControl();
   playbackState();
   drawPaths();
   requestAnimationFrame(frame);

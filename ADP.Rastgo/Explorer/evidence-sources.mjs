@@ -1,0 +1,20 @@
+// Explicit, reviewed excerpts; complete file hashes detect source drift.
+export const evidenceSources = Object.freeze([
+  {id:'model', path:'ADP.Rastgo/Rastgo/Model.cs', start:3, end:61},
+  {id:'runner', path:'ADP.Rastgo/Rastgo/CheckRunner.cs', start:5, end:95},
+  {id:'age', path:'ADP.Rastgo/Rastgo/AssertEvaluator.cs', start:36, end:90},
+  {id:'threshold', path:'ADP.Rastgo/Rastgo/AssertEvaluator.cs', start:92, end:120},
+  {id:'diff', path:'ADP.Rastgo/Rastgo/AssertEvaluator.cs', start:122, end:152},
+  {id:'loader', path:'ADP.Rastgo/Rastgo/YamlCheckLoader.cs', start:10, end:54},
+  {id:'language', path:'ADP.Rastgo/Rastgo/CheckValidation.cs', start:38, end:68},
+  {id:'duckdb', path:'ADP.Rastgo/Rastgo/DuckDbCheckSource.cs', start:22, end:84},
+  {id:'sql', path:'ADP.Rastgo/Rastgo/SqlCheckSource.cs', start:49, end:108},
+  {id:'registry', path:'ADP.Rastgo/Rastgo/ICheckSource.cs', start:59, end:90},
+  {id:'cosmos', path:'ADP.Rastgo/Rastgo/CosmosCheckSource.cs', start:11, end:47},
+  {id:'files', path:'ADP.Rastgo/Rastgo/FileShareCheckSource.cs', start:27, end:83},
+  {id:'sink', path:'ADP.Rastgo/Rastgo/JsonlResultSink.cs', start:7, end:93},
+  {id:'dashboard', path:'ADP.Rastgo/Rastgo/CheckModel.cs', start:68, end:126},
+  {id:'catalog', path:'ADP.Rastgo/Rastgo/SourceCatalog.cs', start:74, end:122},
+  {id:'hawta-facts', path:'ADP.Hawta/Hawta/SourceRunSummary.cs', start:3, end:29},
+  {id:'published-runs', path:'ADP.Hawta/Hawta/PublishedSnapshot.cs', start:61, end:77},
+]);

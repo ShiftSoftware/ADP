@@ -24,6 +24,7 @@ test('Explorer runs from a relocated checkout with bounded public evidence', asy
   const relocated = join(scratch, 'checkout');
   const app = join(relocated, 'ADP.Hawta', 'Explorer');
   await cp(explorerRoot, app, {recursive: true});
+  await cp(new URL('../../ADP.Explorer.Shared/', import.meta.url), join(relocated, 'ADP.Explorer.Shared'), {recursive: true});
   for (const path of new Set(evidenceSources.map(source => source.path))) {
     await mkdir(dirname(join(relocated, path)), {recursive: true});
     await copyFile(join(repositoryRoot, path), join(relocated, path));
@@ -132,7 +133,7 @@ test('Explorer runs from a relocated checkout with bounded public evidence', asy
         await writeFile(sourcePath, sourceText);
         await writeFile(join(app, 'evidence.json'), JSON.stringify(initialCapture));
       }
-      for (const path of ['server.mjs', 'evidence.mjs', 'evidence-sources.mjs', '../Hawta/RowHash.cs', '%2e%2e%2fexternal.txt']) {
+      for (const path of ['shared/server.mjs', 'shared/../shell.js', 'server.mjs', 'evidence.mjs', 'evidence-sources.mjs', '../Hawta/RowHash.cs', '%2e%2e%2fexternal.txt']) {
         assert.equal((await fetch(new URL(path, url))).status, 404, path);
       }
       for (const path of ['', 'evidence-status.json']) {

@@ -10,11 +10,13 @@ const defaultSharedRoot = fileURLToPath(new URL('../../ADP.Explorer.Shared/', im
 const publicFiles = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/index.html', ['index.html', 'text/html; charset=utf-8']],
+  ['/style.css', ['style.css', 'text/css; charset=utf-8']],
   ['/overview.js', ['overview.js', 'text/javascript; charset=utf-8']],
   ['/mechanisms.js', ['mechanisms.js', 'text/javascript; charset=utf-8']],
   ['/explorer.js', ['explorer.js', 'text/javascript; charset=utf-8']],
+
   ['/evidence.json', ['evidence.json', 'application/json; charset=utf-8']],
-  ['/hawta-icon.svg', ['hawta-icon.svg', 'image/svg+xml']],
+  ['/rastgo-icon.svg', ['rastgo-icon.svg', 'image/svg+xml']],
 ]);
 
 export function createExplorerServer({assetRoot = explorerRoot, sourceRoot = repositoryRoot, sharedRoot = defaultSharedRoot} = {}) {
@@ -50,9 +52,9 @@ export function createExplorerServer({assetRoot = explorerRoot, sourceRoot = rep
 }
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
-  const port = Number(process.env.HAWTA_EXPLORER_PORT || 4178);
-  if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid HAWTA_EXPLORER_PORT');
+  const port = Number(process.env.RASTGO_EXPLORER_PORT || 4179);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid RASTGO_EXPLORER_PORT');
   const server = createExplorerServer();
-  server.on('error', error => { process.stderr.write(`Hawta Explorer: ${error.message}\n`); process.exitCode = 1; });
-  server.listen(port, '127.0.0.1', () => process.stdout.write(`Hawta Explorer: http://127.0.0.1:${server.address().port}/\n`));
+  server.on('error', error => { process.stderr.write(`Rastgo Explorer: ${error.message}\n`); process.exitCode = 1; });
+  server.listen(port, '127.0.0.1', () => process.stdout.write(`Rastgo Explorer: http://127.0.0.1:${server.address().port}/\n`));
 }

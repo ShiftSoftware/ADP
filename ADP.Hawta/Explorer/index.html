@@ -12,33 +12,22 @@
       if (savedTheme === 'dark' || savedTheme === 'light') document.documentElement.dataset.theme = savedTheme;
     } catch { /* Theme switching still works when browser storage is unavailable. */ }
   </script>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="explorer.css">
-  <script src="animation.js" defer></script>
+  <link rel="stylesheet" href="shared/theme.css">
+  <link rel="stylesheet" href="shared/engineering.css">
+  <script src="shared/shell.js" defer></script>
+  <script src="overview.js" defer></script>
+  <script src="shared/overview.js" defer></script>
   <script src="mechanisms.js" defer></script>
-  <script src="explorer.js" defer></script>
+  <script src="shared/evidence.js" defer></script><script src="explorer.js" defer></script>
 </head>
 <body data-playing="false" data-view="overview">
   <!-- Illustrative architecture. Sources, mappings, ownership and output delivery
        are configured by the host. Evidence in Explore references public Hawta code. -->
   <main>
-    <header class="masthead">
-      <div class="brand"><img src="hawta-icon.svg" alt="" width="42" height="42"><span>ADP.<strong>Hawta</strong></span></div>
-      <div class="header-actions">
-        <div class="context">Engineering <span>/</span> Explorer</div>
-        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to dark theme"><span aria-hidden="true">◐</span><span id="theme-label">Dark theme</span></button>
-      </div>
-    </header>
+    <header data-explorer-product="Hawta" data-explorer-icon="hawta-icon.svg" data-explorer-theme="hawta-demo-theme"></header>
 
-    <div id="overview">
-    <div class="overview-toolbar">
-      <h1 id="page-title">Many sources. One shared snapshot.</h1>
-      <button type="button" id="toggle" class="motion-toggle" aria-label="Pause motion"><span id="toggle-symbol" aria-hidden="true">Ⅱ</span><span id="toggle-text">Pause motion</span></button>
-    </div>
-    <div class="overview-workspace">
-    <div class="overview-canvas">
-    <div class="overview-caption"><span>Select a stage to inspect it.</span><span>Illustrative flow</span></div>
-    <section class="diagram" aria-label="Hawta ingestion flow">
+    <div id="overview" data-explorer-overview data-overview-title="Many sources. One shared snapshot.">
+<section class="diagram" aria-label="Hawta ingestion flow">
       <svg class="connections" aria-hidden="true"><g class="routes"></g><g class="packets"></g></svg>
 
       <div class="column sources">
@@ -107,13 +96,8 @@
         </div>
       </div>
     </section>
-
-    <div class="existing-path" aria-label="Existing app replication remains separate"><span class="dashed-line" aria-hidden="true"></span><p><strong>App-owned records</strong><span class="path-arrow"> → </span>existing app replication<span class="path-arrow"> → </span><strong>Cosmos DB</strong></p><span class="path-note">One writer per data family</span></div>
-
-    </div>
-    <aside id="overview-inspector" class="overview-inspector" aria-label="Overview inspector" data-open="false">
-      <div class="overview-inspector-bar"><span class="overview-inspector-heading">STAGE INSPECTOR</span><button type="button" id="overview-inspector-toggle" aria-controls="overview-inspector-body" aria-expanded="false"><span id="overview-drawer-label">Collect &amp; stage</span><span>Details ↗</span></button><button type="button" id="overview-inspector-close" aria-label="Close overview inspector">×</button></div>
-      <div id="overview-inspector-body" class="overview-inspector-body">
+<div class="existing-path" aria-label="Existing app replication remains separate"><span class="dashed-line" aria-hidden="true"></span><p><strong>App-owned records</strong><span class="path-arrow"> → </span>existing app replication<span class="path-arrow"> → </span><strong>Cosmos DB</strong></p><span class="path-note">One writer per data family</span></div>
+<div id="overview-inspector-body" class="overview-inspector-body">
       <section class="explanation" id="explanation" aria-label="Selected stage explanation" aria-live="polite" aria-atomic="true">
       <span class="explanation-icon" id="explanation-icon" aria-hidden="true">↓</span>
       <div><p class="selected-label" id="selected-label">COLLECT &amp; STAGE</p><h2 id="explanation-title">Collect from the systems that know.</h2><p id="explanation-copy">This example brings dealer views, file feeds, app tables and document sources into one ingestion flow. Hawta schedules each source and limits parallel fetching to keep the work bounded.</p><button type="button" id="explore-inside" class="explore-button">Explore inside <span aria-hidden="true">↗</span></button></div>
@@ -121,33 +105,16 @@
       <details class="overview-notes"><summary>Architecture context</summary><p>This example shows sources feeding lookups, reports and analytics. Source tables preserve what each system said; host-defined serving projections shape data for consumers.</p><p>Snapshot reconciliation uses a set-based diff and merge. File feeds can skip repeated reads when their metadata matches the last successful stamp.</p><p>Cosmos and versioned Parquet are two outputs from the same snapshot, each with its own schedule. The publisher commits files in its output directory; the host configures delivery to other storage and readers.</p><p>App-owned records retain their existing Cosmos replication. Each data family has one writer.</p><p>The source families, ownership boundary and consumer labels shown here are illustrative. Source activation, mappings and cadences depend on host configuration. Explore inside provides public code evidence and detailed mechanisms.</p></details>
       <p class="overview-disclaimer">Architecture overview · illustrative motion, not live telemetry. Engineering Explorer.</p>
       </div>
-    </aside>
     </div>
-    </div>
-    <section id="engineering" hidden aria-label="Hawta engineering explorer">
-      <div class="explorer-bar">
-        <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="#">← Overview</a></nav>
-        <label class="control-field">Mechanism<select id="mechanism-picker" aria-label="Explore a mechanism"></select></label>
-        <label class="control-field scenario-field">Scenario<select id="scenario-picker"></select></label>
-        <button type="button" id="detail-motion" class="motion-toggle">Pause motion</button>
-      </div>
-      <div class="engineering-workspace">
-        <section class="visual-workspace" aria-label="Mechanism diagram">
-          <div class="canvas-caption"><h1 id="mechanism-title"></h1><span>Illustrative scenario</span></div>
-          <div id="scene" class="scene" aria-label="Animated mechanism"></div>
-          <div class="diagram-footer"><span>Select a node or row to inspect it.</span><span id="scenario-status"></span></div>
-        </section>
-        <aside id="inspector" class="inspector" aria-label="Mechanism inspector" data-open="false">
-          <nav class="layer-tabs" aria-label="Inspection layers">
-            <button type="button" data-layer="behavior" aria-pressed="true">Behavior</button><button type="button" data-layer="evidence" aria-pressed="false">Evidence</button><button type="button" data-layer="choices" aria-pressed="false">Choices</button><button type="button" data-layer="direction" aria-pressed="false">Change brief</button><button type="button" id="close-inspector" aria-label="Close inspector">×</button>
-          </nav>
+
+    <section id="engineering" data-explorer-detail hidden aria-label="Hawta engineering explorer">
           <div class="inspector-body">
             <section id="layer-behavior" class="inspection-layer">
               <div id="selection-explanation" aria-live="polite" aria-atomic="true"><p class="inspector-kicker">SELECTED IN DIAGRAM</p><h2 id="selection-title"></h2><p id="selection-detail"></p><div id="selection-result" class="selection-result"></div></div>
               <details class="scenario-context"><summary>Scenario context &amp; assumptions</summary><p id="scenario-assumptions"></p><div id="scenario-context"></div></details>
               <p class="scene-disclaimer">Motion traces the selected scenario continuously. It does not count new runs or represent measured timing.</p>
             </section>
-            <section id="layer-evidence" class="inspection-layer" hidden><div class="layer-intro"><h2>Source evidence</h2><p>Captured code with current local-file checks. Listed tests were inspected; pipeline tests were not run for this demo.</p></div><div id="evidence-status" role="status"></div><div id="evidence-list"></div><details class="event-foundation"><summary>Future recorded runs</summary><p>Stable mechanism, scenario and event identities remain available for a future adapter. Authored scenario events and visual signal paths are separate from the selected explanation. A future adapter must preserve unknown states; existing SourceRunSummary, SnapshotAgentCycle, SnapshotFetchProgress and replication metrics do not expose every internal check.</p><p>No production instrumentation, log import, or live connection is implemented.</p></details></section>
+            <section id="layer-evidence" class="inspection-layer" hidden><div class="layer-intro"><h2>Source evidence</h2><p>Captured code with source fingerprints. Listed tests were inspected; pipeline tests were not run for this demo.</p></div><div id="evidence-status" role="status"></div><div id="evidence-list"></div><details class="event-foundation"><summary>Future recorded runs</summary><p>Stable mechanism, scenario and event identities remain available for a future adapter. Authored scenario events and visual signal paths are separate from the selected explanation. A future adapter must preserve unknown states; existing SourceRunSummary, SnapshotAgentCycle, SnapshotFetchProgress and replication metrics do not expose every internal check.</p><p>No production instrumentation, log import, or live connection is implemented.</p></details></section>
             <section id="layer-choices" class="inspection-layer" hidden></section>
             <section id="layer-direction" class="inspection-layer" hidden>
               <div class="layer-intro"><h2>Reviewable change brief</h2><p>Edit a local proposal. Preparing it changes no files or settings and sends no instruction.</p></div>
@@ -159,8 +126,6 @@
             </section>
             <details class="reference-notes"><summary>Other important mechanisms</summary><div id="reference-list"></div></details>
           </div>
-        </aside>
-      </div>
     </section>
   </main>
 </body>
