@@ -64,7 +64,15 @@
                       ValueChanged="@((string v) => OnChanged(() => Question.DepartmentId = v?.Trim() ?? ""))"
                       ReadOnly="@ReadOnly"
                       Placeholder="service-center"
-                      HelperText="Department ID, or an earlier answer"
+                      HelperText="Department ID, or an earlier answer. Empty: use services"
+                      Class="qte-num" />
+        <MudTextField T="string"
+                      Label="Services"
+                      Value="@Question.Services"
+                      ValueChanged="@((string v) => OnChanged(() => Question.Services = v?.Trim() ?? ""))"
+                      ReadOnly="@ReadOnly"
+                      Placeholder="auto-repair-and-maintenance"
+                      HelperText="Service IDs, comma separated; used when Department is empty"
                       Class="qte-num" />
         <MudTextField T="string"
                       Label="Brand"
@@ -74,6 +82,17 @@
                       HelperText="Brand ID, or an earlier answer"
                       Class="qte-num" />
     </div>
+
+    <MudSwitch T="bool"
+               Label="Merge the services' departments"
+               Value="@Question.MergeDepartments"
+               ValueChanged="@((bool v) => OnChanged(() => Question.MergeDepartments = v))"
+               ReadOnly="@ReadOnly"
+               Color="Color.Primary" />
+    <MudText Typo="Typo.caption" Class="bse-hint">
+        On: every department of the services is asked and their times are shown together.
+        Off: only the first department is asked.
+    </MudText>
 </div>
 
 <style>

@@ -17,6 +17,7 @@ type CalendarElement = HTMLElement & {
   calendarApi?: string;
   branchId?: string;
   departmentId?: string;
+  departmentIds?: string[];
   brandId?: string;
   label?: string;
   isRequired?: boolean;
@@ -25,7 +26,7 @@ type CalendarElement = HTMLElement & {
 };
 
 /** branch (dropdown) → slot (bookingSlot on the picked branch) → done. */
-function fixture(): Survey {
+function fixture(slot: Record<string, unknown> = {}): Survey {
   return {
     id: 's',
     version: 1,
@@ -62,6 +63,7 @@ function fixture(): Survey {
             branchId: '{{answers.branch}}',
             departmentId: 'service-center',
             brandId: 'BRAND',
+            ...slot,
           },
         ],
         nextScreen: 'done',
@@ -157,5 +159,26 @@ describe('bookingSlot question', () => {
     await user.click(next());
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
     expect(onSubmit.mock.calls[0]![0].answers).toEqual({ branch: 'Pw3xQ', slot: '2026-10-08T10:00' });
+  });
+
+  it('with services and no department, books the first of their departments, or all of them merged', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<SurveyRenderer schema={fixture({ departmentId: '', services: 'auto-repair-and-maintenance' })} onSubmit={vi.fn()} />);
+    await toSlotScreen(user, 'Xr8pQ');
+    expect(calendar().departmentId).toBe('service-center');
+    expect(calendar().departmentIds).toBeUndefined();
+    unmount();
+
+    render(<SurveyRenderer schema={fixture({ departmentId: '', services: 'body-and-paint, parts-counter-sale', mergeDepartments: true })} onSubmit={vi.fn()} />);
+    await toSlotScreen(user, 'Xr8pQ');
+    expect(calendar().departmentId).toBe('');
+    expect(calendar().departmentIds).toEqual(['body-shop', 'parts-shop']);
+  });
+
+  it('an explicit department wins over services', async () => {
+    render(<SurveyRenderer schema={fixture({ services: 'test-drive', mergeDepartments: true })} onSubmit={vi.fn()} />);
+    await toSlotScreen(userEvent.setup(), 'Xr8pQ');
+    expect(calendar().departmentId).toBe('service-center');
+    expect(calendar().departmentIds).toBeUndefined();
   });
 });

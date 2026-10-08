@@ -16,6 +16,7 @@ type BookingCalendarElement = HTMLElement & {
   calendarApi?: string;
   branchId?: string;
   departmentId?: string;
+  departmentIds?: string[];
   brandId?: string;
   language?: string;
   label?: string;
@@ -27,6 +28,21 @@ type BookingCalendarElement = HTMLElement & {
 };
 
 const LANGUAGES = ['en', 'ar', 'ku', 'ru'];
+
+// The same list as Identity's calendar settings and the forms' bookingCalendar, until Identity links services to departments itself.
+const SERVICE_DEPARTMENTS: Record<string, string[]> = {
+  'auto-repair-and-maintenance': ['service-center', 'quick-service-center', 'satellite-1', 'satellite-2', 'satellite-3', 'parts-shop'],
+  'parts-counter-sale': ['parts-shop'],
+  'body-and-paint': ['body-shop'],
+  'dio-and-life-style-products': ['showroom', 'parts-shop'],
+  'new-vehicle-sale': ['showroom'],
+  'test-drive': ['showroom'],
+  'installment-sales': ['showroom'],
+  'used-cars': ['showroom'],
+  'used-car-purchase': ['showroom'],
+  insurance: ['showroom'],
+  'insurance-pending': ['showroom'],
+};
 
 /** The calendar the stored slot was picked from, per question. A slot only means
  *  something at the branch it came from, so when the respondent goes back and
@@ -56,9 +72,13 @@ export function BookingSlotQuestion({ question }: QuestionProps) {
     substituteTokens(String(question[field] ?? ''), answerContext, locale, surface).trim();
   const calendarApi = resolve('calendarApi', 'url');
   const branchId = resolve('branchId');
-  const departmentId = resolve('departmentId');
   const brandId = resolve('brandId');
-  const target = [calendarApi, branchId, departmentId, brandId].join('\n');
+  // The branch's own departments aren't known here, so a service asks all of its departments; one the branch lacks returns no times.
+  const ofServices = [...new Set(resolve('services').split(',').flatMap(service => SERVICE_DEPARTMENTS[service.trim()] ?? []))];
+  const departments = resolve('departmentId') ? [resolve('departmentId')] : question['mergeDepartments'] ? ofServices : ofServices.slice(0, 1);
+  const departmentId = departments.length === 1 ? departments[0]! : '';
+  const departmentIds = departments.length > 1 ? departments : undefined;
+  const target = [calendarApi, branchId, departments.join(','), brandId].join('\n');
   const language = LANGUAGES.includes(locale.slice(0, 2)) ? locale.slice(0, 2) : 'en';
   const label = localize(title, locale, schema.defaultLocale);
 
@@ -82,6 +102,7 @@ export function BookingSlotQuestion({ question }: QuestionProps) {
     el.calendarApi = calendarApi;
     el.branchId = branchId;
     el.departmentId = departmentId;
+    el.departmentIds = departmentIds;
     el.brandId = brandId;
     el.language = language;
     el.label = label;
@@ -93,7 +114,7 @@ export function BookingSlotQuestion({ question }: QuestionProps) {
     el.showToday = false;
     el.hourCycle = 'h12';
     el.defaultValue = picks.get(id) === target ? value : '';
-  }, [calendarApi, branchId, departmentId, brandId, language, label, required]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [calendarApi, branchId, target, language, label, required]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const el = ref.current;

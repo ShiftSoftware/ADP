@@ -27,6 +27,26 @@ public class ValidatorTests
         Assert.True(result.IsValid);
     }
 
+    [Theory]
+    [InlineData("service-center", "", true)]
+    [InlineData("", "auto-repair-and-maintenance", true)]
+    [InlineData("", "{{answers.service}}", true)]
+    [InlineData("", "", false)]
+    public void BookingSlotQuestion_NeedsADepartmentOrServices(string departmentId, string services, bool valid)
+    {
+        var q = new BookingSlotQuestionDto
+        {
+            Id = "slot",
+            Title = LocalizedString.From("en", "x"),
+            CalendarApi = "https://calendar.example/api/calendar",
+            BranchId = "{{answers.branch}}",
+            DepartmentId = departmentId,
+            Services = services,
+            BrandId = "BRAND",
+        };
+        Assert.Equal(valid, new BookingSlotQuestionDtoValidator().Validate(q).IsValid);
+    }
+
     [Fact]
     public void NpsQuestion_MinGreaterThanMax_Fails()
     {
