@@ -5,6 +5,8 @@ export interface BookingTarget {
   // The branch's hash ID.
   branchId: string;
   departmentId: string;
+  // Asked in parallel and shown together, instead of departmentId.
+  departmentIds?: string[];
   brandId: string;
 }
 
@@ -107,7 +109,7 @@ export function summarise(days: BookingDay[]): BookingAvailability | null {
 
 // Everything the endpoint needs is present.
 export function isCompleteTarget(target: Partial<BookingTarget> | null | undefined): boolean {
-  return !!(target?.url && target.branchId && target.departmentId && target.brandId);
+  return !!(target?.url && target.branchId && (target.departmentId || target.departmentIds?.length) && target.brandId);
 }
 
 export function queryUrl(target: Partial<BookingTarget> | null | undefined, today?: string): string | null {
@@ -123,6 +125,13 @@ export function queryUrl(target: Partial<BookingTarget> | null | undefined, toda
   });
 
   return `${target.url}${target.url.includes('?') ? '&' : '?'}${query}`;
+}
+
+export function queryUrls(target: Partial<BookingTarget> | null | undefined, today?: string): string[] | null {
+  const departments = target?.departmentIds?.length ? target.departmentIds : [target?.departmentId];
+  const urls = departments.map(departmentId => queryUrl({ ...target, departmentIds: undefined, departmentId }, today));
+
+  return urls.every(Boolean) ? urls : null;
 }
 
 const cache = new Map<string, BookingOutcome>();
@@ -144,11 +153,11 @@ export function createAvailabilityLoader(fetcher: Fetcher = (url, init) => fetch
   async function load(target: Partial<BookingTarget> | null | undefined, options: LoadOptions = {}): Promise<BookingOutcome> {
     cancel();
 
-    const url = queryUrl(target, options.today);
-    if (!url) return { status: 'cancelled' };
+    const urls = queryUrls(target, options.today);
+    if (!urls) return { status: 'cancelled' };
 
     const language = options.language || 'en';
-    const key = cacheKey(url, language);
+    const key = cacheKey(urls.join(' '), language);
     const cached = cache.get(key);
     if (cached) return cached;
 
@@ -158,11 +167,14 @@ export function createAvailabilityLoader(fetcher: Fetcher = (url, init) => fetch
     let outcome: BookingOutcome;
 
     try {
-      const response = await fetcher(url, { signal: own.signal, headers: { 'Accept-Language': language } });
+      const responses = await Promise.all(urls.map(url => fetcher(url, { signal: own.signal, headers: { 'Accept-Language': language } })));
+      const failed = responses.find(response => !response.ok);
 
-      if (!response.ok) outcome = { status: 'error', error: { kind: 'http', status: response.status } };
+      if (failed) outcome = { status: 'error', error: { kind: 'http', status: failed.status } };
       else {
-        const days = parseDays(await response.json().catch(() => undefined));
+        const payloads = await Promise.all(responses.map(response => response.json().catch(() => undefined)));
+        // parseDays joins a date sent twice and keeps each time once, in order, so the departments' slots merge there.
+        const days = payloads.every(Array.isArray) ? parseDays(payloads.flat()) : null;
         const availability = days && summarise(days);
 
         outcome = !days ? { status: 'error', error: { kind: 'payload' } } : availability ? { status: 'ready', availability } : { status: 'empty' };

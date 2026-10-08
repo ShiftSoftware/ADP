@@ -772,6 +772,15 @@ export const mappers = [
   },
 
   {
+    name: 'modelYear',
+    renders: 'form-input (digits only, up to 4)',
+    minimalNode: `{ "name": "modelYear", "localization": { "en": { "label": "Model year", "placeholder": "e.g. 2022", "format": "Please enter a valid year." } } }`,
+    needs: ['a vehicle field in the same form'],
+    notes:
+      'A typed year, disabled until the `vehicle` field has a value. Accepts 1950 to next year (`format` message otherwise). Not a ticket field on its own: join it to the vehicle with `data.truncatedFields`, e.g. `"vehicle": ["vehicle", " - ", "modelYear"]`, and keep it required, since an empty part of that list is sent as its own name.',
+  },
+
+  {
     name: 'bookingSlot',
     renders: 'branch-slot-picker (day strip + time grid)',
     minimalNode: `{

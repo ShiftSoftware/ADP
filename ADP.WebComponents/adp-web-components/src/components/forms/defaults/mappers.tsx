@@ -8,6 +8,29 @@ import { populateItems } from '~lib/populate-items';
 import { now } from '~lib/clock';
 import { bookingStrings } from '../../form-elements/shift-time-slots/time-slots';
 
+const selectedBranch = form => {
+  form.addWatcher('companyBranchId');
+
+  const branchValue = form?.getValue('companyBranchId');
+
+  return form.context['companyBranchIdList']?.find(item => item.value === branchValue)?.meta;
+};
+
+// The same list as Identity's calendar settings, until Identity links services to departments itself.
+const SERVICE_DEPARTMENTS: Record<string, string[]> = {
+  'auto-repair-and-maintenance': ['service-center', 'quick-service-center', 'satellite-1', 'satellite-2', 'satellite-3', 'parts-shop'],
+  'parts-counter-sale': ['parts-shop'],
+  'body-and-paint': ['body-shop'],
+  'dio-and-life-style-products': ['showroom', 'parts-shop'],
+  'new-vehicle-sale': ['showroom'],
+  'test-drive': ['showroom'],
+  'installment-sales': ['showroom'],
+  'used-cars': ['showroom'],
+  'used-car-purchase': ['showroom'],
+  insurance: ['showroom'],
+  'insurance-pending': ['showroom'],
+};
+
 /**
  * Resolves the four ids the calendar endpoint needs from the branch the
  * `companyBranchId` field has selected.
@@ -18,10 +41,7 @@ import { bookingStrings } from '../../form-elements/shift-time-slots/time-slots'
  * department it does not have returns an empty calendar.
  */
 const resolveBranchTarget = ({ form, props, anyDepartment = true }) => {
-  form.addWatcher('companyBranchId');
-
-  const branchValue = form?.getValue('companyBranchId');
-  const branch = form.context['companyBranchIdList']?.find(item => item.value === branchValue)?.meta;
+  const branch = selectedBranch(form);
 
   const departments: string[] = (branch?.Departments ?? []).map(d => d.IntegrationId).filter(Boolean);
   const brands: string[] = (branch?.Brands ?? []).map(b => b.IntegrationId).filter(Boolean);
@@ -213,8 +233,13 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
    */
   bookingCalendar: ({ form, language, props }) => {
     // Only the listed departments: another department's hours would look bookable but be the wrong ones.
-    const { hasBranch, departmentId, brandId } = resolveBranchTarget({ form, props, anyDepartment: false });
-    const bookable = hasBranch && !!departmentId;
+    const { hasBranch, departmentId: preferred, brandId } = resolveBranchTarget({ form, props, anyDepartment: false });
+    const services: string[] = [props?.services ?? []].flat();
+    const wanted = services.flatMap(service => SERVICE_DEPARTMENTS[service] ?? []);
+    const offered: string[] = (selectedBranch(form)?.Departments ?? []).map(d => d.IntegrationId).filter(id => wanted.includes(id));
+    const departments = services.length && !props?.departmentId ? offered : [preferred].filter(Boolean);
+    const merge = props?.mergeDepartments === true && departments.length > 1;
+    const bookable = hasBranch && departments.length > 0;
     const branchId = bookable ? String(form.getValue('companyBranchId')) : '';
     const unavailable = hasBranch && !bookable ? props?.localization?.[language]?.branchUnavailable || bookingStrings(language).branchUnavailable : '';
     const options = [
@@ -236,7 +261,15 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
 
     return (
       <shift-input {...props} form={form} key={props?.name} language={language} isDisabled={!bookable} hint={unavailable || props?.hint}>
-        <shift-booking-calendar {...picker} branchId={branchId} departmentId={departmentId} brandId={brandId} slot="picker" key="picker" />
+        <shift-booking-calendar
+          {...picker}
+          branchId={branchId}
+          departmentId={merge ? '' : departments[0] ?? ''}
+          departmentIds={merge ? departments : undefined}
+          brandId={brandId}
+          slot="picker"
+          key="picker"
+        />
       </shift-input>
     );
   },
@@ -263,6 +296,20 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
     };
 
     return <form-select key={props?.name} {...props} clearable fetcher={fetcher} language={language} />;
+  },
+
+  modelYear: ({ form, props }) => {
+    form.addWatcher('vehicle');
+
+    return (
+      <form-input
+        key={props?.name}
+        inputProps={{ inputMode: 'numeric' }}
+        formatter={(value: string) => value.replace(/\D/g, '').slice(0, 4)}
+        {...props}
+        isDisabled={!form.getValue('vehicle')}
+      />
+    );
   },
 
   year: ({ language, props }) => {

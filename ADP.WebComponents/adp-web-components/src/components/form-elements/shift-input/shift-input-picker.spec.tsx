@@ -253,7 +253,7 @@ describe('bookingCalendar mapper', () => {
   const branch = {
     ID: 'Xr8pQ',
     IntegrationId: '42',
-    Departments: [{ IntegrationId: 'showroom' }, { IntegrationId: 'service-center' }],
+    Departments: [{ IntegrationId: 'showroom' }, { IntegrationId: 'service-center' }, { IntegrationId: 'parts-shop' }],
     Brands: [{ IntegrationId: 'BRAND-A' }],
   };
   const formWith = (value: string) =>
@@ -304,6 +304,26 @@ describe('bookingCalendar mapper', () => {
     expect(vnode.$attrs$).toMatchObject({ isDisabled: true, hint: 'Online booking isn’t available at this branch' });
     expect(vnode.$children$[0].$attrs$).toMatchObject({ branchId: '', departmentId: '' });
     expect(render({ localization: { en: { branchUnavailable: 'Call the branch to book' } } }).$attrs$).toMatchObject({ hint: 'Call the branch to book' });
+  });
+
+  it('services keeps the branch’s departments that belong to the service and books the first', () => {
+    const render = (props: Record<string, unknown>) =>
+      getFormMappers().bookingCalendar({ form: formWith('Xr8pQ'), language: 'en', props: { name: 'bookingDate', ...props } }) as unknown as VNode;
+
+    expect(render({ services: 'auto-repair-and-maintenance' }).$children$[0].$attrs$).toMatchObject({ branchId: 'Xr8pQ', departmentId: 'service-center' });
+    expect(render({ services: 'auto-repair-and-maintenance' }).$children$[0].$attrs$.departmentIds).toBeUndefined();
+    expect(render({ services: ['body-and-paint', 'test-drive'] }).$children$[0].$attrs$).toMatchObject({ departmentId: 'showroom' });
+    expect(render({ services: 'body-and-paint' }).$attrs$).toMatchObject({ isDisabled: true });
+    expect(render({ services: 'auto-repair-and-maintenance', departmentId: 'body-shop' }).$children$[0].$attrs$).toMatchObject({ departmentId: 'body-shop' });
+  });
+
+  it('mergeDepartments asks every department of the service the branch has', () => {
+    const render = (props: Record<string, unknown>) =>
+      getFormMappers().bookingCalendar({ form: formWith('Xr8pQ'), language: 'en', props: { name: 'bookingDate', mergeDepartments: true, ...props } }) as unknown as VNode;
+
+    expect(render({ services: 'auto-repair-and-maintenance' }).$children$[0].$attrs$).toMatchObject({ departmentId: '', departmentIds: ['service-center', 'parts-shop'] });
+    expect(render({ services: 'body-and-paint' }).$attrs$).toMatchObject({ isDisabled: true });
+    expect(render({ services: 'test-drive' }).$children$[0].$attrs$).toMatchObject({ departmentId: 'showroom' });
   });
 
   it('the older bookingDate field still falls back to the branch’s first department', () => {

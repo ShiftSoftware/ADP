@@ -166,6 +166,31 @@ describe('loader', () => {
     expect(await run(() => Promise.reject(new TypeError('Failed to fetch')))).toEqual({ status: 'error', error: { kind: 'network' } });
   });
 
+  it('departmentIds: one request per department in parallel, slots merged once each and in order', async () => {
+    const { calls, fetcher } = recorder(url =>
+      url.includes('departmentId=satellite-1')
+        ? reply([day('2026-10-01', '09:00 AM'), day('2026-09-30', '01:00 PM', '09:00 AM')])
+        : reply([day('2026-09-30', '09:00 AM', '08:00 AM')]),
+    );
+    const target = { ...TARGET, departmentId: '', departmentIds: ['service-center', 'satellite-1'] };
+    const outcome = await createAvailabilityLoader(fetcher).load(target, { today: '2026-09-28' });
+
+    expect(calls.map(call => new URL(call.url).searchParams.get('departmentId'))).toEqual(['service-center', 'satellite-1']);
+    expect(outcome.status).toBe('ready');
+    if (outcome.status !== 'ready') return;
+    expect(outcome.availability.days.map(({ date, times }) => [date, times.map(t => t.time)])).toEqual([
+      ['2026-09-30', ['08:00', '09:00', '13:00']],
+      ['2026-10-01', ['09:00']],
+    ]);
+
+    await createAvailabilityLoader(fetcher).load(target, { today: '2026-09-28' });
+    expect(calls).toHaveLength(2);
+
+    clearAvailabilityCache();
+    const failing = (url: string) => (url.includes('satellite-1') ? reply(null, 500) : reply([]));
+    expect(await createAvailabilityLoader(failing).load(target, { today: '2026-09-28' })).toEqual({ status: 'error', error: { kind: 'http', status: 500 } });
+  });
+
   it('no request without every input', async () => {
     const { calls, fetcher } = recorder(() => reply([]));
 

@@ -1,6 +1,7 @@
 import { number, object, Schema, string } from 'yup';
 import { FormInputMeta } from '~features/form-hook';
 import validateVin from '~lib/validate-vin';
+import { now } from '~lib/clock';
 
 export const label = (name: string) => `${name}-label`;
 export const format = (name: string) => `${name}-format`;
@@ -105,6 +106,14 @@ export const getFormValidations = (extraFields: Record<string, Schema> = {}) => 
         otherwise: schema => schema.optional(),
         then: schema => schema.required(require('year')),
       }),
+    modelYear: string()
+      .meta(meta('modelYear'))
+      .when(condition('modelYear'), {
+        is: true,
+        otherwise: schema => schema.optional(),
+        then: schema => schema.required(require('modelYear')),
+      })
+      .test(format('modelYear'), format('modelYear'), value => !value || (Number(value) >= 1950 && Number(value) <= now().getFullYear() + 1)),
     time: string()
       .meta(meta('time'))
       .when(condition('time'), {
