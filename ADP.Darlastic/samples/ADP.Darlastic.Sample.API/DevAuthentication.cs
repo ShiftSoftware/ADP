@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
+using ShiftSoftware.TypeAuth.Core;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 
@@ -31,12 +32,16 @@ public sealed class DevAuthenticationHandler : AuthenticationHandler<Authenticat
     /// <summary>Who the audit rows will name. Deliberately obvious in a decision log.</summary>
     public const string DevUser = "sample-dev@localhost";
 
+    private readonly string? accessTree;
+
     public DevAuthenticationHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
-        UrlEncoder encoder)
+        UrlEncoder encoder,
+        IConfiguration configuration)
         : base(options, logger, encoder)
     {
+        accessTree = configuration["Sample:DevAccessTree"];
     }
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -47,6 +52,12 @@ public sealed class DevAuthenticationHandler : AuthenticationHandler<Authenticat
             new Claim(ClaimTypes.Email, DevUser),
             new Claim(ClaimTypes.NameIdentifier, DevUser),
         ], SchemeName);
+
+        // Optional grants for the developer, as an access tree in the same JSON shape an identity
+        // server puts in its tokens — e.g. {"PII":[1,2,3,4]} to see personal information unmasked.
+        // Unset (the default) the developer holds no actions at all, so everything stays masked.
+        if (!string.IsNullOrWhiteSpace(accessTree))
+            identity.AddClaim(new Claim(TypeAuthClaimTypes.AccessTree, accessTree));
 
         return Task.FromResult(AuthenticateResult.Success(
             new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName)));
