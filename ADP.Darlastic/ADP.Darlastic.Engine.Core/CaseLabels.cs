@@ -63,20 +63,28 @@ public static class CaseLabels
             "Without the shared vehicle purchase, these records would not have been combined."),
     };
 
-    /// <summary>Per-customer reasons — the chips on a golden customer row.</summary>
+    /// <summary>Per-customer reasons — the chips on a golden customer row, in the order a list
+    /// shows them: what needs a person first, then how the records were combined, then the rest.</summary>
     public static IReadOnlyDictionary<GoldenReason, PlainLabel> Reasons { get; } = new Dictionary<GoldenReason, PlainLabel>
     {
-        [GoldenReason.NameCompleted] = Clusters[ClusterCat.LongestChain],
-        [GoldenReason.PhoneFromShortNumber] = Clusters[ClusterCat.WeakPhoneFallback],
-        [GoldenReason.SeveralSources] = Clusters[ClusterCat.CrossDealer],
-        [GoldenReason.LargeGroup] = Clusters[ClusterCat.Large],
-        [GoldenReason.MergedByVehicle] = Clusters[ClusterCat.VinBridged],
-        [GoldenReason.LinkedOnlyByVehicle] = Clusters[ClusterCat.VinDecisive],
+        [GoldenReason.NeedsReview] = new("Needs review",
+            "A record here may belong to another customer; a person should decide."),
+        [GoldenReason.PossibleDuplicate] = new("Possible duplicate kept separate",
+            "Another customer looks similar, but not enough to combine them."),
+        [GoldenReason.SamePhoneDifferentNames] = new("Same phone, different names",
+            "A record here shares a phone number with a record under a clearly different name."),
+        [GoldenReason.SameVehicleSimilarName] = new("Same vehicle, similar name",
+            "Another customer with the same first name bought the same vehicle; they were not combined."),
+        [GoldenReason.CompanyOrFleet] = new("Company or fleet",
+            "A record here looks like a company, fleet or placeholder name rather than a person."),
+        [GoldenReason.VehicleChangedOwner] = new("Vehicle changed owner",
+            "A vehicle on this customer was also owned by someone else, before or after them."),
 
         [GoldenReason.SingleRecord] = new("Single record",
             "Only one record is known for this customer."),
         [GoldenReason.MergedByPhoneAndName] = new("Merged automatically: same phone and name",
             "Records were combined because they share a phone number and the names agree."),
+        [GoldenReason.MergedByVehicle] = Clusters[ClusterCat.VinBridged],
         [GoldenReason.MergedByEmail] = new("Merged by e-mail",
             "Records were combined because they share an e-mail address and the names agree."),
         [GoldenReason.MergedByReference] = new("Merged by a link between records",
@@ -85,18 +93,12 @@ public static class CaseLabels
             "Records were combined because their name and contact details are nearly identical."),
         [GoldenReason.MergedByReviewer] = new("Merged by a reviewer",
             "A person decided that two of these records belong to the same customer."),
-        [GoldenReason.NeedsReview] = new("Needs review",
-            "A record here may belong to another customer; a person should decide."),
-        [GoldenReason.PossibleDuplicate] = new("Possible duplicate kept separate",
-            "Another customer looks similar, but not enough to combine them."),
-        [GoldenReason.SamePhoneDifferentNames] = new("Same phone, different names",
-            "A record here shares a phone number with a record under a clearly different name."),
-        [GoldenReason.CompanyOrFleet] = new("Company or fleet",
-            "A record here looks like a company, fleet or placeholder name rather than a person."),
-        [GoldenReason.VehicleChangedOwner] = new("Vehicle changed owner",
-            "A vehicle on this customer was also owned by someone else, before or after them."),
-        [GoldenReason.SameVehicleSimilarName] = new("Same vehicle, similar name",
-            "Another customer with the same first name bought the same vehicle; they were not combined."),
+        [GoldenReason.LinkedOnlyByVehicle] = Clusters[ClusterCat.VinDecisive],
+
+        [GoldenReason.SeveralSources] = Clusters[ClusterCat.CrossDealer],
+        [GoldenReason.LargeGroup] = Clusters[ClusterCat.Large],
+        [GoldenReason.NameCompleted] = Clusters[ClusterCat.LongestChain],
+        [GoldenReason.PhoneFromShortNumber] = Clusters[ClusterCat.WeakPhoneFallback],
         [GoldenReason.NotInLatestRun] = new("Not checked in the latest run",
             "This customer's records were not part of the latest run because their source was not loaded, so what is shown comes from an earlier run."),
     };
@@ -145,9 +147,53 @@ public static class CaseLabels
             "A general mailbox (such as an info address) was left out of the comparison."),
     };
 
+    /// <summary>The golden attributes by the type key the engine stages them under.</summary>
+    public static IReadOnlyDictionary<string, PlainLabel> Attributes { get; } = new Dictionary<string, PlainLabel>(StringComparer.Ordinal)
+    {
+        ["full_name"] = new("Name", "The customer's name as shown everywhere."),
+        ["phone"] = new("Phone", "The customer's main phone number."),
+        ["city"] = new("City", "The city most of the records give."),
+        ["national_id"] = new("ID number", "The customer's national ID number."),
+        ["email"] = new("E-mail", "The customer's e-mail address."),
+    };
+
+    /// <summary>How a golden value was chosen, by the survivorship reason the engine records.</summary>
+    public static IReadOnlyDictionary<string, PlainLabel> Survival { get; } = new Dictionary<string, PlainLabel>(StringComparer.Ordinal)
+    {
+        ["longest-chain"] = new("Fullest version", "The longest form of the name that continues the most common one."),
+        ["confidence-recency"] = new("Most common value", "The value most of the customer's records agree on."),
+        ["weak-fallback"] = new("Only an incomplete number", "No complete number was available, so the incomplete one is shown."),
+        ["source-priority"] = new("Most common value", "The value most of the customer's records agree on."),
+    };
+
     /// <summary>What happened to a scored pair, in words: combined, left for a person, or kept apart.</summary>
     public static PlainLabel Decision(double score) =>
         score >= 0.90 ? new("Combined automatically", "The records matched closely enough to be combined.")
         : score >= Merge.StewardThreshold ? new("Needs a person", "The match is close but not certain; a person decides.")
         : new("Kept separate", "The records were not similar enough to combine.");
+
+    /// <summary>
+    /// Every list above as plain nested dictionaries — <c>{"cases": {"NearMiss": {"label", "description"}}, …}</c>
+    /// keyed by enum member name — for a surface to serve as-is. Dictionaries rather than records so
+    /// the wire form is the same whatever JSON naming policy the serving host uses.
+    /// </summary>
+    public static Dictionary<string, Dictionary<string, Dictionary<string, string>>> Wire()
+    {
+        static Dictionary<string, Dictionary<string, string>> Of<TKey>(IReadOnlyDictionary<TKey, PlainLabel> map) where TKey : notnull =>
+            map.ToDictionary(kv => kv.Key.ToString()!, kv => new Dictionary<string, string>
+            {
+                ["label"] = kv.Value.Label,
+                ["description"] = kv.Value.Description,
+            });
+
+        return new()
+        {
+            ["cases"] = Of(Cases),
+            ["clusters"] = Of(Clusters),
+            ["reasons"] = Of(Reasons),
+            ["evidence"] = Of(Evidence),
+            ["attributes"] = Of(Attributes),
+            ["survival"] = Of(Survival),
+        };
+    }
 }

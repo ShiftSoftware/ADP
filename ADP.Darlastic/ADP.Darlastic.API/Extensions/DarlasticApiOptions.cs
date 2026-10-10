@@ -85,4 +85,12 @@ public class DarlasticApiOptions
     /// real session, so it can mint another whenever it likes — this is a handoff, not a login.
     /// </summary>
     public TimeSpan CaseBrowserTokenLifetime { get; set; } = TimeSpan.FromMinutes(60);
+
+    /// <summary>
+    /// Plain names for the host's source systems, keyed by the slug the engine stores
+    /// (<c>SourceProfile.SourceSystem</c>), for the case browser to show instead of the slug. The
+    /// slugs are the host's own, so only the host can name them. A slug without an entry is shown
+    /// as itself.
+    /// </summary>
+    public Dictionary<string, string> SourceLabels { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }
