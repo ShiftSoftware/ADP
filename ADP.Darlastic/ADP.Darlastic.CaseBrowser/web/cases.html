@@ -978,21 +978,30 @@ async function openCluster(root){
   stopPlay(); state.anim = null;
   const ns = d.nameSurvival;
   const name = d.goldenName || (d.golden||[]).find(g=>g.attrType==="full_name")?.value;
-  const byKey = new Map((d.members||[]).map(m => [`${m.src}:${m.id}`, m]));
-  const nameOf = k => { const m = byKey.get(k); return m?.rawName ? `${m.rawName} #${m.id}` : k; };
+  // Both hosts' shapes: the hosted reader keys edge ends by record key, the standalone by index.
+  const members = d.members || [];
+  const byKey = new Map(members.map(m => [`${m.src}:${m.id}`, m]));
+  const byIdx = new Map(members.filter(m => m.idx != null).map(m => [m.idx, m]));
+  const end = (key, idx) => (key && byKey.get(key)) || byIdx.get(idx) || {src: key ? key.split(":")[0] : "", id: key ? key.slice(key.indexOf(":") + 1) : ""};
+  const nameOf = m => m.rawName ? `${m.rawName} #${m.id}` : `${srcLabel(m.src)} #${m.id}`;
+  const size = d.size ?? members.length;
+  const sources = d.sources ?? new Set(members.map(m => m.src)).size;
   const EDGES_SHOWN = 30;
   const chips = (d.reasons?.length ? reasonChips(d.reasons)
     : (d.cats||[]).map(k=>`<span class="chip cat" title="${esc(L.desc("clusters",k))}">${esc(L.label("clusters",k))}</span>`).join(""));
   host.innerHTML = `
   <div class="detail"><div class="dhead">
       <span class="t">🏆 ${esc(name) || "(no name)"}</span>
-      <span class="chip cat">${d.size} record${d.size===1?"":"s"} · ${d.sources} source(s)</span>
+      <span class="chip cat">${size} record${size===1?"":"s"} · ${sources} source(s)</span>
       ${d.registry?.goldenId?`<span class="chip" style="background:#c9a227;color:#1a1a1a">Customer #${d.registry.goldenId}${d.registry.status===2?" (merged into another)":d.registry.status===3?" (inactive)":""}</span>`:""}
       ${chips}
       <button class="btn x" onclick="closeDetail()">✕ close</button></div>
     <div class="dbody">
       <div class="dpanel"><h5>Customer details</h5>
-        <div class="kv">${(d.golden||[]).map(g=>`<span class="k">${esc(g.label)}</span><span class="v">${esc(g.value)}${g.how?` <span class="small">· ${esc(g.how)}</span>`:""}</span>`).join("") || `<span class="k">–</span><span class="v">nothing recorded</span>`}</div>
+        <div class="kv">${(d.golden||[]).map(g=>{
+          const how = g.how || (g.wonBy ? L.label("survival", g.wonBy) : "");
+          return `<span class="k">${esc(g.label || L.label("attributes", g.attrType))}</span><span class="v">${esc(g.value)}${how?` <span class="small">· ${esc(how)}</span>`:""}</span>`;
+        }).join("") || `<span class="k">–</span><span class="v">nothing recorded</span>`}</div>
         ${ns ? `<h5 style="margin-top:12px">How the name was chosen</h5>
         <div class="small">Most common spelling: <b class="mono">${esc(ns.anchor??"–")}</b> (${ns.anchorCount} record${ns.anchorCount===1?"":"s"})
           ${ns.chosen?` → shown in its fullest form <b class="mono">${esc(ns.chosen)}</b>`:` — shown as it is`}</div>
@@ -1004,21 +1013,22 @@ async function openCluster(root){
       <div class="dpanel"><h5>How the records were joined</h5>
         ${(d.edges||[]).length ? d.edges.slice(0, EDGES_SHOWN).map(e=>{
           const go = e.a != null && e.b != null;
+          const ea = end(e.aKey, e.a), eb = end(e.bKey, e.b);
           const decisive = e.noVin!=null && e.score>=0.90 && e.noVin<0.90;
           return `<div class="ts tracelist" style="display:flex;gap:8px;padding:5px 0;border-bottom:1px dashed #edf0f6;${go?"cursor:pointer":""}" ${go?`onclick="openCase(${e.a},${e.b})"`:""}>
             <span class="cf mono" title="match strength">${pct(e.score)}</span>
-            <span class="td">${esc(nameOf(e.aKey))} ~ ${esc(nameOf(e.bKey))}
-              ${e.crossDealer?`<span class="chip">${esc(srcLabel(e.aKey.split(":")[0]))} ↔ ${esc(srcLabel(e.bKey.split(":")[0]))}</span>`:""}
+            <span class="td">${esc(nameOf(ea))} ~ ${esc(nameOf(eb))}
+              ${e.crossDealer?`<span class="chip">${esc(srcLabel(ea.src))} ↔ ${esc(srcLabel(eb.src))}</span>`:""}
               ${evidenceChips(e.flags, 3)}
               ${decisive?`<span class="chip warn" title="${esc(L.desc("clusters","VinDecisive"))}">${esc(L.label("clusters","VinDecisive"))}</span>`:""}</span></div>`;
-        }).join("") + (d.edges.length > EDGES_SHOWN ? `<div class="small" style="padding-top:6px">and ${d.edges.length - EDGES_SHOWN} more links (strongest shown first)</div>` : "") : `<div class="small">${d.size>1?"Joined by a reviewer, or by links not listed here.":"A single record — nothing to join."}</div>`}
+        }).join("") + (d.edges.length > EDGES_SHOWN ? `<div class="small" style="padding-top:6px">and ${d.edges.length - EDGES_SHOWN} more links (strongest shown first)</div>` : "") : `<div class="small">${size>1?"Joined by a reviewer, or by links not listed here.":"A single record — nothing to join."}</div>`}
       </div>
       ${(d.reviewPairs||[]).length?`<div class="dpanel sectionlist" style="grid-column:1/-1"><h5>Waiting for a person (${d.reviewPairs.length})</h5>
         ${d.reviewPairs.map(p => pairLine(p, false)).join("")}</div>`:""}
       ${(d.relatedPairs||[]).length?`<div class="dpanel sectionlist" style="grid-column:1/-1"><h5>Similar customers kept separate (${d.relatedPairs.length})</h5>
         ${d.relatedPairs.map(p => pairLine(p, true)).join("")}</div>`:""}
-      <div class="dpanel sectionlist" style="grid-column:1/-1"><h5>Records (${(d.members||[]).length})</h5>
-        ${(d.members||[]).map(memberRow).join("")}
+      <div class="dpanel sectionlist" style="grid-column:1/-1"><h5>Records (${members.length})</h5>
+        ${members.map(memberRow).join("")}
       </div>
       ${flagPanelHtml("cluster:"+d.root, null)}
     </div></div>`;
