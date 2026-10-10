@@ -173,6 +173,10 @@ public static class CasesServer
                 audits = auditsByKey.Values.Sum(l => l.Count),
                 goldPairs = goldByKey.Count,
                 flags = flags.Count,
+                // The page carries no names of its own: the one definition rides with the data.
+                // This server indexes pairs in memory and has no golden list to serve.
+                labels = CaseLabels.Wire(),
+                features = new { goldens = false, export = true, reveal = true, partialSearch = true },
             });
         });
 
@@ -372,7 +376,7 @@ public static class CasesServer
                 {
                     n!["resolution"] = (body.Resolution ?? "").Trim();
                     n["status"] = string.IsNullOrWhiteSpace(body.Status) ? "addressed" : body.Status!.Trim();
-                    n["resolvedBy"] = string.IsNullOrWhiteSpace(body.ResolvedBy) ? "Claude" : body.ResolvedBy!.Trim();
+                    n["resolvedBy"] = string.IsNullOrWhiteSpace(body.ResolvedBy) ? "reviewer" : body.ResolvedBy!.Trim();
                     n["resolvedAt"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
                     SaveFlags();
                 }
