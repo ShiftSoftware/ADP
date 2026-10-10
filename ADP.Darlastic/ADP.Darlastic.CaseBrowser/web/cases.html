@@ -6,11 +6,9 @@
 <title>Darlastic Merge — Case Browser</title>
 <link rel="icon" href="data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20256%20256'><rect%20width='256'%20height='256'%20rx='56'%20fill='%23111'/><g%20fill='none'%20stroke-width='11'%20stroke-linecap='round'><path%20d='M66%2064%20C132%2064%20150%20128%20186%20128'%20stroke='%23fff'/><path%20d='M66%20128%20L186%20128'%20stroke='%23F2C230'/><path%20d='M66%20192%20C132%20192%20150%20128%20186%20128'%20stroke='%23fff'/></g><circle%20cx='66'%20cy='64'%20r='15'%20fill='%23fff'/><circle%20cx='66'%20cy='128'%20r='15'%20fill='%23fff'/><circle%20cx='66'%20cy='192'%20r='15'%20fill='%23fff'/><circle%20cx='186'%20cy='128'%20r='19'%20fill='%23F2C230'/></svg>">
 <!--
-  Case browser UI (Phase 5 steward-queue prototype). Served by `dotnet run cases`; ALL data
-  arrives from the localhost API at runtime — no PII is embedded in this file, so unlike
-  explainer.html it is committable. Same design system as the explainer (stations / cards /
-  meter / zones) so walkthroughs look familiar; captions here are generated from the live
-  engine's trace instead of hand-written prose.
+  Case browser. ALL data arrives from the API at runtime and nothing personal is embedded in this
+  file. Every category name, reason and description it shows is served with the data from the one
+  shared definition in the engine (CaseLabels); the page keeps no label list of its own.
 -->
 <style>
   :root{
@@ -212,64 +210,80 @@
   /* Backstop: never scroll the page sideways. `clip` rather than `hidden` on purpose — `hidden`
      would make body a scroll container and silently kill the sticky header and sidebar. */
   body{overflow-x:clip}
+  /* ---------- golden customer rows ---------- */
+  .countpill{flex:none;min-width:62px;text-align:center;font-weight:700;font-size:12px;line-height:1.15;
+    border-radius:9px;padding:5px 6px;color:#fff;background:var(--merge)}
+  .countpill.single{background:#9aa6ba}
+  .countpill small{display:block;font-weight:600;font-size:10px;opacity:.85}
+  .chip.review{background:var(--steward-bg);border-color:#eed9ab;color:#8a5a00}
+  .chip.reason{background:#f2f5fa;border-color:var(--line);color:var(--ink)}
+  .notice{background:#fff8e6;border:1px solid #eed9ab;color:#6b5000;border-radius:10px;padding:8px 12px;font-size:12.5px;margin:0 2px 10px}
+  .waiting{font-size:11.5px;color:var(--ink-soft);padding:6px 9px;line-height:1.4}
+  .waiting b{color:var(--ink)}
+  .sectionlist .rowcard{cursor:default}
+  .sectionlist .rowcard.go{cursor:pointer}
+  .stub .nm{color:var(--ink-soft);font-weight:500}
 </style>
 </head>
 <body>
 <header class="top">
-  <div class="brandmark"><svg class="brandlogo" viewBox="0 0 256 256" aria-hidden="true"><g fill="none" stroke-width="11" stroke-linecap="round"><path d="M66 64 C132 64 150 128 186 128" stroke="#fff"/><path d="M66 128 L186 128" stroke="#F2C230"/><path d="M66 192 C132 192 150 128 186 128" stroke="#fff"/></g><circle cx="66" cy="64" r="15" fill="#fff"/><circle cx="66" cy="128" r="15" fill="#fff"/><circle cx="66" cy="192" r="15" fill="#fff"/><circle cx="186" cy="128" r="19" fill="#F2C230"/></svg> Darlastic Merge <span class="small" style="font-weight:400">Case Browser · centralized customers</span></div>
-  <input id="q" placeholder="Search any record — name, phone, or src:id … (Enter)">
+  <div class="brandmark"><svg class="brandlogo" viewBox="0 0 256 256" aria-hidden="true"><g fill="none" stroke-width="11" stroke-linecap="round"><path d="M66 64 C132 64 150 128 186 128" stroke="#fff"/><path d="M66 128 L186 128" stroke="#F2C230"/><path d="M66 192 C132 192 150 128 186 128" stroke="#fff"/></g><circle cx="66" cy="64" r="15" fill="#fff"/><circle cx="66" cy="128" r="15" fill="#fff"/><circle cx="66" cy="192" r="15" fill="#fff"/><circle cx="186" cy="128" r="19" fill="#F2C230"/></svg> Darlastic <span class="small" style="font-weight:400">Case Browser · customer records</span></div>
+  <input id="q" placeholder="Search — name, phone or customer number (Enter)">
   <div class="stats" id="stats"></div>
 </header>
 
 <div class="layout">
   <aside>
-    <div class="panel">
-      <h4>Pair cases</h4>
+    <div class="panel" id="goldenpanel" style="display:none">
+      <h4>Customers</h4>
+      <div id="reasonlist"></div>
+      <div class="waiting" id="waiting"></div>
+    </div>
+    <div class="panel" id="pairpanel">
+      <h4>Record pairs</h4>
       <div id="catlist"></div>
     </div>
-    <div class="panel">
-      <h4>Identities</h4>
+    <div class="panel" id="clusterpanel">
+      <h4>Grouped customers</h4>
       <div id="clcatlist"></div>
     </div>
     <div class="panel">
-      <h4>Review queue</h4>
-      <button class="catbtn" id="flagsbtn">⚑ Flagged for Claude <span class="n" id="flagcount">0</span></button>
-      <div class="small" style="padding:5px 7px;line-height:1.4">Mark any case with a note — it persists to <span class="mono">review_notes.jsonl</span> (with the full engine trace) for Claude to read next session.</div>
+      <h4>Notes</h4>
+      <button class="catbtn" id="flagsbtn">⚑ Notes for follow-up <span class="n" id="flagcount">0</span></button>
+      <div class="small" style="padding:5px 7px;line-height:1.4">Leave a note on any customer, pair or record. It is kept with the evidence shown at the time, for whoever follows up.</div>
     </div>
-    <div class="panel">
+    <div class="panel" id="filterpanel">
       <h4>Filters</h4>
       <div class="fl">
-        <label>Dealer <select id="f-dealer"><option value="">any</option></select></label>
-        <label>DOB <select id="f-dob">
-          <option value="">any</option><option value="conflict">conflict (×0.6 fired)</option>
-          <option value="equal">equal (+0.05 fired)</option><option value="gap10">gap ≥ 10y</option>
-          <option value="july1">1-July placeholder</option><option value="none">missing a side</option>
+        <label id="f-dealer-l">Source <select id="f-dealer"><option value="">any</option></select></label>
+        <label id="f-dob-l">Birth date <select id="f-dob">
+          <option value="">any</option><option value="conflict">birth dates differ</option>
+          <option value="equal">same birth date</option><option value="gap10">birth years 10 or more apart</option>
+          <option value="july1">1 July (often a placeholder)</option><option value="none">missing on one side</option>
         </select></label>
-        <label>Sort <select id="f-sort">
-          <option value="">score (high → low)</option><option value="score-asc">score (low → high)</option>
-          <option value="gap">DOB gap (wide → narrow)</option>
-        </select></label>
-        <label>Filter within results <input id="f-q" placeholder="name or phone fragment"></label>
+        <label>Sort <select id="f-sort"></select></label>
+        <label>Filter within results <input id="f-q" placeholder="name or phone"></label>
       </div>
     </div>
-    <div class="panel">
-      <h4>Bulk-LLM export</h4>
+    <div class="panel" id="exportpanel" style="display:none">
+      <h4>Export</h4>
       <div class="fl">
-        <label>Cases <input id="x-limit" type="number" value="500" min="1" max="30000"></label>
-        <label>Stride (every k-th) <input id="x-stride" type="number" value="1" min="1"></label>
-        <button class="btn solid" id="x-go" style="margin-top:4px">Export current filter → JSONL</button>
-        <div class="small">Same evidence a human sees, incl. the engine trace. Verdicts come back as audit rows flagged for spot-check.</div>
+        <label>Pairs <input id="x-limit" type="number" value="500" min="1" max="30000"></label>
+        <label>Take every n-th <input id="x-stride" type="number" value="1" min="1"></label>
+        <button class="btn solid" id="x-go" style="margin-top:4px">Export these pairs</button>
+        <div class="small">The same evidence a reviewer sees. Verdicts that come back are recorded for checking.</div>
       </div>
     </div>
   </aside>
 
   <main>
     <div id="detailhost"></div>
+    <div id="maskednotice"></div>
     <div class="listhead">
-      <h2 id="title">Cases</h2><span class="sub" id="subtitle"></span>
+      <h2 id="title">Customers</h2><span class="sub" id="subtitle"></span>
       <div class="pager">
         <span id="pginfo"></span>
-        <button id="pg-prev">‹</button><button id="pg-next">›</button>
+        <button id="pg-prev" aria-label="previous page">‹</button><button id="pg-next" aria-label="next page">›</button>
       </div>
     </div>
     <div id="list"></div>
@@ -280,14 +294,11 @@
 "use strict";
 // Where this page's data comes from. The standalone server (dotnet run cases) serves /api/* from
 // its own process; a host that mounts ADP.Darlastic injects DARLASTIC_API_BASE pointing at the
-// module's compat routes, which speak this same contract. One page, two hosts, one code path —
-// so the local dev loop cannot quietly diverge from what the team sees in the browser.
+// module's compat routes, which speak this same contract. One page, two hosts, one code path.
 const API = (window.DARLASTIC_API_BASE || "/api").replace(/\/+$/, "");
-// A host that authenticates with bearer tokens cannot be reached by a plain HTML page: a browser
-// navigation sends no Authorization header, and this page has no auth stack to attach one. So the
-// host hands it a signed, expiring, single-purpose token in the URL (the same shape ShiftEntity
-// uses for printing) and it rides along on every call from here. Absent locally, where the
-// standalone server is the only caller and localhost is the security model.
+// A host that authenticates with bearer tokens hands this page a signed, expiring, single-purpose
+// token in the URL, and it rides along on every call. Absent locally, where the standalone server
+// is the only caller.
 const authQs = (t, x, a) =>
   (t && x && a) ? `token=${encodeURIComponent(t)}&expires=${encodeURIComponent(x)}&actor=${encodeURIComponent(a)}` : "";
 
@@ -296,14 +307,8 @@ let API_AUTH = (() => {
   return authQs(p.get("token"), p.get("expires"), p.get("actor"));
 })();
 
-// A token minted at load would expire mid-session and start failing calls with nothing on screen to
-// explain it. A host that embeds this page can post a fresh one in before that happens, so the
-// reader is never interrupted and never loses the case they had open.
-//
-// Accepted only from the window that framed us, which is tighter than an origin check (that would
-// admit any page on the same host) and, unlike one, still correct when a host serves its SPA from a
-// different origin than its API. Nothing here executes what it receives — the message can only ever
-// replace the credential this page sends, and a token is something the framer already holds.
+// A host that embeds this page can post a fresh token in before the current one expires. Accepted
+// only from the window that framed us; the message can only ever replace the credential.
 window.addEventListener("message", e => {
   if (e.source !== window.parent) return;
   const d = e.data;
@@ -315,72 +320,85 @@ window.addEventListener("message", e => {
 const api = path => API + path + (API_AUTH ? (path.includes("?") ? "&" : "?") + API_AUTH : "");
 const $ = s => document.querySelector(s);
 const esc = s => (s ?? "").toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function getJson(path){
+  const r = await fetch(api(path));
+  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+  return r.json();
+}
 
-const CAT_LABELS = {
-  AutoMerged:      ["Auto-merged", "score ≥ 0.90 — unified into one identity"],
-  // The corpus count here is the RAW band — every pair that scored 0.80–0.90. The work list is
-  // smaller: pairs whose two records ended up in one identity anyway (via a third record) are
-  // dropped, because there is nothing left to ask. Measured on one deployment: 19,727 band →
-  // 13,355 queued, a 32% drop that matches the 2026-07-19 adversarial review exactly. Labelling
-  // the band as the queue overstates the steward's workload by a third.
-  StewardBand:     ["Steward band (0.80–0.90)", "every pair scored in the uncertain band. The steward QUEUE is smaller — pairs already merged transitively via a third record are dropped (~32%)"],
-  NearMiss:        ["Near miss", "0.70–0.80 — kept separate, close"],
-  ConflictVetoed:  ["Conflict-vetoed", "exact phone, but a hard rule HELD them apart — kept below auto-merge (name conflict / ID conflict)"],
-  OrgLine:         ["Business / placeholder line", "exact phone + a business name (Parts Stock, …Company) — person floor withheld; identical org names still merge (needs the dealer-self/placeholder filter)"],
-  AddressRescued:  ["Address-rescued", "chain-slice rescue → 0.91 (district-confirmed)"],
-  Increment:       ["Phone+given increment", "the deferred 25K auto-merge decision"],
-  Mojibake:        ["Mojibake-recovered", "a CP1256-repaired Arabic name participates"],
-  Arabizi:         ["Arabizi", "a chat-numeral name participates"],
-  VinSold:         ["VIN-merged (sold)", "shared sold VIN + fully-consistent names → 0.91 auto-merge (the safe cross-dealer recall wins)"],
-  VinReview:       ["VIN review (given-only)", "shared sold VIN + same given name but rest differs — NOT merged; the steward-review bucket"],
-  VinServiced:     ["VIN-corroborated (service)", "a shared serviced VIN supported an already-relevant case"],
-  VinTransfer:     ["VIN ownership transfer", "shared VIN, disjoint periods + a sale between — gated as two people (P7)"],
+// Every name shown here comes from the server, which serves the engine's one definition with the
+// data. This page has no category names of its own; an unknown key is shown as a neutral "other".
+const L = {
+  of(group, key){ return state.summary?.labels?.[group]?.[key] ?? {label: "Other", description: ""}; },
+  label(group, key){ return L.of(group, key).label; },
+  desc(group, key){ return L.of(group, key).description; },
 };
-const CLCAT_LABELS = {
-  VinDecisive:       ["⭐ VIN-decisive identities", "unified by a shared sold VIN that name + phone alone could NOT have (score drops below 0.90 without VIN) — the clearest 'power of VIN' cases for a demo"],
-  CrossDealer:       ["Cross-dealer identities", "members from ≥ 2 dealers — the business case"],
-  VinBridged:        ["VIN-bridged identities", "assembled (partly) by a shared sold VIN — the new cross-dealer lever"],
-  LongestChain:      ["Longest-chain goldens", "golden name extended to the fullest chain"],
-  WeakPhoneFallback: ["Weak-phone goldens", "golden phone from a 9-digit truncated-form number"],
-  Large:             ["Large clusters", "≥ 5 records"],
-};
-// Review-flag topics — what kind of feedback this note carries (steers my review next session).
+const srcLabel = s => (state.summary?.sourceLabels?.[s]) || s;
+const pct = s => Math.round((s ?? 0) * 100) + "%";
+
+// Note topics — what kind of follow-up a note asks for.
 const TOPICS = [
-  ["engine",   "Engine score / decision looks wrong"],
-  ["rule-idea","Idea for a new or changed rule"],
-  ["category", "Question about the category / queue design"],
-  ["data",     "Data quality (junk, business entity, encoding)"],
-  ["ux",       "Steward UI / workflow feedback"],
+  ["engine",   "The decision looks wrong"],
+  ["rule-idea","Idea for a change in how records are matched"],
+  ["category", "Question about a category or the review list"],
+  ["data",     "Data quality (junk, company record, unreadable text)"],
+  ["ux",       "Feedback on this screen"],
   ["other",    "Other"],
 ];
 const topicOptions = sel => TOPICS.map(([v,l]) => `<option value="${v}"${v===sel?" selected":""}>${l}</option>`).join("");
-const judgeName = () => localStorage.getItem("cc_judge") || "Aza Asim (domain expert)";
+// The reviewer's own name, remembered on this device once they type it. Never a default: a verdict
+// with no name is recorded under the signed-in user by the server.
+const judgeName = () => localStorage.getItem("cc_judge") || "";
 const STATIONS = [
-  {id:"source",    ic:"📥", nm:"Source records"},
-  {id:"normalize", ic:"🧹", nm:"Normalize"},
+  {id:"source",    ic:"📥", nm:"Records"},
+  {id:"normalize", ic:"🧹", nm:"Clean up"},
   {id:"group",     ic:"🧲", nm:"Group"},
-  {id:"score",     ic:"⚖️", nm:"Score"},
+  {id:"score",     ic:"⚖️", nm:"Compare"},
   {id:"decide",    ic:"✅", nm:"Decide"},
 ];
-const SRC_COLORS = {}; // assigned on the fly
+const SRC_COLORS = {};
 const PALETTE = ["#0f8a86","#5468c4","#b3573f","#7a5fb8","#2e8a52","#a8842c","#c4548e"];
 let srcSeq = 0;
 const srcColor = s => SRC_COLORS[s] ?? (SRC_COLORS[s] = PALETTE[srcSeq++ % PALETTE.length]);
 
+const SORTS = {
+  goldens: [["", "most records first"], ["id", "customer number"]],
+  cases:   [["", "strongest match first"], ["score-asc", "weakest match first"], ["gap", "widest birth-year gap first"]],
+};
+
 const state = {
-  mode: "cases",        // cases | clusters | search | flags
-  cat: "StewardBand", clcat: null,
+  mode: "cases",        // goldens | cases | clusters | search | flags
+  reason: null, cat: null, clcat: null,
   page: 0, size: 50, total: 0,
-  summary: null,
-  anim: null,           // current walkthrough {steps, i, playing, timer, detail}
-  flagsByTarget: new Map(), // target -> flag item (for row chips + prefill)
+  summary: null, goldenCounts: {}, goldenTotal: 0, awaiting: 0,
+  goldenQ: "",
+  anim: null,
+  flagsByTarget: new Map(),
   flagCount: 0,
 };
+const goldensOn = () => !!state.summary?.features?.goldens;
 
 // ---------- boot ----------
 (async function boot(){
-  state.summary = await (await fetch(api("/summary"))).json();
+  state.summary = await getJson("/summary");
   await loadFlags();
+  const s = state.summary;
+  if (goldensOn()) {
+    state.mode = "goldens";
+    state.goldenTotal = s.goldenTotal ?? 0;
+    state.awaiting = s.awaitingResolve ?? 0;
+  } else {
+    // Default pair category: the review band when it has cases, else the first that does.
+    const corpus = s.corpusCategories || {};
+    const count = k => (corpus[k]?.total ?? s.categories?.[k] ?? 0);
+    const keys = Object.keys(s.labels?.cases || {});
+    state.cat = count("StewardBand") > 0 ? "StewardBand" : (keys.find(k => count(k) > 0) || keys[0] || null);
+  }
+  $("#exportpanel").style.display = s.features?.export ? "" : "none";
+  $("#goldenpanel").style.display = goldensOn() ? "" : "none";
+  $("#clusterpanel").style.display = goldensOn() ? "none" : "";
+  if (s.features && !s.features.reveal)
+    $("#maskednotice").innerHTML = `<div class="notice">Names, phones and other personal details are partly hidden. Ask for permission to see personal details if your work needs them.</div>`;
   renderStats(); renderSidebar(); fillDealers();
   $("#q").addEventListener("keydown", e => { if (e.key === "Enter") doSearch($("#q").value); });
   for (const id of ["f-dealer","f-dob","f-sort"]) $("#"+id).addEventListener("change", () => { state.page = 0; loadList(); });
@@ -393,68 +411,93 @@ const state = {
 })();
 
 async function loadFlags(){
-  const r = await (await fetch(api("/flags"))).json();
+  const r = await getJson("/flags");
   state.flagsByTarget = new Map(r.items.map(f => [f.target, f]));
   state.flagCount = r.total;
   const el = $("#flagcount"); if (el) el.textContent = r.total;
 }
 const isFlagged = t => state.flagsByTarget.has(t);
 
-// Two populations, never to be conflated: the REGISTRY (the whole tenant corpus as of the last
-// resolve) and the INDEX (what this process actually loaded — the full corpus under `cases`, only
-// the queue's neighbourhood under `queue`). Showing the index's identity count unlabelled is how a
-// 16k-identity view gets read as a 919k-identity corpus.
 function renderStats(){
   const s = state.summary;
-  const reg = s.registryIdentities != null
-    ? `<span title="the whole tenant corpus, as of resolve run ${s.registryRun}"><b>${s.registryIdentities.toLocaleString()}</b> identities</span>` +
-      `<span title="source profiles in the registry"><b>${s.registryProfiles.toLocaleString()}</b> source records</span>` +
-      `<span class="sep">registry · run ${s.registryRun}</span>`
-    : `<span class="sep">no registry — in-memory only</span>`;
-  $("#stats").innerHTML = reg +
-    `<span class="scoped" title="what this browser loaded and scored — NOT the whole corpus">` +
-      `in view: <b>${s.records.toLocaleString()}</b> records · ` +
-      `<b>${s.totalPairs.toLocaleString()}</b> pairs · ` +
-      `<b>${s.identities.toLocaleString()}</b> clusters · ` +
-      `<b>${s.indexedCases.toLocaleString()}</b> cases</span>`;
+  const parts = [];
+  if (goldensOn())
+    parts.push(`<span title="one row per customer, as of the latest run"><b>${state.goldenTotal.toLocaleString()}</b> customers</span>`);
+  else if (s.registryIdentities != null)
+    parts.push(`<span title="customers as of the latest run"><b>${s.registryIdentities.toLocaleString()}</b> customers</span>`);
+  if (s.registryProfiles != null)
+    parts.push(`<span title="source records behind them"><b>${s.registryProfiles.toLocaleString()}</b> records</span>`);
+  if (s.registryRun != null) parts.push(`<span class="sep">latest run ${s.registryRun}</span>`);
+  else parts.push(`<span class="sep">not saved — this session only</span>`);
+  if (!goldensOn())
+    parts.push(`<span class="scoped" title="what this browser holds for browsing — not every customer">` +
+      `browsable here: <b>${s.records.toLocaleString()}</b> records · <b>${s.indexedCases.toLocaleString()}</b> pairs</span>`);
+  $("#stats").innerHTML = parts.join("");
 }
-// The count beside a category is the CORPUS total staged by the resolve, not the number of cases
-// this process happens to hold. Where the two differ (always, under `queue` mode) the browsable
-// subset is shown underneath, so "500" can never be mistaken for "that is all there is".
+
+// Category buttons with a count of zero are not shown: an empty category is noise to a reader.
+function catButton(attr, key, group, total, on, sub){
+  return `<button class="catbtn ${on?'on':''}" ${attr}="${esc(key)}" title="${esc(L.desc(group, key))}">
+     <span class="clabel">${esc(L.label(group, key))}${sub?`<span class="sub">${esc(sub)}</span>`:""}</span>
+     <span class="n">${total.toLocaleString()}</span></button>`;
+}
 function renderSidebar(){
-  const cats = state.summary.categories, clcats = state.summary.clusterCategories;
-  const corpus = state.summary.corpusCategories;
-  $("#catlist").innerHTML = Object.keys(CAT_LABELS).map(k => {
-    const c = corpus?.[k], inView = cats[k] ?? 0;
-    const total = c ? c.total : inView;
-    const partial = c && c.total > inView;
-    return `<button class="catbtn ${state.mode==='cases'&&state.cat===k?'on':''}" data-cat="${k}" title="${esc(CAT_LABELS[k][1])}${c?`\n\ncorpus-wide: ${c.total.toLocaleString()} · browsable here: ${inView.toLocaleString()}`:""}">
-       <span class="clabel">${CAT_LABELS[k][0]}${partial?`<span class="sub">${inView.toLocaleString()} browsable</span>`:""}</span>
-       <span class="n">${total.toLocaleString()}</span></button>`;
-  }).join("");
-  $("#clcatlist").innerHTML = Object.keys(CLCAT_LABELS).map(k =>
-    `<button class="catbtn ${state.mode==='clusters'&&state.clcat===k?'on':''}" data-clcat="${k}" title="${esc(CLCAT_LABELS[k][1])}">
-       ${CLCAT_LABELS[k][0]} <span class="n">${(clcats[k]??0).toLocaleString()}</span></button>`).join("");
+  const s = state.summary;
+  if (goldensOn()) {
+    const all = `<button class="catbtn ${state.mode==='goldens'&&!state.reason?'on':''}" data-reason="">
+       <span class="clabel">All customers</span><span class="n">${state.goldenTotal.toLocaleString()}</span></button>`;
+    const reasons = Object.keys(s.labels?.reasons || {})
+      .filter(k => (state.goldenCounts[k] ?? 0) > 0)
+      .map(k => catButton("data-reason", k, "reasons", state.goldenCounts[k], state.mode==='goldens' && state.reason===k));
+    $("#reasonlist").innerHTML = all + reasons.join("");
+    $("#waiting").innerHTML = state.awaiting > 0
+      ? `<b>${state.awaiting.toLocaleString()}</b> customer(s) created in the CRM are waiting for their first check and are not listed yet.`
+      : "No customers are waiting for their first check.";
+    document.querySelectorAll("[data-reason]").forEach(b => b.onclick = () => {
+      state.mode = "goldens"; state.reason = b.dataset.reason || null; state.page = 0; renderSidebar(); loadList(); });
+  }
+  const corpus = s.corpusCategories || {}, inView = s.categories || {};
+  $("#catlist").innerHTML = Object.keys(s.labels?.cases || {}).map(k => {
+    const c = corpus[k], here = inView[k] ?? 0, total = c ? c.total : here;
+    if (!total) return "";
+    const sub = c && c.total > here ? `${here.toLocaleString()} can be opened here` : "";
+    return catButton("data-cat", k, "cases", total, state.mode==='cases' && state.cat===k, sub);
+  }).join("") || `<div class="small" style="padding:4px 7px">No pairs to show.</div>`;
+  const clcats = s.clusterCategories || {};
+  $("#clcatlist").innerHTML = Object.keys(s.labels?.clusters || {})
+    .filter(k => (clcats[k] ?? 0) > 0)
+    .map(k => catButton("data-clcat", k, "clusters", clcats[k], state.mode==='clusters' && state.clcat===k)).join("")
+    || `<div class="small" style="padding:4px 7px">No grouped customers to show.</div>`;
   document.querySelectorAll("[data-cat]").forEach(b => b.onclick = () => { state.mode="cases"; state.cat=b.dataset.cat; state.page=0; renderSidebar(); loadList(); });
   document.querySelectorAll("[data-clcat]").forEach(b => b.onclick = () => { state.mode="clusters"; state.clcat=b.dataset.clcat; state.page=0; renderSidebar(); loadList(); });
   $("#flagsbtn")?.classList.toggle("on", state.mode === "flags");
+  // Pair-only filters show only in the pair list; the sort list follows the mode.
+  const pairMode = state.mode === "cases";
+  $("#f-dealer-l").style.display = pairMode ? "" : "none";
+  $("#f-dob-l").style.display = pairMode ? "" : "none";
+  const sorts = SORTS[state.mode] || SORTS.cases;
+  const sel = $("#f-sort"), prev = sel.value;
+  sel.innerHTML = sorts.map(([v,l]) => `<option value="${v}">${l}</option>`).join("");
+  if (sorts.some(([v]) => v === prev)) sel.value = prev;
 }
 function fillDealers(){
   $("#f-dealer").innerHTML = `<option value="">any</option>` +
-    Object.entries(state.summary.sources).map(([s,n]) => `<option value="${s}">${s} (${n.toLocaleString()})</option>`).join("");
+    Object.entries(state.summary.sources || {}).map(([s,n]) => `<option value="${esc(s)}">${esc(srcLabel(s))} (${n.toLocaleString()})</option>`).join("");
 }
 
 function filterQuery(){
   const p = new URLSearchParams();
   if (state.mode === "cases" && state.cat) p.set("cat", state.cat);
   if (state.mode === "clusters" && state.clcat) p.set("cat", state.clcat);
+  if (state.mode === "goldens" && state.reason) p.set("reason", state.reason);
   const dealer = $("#f-dealer").value, dob = $("#f-dob").value, sort = $("#f-sort").value, q = $("#f-q").value.trim();
   if (state.mode === "cases"){
     if (dealer) p.set("dealer", dealer);
     if (dob) p.set("dob", dob);
-    if (sort) p.set("sort", sort);
   }
-  if (q) p.set("q", q);
+  if (sort) p.set("sort", sort);
+  const query = state.mode === "goldens" ? (state.goldenQ || q) : q;
+  if (query) p.set("q", query);
   p.set("page", state.page); p.set("size", state.size);
   return p;
 }
@@ -462,37 +505,53 @@ function filterQuery(){
 async function loadList(){
   const host = $("#list");
   host.innerHTML = `<div class="empty">Loading…</div>`;
-  if (state.mode === "cases"){
-    const r = await (await fetch(api("/cases?" + filterQuery()))).json();
-    state.total = r.total;
-    $("#title").textContent = CAT_LABELS[state.cat]?.[0] ?? "Cases";
-    $("#subtitle").textContent = CAT_LABELS[state.cat]?.[1] ?? "";
-    host.innerHTML = r.items.length ? r.items.map(caseRow).join("") : `<div class="empty">No cases match this filter.</div>`;
-    host.querySelectorAll("[data-a]").forEach(el => el.onclick = () => openCase(+el.dataset.a, +el.dataset.b));
-  } else if (state.mode === "clusters"){
-    const r = await (await fetch(api("/clusters?" + filterQuery()))).json();
-    state.total = r.total;
-    $("#title").textContent = CLCAT_LABELS[state.clcat]?.[0] ?? "Identities";
-    $("#subtitle").textContent = CLCAT_LABELS[state.clcat]?.[1] ?? "";
-    host.innerHTML = r.items.length ? r.items.map(clusterRow).join("") : `<div class="empty">No identities match.</div>`;
-    host.querySelectorAll("[data-root]").forEach(el => el.onclick = () => openCluster(+el.dataset.root));
-  } else if (state.mode === "flags"){
-    await loadFlags();
-    const items = [...state.flagsByTarget.values()];
-    state.total = items.length;
-    const openN = items.filter(f => f.status !== "addressed").length;
-    $("#title").textContent = "Flagged for Claude";
-    $("#subtitle").textContent = `${openN} open · ${items.length - openN} addressed — persisted to review_notes.jsonl (open first)`;
-    host.innerHTML = items.length ? items.map(flagRow).join("")
-      : `<div class="empty">No flagged cases yet. Open any case and use “Flag for review (Claude)”.</div>`;
-    host.querySelectorAll("[data-target]").forEach(el => el.onclick = () => openTarget(el.dataset.target));
-  } else { // search
-    const r = await (await fetch(api("/search?q=" + encodeURIComponent(state.q)))).json();
-    state.total = r.length;
-    $("#title").textContent = `Search “${state.q}”`;
-    $("#subtitle").textContent = `${r.length} record(s)${r.length===50?" (capped at 50)":""} — click one to see its candidates`;
-    host.innerHTML = r.length ? r.map(searchRow).join("") : `<div class="empty">No records found.</div>`;
-    host.querySelectorAll("[data-idx]").forEach(el => el.onclick = () => openRecord(+el.dataset.idx));
+  try {
+    if (state.mode === "goldens"){
+      const r = await getJson("/goldens?" + filterQuery());
+      state.total = r.total;
+      state.goldenCounts = r.reasonCounts || {};
+      state.goldenTotal = r.goldenTotal ?? state.goldenTotal;
+      state.awaiting = r.awaitingResolve ?? state.awaiting;
+      renderSidebar(); renderStats();
+      $("#title").textContent = state.reason ? L.label("reasons", state.reason) : (state.goldenQ ? `Search “${state.goldenQ}”` : "All customers");
+      $("#subtitle").textContent = state.reason ? L.desc("reasons", state.reason) : "One row per customer, with why their records were or were not combined.";
+      host.innerHTML = r.items.length ? r.items.map(goldenRow).join("") : `<div class="empty">No customers match.</div>`;
+      host.querySelectorAll("[data-golden]").forEach(el => el.onclick = () => openCluster(el.dataset.golden));
+    } else if (state.mode === "cases"){
+      const r = await getJson("/cases?" + filterQuery());
+      state.total = r.total;
+      $("#title").textContent = state.cat ? L.label("cases", state.cat) : "Record pairs";
+      $("#subtitle").textContent = state.cat ? L.desc("cases", state.cat) : "";
+      host.innerHTML = r.items.length ? r.items.map(caseRow).join("") : `<div class="empty">No pairs match this filter.</div>`;
+      host.querySelectorAll("[data-a]").forEach(el => el.onclick = () => openCase(+el.dataset.a, +el.dataset.b));
+    } else if (state.mode === "clusters"){
+      const r = await getJson("/clusters?" + filterQuery());
+      state.total = r.total;
+      $("#title").textContent = state.clcat ? L.label("clusters", state.clcat) : "Grouped customers";
+      $("#subtitle").textContent = state.clcat ? L.desc("clusters", state.clcat) : "";
+      host.innerHTML = r.items.length ? r.items.map(clusterRow).join("") : `<div class="empty">No customers match.</div>`;
+      host.querySelectorAll("[data-root]").forEach(el => el.onclick = () => openCluster(el.dataset.root));
+    } else if (state.mode === "flags"){
+      await loadFlags();
+      const items = [...state.flagsByTarget.values()];
+      state.total = items.length;
+      const openN = items.filter(f => f.status !== "addressed").length;
+      $("#title").textContent = "Notes for follow-up";
+      $("#subtitle").textContent = `${openN} open · ${items.length - openN} answered (open first)`;
+      host.innerHTML = items.length ? items.map(flagRow).join("")
+        : `<div class="empty">No notes yet. Open any customer or pair and use “Leave a note”.</div>`;
+      host.querySelectorAll("[data-target]").forEach(el => el.onclick = () => openTarget(el.dataset.target));
+    } else { // record search (pair modes)
+      const r = await getJson("/search?q=" + encodeURIComponent(state.q));
+      state.total = r.length;
+      $("#title").textContent = `Search “${state.q}”`;
+      $("#subtitle").textContent = `${r.length} record(s)${r.length===50?" (first 50)":""} — open one to see its details`;
+      host.innerHTML = r.length ? r.map(searchRow).join("") : `<div class="empty">No records found.</div>`;
+      host.querySelectorAll("[data-idx]").forEach(el => el.onclick = () => openRecord(+el.dataset.idx));
+    }
+  } catch (err) {
+    host.innerHTML = `<div class="empty">Could not load this list (${esc(err.message)}).</div>`;
+    state.total = 0;
   }
   const pages = Math.max(1, Math.ceil(state.total / state.size));
   $("#pginfo").textContent = `${state.total.toLocaleString()} · page ${state.page+1}/${pages}`;
@@ -500,33 +559,51 @@ async function loadList(){
   $("#pg-next").disabled = (state.page+1) * state.size >= state.total;
 }
 
-function scoreClass(s){ return s >= 0.90 ? "merge" : s >= 0.80 ? "steward" : ""; }
+// Reasons in the order the shared definition lists them: what needs a person first.
+function reasonChips(keys){
+  const order = Object.keys(state.summary?.labels?.reasons || {});
+  const rank = k => { const i = order.indexOf(k); return i < 0 ? order.length : i; };
+  return [...(keys || [])].sort((a, b) => rank(a) - rank(b)).map(k => `<span class="chip ${k==="NeedsReview"?"review":"reason"}" title="${esc(L.desc("reasons", k))}">${esc(L.label("reasons", k))}</span>`).join("");
+}
+function goldenRow(g){
+  const flagged = isFlagged("cluster:"+g.id) ? `<span class="chip warn">⚑ note</span>` : "";
+  const srcs = (g.sourceSystems || []).map(srcLabel);
+  const contact = [g.phone, g.city].filter(Boolean).map(esc).join(" · ");
+  return `<div class="rowcard" data-golden="${esc(g.id)}">
+    <div class="countpill ${g.members>1?"":"single"}">${g.members}<small>${g.members===1?"record":"records"}</small></div>
+    <div class="pairnames">
+      <div class="nm">${g.needsReview?`<span title="${esc(L.desc("reasons","NeedsReview"))}">⚑ </span>`:""}${esc(g.name)||"<i>(no name)</i>"}${contact?` <span class="small">· ${contact}</span>`:""}</div>
+      <div class="meta">Customer #${esc(g.id)} · ${g.sources} source(s)${srcs.length?`: ${esc(srcs.join(", "))}`:""}</div>
+    </div>
+    <div class="chips">${reasonChips(g.reasons)}${flagged}</div>
+  </div>`;
+}
 function caseRow(c){
   const chips = [];
-  for (const k of c.cats) if (CAT_LABELS[k]) chips.push(`<span class="chip cat">${CAT_LABELS[k][0]}</span>`);
-  if (c.dobGap != null && c.dobGap > 0) chips.push(`<span class="chip ${c.dobGap>=10?'warn':''}">DOB gap ${c.dobGap}y</span>`);
-  if (c.gold) chips.push(`<span class="chip gold" title="panel votes s/d/a: ${esc(c.gold.votes)}">gold: ${esc(c.gold.label)}</span>`);
-  if (c.audit) chips.push(`<span class="chip audit">audited: ${esc(c.audit.newLabel)} (${esc(c.audit.status)})</span>`);
-  if (isFlagged("pair:"+c.key)) chips.push(`<span class="chip warn">⚑ flagged</span>`);
+  for (const k of c.cats) chips.push(`<span class="chip cat" title="${esc(L.desc("cases", k))}">${esc(L.label("cases", k))}</span>`);
+  if (c.dobGap != null && c.dobGap > 0) chips.push(`<span class="chip ${c.dobGap>=10?'warn':''}">birth years ${c.dobGap} apart</span>`);
+  if (c.gold) chips.push(`<span class="chip gold">reference answer: ${esc(c.gold.label)}</span>`);
+  if (c.audit) chips.push(`<span class="chip audit">verdict: ${esc(c.audit.newLabel || "undecided")}</span>`);
+  if (isFlagged("pair:"+c.key)) chips.push(`<span class="chip warn">⚑ note</span>`);
+  if (!c.a || !c.b) return "";
   return `<div class="rowcard" data-a="${c.a.idx}" data-b="${c.b.idx}">
-    <div class="scorepill ${scoreClass(c.score)}">${c.score.toFixed(3)}</div>
+    <div class="scorepill ${scoreClass(c.score)}" title="match strength">${pct(c.score)}</div>
     <div class="pairnames">
-      <div class="nm">${esc(c.a.rawName)||"<i>(no name)</i>"} <span class="small">· ${esc(c.a.src)}</span>
-        &nbsp;~&nbsp; ${esc(c.b.rawName)||"<i>(no name)</i>"} <span class="small">· ${esc(c.b.src)}</span></div>
+      <div class="nm">${esc(c.a.rawName)||"<i>(no name)</i>"} <span class="small">· ${esc(srcLabel(c.a.src))}</span>
+        &nbsp;~&nbsp; ${esc(c.b.rawName)||"<i>(no name)</i>"} <span class="small">· ${esc(srcLabel(c.b.src))}</span></div>
       <div class="meta">${esc((c.a.phones[0]??c.a.weakPhones[0])??"–")} · ${esc(c.a.city||"–")} ⇄ ${esc((c.b.phones[0]??c.b.weakPhones[0])??"–")} · ${esc(c.b.city||"–")}</div>
     </div>
     <div class="chips">${chips.join("")}</div>
   </div>`;
 }
 function clusterRow(c){
-  const chips = c.cats.map(k => `<span class="chip cat">${CLCAT_LABELS[k]?.[0]??k}</span>`);
-  if (isFlagged("cluster:"+c.root)) chips.push(`<span class="chip warn">⚑ flagged</span>`);
+  const chips = c.cats.map(k => `<span class="chip cat" title="${esc(L.desc("clusters", k))}">${esc(L.label("clusters", k))}</span>`);
+  if (isFlagged("cluster:"+c.root)) chips.push(`<span class="chip warn">⚑ note</span>`);
   return `<div class="rowcard" data-root="${c.root}">
-    <div class="scorepill merge">${c.size}</div>
+    <div class="countpill">${c.size}<small>records</small></div>
     <div class="pairnames">
-      <div class="nm">${esc(c.goldenName)}</div>
-      <div class="meta">${c.sources} dealer(s) · root #${c.root}${c.registry?.goldenId?` · <b style="color:#c9a227">Golden #${c.registry.goldenId}</b>${c.registry.split?` <span style="color:#c0392b">⚠ spans ${c.registry.identities} registry identities (re-resolve pending)</span>`:""}`:""}</div>
-      ${c.highlight?`<div class="meta" style="color:#0f8a86">⭐ ${esc(c.highlight)}</div>`:""}
+      <div class="nm">${esc(c.goldenName)||"<i>(no name)</i>"}</div>
+      <div class="meta">${c.sources} source(s) · Customer #${c.registry?.goldenId ?? c.root}</div>
     </div>
     <div class="chips">${chips.join("")}</div>
   </div>`;
@@ -534,13 +611,14 @@ function clusterRow(c){
 function flagRow(f){
   const topicLabel = (TOPICS.find(t => t[0] === f.topic) || [f.topic, f.topic])[1];
   const addressed = f.status === "addressed";
-  const chips = [`<span class="chip cat">${esc(f.kind)}</span>`,
-    `<span class="chip ${addressed?"gold":"warn"}">${addressed?"✓ addressed":"⚑ open"}</span>`];
+  const kind = {pair: "pair", cluster: "customer", record: "record", case: "pair"}[f.kind] || f.kind;
+  const chips = [`<span class="chip cat">${esc(kind)}</span>`,
+    `<span class="chip ${addressed?"gold":"warn"}">${addressed?"✓ answered":"⚑ open"}</span>`];
   return `<div class="rowcard" data-target="${esc(f.target)}">
     <div class="scorepill ${addressed?"merge":"steward"}" style="width:auto;padding:6px 9px">⚑</div>
     <div class="pairnames">
       <div class="nm">${esc(f.label)}</div>
-      <div class="meta">${esc(topicLabel)} · ${esc(f.author)} · ${esc(f.updatedAt||f.createdAt)} — ${f.comment?esc(f.comment):"<i>no comment</i>"}${addressed&&f.resolution?` <span style="color:var(--brand-d)">· Claude: ${esc(f.resolution)}</span>`:""}</div>
+      <div class="meta">${esc(topicLabel)} · ${esc(f.author)} · ${esc(f.updatedAt||f.createdAt)} — ${f.comment?esc(f.comment):"<i>no comment</i>"}${addressed&&f.resolution?` <span style="color:var(--brand-d)">· Response: ${esc(f.resolution)}</span>`:""}</div>
     </div>
     <div class="chips">${chips.join("")}</div>
   </div>`;
@@ -548,106 +626,115 @@ function flagRow(f){
 function openTarget(target){
   const f = state.flagsByTarget.get(target); if (!f) return;
   if (f.kind === "pair" && f.a != null) openCase(f.a, f.b);
-  else if (f.kind === "cluster" && f.root != null) openCluster(f.root);
+  else if (f.kind === "cluster") openCluster(f.root ?? target.slice("cluster:".length));
   else if (f.kind === "record" && f.idx != null) openRecord(f.idx);
 }
 function searchRow(r){
   const chips = [];
-  if (r.clusterSize>1) chips.push(`<span class="chip cat">in identity ×${r.clusterSize}</span>`);
-  if (isFlagged(`record:${r.src}:${r.id}`)) chips.push(`<span class="chip warn">⚑ flagged</span>`);
+  if (r.clusterSize>1) chips.push(`<span class="chip cat">one of ${r.clusterSize} records of a customer</span>`);
+  if (r.mojibake) chips.push(`<span class="chip">${esc(L.label("cases","Mojibake"))}</span>`);
+  if (r.arabizi) chips.push(`<span class="chip">${esc(L.label("cases","Arabizi"))}</span>`);
+  if (isFlagged(`record:${r.src}:${r.id}`)) chips.push(`<span class="chip warn">⚑ note</span>`);
   return `<div class="rowcard" data-idx="${r.idx}">
-    <div class="scorepill ${r.clusterSize>1?'merge':''}">${r.clusterSize>1?("×"+r.clusterSize):"1"}</div>
+    <div class="countpill ${r.clusterSize>1?'':'single'}">${r.clusterSize>1?r.clusterSize:1}<small>${r.clusterSize>1?"records":"record"}</small></div>
     <div class="pairnames">
-      <div class="nm">${esc(r.rawName)||"<i>(no name)</i>"} <span class="small">· ${esc(r.src)}:${esc(r.id)}</span></div>
-      <div class="meta">${esc([...r.phones, ...r.weakPhones.map(p=>p+"?")].join(" / ")||"no phone")} · ${esc(r.city||"–")}${r.mojibake?" · mojibake":""}${r.arabizi?" · arabizi":""}</div>
+      <div class="nm">${esc(r.rawName)||"<i>(no name)</i>"} <span class="small">· ${esc(srcLabel(r.src))} #${esc(r.id)}</span></div>
+      <div class="meta">${esc([...r.phones, ...r.weakPhones.map(p=>p+" (incomplete)")].join(" / ")||"no phone")} · ${esc(r.city||"–")}</div>
     </div>
     <div class="chips">${chips.join("")}</div>
   </div>`;
 }
 
 function doSearch(q){
-  q = q.trim(); if (!q) return;
+  q = q.trim();
+  if (goldensOn() && (state.mode === "goldens" || state.mode === "flags")) {
+    state.mode = "goldens"; state.goldenQ = q; state.reason = null; state.page = 0;
+    renderSidebar(); loadList(); return;
+  }
+  if (!q) return;
   state.mode = "search"; state.q = q; state.page = 0; renderSidebar(); loadList();
 }
 
-// ---------- review flags (mark-for-Claude) ----------
-// Distinct from adjudication: adjudication labels a pair same/different (corpus); a flag is a
-// free-text note for Claude to review, with the full snapshot persisted for offline reading.
+// ---------- notes (separate from a verdict) ----------
 function flagPanelHtml(target, live){
   const f = state.flagsByTarget.get(target);
   const addressed = f && f.status === "addressed";
-  const statusBadge = f ? `<span class="chip ${addressed?"gold":"warn"}">${addressed?"✓ addressed by Claude":"⚑ open"}</span>` : "";
-  // before/after: what's changed on this record since it was flagged (live recompute vs snapshot)
+  const statusBadge = f ? `<span class="chip ${addressed?"gold":"warn"}">${addressed?"✓ answered":"⚑ open"}</span>` : "";
   let delta = "";
   if (f && live && f.snapScore != null){
     const changed = Math.abs(f.snapScore - live.score) > 1e-9;
-    delta = `<div class="small" style="margin-top:6px">When flagged: <b class="mono">${f.snapScore.toFixed(3)}</b> ${esc(f.snapDecision||"")} · now: <b class="mono">${live.score.toFixed(3)}</b> ${esc(live.decision)} —
-      <b style="color:${changed?'var(--brand-d)':'var(--ink-soft)'}">${changed?"changed since you flagged it":"unchanged"}</b></div>`;
+    delta = `<div class="small" style="margin-top:6px">When noted: <b class="mono">${pct(f.snapScore)}</b> · now: <b class="mono">${pct(live.score)}</b> —
+      <b style="color:${changed?'var(--brand-d)':'var(--ink-soft)'}">${changed?"changed since the note":"unchanged"}</b></div>`;
   }
   const resolution = (addressed && f.resolution)
-    ? `<div class="provrow" style="margin-top:8px;border-left:3px solid var(--brand);padding-left:9px"><b>Claude’s response (${esc(f.resolvedAt||"")}):</b> ${esc(f.resolution)}</div>` : "";
+    ? `<div class="provrow" style="margin-top:8px;border-left:3px solid var(--brand);padding-left:9px"><b>Response (${esc(f.resolvedAt||"")}):</b> ${esc(f.resolution)}</div>` : "";
   return `<div class="dpanel" style="grid-column:1/-1;border-color:${f?(addressed?'var(--brand)':'var(--steward)'):'var(--line)'}">
-    <h5>⚑ Flag for review (Claude) — separate from adjudication ${statusBadge}</h5>
+    <h5>⚑ Leave a note — separate from a verdict ${statusBadge}</h5>
     <div class="verdict">
       <select id="fl-topic" style="max-width:280px">${topicOptions(f?.topic)}</select>
-      <input type="text" id="fl-comment" placeholder="what should Claude look at? (the score, a rule idea, a data issue …)" value="${f?esc(f.comment):""}">
-      <button class="vbtn unsure" id="fl-save">⚑ ${f?"Update flag":"Flag for review"}</button>
+      <input type="text" id="fl-comment" placeholder="what should someone look at?" value="${f?esc(f.comment):""}">
+      <button class="vbtn unsure" id="fl-save">⚑ ${f?"Update note":"Save note"}</button>
       <button class="btn" id="fl-remove" style="display:${f?"inline-block":"none"}">Remove</button>
     </div>
     ${delta}
     ${resolution}
-    <div id="fl-status" class="small" style="margin-top:6px">${f?`flagged ${esc(f.createdAt)} by ${esc(f.author)}${f.updatedAt&&f.updatedAt!==f.createdAt?` · edited ${esc(f.updatedAt)}`:""} — review_notes.jsonl`:""}</div>
+    <div id="fl-status" class="small" style="margin-top:6px">${f?`noted ${esc(f.createdAt)} by ${esc(f.author)}${f.updatedAt&&f.updatedAt!==f.createdAt?` · edited ${esc(f.updatedAt)}`:""}`:""}</div>
   </div>`;
 }
 function wireFlag(kind, ids, target){
   $("#fl-save").onclick = async () => {
     const body = {kind, topic: $("#fl-topic").value, comment: $("#fl-comment").value.trim(), author: judgeName(), ...ids};
     const r = await (await fetch(api("/flag"), {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)})).json();
-    if (!r.ok) { $("#fl-status").textContent = "✖ " + (r.error||"failed"); return; }
+    if (!r.ok) { $("#fl-status").textContent = "✖ " + (r.error||"not saved"); return; }
     await loadFlags();
     $("#fl-remove").style.display = "inline-block";
-    $("#fl-save").textContent = "⚑ Update flag";
-    $("#fl-status").innerHTML = `⚑ flagged → <span class="mono">review_notes.jsonl</span> (full engine trace captured for Claude)`;
+    $("#fl-save").textContent = "⚑ Update note";
+    $("#fl-status").textContent = "⚑ note saved, with the evidence as shown now";
   };
   $("#fl-remove").onclick = async () => {
     await fetch(api("/unflag"), {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({target})});
     await loadFlags();
     $("#fl-remove").style.display = "none";
-    $("#fl-save").textContent = "⚑ Flag for review";
+    $("#fl-save").textContent = "⚑ Save note";
     $("#fl-comment").value = "";
-    $("#fl-status").textContent = "flag removed";
+    $("#fl-status").textContent = "note removed";
   };
 }
 
-// ---------- case walkthrough ----------
+// ---------- pair walkthrough ----------
 async function openCase(a, b){
-  const d = await (await fetch(api(`/case?a=${a}&b=${b}`))).json();
-  renderDetail(d);
+  if (a == null || b == null) return;
+  try { renderDetail(await getJson(`/case?a=${a}&b=${b}`)); }
+  catch (err) { showDetailError(err); return; }
   window.scrollTo({top:0, behavior:"smooth"});
 }
+function showDetailError(err){
+  $("#detailhost").innerHTML = `<div class="detail"><div class="dhead"><span class="t">Could not open this (${esc(err.message)})</span>
+    <button class="btn x" onclick="closeDetail()">✕ close</button></div></div>`;
+}
+const evidenceChips = (flags, max) => (flags || [])
+  .filter(f => !["NamesBoth","PhonesBoth","IdsBoth","VinBoth","EmailsBoth"].includes(f))
+  .slice(0, max ?? 99)
+  .map(f => `<span class="chip" title="${esc(L.desc("evidence", f))}">${esc(L.label("evidence", f))}</span>`).join(" ");
+// Both servers send the engine's own words for the outcome; the page has none of its own.
+const decisionText = d => d.decisionLabel || "";
 
 function buildSteps(d){
   const steps = [];
-  steps.push({st:"source", cap:`Two records — ${d.a.src} #${d.a.id} and ${d.b.src} #${d.b.id}.`,
-    det:`pair key ${d.key}`, place:"source"});
+  steps.push({st:"source", cap:`Two records — ${srcLabel(d.a.src)} #${d.a.id} and ${srcLabel(d.b.src)} #${d.b.id}.`, det:"", place:"source"});
   const normBits = x => x.map(s => s.detail).join("  ·  ");
-  steps.push({st:"normalize", cap:"Each record is cleaned the same way: transliterate, repair, standardize.",
+  steps.push({st:"normalize", cap:"Each record is cleaned up the same way before comparing.",
     det:`A: ${normBits(d.normalizeA)}\nB: ${normBits(d.normalizeB)}`, place:"normalize"});
-  steps.push({st:"group", cap: d.blockKeys.length ? "Shared block keys bring them into the same comparison group." :
-    "No shared block key — this pair only meets through on-demand scoring (it was never blocked together).",
-    det: d.blockKeys.length ? "shared keys: " + d.blockKeys.join("  ") +
-      (d.cappedBlockKeys.length ? `   (capped: ${d.cappedBlockKeys.join(" ")})` : "") : "", place:"group"});
+  steps.push({st:"group", cap: d.blockKeys.length ? "Something they share puts them in the same comparison group." :
+    "They share nothing that groups them, so they were only compared here, on request.",
+    det: d.blockKeys.length ? "shared: " + d.blockKeys.join("  ") : "", place:"group"});
   for (const t of d.trace){
     if (t.stage === "decide") continue;
     steps.push({st:"score", cap:t.title + ".", det:t.detail, meter:t.conf, place:"score"});
   }
-  const fin = d.trace.find(t => t.stage === "decide");
-  steps.push({st:"decide", cap: d.decision === "auto-merge"
-      ? (d.sameIdentity ? "Auto-merge — these records live in one identity." : "Auto-merge band.")
-      : d.decision === "steward-queue" ? "Steward queue — genuine uncertainty; a person decides."
-      : "Kept separate.",
-    det: fin ? fin.detail : `final ${d.score}`, meter:d.score, place:"decide",
-    zone: d.decision === "auto-merge" ? "golden" : d.decision === "steward-queue" ? "steward" : "separate",
+  const zone = d.decision === "auto-merge" ? "golden" : d.decision === "steward-queue" ? "steward" : "separate";
+  steps.push({st:"decide", cap: decisionText(d) + (d.decision === "auto-merge" && d.sameIdentity ? " — these records are one customer." : "."),
+    det:`match strength ${pct(d.score)}`, meter:d.score, place:"decide", zone,
     golden: d.cluster ? {name:d.cluster.goldenName, size:d.cluster.size} : null});
   return steps;
 }
@@ -657,28 +744,25 @@ function renderDetail(d){
   const host = $("#detailhost");
   const steps = buildSteps(d);
   state.anim = {steps, i:0, playing:false, timer:null, detail:d};
-  const goldChip = d.gold ? `<span class="chip gold" title="panel votes s/d/a: ${esc(d.gold.votes)}">gold #${esc(d.gold.pairId)}: ${esc(d.gold.label)}</span>` : "";
   host.innerHTML = `
   <div class="detail">
     <div class="dhead">
       <span class="t">${esc(d.a.rawName)||"(no name)"} ~ ${esc(d.b.rawName)||"(no name)"}</span>
-      <span class="scorepill ${scoreClass(d.score)}" style="width:auto;padding:4px 10px">${d.score.toFixed(3)}</span>
-      <span class="chip">${esc(d.band)}</span>
-      ${d.flags.map(f=>`<span class="chip">${f}</span>`).join("")}
-      ${goldChip}
-      <span class="k">${esc(d.key)}</span>
+      <span class="scorepill ${scoreClass(d.score)}" style="width:auto;padding:4px 10px" title="match strength">${pct(d.score)}</span>
+      <span class="chip">${esc(decisionText(d))}</span>
+      ${evidenceChips(d.flags)}
       <button class="btn x" onclick="closeDetail()">✕ close</button>
     </div>
     <div class="stage">
       <div class="track">${STATIONS.map(s=>`<div class="station" id="st-${s.id}"><div class="orb">${s.ic}</div><div class="nm">${s.nm}</div></div>`).join("")}</div>
       <div class="meterbox" id="meterbox"><div class="meter">
-        <div class="lab"><span>confidence</span><b id="mval">–</b></div>
+        <div class="lab"><span>match strength</span><b id="mval">–</b></div>
         <div class="bar"><div class="fill" id="mfill"></div><div class="thr"></div><div class="thr t80"></div></div>
       </div></div>
       <div class="zones">
-        <div class="zone golden-z" id="z-golden"><div class="zh">🏆 Golden identity</div><div class="zs">auto-merge ≥ 0.90</div></div>
-        <div class="zone steward-z" id="z-steward"><div class="zh">🧑‍⚖️ Steward queue</div><div class="zs">0.80 – 0.90</div></div>
-        <div class="zone separate-z" id="z-separate"><div class="zh">🚧 Kept separate</div><div class="zs">below 0.80 or vetoed</div></div>
+        <div class="zone golden-z" id="z-golden"><div class="zh">🏆 Combined</div><div class="zs">matched closely enough</div></div>
+        <div class="zone steward-z" id="z-steward"><div class="zh">🧑‍⚖️ A person decides</div><div class="zs">close, but not certain</div></div>
+        <div class="zone separate-z" id="z-separate"><div class="zh">🚧 Kept separate</div><div class="zs">not similar enough, or held apart</div></div>
       </div>
       <div class="cards" id="cards"></div>
       <div class="golden" id="goldcard"></div>
@@ -686,38 +770,37 @@ function renderDetail(d){
     <div class="console">
       <div class="caption"><div class="ctext" id="cap"></div><div class="cdetail" id="cdet"></div></div>
       <div class="controls">
-        <button class="cbtn" onclick="stepNav(-1)">‹</button>
+        <button class="cbtn" onclick="stepNav(-1)" aria-label="previous step">‹</button>
         <button class="cbtn play" id="playbtn" onclick="togglePlay()">▶ Play</button>
-        <button class="cbtn" onclick="stepNav(1)">›</button>
+        <button class="cbtn" onclick="stepNav(1)" aria-label="next step">›</button>
         <div class="dots" id="dots"></div>
       </div>
     </div>
     <div class="dbody">
-      <div class="dpanel"><h5>Record A — ${esc(d.a.src)} #${esc(d.a.id)}</h5>${recordKv(d.a)}</div>
-      <div class="dpanel"><h5>Record B — ${esc(d.b.src)} #${esc(d.b.id)}</h5>${recordKv(d.b)}</div>
-      <div class="dpanel" style="grid-column:1/-1"><h5>Engine trace (the live scorer's own steps)</h5>
+      <div class="dpanel"><h5>Record A — ${esc(srcLabel(d.a.src))} #${esc(d.a.id)}</h5>${recordKv(d.a)}</div>
+      <div class="dpanel"><h5>Record B — ${esc(srcLabel(d.b.src))} #${esc(d.b.id)}</h5>${recordKv(d.b)}</div>
+      <div class="dpanel" style="grid-column:1/-1"><h5>How they were compared</h5>
         <div class="tracelist">${d.trace.map((t,i)=>
-          `<div class="ts" onclick="jumpTrace(${i})"><span class="st">${esc(t.stage)}</span>
-           <span><span class="tt">${esc(t.title)}</span><div class="td">${esc(t.detail)}</div></span>
-           ${t.conf!=null?`<span class="cf">${t.conf.toFixed(3)}</span>`:""}</div>`).join("")}</div>
+          `<div class="ts" onclick="jumpTrace(${i})"><span><span class="tt">${esc(t.title)}</span><div class="td">${esc(t.detail)}</div></span>
+           ${t.conf!=null?`<span class="cf">${pct(t.conf)}</span>`:""}</div>`).join("")}</div>
       </div>
-      ${d.cluster ? `<div class="dpanel" style="grid-column:1/-1"><h5>Identity</h5>
-        <div>One identity: <b>${esc(d.cluster.goldenName)}</b> · ${d.cluster.size} records · ${d.cluster.sources} dealer(s)
-        <span class="linky" onclick="openCluster(${d.cluster.root})">view how it assembled →</span></div></div>` : ""}
-      ${(!d.sameIdentity && (d.clusterA || d.clusterB)) ? `<div class="dpanel" style="grid-column:1/-1"><h5>Current identities (not merged)</h5>
-        ${d.clusterA?`<div>A is part of <b>${esc(d.clusterA.goldenName)}</b> ×${d.clusterA.size} <span class="linky" onclick="openCluster(${d.clusterA.root})">view →</span></div>`:""}
-        ${d.clusterB?`<div>B is part of <b>${esc(d.clusterB.goldenName)}</b> ×${d.clusterB.size} <span class="linky" onclick="openCluster(${d.clusterB.root})">view →</span></div>`:""}</div>` : ""}
-      <div class="dpanel" style="grid-column:1/-1"><h5>Adjudicate (writes to label_audits.csv)</h5>
+      ${d.cluster ? `<div class="dpanel" style="grid-column:1/-1"><h5>Customer</h5>
+        <div>One customer: <b>${esc(d.cluster.goldenName)}</b> · ${d.cluster.size} records · ${d.cluster.sources} source(s)
+        <span class="linky" onclick="openCluster(${d.cluster.root})">open the customer →</span></div></div>` : ""}
+      ${(!d.sameIdentity && (d.clusterA || d.clusterB)) ? `<div class="dpanel" style="grid-column:1/-1"><h5>Currently two customers</h5>
+        ${d.clusterA?`<div>A belongs to <b>${esc(d.clusterA.goldenName)}</b> (${d.clusterA.size} records) <span class="linky" onclick="openCluster(${d.clusterA.root})">open →</span></div>`:""}
+        ${d.clusterB?`<div>B belongs to <b>${esc(d.clusterB.goldenName)}</b> (${d.clusterB.size} records) <span class="linky" onclick="openCluster(${d.clusterB.root})">open →</span></div>`:""}</div>` : ""}
+      <div class="dpanel" style="grid-column:1/-1"><h5>Your verdict</h5>
         <div class="verdict">
           <button class="vbtn same" onclick="sendVerdict('same')">Same person</button>
-          <button class="vbtn diff" onclick="sendVerdict('different')">Different</button>
-          <button class="vbtn unsure" onclick="sendVerdict('unsure')">Unsure</button>
-          <input type="text" id="v-note" placeholder="rationale (optional but valuable — it feeds the corpus)">
-          <input type="text" id="v-judge" style="max-width:210px" placeholder="judge" value="${esc(localStorage.getItem('cc_judge')||'Aza Asim (domain expert)')}">
+          <button class="vbtn diff" onclick="sendVerdict('different')">Different people</button>
+          <button class="vbtn unsure" onclick="sendVerdict('unsure')">Not sure</button>
+          <input type="text" id="v-note" placeholder="why (optional, but it helps)">
+          <input type="text" id="v-judge" style="max-width:210px" placeholder="your name (optional)" value="${esc(judgeName())}">
         </div>
         <div id="v-status" class="small" style="margin-top:6px"></div>
         ${d.audits?.length ? `<div style="margin-top:8px">${d.audits.map(a =>
-          `<div class="provrow"><b>${esc(a.newLabel)}</b> by ${esc(a.auditedBy)} on ${esc(a.date)} (${esc(a.status)})${a.rationale?` — ${esc(a.rationale)}`:""}</div>`).join("")}</div>` : ""}
+          `<div class="provrow"><b>${esc(a.newLabel || "undecided")}</b> by ${esc(a.auditedBy)} on ${esc(a.date)}${a.rationale?` — ${esc(a.rationale)}`:""}</div>`).join("")}</div>` : ""}
       </div>
       ${flagPanelHtml("pair:"+d.key, {score: d.score, decision: d.decision})}
     </div>
@@ -729,16 +812,18 @@ function renderDetail(d){
 }
 
 function recordKv(r){
+  const vinSrc = s => s === "sale" ? "bought" : "serviced";
+  const repaired = [r.mojibake ? L.label("cases","Mojibake") : "", r.arabizi ? L.label("cases","Arabizi") : ""].filter(Boolean);
   return `<div class="kv">
-    <span class="k">raw name</span><span class="v">${esc(r.rawName)||"–"}</span>
-    <span class="k">normalized</span><span class="v">${esc(r.normName)||"– (dropped)"}${r.mojibake?" · <b>mojibake-recovered</b>":""}${r.arabizi?" · <b>arabizi</b>":""}</span>
-    <span class="k">phones</span><span class="v">${esc([...r.phones, ...r.weakPhones.map(p=>p+" (weak)")].join(" / ")||"–")}</span>
-    <span class="k">DOB</span><span class="v">${esc(r.dob||"–")}</span>
-    <span class="k">national id</span><span class="v">${esc(r.natId||"–")}</span>
-    <span class="k">address</span><span class="v">${esc(r.rawAddress.replaceAll("|"," | ")||"–")}</span>
-    <span class="k">→ normalized</span><span class="v">${esc(r.normAddress||"–")}${r.city?` · city “${esc(r.city)}”`:""}</span>
-    ${r.vins?.length?`<span class="k">VINs</span><span class="v">${r.vins.map(v=>`${esc(v.vin)} <b>${esc(v.src)}</b>${v.first?` (${esc(v.first)}${v.last&&v.last!==v.first?"–"+esc(v.last):""})`:""}`).join(" · ")}</span>`:""}
-    <span class="k">identity</span><span class="v">${r.clusterSize>1?`in a ×${r.clusterSize} cluster <span class="linky" onclick="openCluster(${r.clusterRoot})">view →</span>`:"single-record"}</span>
+    <span class="k">name as entered</span><span class="v">${esc(r.rawName)||"–"}</span>
+    <span class="k">name compared</span><span class="v">${esc(r.normName)||"– (not usable)"}${repaired.length?` · <b>${esc(repaired.join(", "))}</b>`:""}</span>
+    <span class="k">phones</span><span class="v">${esc([...r.phones, ...r.weakPhones.map(p=>p+" (incomplete)")].join(" / ")||"–")}</span>
+    <span class="k">birth date</span><span class="v">${esc(r.dob||"–")}</span>
+    <span class="k">ID number</span><span class="v">${esc(r.natId||"–")}</span>
+    <span class="k">address</span><span class="v">${esc((r.rawAddress||"").replaceAll("|"," | ")||"–")}</span>
+    <span class="k">address compared</span><span class="v">${esc(r.normAddress||"–")}${r.city?` · city “${esc(r.city)}”`:""}</span>
+    ${r.vins?.length?`<span class="k">vehicles</span><span class="v">${r.vins.map(v=>`${esc(v.vin)} <b>${esc(vinSrc(v.src))}</b>${v.first?` (${esc(v.first)}${v.last&&v.last!==v.first?"–"+esc(v.last):""})`:""}`).join(" · ")}</span>`:""}
+    <span class="k">customer</span><span class="v">${r.clusterSize>1?`one of ${r.clusterSize} records <span class="linky" onclick="openCluster(${r.clusterRoot})">open the customer →</span>`:(r.clusterRoot?`only record <span class="linky" onclick="openCluster(${r.clusterRoot})">open the customer →</span>`:"only record")}</span>
   </div>`;
 }
 
@@ -753,7 +838,7 @@ function buildCards(d){
   [d.a, d.b].forEach((r, i) => {
     const el = document.createElement("div");
     el.className = "rec"; el.style.setProperty("--c", srcColor(r.src));
-    el.innerHTML = `<div class="src">${esc(r.src)} #${esc(r.id)}</div><div class="nm">${esc(r.rawName)||"(no name)"}</div>
+    el.innerHTML = `<div class="src">${esc(srcLabel(r.src))} #${esc(r.id)}</div><div class="nm">${esc(r.rawName)||"(no name)"}</div>
       <div class="ph">${esc((r.phones[0]??r.weakPhones[0])??"")}</div><div class="ad">${esc(r.normAddress)}</div>`;
     el.style.top = "0px"; el.style.left = "0px";
     host.appendChild(el);
@@ -761,10 +846,8 @@ function buildCards(d){
   });
 }
 function placeCards(stationId, gather){
-  const cards = document.querySelectorAll("#cards .rec");
-  cards.forEach(el => {
+  document.querySelectorAll("#cards .rec").forEach(el => {
     const lane = +el.dataset.lane;
-    // gathered cards nest with a small offset so both stay visible
     const x = stationX(stationId) - 100 + (gather ? lane * 14 : 0);
     const y = gather ? 188 + lane * 22 : LANE_Y[lane];
     el.style.transform = `translate(${x}px, ${y - 60}px)`;
@@ -784,7 +867,7 @@ function stepTo(i){
   const mb = $("#meterbox");
   if (s.meter != null){
     mb.classList.add("show");
-    $("#mval").textContent = s.meter.toFixed(3);
+    $("#mval").textContent = pct(s.meter);
     const f = $("#mfill");
     f.style.width = Math.round(s.meter * 100) + "%";
     f.style.background = s.meter >= 0.90 ? "var(--merge)" : s.meter >= 0.80 ? "var(--steward)" : "var(--separate)";
@@ -792,19 +875,15 @@ function stepTo(i){
   ["golden","steward","separate"].forEach(z => $("#z-"+z).classList.toggle("lit", s.zone === z));
   const g = $("#goldcard");
   if (s.zone === "golden" && s.golden){
-    g.innerHTML = `<div class="gt">🏆 golden identity</div><div class="gn">${esc(s.golden.name)}</div>
-      <div class="gp">×${s.golden.size} records</div>
-      <div class="chipsrow"><span class="chip">survived by the engine</span></div>`;
+    g.innerHTML = `<div class="gt">🏆 one customer</div><div class="gn">${esc(s.golden.name)}</div>
+      <div class="gp">${s.golden.size} records</div>`;
     g.classList.add("show");
   } else g.classList.remove("show");
   document.querySelectorAll("#dots .pdot").forEach((d,k)=>d.classList.toggle("on", k === a.i));
 }
 function stepNav(d){ stopPlay(); stepTo(state.anim.i + d); }
 function stepJump(k){ stopPlay(); stepTo(k); }
-function jumpTrace(traceIdx){
-  // trace step k lives at walkthrough index 3 + k (source, normalize, group come first)
-  stopPlay(); stepTo(Math.min(3 + traceIdx, state.anim.steps.length - 1));
-}
+function jumpTrace(traceIdx){ stopPlay(); stepTo(Math.min(3 + traceIdx, state.anim.steps.length - 1)); }
 function togglePlay(){
   const a = state.anim; if (!a) return;
   if (a.playing) { stopPlay(); return; }
@@ -827,39 +906,40 @@ function closeDetail(){ stopPlay(); $("#detailhost").innerHTML = ""; state.anim 
 async function sendVerdict(v){
   const a = state.anim; if (!a) return;
   const judge = $("#v-judge").value.trim();
-  localStorage.setItem("cc_judge", judge);
+  try { if (judge) localStorage.setItem("cc_judge", judge); else localStorage.removeItem("cc_judge"); } catch {}
   const body = {a: a.detail.a.idx, b: a.detail.b.idx, verdict: v, rationale: $("#v-note").value.trim(), judge};
   const r = await fetch(api("/audit"), {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
-  const j = await r.json();
-  $("#v-status").innerHTML = r.ok
-    ? `✔ recorded <b>${esc(v)}</b> → label_audits.csv (status: pending application to labels)`
-    : `✖ ${esc(j.error||"failed")}`;
+  const j = await r.json().catch(() => ({}));
+  const said = {same: "same person", different: "different people", unsure: "not sure"}[v] || v;
+  $("#v-status").innerHTML = r.ok ? `✔ recorded: <b>${esc(said)}</b>` : `✖ ${esc(j.error||"not recorded")}`;
 }
 
-// ---------- record + cluster views ----------
+// ---------- record and customer views ----------
 async function openRecord(idx){
-  const d = await (await fetch(api(`/record/${idx}`))).json();
+  if (idx == null) return;
+  let d;
+  try { d = await getJson(`/record/${idx}`); } catch (err) { showDetailError(err); return; }
   const host = $("#detailhost");
   stopPlay(); state.anim = null;
   host.innerHTML = `
   <div class="detail"><div class="dhead">
-      <span class="t">${esc(d.record.rawName)||"(no name)"} <span class="small">· ${esc(d.record.src)}:${esc(d.record.id)}</span></span>
+      <span class="t">${esc(d.record.rawName)||"(no name)"} <span class="small">· ${esc(srcLabel(d.record.src))} #${esc(d.record.id)}</span></span>
       <button class="btn x" onclick="closeDetail()">✕ close</button></div>
     <div class="dbody">
       <div class="dpanel"><h5>Record</h5>${recordKv(d.record)}</div>
-      <div class="dpanel"><h5>Normalization & blocking</h5>
-        <div class="tracelist">${d.normalize.map(n=>`<div class="ts"><span class="st">${esc(n.stage)}</span><span class="td">${esc(n.detail)}</span></div>`).join("")}</div>
-        <div style="margin-top:8px" class="small">block keys: <span class="mono">${d.blockKeys.map(esc).join("  ")}</span></div>
-        ${d.cappedKeys.length?`<div class="small">capped keys (blocking skipped these): <span class="mono">${d.cappedKeys.map(k=>esc(k.key)+" ×"+k.size).join("  ")}</span></div>`:""}
+      <div class="dpanel"><h5>Clean-up and comparison groups</h5>
+        <div class="tracelist">${(d.normalize||[]).map(n=>`<div class="ts"><span class="td">${esc(n.detail)}</span></div>`).join("")}</div>
+        <div style="margin-top:8px" class="small">comparison groups: <span class="mono">${(d.blockKeys||[]).map(esc).join("  ")||"none"}</span></div>
+        ${(d.cappedKeys||[]).length?`<div class="small">groups too large to compare within: <span class="mono">${d.cappedKeys.map(k=>esc(k.key)+" ×"+k.size).join("  ")}</span></div>`:""}
       </div>
-      <div class="dpanel" style="grid-column:1/-1"><h5>Candidates, scored on demand (top 50)</h5>
-        ${d.candidates.length ? d.candidates.map(c => `
+      <div class="dpanel" style="grid-column:1/-1"><h5>Similar records</h5>
+        ${(d.candidates||[]).length ? d.candidates.map(c => `
           <div class="rowcard" style="margin-bottom:6px" onclick="openCase(${d.record.idx},${c.record.idx})">
-            <div class="scorepill ${scoreClass(c.score)}">${c.score.toFixed(3)}</div>
-            <div class="pairnames"><div class="nm">${esc(c.record.rawName)||"(no name)"} <span class="small">· ${esc(c.record.src)}:${esc(c.record.id)}</span></div>
+            <div class="scorepill ${scoreClass(c.score)}">${pct(c.score)}</div>
+            <div class="pairnames"><div class="nm">${esc(c.record.rawName)||"(no name)"} <span class="small">· ${esc(srcLabel(c.record.src))} #${esc(c.record.id)}</span></div>
             <div class="meta">${esc((c.record.phones[0]??c.record.weakPhones[0])??"–")} · ${esc(c.record.city||"–")}</div></div>
-            <div class="chips">${c.flags.slice(0,4).map(f=>`<span class="chip">${f}</span>`).join("")}</div>
-          </div>`).join("") : `<div class="small">No co-blocked candidates.</div>`}
+            <div class="chips">${evidenceChips(c.flags, 4)}</div>
+          </div>`).join("") : `<div class="small">${esc(d.note || "No similar records listed.")}</div>`}
       </div>
       ${flagPanelHtml(`record:${d.record.src}:${d.record.id}`, null)}
     </div></div>`;
@@ -867,48 +947,89 @@ async function openRecord(idx){
   window.scrollTo({top:0, behavior:"smooth"});
 }
 
+function memberRow(m){
+  if (m.staged === false) {
+    return `<div class="rowcard stub" style="margin-bottom:6px">
+      <div class="pairnames"><div class="nm">${esc(srcLabel(m.src))} #${esc(m.id)}</div>
+      <div class="meta">${m.removed ? "no longer in its source" : "details were not loaded in the latest run"}</div></div></div>`;
+  }
+  return `<div class="rowcard go" style="margin-bottom:6px" onclick="openRecord(${m.idx})">
+    <div class="pairnames"><div class="nm">${esc(m.rawName)||"(no name)"} <span class="small">· ${esc(srcLabel(m.src))} #${esc(m.id)}</span></div>
+    <div class="meta">${esc([...m.phones,...m.weakPhones.map(p=>p+" (incomplete)")].join(" / ")||"no phone")} · ${esc(m.normAddress||m.city||"–")}${m.vins?.length?` · ${m.vins.length} vehicle(s)`:""}</div></div>
+    ${m.mojibake?`<span class="chip cat">${esc(L.label("cases","Mojibake"))}</span>`:""}${m.arabizi?`<span class="chip cat">${esc(L.label("cases","Arabizi"))}</span>`:""}
+  </div>`;
+}
+function pairLine(p, withCats){
+  const other = p.other || {};
+  const go = p.a != null && p.b != null;
+  const cats = withCats ? (p.cats||[]).map(k => `<span class="chip cat" title="${esc(L.desc("cases",k))}">${esc(L.label("cases",k))}</span>`).join("") : "";
+  return `<div class="rowcard ${go?"go":""}" style="margin-bottom:6px" ${go?`onclick="openCase(${p.a},${p.b})"`:""}>
+    <div class="scorepill ${scoreClass(p.score)}" title="match strength">${pct(p.score)}</div>
+    <div class="pairnames"><div class="nm">${esc(other.rawName)||"(no name)"} <span class="small">· ${esc(srcLabel(other.src))} #${esc(other.id)}</span></div>
+    <div class="meta">${p.otherCustomer?`Customer #${esc(p.otherCustomer)} <span class="linky" onclick="event.stopPropagation();openCluster('${esc(p.otherCustomer)}')">open →</span>`:"–"}</div></div>
+    <div class="chips">${cats}</div>
+  </div>`;
+}
+
 async function openCluster(root){
-  const d = await (await fetch(api(`/cluster/${root}`))).json();
-  if (d.error) return;
+  let d;
+  try { d = await getJson(`/cluster/${encodeURIComponent(root)}`); } catch (err) { showDetailError(err); return; }
+  if (d.error) { showDetailError(new Error(d.error)); return; }
   const host = $("#detailhost");
   stopPlay(); state.anim = null;
   const ns = d.nameSurvival;
+  const name = d.goldenName || (d.golden||[]).find(g=>g.attrType==="full_name")?.value;
+  // Both hosts' shapes: the hosted reader keys edge ends by record key, the standalone by index.
+  const members = d.members || [];
+  const byKey = new Map(members.map(m => [`${m.src}:${m.id}`, m]));
+  const byIdx = new Map(members.filter(m => m.idx != null).map(m => [m.idx, m]));
+  const end = (key, idx) => (key && byKey.get(key)) || byIdx.get(idx) || {src: key ? key.split(":")[0] : "", id: key ? key.slice(key.indexOf(":") + 1) : ""};
+  const nameOf = m => m.rawName ? `${m.rawName} #${m.id}` : `${srcLabel(m.src)} #${m.id}`;
+  const size = d.size ?? members.length;
+  const sources = d.sources ?? new Set(members.map(m => m.src)).size;
+  const EDGES_SHOWN = 30;
+  const chips = (d.reasons?.length ? reasonChips(d.reasons)
+    : (d.cats||[]).map(k=>`<span class="chip cat" title="${esc(L.desc("clusters",k))}">${esc(L.label("clusters",k))}</span>`).join(""));
   host.innerHTML = `
   <div class="detail"><div class="dhead">
-      <span class="t">🏆 ${esc(d.golden.find(g=>g.attrType==="full_name")?.value ?? "(no name)")}</span>
-      <span class="chip cat">×${d.members.length} records</span>
-      ${d.registry?.goldenId?`<span class="chip" style="background:#c9a227;color:#1a1a1a">Golden #${d.registry.goldenId}${d.registry.status===2?" (redirected)":d.registry.status===3?" (inactive)":""} · run ${d.registry.run}</span>`:""}
-      ${d.registry?.split?`<span class="chip warn">⚠ registry split — engine changed since last resolve</span>`:""}
-      ${d.cats.map(k=>`<span class="chip cat">${CLCAT_LABELS[k]?.[0]??k}</span>`).join("")}
+      <span class="t">🏆 ${esc(name) || "(no name)"}</span>
+      <span class="chip cat">${size} record${size===1?"":"s"} · ${sources} source(s)</span>
+      ${d.registry?.goldenId?`<span class="chip" style="background:#c9a227;color:#1a1a1a">Customer #${d.registry.goldenId}${d.registry.status===2?" (merged into another)":d.registry.status===3?" (inactive)":""}</span>`:""}
+      ${chips}
       <button class="btn x" onclick="closeDetail()">✕ close</button></div>
     <div class="dbody">
-      <div class="dpanel"><h5>Golden values (engine-survived)</h5>
-        <div class="kv">${d.golden.map(g=>`<span class="k">${esc(g.attrType)}</span><span class="v">${esc(g.value)} <span class="small">· won by ${esc(g.wonBy)}</span></span>`).join("")}</div>
-        <h5 style="margin-top:12px">Name survivorship</h5>
-        <div class="small">anchor (most attested): <b class="mono">${esc(ns.anchor??"–")}</b> ×${ns.anchorCount}
-          ${ns.chosen?` → extended to <b class="mono">${esc(ns.chosen)}</b> (longest chain continuing the anchor)`:` — no qualifying fuller chain; anchor survives`}</div>
+      <div class="dpanel"><h5>Customer details</h5>
+        <div class="kv">${(d.golden||[]).map(g=>{
+          const how = g.how || (g.wonBy ? L.label("survival", g.wonBy) : "");
+          return `<span class="k">${esc(g.label || L.label("attributes", g.attrType))}</span><span class="v">${esc(g.value)}${how?` <span class="small">· ${esc(how)}</span>`:""}</span>`;
+        }).join("") || `<span class="k">–</span><span class="v">nothing recorded</span>`}</div>
+        ${ns ? `<h5 style="margin-top:12px">How the name was chosen</h5>
+        <div class="small">Most common spelling: <b class="mono">${esc(ns.anchor??"–")}</b> (${ns.anchorCount} record${ns.anchorCount===1?"":"s"})
+          ${ns.chosen?` → shown in its fullest form <b class="mono">${esc(ns.chosen)}</b>`:` — shown as it is`}</div>
         ${ns.extensions.length?`<div class="tracelist" style="margin-top:6px">${ns.extensions.map(e=>
-          `<div class="ts"><span class="st">${e.name===ns.chosen?"chosen":"cand."}</span>
-           <span><span class="tt mono">${esc(e.name)}</span> <span class="small">×${e.count}</span>
-           <div class="td">${e.givenAligns?(e.bridge?`bridged by “${esc(e.bridge)}”`:"given aligns, no bridging member — refused"):"given name does not align — refused"}</div></span></div>`).join("")}</div>`:""}
+          `<div class="ts"><span class="st">${e.name===ns.chosen?"chosen":"also seen"}</span>
+           <span><span class="tt mono">${esc(e.name)}</span> <span class="small">(${e.count})</span>
+           <div class="td">${e.givenAligns?(e.bridge?"continues the common spelling":"same first name, but no record links it — not used"):"different first name — not used"}</div></span></div>`).join("")}</div>`:""}` : ""}
       </div>
-      <div class="dpanel"><h5>How it assembled (auto-merge edges)</h5>
-        ${d.edges.length ? d.edges.map(e=>{
-          const ra = d.members.find(m=>m.idx===e.a), rb = d.members.find(m=>m.idx===e.b);
+      <div class="dpanel"><h5>How the records were joined</h5>
+        ${(d.edges||[]).length ? d.edges.slice(0, EDGES_SHOWN).map(e=>{
+          const go = e.a != null && e.b != null;
+          const ea = end(e.aKey, e.a), eb = end(e.bKey, e.b);
           const decisive = e.noVin!=null && e.score>=0.90 && e.noVin<0.90;
-          return `<div class="ts tracelist" style="display:flex;gap:8px;padding:5px 0;border-bottom:1px dashed #edf0f6;cursor:pointer" onclick="openCase(${e.a},${e.b})">
-            <span class="cf mono">${e.score.toFixed(2)}</span>
-            <span class="td">${esc(ra?.rawName??("#"+e.a))} ~ ${esc(rb?.rawName??("#"+e.b))}
-              ${e.crossDealer?`<span class="chip">${esc(ra?.src)}↔${esc(rb?.src)}</span>`:""}
-              ${decisive?`<span class="chip warn" title="without the VIN signal this scores ${e.noVin.toFixed(2)} — below the 0.90 merge line, so name+phone+address alone would NOT have merged it">⭐ VIN-decisive · no-VIN ${e.noVin.toFixed(2)}</span>`:""}</span></div>`;
-        }).join("") : `<div class="small">No edges recorded (single-record or threshold edge-case).</div>`}
+          return `<div class="ts tracelist" style="display:flex;gap:8px;padding:5px 0;border-bottom:1px dashed #edf0f6;${go?"cursor:pointer":""}" ${go?`onclick="openCase(${e.a},${e.b})"`:""}>
+            <span class="cf mono" title="match strength">${pct(e.score)}</span>
+            <span class="td">${esc(nameOf(ea))} ~ ${esc(nameOf(eb))}
+              ${e.crossDealer?`<span class="chip">${esc(srcLabel(ea.src))} ↔ ${esc(srcLabel(eb.src))}</span>`:""}
+              ${evidenceChips(e.flags, 3)}
+              ${decisive?`<span class="chip warn" title="${esc(L.desc("clusters","VinDecisive"))}">${esc(L.label("clusters","VinDecisive"))}</span>`:""}</span></div>`;
+        }).join("") + (d.edges.length > EDGES_SHOWN ? `<div class="small" style="padding-top:6px">and ${d.edges.length - EDGES_SHOWN} more links (strongest shown first)</div>` : "") : `<div class="small">${size>1?"Joined by a reviewer, or by links not listed here.":"A single record — nothing to join."}</div>`}
       </div>
-      <div class="dpanel" style="grid-column:1/-1"><h5>Members</h5>
-        ${d.members.map(m=>`<div class="rowcard" style="margin-bottom:6px" onclick="openRecord(${m.idx})">
-          <div class="pairnames"><div class="nm">${esc(m.rawName)||"(no name)"} <span class="small">· ${esc(m.src)}:${esc(m.id)}</span></div>
-          <div class="meta">${esc([...m.phones,...m.weakPhones.map(p=>p+"?")].join(" / ")||"no phone")} · ${esc(m.normAddress||"–")} · DOB ${esc(m.dob||"–")}</div></div>
-          ${m.mojibake?`<span class="chip cat">mojibake</span>`:""}${m.arabizi?`<span class="chip cat">arabizi</span>`:""}
-        </div>`).join("")}
+      ${(d.reviewPairs||[]).length?`<div class="dpanel sectionlist" style="grid-column:1/-1"><h5>Waiting for a person (${d.reviewPairs.length})</h5>
+        ${d.reviewPairs.map(p => pairLine(p, false)).join("")}</div>`:""}
+      ${(d.relatedPairs||[]).length?`<div class="dpanel sectionlist" style="grid-column:1/-1"><h5>Similar customers kept separate (${d.relatedPairs.length})</h5>
+        ${d.relatedPairs.map(p => pairLine(p, true)).join("")}</div>`:""}
+      <div class="dpanel sectionlist" style="grid-column:1/-1"><h5>Records (${members.length})</h5>
+        ${members.map(memberRow).join("")}
       </div>
       ${flagPanelHtml("cluster:"+d.root, null)}
     </div></div>`;
@@ -916,12 +1037,14 @@ async function openCluster(root){
   window.scrollTo({top:0, behavior:"smooth"});
 }
 
+function scoreClass(s){ return s >= 0.90 ? "merge" : s >= 0.80 ? "steward" : ""; }
+
 function exportBatch(){
   const p = filterQuery();
   p.delete("page"); p.delete("size");
   p.set("limit", $("#x-limit").value || "500");
   p.set("stride", $("#x-stride").value || "1");
-  window.location = "/api/export?" + p;
+  window.location = api("/export?" + p);
 }
 </script>
 </body>

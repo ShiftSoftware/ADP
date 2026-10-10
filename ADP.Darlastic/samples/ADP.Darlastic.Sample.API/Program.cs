@@ -65,6 +65,11 @@ mvcBuilder.AddShiftEntityWeb(x =>
 // though the module's own action-tree enforcement is off below. AddDarlasticApiServices adds the
 // Darlastic tree into the options it configures.
 builder.Services.AddTypeAuth(_ => { });
+// A host decides who may see personal information unmasked by granting the PII action, which
+// TypeAuth only evaluates for trees it was given. Registered here as any host must; granted to the
+// dev user only through Sample:DevAccessTree (see DevAuthenticationHandler).
+builder.Services.Configure<ShiftSoftware.TypeAuth.AspNetCore.TypeAuthAspNetCoreOptions>(
+    o => o.AddActionTree<ShiftSoftware.ShiftEntity.Core.PiiActionTree>());
 
 builder.Services.AddAuthentication(DevAuthenticationHandler.SchemeName)
     .AddScheme<AuthenticationSchemeOptions, DevAuthenticationHandler>(

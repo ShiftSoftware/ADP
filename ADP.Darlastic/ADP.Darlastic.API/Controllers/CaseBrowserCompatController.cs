@@ -9,8 +9,11 @@ using ShiftSoftware.ADP.Darlastic.Data.Entities;
 using ShiftSoftware.ADP.Darlastic.Engine;
 using ShiftSoftware.ADP.Darlastic.Shared;
 using ShiftSoftware.ADP.Darlastic.Shared.ActionTrees;
+using ShiftSoftware.ShiftEntity.Core.Pii;
 using ShiftSoftware.ShiftEntity.EFCore;
+using ShiftSoftware.ShiftEntity.Model.Dtos;
 using ShiftSoftware.TypeAuth.Core;
+using System.Globalization;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -42,6 +45,13 @@ namespace ShiftSoftware.ADP.Darlastic.API.Controllers;
 /// whole tenant corpus) from what the process loaded and scored. A hosted reader scores nothing, so
 /// the in-view block reports the staged set instead. The registry block is unaffected and remains
 /// the honest corpus number — which is the distinction that whole header exists to make.</para>
+///
+/// <para><b>Personal information follows the golden contract.</b> Names, phones, ID numbers,
+/// birth dates and addresses leave this controller masked with the framework's masker unless the
+/// caller holds the host's PII reveal action (<see cref="PiiOptions.Action"/>) — for a token holder,
+/// as measured when the token was minted. Searching by part of a name or phone needs the partial
+/// search action; without it a search matches whole values only. The engine's explanation text
+/// quotes the records it compares, so it is scrubbed the same way.</para>
 /// </summary>
 /// <remarks>
 /// <para><b>On <see cref="AllowAnonymousAttribute"/>.</b> ShiftIdentity installs a global
@@ -58,13 +68,18 @@ public class CaseBrowserCompatController : ControllerBase
 {
     private readonly ShiftDbContext db;
     private readonly DarlasticApiOptions options;
+    private readonly IPiiMasker masker;
+    private readonly PiiOptions piiOptions;
 
     private static readonly JsonSerializerOptions PayloadJson = new() { PropertyNameCaseInsensitive = true };
 
-    public CaseBrowserCompatController(ShiftDbContext db, IOptions<DarlasticApiOptions> options)
+    public CaseBrowserCompatController(ShiftDbContext db, IOptions<DarlasticApiOptions> options,
+        IPiiMasker masker, IOptions<PiiOptions> piiOptions)
     {
         this.db = db;
         this.options = options.Value;
+        this.masker = masker;
+        this.piiOptions = piiOptions.Value;
     }
 
     /// <summary>
@@ -125,6 +140,64 @@ public class CaseBrowserCompatController : ControllerBase
         ?? User?.Identity?.Name
         ?? "unknown";
 
+    // ------------------------------------------------------------ personal information
+
+    private (bool Reveal, bool PartialSearch)? piiGrant;
+
+    /// <summary>
+    /// Whether this caller sees names and phones unmasked, and may search them by partial value.
+    /// A token carries both as measured at mint time; a bearer caller is asked now. Fails closed:
+    /// a host without TypeAuth cannot show anyone holds the action, so everything stays masked.
+    /// </summary>
+    private (bool Reveal, bool PartialSearch) Pii
+    {
+        get
+        {
+            if (piiGrant is { } known) return known;
+            if (TokenGrant is { } t) return (piiGrant = (t.CanRevealPii, t.CanSearchPii)).Value;
+            var typeAuth = HttpContext?.RequestServices.GetService<ITypeAuthService>();
+            bool reveal = typeAuth?.CanAccess(piiOptions.Action) == true;
+            bool partial = typeAuth?.CanAccess(piiOptions.PartialSearchAction) == true;
+            return (piiGrant = (reveal, partial)).Value;
+        }
+    }
+
+    private RecordPiiView? piiView;
+
+    /// <summary>The shared record PII rules, fed with this caller's grant (the token's, when there is one).</summary>
+    private RecordPiiView PiiView => piiView ??= new RecordPiiView(masker, piiOptions, Pii.Reveal, Pii.PartialSearch);
+
+    /// <summary>The value as this caller may see it. Empty stays empty, so "no name" still reads as such.</summary>
+    private string? Shown(PiiKind kind, string? raw) => PiiView.Show(kind, raw);
+
+    /// <summary>Engine explanation text with the record values it quotes hidden from a masked caller.</summary>
+    private string Scrub(string? text) => PiiView.Scrub(text);
+
+    /// <summary>
+    /// Does a record answer this search? Its key always may (not personal). Names and phones match
+    /// by fragment only for callers holding the partial-search action; everyone else matches whole
+    /// values — the same rule the golden list's OData guard applies.
+    /// </summary>
+    private bool Matches(RealRecord r, string needle)
+    {
+        if ((r.SourceRecordId?.Equals(needle, StringComparison.OrdinalIgnoreCase) ?? false)
+            || $"{r.SourceSystem}:{r.SourceRecordId}".Equals(needle, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (Pii.PartialSearch)
+            return (r.NormName?.Contains(needle, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (r.RawName?.Contains(needle, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (r.Phones?.Any(p => p.Contains(needle, StringComparison.Ordinal)) ?? false)
+                || (r.WeakPhones?.Any(p => p.Contains(needle, StringComparison.Ordinal)) ?? false);
+
+        string digits = Digits(needle);
+        return (r.NormName?.Equals(needle, StringComparison.OrdinalIgnoreCase) ?? false)
+            || (r.RawName?.Equals(needle, StringComparison.OrdinalIgnoreCase) ?? false)
+            || (digits.Length > 0 && ((r.Phones?.Contains(digits) ?? false) || (r.WeakPhones?.Contains(digits) ?? false)));
+    }
+
+    private static string Digits(string s) => new([.. s.Where(char.IsDigit)]);
+
     // ---------------------------------------------------------------- summary
 
     [HttpGet("summary")]
@@ -157,14 +230,18 @@ public class CaseBrowserCompatController : ControllerBase
         // bitmask test per row over 10^5 rows, so it runs in SQL rather than in memory. The
         // standalone reports its in-memory cluster counts here; this reports the corpus, which is
         // strictly better information under the same key.
+        // Multi-record identities only: a run with per-golden evidence summarises single-record
+        // identities too, and the identity view is about how several records came together.
         var clusterCats = new Dictionary<string, long>();
         foreach (var cc in Enum.GetValues<ClusterCat>())
         {
             if (cc == ClusterCat.None) continue;
             long mask = (long)cc;
             clusterCats[cc.ToString()] = await db.Set<IdentitySummary>().AsNoTracking()
-                .CountAsync(s => (s.Categories & mask) != 0, ct);
+                .CountAsync(s => s.MemberCount > 1 && (s.Categories & mask) != 0, ct);
         }
+
+        bool reasonsStaged = await ReasonsStagedAsync(ct);
 
         var inView = new Dictionary<string, int>();
         var corpus = new Dictionary<string, object>();
@@ -184,9 +261,26 @@ public class CaseBrowserCompatController : ControllerBase
         {
             records = stagedRecords,
             totalPairs = catalog.Count + queueDepth,
-            identities = await db.Set<IdentitySummary>().AsNoTracking().CountAsync(ct),
+            identities = await db.Set<IdentitySummary>().AsNoTracking().CountAsync(s => s.MemberCount > 1, ct),
             multiRecordIdentities = await db.Set<IdentitySummary>().AsNoTracking()
                 .CountAsync(s => s.MemberCount > 1, ct),
+            // Golden customers: the view's own count (one row per golden), and the identities a
+            // CRM created since the last resolve, which have no golden yet and are never a row.
+            goldenTotal = await db.Set<GoldenCustomer>().AsNoTracking().CountAsync(ct),
+            awaitingResolve = await AwaitingResolveAsync(ct),
+            // What this host can serve and this caller can see. `goldens` is on only when the last
+            // resolve staged per-golden evidence; without it the page keeps its pair view as the
+            // default, so a tenant that never asked for golden rows sees no change.
+            features = new
+            {
+                goldens = reasonsStaged,
+                export = false,
+                reveal = Pii.Reveal,
+                partialSearch = Pii.PartialSearch,
+            },
+            // The one definition of every plain-language name the page shows; it has none of its own.
+            labels = CaseLabels.Wire(),
+            sourceLabels = options.SourceLabels,
             indexedCases = catalog.Count,
             registryProfiles = profiles,
             registryIdentities = identities,
@@ -233,14 +327,16 @@ public class CaseBrowserCompatController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(q))
         {
-            string needle = q.Trim().ToLowerInvariant();
+            string needle = q.Trim();
             rows = rows.Where(r =>
                 Matches(sides.GetValueOrDefault((r.SourceSystemA, r.SourceRecordIdA)), needle) ||
                 Matches(sides.GetValueOrDefault((r.SourceSystemB, r.SourceRecordIdB)), needle)).ToList();
         }
 
         if (!string.IsNullOrWhiteSpace(dob))
-            rows = rows.Where(r => DobBucket(GapOf(r, sides)) == dob).ToList();
+            rows = rows.Where(r => DobMatches(dob, r,
+                sides.GetValueOrDefault((r.SourceSystemA, r.SourceRecordIdA)).rec,
+                sides.GetValueOrDefault((r.SourceSystemB, r.SourceRecordIdB)).rec)).ToList();
 
         rows = sort switch
         {
@@ -290,6 +386,202 @@ public class CaseBrowserCompatController : ControllerBase
         return new JsonResult(await DetailJson(ra.Value.rec, rb.Value.rec, ra.Value.key, rb.Value.key, ct));
     }
 
+    // ------------------------------------------------------------ golden rows
+
+    /// <summary>
+    /// One row per golden customer — exactly the rows of the <c>GoldenCustomer</c> view, so the
+    /// unfiltered total is that view's <c>COUNT(*)</c> — with the plain-language reasons the last
+    /// resolve staged for each (<see cref="GoldenReason"/>).
+    ///
+    /// <para><paramref name="reason"/> filters by one reason name; <c>reasonCounts</c> is computed
+    /// with the same bit test over every golden, so a chip's count and the rows its filter returns
+    /// cannot disagree. <paramref name="q"/> matches a golden ID, or a name or phone (by fragment for
+    /// callers holding the partial-search action, by whole value otherwise). Identities a CRM created
+    /// since the last resolve have no golden yet: they are counted in <c>awaitingResolve</c> and are
+    /// never a row.</para>
+    ///
+    /// <para>A golden with no staged summary (its records' source was not in the last run, or the
+    /// run staged no per-golden evidence) still gets a row; its reasons are what can be said
+    /// without one — see <see cref="GoldenReasons.ForReader"/>, which this query mirrors in SQL.</para>
+    /// </summary>
+    [HttpGet("goldens")]
+    public async Task<IActionResult> Goldens(string? reason, string? q, string? sort, int page = 0, int size = 50,
+        CancellationToken ct = default)
+    {
+        if (Denied(false)) return Forbid();
+        size = Math.Clamp(size, 1, 200);
+        page = Math.Max(0, page);
+
+        long filterMask = 0;
+        if (!string.IsNullOrWhiteSpace(reason))
+        {
+            if (!Enum.TryParse<GoldenReason>(reason, ignoreCase: true, out var parsed) || parsed == GoldenReason.None)
+                return BadRequest(new { error = "unknown reason" });
+            filterMask = (long)parsed;
+        }
+
+        bool reasonsStaged = await ReasonsStagedAsync(ct);
+        var all = GoldenRows(reasonsStaged);
+
+        // Chip counts over every golden, by the same bit test the filter below applies.
+        var everyBits = await all.Select(x => x.Bits).ToListAsync(ct);
+        var reasonCounts = new Dictionary<string, int>();
+        foreach (var r in GoldenReasons.All)
+        {
+            long bit = (long)r;
+            int n = everyBits.Count(b => (b & bit) != 0);
+            if (n > 0) reasonCounts[r.ToString()] = n;
+        }
+
+        var rows = all;
+        long? exactId = null;
+        if (filterMask != 0) rows = rows.Where(x => (x.Bits & filterMask) != 0);
+        if (!string.IsNullOrWhiteSpace(q)) (rows, exactId) = SearchGoldens(rows, q.Trim());
+
+        int total = await rows.CountAsync(ct);
+        // A customer number typed in full comes first, ahead of phones that merely contain it.
+        var ordered = rows.OrderBy(x => x.ID == exactId ? 0 : 1);
+        rows = sort == "id"
+            ? ordered.ThenBy(x => x.ID)
+            : ordered.ThenByDescending(x => x.Members).ThenBy(x => x.ID);
+        var window = await rows.Skip(page * size).Take(size).ToListAsync(ct);
+
+        var ids = window.Select(w => w.ID).ToList();
+        var sourcesOf = (await db.Set<SourceProfile>().AsNoTracking()
+                .Where(p => ids.Contains(p.IdentityID) && !p.Removed)
+                .Select(p => new { p.IdentityID, p.SourceSystem })
+                .Distinct()
+                .ToListAsync(ct))
+            .GroupBy(p => p.IdentityID)
+            .ToDictionary(g => g.Key, g => g.Select(p => p.SourceSystem).Order(StringComparer.Ordinal).ToList());
+
+        var items = window.Select(w =>
+        {
+            var reasons = GoldenReasons.ReasonsOf(w.Bits);
+            var systems = sourcesOf.GetValueOrDefault(w.ID) ?? [];
+            return new
+            {
+                id = w.ID.ToString(CultureInfo.InvariantCulture),
+                name = Shown(PiiKind.Name, w.FullName),
+                phone = Shown(PiiKind.Phone, w.Phone),
+                city = w.City,
+                members = w.Members,
+                sources = w.Sources ?? systems.Count,
+                sourceSystems = systems,
+                reasons = NamesOf<GoldenReason>((long)reasons),
+                needsReview = (reasons & GoldenReason.NeedsReview) != 0,
+            };
+        }).ToList();
+
+        return new JsonResult(new
+        {
+            total,
+            page,
+            size,
+            goldenTotal = everyBits.Count,
+            awaitingResolve = await AwaitingResolveAsync(ct),
+            reasonsStaged,
+            reasonCounts,
+            masked = !Pii.Reveal,
+            items,
+        });
+    }
+
+    /// <summary>One golden row as the list query sees it.</summary>
+    private sealed class GoldenRow
+    {
+        public long ID { get; init; }
+        public string? FullName { get; init; }
+        public string? Phone { get; init; }
+        public string? City { get; init; }
+        public int Members { get; init; }
+        public int? Sources { get; init; }
+        public long Bits { get; init; }
+    }
+
+    /// <summary>
+    /// Every golden, LEFT JOINed to its staged summary, with its reason bits computed in SQL so
+    /// filtering, counting and paging all run on the same expression. The bits follow
+    /// <see cref="GoldenReasons.ForReader"/>: staged reasons when present; the mirrored cluster bits
+    /// for a summary staged without reasons; for no summary, single record and (when the run staged
+    /// evidence) "not in the latest run".
+    /// </summary>
+    private IQueryable<GoldenRow> GoldenRows(bool reasonsStaged)
+    {
+        long allMask = GoldenReasons.AllMask;
+        long clusterMask = GoldenReasons.ClusterCatMask;
+        long shift = 1L << GoldenReasons.ClusterCatShift;
+        long missingSingle = (long)GoldenReasons.ForReader(null, 1, reasonsStaged);
+        long missingMany = (long)GoldenReasons.ForReader(null, 2, reasonsStaged);
+
+        return from g in db.Set<GoldenCustomer>().AsNoTracking()
+               join s in db.Set<IdentitySummary>().AsNoTracking() on g.ID equals s.IdentityID into staged
+               from s in staged.DefaultIfEmpty()
+               select new GoldenRow
+               {
+                   ID = g.ID,
+                   FullName = g.FullName,
+                   Phone = g.Phone,
+                   City = g.City,
+                   Members = g.SourceCount,
+                   Sources = s == null ? null : (int?)s.SourceCount,
+                   Bits = s == null
+                       ? (g.SourceCount == 1 ? missingSingle : missingMany)
+                       : ((s.Categories & allMask) != 0 ? s.Categories : (s.Categories & clusterMask) * shift),
+               };
+    }
+
+    /// <summary>
+    /// A golden ID, a phone (digits, as the engine stores them) or a name. Fragments only for
+    /// callers holding the partial-search action; whole values otherwise.
+    /// </summary>
+    private (IQueryable<GoldenRow> Rows, long? ExactId) SearchGoldens(IQueryable<GoldenRow> rows, string needle)
+    {
+        bool partial = Pii.PartialSearch;
+        string digits = Digits(needle);
+        bool numeric = digits.Length > 0 && needle.All(c => char.IsDigit(c) || c is '+' or ' ' or '-' or '(' or ')');
+
+        if (numeric)
+        {
+            long? asId = digits.Length <= 18 && long.TryParse(digits, out var id) ? id : null;
+            return (partial
+                ? rows.Where(x => x.ID == asId || (x.Phone != null && x.Phone.Contains(digits)))
+                : rows.Where(x => x.ID == asId || x.Phone == digits), asId);
+        }
+
+        return (partial
+            ? rows.Where(x => x.FullName != null && x.FullName.Contains(needle))
+            : rows.Where(x => x.FullName == needle), null);
+    }
+
+    /// <summary>Did the last resolve stage per-golden evidence? Every identity it summarised then
+    /// carries at least one reason bit, and a run without it never sets one.</summary>
+    private Task<bool> ReasonsStagedAsync(CancellationToken ct)
+    {
+        long allMask = GoldenReasons.AllMask;
+        return db.Set<IdentitySummary>().AsNoTracking().AnyAsync(s => (s.Categories & allMask) != 0, ct);
+    }
+
+    /// <summary>
+    /// Live identities with no staged golden: minted by a host (a CRM entry) since the last resolve.
+    /// They are real customers without survived attributes yet, so they are reported beside the
+    /// golden rows rather than mixed into them.
+    /// </summary>
+    private async Task<int> AwaitingResolveAsync(CancellationToken ct)
+    {
+        string sql = $"""
+            SELECT COUNT(*) AS [Value]
+            FROM {Schema()}.[Identity] i
+            WHERE i.Status = {(byte)IdentityStatus.Active}
+              AND NOT EXISTS (SELECT 1 FROM {Schema()}.[ProjectionState] p
+                              WHERE p.ArtifactType = 'golden'
+                                AND p.ArtifactKey = CAST(i.IdentityID AS nvarchar(140)) COLLATE {Data.Extensions.DarlasticModelBuilderExtensions.KeyCollation}
+                                AND p.ContentHash <> 'TOMBSTONE'
+                                AND p.Payload IS NOT NULL)
+            """;
+        return await db.Database.SqlQueryRaw<int>(sql).SingleAsync(ct);
+    }
+
     // ------------------------------------------------------------- identities
 
     [HttpGet("clusters")]
@@ -328,48 +620,235 @@ public class CaseBrowserCompatController : ControllerBase
         return new JsonResult(new { total, page, size, items });
     }
 
+    /// <summary>
+    /// One golden customer opened: every member record, the golden values and how each was chosen,
+    /// and the evidence between records — the auto-merge edges that joined them, the queued pairs
+    /// waiting on a person, and catalogued pairs linking them to other customers.
+    ///
+    /// <para>Any identity opens, not only multi-record ones, and the ID is redirect-chased, so every
+    /// row of a golden list opens. A member whose normalized record was not staged (a run without
+    /// per-golden evidence stages only queued and catalogued records) still appears by its source and
+    /// record id instead of silently dropping out of the member list.</para>
+    ///
+    /// <para>The shape is what the page's identity view reads: <c>golden[]</c> with <c>attrType</c>,
+    /// <c>value</c> and <c>wonBy</c>, <c>nameSurvival</c>, and edges carrying the members' record
+    /// indices <c>a</c>/<c>b</c> — none of which this route returned before.</para>
+    /// </summary>
     [HttpGet("cluster/{root:long}")]
     public async Task<IActionResult> Cluster(long root, CancellationToken ct)
     {
         if (Denied(false)) return Forbid();
 
-        var summary = await db.Set<IdentitySummary>().AsNoTracking()
-            .FirstOrDefaultAsync(s => s.IdentityID == root, ct);
-        if (summary is null) return BadRequest(new { error = "not a multi-record cluster root" });
+        long live = await ChaseAsync(root, ct);
+        var identity = await db.Set<GoldenIdentity>().AsNoTracking().FirstOrDefaultAsync(i => i.IdentityID == live, ct);
+        if (identity is null) return NotFound(new { error = "no such customer" });
 
-        var memberKeys = await db.Set<SourceProfile>().AsNoTracking()
-            .Where(p => p.IdentityID == root)
-            .Select(p => new { p.SourceSystem, p.SourceRecordId })
+        var summary = await db.Set<IdentitySummary>().AsNoTracking().FirstOrDefaultAsync(s => s.IdentityID == live, ct);
+
+        var profiles = await db.Set<SourceProfile>().AsNoTracking()
+            .Where(p => p.IdentityID == live)
+            .OrderBy(p => p.Removed).ThenBy(p => p.SourceSystem).ThenBy(p => p.SourceRecordId)
+            .Select(p => new { p.SourceSystem, p.SourceRecordId, p.Removed })
             .ToListAsync(ct);
-
-        var sides = await LoadSides(memberKeys.Select(m => (m.SourceSystem, m.SourceRecordId)), ct);
+        var memberKeys = profiles.Select(p => (p.SourceSystem, p.SourceRecordId)).ToHashSet();
 
         // Bounded: one identity in a measured corpus carries 28,622 edges, and no human reads past the
         // strongest few dozen.
         var edges = await db.Set<IdentityEdge>().AsNoTracking()
-            .Where(e => e.IdentityID == root)
+            .Where(e => e.IdentityID == live)
             .OrderByDescending(e => e.Score)
             .Take(200)
             .ToListAsync(ct);
 
+        // Pairs that tie a member to someone else: waiting on a person, or catalogued by the resolve.
+        var systems = memberKeys.Select(k => k.SourceSystem).Distinct().ToList();
+        var recIds = memberKeys.Select(k => k.SourceRecordId).Distinct().ToList();
+        bool Touches(string sa, string ia, string sb, string ib) => memberKeys.Contains((sa, ia)) || memberKeys.Contains((sb, ib));
+        bool Internal(string sa, string ia, string sb, string ib) => memberKeys.Contains((sa, ia)) && memberKeys.Contains((sb, ib));
+        var queued = (await db.Set<StewardQueueEntry>().AsNoTracking()
+                .Where(e => (systems.Contains(e.SourceSystemA) && recIds.Contains(e.SourceRecordIdA))
+                         || (systems.Contains(e.SourceSystemB) && recIds.Contains(e.SourceRecordIdB)))
+                .ToListAsync(ct))
+            .Where(e => Touches(e.SourceSystemA, e.SourceRecordIdA, e.SourceSystemB, e.SourceRecordIdB))
+            .OrderByDescending(e => e.Score).Take(50).ToList();
+        var related = (await db.Set<CaseCatalogEntry>().AsNoTracking()
+                .Where(e => (systems.Contains(e.SourceSystemA) && recIds.Contains(e.SourceRecordIdA))
+                         || (systems.Contains(e.SourceSystemB) && recIds.Contains(e.SourceRecordIdB)))
+                .ToListAsync(ct))
+            .Where(e => Touches(e.SourceSystemA, e.SourceRecordIdA, e.SourceSystemB, e.SourceRecordIdB)
+                        && !Internal(e.SourceSystemA, e.SourceRecordIdA, e.SourceSystemB, e.SourceRecordIdB))
+            .OrderByDescending(e => e.Score).Take(50).ToList();
+
+        var sides = await LoadSides(memberKeys
+            .Concat(queued.SelectMany(e => new[] { (e.SourceSystemA, e.SourceRecordIdA), (e.SourceSystemB, e.SourceRecordIdB) }))
+            .Concat(related.SelectMany(e => new[] { (e.SourceSystemA, e.SourceRecordIdA), (e.SourceSystemB, e.SourceRecordIdB) })), ct);
+        RealRecord? Rec(string sys, string id) => sides.GetValueOrDefault((sys, id)).rec;
+
+        var current = profiles.Where(p => !p.Removed).Select(p => Rec(p.SourceSystem, p.SourceRecordId)).ToList();
+        bool allStaged = current.Count > 0 && current.All(r => r is not null);
+
+        // Golden values: recomputed from the members when every one is staged — the same function
+        // over the same records the resolve used, which also says WHY each value won and how the name
+        // survived. Otherwise the staged golden's own values, without the why.
+        var explain = new Merge.NameSurvivalExplain();
+        var golden = allStaged
+            ? Merge.SurviveGolden([.. current.Select(r => r!)], explain)
+            : await StagedGoldenAttrsAsync(live, ct);
+
+        bool reasonsStaged = await ReasonsStagedAsync(ct);
+        var reasons = GoldenReasons.ForReader(summary?.Categories, current.Count, reasonsStaged);
+        string? goldenName = golden.FirstOrDefault(g => g.AttrType == "full_name")?.Value;
+
+        object PairJson(string sa, string ia, string sb, string ib, float score, long? cats)
+        {
+            bool aIsMember = memberKeys.Contains((sa, ia));
+            var mine = aIsMember ? (sa, ia) : (sb, ib);
+            var other = aIsMember ? (sb, ib) : (sa, ia);
+            var otherSide = sides.GetValueOrDefault(other);
+            return new
+            {
+                key = $"{sa}:{ia}~{sb}:{ib}",
+                a = Rec(sa, ia)?.Idx,
+                b = Rec(sb, ib)?.Idx,
+                score = Math.Round(score, 3),
+                cats = cats is { } c ? NamesOf<CaseCat>(c) : [],
+                member = RecordJson(sides.GetValueOrDefault(mine)) ?? StubJson(mine.Item1, mine.Item2, removed: false),
+                other = RecordJson(otherSide) ?? StubJson(other.Item1, other.Item2, removed: false),
+                otherCustomer = otherSide.identityId?.ToString(CultureInfo.InvariantCulture),
+            };
+        }
+
         return new JsonResult(new
         {
-            root,
-            size = summary.MemberCount,
-            sources = summary.SourceCount,
-            goldenName = summary.GoldenName,
-            cats = NamesOf<ClusterCat>(summary.Categories),
-            members = memberKeys
-                .Select(m => RecordJson(sides.GetValueOrDefault((m.SourceSystem, m.SourceRecordId))))
-                .Where(x => x is not null).ToList(),
-            edges = edges.Select(e => new
+            root = live,
+            requested = root,
+            size = current.Count,
+            sources = summary?.SourceCount ?? profiles.Where(p => !p.Removed).Select(p => p.SourceSystem).Distinct().Count(),
+            goldenName = Shown(PiiKind.Name, goldenName),
+            // Cluster categories (the identity view's chips) and per-golden reasons (the golden list's).
+            cats = summary is null ? [] : NamesOf<ClusterCat>(summary.Categories & GoldenReasons.ClusterCatMask),
+            reasons = NamesOf<GoldenReason>((long)reasons),
+            golden = golden.Select(g => new
             {
-                key = $"{e.SourceSystemA}:{e.SourceRecordIdA}~{e.SourceSystemB}:{e.SourceRecordIdB}",
-                score = Math.Round(e.Score, 3),
-                flags = NamesOf<MatchFlags>(e.Flags),
+                attrType = g.AttrType,
+                label = CaseLabels.Attributes.GetValueOrDefault(g.AttrType)?.Label ?? g.AttrType,
+                value = ShownAttribute(g.AttrType, g.Value),
+                wonBy = g.WonBy,
+                how = CaseLabels.Survival.GetValueOrDefault(g.WonBy)?.Label,
             }).ToList(),
-            registry = RegistryJson(root, (await StatusOf([root], ct)).GetValueOrDefault(root), await LatestRun(ct)),
+            nameSurvival = allStaged && explain.Anchor is not null
+                ? new
+                {
+                    anchor = Shown(PiiKind.Name, explain.Anchor),
+                    anchorCount = explain.AnchorCount,
+                    chosen = Shown(PiiKind.Name, explain.Chosen),
+                    extensions = explain.Extensions.Select(e => new
+                    {
+                        name = Shown(PiiKind.Name, e.Name),
+                        count = e.Count,
+                        givenAligns = e.GivenAligns,
+                        bridge = Shown(PiiKind.Name, e.Bridge),
+                    }).ToList(),
+                }
+                : null,
+            members = profiles.Select(p =>
+                    RecordJson(sides.GetValueOrDefault((p.SourceSystem, p.SourceRecordId)))
+                    ?? StubJson(p.SourceSystem, p.SourceRecordId, p.Removed))
+                .ToList(),
+            edges = edges.Select(e =>
+            {
+                var ra = Rec(e.SourceSystemA, e.SourceRecordIdA);
+                var rb = Rec(e.SourceSystemB, e.SourceRecordIdB);
+                var flags = (MatchFlags)e.Flags;
+                return new
+                {
+                    key = $"{e.SourceSystemA}:{e.SourceRecordIdA}~{e.SourceSystemB}:{e.SourceRecordIdB}",
+                    a = ra?.Idx,
+                    b = rb?.Idx,
+                    aKey = $"{e.SourceSystemA}:{e.SourceRecordIdA}",
+                    bKey = $"{e.SourceSystemB}:{e.SourceRecordIdB}",
+                    score = Math.Round(e.Score, 3),
+                    flags = NamesOf<MatchFlags>(e.Flags),
+                    crossDealer = e.SourceSystemA != e.SourceSystemB,
+                    // What the edge scores without the vehicle, when the vehicle is what merged it.
+                    noVin = (flags & MatchFlags.VinSoldMerge) != 0 && ra is not null && rb is not null
+                        ? Math.Round(RealMatcher.Score(ra, rb, useAddress: true, useVin: false), 3)
+                        : (double?)null,
+                };
+            }).ToList(),
+            reviewPairs = queued.Select(e => PairJson(e.SourceSystemA, e.SourceRecordIdA, e.SourceSystemB, e.SourceRecordIdB, e.Score, null)).ToList(),
+            relatedPairs = related.Select(e => PairJson(e.SourceSystemA, e.SourceRecordIdA, e.SourceSystemB, e.SourceRecordIdB, e.Score, e.Categories)).ToList(),
+            registry = RegistryJson(live, (byte)identity.Status, await LatestRun(ct)),
         });
+    }
+
+    /// <summary>A member known only by its key: its normalized record was not staged this run, or it
+    /// was removed from its source. Same shape as a staged record, with nothing to show.</summary>
+    private static object StubJson(string sys, string id, bool removed) => new
+    {
+        idx = (int?)null,
+        src = sys,
+        id,
+        staged = false,
+        removed,
+        rawName = (string?)null,
+        normName = (string?)null,
+        phones = Array.Empty<string>(),
+        weakPhones = Array.Empty<string>(),
+        natId = (string?)null,
+        dob = (string?)null,
+        rawAddress = "",
+        normAddress = "",
+        city = "",
+        mojibake = false,
+        arabizi = false,
+        vins = (object?)null,
+        clusterRoot = (long?)null,
+        clusterSize = 0,
+    };
+
+    /// <summary>A golden attribute as this caller may see it — by the protection its DTO declares.</summary>
+    private string? ShownAttribute(string attrType, string? value) => attrType switch
+    {
+        "full_name" => Shown(PiiKind.Name, value),
+        "phone" => Shown(PiiKind.Phone, value),
+        "email" => Shown(PiiKind.Email, value),
+        "national_id" => Shown(PiiKind.Identifier, value),
+        _ => value,
+    };
+
+    /// <summary>The staged golden's attributes, last-wins per type like the drain and the view.</summary>
+    private async Task<List<Merge.GoldenAttr>> StagedGoldenAttrsAsync(long identityId, CancellationToken ct)
+    {
+        string key = identityId.ToString(CultureInfo.InvariantCulture);
+        var payload = await db.Set<ProjectionState>().AsNoTracking()
+            .Where(p => p.ArtifactType == "golden" && p.ArtifactKey == key && p.ContentHash != "TOMBSTONE")
+            .Select(p => p.Payload)
+            .FirstOrDefaultAsync(ct);
+        var byType = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (payload is not null)
+        {
+            using var doc = JsonDocument.Parse(payload);
+            if (doc.RootElement.TryGetProperty("attrs", out var attrs) && attrs.ValueKind == JsonValueKind.Array)
+                foreach (var a in attrs.EnumerateArray())
+                    if (a.TryGetProperty("t", out var t) && a.TryGetProperty("v", out var v) && t.GetString() is { } type)
+                        byType[type] = v.GetString() ?? "";
+        }
+        return [.. byType.Select(kv => new Merge.GoldenAttr(kv.Key, kv.Value, ""))];
+    }
+
+    /// <summary>Follows merge redirects to the live identity (bounded, like the golden endpoint).</summary>
+    private async Task<long> ChaseAsync(long id, CancellationToken ct)
+    {
+        long live = id;
+        for (int hop = 0; hop < 64; hop++)
+        {
+            var next = await db.Set<IdentityRedirect>().AsNoTracking()
+                .Where(r => r.OldIdentityID == live).Select(r => (long?)r.NewIdentityID).FirstOrDefaultAsync(ct);
+            if (next is null) break;
+            live = next.Value;
+        }
+        return live;
     }
 
     /// <summary>
@@ -412,7 +891,7 @@ public class CaseBrowserCompatController : ControllerBase
         if (Denied(false)) return Forbid();
         if (string.IsNullOrWhiteSpace(q)) return new JsonResult(Array.Empty<object>());
 
-        string needle = q.Trim().ToLowerInvariant();
+        string needle = q.Trim();
         var rows = await db.Set<StewardRecord>().AsNoTracking().Take(50_000).ToListAsync(ct);
 
         var hits = new List<object>();
@@ -443,16 +922,30 @@ public class CaseBrowserCompatController : ControllerBase
         if (hit is null) return BadRequest(new { error = "bad record idx" });
 
         var sides = await LoadSides([hit.Value.key], ct);
+        var rec = hit.Value.rec;
         return new JsonResult(new
         {
             record = RecordJson(sides.GetValueOrDefault(hit.Value.key)),
+            // What normalization did and which comparison groups the record falls in — both pure
+            // functions of the staged record, so they are recomputed rather than staged. Both quote
+            // the record's own values, so a masked caller gets them scrubbed.
+            normalize = Normalization.Steps(rec).Select(s => new { stage = s.Stage, detail = Scrub(s.Detail) }).ToList(),
+            blockKeys = RealMatcher.BlockKeysOf(rec).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)
+                .Select(PiiView.BlockKey).ToList(),
+            // Which keys hit the block cap is a property of the run's blocking pass and is not staged.
+            cappedKeys = Array.Empty<object>(),
             candidates = Array.Empty<object>(),
-            note = "Candidate scoring needs corpus-wide blocking and stays in the local browser.",
+            note = "Candidates are compared during a run; they are not listed here.",
         });
     }
 
     // ------------------------------------------------------------------ flags
 
+    /// <summary>
+    /// The notes list. Each target is parsed back into what the page needs to reopen it — a pair's
+    /// two record indices, a customer's id, a record's index — which this route used to leave null,
+    /// so no note could be reopened from the list.
+    /// </summary>
     [HttpGet("flags")]
     public async Task<IActionResult> Flags(CancellationToken ct)
     {
@@ -460,34 +953,54 @@ public class CaseBrowserCompatController : ControllerBase
 
         var rows = await db.Set<ReviewFlag>().AsNoTracking().ToListAsync(ct);
 
+        static (string sys, string id)? Side(string s)
+        {
+            int colon = s.IndexOf(':');
+            return colon > 0 && colon < s.Length - 1 ? (s[..colon], s[(colon + 1)..]) : null;
+        }
+        var parsed = rows.Select(f =>
+        {
+            string t = f.Target;
+            if (t.StartsWith("pair:", StringComparison.Ordinal) && t[5..].Split('~') is [var x, var y])
+                return (f, kind: "pair", a: Side(x), b: Side(y), root: (long?)null, label: $"Pair {x} ~ {y}");
+            if (t.StartsWith("cluster:", StringComparison.Ordinal) && long.TryParse(t[8..], out var root))
+                return (f, kind: "cluster", a: null, b: null, root: (long?)root, label: $"Customer #{root}");
+            if (t.StartsWith("record:", StringComparison.Ordinal) && Side(t[7..]) is { } r)
+                return (f, kind: "record", a: ((string, string)?)r, b: null, root: (long?)null, label: $"Record {r.sys} #{r.id}");
+            return (f, kind: "other", a: null, b: null, root: (long?)null, label: t);
+        }).ToList();
+
+        var sides = await LoadSides(parsed.SelectMany(p => new[] { p.a, p.b }).Where(k => k is not null).Select(k => k!.Value), ct);
+        int? IdxOf((string, string)? key) => key is { } k ? sides.GetValueOrDefault(k).rec?.Idx : null;
+
         return new JsonResult(new
         {
             total = rows.Count,
             byTopic = rows.GroupBy(f => f.Topic ?? "other").ToDictionary(g => g.Key, g => g.Count()),
             open = rows.Count(f => f.Response == null),
-            items = rows
-                .OrderBy(f => f.Response == null ? 0 : 1)
-                .ThenByDescending(f => f.UpdatedUtc ?? f.CreatedUtc)
-                .Select(f => new
+            items = parsed
+                .OrderBy(p => p.f.Response == null ? 0 : 1)
+                .ThenByDescending(p => p.f.UpdatedUtc ?? p.f.CreatedUtc)
+                .Select(p => new
                 {
-                    target = f.Target,
-                    kind = f.Target.Contains('~') ? "case" : "record",
-                    label = f.Target,
-                    topic = f.Topic,
-                    comment = f.Comment,
-                    author = f.Author,
-                    createdAt = f.CreatedUtc.ToString("O"),
-                    updatedAt = (f.UpdatedUtc ?? f.CreatedUtc).ToString("O"),
-                    status = f.Response == null ? "open" : "addressed",
-                    resolution = f.Response,
-                    resolvedAt = f.ResponseUtc?.ToString("O"),
-                    resolvedBy = f.ResponseBy,
+                    target = p.f.Target,
+                    kind = p.kind,
+                    label = p.label,
+                    topic = p.f.Topic,
+                    comment = p.f.Comment,
+                    author = p.f.Author,
+                    createdAt = p.f.CreatedUtc.ToString("O"),
+                    updatedAt = (p.f.UpdatedUtc ?? p.f.CreatedUtc).ToString("O"),
+                    status = p.f.Response == null ? "open" : "addressed",
+                    resolution = p.f.Response,
+                    resolvedAt = p.f.ResponseUtc?.ToString("O"),
+                    resolvedBy = p.f.ResponseBy,
                     snapScore = (double?)null,
                     snapDecision = (string?)null,
-                    a = (int?)null,
-                    b = (int?)null,
-                    root = (long?)null,
-                    idx = (int?)null,
+                    a = p.kind == "pair" ? IdxOf(p.a) : null,
+                    b = p.kind == "pair" ? IdxOf(p.b) : null,
+                    root = p.root,
+                    idx = p.kind == "record" ? IdxOf(p.a) : null,
                 }).ToList(),
         });
     }
@@ -569,7 +1082,9 @@ public class CaseBrowserCompatController : ControllerBase
                 Comment = body.Comment ?? "",
                 Author = string.IsNullOrWhiteSpace(body.Author) ? Actor() : body.Author!,
                 CreatedUtc = DateTime.UtcNow,
-                Snapshot = snapshot,
+                // The column is NOT NULL; a customer or record flag has no pair evidence to freeze,
+                // and writing null there failed every such flag.
+                Snapshot = snapshot ?? JsonSerializer.Serialize(new { kind, target }),
             });
         }
         else
@@ -712,22 +1227,24 @@ public class CaseBrowserCompatController : ControllerBase
             key,
             a = RecordJson(sides.GetValueOrDefault(ka)),
             b = RecordJson(sides.GetValueOrDefault(kb)),
-            normalizeA = Normalization.Steps(ra).Select(s => new { stage = s.Stage, detail = s.Detail }).ToList(),
-            normalizeB = Normalization.Steps(rb).Select(s => new { stage = s.Stage, detail = s.Detail }).ToList(),
+            normalizeA = Normalization.Steps(ra).Select(s => new { stage = s.Stage, detail = Scrub(s.Detail) }).ToList(),
+            normalizeB = Normalization.Steps(rb).Select(s => new { stage = s.Stage, detail = Scrub(s.Detail) }).ToList(),
             blockKeys = RealMatcher.BlockKeysOf(ra).Intersect(RealMatcher.BlockKeysOf(rb), StringComparer.Ordinal)
-                .Order(StringComparer.Ordinal).ToList(),
+                .Order(StringComparer.Ordinal)
+                .Select(PiiView.BlockKey).ToList(),
             // Which shared keys hit the block cap is a property of the run's blocking pass, not of
             // the pair, and is not staged.
             cappedBlockKeys = Array.Empty<string>(),
             score = Math.Round(score, 3),
             band = RealMatcher.BandLabel(RealMatcher.Band(score)),
             decision = score >= 0.90 ? "auto-merge" : score >= 0.80 ? "steward-queue" : "kept-separate",
+            decisionLabel = CaseLabels.Decision(score).Label,
             flags = NamesOf<MatchFlags>((long)flags),
             trace = trace.Steps.Select(s => new
             {
                 stage = s.Stage,
                 title = s.Title,
-                detail = s.Detail,
+                detail = Scrub(s.Detail),
                 conf = s.ConfAfter is { } c ? Math.Round(c, 3) : (double?)null,
             }).ToList(),
             dobGap = gap,
@@ -764,8 +1281,8 @@ public class CaseBrowserCompatController : ControllerBase
             root = s.IdentityID,
             size = s.MemberCount,
             sources = s.SourceCount,
-            goldenName = s.GoldenName,
-            cats = NamesOf<ClusterCat>(s.Categories),
+            goldenName = Shown(PiiKind.Name, s.GoldenName),
+            cats = NamesOf<ClusterCat>(s.Categories & GoldenReasons.ClusterCatMask),
         };
     }
 
@@ -779,14 +1296,16 @@ public class CaseBrowserCompatController : ControllerBase
             idx = r.Idx,
             src = r.SourceSystem,
             id = r.SourceRecordId,
-            rawName = r.RawName,
-            normName = r.NormName,
-            phones = r.Phones,
-            weakPhones = r.WeakPhones,
-            natId = r.NationalId,
-            dob = r.Dob is { } d ? $"{d.P1}/{d.P2}/{d.Year}" : null,
-            rawAddress = r.RawAddress,
-            normAddress = r.NormAddress,
+            staged = true,
+            removed = false,
+            rawName = Shown(PiiKind.Name, r.RawName),
+            normName = Shown(PiiKind.Name, r.NormName),
+            phones = r.Phones.Select(p => Shown(PiiKind.Phone, p)!).ToArray(),
+            weakPhones = r.WeakPhones.Select(p => Shown(PiiKind.Phone, p)!).ToArray(),
+            natId = Shown(PiiKind.Identifier, r.NationalId),
+            dob = r.Dob is { } d ? Shown(PiiKind.Identifier, $"{d.P1}/{d.P2}/{d.Year}") : null,
+            rawAddress = Shown(PiiKind.Address, r.RawAddress) ?? "",
+            normAddress = Shown(PiiKind.Address, r.NormAddress) ?? "",
             city = r.NormCity,
             mojibake = r.NameWasMojibake,
             arabizi = r.NameHadArabizi,
@@ -847,16 +1366,8 @@ public class CaseBrowserCompatController : ControllerBase
         catch { return null; }
     }
 
-    private static bool Matches((RealRecord? rec, (string sys, string id) key, long? identityId, int clusterSize) side, string needle)
+    private bool Matches((RealRecord? rec, (string sys, string id) key, long? identityId, int clusterSize) side, string needle)
         => side.rec is not null && Matches(side.rec, needle);
-
-    private static bool Matches(RealRecord r, string needle) =>
-        (r.NormName?.Contains(needle, StringComparison.OrdinalIgnoreCase) ?? false)
-        || (r.RawName?.Contains(needle, StringComparison.OrdinalIgnoreCase) ?? false)
-        || (r.SourceRecordId?.Equals(needle, StringComparison.OrdinalIgnoreCase) ?? false)
-        || (r.Phones?.Any(p => p.Contains(needle, StringComparison.Ordinal)) ?? false)
-        || (r.WeakPhones?.Any(p => p.Contains(needle, StringComparison.Ordinal)) ?? false)
-        || $"{r.SourceSystem}:{r.SourceRecordId}".Equals(needle, StringComparison.OrdinalIgnoreCase);
 
     private int? GapOf(CaseCatalogEntry r,
         Dictionary<(string, string), (RealRecord? rec, (string sys, string id) key, long? identityId, int clusterSize)> sides)
@@ -868,13 +1379,26 @@ public class CaseBrowserCompatController : ControllerBase
         return null;
     }
 
-    private static string? DobBucket(int? gap) => gap switch
+    /// <summary>
+    /// The page's birth-date filter, with the values the page sends — the same ones the standalone
+    /// server understands. This used to bucket by year gap under different names, so every value
+    /// the page sent matched nothing here.
+    /// </summary>
+    private static bool DobMatches(string dob, CaseCatalogEntry row, RealRecord? a, RealRecord? b)
     {
-        null => "none",
-        0 => "same",
-        >= 1 and <= 5 => "close",
-        _ => "far",
-    };
+        var flags = (MatchFlags)row.Flags;
+        static bool July1(DobInfo? d) => d is { } x && ((x.P1 == 1 && x.P2 == 7) || (x.P1 == 7 && x.P2 == 1));
+        int? gap = a?.Dob is { } da && b?.Dob is { } dbo && da.Year > 0 && dbo.Year > 0 ? Math.Abs(da.Year - dbo.Year) : null;
+        return dob switch
+        {
+            "conflict" => (flags & MatchFlags.DobConflict) != 0,
+            "equal" => (flags & MatchFlags.DobEqual) != 0,
+            "gap10" => gap >= 10,
+            "july1" => July1(a?.Dob) || July1(b?.Dob),
+            "none" => a?.Dob is null || b?.Dob is null,
+            _ => true,
+        };
+    }
 
     private static long MaskOf<TEnum>(string? csv) where TEnum : struct, Enum
     {

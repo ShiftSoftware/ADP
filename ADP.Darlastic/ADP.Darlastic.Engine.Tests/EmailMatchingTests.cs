@@ -282,4 +282,40 @@ public class EmailMatchingTests
         Assert.Equal(1, over.SkippedBlocks);
         Assert.Empty(over.Blocks);
     }
+
+    [Fact]
+    public void EmailTrace_ReadsInPlainLanguage()
+    {
+        // The e-mail branches of the explain trace, worded for the case browser like every other
+        // branch (TraceWordingTests covers the rest; this one needs the e-mail flag this class owns).
+        using var on = new EmailMatchingOn();
+        var pairs = new (string Title, RealRecord A, RealRecord B)[]
+        {
+            ("Same e-mail, names agree",
+                Rec(0, "src-a", "e1", "kestrel morrow", emails: ["k.morrow@mail.example"]),
+                Rec(1, "src-b", "e2", "kestrel morrow", emails: ["k.morrow@mail.example"])),
+            ("Same e-mail, names differ",
+                Rec(0, "src-a", "e3", "kestrel morrow", emails: ["k.morrow@mail.example"]),
+                Rec(1, "src-b", "e4", "quill sabadine", emails: ["k.morrow@mail.example"])),
+            ("E-mail",
+                Rec(0, "src-a", "e5", "kestrel morrow", emails: ["k.morrow@mail.example"]),
+                Rec(1, "src-b", "e6", "kestrel morrow", emails: ["kestrel@other.example"])),
+            ("E-mail",
+                Rec(0, "src-a", "e7", "kestrel morrow", emails: ["info@dealer.example"]),
+                Rec(1, "src-b", "e8", "kestrel morrow", emails: ["k.morrow@mail.example"])),
+            ("E-mail",
+                Rec(0, "src-a", "e9", "kestrel morrow"),
+                Rec(1, "src-b", "e10", "kestrel morrow", emails: ["k.morrow@mail.example"])),
+        };
+
+        var texts = new List<string>();
+        foreach (var (title, a, b) in pairs)
+        {
+            var steps = TraceWordingTests.Trace(a, b);
+            Assert.Contains(steps, s => s.Title == title);
+            texts.AddRange(steps.SelectMany(s => new[] { s.Title, s.Detail }));
+        }
+        var offenders = TraceWordingTests.Offenders(texts);
+        Assert.True(offenders.Count == 0, "trace text with engine terms:\n" + string.Join("\n", offenders));
+    }
 }

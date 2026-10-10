@@ -40,14 +40,33 @@ internal static class CaseBrowserSas
     public static bool Enabled(DarlasticApiOptions options) =>
         !string.IsNullOrWhiteSpace(options.CaseBrowserSigningKey);
 
+    /// <summary>Suffix for a token whose holder may see protected personal information unmasked.</summary>
+    public const string PiiRevealSuffix = ".PiiReveal";
+
+    /// <summary>Suffix for a token whose holder may search protected information by partial value.</summary>
+    public const string PiiSearchSuffix = ".PiiSearch";
+
+    /// <summary>
+    /// The signed descriptor for one combination of grants. A grant without either PII bit signs
+    /// exactly the descriptor tokens carried before PII grants existed, so those keep validating —
+    /// as masked tokens, which is what they always should have been.
+    /// </summary>
+    private static string Descriptor(bool write, bool revealPii, bool searchPii) =>
+        (write ? WriteDescriptor : ReadDescriptor)
+        + (revealPii ? PiiRevealSuffix : "")
+        + (searchPii ? PiiSearchSuffix : "");
+
     /// <summary>
     /// Signs a token for <paramref name="actor"/> carrying no more than the access the minting caller
-    /// held. <paramref name="canWrite"/> comes from the action tree at mint time, which is the only
-    /// moment a real session is present to ask about.
+    /// held. Every grant comes from the action tree at mint time, which is the only moment a real
+    /// session is present to ask about: <paramref name="canWrite"/> from the steward queue action,
+    /// <paramref name="canRevealPii"/> and <paramref name="canSearchPii"/> from the host's PII
+    /// actions.
     /// </summary>
-    public static (string token, string expires) Mint(DarlasticApiOptions options, string actor, bool canWrite) =>
+    public static (string token, string expires) Mint(DarlasticApiOptions options, string actor, bool canWrite,
+        bool canRevealPii = false, bool canSearchPii = false) =>
         TokenService.GenerateSASToken(
-            canWrite ? WriteDescriptor : ReadDescriptor,
+            Descriptor(canWrite, canRevealPii, canSearchPii),
             actor, DateTime.UtcNow.Add(options.CaseBrowserTokenLifetime), options.CaseBrowserSigningKey!);
 
     /// <summary>
@@ -71,9 +90,14 @@ internal static class CaseBrowserSas
         // by the signature rather than by trusting the query string. The descriptor is signed too,
         // so a read token cannot be re-presented as a write one — try the stronger grant first and
         // fall back, rather than letting the query string say which kind it is.
+        // The same holds for the PII bits: each combination signs a different descriptor, so a
+        // masked token cannot be re-presented as an unmasked one.
         string key = options.CaseBrowserSigningKey!;
-        if (TokenService.ValidateSASToken(WriteDescriptor, actor, expires, token, key)) return new(actor, true);
-        if (TokenService.ValidateSASToken(ReadDescriptor, actor, expires, token, key)) return new(actor, false);
+        foreach (bool write in (bool[])[true, false])
+            foreach (bool reveal in (bool[])[true, false])
+                foreach (bool search in (bool[])[true, false])
+                    if (TokenService.ValidateSASToken(Descriptor(write, reveal, search), actor, expires, token, key))
+                        return new(actor, write, reveal, search);
         return null;
     }
 
@@ -85,8 +109,9 @@ internal static class CaseBrowserSas
 }
 
 /// <summary>
-/// Who a case browser token names and what it lets them do. <paramref name="CanWrite"/> is a property
-/// of the token itself — a steward with read-only access gets a token that cannot flag or audit, so
-/// the handoff to a page with no auth stack of its own does not quietly widen what they may do.
+/// Who a case browser token names and what it lets them do. Every flag is a property of the token
+/// itself — a steward with read-only access gets a token that cannot flag or audit, and one without
+/// the host's PII reveal permission gets masked names and phones — so the handoff to a page with no
+/// auth stack of its own does not quietly widen what they may do.
 /// </summary>
-internal sealed record CaseBrowserGrant(string Actor, bool CanWrite);
+internal sealed record CaseBrowserGrant(string Actor, bool CanWrite, bool CanRevealPii = false, bool CanSearchPii = false);

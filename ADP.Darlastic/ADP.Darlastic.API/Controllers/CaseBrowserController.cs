@@ -9,6 +9,8 @@ using ShiftSoftware.ADP.Darlastic.Engine;
 using ShiftSoftware.ADP.Darlastic.Shared;
 using ShiftSoftware.ADP.Darlastic.Shared.ActionTrees;
 using ShiftSoftware.ADP.Darlastic.Shared.DTOs.Cases;
+using ShiftSoftware.ShiftEntity.Core.Pii;
+using ShiftSoftware.ShiftEntity.Model.Dtos;
 using ShiftSoftware.ShiftEntity.EFCore;
 using ShiftSoftware.TypeAuth.Core;
 using System.Security.Claims;
@@ -33,6 +35,11 @@ namespace ShiftSoftware.ADP.Darlastic.API.Controllers;
 /// and because it is recomputed, the surface can compare live against staged and SAY when the
 /// engine has moved (<see cref="CaseDetailDTO.EngineDrift"/>).</para>
 ///
+/// <para><b>Personal information follows the golden contract</b> (<see cref="RecordPiiView"/>): names,
+/// phones, ID numbers, e-mails and addresses are masked, and the engine's explanation text scrubbed,
+/// unless the caller holds the host's PII reveal action. Search matches part of a name or phone only
+/// for a caller holding the partial-search action; anyone else matches whole values.</para>
+///
 /// <para>Writes go through the host's EF context, matching <c>StewardQueueController</c>: the
 /// engine's own registry path resolves its connection from environment configuration, which is
 /// right for the batch runner and wrong here.</para>
@@ -43,16 +50,26 @@ public class CaseBrowserController : ControllerBase
 {
     private readonly ShiftDbContext db;
     private readonly DarlasticApiOptions options;
+    private readonly IPiiMasker masker;
+    private readonly PiiOptions piiOptions;
 
     /// <summary>The engine serializes <c>RealRecord</c> with default options, so the staged payload
     /// carries CLR property names verbatim.</summary>
     private static readonly JsonSerializerOptions PayloadJson = new() { PropertyNameCaseInsensitive = true };
 
-    public CaseBrowserController(ShiftDbContext db, IOptions<DarlasticApiOptions> options)
+    public CaseBrowserController(ShiftDbContext db, IOptions<DarlasticApiOptions> options,
+        IPiiMasker masker, IOptions<PiiOptions> piiOptions)
     {
         this.db = db;
         this.options = options.Value;
+        this.masker = masker;
+        this.piiOptions = piiOptions.Value;
     }
+
+    private RecordPiiView? pii;
+
+    /// <summary>What this caller may see of the records, asked of TypeAuth once per request.</summary>
+    private RecordPiiView Pii => pii ??= RecordPiiView.ForCaller(HttpContext, masker, piiOptions);
 
     // Seeing how the engine decided the whole corpus and being trusted to change how it resolves
     // are different permissions, so this rides the StewardQueue node's read grant and its own
@@ -215,7 +232,7 @@ public class CaseBrowserController : ControllerBase
         return new IdentityAssemblyDTO
         {
             IdentityID = identityId,
-            GoldenName = await GoldenNameOf(identityId, ct),
+            GoldenName = Pii.Show(PiiKind.Name, await GoldenNameOf(identityId, ct)),
             MemberCount = members.Count,
             SourceCount = members.Select(m => m.SourceSystem).Distinct().Count(),
             // Only members staged for browsing have evidence; the rest are named by key alone.
@@ -265,7 +282,7 @@ public class CaseBrowserController : ControllerBase
             Identities = [.. page.Select(s => new IdentityListItemDTO
             {
                 IdentityID = s.IdentityID,
-                GoldenName = s.GoldenName,
+                GoldenName = Pii.Show(PiiKind.Name, s.GoldenName),
                 MemberCount = s.MemberCount,
                 SourceCount = s.SourceCount,
                 Categories = NamesOf((ClusterCat)s.Categories),
@@ -281,8 +298,11 @@ public class CaseBrowserController : ControllerBase
     /// the engine would then have to keep in step, and this endpoint is a navigation aid rather
     /// than a hot path. If the staged set grows an order of magnitude, promote the columns.</para>
     ///
-    /// <para>Note the scope: this searches what is STAGED for browsing (queue + catalog), not the
-    /// corpus. Finding an arbitrary customer is what the golden list is for.</para>
+    /// <para>Note the scope: this searches what is STAGED for browsing, not the corpus. Finding an
+    /// arbitrary customer is what the golden list is for.</para>
+    ///
+    /// <para>A record key always matches whole. Part of a name or phone matches only for a caller
+    /// holding the partial-search action; anyone else must give the whole name or number.</para>
     /// </summary>
     [HttpGet("Search")]
     [Authorize]
@@ -294,20 +314,35 @@ public class CaseBrowserController : ControllerBase
 
         take = Math.Clamp(take, 1, 200);
         string term = q.Trim();
-        string like = "%" + term.Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]") + "%";
 
-        var rows = await db.Set<StewardRecord>().FromSqlRaw("""
-            SELECT TOP (@take) SourceSystem, SourceRecordId, RunID, Payload
-            FROM Darlastic.StewardRecord
-            WHERE JSON_VALUE(Payload, '$.NormName') LIKE @like
-               OR JSON_VALUE(Payload, '$.RawName')  LIKE @like
-               OR SourceRecordId = @exact
-               OR EXISTS (SELECT 1 FROM OPENJSON(Payload, '$.Phones') p WHERE p.value LIKE @like)
-            """,
-            new Microsoft.Data.SqlClient.SqlParameter("@take", take),
-            new Microsoft.Data.SqlClient.SqlParameter("@like", like),
-            new Microsoft.Data.SqlClient.SqlParameter("@exact", term))
-            .AsNoTracking().ToListAsync(ct);
+        var rows = Pii.PartialSearch
+            ? await db.Set<StewardRecord>().FromSqlRaw("""
+                SELECT TOP (@take) SourceSystem, SourceRecordId, RunID, Payload
+                FROM Darlastic.StewardRecord
+                WHERE JSON_VALUE(Payload, '$.NormName') LIKE @like
+                   OR JSON_VALUE(Payload, '$.RawName')  LIKE @like
+                   OR SourceRecordId = @exact
+                   OR EXISTS (SELECT 1 FROM OPENJSON(Payload, '$.Phones') p WHERE p.value LIKE @like)
+                """,
+                new Microsoft.Data.SqlClient.SqlParameter("@take", take),
+                new Microsoft.Data.SqlClient.SqlParameter("@like", "%" + term.Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]") + "%"),
+                new Microsoft.Data.SqlClient.SqlParameter("@exact", term))
+                .AsNoTracking().ToListAsync(ct)
+            // Whole values only: the name as written or as normalized, or the full number. An empty
+            // digit string never equals a stored phone, so a name-only query cannot match on phone.
+            : await db.Set<StewardRecord>().FromSqlRaw("""
+                SELECT TOP (@take) SourceSystem, SourceRecordId, RunID, Payload
+                FROM Darlastic.StewardRecord
+                WHERE JSON_VALUE(Payload, '$.NormName') = @exact
+                   OR JSON_VALUE(Payload, '$.RawName')  = @exact
+                   OR SourceRecordId = @exact
+                   OR EXISTS (SELECT 1 FROM OPENJSON(Payload, '$.Phones') p WHERE p.value = @digits)
+                   OR EXISTS (SELECT 1 FROM OPENJSON(Payload, '$.WeakPhones') p WHERE p.value = @digits)
+                """,
+                new Microsoft.Data.SqlClient.SqlParameter("@take", take),
+                new Microsoft.Data.SqlClient.SqlParameter("@exact", term),
+                new Microsoft.Data.SqlClient.SqlParameter("@digits", new string([.. term.Where(char.IsDigit)])))
+                .AsNoTracking().ToListAsync(ct);
 
         var ids = await IdentitiesOf(rows.Select(r => (r.SourceSystem, r.SourceRecordId)), ct);
         return rows.Select(r => Revive(r) is { } rec
@@ -543,15 +578,15 @@ public class CaseBrowserController : ControllerBase
             dto.LiveScore = RealMatcher.Explain(recA, recB, trace);
             dto.Trace = [.. trace.Steps.Select(s => new TraceStepDTO
             {
-                Stage = s.Stage, Title = s.Title, Detail = s.Detail, ConfidenceAfter = s.ConfAfter,
+                Stage = s.Stage, Title = s.Title, Detail = Pii.Scrub(s.Detail), ConfidenceAfter = s.ConfAfter,
             })];
 
             // The record-level half of the walkthrough, and why the two were ever compared. Both
             // are pure functions of a single record, so neither needs staging — the same reason
             // the trace does not.
-            dto.NormalizeA = [.. Normalization.Steps(recA).Select(s => new NormalizeStepDTO { Stage = s.Stage, Detail = s.Detail })];
-            dto.NormalizeB = [.. Normalization.Steps(recB).Select(s => new NormalizeStepDTO { Stage = s.Stage, Detail = s.Detail })];
-            dto.SharedBlockKeys = [.. RealMatcher.BlockKeysOf(recA).Intersect(RealMatcher.BlockKeysOf(recB), StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+            dto.NormalizeA = [.. Normalization.Steps(recA).Select(s => new NormalizeStepDTO { Stage = s.Stage, Detail = Pii.Scrub(s.Detail) })];
+            dto.NormalizeB = [.. Normalization.Steps(recB).Select(s => new NormalizeStepDTO { Stage = s.Stage, Detail = Pii.Scrub(s.Detail) })];
+            dto.SharedBlockKeys = [.. RealMatcher.BlockKeysOf(recA).Intersect(RealMatcher.BlockKeysOf(recB), StringComparer.Ordinal).Order(StringComparer.Ordinal).Select(Pii.BlockKey)];
             dto.Decision = dto.LiveScore >= 0.90 ? "auto-merge" : dto.LiveScore >= 0.80 ? "steward-queue" : "kept-separate";
             if (recA.Dob is { } da && recB.Dob is { } dbo && da.Year > 0 && dbo.Year > 0)
                 dto.DobGapYears = Math.Abs(da.Year - dbo.Year);
@@ -672,19 +707,20 @@ public class CaseBrowserController : ControllerBase
         catch (JsonException) { return null; }   // a corrupt payload loses one case, not the page
     }
 
-    private static CaseSideDTO ToSide(RealRecord r, long? identityId) => new()
+    /// <summary>One record as this caller may see it: personal values masked unless the caller may reveal them.</summary>
+    private CaseSideDTO ToSide(RealRecord r, long? identityId) => new()
     {
         SourceSystem = r.SourceSystem,
         SourceRecordId = r.SourceRecordId,
-        RawName = r.RawName,
-        NormName = r.NormName,
-        Phones = [.. r.Phones],
-        WeakPhones = [.. r.WeakPhones],
-        NationalId = r.NationalId,
+        RawName = Pii.Show(PiiKind.Name, r.RawName),
+        NormName = Pii.Show(PiiKind.Name, r.NormName),
+        Phones = Pii.Show(PiiKind.Phone, r.Phones),
+        WeakPhones = Pii.Show(PiiKind.Phone, r.WeakPhones),
+        NationalId = Pii.Show(PiiKind.Identifier, r.NationalId),
         City = string.IsNullOrEmpty(r.NormCity) ? null : r.NormCity,
-        Address = string.IsNullOrEmpty(r.RawAddress) ? null : r.RawAddress,
+        Address = string.IsNullOrEmpty(r.RawAddress) ? null : Pii.Show(PiiKind.Address, r.RawAddress),
         Gender = r.Gender,
-        Emails = r.Emails is null ? [] : [.. r.Emails],
+        Emails = Pii.Show(PiiKind.Email, r.Emails),
         NameWasMojibake = r.NameWasMojibake,
         NameHadArabizi = r.NameHadArabizi,
         IdentityID = identityId,

@@ -90,6 +90,17 @@ public static class Merge
         /// <summary>The per-category cap applied to <see cref="Catalog"/>. Recorded so a surface can
         /// say "showing 500 of 437,238" instead of implying it holds everything.</summary>
         public int CatalogCap;
+
+        /// <summary>
+        /// Per record index, the <see cref="GoldenReason"/> bits the pair walk established for it —
+        /// how its auto-merge edges were justified, whether it is queued, and what its categorised
+        /// pairs say about its customer. A golden's reasons are the OR over its members.
+        ///
+        /// <para>Null unless the walk was asked for per-golden evidence. Its presence is also what
+        /// tells the registry to stage evidence for every identity and record rather than only the
+        /// multi-record identities and the queued or catalogued records.</para>
+        /// </summary>
+        public long[]? RecordReasons;
     }
 
     /// <summary>One auto-merge edge: two records joined, and the evidence that joined them.</summary>
@@ -142,10 +153,18 @@ public static class Merge
     /// <see cref="StewardConstraints"/>). They are resolved to record INDICES once, up front, so
     /// the inner loop — which runs into the tens of millions of pairs — stays a packed-long set
     /// probe and never builds a pair-key string per candidate.</para>
+    ///
+    /// <para><paramref name="perGoldenEvidence"/> (off by default) additionally fills
+    /// <see cref="Result.RecordReasons"/>, which is what lets a browsing surface list one row per
+    /// golden customer with plain reasons. Off, the walk does exactly what it did before the
+    /// parameter existed: clustering, queue, catalog and counts are identical either way; on, it
+    /// keeps the few categorised pairs that say something about customers (see
+    /// <see cref="GoldenReasons.RelationshipCats"/>) and folds them in once the clustering is
+    /// final.</para>
     /// </summary>
     public static Result ClusterFromBlocks(IReadOnlyList<RealRecord> records, RealMatcher.BlockingResult blocking,
         double mergeThreshold = 0.90, StewardConstraints? constraints = null,
-        int catalogCap = DefaultCatalogCap)
+        int catalogCap = DefaultCatalogCap, bool perGoldenEvidence = false)
     {
         int n = records.Count;
         var uf = new UnionFind(n);
@@ -205,6 +224,9 @@ public static class Merge
         var catKept = new Dictionary<CaseCat, int>(CaseCategories.All.Length);
         var catalog = new List<CatalogEntry>(1 << 13);
         foreach (var c in CaseCategories.All) { catCounts[c] = 0; catKept[c] = 0; }
+        // Pairs whose categories describe the customers, kept only for per-golden evidence. Whether
+        // the two records end up in one customer is not known until the walk is over.
+        var relationshipPairs = perGoldenEvidence ? new List<(int A, int B, CaseCat Cats)>() : null;
 
         foreach (var block in blocking.Blocks)
             for (int i = 0; i < block.Count; i++)
@@ -230,6 +252,8 @@ public static class Merge
                                 if (catKept[c] < catalogCap) { catKept[c]++; keep = true; }
                             }
                         if (keep) catalog.Add(new CatalogEntry(a, b, (float)s, flags, cats));
+                        if (relationshipPairs is not null && (cats & GoldenReasons.RelationshipCats) != 0)
+                            relationshipPairs.Add((a, b, cats));
                     }
 
                     if (cannotLink is not null && (flags & CannotLinkFlags) != 0) AddCannotLink(a, b);
@@ -267,6 +291,29 @@ public static class Merge
         // already-merged on a full tenant corpus).
         steward.RemoveAll(p => uf.Find(p.Item1) == uf.Find(p.Item2));
 
+        long[]? recordReasons = null;
+        if (relationshipPairs is not null)
+        {
+            recordReasons = new long[n];
+            void Mark(int i, GoldenReason r) => recordReasons[i] |= (long)r;
+
+            for (int i = 0; i < n; i++)
+                if (records[i].IsOrgPlaceholder) Mark(i, GoldenReason.CompanyOrFleet);
+            foreach (var e in mergeEdges)
+            {
+                var r = GoldenReasons.OfMergeEdge(e.Flags);
+                Mark(e.A, r); Mark(e.B, r);
+            }
+            foreach (var (a, b) in forcedMerge) { Mark(a, GoldenReason.MergedByReviewer); Mark(b, GoldenReason.MergedByReviewer); }
+            foreach (var (a, b, _) in steward) { Mark(a, GoldenReason.NeedsReview); Mark(b, GoldenReason.NeedsReview); }
+            foreach (var (a, b, cats) in relationshipPairs)
+            {
+                var r = GoldenReasons.OfPair(cats, uf.Find(a) == uf.Find(b));
+                if (r == GoldenReason.None) continue;
+                Mark(a, r); Mark(b, r);
+            }
+        }
+
         var parent = uf.Parent;
         var size = new Dictionary<int, int>();
         for (int i = 0; i < n; i++) { int r = uf.Find(i); size[r] = size.GetValueOrDefault(r) + 1; }
@@ -289,6 +336,7 @@ public static class Merge
             CategoryCounts = catCounts,
             Catalog = catalog,
             CatalogCap = catalogCap,
+            RecordReasons = recordReasons,
         };
         foreach (var v in size.Values) result.ClusterSizeHistogram[v] = result.ClusterSizeHistogram.GetValueOrDefault(v) + 1;
         return result;
@@ -541,7 +589,7 @@ public static class Merge
     }
 
     /// <summary>Display casing for golden name/city: the survived value is match-normalized
-    /// (lowercased); title-case it for presentation ("aza asim" → "Aza Asim"). Deterministic
+    /// (lowercased); title-case it for presentation ("sample person" → "Sample Person"). Deterministic
     /// (InvariantCulture) so the golden payload hash stays stable across runs. Matching is
     /// unaffected — the matcher reads each source record's NormName, never the golden's stored name.</summary>
     private static string TitleCaseForDisplay(string s) =>
