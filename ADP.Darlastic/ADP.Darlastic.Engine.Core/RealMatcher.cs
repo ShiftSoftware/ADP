@@ -45,7 +45,7 @@ public static class RealMatcher
             score += 0.45 * nameSim;
             weight += 0.45;
             trace?.Add("signal", "Names",
-                $"\"{a.NormName}\" and \"{b.NormName}\" are {Pct(nameSim)} alike");
+                $"\"{trace.Quote(QuotedValue.Name, a.NormName)}\" and \"{trace.Quote(QuotedValue.Name, b.NormName)}\" are {Pct(nameSim)} alike");
         }
         else trace?.Add("signal", "Names", a.NormName.Length == 0 && b.NormName.Length == 0
             ? "no usable name on either record, so names were not compared"
@@ -73,7 +73,7 @@ public static class RealMatcher
             score += 0.45 * (phoneExact ? 1.0 : phoneSuffix ? 0.7 : 0.0);
             weight += 0.45;
             trace?.Add("signal", "Phone",
-                phoneExact ? $"both records have the same number ({SharedPhone(a, b)})"
+                phoneExact ? $"both records have the same number ({trace.Quote(QuotedValue.Phone, SharedPhone(a, b))})"
                 : phoneSuffix ? "one record has the number with a digit missing; the rest agrees with the other record's number"
                 : "both records have numbers, but none in common");
         }
@@ -116,7 +116,7 @@ public static class RealMatcher
                     flags |= MatchFlags.EmailExact;
                     score += 0.45;
                     weight += 0.45;
-                    trace?.Add("signal", "E-mail", $"both records have the same address ({sharedEmail})");
+                    trace?.Add("signal", "E-mail", $"both records have the same address ({trace.Quote(QuotedValue.Email, sharedEmail ?? "")})");
                 }
                 else trace?.Add("signal", "E-mail",
                     "both records have addresses, but none in common; not counted against them, since one person often has several");
@@ -289,7 +289,7 @@ public static class RealMatcher
                 conf = Math.Min(1.0, conf + 0.05);
                 flags |= MatchFlags.AddressBoost;
                 trace?.Add("address", "Address agrees",
-                    $"\"{a.NormAddress}\" and \"{b.NormAddress}\" agree down to the district, a small boost; a different address never counts against them", conf);
+                    $"\"{trace.Quote(QuotedValue.Address, a.NormAddress)}\" and \"{trace.Quote(QuotedValue.Address, b.NormAddress)}\" agree down to the district, a small boost; a different address never counts against them", conf);
                 // Chain-slice rescue → AUTO-MERGE (raised 0.88 → 0.91, 2026-06-12 domain-expert
                 // audit). 'Hogr Jaafer'/'Hogr Jamil' on one phone at one address is ONE person
                 // captured as different slices of the name chain (given+father vs given+
@@ -323,12 +323,12 @@ public static class RealMatcher
                         flags |= MatchFlags.ChainSliceRescue;
                         conf = Math.Max(conf, 0.91);
                         trace?.Add("address", "Same first name, number and district",
-                            $"the same first name, the same number, and the district part of the address agrees (\"{subA}\" and \"{subB}\"): one person written down with different parts of the family name, enough to combine them", conf);
+                            $"the same first name, the same number, and the district part of the address agrees (\"{trace.Quote(QuotedValue.Address, subA)}\" and \"{trace.Quote(QuotedValue.Address, subB)}\"): one person written down with different parts of the family name, enough to combine them", conf);
                     }
                 }
             }
             else trace?.Add("address", "Address differs",
-                $"\"{a.NormAddress}\" and \"{b.NormAddress}\" do not agree down to the district; not counted against them, since people move and buy in other cities", conf);
+                $"\"{trace.Quote(QuotedValue.Address, a.NormAddress)}\" and \"{trace.Quote(QuotedValue.Address, b.NormAddress)}\" do not agree down to the district; not counted against them, since people move and buy in other cities", conf);
         }
         else if (trace is not null && useAddress && !nameConflict)
         {
@@ -413,10 +413,10 @@ public static class RealMatcher
                 conf = Math.Max(conf, namesBoth && NameConsistent(a.NormName, b.NormName) ? 0.95 : 0.91);
                 flags |= MatchFlags.EmailMerge;
                 trace?.Add("gate", "Same e-mail, names agree",
-                    $"both records have the address ({sharedEmail}) and the names agree (or one record has no name): enough to combine them", conf);
+                    $"both records have the address ({trace.Quote(QuotedValue.Email, sharedEmail ?? "")}) and the names agree (or one record has no name): enough to combine them", conf);
             }
             else trace?.Add("gate", "Same e-mail, names differ",
-                $"both records have the address ({sharedEmail}) but the names point to different people (an address can be typed on the wrong record, or used by several staff), so the address alone is not enough to combine them", conf);
+                $"both records have the address ({trace.Quote(QuotedValue.Email, sharedEmail ?? "")}) but the names point to different people (an address can be typed on the wrong record, or used by several staff), so the address alone is not enough to combine them", conf);
         }
 
         // Conflict penalties — only on strong, plausibility-filtered evidence.
@@ -432,7 +432,7 @@ public static class RealMatcher
             {
                 conf = Math.Min(1.0, conf + 0.05);
                 flags |= MatchFlags.DobEqual;
-                trace?.Add("conflict", "Same birth date", $"the same date of birth ({a.Dob.P1}/{a.Dob.P2}/{a.Dob.Year}), a small boost", conf);
+                trace?.Add("conflict", "Same birth date", $"the same date of birth ({trace.Quote(QuotedValue.BirthDate, $"{a.Dob.P1}/{a.Dob.P2}/{a.Dob.Year}")}), a small boost", conf);
             }
             else if (a.Dob.ConflictsWith(b.Dob))
             {
@@ -444,7 +444,7 @@ public static class RealMatcher
                 // visibility only. National-ID conflict (a reliable key) remains the hard veto above.
                 flags |= MatchFlags.DobConflict;
                 trace?.Add("conflict", "Different birth dates",
-                    $"{a.Dob.P1}/{a.Dob.P2}/{a.Dob.Year} and {b.Dob.P1}/{b.Dob.P2}/{b.Dob.Year}: dealer birth dates are often wrong, so this is shown for information and not counted against them", conf);
+                    $"{trace.Quote(QuotedValue.BirthDate, $"{a.Dob.P1}/{a.Dob.P2}/{a.Dob.Year}")} and {trace.Quote(QuotedValue.BirthDate, $"{b.Dob.P1}/{b.Dob.P2}/{b.Dob.Year}")}: dealer birth dates are often wrong, so this is shown for information and not counted against them", conf);
             }
         }
 

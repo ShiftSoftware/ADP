@@ -318,4 +318,35 @@ public class EmailMatchingTests
         var offenders = TraceWordingTests.Offenders(texts);
         Assert.True(offenders.Count == 0, "trace text with engine terms:\n" + string.Join("\n", offenders));
     }
+
+    [Fact]
+    public void EmailTrace_QuotesTheSharedAddressThroughTheQuoter()
+    {
+        // The address is quoted in three branches; a reader who may not see it gets whatever the
+        // quoter writes, and nothing of the address itself — even when it carries a quote. Here
+        // rather than with the other quoting tests because it needs the e-mail flag this class owns.
+        using var on = new EmailMatchingOn();
+        const string shared = "k.\"morrow\"+x@mail.example";
+        var pairs = new (string Title, RealRecord A, RealRecord B)[]
+        {
+            ("Same e-mail, names agree",
+                Rec(0, "src-a", "q1", "kestrel morrow", emails: [shared]), Rec(1, "src-b", "q2", "kestrel morrow", emails: [shared])),
+            ("Same e-mail, names differ",
+                Rec(0, "src-a", "q3", "kestrel morrow", emails: [shared]), Rec(1, "src-b", "q4", "quill sabadine", emails: [shared])),
+        };
+        foreach (var (title, a, b) in pairs)
+        {
+            var quoted = new List<(QuotedValue Kind, string Value)>();
+            var trace = new MatchTrace((kind, value) => { quoted.Add((kind, value)); return "@@"; });
+            RealMatcher.Explain(a, b, trace);
+
+            Assert.Contains(trace.Steps, s => s.Title == title);
+            Assert.Contains(trace.Steps, s => s.Title == "E-mail" && s.Detail == "both records have the same address (@@)");
+            var emails = quoted.Where(q => q.Kind == QuotedValue.Email).Select(q => q.Value).ToList();
+            Assert.NotEmpty(emails);
+            Assert.All(emails, e => Assert.Equal(Norm.Email(shared), e));
+            Assert.DoesNotContain(trace.Steps, s => s.Detail.Contains("morrow", StringComparison.OrdinalIgnoreCase)
+                                                 || s.Detail.Contains("mail.example", StringComparison.OrdinalIgnoreCase));
+        }
+    }
 }

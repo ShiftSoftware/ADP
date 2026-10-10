@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using ShiftSoftware.ADP.Darlastic.Engine;
 using ShiftSoftware.ShiftEntity.Core.Pii;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
 using ShiftSoftware.TypeAuth.Core;
-using System.Text.RegularExpressions;
 
 namespace ShiftSoftware.ADP.Darlastic.API.Controllers;
 
@@ -50,27 +50,30 @@ internal sealed class RecordPiiView
     public List<string> Show(PiiKind kind, IEnumerable<string>? raw) =>
         raw is null ? [] : [.. raw.Select(v => Show(kind, v)!)];
 
-    private static readonly Regex QuotedText = new("\"[^\"]*\"", RegexOptions.Compiled);
-    private static readonly Regex EmailLike = new(@"[^\s()""]+@[^\s()""]+", RegexOptions.Compiled);
-    // A digit run standing on its own (a phone, an ID number). Not one ending a longer code: a VIN's
-    // serial digits are part of the vehicle number, which the contract does not mask.
-    private static readonly Regex LongNumber = new(@"(?<![A-Za-z0-9])\+?\d{6,}", RegexOptions.Compiled);
-    private static readonly Regex DateLike = new(@"\b\d{1,2}/\d{1,2}/\d{4}\b", RegexOptions.Compiled);
-
     /// <summary>
-    /// Engine explanation text quotes the records it compares: names and addresses in quotes,
-    /// phones and ID numbers as digit runs, e-mails, birth dates. Masked callers get the reasoning
-    /// with those values hidden; the engine's own wording and percentages survive.
+    /// How the engine's explanations write a record's values for this caller: as recorded for a
+    /// caller who may see them, otherwise masked exactly like the same value in the record itself.
+    /// The engine hands over each value whole, so nothing depends on how the surrounding text quotes
+    /// it — a name containing quotes or any other punctuation is replaced like any other.
     /// </summary>
-    public string Scrub(string? text)
+    public ValueQuoter? Quoter => Reveal ? null : (kind, value) => Show(KindOf(kind), value) ?? "";
+
+    /// <summary>What normalization did to the record, worded by the engine, values as this caller may see them.</summary>
+    public List<NormalizeStep> Normalize(RealRecord record) => Normalization.Steps(record, Quoter);
+
+    /// <summary>A trace sink for explaining one pair to this caller.</summary>
+    public MatchTrace NewTrace() => new(Quoter);
+
+    /// <summary>The masker kind for a value an explanation quotes. A birth date is masked as an ID
+    /// number, the way the record's own birth date is.</summary>
+    internal static PiiKind KindOf(QuotedValue kind) => kind switch
     {
-        if (Reveal || string.IsNullOrEmpty(text)) return text ?? "";
-        string hidden = options.HiddenText;
-        text = QuotedText.Replace(text, $"\"{hidden}\"");
-        text = EmailLike.Replace(text, hidden);
-        text = DateLike.Replace(text, hidden);
-        return LongNumber.Replace(text, hidden);
-    }
+        QuotedValue.Name => PiiKind.Name,
+        QuotedValue.Phone => PiiKind.Phone,
+        QuotedValue.Email => PiiKind.Email,
+        QuotedValue.Address => PiiKind.Address,
+        _ => PiiKind.Identifier,
+    };
 
     /// <summary>A blocking key ("P:&lt;phone&gt;", "N:&lt;name prefix&gt;") keeps its kind and hides its value.</summary>
     public string BlockKey(string key) =>
