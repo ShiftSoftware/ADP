@@ -50,6 +50,28 @@ public enum MatchFlags : long   // long: persisted as BIGINT; values below bit 3
 public sealed record NormalizeStep(string Stage, string Detail);
 
 /// <summary>
+/// The kinds of personal value an explanation quotes from the records it describes. A reader who
+/// may not see them gets the explanation with each one written as its kind allows (see
+/// <see cref="ValueQuoter"/>), so the reasoning reads the same and the values do not leak.
+/// </summary>
+public enum QuotedValue
+{
+    Name,
+    Phone,
+    Email,
+    IdNumber,
+    BirthDate,
+    Address,
+}
+
+/// <summary>
+/// Writes one record value into an explanation, as its reader may see it. Called with the exact
+/// value the explanation would otherwise print, never with text around it, so a value containing
+/// quotes, separators or any other punctuation is replaced whole.
+/// </summary>
+public delegate string ValueQuoter(QuotedValue kind, string value);
+
+/// <summary>
 /// The record-level half of the explanation: how raw source text became the text the matcher
 /// compares. Lives in the Engine rather than a browsing surface for the same reason the category
 /// rules do — it describes what the normalizer actually did, and a copy living next to a UI would
@@ -57,27 +79,37 @@ public sealed record NormalizeStep(string Stage, string Detail);
 /// </summary>
 public static class Normalization
 {
-    public static List<NormalizeStep> Steps(RealRecord r)
+    public static List<NormalizeStep> Steps(RealRecord r) => Steps(r, null);
+
+    /// <summary>
+    /// The steps, with every record value written through <paramref name="quote"/>. Without one the
+    /// values appear as recorded. The city stays as recorded either way: it is shown beside the
+    /// record wherever the record is shown.
+    /// </summary>
+    public static List<NormalizeStep> Steps(RealRecord r, ValueQuoter? quote)
     {
+        string Q(QuotedValue kind, string value) => quote is null ? value : quote(kind, value);
+
         var steps = new List<NormalizeStep>();
         if (r.RawName.Length > 0)
         {
             if (r.NameWasMojibake)
-                steps.Add(new("repair", $"garbled text repaired: \"{r.RawName}\" → \"{Mojibake.TryRepair(r.RawName)}\", then written in Latin letters"));
+                steps.Add(new("repair", $"garbled text repaired: \"{Q(QuotedValue.Name, r.RawName)}\" → \"{Q(QuotedValue.Name, Mojibake.TryRepair(r.RawName) ?? "")}\", then written in Latin letters"));
             if (r.NameHadArabizi)
                 steps.Add(new("arabizi", "digits used as letters in chat-style writing (3→a · 7→h · 5→kh …) turned back into letters before writing in Latin letters"));
             steps.Add(new("name", r.NormName.Length > 0
-                ? $"\"{r.RawName}\" → \"{r.NormName}\""
-                : $"\"{r.RawName}\" → dropped (not a usable name)"));
+                ? $"\"{Q(QuotedValue.Name, r.RawName)}\" → \"{Q(QuotedValue.Name, r.NormName)}\""
+                : $"\"{Q(QuotedValue.Name, r.RawName)}\" → dropped (not a usable name)"));
         }
         else steps.Add(new("name", "no name in source"));
 
         if (r.Phones.Length + r.WeakPhones.Length > 0)
             steps.Add(new("phone", string.Join(" · ",
-                r.Phones.Select(p => p + " (full number)").Concat(r.WeakPhones.Select(p => p + " (incomplete number)")))));
+                r.Phones.Select(p => Q(QuotedValue.Phone, p) + " (full number)")
+                    .Concat(r.WeakPhones.Select(p => Q(QuotedValue.Phone, p) + " (incomplete number)")))));
 
         if (r.NormAddress.Length > 0)
-            steps.Add(new("address", $"\"{r.RawAddress.Replace('|', ' ')}\" → \"{r.NormAddress}\" · city \"{r.NormCity}\""));
+            steps.Add(new("address", $"\"{Q(QuotedValue.Address, r.RawAddress.Replace('|', ' '))}\" → \"{Q(QuotedValue.Address, r.NormAddress)}\" · city \"{r.NormCity}\""));
 
         return steps;
     }
@@ -99,7 +131,17 @@ public sealed record TraceStep(string Stage, string Title, string Detail, double
 /// </summary>
 public sealed class MatchTrace
 {
+    private readonly ValueQuoter? quote;
+
+    public MatchTrace() { }
+
+    /// <summary>A trace whose steps write every record value they quote through <paramref name="quote"/>.</summary>
+    public MatchTrace(ValueQuoter? quote) => this.quote = quote;
+
     public readonly List<TraceStep> Steps = [];
     public void Add(string stage, string title, string detail, double? confAfter = null)
         => Steps.Add(new TraceStep(stage, title, detail, confAfter));
+
+    /// <summary>A record value as this trace's reader may see it: as recorded, unless the trace was given a quoter.</summary>
+    public string Quote(QuotedValue kind, string value) => quote is null ? value : quote(kind, value);
 }

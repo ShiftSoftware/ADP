@@ -13,10 +13,12 @@ namespace ShiftSoftware.ADP.Darlastic.Engine.Tests;
 /// people on one mailbox); the sole genuinely-shared-by-many address was a role account.
 ///
 /// <see cref="Flags.EmailMatching"/> is process-global, so every test here sets it through
-/// <see cref="EmailMatchingOn"/>, which restores the prior value. Tests within a class run
-/// sequentially under xUnit; the other suite in this assembly builds records with no e-mail at all,
-/// so it cannot be perturbed by the flag flipping here.
+/// <see cref="EmailMatchingOn"/>, which restores the prior value, and the class runs in the
+/// engine-flags collection, never beside another class: with the flag on, every explained pair gains
+/// an e-mail step even when neither record has an address, so a suite comparing two explanations of
+/// one pair (the wording and quoted-value suites) would see them differ if this class ran beside it.
 /// </summary>
+[Collection(EngineFlagsCollection.Name)]
 public class EmailMatchingTests
 {
     private const double AutoMerge = 0.90;
@@ -317,5 +319,36 @@ public class EmailMatchingTests
         }
         var offenders = TraceWordingTests.Offenders(texts);
         Assert.True(offenders.Count == 0, "trace text with engine terms:\n" + string.Join("\n", offenders));
+    }
+
+    [Fact]
+    public void EmailTrace_QuotesTheSharedAddressThroughTheQuoter()
+    {
+        // The address is quoted in three branches; a reader who may not see it gets whatever the
+        // quoter writes, and nothing of the address itself — even when it carries a quote. Here
+        // rather than with the other quoting tests because it needs the e-mail flag this class owns.
+        using var on = new EmailMatchingOn();
+        const string shared = "k.\"morrow\"+x@mail.example";
+        var pairs = new (string Title, RealRecord A, RealRecord B)[]
+        {
+            ("Same e-mail, names agree",
+                Rec(0, "src-a", "q1", "kestrel morrow", emails: [shared]), Rec(1, "src-b", "q2", "kestrel morrow", emails: [shared])),
+            ("Same e-mail, names differ",
+                Rec(0, "src-a", "q3", "kestrel morrow", emails: [shared]), Rec(1, "src-b", "q4", "quill sabadine", emails: [shared])),
+        };
+        foreach (var (title, a, b) in pairs)
+        {
+            var quoted = new List<(QuotedValue Kind, string Value)>();
+            var trace = new MatchTrace((kind, value) => { quoted.Add((kind, value)); return "@@"; });
+            RealMatcher.Explain(a, b, trace);
+
+            Assert.Contains(trace.Steps, s => s.Title == title);
+            Assert.Contains(trace.Steps, s => s.Title == "E-mail" && s.Detail == "both records have the same address (@@)");
+            var emails = quoted.Where(q => q.Kind == QuotedValue.Email).Select(q => q.Value).ToList();
+            Assert.NotEmpty(emails);
+            Assert.All(emails, e => Assert.Equal(Norm.Email(shared), e));
+            Assert.DoesNotContain(trace.Steps, s => s.Detail.Contains("morrow", StringComparison.OrdinalIgnoreCase)
+                                                 || s.Detail.Contains("mail.example", StringComparison.OrdinalIgnoreCase));
+        }
     }
 }

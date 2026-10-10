@@ -36,9 +36,10 @@ namespace ShiftSoftware.ADP.Darlastic.API.Controllers;
 /// engine has moved (<see cref="CaseDetailDTO.EngineDrift"/>).</para>
 ///
 /// <para><b>Personal information follows the golden contract</b> (<see cref="RecordPiiView"/>): names,
-/// phones, ID numbers, e-mails and addresses are masked, and the engine's explanation text scrubbed,
-/// unless the caller holds the host's PII reveal action. Search matches part of a name or phone only
-/// for a caller holding the partial-search action; anyone else matches whole values.</para>
+/// phones, ID numbers, e-mails and addresses are masked, including where the engine's explanation
+/// text quotes them, unless the caller holds the host's PII reveal action. Search matches part of a
+/// name or phone only for a caller holding the partial-search action; anyone else matches whole
+/// values.</para>
 ///
 /// <para>Writes go through the host's EF context, matching <c>StewardQueueController</c>: the
 /// engine's own registry path resolves its connection from environment configuration, which is
@@ -574,18 +575,20 @@ public class CaseBrowserController : ControllerBase
         // Engine.Core rather than staging a trace that could quietly go stale.
         if (recA is not null && recB is not null)
         {
-            var trace = new MatchTrace();
+            // The trace and the normalization steps quote the records; the engine writes each quoted
+            // value through this caller's masking, so a masked caller reads them masked.
+            var trace = Pii.NewTrace();
             dto.LiveScore = RealMatcher.Explain(recA, recB, trace);
             dto.Trace = [.. trace.Steps.Select(s => new TraceStepDTO
             {
-                Stage = s.Stage, Title = s.Title, Detail = Pii.Scrub(s.Detail), ConfidenceAfter = s.ConfAfter,
+                Stage = s.Stage, Title = s.Title, Detail = s.Detail, ConfidenceAfter = s.ConfAfter,
             })];
 
             // The record-level half of the walkthrough, and why the two were ever compared. Both
             // are pure functions of a single record, so neither needs staging — the same reason
             // the trace does not.
-            dto.NormalizeA = [.. Normalization.Steps(recA).Select(s => new NormalizeStepDTO { Stage = s.Stage, Detail = Pii.Scrub(s.Detail) })];
-            dto.NormalizeB = [.. Normalization.Steps(recB).Select(s => new NormalizeStepDTO { Stage = s.Stage, Detail = Pii.Scrub(s.Detail) })];
+            dto.NormalizeA = [.. Pii.Normalize(recA).Select(s => new NormalizeStepDTO { Stage = s.Stage, Detail = s.Detail })];
+            dto.NormalizeB = [.. Pii.Normalize(recB).Select(s => new NormalizeStepDTO { Stage = s.Stage, Detail = s.Detail })];
             dto.SharedBlockKeys = [.. RealMatcher.BlockKeysOf(recA).Intersect(RealMatcher.BlockKeysOf(recB), StringComparer.Ordinal).Order(StringComparer.Ordinal).Select(Pii.BlockKey)];
             dto.Decision = dto.LiveScore >= 0.90 ? "auto-merge" : dto.LiveScore >= 0.80 ? "steward-queue" : "kept-separate";
             if (recA.Dob is { } da && recB.Dob is { } dbo && da.Year > 0 && dbo.Year > 0)

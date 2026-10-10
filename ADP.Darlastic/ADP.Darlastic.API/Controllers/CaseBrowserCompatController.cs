@@ -51,7 +51,8 @@ namespace ShiftSoftware.ADP.Darlastic.API.Controllers;
 /// caller holds the host's PII reveal action (<see cref="PiiOptions.Action"/>) — for a token holder,
 /// as measured when the token was minted. Searching by part of a name or phone needs the partial
 /// search action; without it a search matches whole values only. The engine's explanation text
-/// quotes the records it compares, so it is scrubbed the same way.</para>
+/// quotes the records it compares; the engine writes each quoted value through the same masker,
+/// so a masked caller reads the reasoning with the values masked as they are in the records.</para>
 /// </summary>
 /// <remarks>
 /// <para><b>On <see cref="AllowAnonymousAttribute"/>.</b> ShiftIdentity installs a global
@@ -169,9 +170,6 @@ public class CaseBrowserCompatController : ControllerBase
 
     /// <summary>The value as this caller may see it. Empty stays empty, so "no name" still reads as such.</summary>
     private string? Shown(PiiKind kind, string? raw) => PiiView.Show(kind, raw);
-
-    /// <summary>Engine explanation text with the record values it quotes hidden from a masked caller.</summary>
-    private string Scrub(string? text) => PiiView.Scrub(text);
 
     /// <summary>
     /// Does a record answer this search? Its key always may (not personal). Names and phones match
@@ -584,6 +582,11 @@ public class CaseBrowserCompatController : ControllerBase
 
     // ------------------------------------------------------------- identities
 
+    /// <summary>
+    /// Customers built from several records, largest first. The golden name follows the golden
+    /// contract like every other name here, and <paramref name="q"/> matches it by fragment only for
+    /// a caller holding the partial-search action; anyone else must give the whole name.
+    /// </summary>
     [HttpGet("clusters")]
     public async Task<IActionResult> Clusters(string? cat, string? q, int page = 0, int size = 50,
         CancellationToken ct = default)
@@ -594,10 +597,17 @@ public class CaseBrowserCompatController : ControllerBase
 
         long mask = MaskOf<ClusterCat>(cat);
         if (mask != 0) query = query.Where(s => (s.Categories & mask) != 0);
-        if (!string.IsNullOrWhiteSpace(q)) query = query.Where(s => s.GoldenName != null && s.GoldenName.Contains(q));
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            string needle = q.Trim();
+            query = Pii.PartialSearch
+                ? query.Where(s => s.GoldenName != null && s.GoldenName.Contains(needle))
+                : query.Where(s => s.GoldenName == needle);
+        }
 
         int total = await query.CountAsync(ct);
-        var window = await query.OrderByDescending(s => s.MemberCount)
+        // Ties on size are ordered by customer number, so paging neither repeats nor skips a customer.
+        var window = await query.OrderByDescending(s => s.MemberCount).ThenBy(s => s.IdentityID)
             .Skip(page * size).Take(size).ToListAsync(ct);
 
         int run = await LatestRun(ct);
@@ -608,7 +618,7 @@ public class CaseBrowserCompatController : ControllerBase
             root = s.IdentityID,
             size = s.MemberCount,
             sources = s.SourceCount,
-            goldenName = s.GoldenName,
+            goldenName = Shown(PiiKind.Name, s.GoldenName),
             cats = NamesOf<ClusterCat>(s.Categories),
             // Highlight is a phrase the standalone composes from live survivorship state. The
             // staged summary carries the categories that phrase was derived from, so the page's
@@ -617,7 +627,7 @@ public class CaseBrowserCompatController : ControllerBase
             registry = RegistryJson(s.IdentityID, status.GetValueOrDefault(s.IdentityID), run),
         }).ToList();
 
-        return new JsonResult(new { total, page, size, items });
+        return new JsonResult(new { total, page, size, masked = !Pii.Reveal, items });
     }
 
     /// <summary>
@@ -807,14 +817,19 @@ public class CaseBrowserCompatController : ControllerBase
         clusterSize = 0,
     };
 
-    /// <summary>A golden attribute as this caller may see it — by the protection its DTO declares.</summary>
+    /// <summary>
+    /// A golden attribute as this caller may see it — by the protection its DTO declares. The city
+    /// is the one attribute the contract leaves open; a type this list does not know is masked
+    /// rather than assumed harmless, so a new survived attribute cannot appear unmasked by default.
+    /// </summary>
     private string? ShownAttribute(string attrType, string? value) => attrType switch
     {
         "full_name" => Shown(PiiKind.Name, value),
         "phone" => Shown(PiiKind.Phone, value),
         "email" => Shown(PiiKind.Email, value),
         "national_id" => Shown(PiiKind.Identifier, value),
-        _ => value,
+        "city" => value,
+        _ => Shown(PiiKind.Identifier, value),
     };
 
     /// <summary>The staged golden's attributes, last-wins per type like the drain and the view.</summary>
@@ -928,8 +943,8 @@ public class CaseBrowserCompatController : ControllerBase
             record = RecordJson(sides.GetValueOrDefault(hit.Value.key)),
             // What normalization did and which comparison groups the record falls in — both pure
             // functions of the staged record, so they are recomputed rather than staged. Both quote
-            // the record's own values, so a masked caller gets them scrubbed.
-            normalize = Normalization.Steps(rec).Select(s => new { stage = s.Stage, detail = Scrub(s.Detail) }).ToList(),
+            // the record's own values, so a masked caller gets them masked.
+            normalize = PiiView.Normalize(rec).Select(s => new { stage = s.Stage, detail = s.Detail }).ToList(),
             blockKeys = RealMatcher.BlockKeysOf(rec).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)
                 .Select(PiiView.BlockKey).ToList(),
             // Which keys hit the block cap is a property of the run's blocking pass and is not staged.
@@ -1207,7 +1222,7 @@ public class CaseBrowserCompatController : ControllerBase
     private async Task<object> DetailJson(RealRecord ra, RealRecord rb,
         (string sys, string id) ka, (string sys, string id) kb, CancellationToken ct)
     {
-        var trace = new MatchTrace();
+        var trace = PiiView.NewTrace();
         double score = RealMatcher.Explain(ra, rb, trace);
         RealMatcher.Score(ra, rb, out var flags);
 
@@ -1227,8 +1242,8 @@ public class CaseBrowserCompatController : ControllerBase
             key,
             a = RecordJson(sides.GetValueOrDefault(ka)),
             b = RecordJson(sides.GetValueOrDefault(kb)),
-            normalizeA = Normalization.Steps(ra).Select(s => new { stage = s.Stage, detail = Scrub(s.Detail) }).ToList(),
-            normalizeB = Normalization.Steps(rb).Select(s => new { stage = s.Stage, detail = Scrub(s.Detail) }).ToList(),
+            normalizeA = PiiView.Normalize(ra).Select(s => new { stage = s.Stage, detail = s.Detail }).ToList(),
+            normalizeB = PiiView.Normalize(rb).Select(s => new { stage = s.Stage, detail = s.Detail }).ToList(),
             blockKeys = RealMatcher.BlockKeysOf(ra).Intersect(RealMatcher.BlockKeysOf(rb), StringComparer.Ordinal)
                 .Order(StringComparer.Ordinal)
                 .Select(PiiView.BlockKey).ToList(),
@@ -1244,7 +1259,7 @@ public class CaseBrowserCompatController : ControllerBase
             {
                 stage = s.Stage,
                 title = s.Title,
-                detail = Scrub(s.Detail),
+                detail = s.Detail,
                 conf = s.ConfAfter is { } c ? Math.Round(c, 3) : (double?)null,
             }).ToList(),
             dobGap = gap,

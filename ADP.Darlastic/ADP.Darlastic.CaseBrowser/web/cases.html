@@ -502,12 +502,19 @@ function filterQuery(){
   return p;
 }
 
+// Only the newest request of each kind may draw. A slower earlier answer that arrives after a newer
+// one is dropped, so the list, title and pager always show the view the reader picked last.
+let listSeq = 0, detailSeq = 0;
+
 async function loadList(){
+  const seq = ++listSeq;
+  const stale = () => seq !== listSeq;
   const host = $("#list");
   host.innerHTML = `<div class="empty">Loading…</div>`;
   try {
     if (state.mode === "goldens"){
       const r = await getJson("/goldens?" + filterQuery());
+      if (stale()) return;
       state.total = r.total;
       state.goldenCounts = r.reasonCounts || {};
       state.goldenTotal = r.goldenTotal ?? state.goldenTotal;
@@ -519,6 +526,7 @@ async function loadList(){
       host.querySelectorAll("[data-golden]").forEach(el => el.onclick = () => openCluster(el.dataset.golden));
     } else if (state.mode === "cases"){
       const r = await getJson("/cases?" + filterQuery());
+      if (stale()) return;
       state.total = r.total;
       $("#title").textContent = state.cat ? L.label("cases", state.cat) : "Record pairs";
       $("#subtitle").textContent = state.cat ? L.desc("cases", state.cat) : "";
@@ -526,6 +534,7 @@ async function loadList(){
       host.querySelectorAll("[data-a]").forEach(el => el.onclick = () => openCase(+el.dataset.a, +el.dataset.b));
     } else if (state.mode === "clusters"){
       const r = await getJson("/clusters?" + filterQuery());
+      if (stale()) return;
       state.total = r.total;
       $("#title").textContent = state.clcat ? L.label("clusters", state.clcat) : "Grouped customers";
       $("#subtitle").textContent = state.clcat ? L.desc("clusters", state.clcat) : "";
@@ -533,6 +542,7 @@ async function loadList(){
       host.querySelectorAll("[data-root]").forEach(el => el.onclick = () => openCluster(el.dataset.root));
     } else if (state.mode === "flags"){
       await loadFlags();
+      if (stale()) return;
       const items = [...state.flagsByTarget.values()];
       state.total = items.length;
       const openN = items.filter(f => f.status !== "addressed").length;
@@ -543,6 +553,7 @@ async function loadList(){
       host.querySelectorAll("[data-target]").forEach(el => el.onclick = () => openTarget(el.dataset.target));
     } else { // record search (pair modes)
       const r = await getJson("/search?q=" + encodeURIComponent(state.q));
+      if (stale()) return;
       state.total = r.length;
       $("#title").textContent = `Search “${state.q}”`;
       $("#subtitle").textContent = `${r.length} record(s)${r.length===50?" (first 50)":""} — open one to see its details`;
@@ -550,6 +561,7 @@ async function loadList(){
       host.querySelectorAll("[data-idx]").forEach(el => el.onclick = () => openRecord(+el.dataset.idx));
     }
   } catch (err) {
+    if (stale()) return;
     host.innerHTML = `<div class="empty">Could not load this list (${esc(err.message)}).</div>`;
     state.total = 0;
   }
@@ -704,8 +716,12 @@ function wireFlag(kind, ids, target){
 // ---------- pair walkthrough ----------
 async function openCase(a, b){
   if (a == null || b == null) return;
-  try { renderDetail(await getJson(`/case?a=${a}&b=${b}`)); }
-  catch (err) { showDetailError(err); return; }
+  const seq = ++detailSeq;
+  let d;
+  try { d = await getJson(`/case?a=${a}&b=${b}`); }
+  catch (err) { if (seq === detailSeq) showDetailError(err); return; }
+  if (seq !== detailSeq) return;
+  renderDetail(d);
   window.scrollTo({top:0, behavior:"smooth"});
 }
 function showDetailError(err){
@@ -901,7 +917,7 @@ function stopPlay(){
   a.timer = null;
   const pb = $("#playbtn"); if (pb) pb.textContent = "▶ Play";
 }
-function closeDetail(){ stopPlay(); $("#detailhost").innerHTML = ""; state.anim = null; }
+function closeDetail(){ detailSeq++; stopPlay(); $("#detailhost").innerHTML = ""; state.anim = null; }
 
 async function sendVerdict(v){
   const a = state.anim; if (!a) return;
@@ -917,8 +933,10 @@ async function sendVerdict(v){
 // ---------- record and customer views ----------
 async function openRecord(idx){
   if (idx == null) return;
+  const seq = ++detailSeq;
   let d;
-  try { d = await getJson(`/record/${idx}`); } catch (err) { showDetailError(err); return; }
+  try { d = await getJson(`/record/${idx}`); } catch (err) { if (seq === detailSeq) showDetailError(err); return; }
+  if (seq !== detailSeq) return;
   const host = $("#detailhost");
   stopPlay(); state.anim = null;
   host.innerHTML = `
@@ -972,8 +990,10 @@ function pairLine(p, withCats){
 }
 
 async function openCluster(root){
+  const seq = ++detailSeq;
   let d;
-  try { d = await getJson(`/cluster/${encodeURIComponent(root)}`); } catch (err) { showDetailError(err); return; }
+  try { d = await getJson(`/cluster/${encodeURIComponent(root)}`); } catch (err) { if (seq === detailSeq) showDetailError(err); return; }
+  if (seq !== detailSeq) return;
   if (d.error) { showDetailError(new Error(d.error)); return; }
   const host = $("#detailhost");
   stopPlay(); state.anim = null;
