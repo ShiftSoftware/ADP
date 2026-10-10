@@ -101,6 +101,14 @@ public static class Merge
         /// multi-record identities and the queued or catalogued records.</para>
         /// </summary>
         public long[]? RecordReasons;
+
+        /// <summary>
+        /// The match configuration the walk scored with (<see cref="MatchSettings.Current"/> when it
+        /// began). The registry records it with the run, so a surface that re-scores one of this run's
+        /// pairs later — in another process — can score it the way this run did. Null for a result
+        /// built by hand.
+        /// </summary>
+        public MatchSettings? Settings;
     }
 
     /// <summary>One auto-merge edge: two records joined, and the evidence that joined them.</summary>
@@ -168,6 +176,7 @@ public static class Merge
     {
         int n = records.Count;
         var uf = new UnionFind(n);
+        var settings = MatchSettings.Current;
 
         // Resolve pair-key constraints to packed index pairs. Records are keyed by (source, id);
         // a decision naming a record this run didn't load simply doesn't apply — counted, not fatal,
@@ -337,6 +346,7 @@ public static class Merge
             Catalog = catalog,
             CatalogCap = catalogCap,
             RecordReasons = recordReasons,
+            Settings = settings,
         };
         foreach (var v in size.Values) result.ClusterSizeHistogram[v] = result.ClusterSizeHistogram.GetValueOrDefault(v) + 1;
         return result;

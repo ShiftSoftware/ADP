@@ -41,6 +41,11 @@ namespace ShiftSoftware.ADP.Darlastic.API.Controllers;
 /// Never write <c>new { last.NewLabel }</c> here — that shorthand takes the CLR name and breaks
 /// under one of the two policies.</para>
 ///
+/// <para><b>Re-scores under the resolve's configuration.</b> A pair's score and trace, a record's
+/// comparison keys and a customer's name survivorship are recomputed from the staged records under the
+/// match configuration the latest resolve recorded (<see cref="RecordedMatchSettingsAttribute"/>), so
+/// they reach the decisions the resolve staged.</para>
+///
 /// <para><b>"In view" means "staged" here.</b> The page's header separates registry totals (the
 /// whole tenant corpus) from what the process loaded and scored. A hosted reader scores nothing, so
 /// the in-view block reports the staged set instead. The registry block is unaffected and remains
@@ -65,6 +70,7 @@ namespace ShiftSoftware.ADP.Darlastic.API.Controllers;
 [Route("[controller]")]
 [ApiController]
 [AllowAnonymous]
+[RecordedMatchSettings]
 public class CaseBrowserCompatController : ControllerBase
 {
     private readonly ShiftDbContext db;

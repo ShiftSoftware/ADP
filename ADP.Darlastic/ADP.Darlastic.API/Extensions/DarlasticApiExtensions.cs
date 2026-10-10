@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using ShiftSoftware.ADP.Darlastic.Data.Extensions;
+using ShiftSoftware.ADP.Darlastic.Engine;
 using ShiftSoftware.ADP.Darlastic.Shared.ActionTrees;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.Core.Pii;
@@ -41,6 +43,10 @@ public static class DarlasticApiExtensions
         // TryAdd-based, so a host's own call and its options still apply. The host decides who
         // may reveal: it grants PiiOptions.Action (PiiActionTree.Reveal by default).
         services.AddShiftEntityPii();
+
+        // The match configuration the registry's latest resolve recorded, read once per resolve and
+        // applied to every request that re-scores a staged pair (RecordedMatchSettingsAttribute).
+        services.TryAddSingleton<RecordedMatchSettings>();
 
         // Registry model (tables + the GoldenCustomer view) lands in the host's DbContext model;
         // the host's own migrations create and version everything under options.Schema.

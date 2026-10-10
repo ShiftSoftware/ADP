@@ -6,10 +6,47 @@ namespace ShiftSoftware.ADP.Darlastic.Engine;
 /// Run-time switches. Baseline mode reproduces the pre-2026-06-08 matcher (no Arabizi fold, no
 /// mojibake repair, no name-aware phone boost) so the EXACT panel-labeled sample can be regenerated
 /// and re-aligned after a sampler change. Set env CC_BASELINE=1.
+///
+/// <para><b>Process-wide, unless scoped.</b> Every per-tenant switch below reads the effective
+/// <see cref="MatchSettings"/>: the innermost <see cref="MatchSettings.Use"/> scope on the calling
+/// flow, else the process-wide configuration. Setting a switch changes the process-wide value (as it
+/// always did, which is how a batch runner configures its resolve and how tests toggle a rule); it
+/// never changes an open scope, so a serving host scoring under a registry's recorded configuration
+/// is not disturbed by — and does not disturb — anything else in the process.</para>
 /// </summary>
 public static class Flags
 {
     public static readonly bool Baseline = Environment.GetEnvironmentVariable("CC_BASELINE") == "1";
+
+    // The process-wide configuration, seeded from the environment at type-init exactly as each
+    // switch always seeded itself. Replaced whole (copy on write) by the setters, so a reader never
+    // sees half of a change.
+    private static MatchSettings processWide = MatchSettings.FromEnvironment();
+
+    // A configuration scoped to one flow of execution (MatchSettings.Use). Null outside any scope,
+    // which costs a reader one thread-local probe in a process that never opens one.
+    private static readonly AsyncLocal<MatchSettings?> scoped = new();
+
+    /// <summary>The configuration the engine reads at this point of the calling flow.</summary>
+    public static MatchSettings Current => scoped.Value ?? Volatile.Read(ref processWide);
+
+    /// <summary>The flow's open scope, or null. Only <see cref="MatchSettings.Use"/> sets it.</summary>
+    internal static MatchSettings? Scoped
+    {
+        get => scoped.Value;
+        set => scoped.Value = value;
+    }
+
+    private static void Change(Func<MatchSettings, MatchSettings> change)
+    {
+        MatchSettings before, after;
+        do
+        {
+            before = Volatile.Read(ref processWide);
+            after = change(before);
+        }
+        while (!ReferenceEquals(Interlocked.CompareExchange(ref processWide, after, before), before));
+    }
 
     /// <summary>
     /// PER-TENANT: does e-mail participate in matching (block key + score + floor)? Ingest and
@@ -26,8 +63,7 @@ public static class Flags
     /// not a build mode: the host sets it from its own settings before resolving, and tests toggle
     /// it per case. Env DARLASTIC_EMAIL_MATCHING=1 is the default for a whole process run.
     /// </summary>
-    public static bool EmailMatching { get; set; } =
-        Environment.GetEnvironmentVariable("DARLASTIC_EMAIL_MATCHING") == "1";
+    public static bool EmailMatching { get => Current.EmailMatching; set => Change(s => s with { EmailMatching = value }); }
 
     // ---- per-tenant name-structure and clustering rules. All four are OFF by default, and a tenant
     // that never sets them scores and clusters exactly as before. Settable for the same reason as
@@ -46,8 +82,7 @@ public static class Flags
     /// A part typed into the other field (given and family swapped) is tolerated, not a conflict.
     /// Records without parts are unaffected, so a feed can supply them only where it knows them.
     /// </summary>
-    public static bool StructuredNames { get; set; } =
-        Environment.GetEnvironmentVariable("DARLASTIC_STRUCTURED_NAMES") == "1";
+    public static bool StructuredNames { get => Current.StructuredNames; set => Change(s => s with { StructuredNames = value }); }
 
     /// <summary>
     /// PER-TENANT: name consistency aligns tokens ONE-TO-ONE. By default every token of the shorter
@@ -55,8 +90,7 @@ public static class Flags
     /// ("Name Nameson") aligns twice and is "consistent" with every relative carrying that family
     /// name. On makes each token of the longer name usable once.
     /// </summary>
-    public static bool StrictTokenAlignment { get; set; } =
-        Environment.GetEnvironmentVariable("DARLASTIC_STRICT_TOKEN_ALIGNMENT") == "1";
+    public static bool StrictTokenAlignment { get => Current.StrictTokenAlignment; set => Change(s => s with { StrictTokenAlignment = value }); }
 
     /// <summary>
     /// PER-TENANT: a record with no usable name needs more than one key to auto-merge. On:
@@ -64,8 +98,7 @@ public static class Flags
     ///     name-only damp (a dealer, fleet or family phone carries nameless purchases of many people);
     ///   - the sold-VIN floor is withheld for a nameless pair whose phones are both present and differ.
     /// </summary>
-    public static bool NamelessNeedsCorroboration { get; set; } =
-        Environment.GetEnvironmentVariable("DARLASTIC_NAMELESS_CORROBORATION") == "1";
+    public static bool NamelessNeedsCorroboration { get => Current.NamelessNeedsCorroboration; set => Change(s => s with { NamelessNeedsCorroboration = value }); }
 
     /// <summary>
     /// PER-TENANT: the matcher's own "two different people" verdicts (name conflict, national-ID
@@ -74,8 +107,7 @@ public static class Flags
     /// edge whose union would put a cannot-link pair into one identity is skipped: one record with a
     /// partial name (surname only, patronymic only) can no longer chain two relatives into one golden.
     /// </summary>
-    public static bool ConflictAwareClustering { get; set; } =
-        Environment.GetEnvironmentVariable("DARLASTIC_CONFLICT_AWARE_CLUSTERING") == "1";
+    public static bool ConflictAwareClustering { get => Current.ConflictAwareClustering; set => Change(s => s with { ConflictAwareClustering = value }); }
 
     /// <summary>
     /// PER-TENANT: two ORGANISATION names (each carries an organisation token) that are consistent
@@ -91,8 +123,7 @@ public static class Flags
     /// By default every pair touching an organisation name only gets the weighted base, so word-order
     /// and legal-form variants of one organisation land in the steward queue.
     /// </summary>
-    public static bool OrgNameMerge { get; set; } =
-        Environment.GetEnvironmentVariable("DARLASTIC_ORG_NAME_MERGE") == "1";
+    public static bool OrgNameMerge { get => Current.OrgNameMerge; set => Change(s => s with { OrgNameMerge = value }); }
 
     /// <summary>
     /// PER-TENANT: a shared SERVICED VIN is decisive when the names are fully consistent (every token
@@ -101,15 +132,14 @@ public static class Flags
     /// visit may be a relative, a driver or a new owner — all of whom carry a different name; the full
     /// name answers that objection, and people change and drop phone numbers far more than names.
     /// </summary>
-    public static bool ServicedVinNameFloor { get; set; } =
-        Environment.GetEnvironmentVariable("DARLASTIC_SERVICED_VIN_NAME_FLOOR") == "1";
+    public static bool ServicedVinNameFloor { get => Current.ServicedVinNameFloor; set => Change(s => s with { ServicedVinNameFloor = value }); }
 
     /// <summary>
     /// PER-TENANT: extra spelling equivalences for name-token alignment, as (from, to) pairs applied
     /// in order after the built-in interdental fold — two romanizations of one letter in the tenant's
     /// scripts. Comparison only: stored and displayed names never change. Empty by default.
     /// </summary>
-    public static IReadOnlyList<(string From, string To)> TokenFolds { get; set; } = [];
+    public static IReadOnlyList<(string From, string To)> TokenFolds { get => Current.TokenFolds; set => Change(s => s with { TokenFolds = value }); }
 
     /// <summary>
     /// PER-TENANT (read with <see cref="StructuredNames"/>): a stricter test of whether two name parts
@@ -127,8 +157,7 @@ public static class Flags
     ///     needs one given name in that strict sense whatever the corpus says.
     /// Off by default.
     /// </summary>
-    public static bool StrictNameParts { get; set; } =
-        Environment.GetEnvironmentVariable("DARLASTIC_STRICT_NAME_PARTS") == "1";
+    public static bool StrictNameParts { get => Current.StrictNameParts; set => Change(s => s with { StrictNameParts = value }); }
 
     /// <summary>
     /// PER-TENANT, used by <see cref="StrictNameParts"/> only: the given and family names the tenant's
@@ -137,7 +166,7 @@ public static class Flags
     /// phones. The host computes it from the records it resolves. Empty by default, which leaves every
     /// name part to the default comparison.
     /// </summary>
-    public static IReadOnlySet<string> EstablishedNameParts { get; set; } = new HashSet<string>();
+    public static IReadOnlySet<string> EstablishedNameParts { get => Current.EstablishedNameParts; set => Change(s => s with { EstablishedNameParts = value }); }
 
     /// <summary>
     /// PER-TENANT, used by <see cref="StrictNameParts"/> only: letters that one name is written with
@@ -145,14 +174,14 @@ public static class Flags
     /// <see cref="TokenFolds"/>. Examples are voiced and unvoiced consonants, or one letter that two
     /// alphabets write differently. Comparison only. Empty by default.
     /// </summary>
-    public static IReadOnlyList<(string From, string To)> NamePartFolds { get; set; } = [];
+    public static IReadOnlyList<(string From, string To)> NamePartFolds { get => Current.NamePartFolds; set => Change(s => s with { NamePartFolds = value }); }
 
     /// <summary>
     /// PER-TENANT, used by <see cref="StrictNameParts"/> only: endearment or honorific endings that one
     /// person's given name carries in some records and not in others. One is set aside before two given
     /// names are compared, when at least three letters remain. Empty by default.
     /// </summary>
-    public static IReadOnlyList<string> GivenNameSuffixes { get; set; } = [];
+    public static IReadOnlyList<string> GivenNameSuffixes { get => Current.GivenNameSuffixes; set => Change(s => s with { GivenNameSuffixes = value }); }
 
     /// <summary>
     /// PER-TENANT, used by <see cref="StrictNameParts"/> only: family-name endings that one family name
@@ -160,7 +189,7 @@ public static class Flags
     /// native one that replaced it). One is set aside before two family names are compared, when at
     /// least three letters remain. Empty by default.
     /// </summary>
-    public static IReadOnlyList<string> FamilyNameEndings { get; set; } = [];
+    public static IReadOnlyList<string> FamilyNameEndings { get => Current.FamilyNameEndings; set => Change(s => s with { FamilyNameEndings = value }); }
 
     /// <summary>
     /// PER-TENANT (read with <see cref="StructuredNames"/>): family-name endings that mark the bearer's
@@ -170,7 +199,7 @@ public static class Flags
     /// conflict. The exception is when both records also carry given names that align: then the ending
     /// is a typing slip on one person's record. Empty by default, so no ending carries meaning.
     /// </summary>
-    public static IReadOnlyList<(string Masculine, string Feminine)> FamilyNameSexEndings { get; set; } = [];
+    public static IReadOnlyList<(string Masculine, string Feminine)> FamilyNameSexEndings { get => Current.FamilyNameSexEndings; set => Change(s => s with { FamilyNameSexEndings = value }); }
 }
 
 

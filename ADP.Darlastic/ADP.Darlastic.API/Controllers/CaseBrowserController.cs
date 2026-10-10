@@ -30,9 +30,11 @@ namespace ShiftSoftware.ADP.Darlastic.API.Controllers;
 /// <c>StewardRecord</c> (the evidence), <c>IdentityEdge</c> (assembly).</para>
 ///
 /// <para><b>Recomputes the derivation, never stages it.</b> A pair's trace is a pure function of
-/// its two staged records, so it is computed per request through <c>ADP.Darlastic.Engine.Core</c>.
-/// Staging it instead would let it go stale against an engine change with nothing to signal that —
-/// and because it is recomputed, the surface can compare live against staged and SAY when the
+/// its two staged records and the match configuration, so it is computed per request through
+/// <c>ADP.Darlastic.Engine.Core</c> — under the configuration the latest resolve recorded
+/// (<see cref="RecordedMatchSettingsAttribute"/>), so the tenant's own rules decide here as they did
+/// there. Staging it instead would let it go stale against an engine change with nothing to signal
+/// that — and because it is recomputed, the surface can compare live against staged and SAY when the
 /// engine has moved (<see cref="CaseDetailDTO.EngineDrift"/>).</para>
 ///
 /// <para><b>Personal information follows the golden contract</b> (<see cref="RecordPiiView"/>): names,
@@ -47,6 +49,7 @@ namespace ShiftSoftware.ADP.Darlastic.API.Controllers;
 /// </summary>
 [Route("[controller]")]
 [ApiController]
+[RecordedMatchSettings]
 public class CaseBrowserController : ControllerBase
 {
     private readonly ShiftDbContext db;
@@ -594,7 +597,9 @@ public class CaseBrowserController : ControllerBase
             if (recA.Dob is { } da && recB.Dob is { } dbo && da.Year > 0 && dbo.Year > 0)
                 dto.DobGapYears = Math.Abs(da.Year - dbo.Year);
             // Tolerance is well below any decision boundary — this flags a real engine change,
-            // not float noise.
+            // not float noise. The live score is computed under the configuration the resolve
+            // recorded, so a difference is the engine or the records moving, not a host that
+            // never saw the tenant's rules.
             dto.EngineDrift = Math.Abs(dto.LiveScore - staged) > 0.0005;
             if (dto.Rules.Count == 0)
             {

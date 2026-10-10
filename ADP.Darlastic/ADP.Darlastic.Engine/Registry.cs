@@ -67,6 +67,14 @@ public static class Registry
     //              staged or tombstoned. Served from this table (GoldenCustomer/{id}/events) — the
     //              Cosmos drain skips it (see Projector).
     internal const string ArtEvents = GoldenEventsPayload.ArtifactType;
+    //   matchconfig — key = "effective"; ONE row: the match configuration the run scored with
+    //              (MatchSettings.ToJson — every switch and list that moves a score, including the
+    //              attested name parts the host computed). Recorded so a surface that re-scores a staged
+    //              pair in another process (the hosted case browser) scores it the way the resolve did.
+    //              Staged only once the configuration is not the engine's defaults (MatchSettings.
+    //              WorthRecording), so a tenant on the defaults gains no row. Hash-guarded like every
+    //              family: the same configuration re-stages nothing. Never drained (see Projector).
+    internal const string ArtMatchConfig = MatchSettings.ArtifactType;
 
     public static string ConnectionString =>
         Environment.GetEnvironmentVariable("DARLASTIC_SQL")
@@ -728,6 +736,13 @@ public static class Registry
         /// <summary>Largest number of events staged on one golden (payload-size watch).</summary>
         public int MaxEventsPerGolden;
 
+        /// <summary>The match configuration this run scored with, as recorded (see
+        /// <see cref="MatchSettings"/>); null when the registry does not record one (a tenant that has
+        /// only ever resolved on the engine defaults).</summary>
+        public MatchSettings? MatchSettings;
+        /// <summary>Content hash of the recorded configuration; null when none is recorded.</summary>
+        public string? MatchSettingsHash;
+
         /// <summary>The D3 acceptance: unchanged sources must produce zero deltas of EVERY kind —
         /// not just zero pending artifacts (a silent mass-rehash must fail the banner too).</summary>
         public bool IsZeroDelta =>
@@ -742,6 +757,7 @@ public static class Registry
             $"artifacts pending {ArtifactsPending:N0}" +
             (PendingByType.Count > 0 ? " (" + string.Join(" / ", PendingByType.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => $"{kv.Key} {kv.Value:N0}")) + ")" : "") +
             $"; steward queue {StewardQueued:N0}" +
+            (MatchSettingsHash is not null ? $"; match configuration {MatchSettingsHash[..12]}" : "") +
             (AbsentSources.Count > 0 ? $"; ABSENT sources frozen: {string.Join(", ", AbsentSources)}" : "") +
             (Events is not null
                 ? $"\n  {Events.Describe()}" +
@@ -919,6 +935,7 @@ public static class Registry
             [ArtVinOwner] = new(StringComparer.Ordinal), [ArtStamp] = new(StringComparer.Ordinal),
         };
         if (events is not null) priorArtifacts[ArtEvents] = new(StringComparer.Ordinal);   // read only when this run stages events
+        priorArtifacts[ArtMatchConfig] = new(StringComparer.Ordinal);                        // one row at most
         using (var cmd = new SqlCommand("SELECT ArtifactType, ArtifactKey, ContentHash, CASE WHEN Payload IS NULL THEN 0 ELSE 1 END FROM Darlastic.ProjectionState", conn))
         using (var r = cmd.ExecuteReader())
             while (r.Read())
@@ -1132,6 +1149,21 @@ public static class Registry
                 if (prev.Hash != Tombstone && !liveEventKeys.Contains(key)) artifactRows.Add((ArtEvents, key, Tombstone, null));
             m.Events = attached;
             m.EventsViaPriorAssignment = viaPrior;
+        }
+
+        // Pass 5: the match configuration the pair walk scored with — what a surface that re-scores one of
+        // this run's pairs must apply to reach the same decision. Recorded once it is not the engine's
+        // defaults; after that it follows the tenant, back to the defaults included. A host on the
+        // defaults stages nothing here, so its runs are exactly what they were.
+        var settings = merge.Settings ?? MatchSettings.Current;
+        bool recorded = priorArtifacts[ArtMatchConfig].TryGetValue(MatchSettings.ArtifactKey, out var priorConfig)
+                        && priorConfig.Hash != Tombstone;
+        if (settings.WorthRecording(recorded))
+        {
+            string canonical = settings.ToJson();
+            Stage(ArtMatchConfig, MatchSettings.ArtifactKey, canonical);
+            m.MatchSettings = settings;
+            m.MatchSettingsHash = Sha(canonical);
         }
 
         // golden tombstones: ONLY identities redirected away this run — the surviving identity's

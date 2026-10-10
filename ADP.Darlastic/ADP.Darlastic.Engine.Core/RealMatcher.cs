@@ -30,6 +30,20 @@ public static class RealMatcher
     /// <summary>Explain-mode: same scoring, plus a step-by-step trace for ONE pair on demand.</summary>
     public static double Explain(RealRecord a, RealRecord b, MatchTrace trace) => ScoreCore(a, b, useAddress: true, useVin: true, useEmail: true, out _, trace);
 
+    /// <summary>Score + flags under <paramref name="settings"/> — for example the configuration a resolve
+    /// recorded — whatever the process-wide <see cref="Flags"/> say. Nothing process-wide changes.</summary>
+    public static double Score(RealRecord a, RealRecord b, out MatchFlags flags, MatchSettings settings)
+    {
+        using (settings.Use()) return ScoreCore(a, b, useAddress: true, useVin: true, useEmail: true, out flags, null);
+    }
+
+    /// <summary>Explain-mode under <paramref name="settings"/>: the trace a resolve that scored with that
+    /// configuration would have produced for the pair, whatever the process-wide <see cref="Flags"/> say.</summary>
+    public static double Explain(RealRecord a, RealRecord b, MatchTrace trace, MatchSettings settings)
+    {
+        using (settings.Use()) return ScoreCore(a, b, useAddress: true, useVin: true, useEmail: true, out _, trace);
+    }
+
     private static double ScoreCore(RealRecord a, RealRecord b, bool useAddress, bool useVin, bool useEmail, out MatchFlags flags, MatchTrace? trace)
     {
         flags = MatchFlags.None;
