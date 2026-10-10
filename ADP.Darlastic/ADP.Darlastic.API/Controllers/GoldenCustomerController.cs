@@ -7,6 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using ShiftSoftware.ADP.Darlastic.API.Extensions;
 using ShiftSoftware.ADP.Darlastic.Data.Entities;
+using ShiftSoftware.ADP.Darlastic.Engine;
+using ShiftSoftware.ADP.Darlastic.Shared;
 using ShiftSoftware.ADP.Darlastic.Shared.ActionTrees;
 using ShiftSoftware.ADP.Darlastic.Shared.DTOs.GoldenCustomer;
 using ShiftSoftware.ShiftEntity.Core.Pii;
@@ -38,6 +40,12 @@ public class GoldenCustomerController : ControllerBase
 {
     /// <summary>Artifact family the golden documents are staged under in <c>ProjectionState</c>.</summary>
     private const string GoldenArtifactType = "golden";
+
+    /// <summary>Artifact family of a golden's vehicle links (key = golden id).</summary>
+    private const string VinLinksArtifactType = "vinlinks";
+
+    /// <summary>Largest page the events endpoint serves.</summary>
+    private const int MaxEventsPageSize = 500;
 
     /// <summary>Sentinel content hash meaning "delete this downstream" — a redirected-away identity.</summary>
     private const string TombstoneHash = "TOMBSTONE";
@@ -231,6 +239,156 @@ public class GoldenCustomerController : ControllerBase
         return Ok(new PiiRevealDTO { Value = staged?.Attribute(attributeType) });
     }
 
+    /// <summary>
+    /// One page of the identity's timeline events — workshop visits, inspections, warranty claims,
+    /// recalls, activations — newest first, read from the <c>events</c> artifact the last resolve
+    /// staged (one clustered-PK seek). Same authorization as <see cref="Detail"/>, and
+    /// redirect-chased the same way, so a merged-away ID shows its survivor's timeline.
+    ///
+    /// <para>Order: date descending with undated events last, then type, then event id. Filter with
+    /// one or more <c>type</c> query values (e.g. <c>?type=ServiceVisit&amp;type=Inspection</c>);
+    /// <see cref="GoldenCustomerEventsDTO.CountsByType"/> always covers every type. Page with
+    /// <c>skip</c> (default 0) and <c>top</c> (default 50, at most 500).</para>
+    ///
+    /// <para>404 when the identity does not exist. An identity with no staged events — none attached,
+    /// or a tenant that stages no events — is a 200 with an empty list.</para>
+    /// </summary>
+    [HttpGet("{id:long}/events")]
+    [Authorize]
+    public async Task<ActionResult<GoldenCustomerEventsDTO>> Events(long id,
+        [FromQuery] GoldenEventType[]? type = null, [FromQuery] int skip = 0, [FromQuery] int top = 50)
+    {
+        if (!CanReadGoldens())
+            return Forbid();
+
+        if (skip < 0 || top < 1 || top > MaxEventsPageSize)
+            return BadRequest(new { Message = $"skip must be 0 or more and top between 1 and {MaxEventsPageSize}." });
+
+        var live = await ChaseRedirectsAsync(id);
+
+        if (!await db.Set<GoldenIdentity>().AsNoTracking().AnyAsync(x => x.IdentityID == live))
+            return NotFound();
+
+        var payload = await LoadStagedPayloadAsync(GoldenEventsPayload.ArtifactType, live);
+        var all = payload is null ? new List<GoldenEventsPayload.StagedEvent>() : GoldenEventsPayload.Parse(payload).Events;
+
+        // Ordered here rather than trusting staged order: the contract belongs to this endpoint.
+        all.Sort((a, b) => GoldenEventsPayload.Compare(a.Date, a.Type, a.Id, b.Date, b.Type, b.Id));
+
+        var filter = type is { Length: > 0 } ? new HashSet<GoldenEventType>(type) : null;
+        var matching = filter is null ? all : all.Where(e => filter.Contains(e.Type)).ToList();
+
+        return Ok(new GoldenCustomerEventsDTO
+        {
+            ID = live.ToString(CultureInfo.InvariantCulture),
+            RequestedID = id.ToString(CultureInfo.InvariantCulture),
+            WasRedirected = live != id,
+            Total = matching.Count,
+            Skip = skip,
+            Top = top,
+            CountsByType = all.GroupBy(e => e.Type).OrderBy(g => g.Key)
+                .ToDictionary(g => g.Key.ToString(), g => g.Count()),
+            Events = matching.Skip(skip).Take(top).Select(e => new GoldenCustomerEventDTO
+            {
+                Type = e.Type,
+                EventID = e.Id,
+                Date = e.Date,
+                VIN = e.Vin,
+                Link = e.Link,
+                SourceSystem = e.SourceSystem,
+                SourceRecordId = e.SourceRecordId,
+                DealerID = e.DealerId,
+                DealerName = e.DealerName,
+                Title = e.Title,
+                Facts = new Dictionary<string, string>(e.Facts, StringComparer.Ordinal),
+            }).ToList(),
+        });
+    }
+
+    /// <summary>
+    /// The identity's vehicles, from the <c>vinlinks</c> artifact the last resolve staged — keyed by
+    /// golden ID, never by phone, so a shared phone cannot put someone else's car on the card. Each
+    /// link carries the ownership period the engine computed (owner or service contact). Same
+    /// authorization and redirect-chasing as <see cref="Detail"/>; the survived name the payload also
+    /// carries is deliberately not returned.
+    ///
+    /// <para>Order: owners first, then service contacts; within each, latest activity first; then
+    /// VIN. 404 when the identity does not exist; 200 with an empty list when it has no vehicles.</para>
+    /// </summary>
+    [HttpGet("{id:long}/vehicles")]
+    [Authorize]
+    public async Task<ActionResult<GoldenCustomerVehiclesDTO>> Vehicles(long id)
+    {
+        if (!CanReadGoldens())
+            return Forbid();
+
+        var live = await ChaseRedirectsAsync(id);
+
+        if (!await db.Set<GoldenIdentity>().AsNoTracking().AnyAsync(x => x.IdentityID == live))
+            return NotFound();
+
+        var payload = await LoadStagedPayloadAsync(VinLinksArtifactType, live);
+        var vehicles = payload is null ? new List<GoldenCustomerVehicleDTO>() : ParseVinLinks(payload);
+
+        static DateOnly? Latest(GoldenCustomerVehicleDTO v) =>
+            new[] { v.LastSale, v.LastService, v.EffectiveFrom }.Where(d => d is not null).Max();
+
+        return Ok(new GoldenCustomerVehiclesDTO
+        {
+            ID = live.ToString(CultureInfo.InvariantCulture),
+            RequestedID = id.ToString(CultureInfo.InvariantCulture),
+            WasRedirected = live != id,
+            Vehicles = vehicles
+                .OrderBy(v => v.Role == "owner" ? 0 : 1)
+                .ThenByDescending(v => Latest(v) ?? DateOnly.MinValue)
+                .ThenBy(v => v.VIN, StringComparer.Ordinal)
+                .ToList(),
+        });
+    }
+
+    /// <summary>
+    /// The staged vehicle-link payload — <c>{"goldenId":N,"links":[{"vin","role","from","to","sales",
+    /// "services","firstSale","lastSale","firstService","lastService","sources":[...]}]}</c>, dates as
+    /// <c>yyyy-MM-dd</c> or empty — mapped to the DTO. Authoritative producer: the engine's
+    /// <c>Registry.AppendLink</c>.
+    /// </summary>
+    private static List<GoldenCustomerVehicleDTO> ParseVinLinks(string payload)
+    {
+        static DateOnly? Date(JsonElement e, string name) =>
+            e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String
+            && DateOnly.TryParseExact(v.GetString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d)
+                ? d : null;
+        static int Int(JsonElement e, string name) =>
+            e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : 0;
+
+        var list = new List<GoldenCustomerVehicleDTO>();
+        using var doc = JsonDocument.Parse(payload);
+        if (!doc.RootElement.TryGetProperty("links", out var links) || links.ValueKind != JsonValueKind.Array)
+            return list;
+
+        foreach (var l in links.EnumerateArray())
+        {
+            if (!l.TryGetProperty("vin", out var vin) || vin.GetString() is not { Length: > 0 } vinValue) continue;
+            list.Add(new GoldenCustomerVehicleDTO
+            {
+                VIN = vinValue,
+                Role = l.TryGetProperty("role", out var role) ? role.GetString() ?? "" : "",
+                EffectiveFrom = Date(l, "from"),
+                EffectiveTo = Date(l, "to"),
+                SaleCount = Int(l, "sales"),
+                ServiceCount = Int(l, "services"),
+                FirstSale = Date(l, "firstSale"),
+                LastSale = Date(l, "lastSale"),
+                FirstService = Date(l, "firstService"),
+                LastService = Date(l, "lastService"),
+                Sources = l.TryGetProperty("sources", out var sources) && sources.ValueKind == JsonValueKind.Array
+                    ? sources.EnumerateArray().Select(s => s.GetString() ?? "").Where(s => s.Length > 0).ToList()
+                    : new(),
+            });
+        }
+        return list;
+    }
+
     /// <summary>Ordinary golden read access. Always true when the module's authorization is off.</summary>
     private bool CanReadGoldens()
     {
@@ -277,16 +435,27 @@ public class GoldenCustomerController : ControllerBase
     /// </summary>
     private async Task<StagedGolden?> LoadStagedGoldenAsync(long live)
     {
+        var payload = await LoadStagedPayloadAsync(GoldenArtifactType, live);
+        return payload is null ? null : StagedGolden.Parse(payload);
+    }
+
+    /// <summary>
+    /// The staged payload of one per-golden artifact (a clustered-PK seek on
+    /// <c>(ArtifactType, ArtifactKey)</c>), or null when there is none or it is tombstoned.
+    /// </summary>
+    private async Task<string?> LoadStagedPayloadAsync(string artifactType, long live)
+    {
         var key = live.ToString(CultureInfo.InvariantCulture);
         var staged = await db.Set<ProjectionState>().AsNoTracking()
-            .Where(x => x.ArtifactType == GoldenArtifactType && x.ArtifactKey == key)
+            .Where(x => x.ArtifactType == artifactType && x.ArtifactKey == key)
             .Select(x => new { x.ContentHash, x.Payload })
             .FirstOrDefaultAsync();
 
-        if (staged?.Payload is null || staged.ContentHash == TombstoneHash)
+        // ContentHash is VARCHAR(64) and may come back space-padded on some collations; compare trimmed.
+        if (staged?.Payload is null || staged.ContentHash.TrimEnd() == TombstoneHash)
             return null;
 
-        return StagedGolden.Parse(staged.Payload);
+        return staged.Payload;
     }
 
     /// <summary>
