@@ -8,6 +8,8 @@ using ShiftSoftware.ADP.Darlastic.Data.Entities;
 using ShiftSoftware.ADP.Darlastic.Shared;
 using ShiftSoftware.ADP.Darlastic.Shared.ActionTrees;
 using ShiftSoftware.ADP.Darlastic.Shared.DTOs.Steward;
+using ShiftSoftware.ShiftEntity.Core.Pii;
+using ShiftSoftware.ShiftEntity.Model.Dtos;
 using ShiftSoftware.ShiftEntity.EFCore;
 using ShiftSoftware.TypeAuth.Core;
 using System.Globalization;
@@ -29,6 +31,10 @@ namespace ShiftSoftware.ADP.Darlastic.API.Controllers;
 /// <c>Registry.RecordStewardVerdict</c> — that path resolves its connection from environment
 /// configuration, which is right for the batch runner and wrong for a hosted API. The two paths
 /// share the verdict vocabulary and the row shapes, so a decision recorded here replays identically.</para>
+///
+/// <para>The records follow the golden PII contract (<see cref="RecordPiiView"/>): names, phones, ID
+/// numbers and addresses are masked unless the caller holds the host's PII reveal action. Masking is
+/// deterministic, so equal values on the two sides still read as equal.</para>
 /// </summary>
 [Route("[controller]")]
 [ApiController]
@@ -36,15 +42,20 @@ public class StewardQueueController : ControllerBase
 {
     private readonly ShiftDbContext db;
     private readonly DarlasticApiOptions options;
+    private readonly IPiiMasker masker;
+    private readonly PiiOptions piiOptions;
 
     /// <summary>The engine serializes <c>RealRecord</c> with default options, so the staged payload
     /// carries CLR property names verbatim.</summary>
     private static readonly JsonSerializerOptions PayloadJson = new() { PropertyNameCaseInsensitive = true };
 
-    public StewardQueueController(ShiftDbContext db, IOptions<DarlasticApiOptions> options)
+    public StewardQueueController(ShiftDbContext db, IOptions<DarlasticApiOptions> options,
+        IPiiMasker masker, IOptions<PiiOptions> piiOptions)
     {
         this.db = db;
         this.options = options.Value;
+        this.masker = masker;
+        this.piiOptions = piiOptions.Value;
     }
 
     private bool Denied(bool write)
@@ -95,6 +106,8 @@ public class StewardQueueController : ControllerBase
             .Where(x => systems.Contains(x.SourceSystem) && recordIds.Contains(x.SourceRecordId) && !x.Removed)
             .ToDictionaryAsync(x => (x.SourceSystem, x.SourceRecordId), x => x.IdentityID);
 
+        var pii = RecordPiiView.ForCaller(HttpContext, masker, piiOptions);
+
         var pairKeys = page.Select(p => p.PairKey).ToList();
         var standing = await db.Set<StewardDecision>().AsNoTracking()
             .Where(x => x.Active && x.Value != null && pairKeys.Contains(x.Value))
@@ -109,8 +122,8 @@ public class StewardQueueController : ControllerBase
                 PairKey = p.PairKey,
                 Score = p.Score,
                 RunID = p.RunID,
-                A = Side(p.SourceSystemA, p.SourceRecordIdA, records, identities),
-                B = Side(p.SourceSystemB, p.SourceRecordIdB, records, identities),
+                A = Side(p.SourceSystemA, p.SourceRecordIdA, records, identities, pii),
+                B = Side(p.SourceSystemB, p.SourceRecordIdB, records, identities, pii),
                 StandingVerdict = standing.GetValueOrDefault(p.PairKey),
             }).ToList(),
         });
@@ -201,7 +214,7 @@ public class StewardQueueController : ControllerBase
     }
 
     private static StewardCaseRecordDTO? Side(string system, string recordId,
-        Dictionary<(string, string), string> records, Dictionary<(string, string), long> identities)
+        Dictionary<(string, string), string> records, Dictionary<(string, string), long> identities, RecordPiiView pii)
     {
         var dto = new StewardCaseRecordDTO { SourceSystem = system, SourceRecordId = recordId };
 
@@ -216,12 +229,12 @@ public class StewardQueueController : ControllerBase
         var parsed = JsonSerializer.Deserialize<StagedRecord>(payload, PayloadJson);
         if (parsed is null) return dto;
 
-        dto.RawName = parsed.RawName;
-        dto.NormName = parsed.NormName;
-        dto.Phones = [.. (parsed.Phones ?? []), .. (parsed.WeakPhones ?? [])];
+        dto.RawName = pii.Show(PiiKind.Name, parsed.RawName);
+        dto.NormName = pii.Show(PiiKind.Name, parsed.NormName);
+        dto.Phones = pii.Show(PiiKind.Phone, [.. (parsed.Phones ?? []), .. (parsed.WeakPhones ?? [])]);
         dto.City = string.IsNullOrWhiteSpace(parsed.NormCity) ? null : parsed.NormCity;
-        dto.Address = string.IsNullOrWhiteSpace(parsed.RawAddress) ? parsed.NormAddress : parsed.RawAddress;
-        dto.NationalId = parsed.NationalId;
+        dto.Address = pii.Show(PiiKind.Address, string.IsNullOrWhiteSpace(parsed.RawAddress) ? parsed.NormAddress : parsed.RawAddress);
+        dto.NationalId = pii.Show(PiiKind.Identifier, parsed.NationalId);
         return dto;
     }
 

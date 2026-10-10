@@ -16,7 +16,6 @@ using ShiftSoftware.TypeAuth.Core;
 using System.Globalization;
 using System.Security.Claims;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace ShiftSoftware.ADP.Darlastic.API.Controllers;
 
@@ -163,29 +162,16 @@ public class CaseBrowserCompatController : ControllerBase
         }
     }
 
+    private RecordPiiView? piiView;
+
+    /// <summary>The shared record PII rules, fed with this caller's grant (the token's, when there is one).</summary>
+    private RecordPiiView PiiView => piiView ??= new RecordPiiView(masker, piiOptions, Pii.Reveal, Pii.PartialSearch);
+
     /// <summary>The value as this caller may see it. Empty stays empty, so "no name" still reads as such.</summary>
-    private string? Shown(PiiKind kind, string? raw) =>
-        Pii.Reveal || string.IsNullOrEmpty(raw) ? raw : masker.Mask(kind, raw);
+    private string? Shown(PiiKind kind, string? raw) => PiiView.Show(kind, raw);
 
-    private static readonly Regex QuotedText = new("\"[^\"]*\"", RegexOptions.Compiled);
-    private static readonly Regex EmailLike = new(@"[^\s()""]+@[^\s()""]+", RegexOptions.Compiled);
-    private static readonly Regex LongNumber = new(@"\+?\d{6,}", RegexOptions.Compiled);
-    private static readonly Regex DateLike = new(@"\b\d{1,2}/\d{1,2}/\d{4}\b", RegexOptions.Compiled);
-
-    /// <summary>
-    /// Engine explanation text quotes the records it compares: names and addresses in quotes,
-    /// phones and ID numbers as digit runs, e-mails, birth dates. Masked callers get the reasoning
-    /// with those values hidden; the numbers that are the engine's own (weights, scores) survive.
-    /// </summary>
-    private string Scrub(string? text)
-    {
-        if (Pii.Reveal || string.IsNullOrEmpty(text)) return text ?? "";
-        string hidden = piiOptions.HiddenText;
-        text = QuotedText.Replace(text, $"\"{hidden}\"");
-        text = EmailLike.Replace(text, hidden);
-        text = DateLike.Replace(text, hidden);
-        return LongNumber.Replace(text, hidden);
-    }
+    /// <summary>Engine explanation text with the record values it quotes hidden from a masked caller.</summary>
+    private string Scrub(string? text) => PiiView.Scrub(text);
 
     /// <summary>
     /// Does a record answer this search? Its key always may (not personal). Names and phones match
@@ -945,7 +931,7 @@ public class CaseBrowserCompatController : ControllerBase
             // the record's own values, so a masked caller gets them scrubbed.
             normalize = Normalization.Steps(rec).Select(s => new { stage = s.Stage, detail = Scrub(s.Detail) }).ToList(),
             blockKeys = RealMatcher.BlockKeysOf(rec).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)
-                .Select(k => Pii.Reveal ? k : k[..(k.IndexOf(':') + 1)] + piiOptions.HiddenText).ToList(),
+                .Select(PiiView.BlockKey).ToList(),
             // Which keys hit the block cap is a property of the run's blocking pass and is not staged.
             cappedKeys = Array.Empty<object>(),
             candidates = Array.Empty<object>(),
@@ -1245,7 +1231,7 @@ public class CaseBrowserCompatController : ControllerBase
             normalizeB = Normalization.Steps(rb).Select(s => new { stage = s.Stage, detail = Scrub(s.Detail) }).ToList(),
             blockKeys = RealMatcher.BlockKeysOf(ra).Intersect(RealMatcher.BlockKeysOf(rb), StringComparer.Ordinal)
                 .Order(StringComparer.Ordinal)
-                .Select(k => Pii.Reveal ? k : k[..(k.IndexOf(':') + 1)] + piiOptions.HiddenText).ToList(),
+                .Select(PiiView.BlockKey).ToList(),
             // Which shared keys hit the block cap is a property of the run's blocking pass, not of
             // the pair, and is not staged.
             cappedBlockKeys = Array.Empty<string>(),
