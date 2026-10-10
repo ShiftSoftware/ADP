@@ -62,6 +62,11 @@ public static class Registry
     internal const string ArtVinLinks = "vinlinks";
     internal const string ArtVinOwner = "vinowner";
     internal const string ArtStamp = "stamp";
+    //   events   — key = goldenId; the golden's timeline events (GoldenEventsPayload). Staged ONLY when
+    //              the host passes event feeds to RunResolve; with none, the family is never read,
+    //              staged or tombstoned. Served from this table (GoldenCustomer/{id}/events) — the
+    //              Cosmos drain skips it (see Projector).
+    internal const string ArtEvents = GoldenEventsPayload.ArtifactType;
 
     public static string ConnectionString =>
         Environment.GetEnvironmentVariable("DARLASTIC_SQL")
@@ -715,6 +720,14 @@ public static class Registry
         public Dictionary<string, int> PendingByType = new(StringComparer.Ordinal);
         public List<string> AbsentSources = [];
 
+        /// <summary>Golden-event attachment, when the run was given event feeds; null otherwise.</summary>
+        public EventAttachResult? Events;
+        /// <summary>Profile-linked events whose profile was not in this run's input and attached through
+        /// the registry's last assignment (frozen absent source, or a record the identity feed skipped).</summary>
+        public int EventsViaPriorAssignment;
+        /// <summary>Largest number of events staged on one golden (payload-size watch).</summary>
+        public int MaxEventsPerGolden;
+
         /// <summary>The D3 acceptance: unchanged sources must produce zero deltas of EVERY kind —
         /// not just zero pending artifacts (a silent mass-rehash must fail the banner too).</summary>
         public bool IsZeroDelta =>
@@ -729,10 +742,27 @@ public static class Registry
             $"artifacts pending {ArtifactsPending:N0}" +
             (PendingByType.Count > 0 ? " (" + string.Join(" / ", PendingByType.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => $"{kv.Key} {kv.Value:N0}")) + ")" : "") +
             $"; steward queue {StewardQueued:N0}" +
-            (AbsentSources.Count > 0 ? $"; ABSENT sources frozen: {string.Join(", ", AbsentSources)}" : "");
+            (AbsentSources.Count > 0 ? $"; ABSENT sources frozen: {string.Join(", ", AbsentSources)}" : "") +
+            (Events is not null
+                ? $"\n  {Events.Describe()}" +
+                  (EventsViaPriorAssignment > 0 ? $"\n    profile-linked via the registry's last assignment (profile not in this run's input): {EventsViaPriorAssignment:N0}" : "") +
+                  $"\n    largest timeline: {MaxEventsPerGolden:N0} events on one golden"
+                : "");
     }
 
-    public static RunMetrics RunResolve(IReadOnlyList<RealRecord> records, Merge.Result merge)
+    /// <summary>Resolve without golden events — exactly the behaviour before event feeds existed.</summary>
+    public static RunMetrics RunResolve(IReadOnlyList<RealRecord> records, Merge.Result merge) =>
+        RunResolve(records, merge, events: null);
+
+    /// <summary>
+    /// The batch resolve. When <paramref name="events"/> is non-null the run also attaches them to
+    /// goldens (<see cref="GoldenEventAttach"/>) and stages one <c>events</c> artifact per golden that
+    /// has any, hash-guarded like every other family; prior <c>events</c> artifacts that no longer
+    /// receive an event are tombstoned. Null skips the family entirely — no read, no stage, no
+    /// tombstone — so a tenant without event sources is unchanged by construction.
+    /// </summary>
+    public static RunMetrics RunResolve(IReadOnlyList<RealRecord> records, Merge.Result merge,
+        IReadOnlyList<SourceEvent>? events, EventAttachOptions? eventOptions = null)
     {
         using var conn = Open();
         var m = new RunMetrics { Records = records.Count };
@@ -888,6 +918,7 @@ public static class Registry
             [ArtGolden] = new(StringComparer.Ordinal), [ArtVinLinks] = new(StringComparer.Ordinal),
             [ArtVinOwner] = new(StringComparer.Ordinal), [ArtStamp] = new(StringComparer.Ordinal),
         };
+        if (events is not null) priorArtifacts[ArtEvents] = new(StringComparer.Ordinal);   // read only when this run stages events
         using (var cmd = new SqlCommand("SELECT ArtifactType, ArtifactKey, ContentHash, CASE WHEN Payload IS NULL THEN 0 ELSE 1 END FROM Darlastic.ProjectionState", conn))
         using (var r = cmd.ExecuteReader())
             while (r.Read())
@@ -1045,6 +1076,52 @@ public static class Registry
             Stage(ArtVinOwner, vin, sb.ToString());
         }
 
+        // Pass 4 (only when the host supplied event feeds): golden timeline events. Profile-linked
+        // events follow their profile — this run's cluster when the profile is in the input, else the
+        // registry's last assignment chased through prior AND this run's redirects (the same hop the
+        // stamp family takes), so a frozen absent source keeps its customers' events attached.
+        // VIN-only events read the ownership timeline computed in pass 2 — the very periods the
+        // vinlinks/vinowner artifacts carry, so the timeline and the vehicle card always agree.
+        var liveEventKeys = new HashSet<string>(StringComparer.Ordinal);
+        if (events is not null)
+        {
+            var currentAssignment = new Dictionary<string, long>(records.Count, StringComparer.Ordinal);
+            foreach (var root in orderedRoots)
+                foreach (var idx in clusters[root])
+                    currentAssignment[Key(idx)] = finalId[root];
+            int viaPrior = 0;
+            long? ProfileGolden(string src, string recId)
+            {
+                string k = src + "|" + recId;
+                if (currentAssignment.TryGetValue(k, out var cur)) return cur;
+                if (!priorProfile.TryGetValue(k, out var p)) return null;
+                long live = Chase(p.IdentityId);
+                if (newRedirect.TryGetValue(live, out var moved)) live = moved;
+                viaPrior++;
+                return live;
+            }
+
+            var periodsByVin = new Dictionary<string, List<VinPeriod>>(StringComparer.Ordinal);
+            foreach (var ((gid, vin), (from, to, role)) in linkPeriod)
+                (periodsByVin.TryGetValue(vin, out var l) ? l : periodsByVin[vin] = []).Add(new VinPeriod(gid, role, from, to));
+            var vinPeriods = periodsByVin.ToDictionary(kv => kv.Key, kv => (IReadOnlyList<VinPeriod>)kv.Value, StringComparer.Ordinal);
+
+            var attached = GoldenEventAttach.Attach(events, ProfileGolden, vinPeriods, eventOptions);
+            foreach (var (gid, list) in attached.ByGolden)
+            {
+                string key = gid.ToString(CultureInfo.InvariantCulture);
+                liveEventKeys.Add(key);
+                Stage(ArtEvents, key, GoldenEventsPayload.Write(gid, list));
+                if (list.Count > m.MaxEventsPerGolden) m.MaxEventsPerGolden = list.Count;
+            }
+            // Full-state, like the ownership families: a golden that no longer receives any event
+            // (merged away, or its events moved) gets its artifact deleted downstream.
+            foreach (var (key, prev) in priorArtifacts[ArtEvents])
+                if (prev.Hash != Tombstone && !liveEventKeys.Contains(key)) artifactRows.Add((ArtEvents, key, Tombstone, null));
+            m.Events = attached;
+            m.EventsViaPriorAssignment = viaPrior;
+        }
+
         // golden tombstones: ONLY identities redirected away this run — the surviving identity's
         // doc replaces them, and their stamps re-point to the survivor above. DEACTIVATED identities
         // keep their last golden doc: there is no successor to re-point forward links at, so
@@ -1104,6 +1181,19 @@ public static class Registry
                 $"Refusing to resolve: {ownershipTombstones:N0} ownership-artifact tombstones = {(double)ownershipTombstones / priorOwnership:P1} " +
                 $"of the projected ownership corpus (threshold {MassChangeThreshold:P0}). This is the signature of a missing/empty " +
                 "VIN-evidence input (the customer files alone look healthy). If the change is genuine, set DARLASTIC_FORCE=1.");
+
+        // ---- guard: same signature for timelines — an event feed that silently read nothing (or a
+        // publish missing a table) would otherwise wipe every customer's timeline in one run.
+        if (events is not null && !Forced)
+        {
+            int priorEvents = priorArtifacts[ArtEvents].Count(kv => kv.Value.Hash != Tombstone);
+            int eventTombstones = artifactRows.Count(r => r.Type == ArtEvents && r.Hash == Tombstone);
+            if (priorEvents > 0 && (double)eventTombstones / priorEvents > MassChangeThreshold)
+                throw new InvalidOperationException(
+                    $"Refusing to resolve: {eventTombstones:N0} timeline tombstones = {(double)eventTombstones / priorEvents:P1} " +
+                    $"of the staged event artifacts (threshold {MassChangeThreshold:P0}). This is the signature of an empty or " +
+                    "partial event source. If the change is genuine, set DARLASTIC_FORCE=1.");
+        }
 
         // ---- write everything (set-based, deltas only)
         m.RunId = Convert.ToInt32(Scalar(conn,
