@@ -59,21 +59,21 @@ public static class Normalization
         if (r.RawName.Length > 0)
         {
             if (r.NameWasMojibake)
-                steps.Add(new("repair", $"CP1256 mojibake repaired: \"{r.RawName}\" → \"{Mojibake.TryRepair(r.RawName)}\" → transliterated"));
+                steps.Add(new("repair", $"garbled text repaired: \"{r.RawName}\" → \"{Mojibake.TryRepair(r.RawName)}\", then written in Latin letters"));
             if (r.NameHadArabizi)
-                steps.Add(new("arabizi", "chat-numeral letters folded (3→a · 7→h · 5→kh …) before transliteration"));
+                steps.Add(new("arabizi", "digits used as letters in chat-style writing (3→a · 7→h · 5→kh …) turned back into letters before writing in Latin letters"));
             steps.Add(new("name", r.NormName.Length > 0
                 ? $"\"{r.RawName}\" → \"{r.NormName}\""
-                : $"\"{r.RawName}\" → dropped (junk/blocklist)"));
+                : $"\"{r.RawName}\" → dropped (not a usable name)"));
         }
         else steps.Add(new("name", "no name in source"));
 
         if (r.Phones.Length + r.WeakPhones.Length > 0)
             steps.Add(new("phone", string.Join(" · ",
-                r.Phones.Select(p => p + " (strong)").Concat(r.WeakPhones.Select(p => p + " (weak 9-digit)")))));
+                r.Phones.Select(p => p + " (full number)").Concat(r.WeakPhones.Select(p => p + " (incomplete number)")))));
 
         if (r.NormAddress.Length > 0)
-            steps.Add(new("address", $"\"{r.RawAddress.Replace('|', ' ')}\" → \"{r.NormAddress}\" · city slot \"{r.NormCity}\""));
+            steps.Add(new("address", $"\"{r.RawAddress.Replace('|', ' ')}\" → \"{r.NormAddress}\" · city \"{r.NormCity}\""));
 
         return steps;
     }
@@ -81,8 +81,9 @@ public static class Normalization
 
 /// <summary>One step of a pair's scoring story, in engine execution order.</summary>
 /// <param name="Stage">Machine key the UI maps to a station: signal | base | gate | address | conflict | decide.</param>
-/// <param name="Title">Short human label ("Name similarity", "Chain-slice rescue").</param>
-/// <param name="Detail">The numbers ("trigram 0.42 · JW 0.78 → blend 0.60 × weight 0.45").</param>
+/// <param name="Title">Short plain-language label ("Names", "Same number, same first name").</param>
+/// <param name="Detail">What the step found, in words a reader of the case browser understands; no
+/// rule codes or thresholds (the running strength is <paramref name="ConfAfter"/>).</param>
 /// <param name="ConfAfter">Running confidence after this step, when it changed or concluded a phase.</param>
 public sealed record TraceStep(string Stage, string Title, string Detail, double? ConfAfter = null);
 

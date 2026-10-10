@@ -549,6 +549,7 @@ public static class CasesServer
             score = Math.Round(score, 3),
             band = RealMatcher.BandLabel(RealMatcher.Band(score)),
             decision = score >= 0.90 ? "auto-merge" : score >= 0.80 ? "steward-queue" : "kept-separate",
+            decisionLabel = CaseLabels.Decision(score).Label,
             flags = FlagNames(flags),
             trace = trace.Steps.Select(s => new { s.Stage, s.Title, s.Detail, conf = s.ConfAfter is { } c ? Math.Round(c, 3) : (double?)null }).ToList(),
             dobGap = DobGap(ra, rb),

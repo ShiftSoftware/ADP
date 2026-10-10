@@ -716,7 +716,8 @@ const evidenceChips = (flags, max) => (flags || [])
   .filter(f => !["NamesBoth","PhonesBoth","IdsBoth","VinBoth","EmailsBoth"].includes(f))
   .slice(0, max ?? 99)
   .map(f => `<span class="chip" title="${esc(L.desc("evidence", f))}">${esc(L.label("evidence", f))}</span>`).join(" ");
-const decisionText = d => d.decisionLabel || (d.decision === "auto-merge" ? "Combined automatically" : d.decision === "steward-queue" ? "Needs a person" : "Kept separate");
+// Both servers send the engine's own words for the outcome; the page has none of its own.
+const decisionText = d => d.decisionLabel || "";
 
 function buildSteps(d){
   const steps = [];

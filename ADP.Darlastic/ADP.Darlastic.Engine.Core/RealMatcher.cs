@@ -44,12 +44,12 @@ public static class RealMatcher
             nameSim = 0.5 * tg + 0.5 * jw;
             score += 0.45 * nameSim;
             weight += 0.45;
-            trace?.Add("signal", "Name similarity",
-                $"\"{a.NormName}\" ~ \"{b.NormName}\" · trigram {tg:F2} · Jaro-Winkler {jw:F2} → blend {nameSim:F2} (weight 0.45)");
+            trace?.Add("signal", "Names",
+                $"\"{a.NormName}\" and \"{b.NormName}\" are {Pct(nameSim)} alike");
         }
-        else trace?.Add("signal", "Name similarity", a.NormName.Length == 0 && b.NormName.Length == 0
-            ? "no usable name on either side — signal skipped"
-            : $"no usable name on {(a.NormName.Length == 0 ? "side A" : "side B")} — signal skipped");
+        else trace?.Add("signal", "Names", a.NormName.Length == 0 && b.NormName.Length == 0
+            ? "no usable name on either record, so names were not compared"
+            : $"no usable name on {(a.NormName.Length == 0 ? "record A" : "record B")}, so names were not compared");
 
         bool phonesBoth = (a.Phones.Length + a.WeakPhones.Length) > 0 && (b.Phones.Length + b.WeakPhones.Length) > 0;
         bool phoneExact = false, phoneSuffix = false;
@@ -73,11 +73,11 @@ public static class RealMatcher
             score += 0.45 * (phoneExact ? 1.0 : phoneSuffix ? 0.7 : 0.0);
             weight += 0.45;
             trace?.Add("signal", "Phone",
-                phoneExact ? $"exact shared number ({SharedPhone(a, b)}) → 1.00 (weight 0.45)"
-                : phoneSuffix ? "weak 9-digit ↔ strong 10-digit suffix-8 bridge → 0.70 (weight 0.45)"
-                : "numbers on both sides but none shared → 0.00 (weight 0.45)");
+                phoneExact ? $"both records have the same number ({SharedPhone(a, b)})"
+                : phoneSuffix ? "one record has the number with a digit missing; the rest agrees with the other record's number"
+                : "both records have numbers, but none in common");
         }
-        else trace?.Add("signal", "Phone", "no number on one side — signal skipped");
+        else trace?.Add("signal", "Phone", "no number on one of the records, so numbers were not compared");
 
         bool idsBoth = a.NationalId is not null && b.NationalId is not null;
         bool idEqual = idsBoth && a.NationalId == b.NationalId;
@@ -87,7 +87,7 @@ public static class RealMatcher
             if (idEqual) flags |= MatchFlags.IdEqual;
             score += 0.10 * (idEqual ? 1 : 0);
             weight += 0.10;
-            trace?.Add("signal", "National ID", idEqual ? "IDs equal → 1.00 (weight 0.10)" : "IDs present but different → 0.00 here; conflict penalty applies below (weight 0.10)");
+            trace?.Add("signal", "ID number", idEqual ? "both records have the same ID number" : "the records have different ID numbers (see below)");
         }
 
         // E-mail — a contact key like phone, but ASYMMETRIC evidence like VIN and address: weight is
@@ -116,10 +116,10 @@ public static class RealMatcher
                     flags |= MatchFlags.EmailExact;
                     score += 0.45;
                     weight += 0.45;
-                    trace?.Add("signal", "E-mail", $"exact shared address ({sharedEmail}) → 1.00 (weight 0.45)");
+                    trace?.Add("signal", "E-mail", $"both records have the same address ({sharedEmail})");
                 }
                 else trace?.Add("signal", "E-mail",
-                    "addresses on both sides but none shared — no signal (one person holds several mailboxes; never a penalty)");
+                    "both records have addresses, but none in common; not counted against them, since one person often has several");
             }
             else if (HasRoleOnlyEmail(a) || HasRoleOnlyEmail(b))
             {
@@ -127,9 +127,9 @@ public static class RealMatcher
                 // see which one happened when asking why a pair didn't merge on e-mail.
                 flags |= MatchFlags.EmailRoleOnly;
                 trace?.Add("signal", "E-mail",
-                    "a side's only address is a role/shared mailbox (info@, sales@, …) — one mailbox fronting many people is contact info, not identity evidence; suppressed");
+                    "one record's only address is a shared mailbox (info@, sales@ …) that many people use, so it says nothing about who the person is and was not compared");
             }
-            else trace?.Add("signal", "E-mail", "no usable address on one side — signal skipped");
+            else trace?.Add("signal", "E-mail", "no usable address on one of the records, so addresses were not compared");
         }
 
         // VIN — the corroborating key that breaks the name-similarity ceiling (build plan step 4).
@@ -149,18 +149,18 @@ public static class RealMatcher
             score += 0.45 * strength;
             weight += 0.45;
             flags |= vinClass == VinClass.SoldOverlap ? MatchFlags.VinSoldOverlap : MatchFlags.VinServiced;
-            trace?.Add("signal", "VIN",
+            trace?.Add("signal", "Vehicle",
                 vinClass == VinClass.SoldOverlap
-                    ? $"shared SOLD VIN ({sharedVin}), ownership periods consistent → 1.00 (weight 0.45) — strong ownership key"
-                    : $"shared SERVICED VIN ({sharedVin}) → 0.60 (weight 0.45) — corroboration (walk-in, may be a relative/driver)");
+                    ? $"both records bought or own the same vehicle ({sharedVin}) over the same period: strong evidence"
+                    : $"the same vehicle ({sharedVin}) was serviced under both records: supporting evidence only, since the driver may be a relative");
         }
         else if (vinClass == VinClass.Transfer)
         {
             flags |= MatchFlags.VinTransfer;
-            trace?.Add("signal", "VIN", $"shared VIN ({sharedVin}) but disjoint periods with a sale between — ownership transfer (two people) → no merge signal");
+            trace?.Add("signal", "Vehicle", $"the same vehicle ({sharedVin}), but it was sold between the two records' visits: it changed owner, so it says nothing about them being one person");
         }
         else if ((flags & MatchFlags.VinBoth) != 0)
-            trace?.Add("signal", "VIN", "both sides carry VINs but none shared — no signal (a person may own several cars; never a penalty)");
+            trace?.Add("signal", "Vehicle", "both records have vehicles, but none in common; not counted against them, since a person may own several");
 
         // Source-asserted same-entity reference — an explicit FK from one record to the other (a
         // CRM ticket raised FOR a known DMS customer carries that customer's key). Weighted like a
@@ -173,17 +173,17 @@ public static class RealMatcher
             flags |= MatchFlags.SameAsRef;
             score += 0.45;
             weight += 0.45;
-            trace?.Add("signal", "Same-entity reference",
-                "one side explicitly references the other's profile key (source-asserted FK, e.g. ticket → DMS customer) → 1.00 (weight 0.45)");
+            trace?.Add("signal", "Direct link",
+                "one record points straight at the other (for example a ticket raised for this customer): strong evidence");
         }
 
         if (weight == 0)
         {
-            trace?.Add("decide", "No usable signal", "no comparable attribute on both sides → 0.00", 0);
+            trace?.Add("decide", "Nothing to compare", "the records have nothing in common that can be compared", 0);
             return 0;
         }
         double conf = score / weight;
-        trace?.Add("base", "Weighted base", $"{score:F3} / {weight:F2} → {conf:F3}", conf);
+        trace?.Add("base", "All the evidence together", $"everything above together gives a match strength of {Pct(conf)}", conf);
 
         // Never auto-merge on name alone: one hyper-common two-token name appeared 81x at a single dealer. A perfect
         // name score with no corroborating signal must land mid-steward-queue, well clear of
@@ -202,7 +202,7 @@ public static class RealMatcher
         {
             conf *= 0.70;
             flags |= MatchFlags.NameOnlyDamp;
-            trace?.Add("gate", "Name-only damp", "name is the only signal — never auto-merge on name alone (hyper-common short names repeat 80+ times per dealer) → ×0.70", conf);
+            trace?.Add("gate", "Only the name in common", "the name is the only thing they share, and many different people have the same name, so the match strength is lowered: a name alone never combines two records", conf);
         }
 
         // Name-aware phone decisiveness (review 2026-06-08). Phone is the king key, but equal
@@ -227,16 +227,16 @@ public static class RealMatcher
                 // Rozhbian), so the same-given-name person-merge must NOT apply. Left at the weighted
                 // base (lands near-miss/steward, not auto-merge) pending the org-entity track.
                 flags |= MatchFlags.OrgLine;
-                trace?.Add("gate", "Business / organization line",
-                    "an org name (Company/Group/Stock/Parts/Show Room) shares this phone — a company line, not one person; person-merge floor withheld (identical org names still merge on the weighted base — a placeholder-entity filter is the real fix)", conf);
+                trace?.Add("gate", "Company number",
+                    "the shared number belongs to a company name, and different people use one company number, so the shared number alone does not combine them", conf);
             }
             else if (NameConsistent(a.NormName, b.NormName))
             {
                 nameConsistent = true;
                 flags |= MatchFlags.NameConsistent;
                 conf = Math.Max(conf, 0.93);
-                trace?.Add("gate", "Phone decisive (names consistent)",
-                    "every token of the shorter name aligns to the longer (spelling drift, not a different person) — a fuzzy name must not veto a perfect phone → floor 0.93", conf);
+                trace?.Add("gate", "Same number, same name",
+                    "every part of the shorter name matches the longer one, only the spelling differs; with the same number they are one person, enough to combine them", conf);
             }
             else if (GivenNamesMatch(a.NormName, b.NormName))
             {
@@ -251,19 +251,19 @@ public static class RealMatcher
                 // safe to treat as a spelling variant.
                 flags |= MatchFlags.PhoneNameMerge;
                 conf = Math.Max(conf, 0.91);
-                trace?.Add("gate", "Phone decisive (same given name — chain slices)",
-                    $"shared exact phone + same given name (spelling drift allowed), rest drifts (blend {nameSim:F2}) — one person across name-chain slices (team domain rule) → floor 0.91", conf);
+                trace?.Add("gate", "Same number, same first name",
+                    "the first names match (the spelling may differ) and the rest of the name differs: one person written down with different parts of the family name, enough to combine them", conf);
             }
             else if (NameConflict(a.NormName, b.NormName, nameSim))
             {
                 nameConflict = true;
                 flags |= MatchFlags.NameConflictCap;
                 conf = Math.Min(conf, 0.55);
-                trace?.Add("gate", "Name conflict (no shared token, no similarity)",
-                    $"name blend {nameSim:F2} < 0.30 and no shared token — completely different names → cap 0.55", conf);
+                trace?.Add("gate", "Same number, unrelated names",
+                    "the names have nothing in common, so the number is shared by different people; kept well short of combining", conf);
             }
-            else trace?.Add("gate", "Phone not decisive (given names differ)",
-                $"shared phone but the given names don't align (blend {nameSim:F2}) — siblings / father-son name order / unrelated; left for a person to review, no floor", conf);
+            else trace?.Add("gate", "Same number, different first names",
+                "the number is shared but the first names differ: they could be relatives or unrelated people, so the number alone is not enough to combine them", conf);
         }
 
         // Address corroboration (2026-06-12; independently requested by a tenant as a match input).
@@ -288,8 +288,8 @@ public static class RealMatcher
             {
                 conf = Math.Min(1.0, conf + 0.05);
                 flags |= MatchFlags.AddressBoost;
-                trace?.Add("address", "Address corroboration",
-                    $"\"{a.NormAddress}\" ~ \"{b.NormAddress}\" = {addrSim:F2} ≥ 0.60 (district-level agreement) → +0.05; a mismatch never penalizes", conf);
+                trace?.Add("address", "Address agrees",
+                    $"\"{a.NormAddress}\" and \"{b.NormAddress}\" agree down to the district, a small boost; a different address never counts against them", conf);
                 // Chain-slice rescue → AUTO-MERGE (raised 0.88 → 0.91, 2026-06-12 domain-expert
                 // audit). 'Hogr Jaafer'/'Hogr Jamil' on one phone at one address is ONE person
                 // captured as different slices of the name chain (given+father vs given+
@@ -322,20 +322,20 @@ public static class RealMatcher
                     {
                         flags |= MatchFlags.ChainSliceRescue;
                         conf = Math.Max(conf, 0.91);
-                        trace?.Add("address", "Chain-slice rescue",
-                            $"same given name + exact phone + district remainder \"{subA}\" ~ \"{subB}\" agrees ≥ 0.60 — one person captured as different slices of the name chain; a steward would merge on sight (expert-audited rule, 2026-06-12) → 0.91 auto-merge", conf);
+                        trace?.Add("address", "Same first name, number and district",
+                            $"the same first name, the same number, and the district part of the address agrees (\"{subA}\" and \"{subB}\"): one person written down with different parts of the family name, enough to combine them", conf);
                     }
                 }
             }
-            else trace?.Add("address", "Address present, no agreement",
-                $"\"{a.NormAddress}\" ~ \"{b.NormAddress}\" = {addrSim:F2} < 0.60 — below district-level agreement; no penalty (people move and buy across cities)", conf);
+            else trace?.Add("address", "Address differs",
+                $"\"{a.NormAddress}\" and \"{b.NormAddress}\" do not agree down to the district; not counted against them, since people move and buy in other cities", conf);
         }
         else if (trace is not null && useAddress && !nameConflict)
         {
-            trace.Add("address", "Address signal skipped",
-                a.NormAddress.Length == 0 && b.NormAddress.Length == 0 ? "no address on either side"
-                : a.NormAddress.Length == 0 || b.NormAddress.Length == 0 ? "no address on one side"
-                : "address is city-only on at least one side — equality would be city-membership in a 1.5M city, not corroboration", conf);
+            trace.Add("address", "Address not compared",
+                a.NormAddress.Length == 0 && b.NormAddress.Length == 0 ? "no address on either record"
+                : a.NormAddress.Length == 0 || b.NormAddress.Length == 0 ? "no address on one of the records"
+                : "at least one record has only a city, and living in the same city says nothing about being one person", conf);
         }
 
         // Shared SOLD VIN → 0.91 auto-merge (build plan step 4): a point-of-sale VIN↔buyer binding is
@@ -367,14 +367,14 @@ public static class RealMatcher
             {
                 conf = Math.Max(conf, 0.91);
                 flags |= MatchFlags.VinSoldMerge;
-                trace?.Add("vin", "Shared sold VIN (ownership consistent, names align)",
-                    $"a point-of-sale VIN↔buyer binding ({sharedVin}) + a fully-aligned/absent name — king-key-grade ownership → floor 0.91 auto-merge", conf);
+                trace?.Add("vin", "Same vehicle bought, names agree",
+                    $"both records bought the same vehicle ({sharedVin}) and the names agree (or one record has no name): enough to combine them", conf);
             }
             else if (namesBoth && GivenNamesMatch(a.NormName, b.NormName))
-                trace?.Add("vin", "Shared sold VIN, given name aligns but a later token differs",
-                    $"shared sold VIN ({sharedVin}) + same given name but the rest differs — a car is shared by relatives / resale; steward-band on the weighted signal, no auto-merge (vin-sample 2026-06-22)", conf);
-            else trace?.Add("vin", "Shared sold VIN but names differ",
-                $"shared sold VIN ({sharedVin}) but the names point to different people — corroboration only, no auto-merge floor", conf);
+                trace?.Add("vin", "Same vehicle bought, similar name",
+                    $"both records bought the same vehicle ({sharedVin}) and the first names match, but the rest of the name differs: relatives often share a car, so this alone is not enough to combine them", conf);
+            else trace?.Add("vin", "Same vehicle bought, different names",
+                $"both records bought the same vehicle ({sharedVin}) but the names point to different people: supporting evidence only, not enough to combine them", conf);
         }
 
         // Same-entity reference → auto-merge floor, name-gated exactly like the sold-VIN rule: the
@@ -390,11 +390,11 @@ public static class RealMatcher
             {
                 conf = Math.Max(conf, namesBoth && NameConsistent(a.NormName, b.NormName) ? 0.95 : 0.91);
                 flags |= MatchFlags.SameAsMerge;
-                trace?.Add("gate", "Same-entity reference decisive",
-                    "explicit FK + names consistent/aligned (or no name to contradict) → auto-merge floor", conf);
+                trace?.Add("gate", "Direct link, names agree",
+                    "one record points at the other and the names agree (or one record has no name): enough to combine them", conf);
             }
-            else trace?.Add("gate", "Same-entity reference held back",
-                "explicit FK but the names point to different people — possibly a ticket raised on the wrong customer record; left for review on the weighted base", conf);
+            else trace?.Add("gate", "Direct link, names differ",
+                "one record points at the other, but the names point to different people (perhaps a ticket raised on the wrong customer), so the link alone is not enough to combine them", conf);
         }
 
         // Shared e-mail → auto-merge floor, name-gated exactly like the sold-VIN and same-as rules. A
@@ -412,11 +412,11 @@ public static class RealMatcher
             {
                 conf = Math.Max(conf, namesBoth && NameConsistent(a.NormName, b.NormName) ? 0.95 : 0.91);
                 flags |= MatchFlags.EmailMerge;
-                trace?.Add("gate", "Shared e-mail decisive",
-                    $"shared address ({sharedEmail}) + names consistent/aligned (or no name to contradict) → auto-merge floor", conf);
+                trace?.Add("gate", "Same e-mail, names agree",
+                    $"both records have the address ({sharedEmail}) and the names agree (or one record has no name): enough to combine them", conf);
             }
-            else trace?.Add("gate", "Shared e-mail held back",
-                $"shared address ({sharedEmail}) but the names point to different people — a mailbox gets entered on the wrong record, and a staff mailbox fronts several people; left for review on the weighted base", conf);
+            else trace?.Add("gate", "Same e-mail, names differ",
+                $"both records have the address ({sharedEmail}) but the names point to different people (an address can be typed on the wrong record, or used by several staff), so the address alone is not enough to combine them", conf);
         }
 
         // Conflict penalties — only on strong, plausibility-filtered evidence.
@@ -424,7 +424,7 @@ public static class RealMatcher
         {
             conf *= 0.3;
             flags |= MatchFlags.IdConflict;
-            trace?.Add("conflict", "National-ID conflict", "different national IDs — hard evidence of two people → ×0.3", conf);
+            trace?.Add("conflict", "Different ID numbers", "the ID numbers differ, which is strong evidence of two people, so the match strength is cut sharply", conf);
         }
         if (a.Dob is not null && b.Dob is not null)
         {
@@ -432,7 +432,7 @@ public static class RealMatcher
             {
                 conf = Math.Min(1.0, conf + 0.05);
                 flags |= MatchFlags.DobEqual;
-                trace?.Add("conflict", "DOB corroboration", $"same date under a consistent day/month reading ({a.Dob.P1}/{a.Dob.P2}/{a.Dob.Year}) → +0.05", conf);
+                trace?.Add("conflict", "Same birth date", $"the same date of birth ({a.Dob.P1}/{a.Dob.P2}/{a.Dob.Year}), a small boost", conf);
             }
             else if (a.Dob.ConflictsWith(b.Dob))
             {
@@ -443,17 +443,17 @@ public static class RealMatcher
                 // matches the phone+given rule should keep together); the flag stays for steward
                 // visibility only. National-ID conflict (a reliable key) remains the hard veto above.
                 flags |= MatchFlags.DobConflict;
-                trace?.Add("conflict", "DOB differs (noted, not penalized)",
-                    $"{a.Dob.P1}/{a.Dob.P2}/{a.Dob.Year} vs {b.Dob.P1}/{b.Dob.P2}/{b.Dob.Year} — dealer DOB is unreliable; flagged for the steward but no score penalty", conf);
+                trace?.Add("conflict", "Different birth dates",
+                    $"{a.Dob.P1}/{a.Dob.P2}/{a.Dob.Year} and {b.Dob.P1}/{b.Dob.P2}/{b.Dob.Year}: dealer birth dates are often wrong, so this is shown for information and not counted against them", conf);
             }
         }
 
-        trace?.Add("decide", BandTitle(conf), $"final confidence {conf:F3}", conf);
+        trace?.Add("decide", CaseLabels.Decision(conf).Label, $"final match strength {Pct(conf)}", conf);
         return conf;
     }
 
-    private static string BandTitle(double conf) =>
-        conf >= 0.90 ? "Combined automatically" : conf >= 0.80 ? "Needs a person" : conf >= 0.50 ? "Tracked, not combined" : "Ignored";
+    /// <summary>A strength or similarity as a whole percentage, the way the case browser shows scores.</summary>
+    private static string Pct(double x) => $"{Math.Round(x * 100, MidpointRounding.AwayFromZero):0}%";
 
     private static string SharedPhone(RealRecord a, RealRecord b) =>
         a.Phones.FirstOrDefault(p => b.Phones.Contains(p))
