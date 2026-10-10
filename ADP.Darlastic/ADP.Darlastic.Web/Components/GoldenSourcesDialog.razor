@@ -151,7 +151,10 @@
     [Parameter, EditorRequired]
     public string ID { get; set; } = default!;
 
-    /// <summary>Display name, passed in by the caller — the endpoint deliberately doesn't carry one.</summary>
+    /// <summary>
+    /// Display name, passed in by the caller — the endpoint deliberately doesn't carry one.
+    /// Pass the masked Display of the protected name, never a revealed value.
+    /// </summary>
     [Parameter]
     public string? FullName { get; set; }
 

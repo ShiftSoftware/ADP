@@ -37,20 +37,18 @@
 		     compatibility contract. Set it to the newest package sitting on the build machine and
 		     every host that hasn't upgraded is silently excluded.
 
-		     Measured 2026-07-30: one deployment had five candidate hosts. The host chosen for
-		     Darlastic was the most current of them, at 2026.6.24.1, and NONE was on 2026.7.28.1, so
-		     the previous floor excluded all of them. Referencing Darlastic from that host failed
-		     restore outright (NU1605: "Detected package downgrade"). Raising the host to match
-		     required upgrades well past the Shift stack: TypeAuth, ASP.NET Core WebAssembly, the
-		     Azure Functions worker, libphonenumber. That is a dependency upgrade of a mobile-app
-		     backend, only to add a read-only internal browser.
+		     Measured 2026-07-30: one deployment had five candidate hosts and none was on the floor of
+		     the day, so referencing Darlastic failed restore outright (NU1605: "Detected package
+		     downgrade"). Raising a host to match can mean upgrades well past the Shift stack.
 
-		     2026.6.24.1 (with TypeAuth 1.6.25 in .Shared / .API) is the oldest pair VERIFIED to
-		     build: full ADP.sln green, 49/49 engine tests. Hosts above the floor still resolve their
-		     own higher version — a host in another deployment stays on 2026.7.28.1 — because a
-		     floor only ever widens. Lower it further only with a build to prove it; raise it only
-		     when Darlastic genuinely needs a newer API, deliberately, knowing that drops every host
-		     below the new floor. -->
-		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.9.30.2" />
+		     The floor is now 2026.10.7.2 (TypeAuth 1.6.30 in .Shared / .API), raised on purpose.
+		     The golden-customer surfaces mask name, phone and email with the framework's PII
+		     protection (PiiFieldDTO, [Pii], PiiDtoProtector, PiiOptions and the OData query guard).
+		     Those types first shipped in 2026.10.5.1, so no host below that can run this module.
+		     2026.10.7.2 is the version verified to build and test here. A floor between 2026.10.5.1
+		     and 2026.10.7.2 is untested; lower it only with a build to prove it. Hosts above the
+		     floor still resolve their own higher version, because a floor only ever widens. Raise it
+		     again only when Darlastic needs a newer API, knowing that drops every host below it. -->
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.10.7.2" />
 	</ItemGroup>
 </Project>

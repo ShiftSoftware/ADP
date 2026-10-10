@@ -1,0 +1,144 @@
+@namespace ShiftSoftware.ADP.Darlastic.Web.Components
+@using Microsoft.Extensions.DependencyInjection
+@using ShiftSoftware.ShiftEntity.Core.Pii
+@using ShiftSoftware.TypeAuth.Core
+@inject HttpClient Http
+@inject ITypeAuthService TypeAuth
+@inject IServiceProvider Services
+@inject IOptions<DarlasticWebOptions> DarlasticOptionsAccessor
+
+@*
+    One protected value in a read-only cell or caption. It shows the masked Display the server
+    sent. A user with the host's PII reveal permission also gets a small eye button, which asks
+    the server for the raw value of this one field on this one record and shows it in place.
+
+    The raw value lives only in this component instance. Nothing caches or stores it, and a new
+    row, member or wrapper from the server resets it to the mask.
+*@
+
+@* Inline styles, not a style block: this renders once per grid cell. *@
+<span style="display: inline-flex; align-items: center;" @onclick:stopPropagation="true">
+    <span>@(_revealed ? _revealedValue : Field?.Display)</span>
+    @if (ShowRevealButton)
+    {
+        <MudTooltip Text="Reveal">
+            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                           Size="Size.Small"
+                           Class="pa-0 ml-1"
+                           Disabled="_revealing"
+                           aria-label="Reveal protected value"
+                           OnClick="RevealAsync" />
+        </MudTooltip>
+    }
+    @if (_revealing)
+    {
+        <MudProgressCircular Indeterminate Size="Size.Small" Class="ml-1" Style="width: 14px; height: 14px;" />
+    }
+    @if (_error is not null)
+    {
+        <MudText Typo="Typo.caption" Color="Color.Error" Inline Class="ml-1">@_error</MudText>
+    }
+</span>
+
+@code {
+    /// <summary>The protected wrapper from the server. Only its masked Display is shown until reveal.</summary>
+    [Parameter]
+    public PiiFieldDTO? Field { get; set; }
+
+    /// <summary>The record key the reveal route takes (for a golden customer, its golden ID).</summary>
+    [Parameter, EditorRequired]
+    public string? RecordId { get; set; }
+
+    /// <summary>The DTO member name the server reveals, for example "FullName".</summary>
+    [Parameter, EditorRequired]
+    public string Member { get; set; } = default!;
+
+    /// <summary>
+    /// The resource the reveal route hangs off, relative to the HttpClient base address. The
+    /// request goes to <c>{Endpoint}/{RecordId}/pii/{Member}/reveal</c>. Defaults to the golden
+    /// customer endpoint under the module's route prefix.
+    /// </summary>
+    [Parameter]
+    public string? Endpoint { get; set; }
+
+    private bool _revealed;
+    private bool _revealing;
+    private string? _revealedValue;
+    private string? _error;
+    private long _requestVersion;
+
+    private string? _previousRecordId;
+    private string? _previousMember;
+    private PiiFieldDTO? _previousField;
+
+    // A masked Display of null means there is no value, so there is nothing to reveal.
+    private bool ShowRevealButton =>
+        !_revealed && Field?.Display is not null && !string.IsNullOrWhiteSpace(RecordId) && CanReveal;
+
+    // The host registers PiiOptions. A missing registration means no reveal.
+    private bool CanReveal =>
+        Services.GetService<IOptions<PiiOptions>>()?.Value.Action is { } action && TypeAuth.CanAccess(action);
+
+    private string ResolvedEndpoint =>
+        Endpoint ?? $"{DarlasticOptionsAccessor.Value.ResolvedRoutePrefix}GoldenCustomer";
+
+    protected override void OnParametersSet()
+    {
+        // A new row, member or wrapper means a new value. Drop anything revealed for the old one.
+        if (_previousRecordId != RecordId || _previousMember != Member || !ReferenceEquals(_previousField, Field))
+        {
+            _revealed = false;
+            _revealing = false;
+            _revealedValue = null;
+            _error = null;
+            _requestVersion++;
+        }
+
+        _previousRecordId = RecordId;
+        _previousMember = Member;
+        _previousField = Field;
+    }
+
+    private async Task RevealAsync()
+    {
+        if (_revealing || _revealed || !CanReveal || string.IsNullOrWhiteSpace(RecordId))
+            return;
+
+        _revealing = true;
+        _error = null;
+        var version = ++_requestVersion;
+
+        try
+        {
+            var url = $"{ResolvedEndpoint.TrimEnd('/')}/{Uri.EscapeDataString(RecordId)}/pii/{Uri.EscapeDataString(Member)}/reveal";
+            using var response = await Http.PostAsync(url, null);
+            if (version != _requestVersion)
+                return;
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = response.StatusCode == System.Net.HttpStatusCode.Forbidden
+                    ? "Not allowed"
+                    : "Could not reveal";
+                return;
+            }
+
+            var reveal = await response.Content.ReadFromJsonAsync<PiiRevealDTO>();
+            if (version != _requestVersion)
+                return;
+
+            _revealedValue = reveal?.Value;
+            _revealed = true;
+        }
+        catch (Exception)
+        {
+            if (version == _requestVersion)
+                _error = "Could not reveal";
+        }
+        finally
+        {
+            if (version == _requestVersion)
+                _revealing = false;
+        }
+    }
+}

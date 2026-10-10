@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ShiftSoftware.ADP.Darlastic.Data.Extensions;
 using ShiftSoftware.ADP.Darlastic.Shared.ActionTrees;
 using ShiftSoftware.ShiftEntity.Core;
+using ShiftSoftware.ShiftEntity.Core.Pii;
 using ShiftSoftware.ShiftEntity.EFCore;
 using ShiftSoftware.TypeAuth.AspNetCore;
 using ShiftSoftware.TypeAuth.AspNetCore.Extensions;
@@ -16,7 +17,7 @@ public static class DarlasticApiExtensions
     /// module pattern). The consumer is responsible for AddControllers, AddShiftEntityWeb,
     /// AddShiftIdentity, AddTypeAuth, etc. — this only wires Darlastic's own model contributor
     /// (so the host DbContext picks up the registry entities + golden view without registering
-    /// it manually), route convention, action tree, and application part.
+    /// it manually), route convention, action tree, application part, and the PII protector.
     ///
     /// The resolve ENGINE stays out of process (a host's sync agent / the dev spike) — these
     /// endpoints only read what it writes, which is why there are no repositories here.
@@ -34,6 +35,12 @@ public static class DarlasticApiExtensions
             services.Configure(configure);
 
         services.AddScoped<ShiftDbContext>(sp => sp.GetRequiredService<TDbContext>());
+
+        // The golden-customer endpoints mask name, phone and email with the framework's PII
+        // protection, so the protector must exist even in a host that forgot to register it.
+        // TryAdd-based, so a host's own call and its options still apply. The host decides who
+        // may reveal: it grants PiiOptions.Action (PiiActionTree.Reveal by default).
+        services.AddShiftEntityPii();
 
         // Registry model (tables + the GoldenCustomer view) lands in the host's DbContext model;
         // the host's own migrations create and version everything under options.Schema.

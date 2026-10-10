@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using ShiftSoftware.ADP.Darlastic.Shared.ActionTrees;
 using ShiftSoftware.ShiftBlazor.Extensions;
+using ShiftSoftware.ShiftEntity.Core.Pii;
 using ShiftSoftware.TypeAuth.Blazor;
 using ShiftSoftware.TypeAuth.Blazor.Extensions;
 
@@ -11,8 +12,8 @@ public static class DarlasticWebExtensions
     /// <summary>
     /// Registers Darlastic Blazor services into the consumer's DI container (the Menus/Surveys
     /// module pattern). The consumer is responsible for AddShiftBlazor, AddShiftIdentity,
-    /// AddTypeAuth, HttpClient, etc. — this only wires Darlastic's options, action tree, and
-    /// routing-discovery assembly.
+    /// AddTypeAuth, HttpClient, etc. — this only wires Darlastic's options, action tree,
+    /// routing-discovery assembly, and the PII options the reveal buttons read.
     /// </summary>
     public static IServiceCollection AddDarlasticBlazorServices(
         this IServiceCollection services,
@@ -31,6 +32,10 @@ public static class DarlasticWebExtensions
 
         // Register ADP.Darlastic.Web assembly for Blazor routing discovery
         services.Configure<AppStartupOptions>(o => o.AddAssembly(typeof(DarlasticWebExtensions).Assembly));
+
+        // The golden grid's reveal buttons read PiiOptions.Action. TryAdd-based, so a host's own
+        // call and its options still apply; this only makes sure the options exist.
+        services.AddShiftEntityPii();
 
         return services;
     }

@@ -30,7 +30,7 @@
 	<ItemGroup>
 		<!-- COMPATIBILITY FLOOR, not "the current version" — see the note in ADP.Darlastic.Data.csproj
 		     before changing either. -->
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.9.30.2" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.10.7.2" />
 		<PackageReference Include="ShiftSoftware.TypeAuth.Core" Version="1.6.30" />
 	</ItemGroup>
 </Project>

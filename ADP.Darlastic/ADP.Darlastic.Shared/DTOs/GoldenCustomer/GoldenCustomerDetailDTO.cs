@@ -1,3 +1,5 @@
+using ShiftSoftware.ShiftEntity.Model.Dtos;
+
 namespace ShiftSoftware.ADP.Darlastic.Shared.DTOs.GoldenCustomer;
 
 /// <summary>
@@ -22,6 +24,11 @@ namespace ShiftSoftware.ADP.Darlastic.Shared.DTOs.GoldenCustomer;
 /// them. <c>SourceProfile</c> carries identity assignment and a content hash, never attributes —
 /// only the originating host's own table holds a just-created record's name and phone. That is a
 /// deliberate boundary, not a gap to close by teaching this endpoint about host tables.</para>
+///
+/// <para>Name, phone, email and national ID are protected representations. This response always carries them
+/// masked, for every caller, whatever their permissions. The raw value of one field comes only from
+/// <c>POST GoldenCustomer/{id}/pii/{field}/reveal</c>, which needs the host's PII reveal
+/// permission.</para>
 /// </summary>
 public class GoldenCustomerDetailDTO
 {
@@ -40,8 +47,9 @@ public class GoldenCustomerDetailDTO
 
     /// <summary>
     /// The identity exists but has no staged golden yet — minted interactively since the last
-    /// resolve run. Every attribute below will be null; render the originating record's own values
-    /// and tell the operator this identity has not been unified yet.
+    /// resolve run. Every attribute below will be empty (null, or a protected wrapper whose Display
+    /// is null); render the originating record's own values and tell the operator this identity
+    /// has not been unified yet.
     /// </summary>
     public bool AwaitingResolve { get; set; }
 
@@ -49,11 +57,27 @@ public class GoldenCustomerDetailDTO
 
     // Survived attributes, extracted from the staged payload with the same last-wins-per-type rule
     // the Cosmos drain uses — so this endpoint, the view and the drained documents never disagree.
-    public string? FullName { get; set; }
-    public string? Phone { get; set; }
+
+    /// <summary>
+    /// Protected survived name. Masked in every response; raw only through reveal. A response
+    /// always carries the wrapper; its Display is null when the identity has no name.
+    /// </summary>
+    [Pii(PiiKind.Name)]
+    public PiiFieldDTO? FullName { get; set; }
+
+    /// <summary>Protected survived phone. Masked in every response; raw only through reveal.</summary>
+    [Pii(PiiKind.Phone)]
+    public PiiFieldDTO? Phone { get; set; }
+
     public string? City { get; set; }
-    public string? IDNumber { get; set; }
-    public string? Email { get; set; }
+
+    /// <summary>Protected survived national ID. Masked in every response; raw only through reveal.</summary>
+    [Pii(PiiKind.Identifier)]
+    public PiiFieldDTO? IDNumber { get; set; }
+
+    /// <summary>Protected survived email. Masked in every response; raw only through reveal.</summary>
+    [Pii(PiiKind.Email)]
+    public PiiFieldDTO? Email { get; set; }
 
     /// <summary>How many source records this identity unifies. 0 while awaiting resolve.</summary>
     public int SourceCount { get; set; }
