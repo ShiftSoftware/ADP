@@ -157,7 +157,7 @@ public static class RealMatcher
         else if (vinClass == VinClass.Transfer)
         {
             flags |= MatchFlags.VinTransfer;
-            trace?.Add("signal", "VIN", $"shared VIN ({sharedVin}) but disjoint periods with a sale between — ownership transfer (two people, P7) → no merge signal");
+            trace?.Add("signal", "VIN", $"shared VIN ({sharedVin}) but disjoint periods with a sale between — ownership transfer (two people) → no merge signal");
         }
         else if ((flags & MatchFlags.VinBoth) != 0)
             trace?.Add("signal", "VIN", "both sides carry VINs but none shared — no signal (a person may own several cars; never a penalty)");
@@ -263,7 +263,7 @@ public static class RealMatcher
                     $"name blend {nameSim:F2} < 0.30 and no shared token — completely different names → cap 0.55", conf);
             }
             else trace?.Add("gate", "Phone not decisive (given names differ)",
-                $"shared phone but the given names don't align (blend {nameSim:F2}) — siblings / father-son name order / unrelated; stays in the steward band, no floor", conf);
+                $"shared phone but the given names don't align (blend {nameSim:F2}) — siblings / father-son name order / unrelated; left for a person to review, no floor", conf);
         }
 
         // Address corroboration (2026-06-12; independently requested by a tenant as a match input).
@@ -394,7 +394,7 @@ public static class RealMatcher
                     "explicit FK + names consistent/aligned (or no name to contradict) → auto-merge floor", conf);
             }
             else trace?.Add("gate", "Same-entity reference held back",
-                "explicit FK but the names point to different people — possibly a ticket raised on the wrong customer record; steward band on the weighted base", conf);
+                "explicit FK but the names point to different people — possibly a ticket raised on the wrong customer record; left for review on the weighted base", conf);
         }
 
         // Shared e-mail → auto-merge floor, name-gated exactly like the sold-VIN and same-as rules. A
@@ -416,7 +416,7 @@ public static class RealMatcher
                     $"shared address ({sharedEmail}) + names consistent/aligned (or no name to contradict) → auto-merge floor", conf);
             }
             else trace?.Add("gate", "Shared e-mail held back",
-                $"shared address ({sharedEmail}) but the names point to different people — a mailbox gets entered on the wrong record, and a staff mailbox fronts several people; steward band on the weighted base", conf);
+                $"shared address ({sharedEmail}) but the names point to different people — a mailbox gets entered on the wrong record, and a staff mailbox fronts several people; left for review on the weighted base", conf);
         }
 
         // Conflict penalties — only on strong, plausibility-filtered evidence.
@@ -448,12 +448,12 @@ public static class RealMatcher
             }
         }
 
-        trace?.Add("decide", BandTitle(conf), $"final confidence {conf:F3} → {BandLabel(Band(conf))}", conf);
+        trace?.Add("decide", BandTitle(conf), $"final confidence {conf:F3}", conf);
         return conf;
     }
 
     private static string BandTitle(double conf) =>
-        conf >= 0.90 ? "Auto-merge" : conf >= 0.80 ? "Steward queue" : conf >= 0.50 ? "Tracked, not merged" : "Ignored";
+        conf >= 0.90 ? "Combined automatically" : conf >= 0.80 ? "Needs a person" : conf >= 0.50 ? "Tracked, not combined" : "Ignored";
 
     private static string SharedPhone(RealRecord a, RealRecord b) =>
         a.Phones.FirstOrDefault(p => b.Phones.Contains(p))

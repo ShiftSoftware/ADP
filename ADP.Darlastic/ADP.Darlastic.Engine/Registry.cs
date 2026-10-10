@@ -919,6 +919,9 @@ public static class Registry
             (edgesByRoot.TryGetValue(r, out var l) ? l : edgesByRoot[r] = []).Add(e);
         }
         var summaryRows = new List<(long Id, int Members, int Sources, string Name, long Cats)>();
+        // Per-golden evidence (the walk collected reasons per record): summarise EVERY identity, so a
+        // surface can list one row per golden customer. Without it, only the multi-record ones.
+        long[]? recordReasons = merge.RecordReasons;
 
         foreach (var root in orderedRoots)
         {
@@ -928,8 +931,9 @@ public static class Registry
             goldenName[id] = survived.FirstOrDefault(g => g.AttrType == "full_name")?.Value ?? "";
             Stage(ArtGolden, id.ToString(CultureInfo.InvariantCulture), GoldenCanonical(id, survived, Key, clusters[root]));
 
-            // Multi-record identities only: a single-record identity has nothing to explain.
-            if (members.Count > 1)
+            // Multi-record identities only, unless per-golden evidence was asked for: a single-record
+            // identity has no assembly story, but it still has a row in a customer list.
+            if (members.Count > 1 || recordReasons is not null)
             {
                 var cc = ClusterCat.None;
                 if (survived.Any(g => g.AttrType == "full_name" && g.WonBy == "longest-chain")) cc |= ClusterCat.LongestChain;
@@ -949,7 +953,15 @@ public static class Registry
                         cc |= ClusterCat.VinDecisive;
                 }
 
-                summaryRows.Add((id, members.Count, srcCount, goldenName[id], (long)cc));
+                long staged = (long)cc;
+                if (recordReasons is not null)
+                {
+                    var reasons = GoldenReasons.FromClusterCats(cc);
+                    foreach (var idx in clusters[root]) reasons |= (GoldenReason)recordReasons[idx];
+                    if (members.Count == 1) reasons |= GoldenReason.SingleRecord;
+                    staged = GoldenReasons.Pack(cc, reasons);
+                }
+                summaryRows.Add((id, members.Count, srcCount, goldenName[id], staged));
             }
 
             string gid = id.ToString(CultureInfo.InvariantCulture);
@@ -1112,7 +1124,7 @@ public static class Registry
         WriteIdentities(conn, tx, newIdentities, redirects, deactivated, reactivated, m.RunId);
         WriteProfiles(conn, tx, profileRows, removedKeys, m.RunId);
         WriteArtifacts(conn, tx, artifactRows, m.RunId);
-        WriteStewardQueue(conn, tx, records, merge.StewardPairs, merge.Catalog, m.RunId);
+        WriteStewardQueue(conn, tx, records, merge.StewardPairs, merge.Catalog, m.RunId, allRecords: recordReasons is not null);
         m.StewardQueued = merge.StewardPairs.Count;
         // Case evidence rides in the same transaction as the queue: both are derived state from the
         // same walk, and a run that committed one without the other would leave a surface showing
@@ -1359,18 +1371,22 @@ public static class Registry
     /// live trace recompute, instead of re-scoring the whole corpus in memory at startup (the
     /// case browser's minutes/GBs dev-loop shape). Replaced wholesale every run — the queue is a
     /// function of the run, not a delta-disciplined source artifact; IsZeroDelta ignores it.
+    ///
+    /// <para><paramref name="allRecords"/> (per-golden evidence) stages every record, so a surface
+    /// can show all the members of any golden customer, not only those that appear in a queued or
+    /// catalogued pair.</para>
     /// </summary>
     private static void WriteStewardQueue(SqlConnection conn, SqlTransaction tx,
         IReadOnlyList<RealRecord> records, List<(int A, int B, float Score)> pairs,
-        List<Merge.CatalogEntry> catalog, int runId)
+        List<Merge.CatalogEntry> catalog, int runId, bool allRecords = false)
     {
         Exec(conn, tx, "DELETE FROM Darlastic.StewardQueue; DELETE FROM Darlastic.StewardRecord");
-        if (pairs.Count == 0 && catalog.Count == 0) return;
+        if (pairs.Count == 0 && catalog.Count == 0 && !allRecords) return;
 
         // StewardRecord backs BOTH the queue and the catalog: a catalogued case is unreadable
         // without its two records, and re-reading the sources to render one is exactly the cost
         // this staging exists to avoid.
-        var recIdxs = new HashSet<int>();
+        var recIdxs = allRecords ? new HashSet<int>(Enumerable.Range(0, records.Count)) : new HashSet<int>();
         foreach (var p in pairs) { recIdxs.Add(p.A); recIdxs.Add(p.B); }
         foreach (var c in catalog) { recIdxs.Add(c.A); recIdxs.Add(c.B); }
 
@@ -1411,7 +1427,9 @@ public static class Registry
     /// </summary>
     /// <summary>
     /// Persist the per-identity browsing summary. Multi-record identities only — at production scale that
-    /// is ~249K rows out of 919K identities, and the 670K single-record ones have nothing to say.
+    /// is ~249K rows out of 919K identities, and the 670K single-record ones have nothing to say —
+    /// unless the run collected per-golden evidence, in which case every identity has a row and
+    /// <c>Categories</c> carries its <see cref="GoldenReason"/>s in the high 32 bits.
     /// </summary>
     private static void WriteIdentitySummaries(SqlConnection conn, SqlTransaction tx,
         List<(long Id, int Members, int Sources, string Name, long Cats)> rows, int runId)

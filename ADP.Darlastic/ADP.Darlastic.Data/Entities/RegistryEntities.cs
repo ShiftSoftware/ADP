@@ -184,8 +184,10 @@ public class CaseCatalogEntry
 /// spelling" and "a shared sold VIN merged records that name and phone alone could not" are facts
 /// known only while survivorship and scoring are running.</para>
 ///
-/// <para>Multi-record identities only: a single-record identity has nothing to explain, and
-/// including them would put a row here for two thirds of the corpus to say so.</para>
+/// <para>Multi-record identities only by default: a single-record identity has nothing to explain,
+/// and including them would put a row here for two thirds of the corpus to say so. A resolve run
+/// with per-golden evidence writes a row for EVERY identity instead, which is what a one-row-per-
+/// golden customer list reads.</para>
 ///
 /// <para>Derived state, rewritten wholesale each resolve.</para>
 /// </summary>
@@ -202,7 +204,11 @@ public class IdentitySummary
     /// <summary>The survived full name, as the golden carries it.</summary>
     public string? GoldenName { get; set; }
 
-    /// <summary>The engine's <c>ClusterCat</c> bitmask.</summary>
+    /// <summary>
+    /// Two bitmasks in one column. The low 32 bits are the engine's <c>ClusterCat</c>; the high 32
+    /// bits are its <c>GoldenReason</c>s, written only by a run with per-golden evidence. A reader
+    /// that only knows the cluster categories masks the low half and is unaffected.
+    /// </summary>
     public long Categories { get; set; }
 }
 
