@@ -28,6 +28,82 @@ public static class Flags
     /// </summary>
     public static bool EmailMatching { get; set; } =
         Environment.GetEnvironmentVariable("DARLASTIC_EMAIL_MATCHING") == "1";
+
+    // ---- per-tenant name-structure and clustering rules. All four are OFF by default, and a tenant
+    // that never sets them scores and clusters exactly as before. Settable for the same reason as
+    // EmailMatching: they are run-scoped tenant configuration, and tests toggle them per case.
+
+    /// <summary>
+    /// PER-TENANT: read the feed-supplied name parts <see cref="RealRecord.GivenName"/> and
+    /// <see cref="RealRecord.FamilyName"/>. Meant for naming conventions where the family name is a
+    /// fixed, inherited surname rather than one more slice of a name chain. Two effects, both only
+    /// when BOTH records carry the part in question:
+    ///   - family names that do not align → the given-name-only floors (shared phone, chain-slice
+    ///     address rescue, e-mail and same-as given-only) are withheld and the pair is held below the
+    ///     line: same given name + different surname on a shared phone is two namesakes;
+    ///   - given names that do not align → no floor at all and the pair is held below the steward
+    ///     line: distinct given names with one surname on one phone are relatives, not a duplicate.
+    /// A part typed into the other field (given and family swapped) is tolerated, not a conflict.
+    /// Records without parts are unaffected, so a feed can supply them only where it knows them.
+    /// </summary>
+    public static bool StructuredNames { get; set; } =
+        Environment.GetEnvironmentVariable("DARLASTIC_STRUCTURED_NAMES") == "1";
+
+    /// <summary>
+    /// PER-TENANT: name consistency aligns tokens ONE-TO-ONE. By default every token of the shorter
+    /// name may align to ANY token of the longer one, so a given name contained in the family name
+    /// ("Name Nameson") aligns twice and is "consistent" with every relative carrying that family
+    /// name. On makes each token of the longer name usable once.
+    /// </summary>
+    public static bool StrictTokenAlignment { get; set; } =
+        Environment.GetEnvironmentVariable("DARLASTIC_STRICT_TOKEN_ALIGNMENT") == "1";
+
+    /// <summary>
+    /// PER-TENANT: a record with no usable name needs more than one key to auto-merge. On:
+    ///   - an exact shared phone that is the ONLY positive signal is damped ×0.70, mirroring the
+    ///     name-only damp (a dealer, fleet or family phone carries nameless purchases of many people);
+    ///   - the sold-VIN floor is withheld for a nameless pair whose phones are both present and differ.
+    /// </summary>
+    public static bool NamelessNeedsCorroboration { get; set; } =
+        Environment.GetEnvironmentVariable("DARLASTIC_NAMELESS_CORROBORATION") == "1";
+
+    /// <summary>
+    /// PER-TENANT: the matcher's own "two different people" verdicts (name conflict, national-ID
+    /// conflict and, with <see cref="StructuredNames"/>, given/family-name conflicts) become
+    /// cannot-link constraints in clustering. Auto-merge edges are then applied strongest first, and an
+    /// edge whose union would put a cannot-link pair into one identity is skipped: one record with a
+    /// partial name (surname only, patronymic only) can no longer chain two relatives into one golden.
+    /// </summary>
+    public static bool ConflictAwareClustering { get; set; } =
+        Environment.GetEnvironmentVariable("DARLASTIC_CONFLICT_AWARE_CLUSTERING") == "1";
+
+    /// <summary>
+    /// PER-TENANT: two ORGANISATION names (each carries an organisation token) that are consistent
+    /// token by token on a shared exact phone are one organisation → floor 0.91. Also when only one
+    /// side carries the token and the other side's two or more words are all the organisation's own
+    /// words (the same organisation written without its legal form). By default every pair touching an organisation
+    /// name only gets the weighted base, so word-order and legal-form variants of one organisation
+    /// land in the steward queue. A one-word person name next to an organisation is never floored.
+    /// </summary>
+    public static bool OrgNameMerge { get; set; } =
+        Environment.GetEnvironmentVariable("DARLASTIC_ORG_NAME_MERGE") == "1";
+
+    /// <summary>
+    /// PER-TENANT: a shared SERVICED VIN is decisive when the names are fully consistent (every token
+    /// of the shorter aligns) and both carry two or more words → floor 0.91, even when the phones differ
+    /// or one is missing. By default a serviced VIN only corroborates, because the person at a service
+    /// visit may be a relative, a driver or a new owner — all of whom carry a different name; the full
+    /// name answers that objection, and people change and drop phone numbers far more than names.
+    /// </summary>
+    public static bool ServicedVinNameFloor { get; set; } =
+        Environment.GetEnvironmentVariable("DARLASTIC_SERVICED_VIN_NAME_FLOOR") == "1";
+
+    /// <summary>
+    /// PER-TENANT: extra spelling equivalences for name-token alignment, as (from, to) pairs applied
+    /// in order after the built-in interdental fold — two romanizations of one letter in the tenant's
+    /// scripts. Comparison only: stored and displayed names never change. Empty by default.
+    /// </summary>
+    public static IReadOnlyList<(string From, string To)> TokenFolds { get; set; } = [];
 }
 
 

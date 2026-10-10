@@ -205,6 +205,39 @@ public static class RealMatcher
             trace?.Add("gate", "Name-only damp", "name is the only signal — never auto-merge on name alone (hyper-common short names repeat 80+ times per dealer) → ×0.70", conf);
         }
 
+        // The mirror image (Flags.NamelessNeedsCorroboration; off by default): never auto-merge on a
+        // phone alone when there is no name to confirm it. A record without a usable name scores a
+        // perfect 1.00 on a shared phone because the phone is then its only comparable attribute — and
+        // the phones such records share are the dealer, fleet and family lines that carry nameless
+        // purchases of many people. A shared VIN, e-mail, reference or ID still corroborates.
+        if (Flags.NamelessNeedsCorroboration && !Flags.Baseline && !namesBoth && phoneExact
+            && !vinPositive && !emailExact && !sameAsLinked && !idEqual)
+        {
+            conf *= 0.70;
+            flags |= MatchFlags.NamelessHeld;
+            trace?.Add("gate", "Nameless, phone only",
+                "a side has no usable name and the shared phone is the only positive signal — a phone alone is not identity evidence for a nameless record → ×0.70", conf);
+        }
+
+        // Structured name parts (Flags.StructuredNames; off by default). Where the feed knows the given
+        // and family name, a conflict in either is a decision about two people, not drift to be floored
+        // over: same given + different surname on one phone is two namesakes, distinct given names on
+        // one phone are relatives. Every person floor below is withheld and the pair is capped at the end.
+        var parts = Flags.StructuredNames && !Flags.Baseline ? CompareNameParts(a, b) : PartsVerdict.Unknown;
+        bool partsVeto = parts is PartsVerdict.GivenConflict or PartsVerdict.FamilyConflict;
+        if (parts == PartsVerdict.GivenConflict)
+        {
+            flags |= MatchFlags.GivenNameConflict;
+            trace?.Add("gate", "Given names differ (structured)",
+                $"given \"{a.GivenName}\" vs \"{b.GivenName}\" do not align — relatives or strangers, not a spelling variant; no floor, held below the steward line", conf);
+        }
+        else if (parts == PartsVerdict.FamilyConflict)
+        {
+            flags |= MatchFlags.FamilyNameConflict;
+            trace?.Add("gate", "Family names differ (structured)",
+                $"family \"{a.FamilyName}\" vs \"{b.FamilyName}\" do not align — a shared given name is a namesake, not the same person; no floor, held below the line", conf);
+        }
+
         // Name-aware phone decisiveness (review 2026-06-08). Phone is the king key, but equal
         // 0.45/0.45 weighting let a fuzzy name VETO an exact phone — 177 true matches with a
         // shared phone + spelling/token drift ('Hazim Jabir' / 'Hazem Jaber', 'Salam' /
@@ -227,8 +260,34 @@ public static class RealMatcher
                 // Rozhbian), so the same-given-name person-merge must NOT apply. Left at the weighted
                 // base (lands near-miss/steward, not auto-merge) pending the org-entity track.
                 flags |= MatchFlags.OrgLine;
-                trace?.Add("gate", "Business / organization line",
+                if (Flags.OrgNameMerge && !Flags.Baseline && OrgNamesConsistent(a.NormName, b.NormName))
+                {
+                    // One organisation written two ways (word order, legal form, drift). A side
+                    // without an organisation token must consist of the organisation's own words, two
+                    // or more — never a lone person name beside a company.
+                    nameConsistent = true;
+                    flags |= MatchFlags.NameConsistent;
+                    conf = Math.Max(conf, 0.91);
+                    trace?.Add("gate", "Organisation names consistent",
+                        "both names are one organisation's (every token of the shorter aligns into the longer) on a shared phone → floor 0.91", conf);
+                }
+                else trace?.Add("gate", "Business / organization line",
                     "an org name (Company/Group/Stock/Parts/Show Room) shares this phone — a company line, not one person; person-merge floor withheld (identical org names still merge on the weighted base — a placeholder-entity filter is the real fix)", conf);
+            }
+            else if (partsVeto)
+            {
+                // The structured verdict above already decided "two people"; completely unrelated
+                // names still take the stricter name-conflict cap.
+                if (NameConflict(a.NormName, b.NormName, nameSim))
+                {
+                    nameConflict = true;
+                    flags |= MatchFlags.NameConflictCap;
+                    conf = Math.Min(conf, 0.55);
+                    trace?.Add("gate", "Name conflict (no shared token, no similarity)",
+                        $"name blend {nameSim:F2} < 0.30 and no shared token — completely different names → cap 0.55", conf);
+                }
+                else trace?.Add("gate", "Phone not decisive (name parts conflict)",
+                    "shared phone, but the given or family names conflict — no floor", conf);
             }
             else if (NameConsistent(a.NormName, b.NormName))
             {
@@ -314,7 +373,7 @@ public static class RealMatcher
                 // cleared 0.60 on repeated city tokens — corpus diagnostic 2026-06-12); district
                 // evidence is what makes a same-given-name pair one person, so the rescue requires
                 // the DISTRICT to match, not the city pattern.
-                if (phoneExact && !nameConsistent && namesBoth && FirstTokensAlign(a.NormName, b.NormName))
+                if (phoneExact && !nameConsistent && namesBoth && !partsVeto && FirstTokensAlign(a.NormName, b.NormName))
                 {
                     string subA = SubCityRemainder(a), subB = SubCityRemainder(b);
                     if (subA.Length >= 4 && subB.Length >= 4
@@ -363,7 +422,21 @@ public static class RealMatcher
             // keeps only the weighted sold contribution (lands near-miss / steward) and is flagged, but does
             // NOT auto-merge. Chain-slice (12 gold 'same', 0 'different') stays 0.91. Loosening back to
             // given-only is a pending expert call.
-            if (!namesBoth || NameConsistent(a.NormName, b.NormName))
+            // Nameless counterpart of the name gate (Flags.NamelessNeedsCorroboration): with no name on
+            // a side, the sold VIN is the only identity evidence, and phones that are present on both
+            // sides and differ contradict it (a buyer's car brought in by someone else) — no floor.
+            bool namelessPhonesDiffer = Flags.NamelessNeedsCorroboration && !namesBoth && phonesBoth
+                && !phoneExact && !phoneSuffix && !emailExact;
+            if (partsVeto)
+                trace?.Add("vin", "Shared sold VIN, name parts conflict",
+                    $"shared sold VIN ({sharedVin}) but the given or family names conflict — a car is shared by relatives / resale; no floor", conf);
+            else if (namelessPhonesDiffer)
+            {
+                flags |= MatchFlags.NamelessHeld;
+                trace?.Add("vin", "Shared sold VIN, nameless side, phones differ",
+                    $"shared sold VIN ({sharedVin}) is the only identity evidence for a nameless record, and the phones on both sides differ — no floor", conf);
+            }
+            else if (!namesBoth || NameConsistent(a.NormName, b.NormName))
             {
                 conf = Math.Max(conf, 0.91);
                 flags |= MatchFlags.VinSoldMerge;
@@ -377,6 +450,20 @@ public static class RealMatcher
                 $"shared sold VIN ({sharedVin}) but the names point to different people — corroboration only, no auto-merge floor", conf);
         }
 
+        // Shared SERVICED VIN + the same full name (Flags.ServicedVinNameFloor; off by default). The
+        // serviced-VIN objection is "the visitor may be a relative, a driver or a new owner"; a fully
+        // consistent name of two or more words on both sides answers it, so the phone no longer has to.
+        if (Flags.ServicedVinNameFloor && !Flags.Baseline && useVin && vinClass == VinClass.Serviced && namesBoth
+            && !partsVeto && conf < 0.91
+            && NameTokens(a.NormName).Length >= 2 && NameTokens(b.NormName).Length >= 2
+            && NameConsistent(a.NormName, b.NormName))
+        {
+            conf = 0.91;
+            flags |= MatchFlags.ServicedVinNameMerge;
+            trace?.Add("vin", "Shared serviced VIN + the same full name",
+                $"shared serviced VIN ({sharedVin}) and every word of the shorter name aligns (two or more words each) — not a relative or driver; phones may differ → floor 0.91", conf);
+        }
+
         // Same-entity reference → auto-merge floor, name-gated exactly like the sold-VIN rule: the
         // FK is decisive when the names are fully consistent OR there is no usable name to
         // contradict it (a validated-fake lead name is blanked at ingest, leaving the FK + phone to
@@ -386,7 +473,7 @@ public static class RealMatcher
         // customer record, and a stale FK after a number/name change looks exactly like that.
         if (sameAsLinked)
         {
-            if (!namesBoth || NameConsistent(a.NormName, b.NormName) || GivenNamesMatch(a.NormName, b.NormName))
+            if (!partsVeto && (!namesBoth || NameConsistent(a.NormName, b.NormName) || GivenNamesMatch(a.NormName, b.NormName)))
             {
                 conf = Math.Max(conf, namesBoth && NameConsistent(a.NormName, b.NormName) ? 0.95 : 0.91);
                 flags |= MatchFlags.SameAsMerge;
@@ -408,7 +495,7 @@ public static class RealMatcher
         // Sits before the conflict penalties so a national-ID conflict still crushes it (×0.3).
         if (emailExact)
         {
-            if (!namesBoth || NameConsistent(a.NormName, b.NormName) || GivenNamesMatch(a.NormName, b.NormName))
+            if (!partsVeto && (!namesBoth || NameConsistent(a.NormName, b.NormName) || GivenNamesMatch(a.NormName, b.NormName)))
             {
                 conf = Math.Max(conf, namesBoth && NameConsistent(a.NormName, b.NormName) ? 0.95 : 0.91);
                 flags |= MatchFlags.EmailMerge;
@@ -448,8 +535,56 @@ public static class RealMatcher
             }
         }
 
+        // Last, so no boost above (address, DOB) can lift a structured name conflict back into the
+        // steward band: the pair is decided, and a queue full of obvious relatives is queue noise.
+        if (partsVeto && conf > PartsConflictCap)
+        {
+            conf = PartsConflictCap;
+            trace?.Add("conflict", "Name parts conflict cap",
+                $"given or family names conflict — two people; held at {PartsConflictCap:F2}, below the steward line", conf);
+        }
+
         trace?.Add("decide", BandTitle(conf), $"final confidence {conf:F3} → {BandLabel(Band(conf))}", conf);
         return conf;
+    }
+
+    /// <summary>Where a structured given/family-name conflict holds a pair (Flags.StructuredNames):
+    /// below the steward line, inside the near-miss band so the pair stays browsable.</summary>
+    public const double PartsConflictCap = 0.75;
+
+    private enum PartsVerdict { Unknown, Agree, GivenConflict, FamilyConflict }
+
+    /// <summary>
+    /// Compare the feed-supplied name parts (Flags.StructuredNames). A part is compared only when both
+    /// records carry it. A part typed into the other field explains a difference instead of making
+    /// one: with both parts on both sides the given and family names must match crosswise; with a part
+    /// missing on one side, either crosswise match is enough (a lone given field holding the surname).
+    /// </summary>
+    private static PartsVerdict CompareNameParts(RealRecord a, RealRecord b)
+    {
+        string? ga = Part(a.GivenName), gb = Part(b.GivenName), fa = Part(a.FamilyName), fb = Part(b.FamilyName);
+        bool givenBoth = ga is not null && gb is not null, familyBoth = fa is not null && fb is not null;
+        if (!givenBoth && !familyBoth) return PartsVerdict.Unknown;
+        bool givenOk = !givenBoth || NamePartsAlign(ga!, gb!);
+        bool familyOk = !familyBoth || NamePartsAlign(fa!, fb!);
+        if (givenOk && familyOk) return PartsVerdict.Agree;
+
+        bool swapped = ga is not null && fa is not null && gb is not null && fb is not null
+            ? NamePartsAlign(ga, fb) && NamePartsAlign(fa, gb)
+            : (ga is not null && fb is not null && NamePartsAlign(ga, fb)) || (gb is not null && fa is not null && NamePartsAlign(gb, fa));
+        if (swapped) return PartsVerdict.Agree;
+        return !givenOk ? PartsVerdict.GivenConflict : PartsVerdict.FamilyConflict;
+
+        static string? Part(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
+    }
+
+    /// <summary>Two name parts are one person's: the shared token rule, or romanization drift at the
+    /// given-name bar (Jaro-Winkler ≥ 0.80 with consonant skeletons at most one edit apart). A
+    /// multi-token part is compared with <see cref="NameConsistent"/>.</summary>
+    public static bool NamePartsAlign(string x, string y)
+    {
+        if (x.Contains(' ') || y.Contains(' ')) return NameConsistent(x, y);
+        return TokensAlign(x, y) || (Sim.JaroWinkler(x, y) >= 0.80 && SkeletonDistance(x, y) <= 1);
     }
 
     private static string BandTitle(double conf) =>
@@ -478,7 +613,32 @@ public static class RealMatcher
             string tok = small[0];
             return big.Count(t => t == tok) >= small.Length;
         }
+        if (Flags.StrictTokenAlignment && !Flags.Baseline) return AlignsOneToOne(small, big);
         return small.All(t => big.Any(u => TokensAlign(t, u)));
+    }
+
+    /// <summary>Flags.StrictTokenAlignment: every token of <paramref name="small"/> aligns to its OWN
+    /// token of <paramref name="big"/> (bipartite matching, augmenting paths). The default any-to-any
+    /// test lets a given name contained in the family name ('Name' in 'Nameson') align twice, which
+    /// makes 'Name Nameson' consistent with every 'Other Nameson' on the same phone.</summary>
+    private static bool AlignsOneToOne(string[] small, string[] big)
+    {
+        var owner = new int[big.Length];
+        Array.Fill(owner, -1);
+        for (int i = 0; i < small.Length; i++)
+            if (!Augment(i, new bool[big.Length])) return false;
+        return true;
+
+        bool Augment(int i, bool[] seen)
+        {
+            for (int j = 0; j < big.Length; j++)
+            {
+                if (seen[j] || !TokensAlign(small[i], big[j])) continue;
+                seen[j] = true;
+                if (owner[j] < 0 || Augment(owner[j], seen)) { owner[j] = i; return true; }
+            }
+            return false;
+        }
     }
 
     // The address minus its own city tokens and 'al' articles — the district/street part that
@@ -609,10 +769,20 @@ public static class RealMatcher
     // TokensAlign's fuzzy comparison — it never rewrites a stored or displayed name. 'th' here is
     // the ظ/ذ romanization; a genuine 'th'=ث name (Othman, Haitham) only collides if every OTHER
     // letter already matches, which the gold-set + corpus face-validity gates check.
-    private static string Canon(string t) =>
-        t.Contains("dh") || t.Contains("th") || t.Contains("zh")
+    private static string Canon(string t)
+    {
+        string c = t.Contains("dh") || t.Contains("th") || t.Contains("zh")
             ? t.Replace("dh", "z").Replace("th", "z").Replace("zh", "z")
             : t;
+        // Tenant equivalences (Flags.TokenFolds; empty by default, so the fast path above is the whole
+        // story for a tenant that sets none). Same contract: the same instance back when nothing changed.
+        var folds = Flags.TokenFolds;
+        if (folds.Count == 0 || Flags.Baseline) return c;
+        string f = c;
+        foreach (var (from, to) in folds)
+            if (f.Contains(from, StringComparison.Ordinal)) f = f.Replace(from, to, StringComparison.Ordinal);
+        return f == c ? c : f;
+    }
 
     private static string Skeleton(string t)
     {
@@ -657,6 +827,34 @@ public static class RealMatcher
         ["company", "group", "grop", "stock", "motors", "trading", "showroom", "factory", "sharika", "parts"];
     private static bool IsLikelyOrg(string normName) =>
         normName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Any(OrgTokens.Contains);
+
+    /// <summary>Flags.OrgNameMerge: two names of one organisation. Both organisation-named and
+    /// consistent (their organisation tokens align to each other); or the other side's two or more
+    /// words are all the organisation's own words (its organisation tokens set aside) — the
+    /// organisation written without its legal form, possibly shortened. Either way, a name written
+    /// with its words joined counts as the same words.</summary>
+    private static bool OrgNamesConsistent(string a, string b)
+    {
+        bool orgA = IsLikelyOrg(a), orgB = IsLikelyOrg(b);
+        if (orgA && orgB) return NameConsistent(a, b) || JoinedAlign(OrgCore(a), OrgCore(b));
+        string org = orgA ? a : b, other = orgA ? b : a;
+        var otherTokens = NameTokens(other);
+        if (otherTokens.Length < 2) return false;
+        var orgCore = OrgCore(org);
+        return orgCore.Length > 0
+            && ((NameTokens(orgCore).Length >= otherTokens.Length && NameConsistent(other, orgCore)) || JoinedAlign(orgCore, other));
+
+        static string OrgCore(string n) => string.Join(' ', NameTokens(n).Where(t => !OrgTokens.Contains(t)));
+
+        // One name written with and without the spaces between its words ('brim vale' /
+        // 'brimvale'): equal, or near-equal at a strict bar, once the spaces are gone. Long
+        // strings only; containment is deliberately NOT enough here.
+        static bool JoinedAlign(string x, string y)
+        {
+            string jx = x.Replace(" ", ""), jy = y.Replace(" ", "");
+            return jx.Length >= 6 && jy.Length >= 6 && (jx == jy || Sim.JaroWinkler(jx, jy) >= 0.92);
+        }
+    }
 
     // Role / shared mailboxes: ONE address that fronts MANY people, so it is contact information but
     // never identity evidence. This is the only guard e-mail needs — and, on the real corpus, the only

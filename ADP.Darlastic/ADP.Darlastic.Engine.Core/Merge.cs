@@ -63,6 +63,11 @@ public static class Merge
         /// set that silently stops applying is indistinguishable from one that never worked.</summary>
         public int StewardUnmatchedConstraints;
 
+        /// <summary>Flags.ConflictAwareClustering: candidate pairs the matcher itself judged to be two
+        /// people (the cannot-link constraints), and the auto-merge edges skipped because applying them
+        /// would have put such a pair into one identity. Both 0 when the option is off.</summary>
+        public int CannotLinkPairs, ConflictBlockedEdges;
+
         // ---------------------------------------------------------------- case evidence
         // The resolve's pair walk is the ONLY pass that sees the whole corpus. Everything below is
         // collected during it because no later query can recover it: a surface that re-derives
@@ -172,6 +177,26 @@ public static class Merge
         var steward = new List<(int, int, float)>();
         var seen = new HashSet<long>();
 
+        // Flags.ConflictAwareClustering: the walk only COLLECTS auto-merge edges and the matcher's own
+        // "two people" verdicts; the unions happen after it, strongest edge first, refusing any union
+        // that would join a cannot-link pair. Off, the walk unions in place exactly as before.
+        bool conflictAware = Flags.ConflictAwareClustering;
+        var deferred = conflictAware ? new List<(int A, int B, double Score, MatchFlags Flags)>() : null;
+        var cannotLink = conflictAware ? new Dictionary<int, List<int>>() : null;
+        int cannotLinkPairs = 0;
+        // A steward's "different" is the strongest such verdict: under the option it also keeps the
+        // pair from being chained together through third records, not only off this one edge.
+        if (cannotLink is not null)
+            foreach (var packed in forcedSeparate.OrderBy(p => p))
+                AddCannotLink((int)(packed >> 32), (int)(uint)packed);
+
+        void AddCannotLink(int a, int b)
+        {
+            (cannotLink!.TryGetValue(a, out var la) ? la : cannotLink[a] = []).Add(b);
+            (cannotLink.TryGetValue(b, out var lb) ? lb : cannotLink[b] = []).Add(a);
+            cannotLinkPairs++;
+        }
+
         // Case evidence, collected in this same walk. The flags overload of Score costs nothing —
         // MatchFlags are bit-ors already set on ScoreCore's own path — so categorising here is a
         // dictionary bump per decision-relevant pair, not a second scoring pass.
@@ -207,10 +232,13 @@ public static class Merge
                         if (keep) catalog.Add(new CatalogEntry(a, b, (float)s, flags, cats));
                     }
 
+                    if (cannotLink is not null && (flags & CannotLinkFlags) != 0) AddCannotLink(a, b);
+
                     if (s >= mergeThreshold)
                     {
                         // A steward who said "different" outranks the score on THIS edge.
                         if (forcedSeparate.Contains(packed)) { vetoed++; continue; }
+                        if (deferred is not null) { deferred.Add((a, b, s, flags)); continue; }
                         uf.Union(a, b); edges++;
                         // Recorded even when the Union is redundant (both already joined via a
                         // third record): corroborating edges are evidence a steward reads, and
@@ -227,7 +255,11 @@ public static class Merge
         // Steward "same" verdicts union AFTER the score walk and BEFORE the transitive filter
         // below, so a pair the steward settled also settles every band pair it transitively
         // resolves — the human's decision propagates exactly as an auto-merge edge would.
+        // Under conflict-aware clustering they go first: a human verdict is not subject to the
+        // matcher's constraints, and the constrained edges then see the clusters it made.
         foreach (var (a, b) in forcedMerge) if (uf.Union(a, b)) edges++;
+
+        int blocked = deferred is null ? 0 : UnionWithCannotLink(uf, deferred, cannotLink!, mergeEdges, ref edges);
 
         // A pair judged [0.80,0.90) can still land in the SAME identity via other edges
         // (transitive auto-merge) — that is a settled question, not steward work. Filter when
@@ -251,6 +283,8 @@ public static class Merge
             StewardVetoedEdges = vetoed,
             StewardSuppressedPairs = suppressed,
             StewardUnmatchedConstraints = unmatched,
+            CannotLinkPairs = cannotLinkPairs,
+            ConflictBlockedEdges = blocked,
             AutoMergeEdgeList = mergeEdges,
             CategoryCounts = catCounts,
             Catalog = catalog,
@@ -258,6 +292,69 @@ public static class Merge
         };
         foreach (var v in size.Values) result.ClusterSizeHistogram[v] = result.ClusterSizeHistogram.GetValueOrDefault(v) + 1;
         return result;
+    }
+
+    /// <summary>The matcher's "two different people" verdicts — the cannot-link constraints of
+    /// <see cref="Flags.ConflictAwareClustering"/>. The structured name-part conflicts only ever fire
+    /// under <see cref="Flags.StructuredNames"/>.</summary>
+    public const MatchFlags CannotLinkFlags = MatchFlags.NameConflictCap | MatchFlags.IdConflict
+        | MatchFlags.GivenNameConflict | MatchFlags.FamilyNameConflict;
+
+    /// <summary>
+    /// Conflict-aware union (<see cref="Flags.ConflictAwareClustering"/>). Edges are applied strongest
+    /// first (ties in record order, so the result is deterministic); an edge between two clusters that
+    /// would put a cannot-link pair into one identity is skipped and counted. Applied and redundant
+    /// edges are recorded exactly as the in-walk union records them; skipped ones are not, because they
+    /// did not merge anything. The typical skip is a record with a partial name (surname only,
+    /// patronymic only) whose consistent-name edges reach two relatives: it joins the cluster its
+    /// strongest edge points at, and the relatives stay apart.
+    /// </summary>
+    private static int UnionWithCannotLink(UnionFind uf, List<(int A, int B, double Score, MatchFlags Flags)> edges,
+        Dictionary<int, List<int>> cannotLink, List<MergeEdge> mergeEdges, ref long edgeCount)
+    {
+        edges.Sort((x, y) =>
+        {
+            int c = y.Score.CompareTo(x.Score);
+            if (c == 0) c = x.A.CompareTo(y.A);
+            return c != 0 ? c : x.B.CompareTo(y.B);
+        });
+
+        // Constrained members per current root: only records that carry a cannot-link can block.
+        var constrained = new Dictionary<int, List<int>>();
+        foreach (var r in cannotLink.Keys)
+        {
+            int root = uf.Find(r);
+            (constrained.TryGetValue(root, out var l) ? l : constrained[root] = []).Add(r);
+        }
+
+        int blocked = 0;
+        foreach (var (a, b, s, f) in edges)
+        {
+            int ra = uf.Find(a), rb = uf.Find(b);
+            if (ra != rb)
+            {
+                if (Conflicts(ra, rb)) { blocked++; continue; }
+                uf.Union(a, b);
+                int root = uf.Find(a), other = root == ra ? rb : ra;
+                if (constrained.Remove(other, out var moved))
+                    (constrained.TryGetValue(root, out var l) ? l : constrained[root] = []).AddRange(moved);
+            }
+            edgeCount++;
+            mergeEdges.Add(new MergeEdge(a, b, (float)s, f));
+        }
+        return blocked;
+
+        // A cannot-link between two clusters needs a constrained member on each side; walk the
+        // smaller side's constrained members and look for a partner inside the other cluster.
+        bool Conflicts(int ra, int rb)
+        {
+            if (!constrained.TryGetValue(ra, out var la) || !constrained.TryGetValue(rb, out var lb)) return false;
+            var (members, otherRoot) = la.Count <= lb.Count ? (la, rb) : (lb, ra);
+            foreach (var m in members)
+                foreach (var p in cannotLink[m])
+                    if (uf.Find(p) == otherRoot) return true;
+            return false;
+        }
     }
 
     /// <summary>
