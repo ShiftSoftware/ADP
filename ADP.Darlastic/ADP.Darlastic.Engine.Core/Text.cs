@@ -28,6 +28,149 @@ public static class Flags
     /// </summary>
     public static bool EmailMatching { get; set; } =
         Environment.GetEnvironmentVariable("DARLASTIC_EMAIL_MATCHING") == "1";
+
+    // ---- per-tenant name-structure and clustering rules. All four are OFF by default, and a tenant
+    // that never sets them scores and clusters exactly as before. Settable for the same reason as
+    // EmailMatching: they are run-scoped tenant configuration, and tests toggle them per case.
+
+    /// <summary>
+    /// PER-TENANT: read the feed-supplied name parts <see cref="RealRecord.GivenName"/> and
+    /// <see cref="RealRecord.FamilyName"/>. Meant for naming conventions where the family name is a
+    /// fixed, inherited surname rather than one more slice of a name chain. Two effects, both only
+    /// when BOTH records carry the part in question:
+    ///   - family names that do not align → the given-name-only floors (shared phone, chain-slice
+    ///     address rescue, e-mail and same-as given-only) are withheld and the pair is held below the
+    ///     line: same given name + different surname on a shared phone is two namesakes;
+    ///   - given names that do not align → no floor at all and the pair is held below the steward
+    ///     line: distinct given names with one surname on one phone are relatives, not a duplicate.
+    /// A part typed into the other field (given and family swapped) is tolerated, not a conflict.
+    /// Records without parts are unaffected, so a feed can supply them only where it knows them.
+    /// </summary>
+    public static bool StructuredNames { get; set; } =
+        Environment.GetEnvironmentVariable("DARLASTIC_STRUCTURED_NAMES") == "1";
+
+    /// <summary>
+    /// PER-TENANT: name consistency aligns tokens ONE-TO-ONE. By default every token of the shorter
+    /// name may align to ANY token of the longer one, so a given name contained in the family name
+    /// ("Name Nameson") aligns twice and is "consistent" with every relative carrying that family
+    /// name. On makes each token of the longer name usable once.
+    /// </summary>
+    public static bool StrictTokenAlignment { get; set; } =
+        Environment.GetEnvironmentVariable("DARLASTIC_STRICT_TOKEN_ALIGNMENT") == "1";
+
+    /// <summary>
+    /// PER-TENANT: a record with no usable name needs more than one key to auto-merge. On:
+    ///   - an exact shared phone that is the ONLY positive signal is damped ×0.70, mirroring the
+    ///     name-only damp (a dealer, fleet or family phone carries nameless purchases of many people);
+    ///   - the sold-VIN floor is withheld for a nameless pair whose phones are both present and differ.
+    /// </summary>
+    public static bool NamelessNeedsCorroboration { get; set; } =
+        Environment.GetEnvironmentVariable("DARLASTIC_NAMELESS_CORROBORATION") == "1";
+
+    /// <summary>
+    /// PER-TENANT: the matcher's own "two different people" verdicts (name conflict, national-ID
+    /// conflict and, with <see cref="StructuredNames"/>, given/family-name conflicts) become
+    /// cannot-link constraints in clustering. Auto-merge edges are then applied strongest first, and an
+    /// edge whose union would put a cannot-link pair into one identity is skipped: one record with a
+    /// partial name (surname only, patronymic only) can no longer chain two relatives into one golden.
+    /// </summary>
+    public static bool ConflictAwareClustering { get; set; } =
+        Environment.GetEnvironmentVariable("DARLASTIC_CONFLICT_AWARE_CLUSTERING") == "1";
+
+    /// <summary>
+    /// PER-TENANT: two ORGANISATION names (each carries an organisation token) that are consistent
+    /// token by token on a shared exact phone are one organisation → floor 0.91. Also when only one
+    /// side carries the token and the other side's two or more words are all the organisation's own
+    /// words (the same organisation written without its legal form). Two forms of one word (a shared
+    /// stem of five or more letters covering most of the shorter word) align. On a shared SOLD VIN the
+    /// same test floors the pair too, and so does an organisation whose name is one word beside a record
+    /// carrying just that word. An organisation line whose names are NOT one organisation's is held in
+    /// the steward band (0.89) instead of merging on the weighted base. A one-word person name next to an
+    /// organisation on a phone is never floored, unless <see cref="StrictNameParts"/> is on and the corpus
+    /// does not attest the word as a name part (then it is the company typed without its legal form).
+    /// By default every pair touching an organisation name only gets the weighted base, so word-order
+    /// and legal-form variants of one organisation land in the steward queue.
+    /// </summary>
+    public static bool OrgNameMerge { get; set; } =
+        Environment.GetEnvironmentVariable("DARLASTIC_ORG_NAME_MERGE") == "1";
+
+    /// <summary>
+    /// PER-TENANT: a shared SERVICED VIN is decisive when the names are fully consistent (every token
+    /// of the shorter aligns) and both carry two or more words → floor 0.91, even when the phones differ
+    /// or one is missing. By default a serviced VIN only corroborates, because the person at a service
+    /// visit may be a relative, a driver or a new owner — all of whom carry a different name; the full
+    /// name answers that objection, and people change and drop phone numbers far more than names.
+    /// </summary>
+    public static bool ServicedVinNameFloor { get; set; } =
+        Environment.GetEnvironmentVariable("DARLASTIC_SERVICED_VIN_NAME_FLOOR") == "1";
+
+    /// <summary>
+    /// PER-TENANT: extra spelling equivalences for name-token alignment, as (from, to) pairs applied
+    /// in order after the built-in interdental fold — two romanizations of one letter in the tenant's
+    /// scripts. Comparison only: stored and displayed names never change. Empty by default.
+    /// </summary>
+    public static IReadOnlyList<(string From, string To)> TokenFolds { get; set; } = [];
+
+    /// <summary>
+    /// PER-TENANT (read with <see cref="StructuredNames"/>): a stricter test of whether two name parts
+    /// are one name. By default parts also align on a high Jaro-Winkler alone, or on a near match one
+    /// consonant edit apart. That admits two different given names that share their first element or
+    /// differ in one consonant (siblings on a family phone or car, in naming conventions built from
+    /// compounds), and two different family names one consonant apart (namesakes). On:
+    ///   - two structured given names, or two structured family names, that are BOTH in
+    ///     <see cref="EstablishedNameParts"/> align only when they are one name: equal, a short form,
+    ///     written with or without spaces, or the same consonant skeleton (vowel and doubled-letter
+    ///     drift, one 'h'), compared after <see cref="NamePartFolds"/> and also with one ending set aside
+    ///     (<see cref="GivenNameSuffixes"/>, <see cref="FamilyNameEndings"/>). A name the corpus has not
+    ///     established may be a typing slip of the other, and keeps the default test;
+    ///   - the serviced-VIN floor (<see cref="ServicedVinNameFloor"/>), where no phone corroborates,
+    ///     needs one given name in that strict sense whatever the corpus says.
+    /// Off by default.
+    /// </summary>
+    public static bool StrictNameParts { get; set; } =
+        Environment.GetEnvironmentVariable("DARLASTIC_STRICT_NAME_PARTS") == "1";
+
+    /// <summary>
+    /// PER-TENANT, used by <see cref="StrictNameParts"/> only: the given and family names the tenant's
+    /// corpus attests (in the feeds' normalized form, as in <see cref="RealRecord.GivenName"/> and
+    /// <see cref="RealRecord.FamilyName"/>), for example every name part seen on several distinct
+    /// phones. The host computes it from the records it resolves. Empty by default, which leaves every
+    /// name part to the default comparison.
+    /// </summary>
+    public static IReadOnlySet<string> EstablishedNameParts { get; set; } = new HashSet<string>();
+
+    /// <summary>
+    /// PER-TENANT, used by <see cref="StrictNameParts"/> only: letters that one name is written with
+    /// across the tenant's scripts and transliterations, as (from, to) pairs applied in order after
+    /// <see cref="TokenFolds"/>. Examples are voiced and unvoiced consonants, or one letter that two
+    /// alphabets write differently. Comparison only. Empty by default.
+    /// </summary>
+    public static IReadOnlyList<(string From, string To)> NamePartFolds { get; set; } = [];
+
+    /// <summary>
+    /// PER-TENANT, used by <see cref="StrictNameParts"/> only: endearment or honorific endings that one
+    /// person's given name carries in some records and not in others. One is set aside before two given
+    /// names are compared, when at least three letters remain. Empty by default.
+    /// </summary>
+    public static IReadOnlyList<string> GivenNameSuffixes { get; set; } = [];
+
+    /// <summary>
+    /// PER-TENANT, used by <see cref="StrictNameParts"/> only: family-name endings that one family name
+    /// is written with, or exchanges for one another (an ending borrowed from another language and the
+    /// native one that replaced it). One is set aside before two family names are compared, when at
+    /// least three letters remain. Empty by default.
+    /// </summary>
+    public static IReadOnlyList<string> FamilyNameEndings { get; set; } = [];
+
+    /// <summary>
+    /// PER-TENANT (read with <see cref="StructuredNames"/>): family-name endings that mark the bearer's
+    /// sex, as (masculine, feminine) pairs, for a naming convention where a woman carries the feminine
+    /// form of the family name. A family name and its other-sex form are then two people (spouses,
+    /// siblings, a parent and child on one phone), not a spelling variant, so the pair is a family-name
+    /// conflict. The exception is when both records also carry given names that align: then the ending
+    /// is a typing slip on one person's record. Empty by default, so no ending carries meaning.
+    /// </summary>
+    public static IReadOnlyList<(string Masculine, string Feminine)> FamilyNameSexEndings { get; set; } = [];
 }
 
 
