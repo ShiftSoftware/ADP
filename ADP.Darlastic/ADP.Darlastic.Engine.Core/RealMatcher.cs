@@ -244,7 +244,7 @@ public static class RealMatcher
         // 'Salam Ahmed') sat at 0.80-0.90, just under auto-merge. Conversely a shared *family/
         // shop* phone with clearly different names ('Emad Nahir' / 'Ghanim Ahmed') must NOT merge.
         // So gate the exact-phone signal on name consistency in BOTH directions.
-        bool nameConsistent = false, nameConflict = false;
+        bool nameConsistent = false, nameConflict = false, orgUnresolved = false;
         if (!Flags.Baseline && phoneExact && namesBoth)
         {
             // Gender is NOT used as a conflict signal (domain-expert audit, 2026-06-22): the dealer
@@ -271,8 +271,14 @@ public static class RealMatcher
                     trace?.Add("gate", "Organisation names consistent",
                         "both names are one organisation's (every token of the shorter aligns into the longer) on a shared phone → floor 0.91", conf);
                 }
-                else trace?.Add("gate", "Business / organization line",
-                    "an org name (Company/Group/Stock/Parts/Show Room) shares this phone — a company line, not one person; person-merge floor withheld (identical org names still merge on the weighted base — a placeholder-entity filter is the real fix)", conf);
+                else
+                {
+                    // Flags.OrgNameMerge decides an organisation line by its names: when they are not
+                    // one organisation's, the weighted base must not merge it either (capped below).
+                    orgUnresolved = Flags.OrgNameMerge && !Flags.Baseline;
+                    trace?.Add("gate", "Business / organization line",
+                        "an org name (Company/Group/Stock/Parts/Show Room) shares this phone — a company line, not one person; person-merge floor withheld (identical org names still merge on the weighted base — a placeholder-entity filter is the real fix)", conf);
+                }
             }
             else if (partsVeto)
             {
@@ -443,6 +449,15 @@ public static class RealMatcher
                 trace?.Add("vin", "Shared sold VIN (ownership consistent, names align)",
                     $"a point-of-sale VIN↔buyer binding ({sharedVin}) + a fully-aligned/absent name — king-key-grade ownership → floor 0.91 auto-merge", conf);
             }
+            else if (Flags.OrgNameMerge && !Flags.Baseline && OrgOnSoldVin(a.NormName, b.NormName))
+            {
+                // Flags.OrgNameMerge: the buyer is an organisation and the other record names that
+                // organisation (word order, word forms, legal form dropped, or its one-word name alone).
+                conf = Math.Max(conf, 0.91);
+                flags |= MatchFlags.VinSoldMerge;
+                trace?.Add("vin", "Shared sold VIN, one organisation's names",
+                    $"a point-of-sale VIN↔buyer binding ({sharedVin}) and both names are one organisation's → floor 0.91 auto-merge", conf);
+            }
             else if (namesBoth && GivenNamesMatch(a.NormName, b.NormName))
                 trace?.Add("vin", "Shared sold VIN, given name aligns but a later token differs",
                     $"shared sold VIN ({sharedVin}) + same given name but the rest differs — a car is shared by relatives / resale; steward-band on the weighted signal, no auto-merge (vin-sample 2026-06-22)", conf);
@@ -456,7 +471,8 @@ public static class RealMatcher
         if (Flags.ServicedVinNameFloor && !Flags.Baseline && useVin && vinClass == VinClass.Serviced && namesBoth
             && !partsVeto && conf < 0.91
             && NameTokens(a.NormName).Length >= 2 && NameTokens(b.NormName).Length >= 2
-            && NameConsistent(a.NormName, b.NormName))
+            && NameConsistent(a.NormName, b.NormName)
+            && (!Flags.StrictNameParts || GivenNamesSame(a, b)))
         {
             conf = 0.91;
             flags |= MatchFlags.ServicedVinNameMerge;
@@ -535,6 +551,18 @@ public static class RealMatcher
             }
         }
 
+        // Flags.OrgNameMerge: an organisation line whose names are not one organisation's, and that no
+        // floor above decided, is not merged on the weighted base: two bodies whose long titles share
+        // every word but the place name score a high name blend on a shared phone. Steward band.
+        const MatchFlags decidingFloors = MatchFlags.VinSoldMerge | MatchFlags.SameAsMerge | MatchFlags.EmailMerge
+            | MatchFlags.ServicedVinNameMerge | MatchFlags.PhoneNameMerge | MatchFlags.ChainSliceRescue;
+        if (orgUnresolved && conf > OrgUnresolvedCap && (flags & decidingFloors) == 0)
+        {
+            conf = OrgUnresolvedCap;
+            trace?.Add("conflict", "Organisation names unresolved",
+                $"an organisation line whose names are not one organisation's — held at {OrgUnresolvedCap:F2}, in the steward band", conf);
+        }
+
         // Last, so no boost above (address, DOB) can lift a structured name conflict back into the
         // steward band: the pair is decided, and a queue full of obvious relatives is queue noise.
         if (partsVeto && conf > PartsConflictCap)
@@ -552,6 +580,10 @@ public static class RealMatcher
     /// below the steward line, inside the near-miss band so the pair stays browsable.</summary>
     public const double PartsConflictCap = 0.75;
 
+    /// <summary>Where an organisation line with unresolved names is held (Flags.OrgNameMerge): the
+    /// steward band, below the auto-merge line.</summary>
+    public const double OrgUnresolvedCap = 0.89;
+
     private enum PartsVerdict { Unknown, Agree, GivenConflict, FamilyConflict }
 
     /// <summary>
@@ -559,23 +591,123 @@ public static class RealMatcher
     /// records carry it. A part typed into the other field explains a difference instead of making
     /// one: with both parts on both sides the given and family names must match crosswise; with a part
     /// missing on one side, either crosswise match is enough (a lone given field holding the surname).
+    /// Given and family names are compared under <see cref="Flags.StrictNameParts"/> when it is on;
+    /// family names in their two sex forms conflict under <see cref="Flags.FamilyNameSexEndings"/>
+    /// unless the given names on both sides align.
     /// </summary>
     private static PartsVerdict CompareNameParts(RealRecord a, RealRecord b)
     {
         string? ga = Part(a.GivenName), gb = Part(b.GivenName), fa = Part(a.FamilyName), fb = Part(b.FamilyName);
         bool givenBoth = ga is not null && gb is not null, familyBoth = fa is not null && fb is not null;
         if (!givenBoth && !familyBoth) return PartsVerdict.Unknown;
-        bool givenOk = !givenBoth || NamePartsAlign(ga!, gb!);
-        bool familyOk = !familyBoth || NamePartsAlign(fa!, fb!);
+        bool givenOk = !givenBoth || StrictPartsAlign(ga!, gb!, given: true);
+        bool familyOk = !familyBoth || (StrictPartsAlign(fa!, fb!, given: false) && ((givenBoth && givenOk) || !FamilySexForms(fa!, fb!)));
         if (givenOk && familyOk) return PartsVerdict.Agree;
 
         bool swapped = ga is not null && fa is not null && gb is not null && fb is not null
-            ? NamePartsAlign(ga, fb) && NamePartsAlign(fa, gb)
-            : (ga is not null && fb is not null && NamePartsAlign(ga, fb)) || (gb is not null && fa is not null && NamePartsAlign(gb, fa));
+            ? CrossAlign(ga, fb) && CrossAlign(fa, gb)
+            : (ga is not null && fb is not null && CrossAlign(ga, fb)) || (gb is not null && fa is not null && CrossAlign(gb, fa));
         if (swapped) return PartsVerdict.Agree;
         return !givenOk ? PartsVerdict.GivenConflict : PartsVerdict.FamilyConflict;
 
         static string? Part(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
+        static bool CrossAlign(string x, string y) => NamePartsAlign(x, y) && !FamilySexForms(x, y);
+    }
+
+    /// <summary>Two structured given names, or two family names. By default <see cref="NamePartsAlign"/>.
+    /// Under <see cref="Flags.StrictNameParts"/>, two names that are each established in the tenant's
+    /// corpus (<see cref="Flags.EstablishedNameParts"/>) must be one name (<see cref="SameNamePart"/>):
+    /// two attested names that merely look alike are two people. A name the corpus has not established
+    /// may be a typing slip of the other one, and keeps the default comparison.</summary>
+    private static bool StrictPartsAlign(string x, string y, bool given)
+    {
+        if (!Flags.StrictNameParts || Flags.Baseline) return NamePartsAlign(x, y);
+        if (SameNamePart(x, y, given)) return true;
+        return NamePartsAlign(x, y) && !(Flags.EstablishedNameParts.Contains(x) && Flags.EstablishedNameParts.Contains(y));
+    }
+
+    /// <summary>
+    /// Flags.StrictNameParts: one name, not two names that look alike. Equal; written with or without
+    /// its spaces; or, compared after the tenant's <see cref="Flags.NamePartFolds"/>, both as written and
+    /// with one of its endings set aside (a given name's <see cref="Flags.GivenNameSuffixes"/>, a family
+    /// name's <see cref="Flags.FamilyNameEndings"/>): a near match with the same consonant skeleton
+    /// (vowel and doubled-letter drift) or one 'h' apart. A given name may also be a short form of the
+    /// other: contained in it, or its skeleton (three or more consonants) starting the other's; a family
+    /// name contained in another is another family. A high Jaro-Winkler on its own is not enough: it
+    /// rewards a shared first element, and two compound names that share one are two names.
+    /// </summary>
+    internal static bool SameNamePart(string x, string y, bool given = true)
+    {
+        if (x == y) return true;
+        if (x.Contains(' ') || y.Contains(' '))
+        {
+            if (x.Replace(" ", "") == y.Replace(" ", "")) return true;
+            return NameConsistent(x, y);
+        }
+        string cx = Canon(x), cy = Canon(y);
+        if (OneName(cx, cy, given) || OneName(PartFold(cx), PartFold(cy), given)) return true;
+        string px = Strip(cx, given ? Flags.GivenNameSuffixes : Flags.FamilyNameEndings);
+        string py = Strip(cy, given ? Flags.GivenNameSuffixes : Flags.FamilyNameEndings);
+        if ((!ReferenceEquals(px, cx) || !ReferenceEquals(py, cy)) && OneName(PartFold(px), PartFold(py), given)) return true;
+        // One 'h' apart, before the letter folds (which may turn 'h' into another letter).
+        return Sim.JaroWinkler(cx, cy) >= 0.80 && DiffersByOneH(Skeleton(cx), Skeleton(cy));
+
+        static bool Contained(string u, string v) => u.Length >= 4 && v.Length >= 4 && (u.Contains(v) || v.Contains(u));
+
+        // Short forms (one contained in the other, or a skeleton that starts the other) are a given
+        // name's: a family name contained in another is a different family name.
+        static bool OneName(string u, string v, bool shortForms)
+        {
+            if (u == v || (shortForms && Contained(u, v))) return true;
+            string su = Skeleton(u), sv = Skeleton(v);
+            if (su.Length > 0 && su == sv) return Sim.JaroWinkler(u, v) >= 0.80;
+            if (!shortForms) return false;
+            var (shortSk, longSk) = su.Length <= sv.Length ? (su, sv) : (sv, su);
+            return shortSk.Length >= 3 && longSk.StartsWith(shortSk, StringComparison.Ordinal);
+        }
+
+        static string Strip(string t, IReadOnlyList<string> endings)
+        {
+            foreach (var s in endings)
+                if (s.Length > 0 && t.Length - s.Length >= 3 && t.EndsWith(s, StringComparison.Ordinal)) return t[..^s.Length];
+            return t;
+        }
+
+        static string PartFold(string t)
+        {
+            foreach (var (from, to) in Flags.NamePartFolds)
+                if (from.Length > 0 && t.Contains(from, StringComparison.Ordinal)) t = t.Replace(from, to, StringComparison.Ordinal);
+            return t;
+        }
+    }
+
+    /// <summary>The serviced-VIN floor's test under <see cref="Flags.StrictNameParts"/>: when both
+    /// records carry a structured given name, it is one name (<see cref="SameNamePart"/>), straight or,
+    /// with both parts on both sides, crosswise (given and family typed into each other's fields).
+    /// Records without a structured given name (organisations, names in an unknown order) pass.</summary>
+    private static bool GivenNamesSame(RealRecord a, RealRecord b)
+    {
+        string? ga = a.GivenName, gb = b.GivenName, fa = a.FamilyName, fb = b.FamilyName;
+        if (string.IsNullOrWhiteSpace(ga) || string.IsNullOrWhiteSpace(gb)) return true;
+        if (SameNamePart(ga, gb)) return true;
+        return !string.IsNullOrWhiteSpace(fa) && !string.IsNullOrWhiteSpace(fb)
+            && SameNamePart(ga, fb, given: false) && SameNamePart(fa, gb, given: false);
+    }
+
+    /// <summary>Flags.FamilyNameSexEndings: one family name in its masculine and its feminine form
+    /// (the stems, at least three letters each, align as name parts).</summary>
+    private static bool FamilySexForms(string x, string y)
+    {
+        if (Flags.FamilyNameSexEndings.Count == 0 || Flags.Baseline || x.Contains(' ') || y.Contains(' ')) return false;
+        foreach (var (m, f) in Flags.FamilyNameSexEndings)
+            if (Forms(x, y, m, f) || Forms(y, x, m, f)) return true;
+        return false;
+
+        static bool Forms(string masc, string fem, string m, string f) =>
+            m.Length > 0 && f.Length > 0
+            && masc.EndsWith(m, StringComparison.Ordinal) && fem.EndsWith(f, StringComparison.Ordinal)
+            && masc.Length - m.Length >= 3 && fem.Length - f.Length >= 3
+            && NamePartsAlign(masc[..^m.Length], fem[..^f.Length]);
     }
 
     /// <summary>Two name parts are one person's: the shared token rule, or romanization drift at the
@@ -621,7 +753,9 @@ public static class RealMatcher
     /// token of <paramref name="big"/> (bipartite matching, augmenting paths). The default any-to-any
     /// test lets a given name contained in the family name ('Name' in 'Nameson') align twice, which
     /// makes 'Name Nameson' consistent with every 'Other Nameson' on the same phone.</summary>
-    private static bool AlignsOneToOne(string[] small, string[] big)
+    private static bool AlignsOneToOne(string[] small, string[] big) => AlignsOneToOne(small, big, TokensAlign);
+
+    private static bool AlignsOneToOne(string[] small, string[] big, Func<string, string, bool> align)
     {
         var owner = new int[big.Length];
         Array.Fill(owner, -1);
@@ -633,7 +767,7 @@ public static class RealMatcher
         {
             for (int j = 0; j < big.Length; j++)
             {
-                if (seen[j] || !TokensAlign(small[i], big[j])) continue;
+                if (seen[j] || !align(small[i], big[j])) continue;
                 seen[j] = true;
                 if (owner[j] < 0 || Augment(owner[j], seen)) { owner[j] = i; return true; }
             }
@@ -832,27 +966,76 @@ public static class RealMatcher
     /// consistent (their organisation tokens align to each other); or the other side's two or more
     /// words are all the organisation's own words (its organisation tokens set aside) — the
     /// organisation written without its legal form, possibly shortened. Either way, a name written
-    /// with its words joined counts as the same words.</summary>
+    /// with its words joined counts as the same words, and two forms of one word (a shared stem of five
+    /// or more letters covering most of the shorter word: an adjective and a genitive of one country
+    /// or town in an inflected language) align.</summary>
+    /// <summary>Flags.OrgNameMerge on a shared SOLD VIN: two names of one organisation
+    /// (<see cref="OrgNamesConsistent"/>), or an organisation whose name is one word and a record that
+    /// carries just that word. On a phone a lone word beside a company may be a contact person's given
+    /// name; on the car the company bought it is the company's own name typed without its legal form.</summary>
+    private static bool OrgOnSoldVin(string a, string b)
+    {
+        bool orgA = IsLikelyOrg(a), orgB = IsLikelyOrg(b);
+        if (!orgA && !orgB) return false;
+        if (OrgNamesConsistent(a, b)) return true;
+        if (orgA && orgB) return false;
+        var core = NameTokens(orgA ? a : b).Where(t => !OrgTokens.Contains(t)).ToArray();
+        var other = NameTokens(orgA ? b : a);
+        return core.Length == 1 && other.Length == 1 && core[0].Length >= 4 && TokensAlign(core[0], other[0]);
+    }
+
     private static bool OrgNamesConsistent(string a, string b)
     {
         bool orgA = IsLikelyOrg(a), orgB = IsLikelyOrg(b);
-        if (orgA && orgB) return NameConsistent(a, b) || JoinedAlign(OrgCore(a), OrgCore(b));
+        if (orgA && orgB) return OrgWordsConsistent(a, b) || JoinedAlign(OrgCore(a), OrgCore(b));
         string org = orgA ? a : b, other = orgA ? b : a;
         var otherTokens = NameTokens(other);
-        if (otherTokens.Length < 2) return false;
         var orgCore = OrgCore(org);
+        if (otherTokens.Length < 2)
+        {
+            // A lone word beside a company is a contact person's given name — unless the tenant's
+            // corpus does not attest it as a name part (Flags.StrictNameParts) and it is the company's
+            // own one-word name: then it is the company typed without its legal form.
+            var core = NameTokens(orgCore);
+            return Flags.StrictNameParts && otherTokens.Length == 1 && core.Length == 1 && core[0].Length >= 4
+                && !Flags.EstablishedNameParts.Contains(otherTokens[0]) && TokensAlign(core[0], otherTokens[0]);
+        }
         return orgCore.Length > 0
-            && ((NameTokens(orgCore).Length >= otherTokens.Length && NameConsistent(other, orgCore)) || JoinedAlign(orgCore, other));
+            && ((NameTokens(orgCore).Length >= otherTokens.Length && OrgWordsConsistent(other, orgCore)) || JoinedAlign(orgCore, other));
 
         static string OrgCore(string n) => string.Join(' ', NameTokens(n).Where(t => !OrgTokens.Contains(t)));
 
+        // NameConsistent with organisation word forms: every token of the shorter name aligns
+        // (one-to-one under StrictTokenAlignment) by TokensAlign or as a form of the same word.
+        static bool OrgWordsConsistent(string x, string y)
+        {
+            var tx = NameTokens(x);
+            var ty = NameTokens(y);
+            if (tx.Length == 0 || ty.Length == 0) return false;
+            var (small, big) = tx.Length <= ty.Length ? (tx, ty) : (ty, tx);
+            if (small.Distinct().Count() < 2) return NameConsistent(x, y);
+            if (Flags.StrictTokenAlignment && !Flags.Baseline) return AlignsOneToOne(small, big, WordAlign);
+            return small.All(t => big.Any(u => WordAlign(t, u)));
+        }
+
+        static bool WordAlign(string t, string u)
+        {
+            if (TokensAlign(t, u)) return true;
+            int p = 0, n = Math.Min(t.Length, u.Length);
+            while (p < n && t[p] == u[p]) p++;
+            return p >= 5 && p >= 0.7 * n;
+        }
+
         // One name written with and without the spaces between its words ('brim vale' /
-        // 'brimvale'): equal, or near-equal at a strict bar, once the spaces are gone. Long
-        // strings only; containment is deliberately NOT enough here.
+        // 'brimvale'): equal, or a typing slip apart (one edit per ten letters), once the spaces are
+        // gone. Long strings only; containment is deliberately NOT enough here, and neither is a high
+        // Jaro-Winkler: two bodies whose long titles share every word but the place name score above
+        // 0.92 on the shared prefix alone.
         static bool JoinedAlign(string x, string y)
         {
             string jx = x.Replace(" ", ""), jy = y.Replace(" ", "");
-            return jx.Length >= 6 && jy.Length >= 6 && (jx == jy || Sim.JaroWinkler(jx, jy) >= 0.92);
+            if (jx.Length < 6 || jy.Length < 6) return false;
+            return jx == jy || Levenshtein(jx, jy) <= Math.Max(1, Math.Min(jx.Length, jy.Length) / 10);
         }
     }
 
