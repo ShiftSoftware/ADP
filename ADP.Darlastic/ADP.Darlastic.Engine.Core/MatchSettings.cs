@@ -39,9 +39,10 @@ public sealed record MatchSettings
     /// <summary>The newest payload format <see cref="FromJson"/> reads. Raised whenever a field is added
     /// that a reader ignoring it would score differently with — which is every new switch — so an older
     /// reader refuses a newer record instead of misreading it. <see cref="ToJson"/> writes format 2 only
-    /// when a format-2 switch is on (<see cref="UsesFormat2"/>); every other configuration keeps its
-    /// format-1 bytes, so a registry that recorded one stays zero-delta.</summary>
-    public const int FormatVersion = 2;
+    /// when a format-2 switch is on (<see cref="UsesFormat2"/>) and format 3 only when a format-3 switch is
+    /// on (<see cref="UsesFormat3"/>); every other configuration keeps its older bytes, so a registry that
+    /// recorded one stays zero-delta.</summary>
+    public const int FormatVersion = 3;
 
     private static readonly IReadOnlySet<string> NoNameParts = new HashSet<string>();
 
@@ -98,8 +99,31 @@ public sealed record MatchSettings
     /// <summary><see cref="Flags.DistinctGivenNames"/> (format 2).</summary>
     public bool DistinctGivenNames { get; init; }
 
+    /// <summary><see cref="Flags.GivenNameChainFit"/> (format 3).</summary>
+    public bool GivenNameChainFit { get; init; }
+    /// <summary><see cref="Flags.TwoWordChainFit"/> (format 3).</summary>
+    public bool TwoWordChainFit { get; init; }
+    /// <summary><see cref="Flags.NamedMergeNeedsFloor"/> (format 3).</summary>
+    public bool NamedMergeNeedsFloor { get; init; }
+    /// <summary><see cref="Flags.ShiftedChainConflict"/> (format 3).</summary>
+    public bool ShiftedChainConflict { get; init; }
+    /// <summary><see cref="Flags.SameAsRefPhoneFloor"/> (format 3).</summary>
+    public bool SameAsRefPhoneFloor { get; init; }
+    /// <summary><see cref="Flags.OrgNamesBothSides"/> (format 3).</summary>
+    public bool OrgNamesBothSides { get; init; }
+    /// <summary><see cref="Flags.CrossScriptLetters"/> (format 3).</summary>
+    public bool CrossScriptLetters { get; init; }
+    /// <summary><see cref="Flags.JoinedNames"/> (format 3).</summary>
+    public bool JoinedNames { get; init; }
+    /// <summary><see cref="Flags.ServicedVinNeverLowers"/> (format 3).</summary>
+    public bool ServicedVinNeverLowers { get; init; }
+
     /// <summary>True when a switch of format 2 is on: the recorded form then needs format 2.</summary>
     public bool UsesFormat2 => CrossScriptNames || ExtendedArabicLetters || NamelessSoldVinNeedsPhone || AnchoredGivenName || DistinctGivenNames;
+
+    /// <summary>True when a switch of format 3 is on: the recorded form then needs format 3.</summary>
+    public bool UsesFormat3 => GivenNameChainFit || TwoWordChainFit || NamedMergeNeedsFloor || ShiftedChainConflict
+        || SameAsRefPhoneFloor || OrgNamesBothSides || CrossScriptLetters || JoinedNames || ServicedVinNeverLowers;
 
     /// <summary>True for the engine as shipped (<see cref="Defaults"/>).</summary>
     public bool IsDefault => Equals(Defaults);
@@ -159,6 +183,15 @@ public sealed record MatchSettings
             NamelessSoldVinNeedsPhone = On("DARLASTIC_NAMELESS_SOLD_VIN_PHONE"),
             AnchoredGivenName = On("DARLASTIC_ANCHORED_GIVEN_NAME"),
             DistinctGivenNames = On("DARLASTIC_DISTINCT_GIVEN_NAMES"),
+            GivenNameChainFit = On("DARLASTIC_GIVEN_NAME_CHAIN_FIT"),
+            TwoWordChainFit = On("DARLASTIC_TWO_WORD_CHAIN_FIT"),
+            NamedMergeNeedsFloor = On("DARLASTIC_NAMED_MERGE_NEEDS_FLOOR"),
+            ShiftedChainConflict = On("DARLASTIC_SHIFTED_CHAIN_CONFLICT"),
+            SameAsRefPhoneFloor = On("DARLASTIC_SAME_AS_REF_PHONE_FLOOR"),
+            OrgNamesBothSides = On("DARLASTIC_ORG_NAMES_BOTH_SIDES"),
+            CrossScriptLetters = On("DARLASTIC_CROSS_SCRIPT_LETTERS"),
+            JoinedNames = On("DARLASTIC_JOINED_NAMES"),
+            ServicedVinNeverLowers = On("DARLASTIC_SERVICED_VIN_NEVER_LOWERS"),
         };
     }
 
@@ -176,6 +209,11 @@ public sealed record MatchSettings
              && CrossScriptNames == other.CrossScriptNames && ExtendedArabicLetters == other.ExtendedArabicLetters
              && NamelessSoldVinNeedsPhone == other.NamelessSoldVinNeedsPhone && AnchoredGivenName == other.AnchoredGivenName
              && DistinctGivenNames == other.DistinctGivenNames
+             && GivenNameChainFit == other.GivenNameChainFit && TwoWordChainFit == other.TwoWordChainFit
+             && NamedMergeNeedsFloor == other.NamedMergeNeedsFloor && ShiftedChainConflict == other.ShiftedChainConflict
+             && SameAsRefPhoneFloor == other.SameAsRefPhoneFloor && OrgNamesBothSides == other.OrgNamesBothSides
+             && CrossScriptLetters == other.CrossScriptLetters && JoinedNames == other.JoinedNames
+             && ServicedVinNeverLowers == other.ServicedVinNeverLowers
              && TokenFolds.SequenceEqual(other.TokenFolds) && NamePartFolds.SequenceEqual(other.NamePartFolds)
              && GivenNameSuffixes.SequenceEqual(other.GivenNameSuffixes, StringComparer.Ordinal)
              && FamilyNameEndings.SequenceEqual(other.FamilyNameEndings, StringComparer.Ordinal)
@@ -191,6 +229,9 @@ public sealed record MatchSettings
         h.Add(ServicedVinNameFloor); h.Add(StrictNameParts);
         h.Add(CrossScriptNames); h.Add(ExtendedArabicLetters); h.Add(NamelessSoldVinNeedsPhone); h.Add(AnchoredGivenName);
         h.Add(DistinctGivenNames);
+        h.Add(GivenNameChainFit); h.Add(TwoWordChainFit); h.Add(NamedMergeNeedsFloor); h.Add(ShiftedChainConflict);
+        h.Add(SameAsRefPhoneFloor); h.Add(OrgNamesBothSides); h.Add(CrossScriptLetters); h.Add(JoinedNames);
+        h.Add(ServicedVinNeverLowers);
         h.Add(TokenFolds.Count); h.Add(NamePartFolds.Count); h.Add(GivenNameSuffixes.Count);
         h.Add(FamilyNameEndings.Count); h.Add(FamilyNameSexEndings.Count); h.Add(EstablishedNameParts.Count);
         return h.ToHashCode();
@@ -215,6 +256,15 @@ public sealed record MatchSettings
         if (NamelessSoldVinNeedsPhone) on.Add("nameless sold-VIN phone check");
         if (AnchoredGivenName) on.Add("anchored given name");
         if (DistinctGivenNames) on.Add("distinct given names");
+        if (GivenNameChainFit) on.Add("given-name chain fit");
+        if (TwoWordChainFit) on.Add("two-word chain fit");
+        if (NamedMergeNeedsFloor) on.Add("named merge needs a floor");
+        if (ShiftedChainConflict) on.Add("shifted chain conflict");
+        if (SameAsRefPhoneFloor) on.Add("same-as reference phone floor");
+        if (OrgNamesBothSides) on.Add("organisation names both sides");
+        if (CrossScriptLetters) on.Add("cross-script letters");
+        if (JoinedNames) on.Add("joined names");
+        if (ServicedVinNeverLowers) on.Add("serviced VIN never lowers");
         void List(string name, int count) { if (count > 0) on.Add($"{name} {count:N0}"); }
         List("token folds", TokenFolds.Count);
         List("name-part folds", NamePartFolds.Count);
@@ -254,7 +304,7 @@ public sealed record MatchSettings
             w.WriteStartObject();
             // Format 1 for every configuration format 1 can describe: byte-identical to the records
             // written before format 2 existed, so a registry that holds one stays zero-delta.
-            w.WriteNumber("v", UsesFormat2 ? 2 : 1);
+            w.WriteNumber("v", UsesFormat3 ? 3 : UsesFormat2 ? 2 : 1);
             w.WriteBoolean("baseline", Baseline);
             w.WriteBoolean("emailMatching", EmailMatching);
             w.WriteBoolean("structuredNames", StructuredNames);
@@ -264,13 +314,25 @@ public sealed record MatchSettings
             w.WriteBoolean("orgNameMerge", OrgNameMerge);
             w.WriteBoolean("servicedVinNameFloor", ServicedVinNameFloor);
             w.WriteBoolean("strictNameParts", StrictNameParts);
-            if (UsesFormat2)
+            if (UsesFormat2 || UsesFormat3)
             {
                 w.WriteBoolean("crossScriptNames", CrossScriptNames);
                 w.WriteBoolean("extendedArabicLetters", ExtendedArabicLetters);
                 w.WriteBoolean("namelessSoldVinNeedsPhone", NamelessSoldVinNeedsPhone);
                 w.WriteBoolean("anchoredGivenName", AnchoredGivenName);
                 w.WriteBoolean("distinctGivenNames", DistinctGivenNames);
+            }
+            if (UsesFormat3)
+            {
+                w.WriteBoolean("givenNameChainFit", GivenNameChainFit);
+                w.WriteBoolean("twoWordChainFit", TwoWordChainFit);
+                w.WriteBoolean("namedMergeNeedsFloor", NamedMergeNeedsFloor);
+                w.WriteBoolean("shiftedChainConflict", ShiftedChainConflict);
+                w.WriteBoolean("sameAsRefPhoneFloor", SameAsRefPhoneFloor);
+                w.WriteBoolean("orgNamesBothSides", OrgNamesBothSides);
+                w.WriteBoolean("crossScriptLetters", CrossScriptLetters);
+                w.WriteBoolean("joinedNames", JoinedNames);
+                w.WriteBoolean("servicedVinNeverLowers", ServicedVinNeverLowers);
             }
             Pairs(w, "tokenFolds", TokenFolds);
             Pairs(w, "namePartFolds", NamePartFolds);
@@ -356,6 +418,15 @@ public sealed record MatchSettings
                 NamelessSoldVinNeedsPhone = Bool("namelessSoldVinNeedsPhone"),
                 AnchoredGivenName = Bool("anchoredGivenName"),
                 DistinctGivenNames = Bool("distinctGivenNames"),
+                GivenNameChainFit = Bool("givenNameChainFit"),
+                TwoWordChainFit = Bool("twoWordChainFit"),
+                NamedMergeNeedsFloor = Bool("namedMergeNeedsFloor"),
+                ShiftedChainConflict = Bool("shiftedChainConflict"),
+                SameAsRefPhoneFloor = Bool("sameAsRefPhoneFloor"),
+                OrgNamesBothSides = Bool("orgNamesBothSides"),
+                CrossScriptLetters = Bool("crossScriptLetters"),
+                JoinedNames = Bool("joinedNames"),
+                ServicedVinNeverLowers = Bool("servicedVinNeverLowers"),
                 TokenFolds = Pairs("tokenFolds"),
                 NamePartFolds = Pairs("namePartFolds"),
                 GivenNameSuffixes = Strings("givenNameSuffixes"),

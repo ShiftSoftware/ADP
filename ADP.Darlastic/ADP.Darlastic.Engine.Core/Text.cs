@@ -259,6 +259,107 @@ public static class Flags
     /// can lift over the auto-merge line: siblings and a parent and child on one family phone.
     /// </summary>
     public static bool DistinctGivenNames { get => Current.DistinctGivenNames; set => Change(s => s with { DistinctGivenNames = value }); }
+
+    // ---- per-tenant rules for name chains, organisation lines and linked records. All OFF by default,
+    // and a tenant that never sets them scores and clusters exactly as before.
+
+    /// <summary>
+    /// PER-TENANT: the shared-phone + same-given-name floor needs the two name chains to fit. By default
+    /// a shared phone and an aligned given name merge whatever follows the given name, so a son, a
+    /// cousin or a namesake with another father ("Given Father Grandfather" against "Given Other") merges
+    /// on a family phone. On, when both names carry later tokens (father, grandfather, family name), at
+    /// least one later token of the shorter name must align with a later token of the longer one (in any
+    /// order: father and grandfather are sometimes typed the other way round; an initial aligns the name it
+    /// starts, and a truncated name the name it begins), and the first names must not differ by a dropped
+    /// first consonant (two names, not one name misspelt). A later token repeating the given name is filler
+    /// ("Given Given"), and a later token made of the article "al" and four letters or more is a family or
+    /// tribal name that may be present on one side only. A given name alone fits any chain, and two two-word names fit unless <see cref="TwoWordChainFit"/> is on. A pair that does
+    /// not fit keeps its weighted base.
+    /// </summary>
+    public static bool GivenNameChainFit { get => Current.GivenNameChainFit; set => Change(s => s with { GivenNameChainFit = value }); }
+
+    /// <summary>
+    /// PER-TENANT, read with <see cref="GivenNameChainFit"/>: two two-word names ("Given Father" against
+    /// "Given Other") fit only when their second words align. By default such a pair fits: the second word
+    /// may be the father's name on one record and the grandfather's on the other (one person written
+    /// down with different slices of the chain), which is also what two cousins on one phone look like.
+    /// </summary>
+    public static bool TwoWordChainFit { get => Current.TwoWordChainFit; set => Change(s => s with { TwoWordChainFit = value }); }
+
+    /// <summary>
+    /// PER-TENANT: two records that both carry a name merge only when a deciding rule says so (consistent
+    /// names, the same given name, a district-agreeing chain slice, a sold VIN, a direct reference, an
+    /// e-mail) or their names are consistent. By default the weighted blend of a shared phone and a similar
+    /// but not consistent name, plus an address or birth-date boost, can cross the auto-merge line on its
+    /// own: two siblings with near-spelled first names and one father on one family phone and address do.
+    /// On, such a pair is held in the steward band (0.89). Consistent names without a floor (no shared
+    /// phone, a district and a birth date agreeing), organisation lines (decided by the organisation rules)
+    /// and pairs with the same national ID keep the weighted base.
+    /// </summary>
+    public static bool NamedMergeNeedsFloor { get => Current.NamedMergeNeedsFloor; set => Change(s => s with { NamedMergeNeedsFloor = value }); }
+
+    /// <summary>
+    /// PER-TENANT: a shifted name chain is two people. When one name's given name is the other name's second
+    /// word (its father's name) and the given names differ ("Son Father Grandfather" against "Father
+    /// Grandfather ..."), the records are a parent and a child, on a shared phone or through a direct
+    /// reference: <see cref="MatchFlags.GivenNameConflict"/>, held below the steward line, and the reference
+    /// floor is withheld. Two two-word names written in reverse order ("A B" against "B A") are left alone:
+    /// they are as often one name typed in the other field order. By default such pairs keep the weighted
+    /// base, and the direct-reference floor of a nameless or given-name-only record.
+    /// </summary>
+    public static bool ShiftedChainConflict { get => Current.ShiftedChainConflict; set => Change(s => s with { ShiftedChainConflict = value }); }
+
+    /// <summary>
+    /// PER-TENANT: a record that points at another (a ticket raised for that customer number) and shares
+    /// its exact phone merges unless the names say two people: unrelated names, first names that are
+    /// clearly different names, a shifted chain, a given-name conflict. By default the reference floor
+    /// also needs the names to be consistent or the given names to align, so the same person written in
+    /// another script, with a title or a short name stays in the steward queue although the number and the
+    /// reference agree.
+    /// </summary>
+    public static bool SameAsRefPhoneFloor { get => Current.SameAsRefPhoneFloor; set => Change(s => s with { SameAsRefPhoneFloor = value }); }
+
+    /// <summary>
+    /// PER-TENANT: organisation lines are decided by both names. On a shared exact phone, two names that
+    /// BOTH carry an organisation token and name one organisation (consistent token by token, word forms
+    /// aligned, or one written with its words joined, with at least one aligned word that is not a generic
+    /// business word) floor at 0.91. When only ONE name is an organisation's and the other is a person's
+    /// name chain of three words or more, the pair is a company and a person (often the person the company
+    /// is named after): it is not merged on the weighted base and is held in the steward band (0.89); a
+    /// shorter name beside a company is as often the company written without its legal form, and keeps the
+    /// weighted base. An organisation line never takes the person floors either (the
+    /// district-agreeing chain slice). Independent of <see cref="OrgNameMerge"/>. By default every
+    /// organisation line gets the weighted base, and the chain-slice floor when its first words align.
+    /// </summary>
+    public static bool OrgNamesBothSides { get => Current.OrgNamesBothSides; set => Change(s => s with { OrgNamesBothSides = value }); }
+
+    /// <summary>
+    /// PER-TENANT, read with <see cref="CrossScriptNames"/>: letters the two scripts write differently
+    /// align across them. The emphatic and interdental d/z class (the Latin dh, z or d of one Arabic
+    /// letter), v and f, the k, q and g class (a Kurdish g typed with the Arabic kaf, a q written k or g in
+    /// Latin), an Arabic t followed by h that is not one letter, an h the Latin spelling leaves out, and a
+    /// compound written as one word in one script and two in the other (its second word "allah" or
+    /// "din"). By default cross-script tokens align only on identical consonants.
+    /// </summary>
+    public static bool CrossScriptLetters { get => Current.CrossScriptLetters; set => Change(s => s with { CrossScriptLetters = value }); }
+
+    /// <summary>
+    /// PER-TENANT: a name written with some of its words run together ("Givenfather" against "Given
+    /// Father", a user name typed without spaces) is consistent with the spaced name when every word or
+    /// run of words of one aligns, in order and from the given name on, with the other's (a run is compared
+    /// joined, at least six letters). By default each word is compared on its own, so a joined name never
+    /// aligns with its spaced form.
+    /// </summary>
+    public static bool JoinedNames { get => Current.JoinedNames; set => Change(s => s with { JoinedNames = value }); }
+
+    /// <summary>
+    /// PER-TENANT: a shared serviced VIN never lowers a pair's strength. The serviced VIN is supporting
+    /// evidence (weight 0.45 at strength 0.6), so by default it pulls the blend DOWN when the other evidence
+    /// is stronger: two records on one exact phone, one of them nameless, score 1.00 on the phone alone but
+    /// 0.80 when both also carry the same serviced car. On, the blend is taken without the serviced VIN when
+    /// that is higher.
+    /// </summary>
+    public static bool ServicedVinNeverLowers { get => Current.ServicedVinNeverLowers; set => Change(s => s with { ServicedVinNeverLowers = value }); }
 }
 
 
