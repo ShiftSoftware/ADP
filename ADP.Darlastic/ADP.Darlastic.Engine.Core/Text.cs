@@ -200,6 +200,192 @@ public static class Flags
     /// is a typing slip on one person's record. Empty by default, so no ending carries meaning.
     /// </summary>
     public static IReadOnlyList<(string Masculine, string Feminine)> FamilyNameSexEndings { get => Current.FamilyNameSexEndings; set => Change(s => s with { FamilyNameSexEndings = value }); }
+
+    // ---- per-tenant rules for names written in two scripts. All four are OFF by default, and a tenant
+    // that never sets them normalises, scores and clusters exactly as before.
+
+    /// <summary>
+    /// PER-TENANT: one name written in a script that leaves short vowels out (Arabic letters, read
+    /// through <see cref="Norm.Name"/>) and in Latin letters that write them. By default such tokens
+    /// only align on the shared rules (a near Jaro-Winkler, or the same consonant skeleton AND a
+    /// near Jaro-Winkler), and the transliterated form is a consonant string far from the Latin one:
+    /// the two spellings of one person never align. On, when one record's name is written in Arabic
+    /// script and the other's in Latin letters, two tokens also align when they have the same
+    /// consonants in the same order (folds applied, doubled letters collapsed, a medial w or y read as
+    /// the long vowel it writes, an optional final h, a joined "abd" compound) and every long vowel
+    /// one side writes is matched by a vowel of the same class on the other (a: a; y: i, e, y; w: o,
+    /// u, w) — so two names that differ in a long vowel stay apart. A token with three or more
+    /// consonants aligns on its own; a shorter one only where every token of the shorter name aligns
+    /// (given and father name together), never as a lone given name.
+    /// </summary>
+    public static bool CrossScriptNames { get => Current.CrossScriptNames; set => Change(s => s with { CrossScriptNames = value }); }
+
+    /// <summary>
+    /// PER-TENANT: <see cref="Norm.Name"/> reads the Kurdish and Persian letters of the Arabic script
+    /// (پ چ ژ ڤ ک گ ی ێ ۆ ە ڕ ڵ ھ) and the hamza seats ؤ and ئ (a word-initial ئ is the silent vowel
+    /// carrier). By default they are dropped, so a name typed on a Kurdish or Persian keyboard loses
+    /// letters ("علی" normalises to "al", not "aly"). Changes the normalised name, not the stored one.
+    /// </summary>
+    public static bool ExtendedArabicLetters { get => Current.ExtendedArabicLetters; set => Change(s => s with { ExtendedArabicLetters = value }); }
+
+    /// <summary>
+    /// PER-TENANT: the sold-VIN half of <see cref="NamelessNeedsCorroboration"/> on its own: a shared
+    /// sold VIN is not decisive for a pair with no name on one side when that nameless record carries a
+    /// phone the other record does not confirm (the other's phones differ, or it has none): the buyer's
+    /// car brought in by someone else. A nameless record without any phone keeps the floor, and the
+    /// phone-only damp of <see cref="NamelessNeedsCorroboration"/> stays off, for a tenant whose nameless
+    /// phone-only merges are sound.
+    /// </summary>
+    public static bool NamelessSoldVinNeedsPhone { get => Current.NamelessSoldVinNeedsPhone; set => Change(s => s with { NamelessSoldVinNeedsPhone = value }); }
+
+    /// <summary>
+    /// PER-TENANT: name consistency is anchored on the given name. By default every token of the
+    /// shorter name may align to any token of the longer one, in any order, so a son's name chain
+    /// ("Given Father Grandfather") is consistent with his father's ("Father Grandfather"). On, the
+    /// shorter name's first token must align with the longer name's first token, and its remaining
+    /// tokens with the longer name's remaining tokens in order (tokens may be skipped, so a trailing
+    /// family or tribal name still aligns); a one-word name must be the longer name's first token. A
+    /// leading title (mr, mrs, ms, miss, dr, eng) is not the given name and is set aside.
+    /// </summary>
+    public static bool AnchoredGivenName { get => Current.AnchoredGivenName; set => Change(s => s with { AnchoredGivenName = value }); }
+
+    /// <summary>
+    /// PER-TENANT: on a shared exact phone, two person names whose first names are clearly different
+    /// names (the names are neither consistent nor the same first name, across scripts too where
+    /// <see cref="CrossScriptNames"/> is on, and the first names are not near spellings, a name split or
+    /// joined, or behind a title) are two people: the pair is held below the steward line
+    /// (<see cref="MatchFlags.GivenNameConflict"/>), and under <see cref="ConflictAwareClustering"/> it
+    /// is a cannot-link. By default it keeps the weighted base, which a shared father and family name
+    /// can lift over the auto-merge line: siblings and a parent and child on one family phone.
+    /// </summary>
+    public static bool DistinctGivenNames { get => Current.DistinctGivenNames; set => Change(s => s with { DistinctGivenNames = value }); }
+
+    // ---- per-tenant rules for name chains, organisation lines and linked records. All OFF by default,
+    // and a tenant that never sets them scores and clusters exactly as before.
+
+    /// <summary>
+    /// PER-TENANT: the shared-phone + same-given-name floor needs the two name chains to fit. By default
+    /// a shared phone and an aligned given name merge whatever follows the given name, so a son, a
+    /// cousin or a namesake with another father ("Given Father Grandfather" against "Given Other") merges
+    /// on a family phone. On, when both names carry later tokens (father, grandfather, family name), at
+    /// least one later token of the shorter name must align with a later token of the longer one (in any
+    /// order: father and grandfather are sometimes typed the other way round; an initial aligns the name it
+    /// starts, and a truncated name the name it begins), and the first names must not differ by a dropped
+    /// first consonant (two names, not one name misspelt). A later token repeating the given name is filler
+    /// ("Given Given"), and a later token made of the article "al" and four letters or more is a family or
+    /// tribal name that may be present on one side only. A given name alone fits any chain, and two two-word names fit unless <see cref="TwoWordChainFit"/> is on. A pair that does
+    /// not fit keeps its weighted base.
+    /// </summary>
+    public static bool GivenNameChainFit { get => Current.GivenNameChainFit; set => Change(s => s with { GivenNameChainFit = value }); }
+
+    /// <summary>
+    /// PER-TENANT, read with <see cref="GivenNameChainFit"/>: two two-word names ("Given Father" against
+    /// "Given Other") fit only when their second words align. By default such a pair fits: the second word
+    /// may be the father's name on one record and the grandfather's on the other (one person written
+    /// down with different slices of the chain), which is also what two cousins on one phone look like.
+    /// </summary>
+    public static bool TwoWordChainFit { get => Current.TwoWordChainFit; set => Change(s => s with { TwoWordChainFit = value }); }
+
+    /// <summary>
+    /// PER-TENANT: two records that both carry a name merge only when a deciding rule says so (consistent
+    /// names, the same given name, a district-agreeing chain slice, a sold VIN, a direct reference, an
+    /// e-mail) or their names are consistent. By default the weighted blend of a shared phone and a similar
+    /// but not consistent name, plus an address or birth-date boost, can cross the auto-merge line on its
+    /// own: two siblings with near-spelled first names and one father on one family phone and address do.
+    /// On, such a pair is held in the steward band (0.89). Consistent names without a floor (no shared
+    /// phone, a district and a birth date agreeing), organisation lines (decided by the organisation rules)
+    /// and pairs with the same national ID keep the weighted base.
+    /// </summary>
+    public static bool NamedMergeNeedsFloor { get => Current.NamedMergeNeedsFloor; set => Change(s => s with { NamedMergeNeedsFloor = value }); }
+
+    /// <summary>
+    /// PER-TENANT: a shifted name chain is two people. When one name's given name is the other name's second
+    /// word (its father's name) and the given names differ ("Son Father Grandfather" against "Father
+    /// Grandfather ..."), the records are a parent and a child, on a shared phone or through a direct
+    /// reference: <see cref="MatchFlags.GivenNameConflict"/>, held below the steward line, and the reference
+    /// floor is withheld. Two two-word names written in reverse order ("A B" against "B A") are left alone:
+    /// they are as often one name typed in the other field order. By default such pairs keep the weighted
+    /// base, and the direct-reference floor of a nameless or given-name-only record.
+    /// </summary>
+    public static bool ShiftedChainConflict { get => Current.ShiftedChainConflict; set => Change(s => s with { ShiftedChainConflict = value }); }
+
+    /// <summary>
+    /// PER-TENANT: a record that points at another (a ticket raised for that customer number) and shares
+    /// its exact phone merges unless the names say two people: unrelated names, first names that are
+    /// clearly different names, a shifted chain, a given-name conflict. By default the reference floor
+    /// also needs the names to be consistent or the given names to align, so the same person written in
+    /// another script, with a title or a short name stays in the steward queue although the number and the
+    /// reference agree.
+    /// </summary>
+    public static bool SameAsRefPhoneFloor { get => Current.SameAsRefPhoneFloor; set => Change(s => s with { SameAsRefPhoneFloor = value }); }
+
+    /// <summary>
+    /// PER-TENANT: organisation lines are decided by both names. On a shared exact phone, two names that
+    /// BOTH carry an organisation token and name one organisation (consistent token by token, word forms
+    /// aligned, or one written with its words joined, with at least one aligned word that is not a generic
+    /// business word) floor at 0.91. When only ONE name is an organisation's and the other is a person's
+    /// name chain of three words or more, the pair is a company and a person (often the person the company
+    /// is named after): it is not merged on the weighted base and is held in the steward band (0.89); a
+    /// shorter name beside a company is as often the company written without its legal form, and keeps the
+    /// weighted base. An organisation line never takes the person floors either (the
+    /// district-agreeing chain slice). Independent of <see cref="OrgNameMerge"/>. By default every
+    /// organisation line gets the weighted base, and the chain-slice floor when its first words align.
+    /// </summary>
+    public static bool OrgNamesBothSides { get => Current.OrgNamesBothSides; set => Change(s => s with { OrgNamesBothSides = value }); }
+
+    /// <summary>
+    /// PER-TENANT, read with <see cref="CrossScriptNames"/>: letters the two scripts write differently
+    /// align across them. The emphatic and interdental d/z class (the Latin dh, z or d of one Arabic
+    /// letter), v and f, the k, q and g class (a Kurdish g typed with the Arabic kaf, a q written k or g in
+    /// Latin), an Arabic t followed by h that is not one letter, an h the Latin spelling leaves out, and a
+    /// compound written as one word in one script and two in the other (its second word "allah" or
+    /// "din"). By default cross-script tokens align only on identical consonants.
+    /// </summary>
+    public static bool CrossScriptLetters { get => Current.CrossScriptLetters; set => Change(s => s with { CrossScriptLetters = value }); }
+
+    /// <summary>
+    /// PER-TENANT: a name written with some of its words run together ("Givenfather" against "Given
+    /// Father", a user name typed without spaces) is consistent with the spaced name when every word or
+    /// run of words of one aligns, in order and from the given name on, with the other's (a run is compared
+    /// joined, at least six letters). By default each word is compared on its own, so a joined name never
+    /// aligns with its spaced form.
+    /// </summary>
+    public static bool JoinedNames { get => Current.JoinedNames; set => Change(s => s with { JoinedNames = value }); }
+
+    /// <summary>
+    /// PER-TENANT: a shared serviced VIN never lowers a pair's strength. The serviced VIN is supporting
+    /// evidence (weight 0.45 at strength 0.6), so by default it pulls the blend DOWN when the other evidence
+    /// is stronger: two records on one exact phone, one of them nameless, score 1.00 on the phone alone but
+    /// 0.80 when both also carry the same serviced car. On, the blend is taken without the serviced VIN when
+    /// that is higher.
+    /// </summary>
+    public static bool ServicedVinNeverLowers { get => Current.ServicedVinNeverLowers; set => Change(s => s with { ServicedVinNeverLowers = value }); }
+
+    // ---- per-tenant rules for placeholder names. OFF by default, and a tenant that never sets them scores
+    // and clusters exactly as before.
+
+    /// <summary>
+    /// PER-TENANT: a record whose feed blanked a placeholder typed into the name field
+    /// (<see cref="RealRecord.NamePlaceholder"/>: "n/a", "customer", an e-mail address as the name) does not
+    /// merge on a phone alone. A record with no name at all scores 1.00 on a shared exact phone, because the
+    /// phone is then the only thing compared; a placeholder says more than nothing: whoever filled the field
+    /// did not know or did not give the customer's name, so the number may be the agent's, the dealer's or a
+    /// relative's. On, such a pair is held below the steward band (<see cref="RealMatcher.PlaceholderUnconfirmedCap"/>)
+    /// unless something besides the phone ties the records: a shared vehicle, e-mail, ID number or a direct
+    /// reference. Records whose feed does not set the marker are unaffected. Off by default.
+    /// </summary>
+    public static bool PlaceholderNamesNeedCorroboration { get => Current.PlaceholderNamesNeedCorroboration; set => Change(s => s with { PlaceholderNamesNeedCorroboration = value }); }
+
+    /// <summary>
+    /// PER-TENANT, read with <see cref="CrossScriptNames"/>: "abd" compounds ("servant of" + a name) align across
+    /// the two scripts the way they already do within one. The linking vowel of a compound is read alike inside a
+    /// word too (a given name and an "abd" father name written as one word in one script and apart in the other),
+    /// and a given name that is the short form of a compound (the name without "abd", three consonants or more)
+    /// is that compound as the given name, also for <see cref="DistinctGivenNames"/>. Later words are not read as
+    /// short forms (that would make a parent and a child of one person, see <see cref="ShiftedChainConflict"/>).
+    /// Within one script the short form already aligns (one name contains the other). Off by default.
+    /// </summary>
+    public static bool AbdCompounds { get => Current.AbdCompounds; set => Change(s => s with { AbdCompounds = value }); }
 }
 
 
@@ -236,6 +422,16 @@ public static class Norm
         ['ه'] = "h", ['و'] = "w", ['ي'] = "y", ['ى'] = "a", ['ة'] = "a", ['ء'] = "",
     };
 
+    // Kurdish and Persian letters of the Arabic script, and the hamza seats (Flags.ExtendedArabicLetters;
+    // off by default, when they are dropped as they always were). Kurdish writes its vowels: ە and ێ
+    // are e, ۆ is o. A word-initial ئ is the silent vowel carrier of Kurdish spelling and is skipped.
+    private static readonly Dictionary<char, string> ArabicExtended = new()
+    {
+        ['پ'] = "p", ['چ'] = "ch", ['ژ'] = "zh", ['ڤ'] = "v", ['ک'] = "k", ['گ'] = "g",
+        ['ی'] = "y", ['ێ'] = "e", ['ۆ'] = "o", ['ە'] = "e", ['ڕ'] = "r", ['ڵ'] = "l", ['ھ'] = "h",
+        ['ؤ'] = "w", ['ئ'] = "y",
+    };
+
     // Arabizi (Franco-Arabic chat) numerals → the same Latin letter the Arabic transliteration uses,
     // so '3aftan' and 'عفتان' land near each other. Arabic-transliterated tenant data uses these heavily; the old digit
     // gate blanked every one of them (review 2026-06-08: 'Nafi3', 'Mohammed 7assan', 'Sa3eed').
@@ -248,12 +444,18 @@ public static class Norm
     {
         if (string.IsNullOrWhiteSpace(s)) return "";
         if (!Flags.Baseline) s = FoldArabizi(s);
+        bool extended = Flags.ExtendedArabicLetters && !Flags.Baseline;
         var sb = new StringBuilder(s.Length);
         foreach (char ch in s)
         {
             char c = char.ToLowerInvariant(ch);
             if (Cyrillic.TryGetValue(c, out var cy)) sb.Append(cy);
             else if (Arabic.TryGetValue(c, out var ar)) sb.Append(ar);
+            else if (extended && ArabicExtended.TryGetValue(c, out var ext))
+            {
+                if (c == 'ئ' && (sb.Length == 0 || sb[^1] == ' ')) continue;   // the silent word-initial carrier
+                sb.Append(ext);
+            }
             else if (c is >= 'a' and <= 'z') sb.Append(c);
             // arabizi digits were folded to letters above; remaining digits are serials / list
             // markers ('Firka 1', '2. Mariwan') and are dropped. Baseline mode keeps digits (so the
