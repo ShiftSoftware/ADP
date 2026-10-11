@@ -91,7 +91,8 @@ public class GoldenCustomerController : ControllerBase
     /// The framework's OData guard rewrites those to the raw value, which is why the projection
     /// below fills only <see cref="PiiFieldDTO.Value"/>: the filter still runs in SQL. Callers
     /// without the partial-search permission get whole-value equality; ordering on these members
-    /// is rejected for everyone. Ordinary filters and sorting are unchanged.</para>
+    /// is rejected for everyone. Ordinary filters and sorting are unchanged. A query OData cannot parse or bind
+    /// (a protected member compared as a string, an unknown member) is a 400 with a fixed message.</para>
     ///
     /// <para>An exact phone lookup (an equality, or a contains narrowed to one) passes the input
     /// through the host's <c>IPhoneNumberService</c> before it reaches SQL. Without that service the
@@ -129,6 +130,13 @@ public class GoldenCustomerController : ControllerBase
             // phone lookup, a missing $top. Same status and body as the framework's own list action.
             return StatusCode(ex.HttpStatusCode, new { ex.Message, ex.AdditionalData });
         }
+        catch (Microsoft.OData.ODataException)
+        {
+            // A query OData cannot parse or bind: most often a protected member compared as if it were a string
+            // ("FullName eq '...'", "contains(Phone, '...')"). The caller's mistake, so a 400, never a 500; the
+            // message is fixed and does not repeat the query, which may carry a name or a number.
+            return BadRequest(new { Message = InvalidListQueryMessage });
+        }
 
         // The rows were read with raw values so the filter could match them. Mask every row
         // before it leaves the server.
@@ -141,6 +149,11 @@ public class GoldenCustomerController : ControllerBase
 
         return Ok(result);
     }
+
+    /// <summary>The 400 answer to a list query OData cannot parse or bind.</summary>
+    internal const string InvalidListQueryMessage =
+        "The query could not be applied. Filter a protected member (FullName, Phone, Email, IDNumber) on its Display " +
+        "member, e.g. FullName/Display eq '...', and use only the list's own members and OData's functions.";
 
     /// <summary>
     /// One identity by ID, redirect-chased, with its survived attributes — the read a customer-detail
