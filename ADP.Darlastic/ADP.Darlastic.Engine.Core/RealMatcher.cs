@@ -708,9 +708,25 @@ public static class RealMatcher
                 "the first or family names are different names, so these are two people: nothing else they share brings them up for a person to decide", conf);
         }
 
+        // Flags.PlaceholderNamesNeedCorroboration: a placeholder typed into the name field names nobody, so the
+        // phone alone does not say the records are one person. Last, so no boost lifts it back.
+        if (Flags.PlaceholderNamesNeedCorroboration && !Flags.Baseline && (a.NamePlaceholder || b.NamePlaceholder)
+            && !vinPositive && !emailExact && !sameAsLinked && !idEqual && (flags & decidingFloors) == 0
+            && conf > PlaceholderUnconfirmedCap)
+        {
+            conf = PlaceholderUnconfirmedCap;
+            flags |= MatchFlags.NamelessHeld;
+            trace?.Add("gate", "A placeholder for a name",
+                "one record's name field holds a placeholder (such as \"n/a\" or \"customer\"), not a name, and the number is all the records share; a number alone does not say who that record is, so they are not combined", conf);
+        }
+
         trace?.Add("decide", CaseLabels.Decision(conf).Label, $"final match strength {Pct(conf)}", conf);
         return conf;
     }
+
+    /// <summary>Where Flags.PlaceholderNamesNeedCorroboration holds a pair whose only tie is a phone beside a
+    /// placeholder name: below the steward band and the near-miss band (nothing for a person to decide).</summary>
+    public const double PlaceholderUnconfirmedCap = 0.60;
 
     /// <summary>
     /// Flags.DistinctGivenNames: the first names are two names, not one name written two ways. Leading
@@ -740,6 +756,8 @@ public static class RealMatcher
         if (Sim.JaroWinkler(ga, gb) >= 0.80 && skeletonEdits <= 2) return false;
         if (skeletonEdits <= 1 && Skeleton(Canon(ga)).Length == Skeleton(Canon(gb)).Length) return false;
         if (ctx.Cross && (ctx.ArabicSide == 1 ? CrossAligns(ga, gb, 1) : CrossAligns(gb, ga, 1))) return false;
+        // Flags.AbdCompounds: an "abd" compound and its short form are one given name.
+        if (ctx.Cross && (ctx.ArabicSide == 1 ? AbdShortForm(ga, gb) : AbdShortForm(gb, ga))) return false;
         return true;
     }
 
@@ -1123,6 +1141,10 @@ public static class RealMatcher
         Func<string, string, bool> align = ctx.Cross
             ? (t, u) => TokensAlign(t, u) || (smallIsArabic ? CrossAligns(t, u, 1) : CrossAligns(u, t, 1))
             : TokensAlign;
+        // Flags.AbdCompounds: the given name may be an "abd" compound on one side and its short form on the other.
+        Func<string, string, bool> alignGiven = ctx.Cross && Flags.AbdCompounds && !Flags.Baseline
+            ? (t, u) => align(t, u) || (smallIsArabic ? AbdShortForm(t, u) : AbdShortForm(u, t))
+            : align;
         // A single distinct token — a true mononym ('Salam') or a repeated junk name
         // ('Mohammed Mohammed') — requires that many EXACT occurrences in the longer name. So
         // 'Salam' still matches 'Salam Ahmed', but 'Mohammed Mohammed' does NOT match 'Mohammed
@@ -1135,9 +1157,9 @@ public static class RealMatcher
             // Flags.CrossScriptNames: a lone name in the other script aligns the longer name's given
             // name, and only with a consonant frame of three or more.
             return ctx.Cross && small.Length == 1
-                && (smallIsArabic ? CrossAligns(tok, big[0], 3) : CrossAligns(big[0], tok, 3));
+                && (smallIsArabic ? CrossAligns(tok, big[0], 3) || AbdShortForm(tok, big[0]) : CrossAligns(big[0], tok, 3) || AbdShortForm(big[0], tok));
         }
-        if (ctx.Anchored) return AlignsAnchored(small, big, align);
+        if (ctx.Anchored) return AlignsAnchored(small, big, align, alignGiven);
         if (Flags.StrictTokenAlignment && !Flags.Baseline) return AlignsOneToOne(small, big, align);
         return small.All(t => big.Any(u => align(t, u)));
     }
@@ -1146,9 +1168,9 @@ public static class RealMatcher
     /// token, and its other tokens align the longer name's other tokens in order (tokens of the longer
     /// name may be skipped, so a trailing family or tribal name still aligns). Taking the earliest match
     /// is optimal for an order-preserving match, so the scan is greedy.</summary>
-    private static bool AlignsAnchored(string[] small, string[] big, Func<string, string, bool> align)
+    private static bool AlignsAnchored(string[] small, string[] big, Func<string, string, bool> align, Func<string, string, bool> alignGiven)
     {
-        if (!align(small[0], big[0])) return false;
+        if (!alignGiven(small[0], big[0])) return false;
         int j = 1;
         for (int i = 1; i < small.Length; i++)
         {
@@ -1418,6 +1440,54 @@ public static class RealMatcher
     private static bool CrossAligns(string ar, string la, int minConsonants)
     {
         if (ar == la) return true;
+        if (CrossAlignsCore(ar, la, minConsonants)) return true;
+        if (!Flags.AbdCompounds || Flags.Baseline) return false;
+        // Flags.AbdCompounds: the linking vowel of an "abd" compound inside a word (a given name and an "abd"
+        // father name written as one word in one script, apart in the other).
+        string arInner = WithoutAbdLinks(ar), laInner = WithoutAbdLinks(la);
+        return (!ReferenceEquals(arInner, ar) || !ReferenceEquals(laInner, la)) && CrossAlignsCore(arInner, laInner, minConsonants);
+    }
+
+    /// <summary>
+    /// Flags.AbdCompounds: <paramref name="ar"/> (Arabic script) and <paramref name="la"/> (Latin letters) are one
+    /// given name, one of them an "abd" compound and the other its short form (the name after "abd", three
+    /// consonants or more). Asked for the given name only: in a later position a compound's short form is as often
+    /// another word of the chain, and reading it as the compound would make a parent and a child of one person.
+    /// </summary>
+    private static bool AbdShortForm(string ar, string la)
+    {
+        if (!Flags.AbdCompounds || Flags.Baseline) return false;
+        string arPrep = CrossPrep(ar), laPrep = CrossPrep(la);
+        bool arAbd = arPrep.StartsWith("abd", StringComparison.Ordinal), laAbd = laPrep.StartsWith("abd", StringComparison.Ordinal);
+        if (arAbd == laAbd) return false;
+        return arAbd
+            ? arPrep.Length >= 6 && CrossAlignsCore(arPrep[3..], la, 3)
+            : laPrep.Length >= 6 && CrossAlignsCore(ar, laPrep[3..], 3);
+    }
+
+    /// <summary>Flags.AbdCompounds: a token with the linking vowel of every "abd" compound inside it read alike
+    /// (<see cref="AbdLinks"/>): "...abdul..." and "...abdal..." are "...abd...". The same instance when the token has none.</summary>
+    private static string WithoutAbdLinks(string t)
+    {
+        int at = t.IndexOf("abd", 1, StringComparison.Ordinal);
+        if (at < 0) return t;
+        var sb = new System.Text.StringBuilder(t.Length);
+        int i = 0;
+        while (at >= 0)
+        {
+            sb.Append(t, i, at + 3 - i);
+            i = at + 3;
+            foreach (var link in AbdLinks)
+                if (string.CompareOrdinal(t, i, link, 0, link.Length) == 0 && t.Length - i - link.Length >= 2) { i += link.Length; break; }
+            at = i < t.Length ? t.IndexOf("abd", i, StringComparison.Ordinal) : -1;
+        }
+        sb.Append(t, i, t.Length - i);
+        string r = sb.ToString();
+        return r == t ? t : r;
+    }
+
+    private static bool CrossAlignsCore(string ar, string la, int minConsonants)
+    {
         if (CrossAlignsShapes(Canon(CrossPrep(ar)), Canon(CrossPrep(la)), minConsonants, innerH: false)) return true;
         if (!Flags.CrossScriptLetters || Flags.Baseline) return false;
         // Flags.CrossScriptLetters: the letters the two scripts write differently, an h the Latin spelling

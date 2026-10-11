@@ -360,6 +360,32 @@ public static class Flags
     /// that is higher.
     /// </summary>
     public static bool ServicedVinNeverLowers { get => Current.ServicedVinNeverLowers; set => Change(s => s with { ServicedVinNeverLowers = value }); }
+
+    // ---- per-tenant rules for placeholder names. OFF by default, and a tenant that never sets them scores
+    // and clusters exactly as before.
+
+    /// <summary>
+    /// PER-TENANT: a record whose feed blanked a placeholder typed into the name field
+    /// (<see cref="RealRecord.NamePlaceholder"/>: "n/a", "customer", an e-mail address as the name) does not
+    /// merge on a phone alone. A record with no name at all scores 1.00 on a shared exact phone, because the
+    /// phone is then the only thing compared; a placeholder says more than nothing: whoever filled the field
+    /// did not know or did not give the customer's name, so the number may be the agent's, the dealer's or a
+    /// relative's. On, such a pair is held below the steward band (<see cref="RealMatcher.PlaceholderUnconfirmedCap"/>)
+    /// unless something besides the phone ties the records: a shared vehicle, e-mail, ID number or a direct
+    /// reference. Records whose feed does not set the marker are unaffected. Off by default.
+    /// </summary>
+    public static bool PlaceholderNamesNeedCorroboration { get => Current.PlaceholderNamesNeedCorroboration; set => Change(s => s with { PlaceholderNamesNeedCorroboration = value }); }
+
+    /// <summary>
+    /// PER-TENANT, read with <see cref="CrossScriptNames"/>: "abd" compounds ("servant of" + a name) align across
+    /// the two scripts the way they already do within one. The linking vowel of a compound is read alike inside a
+    /// word too (a given name and an "abd" father name written as one word in one script and apart in the other),
+    /// and a given name that is the short form of a compound (the name without "abd", three consonants or more)
+    /// is that compound as the given name, also for <see cref="DistinctGivenNames"/>. Later words are not read as
+    /// short forms (that would make a parent and a child of one person, see <see cref="ShiftedChainConflict"/>).
+    /// Within one script the short form already aligns (one name contains the other). Off by default.
+    /// </summary>
+    public static bool AbdCompounds { get => Current.AbdCompounds; set => Change(s => s with { AbdCompounds = value }); }
 }
 
 

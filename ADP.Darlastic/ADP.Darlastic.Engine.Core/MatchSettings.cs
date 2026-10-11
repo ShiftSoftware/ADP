@@ -39,10 +39,10 @@ public sealed record MatchSettings
     /// <summary>The newest payload format <see cref="FromJson"/> reads. Raised whenever a field is added
     /// that a reader ignoring it would score differently with — which is every new switch — so an older
     /// reader refuses a newer record instead of misreading it. <see cref="ToJson"/> writes format 2 only
-    /// when a format-2 switch is on (<see cref="UsesFormat2"/>) and format 3 only when a format-3 switch is
-    /// on (<see cref="UsesFormat3"/>); every other configuration keeps its older bytes, so a registry that
-    /// recorded one stays zero-delta.</summary>
-    public const int FormatVersion = 3;
+    /// when a format-2 switch is on (<see cref="UsesFormat2"/>), format 3 only when a format-3 switch is
+    /// on (<see cref="UsesFormat3"/>) and format 4 only when a format-4 switch is on (<see cref="UsesFormat4"/>);
+    /// every other configuration keeps its older bytes, so a registry that recorded one stays zero-delta.</summary>
+    public const int FormatVersion = 4;
 
     private static readonly IReadOnlySet<string> NoNameParts = new HashSet<string>();
 
@@ -118,12 +118,20 @@ public sealed record MatchSettings
     /// <summary><see cref="Flags.ServicedVinNeverLowers"/> (format 3).</summary>
     public bool ServicedVinNeverLowers { get; init; }
 
+    /// <summary><see cref="Flags.PlaceholderNamesNeedCorroboration"/> (format 4).</summary>
+    public bool PlaceholderNamesNeedCorroboration { get; init; }
+    /// <summary><see cref="Flags.AbdCompounds"/> (format 4).</summary>
+    public bool AbdCompounds { get; init; }
+
     /// <summary>True when a switch of format 2 is on: the recorded form then needs format 2.</summary>
     public bool UsesFormat2 => CrossScriptNames || ExtendedArabicLetters || NamelessSoldVinNeedsPhone || AnchoredGivenName || DistinctGivenNames;
 
     /// <summary>True when a switch of format 3 is on: the recorded form then needs format 3.</summary>
     public bool UsesFormat3 => GivenNameChainFit || TwoWordChainFit || NamedMergeNeedsFloor || ShiftedChainConflict
         || SameAsRefPhoneFloor || OrgNamesBothSides || CrossScriptLetters || JoinedNames || ServicedVinNeverLowers;
+
+    /// <summary>True when a switch of format 4 is on: the recorded form then needs format 4.</summary>
+    public bool UsesFormat4 => PlaceholderNamesNeedCorroboration || AbdCompounds;
 
     /// <summary>True for the engine as shipped (<see cref="Defaults"/>).</summary>
     public bool IsDefault => Equals(Defaults);
@@ -192,6 +200,8 @@ public sealed record MatchSettings
             CrossScriptLetters = On("DARLASTIC_CROSS_SCRIPT_LETTERS"),
             JoinedNames = On("DARLASTIC_JOINED_NAMES"),
             ServicedVinNeverLowers = On("DARLASTIC_SERVICED_VIN_NEVER_LOWERS"),
+            PlaceholderNamesNeedCorroboration = On("DARLASTIC_PLACEHOLDER_NAMES_CORROBORATION"),
+            AbdCompounds = On("DARLASTIC_ABD_COMPOUNDS"),
         };
     }
 
@@ -214,6 +224,8 @@ public sealed record MatchSettings
              && SameAsRefPhoneFloor == other.SameAsRefPhoneFloor && OrgNamesBothSides == other.OrgNamesBothSides
              && CrossScriptLetters == other.CrossScriptLetters && JoinedNames == other.JoinedNames
              && ServicedVinNeverLowers == other.ServicedVinNeverLowers
+             && PlaceholderNamesNeedCorroboration == other.PlaceholderNamesNeedCorroboration
+             && AbdCompounds == other.AbdCompounds
              && TokenFolds.SequenceEqual(other.TokenFolds) && NamePartFolds.SequenceEqual(other.NamePartFolds)
              && GivenNameSuffixes.SequenceEqual(other.GivenNameSuffixes, StringComparer.Ordinal)
              && FamilyNameEndings.SequenceEqual(other.FamilyNameEndings, StringComparer.Ordinal)
@@ -231,7 +243,7 @@ public sealed record MatchSettings
         h.Add(DistinctGivenNames);
         h.Add(GivenNameChainFit); h.Add(TwoWordChainFit); h.Add(NamedMergeNeedsFloor); h.Add(ShiftedChainConflict);
         h.Add(SameAsRefPhoneFloor); h.Add(OrgNamesBothSides); h.Add(CrossScriptLetters); h.Add(JoinedNames);
-        h.Add(ServicedVinNeverLowers);
+        h.Add(ServicedVinNeverLowers); h.Add(PlaceholderNamesNeedCorroboration); h.Add(AbdCompounds);
         h.Add(TokenFolds.Count); h.Add(NamePartFolds.Count); h.Add(GivenNameSuffixes.Count);
         h.Add(FamilyNameEndings.Count); h.Add(FamilyNameSexEndings.Count); h.Add(EstablishedNameParts.Count);
         return h.ToHashCode();
@@ -265,6 +277,8 @@ public sealed record MatchSettings
         if (CrossScriptLetters) on.Add("cross-script letters");
         if (JoinedNames) on.Add("joined names");
         if (ServicedVinNeverLowers) on.Add("serviced VIN never lowers");
+        if (PlaceholderNamesNeedCorroboration) on.Add("placeholder names need corroboration");
+        if (AbdCompounds) on.Add("abd compounds across scripts");
         void List(string name, int count) { if (count > 0) on.Add($"{name} {count:N0}"); }
         List("token folds", TokenFolds.Count);
         List("name-part folds", NamePartFolds.Count);
@@ -304,7 +318,7 @@ public sealed record MatchSettings
             w.WriteStartObject();
             // Format 1 for every configuration format 1 can describe: byte-identical to the records
             // written before format 2 existed, so a registry that holds one stays zero-delta.
-            w.WriteNumber("v", UsesFormat3 ? 3 : UsesFormat2 ? 2 : 1);
+            w.WriteNumber("v", UsesFormat4 ? 4 : UsesFormat3 ? 3 : UsesFormat2 ? 2 : 1);
             w.WriteBoolean("baseline", Baseline);
             w.WriteBoolean("emailMatching", EmailMatching);
             w.WriteBoolean("structuredNames", StructuredNames);
@@ -314,7 +328,7 @@ public sealed record MatchSettings
             w.WriteBoolean("orgNameMerge", OrgNameMerge);
             w.WriteBoolean("servicedVinNameFloor", ServicedVinNameFloor);
             w.WriteBoolean("strictNameParts", StrictNameParts);
-            if (UsesFormat2 || UsesFormat3)
+            if (UsesFormat2 || UsesFormat3 || UsesFormat4)
             {
                 w.WriteBoolean("crossScriptNames", CrossScriptNames);
                 w.WriteBoolean("extendedArabicLetters", ExtendedArabicLetters);
@@ -322,7 +336,7 @@ public sealed record MatchSettings
                 w.WriteBoolean("anchoredGivenName", AnchoredGivenName);
                 w.WriteBoolean("distinctGivenNames", DistinctGivenNames);
             }
-            if (UsesFormat3)
+            if (UsesFormat3 || UsesFormat4)
             {
                 w.WriteBoolean("givenNameChainFit", GivenNameChainFit);
                 w.WriteBoolean("twoWordChainFit", TwoWordChainFit);
@@ -333,6 +347,11 @@ public sealed record MatchSettings
                 w.WriteBoolean("crossScriptLetters", CrossScriptLetters);
                 w.WriteBoolean("joinedNames", JoinedNames);
                 w.WriteBoolean("servicedVinNeverLowers", ServicedVinNeverLowers);
+            }
+            if (UsesFormat4)
+            {
+                w.WriteBoolean("placeholderNamesNeedCorroboration", PlaceholderNamesNeedCorroboration);
+                w.WriteBoolean("abdCompounds", AbdCompounds);
             }
             Pairs(w, "tokenFolds", TokenFolds);
             Pairs(w, "namePartFolds", NamePartFolds);
@@ -427,6 +446,8 @@ public sealed record MatchSettings
                 CrossScriptLetters = Bool("crossScriptLetters"),
                 JoinedNames = Bool("joinedNames"),
                 ServicedVinNeverLowers = Bool("servicedVinNeverLowers"),
+                PlaceholderNamesNeedCorroboration = Bool("placeholderNamesNeedCorroboration"),
+                AbdCompounds = Bool("abdCompounds"),
                 TokenFolds = Pairs("tokenFolds"),
                 NamePartFolds = Pairs("namePartFolds"),
                 GivenNameSuffixes = Strings("givenNameSuffixes"),
