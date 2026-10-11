@@ -527,13 +527,23 @@ public static class Merge
     /// <para>How the chosen chain is SHOWN is <paramref name="nameOptions"/>' business (null = the defaults: the
     /// title-cased match form). With <see cref="GoldenNameOptions.DisplayFromRecordNames"/> on, the
     /// <c>full_name</c> value is the chain as one of its records wrote it (<see cref="GoldenDisplayName"/>);
-    /// the choice of chain, its <c>WonBy</c> reason and every other attribute are the same either way.</para>
+    /// the choice of chain, its <c>WonBy</c> reason and every other attribute are the same either way. The
+    /// options' chain rules (<see cref="GoldenNameOptions.PlaceholderNames"/>, <see cref="GoldenNameOptions.PlaceholderTokens"/>,
+    /// <see cref="GoldenNameOptions.MinimumLetters"/>, <see cref="GoldenNameOptions.PresentableOnly"/>; all off by
+    /// default) take the chains they refuse out of the choice first; with none left there is no <c>full_name</c>.</para>
     /// </summary>
     public static List<GoldenAttr> SurviveGolden(List<RealRecord> members, NameSurvivalExplain? explain = null, GoldenNameOptions? nameOptions = null)
     {
         var golden = new List<GoldenAttr>();
 
         var names = members.Where(m => m.NormName.Length > 0).Select(m => m.NormName).ToList();
+        if (nameOptions is { FiltersChains: true } && names.Count > 0)
+        {
+            // Chains the options refuse never stand as the shown name (GoldenNameOptions.MayShow); the best of
+            // the others is chosen exactly as before, and a golden with none left shows no name.
+            var verdicts = new Dictionary<string, bool>(StringComparer.Ordinal);
+            names = names.Where(n => verdicts.TryGetValue(n, out var ok) ? ok : verdicts[n] = nameOptions.MayShow(n, members)).ToList();
+        }
         if (names.Count > 0)
         {
             var groups = names.GroupBy(x => x)

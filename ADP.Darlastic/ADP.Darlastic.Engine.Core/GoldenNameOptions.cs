@@ -26,6 +26,9 @@ namespace ShiftSoftware.ADP.Darlastic.Engine;
 /// </summary>
 public sealed record GoldenNameOptions
 {
+    // First: Default below is built with it (static initializers run in declaration order).
+    private static readonly IReadOnlySet<string> NoNames = new HashSet<string>(StringComparer.Ordinal);
+
     /// <summary>The engine as shipped: the golden's name is the title-cased match form.</summary>
     public static GoldenNameOptions Default { get; } = new();
 
@@ -46,16 +49,83 @@ public sealed record GoldenNameOptions
     /// <summary>The rank of <paramref name="sourceSystem"/>.</summary>
     public int RankOf(string sourceSystem) => SourceRank.TryGetValue(sourceSystem, out var rank) ? rank : UnlistedRank;
 
-    /// <summary>One line for a run log (source systems and ranks, never a value).</summary>
+    // ── which chains may be shown (all off by default) ─────────────────────────────────────────────
+    // A chain these rules refuse never stands as the golden's name: survivorship picks the best chain among
+    // the others (same order as always), and a golden whose every chain is refused has no shown name. They
+    // read only names the resolve already normalized, and change only the name-bearing artifacts — matching,
+    // clustering and every score read each record's own normalized name, never the golden's.
+
+    /// <summary>
+    /// Whole normalized names (as <see cref="Norm.Name"/> writes them) that name nobody — the placeholders a
+    /// tenant's sources type into a required name field ("unknown", "no name" ...). Exact match on the whole
+    /// chain. Empty (the default): every chain may be shown.
+    /// </summary>
+    public IReadOnlySet<string> PlaceholderNames { get; init; } = NoNames;
+
+    /// <summary>
+    /// Normalized tokens that name nobody on their own (the letters of "n/a", "test", a bare title such as
+    /// "mr"): a chain made ONLY of these tokens is a placeholder ("n a n a", "test test", "mr"). A real name
+    /// that merely contains one is untouched. Empty (the default): no token rule.
+    /// </summary>
+    public IReadOnlySet<string> PlaceholderTokens { get; init; } = NoNames;
+
+    /// <summary>A chain with fewer letters than this is junk and never shown ("ab", "x y"). 0 (the default): no minimum.</summary>
+    public int MinimumLetters { get; init; }
+
+    /// <summary>
+    /// Show only presentable spellings (off by default). With <see cref="DisplayFromRecordNames"/> on, a record's
+    /// spelling is never the shown name when it is e-mail-shaped (holds an @), carries an emoji or another
+    /// pictograph, the replacement character U+FFFD (a letter lost in transcoding) or any numeral (the cleanup
+    /// already refuses decimal digits); another spelling of the chain, or its match form, is shown instead. And
+    /// a chain every spelling of which is e-mail-shaped is an address, not a name: it is never shown, in either
+    /// form.
+    /// </summary>
+    public bool PresentableOnly { get; init; }
+
+    /// <summary>True when a rule above may refuse a chain.</summary>
+    public bool FiltersChains => PlaceholderNames.Count > 0 || PlaceholderTokens.Count > 0 || MinimumLetters > 0 || PresentableOnly;
+
+    /// <summary>
+    /// Whether the chain <paramref name="normName"/> (a member's normalized name) may stand as the golden's
+    /// shown name under these options. <paramref name="members"/> are the cluster's records (read only for
+    /// <see cref="PresentableOnly"/>: the spellings of the chain).
+    /// </summary>
+    public bool MayShow(string normName, IReadOnlyList<RealRecord> members)
+    {
+        if (normName.Length == 0) return false;
+        if (PlaceholderNames.Contains(normName)) return false;
+        if (PlaceholderTokens.Count > 0 && normName.Split(' ', StringSplitOptions.RemoveEmptyEntries).All(PlaceholderTokens.Contains))
+            return false;
+        if (MinimumLetters > 0 && normName.Count(char.IsLetter) < MinimumLetters) return false;
+        if (PresentableOnly)
+        {
+            bool spelled = false;
+            foreach (var m in members)
+            {
+                if (!string.Equals(m.NormName, normName, StringComparison.Ordinal)) continue;
+                if (!GoldenDisplayName.IsEmailShaped(m.RawName)) return true;
+                spelled = true;
+            }
+            if (spelled) return false;
+        }
+        return true;
+    }
+
+    /// <summary>One line for a run log (source systems, ranks and rule sizes, never a value).</summary>
     public string Describe()
     {
-        if (!DisplayFromRecordNames) return "match form (title-cased)";
-        if (SourceRank.Count == 0) return "as the records wrote them (every source alike)";
+        string rules = FiltersChains
+            ? FormattableString.Invariant($"; never shown: {PlaceholderNames.Count} placeholder names, chains of {PlaceholderTokens.Count} placeholder tokens")
+              + (MinimumLetters > 0 ? FormattableString.Invariant($", chains under {MinimumLetters} letters") : "")
+              + (PresentableOnly ? ", unpresentable spellings" : "")
+            : "";
+        if (!DisplayFromRecordNames) return "match form (title-cased)" + rules;
+        if (SourceRank.Count == 0) return "as the records wrote them (every source alike)" + rules;
         var groups = SourceRank.Select(kv => (Rank: kv.Value, Name: kv.Key))
             .Append((Rank: UnlistedRank, Name: "other sources"))
             .GroupBy(x => x.Rank).OrderBy(g => g.Key)
             .Select(g => string.Join("/", g.Select(x => x.Name).Order(StringComparer.Ordinal)));
-        return "as the records wrote them (" + string.Join(" > ", groups) + ")";
+        return "as the records wrote them (" + string.Join(" > ", groups) + ")" + rules;
     }
 }
 
@@ -74,6 +144,7 @@ public static class GoldenDisplayName
         foreach (var m in members)
         {
             if (!string.Equals(m.NormName, chosenNormName, StringComparison.Ordinal)) continue;
+            if (options.PresentableOnly && !IsPresentable(m.RawName, m.NameWasMojibake)) continue;
             if (Clean(m.RawName, m.NameWasMojibake) is not { } display) continue;
             candidates.Add((m, display, display.Split(' ').Length, display.Count(char.IsLetter)));
         }
@@ -149,6 +220,32 @@ public static class GoldenDisplayName
         if (anyUpper != anyLower)   // Latin letters present, all in one case
             joined = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(joined.ToLowerInvariant());
         return joined;
+    }
+
+    /// <summary>A raw name that holds an @: an e-mail address (or part of one) typed into the name field.</summary>
+    public static bool IsEmailShaped(string? raw) => raw is not null && raw.Contains('@');
+
+    /// <summary>
+    /// Whether a record's spelling may be shown under <see cref="GoldenNameOptions.PresentableOnly"/>: not
+    /// e-mail-shaped, and (after the garbled-codepage repair <see cref="Clean"/> makes) no emoji or other
+    /// pictograph (a character outside the Basic Multilingual Plane, or an "other symbol" such as a heart or a
+    /// check mark), no replacement character U+FFFD and no numeral of any kind.
+    /// </summary>
+    public static bool IsPresentable(string? raw, bool wasMojibake = false)
+    {
+        if (string.IsNullOrWhiteSpace(raw) || IsEmailShaped(raw)) return false;
+        string s = raw;
+        if (wasMojibake)
+        {
+            if (Mojibake.TryRepair(s) is not { } repaired) return false;
+            s = repaired;
+        }
+        foreach (char c in s)
+        {
+            if (c == '�' || char.IsSurrogate(c) || char.IsNumber(c)) return false;
+            if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.OtherSymbol) return false;
+        }
+        return true;
     }
 
     private static bool IsEdgeJunk(char c) =>
