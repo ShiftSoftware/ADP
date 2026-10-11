@@ -244,7 +244,8 @@ public static class Flags
     /// ("Given Father Grandfather") is consistent with his father's ("Father Grandfather"). On, the
     /// shorter name's first token must align with the longer name's first token, and its remaining
     /// tokens with the longer name's remaining tokens in order (tokens may be skipped, so a trailing
-    /// family or tribal name still aligns); a one-word name must be the longer name's first token.
+    /// family or tribal name still aligns); a one-word name must be the longer name's first token. A
+    /// leading title (mr, mrs, ms, miss, dr, eng) is not the given name and is set aside.
     /// </summary>
     public static bool AnchoredGivenName { get => Current.AnchoredGivenName; set => Change(s => s with { AnchoredGivenName = value }); }
 

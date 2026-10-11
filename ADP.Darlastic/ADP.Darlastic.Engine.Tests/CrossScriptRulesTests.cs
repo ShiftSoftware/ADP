@@ -225,6 +225,8 @@ public class CrossScriptRulesTests
         Assert.True(Consistent(Anchored, "Torvin", "Torvin Ostrid"));
         Assert.False(Consistent(Anchored, "Ostrid", "Torvin Ostrid"));                             // the father alone
         Assert.False(Consistent(Anchored, "Quellmar Torvin", "Torvin Ostrid Quellmar"));           // out of order
+        Assert.True(Consistent(Anchored, "Mr Torvin Ostrid", "Torvin Ostrid Quellmar"));           // a title is not the given name
+        Assert.True(Consistent(Anchored, "Dr Torvin", "Torvin Ostrid"));
 
         Assert.True(Consistent(MatchSettings.Defaults, "Ostrid", "Torvin Ostrid"));
         Assert.True(Consistent(MatchSettings.Defaults, "Quellmar Torvin", "Torvin Ostrid Quellmar"));

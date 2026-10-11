@@ -652,13 +652,16 @@ public static class RealMatcher
         if (skeletonEdits <= 1 && Skeleton(Canon(ga)).Length == Skeleton(Canon(gb)).Length) return false;
         if (ctx.Cross && (ctx.ArabicSide == 1 ? CrossAligns(ga, gb, 1) : CrossAligns(gb, ga, 1))) return false;
         return true;
+    }
 
-        static string[] WithoutTitles(string[] t)
-        {
-            int i = 0;
-            while (i < t.Length - 1 && t[i] is "mr" or "mrs" or "ms" or "miss" or "dr" or "eng") i++;
-            return i == 0 ? t : t[i..];
-        }
+    /// <summary>The tokens without leading titles (mr, mrs, ms, miss, dr, eng); a title that is the whole
+    /// name stays. Used where the given name is compared as such (<see cref="Flags.AnchoredGivenName"/>,
+    /// <see cref="Flags.DistinctGivenNames"/>).</summary>
+    private static string[] WithoutTitles(string[] t)
+    {
+        int i = 0;
+        while (i < t.Length - 1 && t[i] is "mr" or "mrs" or "ms" or "miss" or "dr" or "eng") i++;
+        return i == 0 ? t : t[i..];
     }
 
     /// <summary>Where Flags.NamelessSoldVinNeedsPhone holds a nameless sold-VIN pair whose named side has no phone:
@@ -835,6 +838,8 @@ public static class RealMatcher
     {
         var ta = MatchTokens(a, ctx);
         var tb = MatchTokens(b, ctx);
+        // Flags.AnchoredGivenName: the anchor is the given name, so a leading title is not compared.
+        if (ctx.Anchored) { ta = WithoutTitles(ta); tb = WithoutTitles(tb); }
         if (ta.Length == 0 || tb.Length == 0) return false;
         bool aSmall = ta.Length <= tb.Length;
         var (small, big) = aSmall ? (ta, tb) : (tb, ta);
