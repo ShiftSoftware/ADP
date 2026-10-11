@@ -113,4 +113,12 @@ public class DarlasticApiOptions
     /// 0 (the default) shows every city, as before.
     /// </summary>
     public int CityMinimumShare { get; set; }
+
+    /// <summary>
+    /// Show a record-reference comparison group ("R:&lt;source&gt;|&lt;record id&gt;", the group every record forms
+    /// with the records that name it) to a caller who may see values with the source's <see cref="SourceLabels"/>
+    /// name instead of its slug, on the case browser's record and pair views. A caller without the reveal
+    /// permission sees every group's value hidden either way. Off by default: the slug, as before.
+    /// </summary>
+    public bool LabelSourcesInBlockKeys { get; set; }
 }

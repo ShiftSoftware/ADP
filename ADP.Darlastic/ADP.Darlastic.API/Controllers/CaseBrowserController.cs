@@ -73,7 +73,7 @@ public class CaseBrowserController : ControllerBase
     private RecordPiiView? pii;
 
     /// <summary>What this caller may see of the records, asked of TypeAuth once per request.</summary>
-    private RecordPiiView Pii => pii ??= RecordPiiView.ForCaller(HttpContext, masker, piiOptions);
+    private RecordPiiView Pii => pii ??= RecordPiiView.ForCaller(HttpContext, masker, piiOptions, RecordPiiView.BlockKeyLabels(options));
 
     // Seeing how the engine decided the whole corpus and being trusted to change how it resolves
     // are different permissions, so this rides the StewardQueue node's read grant and its own

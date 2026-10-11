@@ -175,7 +175,7 @@ public class CaseBrowserCompatController : ControllerBase
 
     /// <summary>The shared record PII rules, fed with this caller's grant (the token's, when there is one).</summary>
     private RecordPiiView PiiView => piiView ??= new RecordPiiView(masker, piiOptions, Pii.Reveal, Pii.PartialSearch,
-        CityDisclosureAttribute.ShownCities(HttpContext));
+        CityDisclosureAttribute.ShownCities(HttpContext), RecordPiiView.BlockKeyLabels(options));
 
     /// <summary>The value as this caller may see it. Empty stays empty, so "no name" still reads as such.</summary>
     private string? Shown(PiiKind kind, string? raw) => PiiView.Show(kind, raw);
