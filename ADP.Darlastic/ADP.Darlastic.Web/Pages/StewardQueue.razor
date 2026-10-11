@@ -92,8 +92,9 @@
                                 </MudTooltip>
                             }
                         </MudStack>
-                        <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="font-family: monospace;">
-                            @c.PairKey
+                        @* The pair's key, with the host's plain source names in place of the slugs when it gives them. *@
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="@(Labelled(c) ? null : "font-family: monospace;")">
+                            @PairCaption(c)
                         </MudText>
                     </MudStack>
 
@@ -243,6 +244,23 @@
         {
             _busy = null;
         }
+    }
+
+    private static bool Labelled(StewardCaseDTO c) => c.A?.SourceLabel is not null || c.B?.SourceLabel is not null;
+
+    /// <summary>The pair key as written ("source:id~source:id"), each source the host names shown by that name
+    /// ("Name #id"). Unchanged when the host names no source.</summary>
+    private static string PairCaption(StewardCaseDTO c)
+    {
+        if (!Labelled(c)) return c.PairKey;
+        var labels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var r in new[] { c.A, c.B })
+            if (r?.SourceLabel is { } label) labels[r.SourceSystem] = label;
+        return string.Join(" ~ ", c.PairKey.Split('~').Select(side =>
+        {
+            int colon = side.IndexOf(':');
+            return colon > 0 && labels.TryGetValue(side[..colon], out var label) ? $"{label} #{side[(colon + 1)..]}" : side;
+        }));
     }
 
     private static Color ScoreColor(float score) => score switch
