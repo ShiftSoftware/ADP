@@ -31,7 +31,9 @@ namespace ShiftSoftware.ADP.Darlastic.Engine;
 ///   - Empty input against a non-empty registry aborts; so does a removal/deactivation wave above
 ///     MassChangeThreshold, unless DARLASTIC_FORCE=1.
 ///   - Resolve runs are serialized via sp_getapplock — concurrent runs would corrupt the
-///     read-compute-write cycle.
+///     read-compute-write cycle. The lock is Session-owned and released explicitly when the resolve
+///     ends, or when a check right after taking it fails (a pooled connection would otherwise carry
+///     the session, and the lock, back into the pool; an undisposed one would keep it for good).
 ///
 /// Storage: SQL Server, schema [Darlastic], created idempotently on first run. Connection via the
 /// DARLASTIC_SQL env var; defaults to localhost\SQLEXPRESS, database Darlastic (created if absent).
@@ -109,11 +111,25 @@ public static class Registry
     {
         EnsureDatabase();
         var conn = new SqlConnection(ConnectionString);
-        conn.Open();
-        AcquireResolveLock(conn);
-        EnsureSchema(conn);
-        AssertTenant(conn, stampIfMissing: true);
-        return conn;
+        bool locked = false;
+        try
+        {
+            conn.Open();
+            AcquireResolveLock(conn);
+            locked = true;
+            EnsureSchema(conn);
+            AssertTenant(conn, stampIfMissing: true);
+            return conn;
+        }
+        catch
+        {
+            // A check after the lock failed (the schema check, the tenant assert, a command timeout). The caller
+            // never receives this connection, so nothing else would end its session: release the lock and close
+            // it, or every later resolve in this process reads "another resolve is running" until it exits.
+            if (locked) ReleaseResolveLock(conn);
+            conn.Dispose();
+            throw;
+        }
     }
 
     /// <summary>The tenant this process believes it is (DARLASTIC_TENANT; "default" when unset).</summary>
@@ -237,6 +253,34 @@ public static class Registry
         cmd.ExecuteNonQuery();
         if ((int)ret.Value! < 0)
             throw new InvalidOperationException("Another Darlastic resolve is already running (sp_getapplock 'Darlastic.Resolve' denied).");
+    }
+
+    /// <summary>
+    /// Release <see cref="AcquireResolveLock"/>'s lock (best effort, never throws). Closing an unpooled connection
+    /// ends the session and the lock with it, but a POOLED connection goes back to the pool with its session alive,
+    /// and a Session-owned lock would outlive the resolve there. A connection that cannot run the release (broken,
+    /// a reader still open, a transaction pending) is disposed right after by the caller.
+    /// </summary>
+    private static void ReleaseResolveLock(SqlConnection conn)
+    {
+        if (conn.State != System.Data.ConnectionState.Open) return;
+        try
+        {
+            using var cmd = new SqlCommand("sp_releaseapplock", conn) { CommandType = System.Data.CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@Resource", "Darlastic.Resolve");
+            cmd.Parameters.AddWithValue("@LockOwner", "Session");
+            cmd.ExecuteNonQuery();
+        }
+        catch (SqlException) { }
+        catch (InvalidOperationException) { }
+    }
+
+    /// <summary>The resolve lock for the life of one resolve: declared right after its connection, so it is
+    /// released before the connection is disposed (and after every transaction declared later is rolled back or
+    /// committed).</summary>
+    private sealed class HeldResolveLock(SqlConnection conn) : IDisposable
+    {
+        public void Dispose() => ReleaseResolveLock(conn);
     }
 
     private static void EnsureSchema(SqlConnection conn)
@@ -784,6 +828,7 @@ public static class Registry
         IReadOnlyList<SourceEvent>? events, EventAttachOptions? eventOptions = null, GoldenNameOptions? names = null)
     {
         using var conn = Open();
+        using var resolveLock = new HeldResolveLock(conn);
         var m = new RunMetrics { Records = records.Count };
 
         // ---- prior state (reads are safe: resolve runs are serialized by the applock)
