@@ -67,6 +67,14 @@ public class DarlasticWebOptions
     public TypeAuthAction? GoldenCustomersAction =>
         EnableDarlasticActionTreeAuthorization ? Actions.ResolvedGoldenCustomers : null;
 
+    /// <summary>
+    /// Show the steward queue in plain language, for business users rather than the people tuning the matcher: a
+    /// "strong" / "borderline" cue in place of the matcher's three-decimal score, no resolve run or identity numbers,
+    /// no normalized match form of a name, and no "engine" or "resolve run" wording in its texts. The cases, their
+    /// order and the verdict controls are the same either way. Off by default: the page as before.
+    /// </summary>
+    public bool PlainLanguageStewardQueue { get; set; }
+
     /// <summary>Steward queue counterpart of <see cref="GoldenCustomersAction"/>.</summary>
     public TypeAuthAction? StewardQueueAction =>
         EnableDarlasticActionTreeAuthorization ? Actions.ResolvedStewardQueue : null;
