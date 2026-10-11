@@ -47,6 +47,9 @@ public class GoldenCustomerController : ControllerBase
     /// <summary>Largest page the events endpoint serves.</summary>
     private const int MaxEventsPageSize = 500;
 
+    /// <summary>Length of a vehicle identification number.</summary>
+    private const int VinLength = 17;
+
     /// <summary>Sentinel content hash meaning "delete this downstream" — a redirected-away identity.</summary>
     private const string TombstoneHash = "TOMBSTONE";
 
@@ -250,8 +253,9 @@ public class GoldenCustomerController : ControllerBase
     }
 
     /// <summary>
-    /// One page of the identity's timeline events — workshop visits, inspections, warranty claims,
-    /// recalls, activations — newest first, read from the <c>events</c> artifact the last resolve
+    /// One page of the identity's timeline events — every <see cref="GoldenEventType"/> the tenant's
+    /// feeds supply (workshop visits, sales, inspections, recalls, bookings, test drives, quotations,
+    /// app registrations, …) — newest first, read from the <c>events</c> artifact the last resolve
     /// staged (one clustered-PK seek). Same authorization as <see cref="Detail"/>, and
     /// redirect-chased the same way, so a merged-away ID shows its survivor's timeline.
     ///
@@ -357,6 +361,80 @@ public class GoldenCustomerController : ControllerBase
     }
 
     /// <summary>
+    /// The golden customers linked to one vehicle, from the <c>vinowner</c> artifact the last resolve
+    /// staged for the VIN (one clustered-PK seek): each with its role (<c>owner</c> or
+    /// <c>service-contact</c>) and the period the engine computed, in the engine's order (owners in
+    /// timeline order, then service contacts). Each link is redirect-chased to the surviving identity,
+    /// so a golden merged away since the resolve answers as its survivor. A survivor is listed once:
+    /// when several of the VIN's goldens were merged into it, only its strongest link is kept (owner
+    /// over service contact, then the longer period; see <see cref="VinOwnerPayload.OnePerSurvivor"/>).
+    /// Same authorization as the list and <see cref="Detail"/>.
+    ///
+    /// <para>Name and phone come back masked for every caller, read and protected exactly as
+    /// <see cref="Detail"/> does; <see cref="RevealPii"/> with a link's ID is the only route to a raw
+    /// value. The VIN is trimmed and upper-cased first: 400 when it is not 17 letters or digits, 404
+    /// when the registry has no link to it.</para>
+    /// </summary>
+    [HttpGet("by-vin/{vin}")]
+    [Authorize]
+    public async Task<ActionResult<GoldenCustomerByVinDTO>> ByVin(string vin)
+    {
+        if (!CanReadGoldens())
+            return Forbid();
+
+        var trimmed = vin?.Trim() ?? "";
+        if (trimmed.Length != VinLength || !trimmed.All(char.IsAsciiLetterOrDigit))
+            return BadRequest(new { Message = $"A VIN is {VinLength} letters or digits." });
+
+        // The engine keys every VIN artifact on this canonical form; a VIN it rejects as implausible
+        // can never have been linked.
+        if (Norm.Vin(trimmed) is not { } key)
+            return NotFound();
+
+        var payload = await LoadStagedPayloadAsync(VinOwnerPayload.ArtifactType, key);
+        if (payload is null)
+            return NotFound();
+
+        var links = VinOwnerPayload.Parse(payload).Links;
+        var live = new Dictionary<long, long>();
+        foreach (var link in links)
+            if (!live.ContainsKey(link.GoldenId))
+                live[link.GoldenId] = await ChaseRedirectsAsync(link.GoldenId);
+
+        // Two linked goldens merged since the resolve chase to one survivor: list it once, by its
+        // strongest link (owner over service contact, then the longer period).
+        var dto = new GoldenCustomerByVinDTO { VIN = key };
+        foreach (var (link, liveId) in VinOwnerPayload.OnePerSurvivor(links, live))
+        {
+            var staged = await LoadStagedGoldenAsync(liveId);
+
+            dto.Goldens.Add(new GoldenCustomerVinLinkDTO
+            {
+                ID = liveId.ToString(CultureInfo.InvariantCulture),
+                LinkedID = link.GoldenId.ToString(CultureInfo.InvariantCulture),
+                WasRedirected = liveId != link.GoldenId,
+                Role = link.Role,
+                EffectiveFrom = link.From,
+                EffectiveTo = link.To,
+                SaleCount = link.Sales,
+                ServiceCount = link.Services,
+                FirstSale = link.FirstSale,
+                LastSale = link.LastSale,
+                FirstService = link.FirstService,
+                LastService = link.LastService,
+                Sources = link.Sources.ToList(),
+                AwaitingResolve = staged is null,
+                FullName = new PiiFieldDTO { Value = staged?.Attribute("full_name") },
+                Phone = new PiiFieldDTO { Value = staged?.Attribute("phone") },
+            });
+        }
+
+        // Mask every protected member, in every link, before the response leaves the server.
+        piiProtector.Protect(dto);
+        return Ok(dto);
+    }
+
+    /// <summary>
     /// The staged vehicle-link payload — <c>{"goldenId":N,"links":[{"vin","role","from","to","sales",
     /// "services","firstSale","lastSale","firstService","lastService","sources":[...]}]}</c>, dates as
     /// <c>yyyy-MM-dd</c> or empty — mapped to the DTO. Authoritative producer: the engine's
@@ -453,9 +531,13 @@ public class GoldenCustomerController : ControllerBase
     /// The staged payload of one per-golden artifact (a clustered-PK seek on
     /// <c>(ArtifactType, ArtifactKey)</c>), or null when there is none or it is tombstoned.
     /// </summary>
-    private async Task<string?> LoadStagedPayloadAsync(string artifactType, long live)
+    private Task<string?> LoadStagedPayloadAsync(string artifactType, long live) =>
+        LoadStagedPayloadAsync(artifactType, live.ToString(CultureInfo.InvariantCulture));
+
+    /// <summary>The staged payload of one artifact by its key, or null when there is none or it is
+    /// tombstoned.</summary>
+    private async Task<string?> LoadStagedPayloadAsync(string artifactType, string key)
     {
-        var key = live.ToString(CultureInfo.InvariantCulture);
         var staged = await db.Set<ProjectionState>().AsNoTracking()
             .Where(x => x.ArtifactType == artifactType && x.ArtifactKey == key)
             .Select(x => new { x.ContentHash, x.Payload })

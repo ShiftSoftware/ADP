@@ -523,8 +523,13 @@ public static class Merge
     /// Order-preserving on purpose: 'ali mohammed' must NOT extend to 'mohammed ali kamil'
     /// — name-order inversion is father/son evidence, not a chain slice (those stay for
     /// the steward's enrich/compose action, Phase 5).
+    ///
+    /// <para>How the chosen chain is SHOWN is <paramref name="nameOptions"/>' business (null = the defaults: the
+    /// title-cased match form). With <see cref="GoldenNameOptions.DisplayFromRecordNames"/> on, the
+    /// <c>full_name</c> value is the chain as one of its records wrote it (<see cref="GoldenDisplayName"/>);
+    /// the choice of chain, its <c>WonBy</c> reason and every other attribute are the same either way.</para>
     /// </summary>
-    public static List<GoldenAttr> SurviveGolden(List<RealRecord> members, NameSurvivalExplain? explain = null)
+    public static List<GoldenAttr> SurviveGolden(List<RealRecord> members, NameSurvivalExplain? explain = null, GoldenNameOptions? nameOptions = null)
     {
         var golden = new List<GoldenAttr>();
 
@@ -558,9 +563,11 @@ public static class Merge
                 }
                 explain.Chosen = fullest.Count > 0 ? fullest[0].Name : null;
             }
-            golden.Add(fullest.Count > 0
-                ? new GoldenAttr("full_name", TitleCaseForDisplay(fullest[0].Name), "longest-chain")
-                : new GoldenAttr("full_name", TitleCaseForDisplay(anchor.Name), "confidence-recency"));
+            string chosen = fullest.Count > 0 ? fullest[0].Name : anchor.Name;
+            string shown = nameOptions is { DisplayFromRecordNames: true }
+                ? GoldenDisplayName.Choose(members, chosen, nameOptions) ?? TitleCaseForDisplay(chosen)
+                : TitleCaseForDisplay(chosen);
+            golden.Add(new GoldenAttr("full_name", shown, fullest.Count > 0 ? "longest-chain" : "confidence-recency"));
         }
         // Golden city: most-frequent normalized city (display/probe value; spelling variants of
         // one city count separately — fuzzy city unification is a Phase 4/steward concern).
