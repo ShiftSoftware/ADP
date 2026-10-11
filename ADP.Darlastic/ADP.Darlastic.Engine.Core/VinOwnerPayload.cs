@@ -73,6 +73,70 @@ public static class VinOwnerPayload
         return (vin, links);
     }
 
+    /// <summary>
+    /// One link per surviving identity. The payload is as fresh as the last resolve; when two of its
+    /// goldens have since been merged into one survivor, a read that redirect-chases each link would
+    /// list that survivor twice. This keeps the strongest link of each survivor (see
+    /// <see cref="IsStronger"/>) and drops the others.
+    ///
+    /// <para>The kept links stay in staged order (owners in timeline order, then service contacts),
+    /// each at its own staged position. A dropped link's counts, dates and sources are NOT folded into
+    /// the kept one: every fact on a kept link comes from one staged link, so its period still means
+    /// what the resolve computed. The next resolve restages the VIN with the survivor's combined
+    /// evidence.</para>
+    /// </summary>
+    /// <param name="links">The staged links, in staged order.</param>
+    /// <param name="liveId">Each link's golden id mapped to its surviving identity; an id it does
+    /// not contain is its own survivor.</param>
+    /// <returns>The kept links with their surviving identity, in staged order.</returns>
+    public static List<(Link Link, long LiveId)> OnePerSurvivor(IReadOnlyList<Link> links, IReadOnlyDictionary<long, long> liveId)
+    {
+        var best = new Dictionary<long, int>();
+        for (int i = 0; i < links.Count; i++)
+        {
+            var live = liveId.GetValueOrDefault(links[i].GoldenId, links[i].GoldenId);
+            if (!best.TryGetValue(live, out var kept) || IsStronger(links[i], links[kept]))
+                best[live] = i;
+        }
+
+        var result = new List<(Link, long)>(best.Count);
+        for (int i = 0; i < links.Count; i++)
+        {
+            var live = liveId.GetValueOrDefault(links[i].GoldenId, links[i].GoldenId);
+            if (best[live] == i)
+                result.Add((links[i], live));
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// True when <paramref name="a"/> is a strictly stronger link to the vehicle than
+    /// <paramref name="b"/>: an owner beats a service contact; within a role, the longer period wins.
+    /// An open period (no end: still the owner) is the longest; a period with no known start is the
+    /// shortest, since nothing says how long it was. Equal strength is not stronger, so the
+    /// earlier staged link is kept.
+    /// </summary>
+    public static bool IsStronger(Link a, Link b)
+    {
+        int byRole = RoleRank(a.Role).CompareTo(RoleRank(b.Role));
+        if (byRole != 0) return byRole > 0;
+        return PeriodLength(a) > PeriodLength(b);
+    }
+
+    private static int RoleRank(string role) => role switch
+    {
+        VinPeriod.OwnerRole => 2,
+        VinPeriod.ContactRole => 1,
+        _ => 0,
+    };
+
+    /// <summary>Days from start to end; <see cref="long.MaxValue"/> when open-ended, -1 when the start
+    /// is unknown.</summary>
+    private static long PeriodLength(Link l) =>
+        l.From is not { } from ? -1
+        : l.To is { } to ? to.DayNumber - from.DayNumber
+        : long.MaxValue;
+
     private static string? Str(JsonElement e, string name) =>
         e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
 

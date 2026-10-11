@@ -12,6 +12,13 @@ namespace ShiftSoftware.ADP.Darlastic.Shared.DTOs.GoldenCustomer;
 /// <para>Ordering is the resolve's: owners first in timeline order (earliest ownership first, an
 /// unknown start first of all), then service contacts.</para>
 ///
+/// <para>One entry per surviving identity. When goldens the resolve linked to the VIN were merged into
+/// one survivor since, that survivor is listed once, by its strongest link: an owner link over a
+/// service-contact link, then the longer period (an open period, still the owner, is the longest; an
+/// unknown start the shortest), then the earlier staged link. The dropped links' counts and sources are
+/// not added to the kept one, so every fact on an entry comes from one staged link; the next resolve
+/// restages the VIN with the survivor's combined evidence.</para>
+///
 /// <para>Name and phone are protected representations: every response carries them masked, for
 /// every caller. The raw value of one field comes only from the reveal route,
 /// <c>POST GoldenCustomer/{id}/pii/{field}/reveal</c>, with the link's <see cref="GoldenCustomerVinLinkDTO.ID"/>.</para>
@@ -31,7 +38,8 @@ public class GoldenCustomerVinLinkDTO
     public string ID { get; set; } = default!;
 
     /// <summary>The identity the last resolve linked; differs from <see cref="ID"/> when that identity
-    /// was merged away since.</summary>
+    /// was merged away since. When several linked identities share one survivor, this is the one whose
+    /// link was kept.</summary>
     public string? LinkedID { get; set; }
 
     public bool WasRedirected { get; set; }

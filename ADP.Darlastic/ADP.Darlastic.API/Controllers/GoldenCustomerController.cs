@@ -355,8 +355,10 @@ public class GoldenCustomerController : ControllerBase
     /// staged for the VIN (one clustered-PK seek): each with its role (<c>owner</c> or
     /// <c>service-contact</c>) and the period the engine computed, in the engine's order (owners in
     /// timeline order, then service contacts). Each link is redirect-chased to the surviving identity,
-    /// so a golden merged away since the resolve answers as its survivor. Same authorization as the
-    /// list and <see cref="Detail"/>.
+    /// so a golden merged away since the resolve answers as its survivor. A survivor is listed once:
+    /// when several of the VIN's goldens were merged into it, only its strongest link is kept (owner
+    /// over service contact, then the longer period; see <see cref="VinOwnerPayload.OnePerSurvivor"/>).
+    /// Same authorization as the list and <see cref="Detail"/>.
     ///
     /// <para>Name and phone come back masked for every caller, read and protected exactly as
     /// <see cref="Detail"/> does; <see cref="RevealPii"/> with a link's ID is the only route to a raw
@@ -383,15 +385,18 @@ public class GoldenCustomerController : ControllerBase
         if (payload is null)
             return NotFound();
 
-        var dto = new GoldenCustomerByVinDTO { VIN = key };
+        var links = VinOwnerPayload.Parse(payload).Links;
         var live = new Dictionary<long, long>();
-        var goldens = new Dictionary<long, StagedGolden?>();
-        foreach (var link in VinOwnerPayload.Parse(payload).Links)
+        foreach (var link in links)
+            if (!live.ContainsKey(link.GoldenId))
+                live[link.GoldenId] = await ChaseRedirectsAsync(link.GoldenId);
+
+        // Two linked goldens merged since the resolve chase to one survivor: list it once, by its
+        // strongest link (owner over service contact, then the longer period).
+        var dto = new GoldenCustomerByVinDTO { VIN = key };
+        foreach (var (link, liveId) in VinOwnerPayload.OnePerSurvivor(links, live))
         {
-            if (!live.TryGetValue(link.GoldenId, out var liveId))
-                live[link.GoldenId] = liveId = await ChaseRedirectsAsync(link.GoldenId);
-            if (!goldens.TryGetValue(liveId, out var staged))
-                goldens[liveId] = staged = await LoadStagedGoldenAsync(liveId);
+            var staged = await LoadStagedGoldenAsync(liveId);
 
             dto.Goldens.Add(new GoldenCustomerVinLinkDTO
             {
