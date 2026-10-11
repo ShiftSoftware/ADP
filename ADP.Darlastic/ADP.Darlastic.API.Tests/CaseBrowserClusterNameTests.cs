@@ -57,6 +57,19 @@ public class CaseBrowserClusterNameTests
     }
 
     [Fact]
+    public async Task AStagedGoldenWithNoName_ShowsNoName_ThoughItsRecordsHaveOne()
+    {
+        // The resolve's name options refused every chain (a placeholder that names nobody): no surface shows one.
+        using var registry = new Registry();
+        await registry.SeedAsync(stagedName: null, stageNamelessGolden: true);
+
+        var (goldenName, attr) = await registry.ClusterNameAsync();
+
+        Assert.Null(goldenName);
+        Assert.Null(attr);
+    }
+
+    [Fact]
     public async Task WhenStagedAndRecomputedAgree_TheViewIsUnchanged()
     {
         // A tenant on the defaults stages exactly what the view recomputes.
@@ -88,7 +101,7 @@ public class CaseBrowserClusterNameTests
 
         private ShiftDbContext Db => scope.ServiceProvider.GetRequiredService<ShiftDbContext>();
 
-        public async Task SeedAsync(string? stagedName)
+        public async Task SeedAsync(string? stagedName, bool stageNamelessGolden = false)
         {
             Db.Add(new GoldenIdentity { IdentityID = 1, Status = IdentityStatus.Active, CreatedRunID = 1, LastChangedRunID = 1 });
             foreach (var id in new[] { "1", "2" })
@@ -107,6 +120,20 @@ public class CaseBrowserClusterNameTests
                     {
                         goldenId = 1,
                         attrs = new[] { new { t = "full_name", v = stagedName }, new { t = "phone", v = "7000000101" } },
+                        members = new[] { "dealer-a|1", "dealer-a|2" },
+                    }),
+                });
+            else if (stageNamelessGolden)
+                Db.Add(new ProjectionState
+                {
+                    ArtifactType = "golden",
+                    ArtifactKey = "1",
+                    ContentHash = "hash-1",
+                    UpdatedRunID = 1,
+                    Payload = JsonSerializer.Serialize(new
+                    {
+                        goldenId = 1,
+                        attrs = new[] { new { t = "phone", v = "7000000101" } },
                         members = new[] { "dealer-a|1", "dealer-a|2" },
                     }),
                 });
@@ -133,8 +160,10 @@ public class CaseBrowserClusterNameTests
             var result = Assert.IsType<JsonResult>(await controller.Cluster(1, CancellationToken.None));
             using var doc = JsonDocument.Parse(JsonSerializer.Serialize(result.Value));
             var root = doc.RootElement;
-            string? attr = root.GetProperty("golden").EnumerateArray()
-                .Single(g => g.GetProperty("attrType").GetString() == "full_name").GetProperty("value").GetString();
+            var names = root.GetProperty("golden").EnumerateArray()
+                .Where(g => g.GetProperty("attrType").GetString() == "full_name").ToList();
+            Assert.True(names.Count <= 1, "at most one full_name attribute");
+            string? attr = names.Count == 1 ? names[0].GetProperty("value").GetString() : null;
             return (root.GetProperty("goldenName").GetString(), attr);
         }
 
