@@ -1014,6 +1014,11 @@ public class CaseBrowserCompatController : ControllerBase
 
     // ----------------------------------------------------------------- search
 
+    /// <summary>
+    /// The page's record search: up to 50 staged records answering <see cref="Matches(RealRecord, string)"/>. Reads
+    /// the first 50,000 staged records, unless the host keeps the per-run record index
+    /// (<see cref="DarlasticApiOptions.RecordSearchIndex"/>): then every staged record is searched.
+    /// </summary>
     [HttpGet("search")]
     public async Task<IActionResult> Search(string q, CancellationToken ct)
     {
@@ -1021,7 +1026,9 @@ public class CaseBrowserCompatController : ControllerBase
         if (string.IsNullOrWhiteSpace(q)) return new JsonResult(Array.Empty<object>());
 
         string needle = q.Trim();
-        var rows = await db.Set<StewardRecord>().AsNoTracking().Take(50_000).ToListAsync(ct);
+        var rows = options.RecordSearchIndex
+            ? await SearchByIndexAsync(needle, ct)
+            : await db.Set<StewardRecord>().AsNoTracking().Take(50_000).ToListAsync(ct);
 
         var hits = new List<object>();
         foreach (var row in rows)
@@ -1034,6 +1041,34 @@ public class CaseBrowserCompatController : ControllerBase
 
         var withIdentity = await WithIdentities(hits, ct);
         return new JsonResult(withIdentity);
+    }
+
+    /// <summary>
+    /// <see cref="Search"/> through the per-run record index: the candidates are the records whose key, names or
+    /// phones hold the search text (by fragment for a partial-search caller, whole otherwise, the key always
+    /// whole, also after a "source:" prefix); each is kept only if it answers <see cref="Matches(RealRecord, string)"/>.
+    /// </summary>
+    private async Task<List<StewardRecord>> SearchByIndexAsync(string needle, CancellationToken ct)
+    {
+        var index = await runCache.GetAsync(db, RecordSearchIndex.CacheName, RecordSearchIndex.BuildAsync, ct);
+        const RecordSearchIndex.Fields none = RecordSearchIndex.Fields.None;
+        const RecordSearchIndex.Fields phones = RecordSearchIndex.Fields.Phones | RecordSearchIndex.Fields.WeakPhones;
+        var searches = new List<(RecordSearchIndex.Fields, RecordSearchIndex.Fields, string?)>
+        {
+            (RecordSearchIndex.Fields.RecordIds, none, needle),
+        };
+        // "source:id" names a record too: its ID is whatever follows a colon.
+        for (int colon = needle.IndexOf(':'); colon >= 0; colon = needle.IndexOf(':', colon + 1))
+            searches.Add((RecordSearchIndex.Fields.RecordIds, none, needle[(colon + 1)..]));
+        if (Pii.PartialSearch)
+            searches.Add((none, RecordSearchIndex.Fields.Names | phones, needle));
+        else
+        {
+            searches.Add((RecordSearchIndex.Fields.Names, none, needle));
+            searches.Add((phones, none, Digits(needle)));
+        }
+        return await index.RowsAsync(db, index.Find([.. searches]), 50,
+            row => Revive(row) is { } rec && Matches(rec, needle), ct);
     }
 
     /// <summary>
@@ -1328,6 +1363,18 @@ public class CaseBrowserCompatController : ControllerBase
 
     private async Task<(RealRecord rec, (string sys, string id) key)?> RecordByIdx(int idx, CancellationToken ct)
     {
+        if (options.RecordSearchIndex)
+        {
+            // The per-run record index knows which staged record carries the index: one key seek.
+            var index = await runCache.GetAsync(db, RecordSearchIndex.CacheName, RecordSearchIndex.BuildAsync, ct);
+            int position = index.PositionOfIdx(idx);
+            if (position < 0) return null;
+            var (sys, id) = index.KeyAt(position);
+            var staged = await db.Set<StewardRecord>().AsNoTracking()
+                .FirstOrDefaultAsync(r => r.SourceSystem == sys && r.SourceRecordId == id, ct);
+            return Revive(staged) is { } found && found.Idx == idx ? (found, (staged!.SourceSystem, staged.SourceRecordId)) : null;
+        }
+
         DbSet<StewardRecord> set = db.Set<StewardRecord>();
         string sql = "SELECT * FROM " + Schema() + ".StewardRecord WHERE JSON_VALUE(Payload,'$.Idx') = {0}";
         var row = await set.FromSqlRaw(sql, idx.ToString()).AsNoTracking().FirstOrDefaultAsync(ct);

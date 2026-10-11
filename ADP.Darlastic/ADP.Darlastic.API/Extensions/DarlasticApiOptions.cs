@@ -121,4 +121,16 @@ public class DarlasticApiOptions
     /// permission sees every group's value hidden either way. Off by default: the slug, as before.
     /// </summary>
     public bool LabelSourcesInBlockKeys { get; set; }
+
+    /// <summary>
+    /// Find staged records for the case browser through an in-memory index of every staged record's names,
+    /// phones, key and record index, built once per resolve run and reused until the next run finishes: the
+    /// record search of both case browser surfaces, and opening a record or a pair by its record index. Without
+    /// it each of those unpacks every staged payload in SQL (seconds per call, and timeouts under concurrent use
+    /// once the staged records number in the millions), and the case browser page's search looks only at the
+    /// first 50,000 staged records. A search matches the same values either way; whole names compare ignoring
+    /// case. The index costs one pass over the staged records per run and about seventy bytes per staged record.
+    /// Off by default.
+    /// </summary>
+    public bool RecordSearchIndex { get; set; }
 }
