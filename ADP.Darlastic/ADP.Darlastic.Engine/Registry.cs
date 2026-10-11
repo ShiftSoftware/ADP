@@ -1053,16 +1053,19 @@ public static class Registry
         // Pass 2: the per-VIN ownership timeline (P7). Only sale-grade evidence opens an ownership
         // period; a later sale to a DIFFERENT golden closes the previous owner's period (transfer).
         // Service-only evidence is a "service-contact" observation window, never an ownership claim.
+        // The owner periods come from OwnershipTimeline; a tenant that leaves ambiguous owners'
+        // events unattached also has tied owners SHARE a period there (see
+        // EventAttachOptions.AmbiguousOwnersUnattached), so the vehicle card and the timeline agree.
         var byVin = new Dictionary<string, List<(long Id, VinEvidence E)>>(StringComparer.Ordinal);
         foreach (var kv in vinAgg)
             (byVin.TryGetValue(kv.Key.Vin, out var l) ? l : byVin[kv.Key.Vin] = []).Add((kv.Key.IdentityId, kv.Value));
+        bool tiedOwnersShare = eventOptions?.AmbiguousOwnersUnattached == true;
         var linkPeriod = new Dictionary<(long, string), (DateOnly? From, DateOnly? To, string Role)>();
         foreach (var (vin, entries) in byVin)
         {
-            var owners = entries.Where(x => x.E.Sales > 0)
-                .OrderBy(x => x.E.FirstSale ?? DateOnly.MinValue).ThenBy(x => x.Id).ToList();
-            for (int i = 0; i < owners.Count; i++)
-                linkPeriod[(owners[i].Id, vin)] = (owners[i].E.FirstSale, i + 1 < owners.Count ? owners[i + 1].E.FirstSale : null, "owner");
+            var owners = entries.Where(x => x.E.Sales > 0).Select(x => (x.Id, x.E.FirstSale));
+            foreach (var (ownerId, from, to) in OwnershipTimeline.OwnerPeriods(owners, tiedOwnersShare))
+                linkPeriod[(ownerId, vin)] = (from, to, "owner");
             foreach (var x in entries.Where(x => x.E.Sales == 0))
                 linkPeriod[(x.Id, vin)] = (x.E.FirstService, x.E.LastService, "service-contact");
         }
