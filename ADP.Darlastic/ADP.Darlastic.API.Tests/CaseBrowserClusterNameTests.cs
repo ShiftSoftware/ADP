@@ -119,7 +119,7 @@ public class CaseBrowserClusterNameTests
         public async Task<(string? GoldenName, string? Attribute)> ClusterNameAsync()
         {
             var controller = new CaseBrowserCompatController(Db, Options.Create(new DarlasticApiOptions()),
-                new DefaultPiiMasker(Options.Create(new PiiOptions())), Options.Create(new PiiOptions()))
+                new DefaultPiiMasker(Options.Create(new PiiOptions())), Options.Create(new PiiOptions()), new RegistryRunCache())
             {
                 ControllerContext = new ControllerContext
                 {
