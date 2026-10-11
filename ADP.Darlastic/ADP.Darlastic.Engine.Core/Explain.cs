@@ -38,7 +38,7 @@ public enum MatchFlags : long   // long: persisted as BIGINT; values below bit 3
     EmailExact       = 1 << 25,  // a canonical address is shared → 1.00 (weight 0.45); never a penalty when they differ
     EmailMerge       = 1 << 26,  // shared e-mail + names consistent/aligned (or absent) → auto-merge floor fired
     EmailRoleOnly    = 1 << 27,  // a side's only e-mail was a role/shared mailbox (info@, sales@…) — suppressed from matching, still survives to golden
-    GivenNameConflict  = 1 << 28,  // Flags.StructuredNames: both given names known and they do not align → no floor, held below the steward line
+    GivenNameConflict  = 1 << 28,  // Flags.StructuredNames: both given names known and they do not align; or Flags.DistinctGivenNames: different first names on a shared phone → no floor, held below the steward line
     FamilyNameConflict = 1 << 29,  // Flags.StructuredNames: both family names known and they do not align → given-only floors withheld, held below the line
     NamelessHeld       = 1 << 30,  // Flags.NamelessNeedsCorroboration: a nameless pair's single key (phone alone, or a sold VIN against differing phones) held below the line
     ServicedVinNameMerge = 1L << 31, // Flags.ServicedVinNameFloor: shared serviced VIN + fully consistent names of 2+ words → floor 0.91 (phones may differ)

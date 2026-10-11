@@ -65,6 +65,13 @@ public static class RealMatcher
             ? "no usable name on either record, so names were not compared"
             : $"no usable name on {(a.NormName.Length == 0 ? "record A" : "record B")}, so names were not compared");
 
+        // How the two names are compared token by token: across scripts (Flags.CrossScriptNames) and
+        // anchored on the given name (Flags.AnchoredGivenName). Both off: the default comparison.
+        var nameCtx = namesBoth && !Flags.Baseline ? NameCtx.Of(a, b) : default;
+        if (nameCtx.Cross)
+            trace?.Add("signal", "Names in two scripts",
+                "one name is written in Arabic letters and the other in Latin letters, so the names were also compared letter by letter across the two scripts");
+
         bool phonesBoth = (a.Phones.Length + a.WeakPhones.Length) > 0 && (b.Phones.Length + b.WeakPhones.Length) > 0;
         bool phoneExact = false, phoneSuffix = false;
         if (phonesBoth)
@@ -258,7 +265,7 @@ public static class RealMatcher
         // 'Salam Ahmed') sat at 0.80-0.90, just under auto-merge. Conversely a shared *family/
         // shop* phone with clearly different names ('Emad Nahir' / 'Ghanim Ahmed') must NOT merge.
         // So gate the exact-phone signal on name consistency in BOTH directions.
-        bool nameConsistent = false, nameConflict = false, orgUnresolved = false;
+        bool nameConsistent = false, nameConflict = false, orgUnresolved = false, givenNamesDiffer = false;
         if (!Flags.Baseline && phoneExact && namesBoth)
         {
             // Gender is NOT used as a conflict signal (domain-expert audit, 2026-06-22): the dealer
@@ -309,7 +316,7 @@ public static class RealMatcher
                 else trace?.Add("gate", "Same number, different names",
                     "the number is shared, but the first or family names are different names, so the number alone is not enough to combine them", conf);
             }
-            else if (NameConsistent(a.NormName, b.NormName))
+            else if (NameConsistent(a.NormName, b.NormName, nameCtx))
             {
                 nameConsistent = true;
                 flags |= MatchFlags.NameConsistent;
@@ -317,7 +324,7 @@ public static class RealMatcher
                 trace?.Add("gate", "Same number, same name",
                     "every part of the shorter name matches the longer one, only the spelling differs; with the same number they are one person, enough to combine them", conf);
             }
-            else if (GivenNamesMatch(a.NormName, b.NormName))
+            else if (GivenNamesMatch(a.NormName, b.NormName, nameCtx))
             {
                 // Shared exact phone + the GIVEN (first) name is the same person's, allowing Arabic/
                 // Kurdish romanization drift (Bewar/Dewar, Essa/Issa, Kebin/Tebin) — the rest may be
@@ -340,6 +347,16 @@ public static class RealMatcher
                 conf = Math.Min(conf, 0.55);
                 trace?.Add("gate", "Same number, unrelated names",
                     "the names have nothing in common, so the number is shared by different people; kept well short of combining", conf);
+            }
+            else if (Flags.DistinctGivenNames && !Flags.Baseline && GivenNamesClearlyDiffer(a.NormName, b.NormName, nameCtx))
+            {
+                // Flags.DistinctGivenNames: two different first names on one number are two people
+                // (siblings, a parent and a child), whatever the rest of the names blend to. Held below
+                // the steward line at the end, after every boost.
+                givenNamesDiffer = true;
+                flags |= MatchFlags.GivenNameConflict;
+                trace?.Add("gate", "Same number, different first names",
+                    "the number is shared but the first names are different names, not two spellings of one: relatives share a number, so these are two people", conf);
             }
             else trace?.Add("gate", "Same number, different first names",
                 "the number is shared but the first names differ: they could be relatives or unrelated people, so the number alone is not enough to combine them", conf);
@@ -393,7 +410,7 @@ public static class RealMatcher
                 // cleared 0.60 on repeated city tokens — corpus diagnostic 2026-06-12); district
                 // evidence is what makes a same-given-name pair one person, so the rescue requires
                 // the DISTRICT to match, not the city pattern.
-                if (phoneExact && !nameConsistent && namesBoth && !partsVeto && FirstTokensAlign(a.NormName, b.NormName))
+                if (phoneExact && !nameConsistent && namesBoth && !partsVeto && FirstTokensAlign(a.NormName, b.NormName, nameCtx))
                 {
                     string subA = SubCityRemainder(a), subB = SubCityRemainder(b);
                     if (subA.Length >= 4 && subB.Length >= 4
@@ -445,18 +462,25 @@ public static class RealMatcher
             // Nameless counterpart of the name gate (Flags.NamelessNeedsCorroboration): with no name on
             // a side, the sold VIN is the only identity evidence, and phones that are present on both
             // sides and differ contradict it (a buyer's car brought in by someone else) — no floor.
-            bool namelessPhonesDiffer = Flags.NamelessNeedsCorroboration && !namesBoth && phonesBoth
-                && !phoneExact && !phoneSuffix && !emailExact;
+            // Flags.NamelessSoldVinNeedsPhone, the sold-VIN half on its own: the nameless record's own number
+            // must agree; a nameless record with a number beside a record whose number differs or is missing
+            // is the car brought in by someone the buyer's record does not confirm.
+            bool namelessPhonesDiffer = !namesBoth && !phoneExact && !phoneSuffix && !emailExact
+                && ((Flags.NamelessNeedsCorroboration && phonesBoth)
+                    || (Flags.NamelessSoldVinNeedsPhone && !Flags.Baseline && NamelessSideHasPhone(a, b)));
             if (partsVeto)
                 trace?.Add("vin", "Same vehicle bought, first or family names differ",
                     $"both records bought the same vehicle ({sharedVin}) but the first or family names are different names: relatives share cars and cars are resold, so this alone is not enough to combine them", conf);
             else if (namelessPhonesDiffer)
             {
                 flags |= MatchFlags.NamelessHeld;
+                // Flags.NamelessSoldVinNeedsPhone: with no number on the named side, the car was the only thing
+                // compared; the nameless record's unconfirmed number counts as a number that does not agree.
+                if (!phonesBoth) conf = Math.Min(conf, NamelessUnconfirmedCap);
                 trace?.Add("vin", "Same vehicle bought, no name, different numbers",
-                    $"both records bought the same vehicle ({sharedVin}), but one record has no name and the two records have different numbers: someone else may have brought the buyer's car in, so the vehicle alone is not enough to combine them", conf);
+                    $"both records bought the same vehicle ({sharedVin}), but one record has no name and its number is not the other record's: someone else may have brought the buyer's car in, so the vehicle alone is not enough to combine them", conf);
             }
-            else if (!namesBoth || NameConsistent(a.NormName, b.NormName))
+            else if (!namesBoth || NameConsistent(a.NormName, b.NormName, nameCtx))
             {
                 conf = Math.Max(conf, 0.91);
                 flags |= MatchFlags.VinSoldMerge;
@@ -472,7 +496,7 @@ public static class RealMatcher
                 trace?.Add("vin", "Same vehicle bought, one company's names",
                     $"both records bought the same vehicle ({sharedVin}) and both names are the same company's, written with or without its legal form: enough to combine them", conf);
             }
-            else if (namesBoth && GivenNamesMatch(a.NormName, b.NormName))
+            else if (namesBoth && GivenNamesMatch(a.NormName, b.NormName, nameCtx))
                 trace?.Add("vin", "Same vehicle bought, similar name",
                     $"both records bought the same vehicle ({sharedVin}) and the first names match, but the rest of the name differs: relatives often share a car, so this alone is not enough to combine them", conf);
             else trace?.Add("vin", "Same vehicle bought, different names",
@@ -485,7 +509,7 @@ public static class RealMatcher
         if (Flags.ServicedVinNameFloor && !Flags.Baseline && useVin && vinClass == VinClass.Serviced && namesBoth
             && !partsVeto && conf < 0.91
             && NameTokens(a.NormName).Length >= 2 && NameTokens(b.NormName).Length >= 2
-            && NameConsistent(a.NormName, b.NormName)
+            && NameConsistent(a.NormName, b.NormName, nameCtx)
             && (!Flags.StrictNameParts || GivenNamesSame(a, b)))
         {
             conf = 0.91;
@@ -503,9 +527,9 @@ public static class RealMatcher
         // customer record, and a stale FK after a number/name change looks exactly like that.
         if (sameAsLinked)
         {
-            if (!partsVeto && (!namesBoth || NameConsistent(a.NormName, b.NormName) || GivenNamesMatch(a.NormName, b.NormName)))
+            if (!partsVeto && (!namesBoth || NameConsistent(a.NormName, b.NormName, nameCtx) || GivenNamesMatch(a.NormName, b.NormName, nameCtx)))
             {
-                conf = Math.Max(conf, namesBoth && NameConsistent(a.NormName, b.NormName) ? 0.95 : 0.91);
+                conf = Math.Max(conf, namesBoth && NameConsistent(a.NormName, b.NormName, nameCtx) ? 0.95 : 0.91);
                 flags |= MatchFlags.SameAsMerge;
                 trace?.Add("gate", "Direct link, names agree",
                     "one record points at the other and the names agree (or one record has no name): enough to combine them", conf);
@@ -525,9 +549,9 @@ public static class RealMatcher
         // Sits before the conflict penalties so a national-ID conflict still crushes it (×0.3).
         if (emailExact)
         {
-            if (!partsVeto && (!namesBoth || NameConsistent(a.NormName, b.NormName) || GivenNamesMatch(a.NormName, b.NormName)))
+            if (!partsVeto && (!namesBoth || NameConsistent(a.NormName, b.NormName, nameCtx) || GivenNamesMatch(a.NormName, b.NormName, nameCtx)))
             {
-                conf = Math.Max(conf, namesBoth && NameConsistent(a.NormName, b.NormName) ? 0.95 : 0.91);
+                conf = Math.Max(conf, namesBoth && NameConsistent(a.NormName, b.NormName, nameCtx) ? 0.95 : 0.91);
                 flags |= MatchFlags.EmailMerge;
                 trace?.Add("gate", "Same e-mail, names agree",
                     $"both records have the address ({trace.Quote(QuotedValue.Email, sharedEmail ?? "")}) and the names agree (or one record has no name): enough to combine them", conf);
@@ -577,6 +601,15 @@ public static class RealMatcher
                 "a company shares the number, but the names are not the same company's, so the records are left for a person to decide", conf);
         }
 
+        // Flags.DistinctGivenNames: different first names on one number are decided like a structured
+        // given-name conflict — below the steward line, unless a decisive floor above combined them.
+        if (givenNamesDiffer && conf > PartsConflictCap && (flags & decidingFloors) == 0)
+        {
+            conf = PartsConflictCap;
+            trace?.Add("conflict", "First names differ",
+                "the first names are different names, so these are two people: nothing else they share brings them up for a person to decide", conf);
+        }
+
         // Last, so no boost above (address, DOB) can lift a structured name conflict back into the
         // steward band: the pair is decided, and a queue full of obvious relatives is queue noise.
         if (partsVeto && conf > PartsConflictCap)
@@ -589,6 +622,53 @@ public static class RealMatcher
         trace?.Add("decide", CaseLabels.Decision(conf).Label, $"final match strength {Pct(conf)}", conf);
         return conf;
     }
+
+    /// <summary>
+    /// Flags.DistinctGivenNames: the first names are two names, not one name written two ways. Leading
+    /// titles (mr, mrs, ms, miss, dr, eng) are set aside first. Not two names when: the names have a
+    /// different number of words but read alike with their spaces removed (one name split or joined:
+    /// "abc def" / "abcdef"); a first name of one or two letters; one first name starts the other (a first
+    /// name joined to the next word); the
+    /// first names align (<see cref="TokensAlign"/>, or across scripts); or they are near spellings (a
+    /// Jaro-Winkler of 0.80 or more with consonant skeletons at most two edits apart, or skeletons of one
+    /// length one letter apart). Only first names that fail every one of these tests are different names.
+    /// </summary>
+    private static bool GivenNamesClearlyDiffer(string a, string b, NameCtx ctx)
+    {
+        var ta = WithoutTitles(MatchTokens(a, ctx));
+        var tb = WithoutTitles(MatchTokens(b, ctx));
+        if (ta.Length == 0 || tb.Length == 0) return false;
+        if (ta.Length != tb.Length)
+        {
+            string ja = string.Concat(ta), jb = string.Concat(tb);
+            if (ja.Contains(jb, StringComparison.Ordinal) || jb.Contains(ja, StringComparison.Ordinal) || Sim.JaroWinkler(ja, jb) >= 0.85) return false;
+        }
+        string ga = ta[0], gb = tb[0];
+        if (ga.Length <= 2 || gb.Length <= 2) return false;   // too short to tell a name from a slip
+        if (ga.StartsWith(gb, StringComparison.Ordinal) || gb.StartsWith(ga, StringComparison.Ordinal)) return false;
+        if (TokensAlign(ga, gb)) return false;
+        int skeletonEdits = SkeletonDistance(ga, gb);
+        if (Sim.JaroWinkler(ga, gb) >= 0.80 && skeletonEdits <= 2) return false;
+        if (skeletonEdits <= 1 && Skeleton(Canon(ga)).Length == Skeleton(Canon(gb)).Length) return false;
+        if (ctx.Cross && (ctx.ArabicSide == 1 ? CrossAligns(ga, gb, 1) : CrossAligns(gb, ga, 1))) return false;
+        return true;
+
+        static string[] WithoutTitles(string[] t)
+        {
+            int i = 0;
+            while (i < t.Length - 1 && t[i] is "mr" or "mrs" or "ms" or "miss" or "dr" or "eng") i++;
+            return i == 0 ? t : t[i..];
+        }
+    }
+
+    /// <summary>Where Flags.NamelessSoldVinNeedsPhone holds a nameless sold-VIN pair whose named side has no phone:
+    /// the strength a shared car has beside a number that does not agree.</summary>
+    public const double NamelessUnconfirmedCap = 0.50;
+
+    /// <summary>A record without a usable name in the pair carries a phone (either one, when neither is named).</summary>
+    private static bool NamelessSideHasPhone(RealRecord a, RealRecord b) =>
+        (a.NormName.Length == 0 && a.Phones.Length + a.WeakPhones.Length > 0)
+        || (b.NormName.Length == 0 && b.Phones.Length + b.WeakPhones.Length > 0);
 
     /// <summary>Where a structured given/family-name conflict holds a pair (Flags.StructuredNames):
     /// below the steward line, inside the near-miss band so the pair stays browsable.</summary>
@@ -744,12 +824,27 @@ public static class RealMatcher
     // an overall blend: every token of the shorter name must align to a token of the longer one.
     // 'Hazim Jabir'/'Hazem Jaber' aligns (both tokens drift); 'Hogr Jafar'/'Hogr Jamil' does NOT
     // (first identical, second a different word) — that's a sibling pair, left to the steward band.
-    public static bool NameConsistent(string a, string b)
+    public static bool NameConsistent(string a, string b) => NameConsistent(a, b, default);
+
+    /// <summary>Two person records' names are consistent (<see cref="NameConsistent(string, string)"/>),
+    /// compared under the tenant's cross-script and anchored-given-name rules where they are on.</summary>
+    public static bool NameConsistent(RealRecord a, RealRecord b) =>
+        NameConsistent(a.NormName, b.NormName, Flags.Baseline ? default : NameCtx.Of(a, b));
+
+    private static bool NameConsistent(string a, string b, NameCtx ctx)
     {
-        var ta = NameTokens(a);
-        var tb = NameTokens(b);
+        var ta = MatchTokens(a, ctx);
+        var tb = MatchTokens(b, ctx);
         if (ta.Length == 0 || tb.Length == 0) return false;
-        var (small, big) = ta.Length <= tb.Length ? (ta, tb) : (tb, ta);
+        bool aSmall = ta.Length <= tb.Length;
+        var (small, big) = aSmall ? (ta, tb) : (tb, ta);
+        // Flags.CrossScriptNames: a token of the shorter name may also align across the two scripts. Every
+        // token of the shorter name has to align, so a short consonant frame (one or two consonants)
+        // counts here only beside the name's other tokens (given and father name together).
+        bool smallIsArabic = ctx.ArabicSide == (aSmall ? 1 : 2);
+        Func<string, string, bool> align = ctx.Cross
+            ? (t, u) => TokensAlign(t, u) || (smallIsArabic ? CrossAligns(t, u, 1) : CrossAligns(u, t, 1))
+            : TokensAlign;
         // A single distinct token — a true mononym ('Salam') or a repeated junk name
         // ('Mohammed Mohammed') — requires that many EXACT occurrences in the longer name. So
         // 'Salam' still matches 'Salam Ahmed', but 'Mohammed Mohammed' does NOT match 'Mohammed
@@ -757,10 +852,86 @@ public static class RealMatcher
         if (small.Distinct().Count() < 2)
         {
             string tok = small[0];
-            return big.Count(t => t == tok) >= small.Length;
+            // Flags.AnchoredGivenName: a one-word name is the longer name's given name.
+            if (big.Count(t => t == tok) >= small.Length && (!ctx.Anchored || big[0] == tok)) return true;
+            // Flags.CrossScriptNames: a lone name in the other script aligns the longer name's given
+            // name, and only with a consonant frame of three or more.
+            return ctx.Cross && small.Length == 1
+                && (smallIsArabic ? CrossAligns(tok, big[0], 3) : CrossAligns(big[0], tok, 3));
         }
-        if (Flags.StrictTokenAlignment && !Flags.Baseline) return AlignsOneToOne(small, big);
-        return small.All(t => big.Any(u => TokensAlign(t, u)));
+        if (ctx.Anchored) return AlignsAnchored(small, big, align);
+        if (Flags.StrictTokenAlignment && !Flags.Baseline) return AlignsOneToOne(small, big, align);
+        return small.All(t => big.Any(u => align(t, u)));
+    }
+
+    /// <summary>Flags.AnchoredGivenName: the shorter name's first token aligns the longer name's first
+    /// token, and its other tokens align the longer name's other tokens in order (tokens of the longer
+    /// name may be skipped, so a trailing family or tribal name still aligns). Taking the earliest match
+    /// is optimal for an order-preserving match, so the scan is greedy.</summary>
+    private static bool AlignsAnchored(string[] small, string[] big, Func<string, string, bool> align)
+    {
+        if (!align(small[0], big[0])) return false;
+        int j = 1;
+        for (int i = 1; i < small.Length; i++)
+        {
+            while (j < big.Length && !align(small[i], big[j])) j++;
+            if (j == big.Length) return false;
+            j++;
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// How two person records' names are compared; the default value is the plain token comparison.
+    /// <see cref="ArabicSide"/>: under <see cref="Flags.CrossScriptNames"/>, which record's name is
+    /// written in Arabic script when the other's is in Latin letters (1 = a, 2 = b, 0 = not a
+    /// cross-script pair). <see cref="Anchored"/>: <see cref="Flags.AnchoredGivenName"/>.
+    /// </summary>
+    private readonly record struct NameCtx(int ArabicSide, bool Anchored)
+    {
+        public bool Cross => ArabicSide != 0;
+
+        public static NameCtx Of(RealRecord a, RealRecord b)
+        {
+            int side = 0;
+            if (Flags.CrossScriptNames)
+            {
+                int sa = ScriptOf(a), sb = ScriptOf(b);
+                side = sa == 1 && sb == 2 ? 1 : sa == 2 && sb == 1 ? 2 : 0;
+            }
+            return new NameCtx(side, Flags.AnchoredGivenName);
+        }
+    }
+
+    /// <summary>The script a record's name is written in: 1 = Arabic letters only (or a repaired CP1256
+    /// name), 2 = Latin letters only, 0 = both, neither, or no name.</summary>
+    private static int ScriptOf(RealRecord r)
+    {
+        if (r.NameWasMojibake) return 1;
+        bool arabic = false, latin = false;
+        foreach (char c in r.RawName)
+        {
+            if (c is (>= '؀' and <= 'ۿ') or (>= 'ݐ' and <= 'ݿ') or (>= 'ﭐ' and <= '﷿') or (>= 'ﹰ' and <= '﻿'))
+                arabic = true;
+            else if (c is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z')) latin = true;
+        }
+        return arabic == latin ? 0 : arabic ? 1 : 2;
+    }
+
+    /// <summary>The tokens names are compared with: <see cref="NameTokens"/>, and across scripts an "abd"
+    /// compound (the word "abd" with or without its linking vowel, then a name) joined into one token,
+    /// since one script joins it and the other splits it.</summary>
+    private static string[] MatchTokens(string name, NameCtx ctx)
+    {
+        var t = NameTokens(name);
+        if (!ctx.Cross || t.Length < 2 || !t.Any(IsAbdPrefix)) return t;
+        var joined = new List<string>(t.Length);
+        for (int i = 0; i < t.Length; i++)
+            if (IsAbdPrefix(t[i]) && i + 1 < t.Length) { joined.Add(t[i] + t[i + 1]); i++; }
+            else joined.Add(t[i]);
+        return [.. joined];
+
+        static bool IsAbdPrefix(string x) => x == "abd" || AbdPrefixes.Contains(x);
     }
 
     /// <summary>Flags.StrictTokenAlignment: every token of <paramref name="small"/> aligns to its OWN
@@ -813,6 +984,27 @@ public static class RealMatcher
         return ta.Length > 0 && tb.Length > 0 && TokensAlign(ta[0], tb[0]);
     }
 
+    /// <summary><see cref="FirstTokensAlign(string, string)"/> for two person records, under the tenant's
+    /// cross-script rule where it is on.</summary>
+    public static bool FirstTokensAlign(RealRecord a, RealRecord b) =>
+        FirstTokensAlign(a.NormName, b.NormName, Flags.Baseline ? default : NameCtx.Of(a, b));
+
+    private static bool FirstTokensAlign(string a, string b, NameCtx ctx) =>
+        FirstTokensAlign(a, b) || (ctx.Cross && CrossGivenNames(a, b, ctx));
+
+    /// <summary>Flags.CrossScriptNames: the given names align across the two scripts, on their own with a
+    /// consonant frame of three or more, a shorter frame only together with the father name.</summary>
+    private static bool CrossGivenNames(string a, string b, NameCtx ctx)
+    {
+        var ta = MatchTokens(a, ctx);
+        var tb = MatchTokens(b, ctx);
+        if (ta.Length == 0 || tb.Length == 0) return false;
+        var (ar, la) = ctx.ArabicSide == 1 ? (ta, tb) : (tb, ta);
+        if (CrossAligns(ar[0], la[0], 3)) return true;
+        return ar.Length >= 2 && la.Length >= 2 && CrossAligns(ar[0], la[0], 1)
+            && (TokensAlign(ar[1], la[1]) || CrossAligns(ar[1], la[1], 1));
+    }
+
     // The given (first) names belong to the same person, allowing Arabic/Kurdish romanization drift
     // (Bewar/Dewar, Essa/Issa, Kebin/Tebin, Mohtaz/Muhtaj). Looser than TokensAlign's ~0.90 bar
     // because the caller only invokes it on a SHARED EXACT PHONE — that context makes a merely-
@@ -831,6 +1023,14 @@ public static class RealMatcher
         return TokensAlign(ta[0], tb[0])
             || (Sim.JaroWinkler(ta[0], tb[0]) >= 0.80 && SkeletonDistance(ta[0], tb[0]) <= 1);
     }
+
+    /// <summary><see cref="GivenNamesMatch(string, string)"/> for two person records, under the tenant's
+    /// cross-script rule where it is on.</summary>
+    public static bool GivenNamesMatch(RealRecord a, RealRecord b) =>
+        GivenNamesMatch(a.NormName, b.NormName, Flags.Baseline ? default : NameCtx.Of(a, b));
+
+    private static bool GivenNamesMatch(string a, string b, NameCtx ctx) =>
+        GivenNamesMatch(a, b) || (ctx.Cross && CrossGivenNames(a, b, ctx));
 
     // Consonant-skeleton edit distance — the discriminator that lets GivenNamesMatch keep romanization
     // drift but reject different names that merely share a JW prefix. Folds the interdental class first
@@ -910,6 +1110,136 @@ public static class RealMatcher
         return false;
     }
 
+    /// <summary>
+    /// Flags.CrossScriptNames: <paramref name="ar"/> (a token transliterated from Arabic script, which
+    /// writes consonants and long vowels and leaves short vowels out) and <paramref name="la"/> (the token
+    /// typed in Latin letters, which writes every vowel) are one name. Both are split into consonants and
+    /// the vowel letters between them (a medial w or y is the long vowel it writes; a word-initial one is
+    /// a consonant), after the token folds, with doubled consonants collapsed, a leading article "al"
+    /// set aside and the linking vowel of an "abd" compound read alike (see <see cref="AbdLinks"/>). Then:
+    ///   - the consonants are the same, in order (a final h on one side only may be left out), and there
+    ///     are at least <paramref name="minConsonants"/> of them;
+    ///   - both start with a vowel, or neither does;
+    ///   - every long vowel the Arabic side writes (a, y, w) has a vowel of its class in the same gap of
+    ///     the Latin side (a: a; y: e, i, y; w: o, u, w), and every long vowel the Latin side writes (a
+    ///     doubled vowel, a diphthong, a final i, y, o or u) has one in the Arabic gap. So two names that
+    ///     differ in a long vowel stay apart; short vowels are free, since they are what the scripts
+    ///     disagree about.
+    /// </summary>
+    private static bool CrossAligns(string ar, string la, int minConsonants)
+    {
+        if (ar == la) return true;
+        var (ac, ag) = CrossShape(Canon(CrossPrep(ar)));
+        var (lc, lg) = CrossShape(Canon(CrossPrep(la)));
+        // An optional final h: a taa marbuta or final heh written as h on one side only.
+        if (ac.Count == lc.Count + 1 && ac[^1] == 'h') DropFinal(ac, ag);
+        else if (lc.Count == ac.Count + 1 && lc[^1] == 'h') DropFinal(lc, lg);
+        if (ac.Count != lc.Count || ac.Count < minConsonants) return false;
+        for (int i = 0; i < ac.Count; i++) if (ac[i] != lc[i]) return false;
+        // The vowel before the first consonant: present on both sides or on neither.
+        if ((ag[0].Length > 0) != (lg[0].Length > 0)) return false;
+        // Letters after the first of an Arabic leading cluster ("aa", "ay", "aw") are written long vowels.
+        if (ag[0].Length > 1 && !Covers(VowelClasses(lg[0]), RequiredClasses(ag[0][1..]))) return false;
+        if (!Covers(VowelClasses(ag[0]), LatinLongClasses(lg[0], final: false))) return false;
+        for (int g = 1; g < ag.Count; g++)
+        {
+            bool final = g == ag.Count - 1;
+            int required = RequiredClasses(ag[g]);
+            // A final Arabic 'a' (taa marbuta, alef maqsura) is any final vowel in Latin.
+            if (final && required == ClassA && lg[g].Length > 0) required = 0;
+            if (!Covers(VowelClasses(lg[g]), required)) return false;
+            if (!Covers(VowelClasses(ag[g]), LatinLongClasses(lg[g], final))) return false;
+        }
+        return true;
+
+        static void DropFinal(List<char> cons, List<string> gaps)
+        {
+            cons.RemoveAt(cons.Count - 1);
+            gaps[^2] += gaps[^1];
+            gaps.RemoveAt(gaps.Count - 1);
+        }
+        static bool Covers(int have, int need) => (have & need) == need;
+    }
+
+    private const int ClassA = 1, ClassI = 2, ClassU = 4;
+
+    /// <summary>The linking vowels an "abd" compound is written with before the name it belongs to.</summary>
+    private static readonly string[] AbdLinks = ["ul", "el", "il", "ol", "al", "u"];
+
+    /// <summary>Every linking vowel written after the compound word, longest first.</summary>
+    private static readonly string[] AbdPrefixes = [.. AbdLinks.Select(l => "abd" + l)];
+
+    /// <summary>A leading article "al" set aside (a token of five letters or more), and the linking vowel of
+    /// an "abd" compound read alike: "abd" followed directly by the name.</summary>
+    private static string CrossPrep(string t)
+    {
+        foreach (var p in AbdPrefixes)
+            if (t.Length >= p.Length + 2 && t.StartsWith(p, StringComparison.Ordinal)) return "abd" + t[p.Length..];
+        return t.Length >= 5 && t.StartsWith("al", StringComparison.Ordinal) ? t[2..] : t;
+    }
+
+    /// <summary>A token as consonants and the vowel letters around them: gaps[0] before the first
+    /// consonant, gaps[i] after consonant i-1. a e i o u are vowels; w and y are vowels except at the
+    /// start of the token; a consonant repeated with no vowel between is one consonant.</summary>
+    private static (List<char> Cons, List<string> Gaps) CrossShape(string t)
+    {
+        var cons = new List<char>(t.Length);
+        var gaps = new List<string>(t.Length + 1);
+        var gap = new System.Text.StringBuilder();
+        for (int i = 0; i < t.Length; i++)
+        {
+            char c = t[i];
+            bool vowel = c is 'a' or 'e' or 'i' or 'o' or 'u' || (i > 0 && c is 'w' or 'y');
+            if (vowel) { gap.Append(c); continue; }
+            if (cons.Count > 0 && gap.Length == 0 && cons[^1] == c) continue;   // doubled consonant
+            gaps.Add(gap.ToString());
+            gap.Clear();
+            cons.Add(c);
+        }
+        gaps.Add(gap.ToString());
+        return (cons, gaps);
+    }
+
+    /// <summary>The vowel classes a gap holds: a is A; e, i, y are I; o, u, w are U.</summary>
+    private static int VowelClasses(string gap)
+    {
+        int k = 0;
+        foreach (char c in gap)
+            k |= c switch { 'a' => ClassA, 'e' or 'i' or 'y' => ClassI, 'o' or 'u' or 'w' => ClassU, _ => 0 };
+        return k;
+    }
+
+    /// <summary>The long vowels an Arabic-side gap writes: a (alef, ain, taa marbuta), y and w. Kurdish e
+    /// and o are vowels the other side may write short, so they require nothing.</summary>
+    private static int RequiredClasses(string gap)
+    {
+        int k = 0;
+        foreach (char c in gap)
+            k |= c switch { 'a' => ClassA, 'y' => ClassI, 'w' => ClassU, _ => 0 };
+        return k;
+    }
+
+    /// <summary>The long vowels a Latin gap writes: a doubled vowel or a diphthong (aa; ee ii ei ey ie iy ai
+    /// ay; oo uu ou ow uw au aw) and, at the end of the token, a final i, y, o or u.</summary>
+    private static int LatinLongClasses(string gap, bool final)
+    {
+        int k = 0;
+        for (int i = 0; i + 1 < gap.Length; i++)
+        {
+            k |= (gap[i], gap[i + 1]) switch
+            {
+                ('a', 'a') => ClassA,
+                ('e', 'e') or ('i', 'i') or ('e', 'i') or ('e', 'y') or ('i', 'e') or ('i', 'y') or ('a', 'i') or ('a', 'y') => ClassI,
+                ('o', 'o') or ('u', 'u') or ('o', 'u') or ('o', 'w') or ('u', 'w') or ('a', 'u') or ('a', 'w') => ClassU,
+                _ => 0,
+            };
+        }
+        if (final && gap.Length > 0)
+            k |= gap[^1] switch { 'i' or 'y' => ClassI, 'o' or 'u' => ClassU, _ => 0 };
+        return k;
+    }
+
+
     // Fold the z/dh/th/zh interdental-emphatic transliteration class (Arabic ظ ذ ض) to a single
     // 'z' so spelling variants of one Arabic letter compare equal. Returns the SAME instance when
     // no digraph is present (the common case), which lets TokensAlign skip recomputing similarity
@@ -975,6 +1305,11 @@ public static class RealMatcher
         ["company", "group", "grop", "stock", "motors", "trading", "showroom", "factory", "sharika", "parts"];
     private static bool IsLikelyOrg(string normName) =>
         normName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Any(OrgTokens.Contains);
+
+    /// <summary>True when a normalised name carries one of the engine's organisation tokens (the
+    /// business-line test the phone and VIN rules apply). A feed that recognises an organisation by its
+    /// own words marks it by appending "company" when this is false.</summary>
+    public static bool IsOrganisationName(string normName) => IsLikelyOrg(normName);
 
     /// <summary>Flags.OrgNameMerge: two names of one organisation. Both organisation-named and
     /// consistent (their organisation tokens align to each other); or the other side's two or more

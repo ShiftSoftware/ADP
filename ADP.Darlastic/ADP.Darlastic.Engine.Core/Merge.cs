@@ -354,7 +354,8 @@ public static class Merge
 
     /// <summary>The matcher's "two different people" verdicts — the cannot-link constraints of
     /// <see cref="Flags.ConflictAwareClustering"/>. The structured name-part conflicts only ever fire
-    /// under <see cref="Flags.StructuredNames"/>.</summary>
+    /// under <see cref="Flags.StructuredNames"/>, and the first-name conflict also under
+    /// <see cref="Flags.DistinctGivenNames"/>.</summary>
     public const MatchFlags CannotLinkFlags = MatchFlags.NameConflictCap | MatchFlags.IdConflict
         | MatchFlags.GivenNameConflict | MatchFlags.FamilyNameConflict;
 

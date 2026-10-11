@@ -35,6 +35,11 @@ public class MatchSettingsTests
         GivenNameSuffixes = ["jon", "bek"],
         FamilyNameEndings = ["ovski", "ov"],
         FamilyNameSexEndings = [("ov", "ova"), ("in", "ina")],
+        CrossScriptNames = true,
+        ExtendedArabicLetters = true,
+        NamelessSoldVinNeedsPhone = true,
+        AnchoredGivenName = true,
+        DistinctGivenNames = true,
     };
 
     /// <summary>Sets the process-wide flags the way a batch runner does, and restores them.</summary>
@@ -62,6 +67,11 @@ public class MatchSettingsTests
             Flags.GivenNameSuffixes = s.GivenNameSuffixes;
             Flags.FamilyNameEndings = s.FamilyNameEndings;
             Flags.FamilyNameSexEndings = s.FamilyNameSexEndings;
+            Flags.CrossScriptNames = s.CrossScriptNames;
+            Flags.ExtendedArabicLetters = s.ExtendedArabicLetters;
+            Flags.NamelessSoldVinNeedsPhone = s.NamelessSoldVinNeedsPhone;
+            Flags.AnchoredGivenName = s.AnchoredGivenName;
+            Flags.DistinctGivenNames = s.DistinctGivenNames;
         }
     }
 
@@ -147,7 +157,7 @@ public class MatchSettingsTests
     [Fact]
     public void RecordedForm_FromANewerEngine_IsRefused_NotMisread()
     {
-        Assert.Throws<NotSupportedException>(() => MatchSettings.FromJson("""{"v":2,"structuredNames":true}"""));
+        Assert.Throws<NotSupportedException>(() => MatchSettings.FromJson($$"""{"v":{{MatchSettings.FormatVersion + 1}},"structuredNames":true}"""));
         Assert.Throws<FormatException>(() => MatchSettings.FromJson("""{"structuredNames":true}"""));
         Assert.Throws<FormatException>(() => MatchSettings.FromJson("not json"));
         Assert.Throws<FormatException>(() => MatchSettings.FromJson("""{"v":1,"tokenFolds":[["a"]]}"""));

@@ -95,14 +95,14 @@ public static class CaseCategories
         // (exact phone+given, chain-slice address rescue, both 0.91), and without the guard those
         // ride-alongs showed up tagged BOTH Auto-merged AND "VIN review (NOT merged)".
         if (s < 0.90 && (f & MatchFlags.VinSoldOverlap) != 0 && (f & MatchFlags.VinSoldMerge) == 0
-            && (f & MatchFlags.NamesBoth) != 0 && RealMatcher.GivenNamesMatch(ra.NormName, rb.NormName))
+            && (f & MatchFlags.NamesBoth) != 0 && RealMatcher.GivenNamesMatch(ra, rb))
             cats |= CaseCat.VinReview;
 
         if (phoneExact && s < 0.90
             && (f & MatchFlags.NamesBoth) != 0
             && (f & (MatchFlags.NameConsistent | MatchFlags.NameConflictCap | MatchFlags.ChainSliceRescue | MatchFlags.OrgLine
                      | MatchFlags.GivenNameConflict | MatchFlags.FamilyNameConflict)) == 0
-            && RealMatcher.FirstTokensAlign(ra.NormName, rb.NormName))
+            && RealMatcher.FirstTokensAlign(ra, rb))
             cats |= CaseCat.Increment;
 
         // Script-recovery tags ride along on cases interesting for another reason, plus any

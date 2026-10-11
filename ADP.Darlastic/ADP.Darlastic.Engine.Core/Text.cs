@@ -200,6 +200,64 @@ public static class Flags
     /// is a typing slip on one person's record. Empty by default, so no ending carries meaning.
     /// </summary>
     public static IReadOnlyList<(string Masculine, string Feminine)> FamilyNameSexEndings { get => Current.FamilyNameSexEndings; set => Change(s => s with { FamilyNameSexEndings = value }); }
+
+    // ---- per-tenant rules for names written in two scripts. All four are OFF by default, and a tenant
+    // that never sets them normalises, scores and clusters exactly as before.
+
+    /// <summary>
+    /// PER-TENANT: one name written in a script that leaves short vowels out (Arabic letters, read
+    /// through <see cref="Norm.Name"/>) and in Latin letters that write them. By default such tokens
+    /// only align on the shared rules (a near Jaro-Winkler, or the same consonant skeleton AND a
+    /// near Jaro-Winkler), and the transliterated form is a consonant string far from the Latin one:
+    /// the two spellings of one person never align. On, when one record's name is written in Arabic
+    /// script and the other's in Latin letters, two tokens also align when they have the same
+    /// consonants in the same order (folds applied, doubled letters collapsed, a medial w or y read as
+    /// the long vowel it writes, an optional final h, a joined "abd" compound) and every long vowel
+    /// one side writes is matched by a vowel of the same class on the other (a: a; y: i, e, y; w: o,
+    /// u, w) — so two names that differ in a long vowel stay apart. A token with three or more
+    /// consonants aligns on its own; a shorter one only where every token of the shorter name aligns
+    /// (given and father name together), never as a lone given name.
+    /// </summary>
+    public static bool CrossScriptNames { get => Current.CrossScriptNames; set => Change(s => s with { CrossScriptNames = value }); }
+
+    /// <summary>
+    /// PER-TENANT: <see cref="Norm.Name"/> reads the Kurdish and Persian letters of the Arabic script
+    /// (پ چ ژ ڤ ک گ ی ێ ۆ ە ڕ ڵ ھ) and the hamza seats ؤ and ئ (a word-initial ئ is the silent vowel
+    /// carrier). By default they are dropped, so a name typed on a Kurdish or Persian keyboard loses
+    /// letters ("علی" normalises to "al", not "aly"). Changes the normalised name, not the stored one.
+    /// </summary>
+    public static bool ExtendedArabicLetters { get => Current.ExtendedArabicLetters; set => Change(s => s with { ExtendedArabicLetters = value }); }
+
+    /// <summary>
+    /// PER-TENANT: the sold-VIN half of <see cref="NamelessNeedsCorroboration"/> on its own: a shared
+    /// sold VIN is not decisive for a pair with no name on one side when that nameless record carries a
+    /// phone the other record does not confirm (the other's phones differ, or it has none): the buyer's
+    /// car brought in by someone else. A nameless record without any phone keeps the floor, and the
+    /// phone-only damp of <see cref="NamelessNeedsCorroboration"/> stays off, for a tenant whose nameless
+    /// phone-only merges are sound.
+    /// </summary>
+    public static bool NamelessSoldVinNeedsPhone { get => Current.NamelessSoldVinNeedsPhone; set => Change(s => s with { NamelessSoldVinNeedsPhone = value }); }
+
+    /// <summary>
+    /// PER-TENANT: name consistency is anchored on the given name. By default every token of the
+    /// shorter name may align to any token of the longer one, in any order, so a son's name chain
+    /// ("Given Father Grandfather") is consistent with his father's ("Father Grandfather"). On, the
+    /// shorter name's first token must align with the longer name's first token, and its remaining
+    /// tokens with the longer name's remaining tokens in order (tokens may be skipped, so a trailing
+    /// family or tribal name still aligns); a one-word name must be the longer name's first token.
+    /// </summary>
+    public static bool AnchoredGivenName { get => Current.AnchoredGivenName; set => Change(s => s with { AnchoredGivenName = value }); }
+
+    /// <summary>
+    /// PER-TENANT: on a shared exact phone, two person names whose first names are clearly different
+    /// names (the names are neither consistent nor the same first name, across scripts too where
+    /// <see cref="CrossScriptNames"/> is on, and the first names are not near spellings, a name split or
+    /// joined, or behind a title) are two people: the pair is held below the steward line
+    /// (<see cref="MatchFlags.GivenNameConflict"/>), and under <see cref="ConflictAwareClustering"/> it
+    /// is a cannot-link. By default it keeps the weighted base, which a shared father and family name
+    /// can lift over the auto-merge line: siblings and a parent and child on one family phone.
+    /// </summary>
+    public static bool DistinctGivenNames { get => Current.DistinctGivenNames; set => Change(s => s with { DistinctGivenNames = value }); }
 }
 
 
@@ -236,6 +294,16 @@ public static class Norm
         ['ه'] = "h", ['و'] = "w", ['ي'] = "y", ['ى'] = "a", ['ة'] = "a", ['ء'] = "",
     };
 
+    // Kurdish and Persian letters of the Arabic script, and the hamza seats (Flags.ExtendedArabicLetters;
+    // off by default, when they are dropped as they always were). Kurdish writes its vowels: ە and ێ
+    // are e, ۆ is o. A word-initial ئ is the silent vowel carrier of Kurdish spelling and is skipped.
+    private static readonly Dictionary<char, string> ArabicExtended = new()
+    {
+        ['پ'] = "p", ['چ'] = "ch", ['ژ'] = "zh", ['ڤ'] = "v", ['ک'] = "k", ['گ'] = "g",
+        ['ی'] = "y", ['ێ'] = "e", ['ۆ'] = "o", ['ە'] = "e", ['ڕ'] = "r", ['ڵ'] = "l", ['ھ'] = "h",
+        ['ؤ'] = "w", ['ئ'] = "y",
+    };
+
     // Arabizi (Franco-Arabic chat) numerals → the same Latin letter the Arabic transliteration uses,
     // so '3aftan' and 'عفتان' land near each other. Arabic-transliterated tenant data uses these heavily; the old digit
     // gate blanked every one of them (review 2026-06-08: 'Nafi3', 'Mohammed 7assan', 'Sa3eed').
@@ -248,12 +316,18 @@ public static class Norm
     {
         if (string.IsNullOrWhiteSpace(s)) return "";
         if (!Flags.Baseline) s = FoldArabizi(s);
+        bool extended = Flags.ExtendedArabicLetters && !Flags.Baseline;
         var sb = new StringBuilder(s.Length);
         foreach (char ch in s)
         {
             char c = char.ToLowerInvariant(ch);
             if (Cyrillic.TryGetValue(c, out var cy)) sb.Append(cy);
             else if (Arabic.TryGetValue(c, out var ar)) sb.Append(ar);
+            else if (extended && ArabicExtended.TryGetValue(c, out var ext))
+            {
+                if (c == 'ئ' && (sb.Length == 0 || sb[^1] == ' ')) continue;   // the silent word-initial carrier
+                sb.Append(ext);
+            }
             else if (c is >= 'a' and <= 'z') sb.Append(c);
             // arabizi digits were folded to letters above; remaining digits are serials / list
             // markers ('Firka 1', '2. Mariwan') and are dropped. Baseline mode keeps digits (so the
