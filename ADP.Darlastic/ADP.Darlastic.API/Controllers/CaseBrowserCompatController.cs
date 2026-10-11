@@ -710,6 +710,11 @@ public class CaseBrowserCompatController : ControllerBase
         var golden = allStaged
             ? Merge.SurviveGolden([.. current.Select(r => r!)], explain)
             : await StagedGoldenAttrsAsync(live, ct);
+        // The name as the resolve staged it, which every other surface serves: the recomputation above
+        // picks the same chain, but shows it as the match form, while a tenant may have the resolve show
+        // it as its records wrote it (GoldenNameOptions). The explanation keeps the chain decision.
+        if (allStaged && (await StagedGoldenAttrsAsync(live, ct)).FirstOrDefault(g => g.AttrType == "full_name") is { } stagedName)
+            golden = [.. golden.Select(g => g.AttrType == "full_name" ? g with { Value = stagedName.Value } : g)];
 
         bool reasonsStaged = await ReasonsStagedAsync(ct);
         var reasons = GoldenReasons.ForReader(summary?.Categories, current.Count, reasonsStaged);

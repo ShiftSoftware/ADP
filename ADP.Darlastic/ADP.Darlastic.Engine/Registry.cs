@@ -776,9 +776,12 @@ public static class Registry
     /// has any, hash-guarded like every other family; prior <c>events</c> artifacts that no longer
     /// receive an event are tombstoned. Null skips the family entirely — no read, no stage, no
     /// tombstone — so a tenant without event sources is unchanged by construction.
+    /// <paramref name="names"/> says how each golden's name is shown (<see cref="GoldenNameOptions"/>; null =
+    /// the defaults, the title-cased match form). It moves what the name-bearing artifacts carry
+    /// (<c>golden</c>, <c>vinlinks</c>, <c>vinowner</c>, the identity summaries), never a cluster.
     /// </summary>
     public static RunMetrics RunResolve(IReadOnlyList<RealRecord> records, Merge.Result merge,
-        IReadOnlyList<SourceEvent>? events, EventAttachOptions? eventOptions = null)
+        IReadOnlyList<SourceEvent>? events, EventAttachOptions? eventOptions = null, GoldenNameOptions? names = null)
     {
         using var conn = Open();
         var m = new RunMetrics { Records = records.Count };
@@ -975,7 +978,7 @@ public static class Registry
         {
             long id = finalId[root];
             var members = clusters[root].Select(i => records[i]).ToList();
-            var survived = Merge.SurviveGolden(members);
+            var survived = Merge.SurviveGolden(members, nameOptions: names);
             goldenName[id] = survived.FirstOrDefault(g => g.AttrType == "full_name")?.Value ?? "";
             Stage(ArtGolden, id.ToString(CultureInfo.InvariantCulture), GoldenCanonical(id, survived, Key, clusters[root]));
 
