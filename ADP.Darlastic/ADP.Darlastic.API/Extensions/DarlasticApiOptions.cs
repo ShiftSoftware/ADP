@@ -93,4 +93,24 @@ public class DarlasticApiOptions
     /// as itself.
     /// </summary>
     public Dictionary<string, string> SourceLabels { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Serve the case browser's golden rows (one row per golden customer) from an in-memory index of
+    /// every golden's ID, record count and reasons, built once per resolve run and reused until the next
+    /// run finishes, instead of unpacking every golden's payload in SQL on each request. For registries of
+    /// hundreds of thousands of goldens, where that unpacking makes each page take seconds; the index
+    /// costs one build per run (about two seconds and a few tens of megabytes per million goldens).
+    /// The rows, their order, the totals and the reason counts are the same either way. Off by default.
+    /// </summary>
+    public bool GoldenRowIndex { get; set; }
+
+    /// <summary>
+    /// Show a city to a caller without the reveal permission only when at least this many golden
+    /// customers share it; any other value of a city slot is masked like an address. A record's city
+    /// slot is free text in some tenants' sources: besides city names it holds neighbourhoods, streets
+    /// and one-off spellings, and a value few customers share can point at one household. Applies to the
+    /// golden list and detail, the steward queue and both case browser surfaces, explanations included.
+    /// 0 (the default) shows every city, as before.
+    /// </summary>
+    public int CityMinimumShare { get; set; }
 }

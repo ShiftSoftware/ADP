@@ -95,7 +95,7 @@ public class QuotedValueTests
         Assert.Contains(steps, s => s.Stage == "name" && s.Detail == $"\"{Hidden}Name{Hidden}\" → \"{Hidden}Name{Hidden}\"");
         Assert.Contains(steps, s => s.Stage == "phone" && s.Detail == $"{Hidden}Phone{Hidden} (full number) · {Hidden}Phone{Hidden} (incomplete number)");
         if (normAddress.Length > 0)
-            Assert.Contains(steps, s => s.Stage == "address" && s.Detail == $"\"{Hidden}Address{Hidden}\" → \"{Hidden}Address{Hidden}\" · city \"springfield\"");
+            Assert.Contains(steps, s => s.Stage == "address" && s.Detail == $"\"{Hidden}Address{Hidden}\" → \"{Hidden}Address{Hidden}\" · city \"{Hidden}City{Hidden}\"");
 
         // Each value went to the quoter whole and as the kind it is.
         Assert.Contains((QuotedValue.Name, rawName), quoter.Seen);
@@ -107,12 +107,12 @@ public class QuotedValueTests
         {
             Assert.Contains((QuotedValue.Address, rawAddress.Replace('|', ' ')), quoter.Seen);
             Assert.Contains((QuotedValue.Address, normAddress), quoter.Seen);
+            Assert.Contains((QuotedValue.City, "springfield"), quoter.Seen);
         }
 
-        // And nothing of any of them is left in the text. The city is shown beside every record by
-        // the contract, so it is the one word an address may leave behind.
+        // And nothing of any of them is left in the text, the city included: it went to the quoter too.
         AssertNoFragment(steps.Select(s => s.Detail),
-            [rawName, normName, rawAddress, normAddress, "7700000701", "770000702"], "springfield");
+            [rawName, normName, rawAddress, normAddress, "7700000701", "770000702", "springfield"]);
     }
 
     [Fact]

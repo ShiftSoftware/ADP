@@ -51,6 +51,31 @@ public enum GoldenReason : long
 
     // ---- resolve-only, added after the reader-side bit (bits are persisted, so never renumbered) ----
     MergedByServicedVehicleAndName = 1L << 51,   // an auto-merge edge on the serviced-vehicle + same-full-name floor (Flags.ServicedVinNameFloor)
+
+    /// <summary>An auto-merge edge that no floor carried, on an exact shared phone where at least one
+    /// record has no name to compare. Staged only under
+    /// <see cref="GoldenEvidenceOptions.PhoneWithoutNameReason"/>; otherwise such an edge is one of the
+    /// <see cref="MergedBySimilarDetails"/>.</summary>
+    MergedByPhoneWithoutName = 1L << 52,
+}
+
+/// <summary>
+/// How the resolve words per-golden evidence (<c>Merge.ClusterFromBlocks(perGoldenEvidence: true)</c>).
+/// The defaults stage exactly the reasons staged before these options existed.
+/// </summary>
+public sealed record GoldenEvidenceOptions
+{
+    /// <summary>The reasons as first staged.</summary>
+    public static GoldenEvidenceOptions Default { get; } = new();
+
+    /// <summary>
+    /// Name the merges that rest on a shared phone with a record that has no name
+    /// (<see cref="GoldenReason.MergedByPhoneWithoutName"/>) instead of counting them among the merges
+    /// on matching details. For a tenant whose matcher lets a phone alone combine a nameless record
+    /// (one that does not hold nameless pairs back), where "matching details" would tell a reader the
+    /// names agreed when one of them was missing. Off by default.
+    /// </summary>
+    public bool PhoneWithoutNameReason { get; init; }
 }
 
 /// <summary>The rules that turn the resolve's pair walk into <see cref="GoldenReason"/>s.</summary>
@@ -94,7 +119,13 @@ public static class GoldenReasons
     /// floors fired carries all of them: each one alone would have merged it, so each is a true
     /// answer to "why were these combined".
     /// </summary>
-    public static GoldenReason OfMergeEdge(MatchFlags f)
+    public static GoldenReason OfMergeEdge(MatchFlags f) => OfMergeEdge(f, GoldenEvidenceOptions.Default);
+
+    /// <summary><see cref="OfMergeEdge(MatchFlags)"/> under <paramref name="options"/>: with
+    /// <see cref="GoldenEvidenceOptions.PhoneWithoutNameReason"/>, an edge no floor carried that shares an
+    /// exact phone while a name is missing on one side (and is not a company line) is a merge by phone
+    /// without a name rather than by matching details.</summary>
+    public static GoldenReason OfMergeEdge(MatchFlags f, GoldenEvidenceOptions options)
     {
         var r = GoldenReason.None;
         if ((f & MatchFlags.VinSoldMerge) != 0) r |= GoldenReason.MergedByVehicle;
@@ -104,7 +135,11 @@ public static class GoldenReasons
         if ((f & MatchFlags.PhoneExact) != 0
             && (f & (MatchFlags.NameConsistent | MatchFlags.PhoneNameMerge | MatchFlags.ChainSliceRescue)) != 0)
             r |= GoldenReason.MergedByPhoneAndName;
-        return r == GoldenReason.None ? GoldenReason.MergedBySimilarDetails : r;
+        if (r != GoldenReason.None) return r;
+        if (options.PhoneWithoutNameReason
+            && (f & MatchFlags.PhoneExact) != 0 && (f & MatchFlags.NamesBoth) == 0 && (f & MatchFlags.OrgLine) == 0)
+            return GoldenReason.MergedByPhoneWithoutName;
+        return GoldenReason.MergedBySimilarDetails;
     }
 
     /// <summary>

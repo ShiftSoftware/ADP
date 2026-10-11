@@ -725,7 +725,7 @@ public class CaseBrowserController : ControllerBase
         Phones = Pii.Show(PiiKind.Phone, r.Phones),
         WeakPhones = Pii.Show(PiiKind.Phone, r.WeakPhones),
         NationalId = Pii.Show(PiiKind.Identifier, r.NationalId),
-        City = string.IsNullOrEmpty(r.NormCity) ? null : r.NormCity,
+        City = string.IsNullOrEmpty(r.NormCity) ? null : Pii.ShowCity(r.NormCity),
         Address = string.IsNullOrEmpty(r.RawAddress) ? null : Pii.Show(PiiKind.Address, r.RawAddress),
         Gender = r.Gender,
         Emails = Pii.Show(PiiKind.Email, r.Emails),

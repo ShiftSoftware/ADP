@@ -42,8 +42,12 @@ public class GoldenCustomerSourcesDTO
 public class GoldenCustomerSourceDTO
 {
     /// <summary>Source-system slug as the tenant's feeds emit it (e.g. "activation", "dms-&lt;dealer&gt;").
-    /// Rendered verbatim: this package is tenant-agnostic, so any friendly naming is a host concern.</summary>
+    /// This package is tenant-agnostic, so a friendly name is the host's: see <see cref="SourceLabel"/>.</summary>
     public string SourceSystem { get; set; } = default!;
+
+    /// <summary>The host's plain name for <see cref="SourceSystem"/> (its <c>DarlasticApiOptions.SourceLabels</c>),
+    /// or null when the host gives none — show the slug then.</summary>
+    public string? SourceLabel { get; set; }
 
     public string SourceRecordId { get; set; } = default!;
 
