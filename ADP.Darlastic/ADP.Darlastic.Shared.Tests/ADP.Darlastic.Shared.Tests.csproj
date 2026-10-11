@@ -27,4 +27,10 @@
 		<ProjectReference Include="..\ADP.Darlastic.Shared\ADP.Darlastic.Shared.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<!-- The framework's own PII protector, so the masking tests run the code the API runs rather
+		     than a stand-in. Same floor as the Model package Shared references. -->
+		<PackageReference Include="ShiftSoftware.ShiftEntity" Version="2026.10.7.2" />
+	</ItemGroup>
+
 </Project>
