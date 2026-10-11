@@ -77,16 +77,18 @@ public class CaseBrowserCompatController : ControllerBase
     private readonly DarlasticApiOptions options;
     private readonly IPiiMasker masker;
     private readonly PiiOptions piiOptions;
+    private readonly RegistryRunCache runCache;
 
     private static readonly JsonSerializerOptions PayloadJson = new() { PropertyNameCaseInsensitive = true };
 
     public CaseBrowserCompatController(ShiftDbContext db, IOptions<DarlasticApiOptions> options,
-        IPiiMasker masker, IOptions<PiiOptions> piiOptions)
+        IPiiMasker masker, IOptions<PiiOptions> piiOptions, RegistryRunCache runCache)
     {
         this.db = db;
         this.options = options.Value;
         this.masker = masker;
         this.piiOptions = piiOptions.Value;
+        this.runCache = runCache;
     }
 
     /// <summary>
@@ -172,7 +174,8 @@ public class CaseBrowserCompatController : ControllerBase
     private RecordPiiView? piiView;
 
     /// <summary>The shared record PII rules, fed with this caller's grant (the token's, when there is one).</summary>
-    private RecordPiiView PiiView => piiView ??= new RecordPiiView(masker, piiOptions, Pii.Reveal, Pii.PartialSearch);
+    private RecordPiiView PiiView => piiView ??= new RecordPiiView(masker, piiOptions, Pii.Reveal, Pii.PartialSearch,
+        CityDisclosureAttribute.ShownCities(HttpContext), RecordPiiView.BlockKeyLabels(options));
 
     /// <summary>The value as this caller may see it. Empty stays empty, so "no name" still reads as such.</summary>
     private string? Shown(PiiKind kind, string? raw) => PiiView.Show(kind, raw);
@@ -424,6 +427,9 @@ public class CaseBrowserCompatController : ControllerBase
             filterMask = (long)parsed;
         }
 
+        if (options.GoldenRowIndex)
+            return await GoldensFromIndexAsync(filterMask, q, sort, page, size, ct);
+
         bool reasonsStaged = await ReasonsStagedAsync(ct);
         var all = GoldenRows(reasonsStaged);
 
@@ -451,13 +457,7 @@ public class CaseBrowserCompatController : ControllerBase
         var window = await rows.Skip(page * size).Take(size).ToListAsync(ct);
 
         var ids = window.Select(w => w.ID).ToList();
-        var sourcesOf = (await db.Set<SourceProfile>().AsNoTracking()
-                .Where(p => ids.Contains(p.IdentityID) && !p.Removed)
-                .Select(p => new { p.IdentityID, p.SourceSystem })
-                .Distinct()
-                .ToListAsync(ct))
-            .GroupBy(p => p.IdentityID)
-            .ToDictionary(g => g.Key, g => g.Select(p => p.SourceSystem).Order(StringComparer.Ordinal).ToList());
+        var sourcesOf = await SourceSystemsOfAsync(ids, ct);
 
         var items = window.Select(w =>
         {
@@ -468,7 +468,7 @@ public class CaseBrowserCompatController : ControllerBase
                 id = w.ID.ToString(CultureInfo.InvariantCulture),
                 name = Shown(PiiKind.Name, w.FullName),
                 phone = Shown(PiiKind.Phone, w.Phone),
-                city = w.City,
+                city = PiiView.ShowCity(w.City),
                 members = w.Members,
                 sources = w.Sources ?? systems.Count,
                 sourceSystems = systems,
@@ -490,6 +490,105 @@ public class CaseBrowserCompatController : ControllerBase
             items,
         });
     }
+
+    /// <summary>
+    /// <see cref="Goldens"/> from the per-run in-memory index (<see cref="DarlasticApiOptions.GoldenRowIndex"/>):
+    /// the same rows, order, totals and chip counts, with only the page's own rows read from the view.
+    /// </summary>
+    private async Task<IActionResult> GoldensFromIndexAsync(long filterMask, string? q, string? sort, int page, int size,
+        CancellationToken ct)
+    {
+        var index = await runCache.GetAsync(db, GoldenRowIndex.CacheName, GoldenRowIndex.BuildAsync, ct);
+
+        HashSet<long>? found = null;
+        long? exactId = null;
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var (matches, exact) = SearchGoldens(GoldenSearchRows(), q.Trim());
+            found = [.. await matches.Select(x => x.ID).ToListAsync(ct)];
+            exactId = exact;
+        }
+
+        // The view's order: a customer number typed in full first, then most records first (or by
+        // number). Positions walk the snapshot's arrays; nothing is sorted per request.
+        IEnumerable<int> positions = sort == "id" ? index.ById : Enumerable.Range(0, index.Count);
+        bool Wanted(int i) => (filterMask == 0 || (index.Bits[i] & filterMask) != 0)
+                              && (found is null || found.Contains(index.Ids[i]));
+
+        int total = 0;
+        int? exactPos = null;
+        int skip = page * size;
+        var rest = new List<int>(Math.Min(skip + size, 4096));
+        foreach (var i in positions)
+        {
+            if (!Wanted(i)) continue;
+            total++;
+            // The exact match takes the first slot below; everything else keeps its order.
+            if (exactId is { } e && index.Ids[i] == e) { exactPos = i; continue; }
+            if (rest.Count < skip + size) rest.Add(i);
+        }
+        if (exactPos is { } first) rest.Insert(0, first);
+        var window = rest.Skip(skip).Take(size).ToList();
+
+        var ids = window.Select(i => index.Ids[i]).ToList();
+        var details = await db.Set<GoldenCustomer>().AsNoTracking()
+            .Where(g => ids.Contains(g.ID))
+            .Select(g => new { g.ID, g.FullName, g.Phone, g.City })
+            .ToDictionaryAsync(g => g.ID, ct);
+        var sourceCounts = await db.Set<IdentitySummary>().AsNoTracking()
+            .Where(s => ids.Contains(s.IdentityID))
+            .Select(s => new { s.IdentityID, s.SourceCount })
+            .ToDictionaryAsync(s => s.IdentityID, s => s.SourceCount, ct);
+        var sourcesOf = await SourceSystemsOfAsync(ids, ct);
+
+        var items = window.Select(i =>
+        {
+            long id = index.Ids[i];
+            var reasons = GoldenReasons.ReasonsOf(index.Bits[i]);
+            var systems = sourcesOf.GetValueOrDefault(id) ?? [];
+            var g = details.GetValueOrDefault(id);
+            return new
+            {
+                id = id.ToString(CultureInfo.InvariantCulture),
+                name = Shown(PiiKind.Name, g?.FullName),
+                phone = Shown(PiiKind.Phone, g?.Phone),
+                city = PiiView.ShowCity(g?.City),
+                members = index.Members[i],
+                sources = sourceCounts.TryGetValue(id, out var sc) ? sc : systems.Count,
+                sourceSystems = systems,
+                reasons = NamesOf<GoldenReason>((long)reasons),
+                needsReview = (reasons & GoldenReason.NeedsReview) != 0,
+            };
+        }).ToList();
+
+        return new JsonResult(new
+        {
+            total,
+            page,
+            size,
+            goldenTotal = index.Count,
+            awaitingResolve = await AwaitingResolveAsync(ct),
+            reasonsStaged = index.ReasonsStaged,
+            reasonCounts = index.ReasonCounts,
+            masked = !Pii.Reveal,
+            items,
+        });
+    }
+
+    /// <summary>The view's rows with only what a golden search reads (no summary join, no reasons).</summary>
+    private IQueryable<GoldenRow> GoldenSearchRows() =>
+        db.Set<GoldenCustomer>().AsNoTracking()
+            .Select(g => new GoldenRow { ID = g.ID, FullName = g.FullName, Phone = g.Phone });
+
+    /// <summary>The source systems of each golden's live records, in ordinal order.</summary>
+    private async Task<Dictionary<long, List<string>>> SourceSystemsOfAsync(List<long> ids, CancellationToken ct) =>
+        (await db.Set<SourceProfile>().AsNoTracking()
+                .Where(p => ids.Contains(p.IdentityID) && !p.Removed)
+                .Select(p => new { p.IdentityID, p.SourceSystem })
+                .Distinct()
+                .ToListAsync(ct))
+            .GroupBy(p => p.IdentityID)
+            .ToDictionary(g => g.Key, g => g.Select(p => p.SourceSystem).Order(StringComparer.Ordinal).ToList());
 
     /// <summary>One golden row as the list query sees it.</summary>
     private sealed class GoldenRow
@@ -825,7 +924,8 @@ public class CaseBrowserCompatController : ControllerBase
 
     /// <summary>
     /// A golden attribute as this caller may see it — by the protection its DTO declares. The city
-    /// is the one attribute the contract leaves open; a type this list does not know is masked
+    /// is the one attribute the contract leaves open (unless too few customers share it, see
+    /// <see cref="DarlasticApiOptions.CityMinimumShare"/>); a type this list does not know is masked
     /// rather than assumed harmless, so a new survived attribute cannot appear unmasked by default.
     /// </summary>
     private string? ShownAttribute(string attrType, string? value) => attrType switch
@@ -834,7 +934,7 @@ public class CaseBrowserCompatController : ControllerBase
         "phone" => Shown(PiiKind.Phone, value),
         "email" => Shown(PiiKind.Email, value),
         "national_id" => Shown(PiiKind.Identifier, value),
-        "city" => value,
+        "city" => PiiView.ShowCity(value),
         _ => Shown(PiiKind.Identifier, value),
     };
 
@@ -979,15 +1079,18 @@ public class CaseBrowserCompatController : ControllerBase
             int colon = s.IndexOf(':');
             return colon > 0 && colon < s.Length - 1 ? (s[..colon], s[(colon + 1)..]) : null;
         }
+        // A record by the host's name for its source (the slug when the host gives none), as the page
+        // names it everywhere else.
+        string Named(string side) => Side(side) is { } k ? $"{SourceName(k.sys)} #{k.id}" : side;
         var parsed = rows.Select(f =>
         {
             string t = f.Target;
             if (t.StartsWith("pair:", StringComparison.Ordinal) && t[5..].Split('~') is [var x, var y])
-                return (f, kind: "pair", a: Side(x), b: Side(y), root: (long?)null, label: $"Pair {x} ~ {y}");
+                return (f, kind: "pair", a: Side(x), b: Side(y), root: (long?)null, label: $"Pair {Named(x)} ~ {Named(y)}");
             if (t.StartsWith("cluster:", StringComparison.Ordinal) && long.TryParse(t[8..], out var root))
                 return (f, kind: "cluster", a: null, b: null, root: (long?)root, label: $"Customer #{root}");
             if (t.StartsWith("record:", StringComparison.Ordinal) && Side(t[7..]) is { } r)
-                return (f, kind: "record", a: ((string, string)?)r, b: null, root: (long?)null, label: $"Record {r.sys} #{r.id}");
+                return (f, kind: "record", a: ((string, string)?)r, b: null, root: (long?)null, label: $"Record {SourceName(r.sys)} #{r.id}");
             return (f, kind: "other", a: null, b: null, root: (long?)null, label: t);
         }).ToList();
 
@@ -1327,7 +1430,7 @@ public class CaseBrowserCompatController : ControllerBase
             dob = r.Dob is { } d ? Shown(PiiKind.Identifier, $"{d.P1}/{d.P2}/{d.Year}") : null,
             rawAddress = Shown(PiiKind.Address, r.RawAddress) ?? "",
             normAddress = Shown(PiiKind.Address, r.NormAddress) ?? "",
-            city = r.NormCity,
+            city = PiiView.ShowCity(r.NormCity),
             mojibake = r.NameWasMojibake,
             arabizi = r.NameHadArabizi,
             vins = r.VinLinks is { Length: > 0 }
@@ -1373,6 +1476,9 @@ public class CaseBrowserCompatController : ControllerBase
     }
 
     private string Schema() => options.Schema ?? "Darlastic";
+
+    /// <summary>The host's plain name for a source system, or the slug when it gives none.</summary>
+    private string SourceName(string system) => options.SourceLabels.GetValueOrDefault(system) ?? system;
 
     private static string PairKeyOf((string sys, string id) a, (string sys, string id) b)
     {

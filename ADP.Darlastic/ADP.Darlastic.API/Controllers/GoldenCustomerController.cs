@@ -74,6 +74,12 @@ public class GoldenCustomerController : ControllerBase
         this.piiProtector = piiProtector;
     }
 
+    /// <summary>How this caller sees a city: as stored, or masked when too few customers share it
+    /// (<see cref="DarlasticApiOptions.CityMinimumShare"/>) and the caller may not see personal data.</summary>
+    private RecordPiiView CityView() => RecordPiiView.ForCaller(HttpContext,
+        HttpContext.RequestServices.GetRequiredService<IPiiMasker>(),
+        HttpContext.RequestServices.GetRequiredService<IOptions<PiiOptions>>().Value);
+
     /// <summary>
     /// Golden-customer grid. Name, phone, email and national ID come back masked for every caller.
     ///
@@ -123,8 +129,12 @@ public class GoldenCustomerController : ControllerBase
 
         // The rows were read with raw values so the filter could match them. Mask every row
         // before it leaves the server.
+        var cities = CityView();
         foreach (var row in result.Value)
+        {
             piiProtector.Protect(row);
+            row.City = cities.ShowCity(row.City);
+        }
 
         return Ok(result);
     }
@@ -184,7 +194,7 @@ public class GoldenCustomerController : ControllerBase
         {
             dto.FullName = new PiiFieldDTO { Value = staged.Attribute("full_name") };
             dto.Phone = new PiiFieldDTO { Value = staged.Attribute("phone") };
-            dto.City = staged.Attribute("city");
+            dto.City = CityView().ShowCity(staged.Attribute("city"));
             dto.IDNumber = new PiiFieldDTO { Value = staged.Attribute("national_id") };
             dto.Email = new PiiFieldDTO { Value = staged.Attribute("email") };
             dto.SourceCount = staged.SourceCount;
@@ -530,6 +540,7 @@ public class GoldenCustomerController : ControllerBase
                 LastChangedRunID = x.LastChangedRunID,
             })
             .ToListAsync();
+        foreach (var s in sources) s.SourceLabel = options.SourceLabels.GetValueOrDefault(s.SourceSystem);
 
         // Which identities were absorbed into this one. IdentityRedirect is keyed on OldIdentityID,
         // so this direction is a scan — fine while merges are rare, but if a tenant's redirect table

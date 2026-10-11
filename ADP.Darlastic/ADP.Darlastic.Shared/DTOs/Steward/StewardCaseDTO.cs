@@ -49,6 +49,9 @@ public class StewardCaseDTO
 public class StewardCaseRecordDTO
 {
     public string SourceSystem { get; set; } = default!;
+
+    /// <summary>The host's plain name for <see cref="SourceSystem"/>, or null when it gives none.</summary>
+    public string? SourceLabel { get; set; }
     public string SourceRecordId { get; set; } = default!;
 
     /// <summary>As the source spells it — what a steward recognizes.</summary>

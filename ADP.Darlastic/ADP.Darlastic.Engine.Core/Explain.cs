@@ -62,6 +62,10 @@ public enum QuotedValue
     IdNumber,
     BirthDate,
     Address,
+
+    /// <summary>The city slot of an address. A reader's quoter usually writes it as recorded (the city is
+    /// shown beside the record); one that shows only cities enough customers share masks the rest.</summary>
+    City,
 }
 
 /// <summary>
@@ -83,8 +87,8 @@ public static class Normalization
 
     /// <summary>
     /// The steps, with every record value written through <paramref name="quote"/>. Without one the
-    /// values appear as recorded. The city stays as recorded either way: it is shown beside the
-    /// record wherever the record is shown.
+    /// values appear as recorded. The city goes through the quoter as <see cref="QuotedValue.City"/>,
+    /// so it reads the way the record view beside it shows the city.
     /// </summary>
     public static List<NormalizeStep> Steps(RealRecord r, ValueQuoter? quote)
     {
@@ -109,7 +113,7 @@ public static class Normalization
                     .Concat(r.WeakPhones.Select(p => Q(QuotedValue.Phone, p) + " (incomplete number)")))));
 
         if (r.NormAddress.Length > 0)
-            steps.Add(new("address", $"\"{Q(QuotedValue.Address, r.RawAddress.Replace('|', ' '))}\" → \"{Q(QuotedValue.Address, r.NormAddress)}\" · city \"{r.NormCity}\""));
+            steps.Add(new("address", $"\"{Q(QuotedValue.Address, r.RawAddress.Replace('|', ' '))}\" → \"{Q(QuotedValue.Address, r.NormAddress)}\" · city \"{Q(QuotedValue.City, r.NormCity)}\""));
 
         return steps;
     }

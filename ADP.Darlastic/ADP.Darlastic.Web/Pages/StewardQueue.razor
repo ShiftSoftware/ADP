@@ -262,7 +262,8 @@
         <MudPaper Outlined Class="pa-3" Style="height: 100%;">
             <MudStack Spacing="2">
                 <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                    <MudText Typo="Typo.subtitle2" Style="font-family: monospace;">@r.SourceSystem</MudText>
+                    @* The host's plain name for the source when it gives one; the slug otherwise. *@
+                    <MudText Typo="Typo.subtitle2" Style="@(r.SourceLabel is null ? "font-family: monospace;" : null)">@(r.SourceLabel ?? r.SourceSystem)</MudText>
                     <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="font-family: monospace;">
                         #@r.SourceRecordId
                     </MudText>

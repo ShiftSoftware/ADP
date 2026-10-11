@@ -122,8 +122,8 @@ public class StewardQueueController : ControllerBase
                 PairKey = p.PairKey,
                 Score = p.Score,
                 RunID = p.RunID,
-                A = Side(p.SourceSystemA, p.SourceRecordIdA, records, identities, pii),
-                B = Side(p.SourceSystemB, p.SourceRecordIdB, records, identities, pii),
+                A = Side(p.SourceSystemA, p.SourceRecordIdA, records, identities, pii, options.SourceLabels),
+                B = Side(p.SourceSystemB, p.SourceRecordIdB, records, identities, pii, options.SourceLabels),
                 StandingVerdict = standing.GetValueOrDefault(p.PairKey),
             }).ToList(),
         });
@@ -214,9 +214,15 @@ public class StewardQueueController : ControllerBase
     }
 
     private static StewardCaseRecordDTO? Side(string system, string recordId,
-        Dictionary<(string, string), string> records, Dictionary<(string, string), long> identities, RecordPiiView pii)
+        Dictionary<(string, string), string> records, Dictionary<(string, string), long> identities, RecordPiiView pii,
+        IReadOnlyDictionary<string, string> sourceLabels)
     {
-        var dto = new StewardCaseRecordDTO { SourceSystem = system, SourceRecordId = recordId };
+        var dto = new StewardCaseRecordDTO
+        {
+            SourceSystem = system,
+            SourceLabel = sourceLabels.GetValueOrDefault(system),
+            SourceRecordId = recordId,
+        };
 
         if (identities.TryGetValue((system, recordId), out var identityId))
             dto.IdentityID = identityId.ToString(CultureInfo.InvariantCulture);
@@ -232,7 +238,7 @@ public class StewardQueueController : ControllerBase
         dto.RawName = pii.Show(PiiKind.Name, parsed.RawName);
         dto.NormName = pii.Show(PiiKind.Name, parsed.NormName);
         dto.Phones = pii.Show(PiiKind.Phone, [.. (parsed.Phones ?? []), .. (parsed.WeakPhones ?? [])]);
-        dto.City = string.IsNullOrWhiteSpace(parsed.NormCity) ? null : parsed.NormCity;
+        dto.City = string.IsNullOrWhiteSpace(parsed.NormCity) ? null : pii.ShowCity(parsed.NormCity);
         dto.Address = pii.Show(PiiKind.Address, string.IsNullOrWhiteSpace(parsed.RawAddress) ? parsed.NormAddress : parsed.RawAddress);
         dto.NationalId = pii.Show(PiiKind.Identifier, parsed.NationalId);
         return dto;

@@ -12,8 +12,9 @@
     Promising "why" here and rendering "what" would be the worse outcome, so the wording stays
     honest and the footer says where the reasoning actually lives.
 
-    Source-system slugs render verbatim (activation / inspection / dms-<dealer> / crm / ticket-*):
-    this package is tenant-agnostic, so mapping them to friendly names is a host's job.
+    Sources show the host's plain names for them (DarlasticApiOptions.SourceLabels, served with each
+    record): this package is tenant-agnostic, so naming them is the host's job. A source the host does
+    not name shows its slug (activation / inspection / dms-<dealer> / crm / ticket-*).
 *@
 
 <MudDialog>
@@ -71,7 +72,8 @@
                     {
                         <MudPaper Outlined Class="pa-3">
                             <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
-                                <MudText Typo="Typo.subtitle2" Style="font-family: monospace;">@group.Key</MudText>
+                                @{ var label = group.First().SourceLabel; }
+                                <MudText Typo="Typo.subtitle2" Style="@(label is null ? "font-family: monospace;" : null)">@(label ?? group.Key)</MudText>
                                 <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Text">
                                     @group.Count()
                                 </MudChip>
@@ -199,8 +201,8 @@
             ? $"seen in run {record.FirstRunID}"
             : $"first seen run {record.FirstRunID}, last changed run {record.LastChangedRunID}";
         return record.Removed
-            ? $"{record.SourceSystem} #{record.SourceRecordId} — gone from its source, held ({lifecycle})"
-            : $"{record.SourceSystem} #{record.SourceRecordId} — {lifecycle}";
+            ? $"{record.SourceLabel ?? record.SourceSystem} #{record.SourceRecordId} — gone from its source, held ({lifecycle})"
+            : $"{record.SourceLabel ?? record.SourceSystem} #{record.SourceRecordId} — {lifecycle}";
     }
 
     private void Close() => MudDialogInstance.Close(DialogResult.Ok(true));

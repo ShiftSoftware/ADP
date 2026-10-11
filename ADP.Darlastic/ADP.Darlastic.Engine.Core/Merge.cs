@@ -168,11 +168,12 @@ public static class Merge
     /// parameter existed: clustering, queue, catalog and counts are identical either way; on, it
     /// keeps the few categorised pairs that say something about customers (see
     /// <see cref="GoldenReasons.RelationshipCats"/>) and folds them in once the clustering is
-    /// final.</para>
+    /// final. <paramref name="evidenceOptions"/> (defaults when null) words those reasons; it changes
+    /// nothing without per-golden evidence.</para>
     /// </summary>
     public static Result ClusterFromBlocks(IReadOnlyList<RealRecord> records, RealMatcher.BlockingResult blocking,
         double mergeThreshold = 0.90, StewardConstraints? constraints = null,
-        int catalogCap = DefaultCatalogCap, bool perGoldenEvidence = false)
+        int catalogCap = DefaultCatalogCap, bool perGoldenEvidence = false, GoldenEvidenceOptions? evidenceOptions = null)
     {
         int n = records.Count;
         var uf = new UnionFind(n);
@@ -310,7 +311,7 @@ public static class Merge
                 if (records[i].IsOrgPlaceholder) Mark(i, GoldenReason.CompanyOrFleet);
             foreach (var e in mergeEdges)
             {
-                var r = GoldenReasons.OfMergeEdge(e.Flags);
+                var r = GoldenReasons.OfMergeEdge(e.Flags, evidenceOptions ?? GoldenEvidenceOptions.Default);
                 Mark(e.A, r); Mark(e.B, r);
             }
             foreach (var (a, b) in forcedMerge) { Mark(a, GoldenReason.MergedByReviewer); Mark(b, GoldenReason.MergedByReviewer); }

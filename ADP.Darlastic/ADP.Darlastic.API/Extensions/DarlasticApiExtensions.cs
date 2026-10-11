@@ -48,6 +48,10 @@ public static class DarlasticApiExtensions
         // applied to every request that re-scores a staged pair (RecordedMatchSettingsAttribute).
         services.TryAddSingleton<RecordedMatchSettings>();
 
+        // What readers derive from the whole registry once per resolve run (the case browser's golden row
+        // index, the cities enough customers share). Holds nothing until an option asks for one.
+        services.TryAddSingleton<RegistryRunCache>();
+
         // Registry model (tables + the GoldenCustomer view) lands in the host's DbContext model;
         // the host's own migrations create and version everything under options.Schema.
         //
@@ -65,6 +69,8 @@ public static class DarlasticApiExtensions
         services.Configure<MvcOptions>(mvcOptions =>
         {
             mvcOptions.Conventions.Add(new DarlasticRoutePrefixConvention(options.RoutePrefix));
+            // Cities rarer than DarlasticApiOptions.CityMinimumShare are masked on every module surface.
+            mvcOptions.Conventions.Add(new CityDisclosureConvention());
         });
 
         mvcBuilder.AddApplicationPart(typeof(DarlasticApiExtensions).Assembly);
