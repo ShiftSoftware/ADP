@@ -31,8 +31,10 @@ build before testing. (`apps/standalone` is exempt — it aliases the packages t
 
 ## Deploying the customer-facing app
 
-`apps/standalone` is what respondents actually open. One deployment per consumer, as an
-Azure Static Web App — see `apps/standalone/azure-pipelines.yml` (tag `release-survey-app-*`).
+Each consumer ships its own customer-facing app from its own repo: a thin, branded shell that
+mounts `@shiftsoftware/survey-renderer` from npm and deploys wherever that consumer hosts static
+sites. `apps/standalone` is the reference shell for such an app and the target of local
+development and the e2e harness; ADP itself deploys nothing.
 
 Two things make or break a deployment:
 

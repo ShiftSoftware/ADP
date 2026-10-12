@@ -13,8 +13,5 @@
     "test": "npm test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "sync:blazor": "npm run build -w @shiftsoftware/survey-web-component && node scripts/sync-blazor-bundle.mjs"
-  },
-  "overrides": {
-    "adp-web-components": "file:../../ADP.WebComponents/adp-web-components"
   }
 }
