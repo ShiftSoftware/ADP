@@ -1,7 +1,7 @@
 {
-  "name": "@shiftsoftware/survey-web-component",
+  "name": "@shift-software/survey-web-component",
   "version": "0.1.0",
-  "description": "Custom-element wrapper around @shiftsoftware/survey-renderer. Exposes <shift-survey> so non-React hosts (Blazor live-preview, plain HTML embeds, Stencil apps) can mount a survey without pulling React into the host. Ships React + renderer inside the bundle.",
+  "description": "Custom-element wrapper around @shift-software/survey-renderer. Exposes <shift-survey> so non-React hosts (Blazor live-preview, plain HTML embeds, Stencil apps) can mount a survey without pulling React into the host. Ships React + renderer inside the bundle.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -32,8 +32,8 @@
     "test.watch": "vitest"
   },
   "dependencies": {
-    "@shiftsoftware/survey-renderer": "^0.1.0",
-    "@shiftsoftware/survey-sdk": "^0.1.0",
+    "@shift-software/survey-renderer": "^0.1.0",
+    "@shift-software/survey-sdk": "^0.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

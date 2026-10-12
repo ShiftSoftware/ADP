@@ -7,7 +7,7 @@ import type {
   Survey,
   SurveySubmission,
   SubmissionMeta,
-} from '@shiftsoftware/survey-sdk';
+} from '@shift-software/survey-sdk';
 import {
   computeNext,
   replayPathTo,
@@ -17,7 +17,7 @@ import {
   validateAnswerValue,
   validatePresentAnswers,
   type AnswerValidationError,
-} from '@shiftsoftware/survey-sdk';
+} from '@shift-software/survey-sdk';
 import { brandingToCssVars } from './branding.js';
 import { SurveyContextProvider } from './SurveyContext.js';
 import { localize } from './locale.js';

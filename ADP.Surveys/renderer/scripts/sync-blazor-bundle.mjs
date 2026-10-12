@@ -30,7 +30,7 @@ async function main() {
   } catch {
     throw new Error(
       'packages/survey-web-component/dist/index.js is missing — run the build first ' +
-        '(`npm run build -w @shiftsoftware/survey-web-component`).',
+        '(`npm run build -w @shift-software/survey-web-component`).',
     );
   }
 

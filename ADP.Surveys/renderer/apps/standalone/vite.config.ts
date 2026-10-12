@@ -22,13 +22,13 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     resolve: {
       alias: {
-        '@shiftsoftware/survey-renderer/styles.css': fileURLToPath(
+        '@shift-software/survey-renderer/styles.css': fileURLToPath(
           new URL('../../packages/survey-renderer/src/styles.css', import.meta.url),
         ),
-        '@shiftsoftware/survey-renderer': fileURLToPath(
+        '@shift-software/survey-renderer': fileURLToPath(
           new URL('../../packages/survey-renderer/src/index.ts', import.meta.url),
         ),
-        '@shiftsoftware/survey-sdk': fileURLToPath(
+        '@shift-software/survey-sdk': fileURLToPath(
           new URL('../../packages/survey-sdk/src/index.ts', import.meta.url),
         ),
       },

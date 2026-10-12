@@ -2,7 +2,7 @@
  * ADP Dynamic Surveys — API-layer end-to-end smoke harness.
  *
  * Exercises the full authenticated-admin + anonymous-public paths against a running
- * Sample.API, then drives the resulting schema through `@shiftsoftware/survey-sdk`
+ * Sample.API, then drives the resulting schema through `@shift-software/survey-sdk`
  * to assert the SDK + server agree on schema shape, logic routing, and response
  * persistence. Pair with `browser.ts` for the in-browser renderer smoke.
  *
@@ -19,7 +19,7 @@ import {
   resolveNavigationListTarget,
   type NavigationOption,
   type Survey,
-} from '@shiftsoftware/survey-sdk';
+} from '@shift-software/survey-sdk';
 import { API_SURVEYS, assert, assertEq, sql, step } from './lib/util.js';
 import { cleanupSeeded, seedSurvey, type SeededState } from './lib/seed.js';
 

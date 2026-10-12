@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { substituteTokens, type LocalizedString, type TokenSurface } from '@shiftsoftware/survey-sdk';
+import { substituteTokens, type LocalizedString, type TokenSurface } from '@shift-software/survey-sdk';
 import 'adp-web-components/components/shift-booking-calendar';
 import { useSurveyContext } from '../SurveyContext.js';
 import { localize } from '../locale.js';

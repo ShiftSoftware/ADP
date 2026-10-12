@@ -11,7 +11,7 @@ export default defineConfig({
       fileName: 'index',
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'react/jsx-runtime', '@shiftsoftware/survey-sdk', /^adp-web-components(\/|$)/],
+      external: ['react', 'react-dom', 'react/jsx-runtime', '@shift-software/survey-sdk', /^adp-web-components(\/|$)/],
     },
     sourcemap: true,
   },

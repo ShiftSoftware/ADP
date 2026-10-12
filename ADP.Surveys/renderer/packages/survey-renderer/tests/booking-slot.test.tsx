@@ -8,7 +8,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Survey } from '@shiftsoftware/survey-sdk';
+import type { Survey } from '@shift-software/survey-sdk';
 import { SurveyRenderer } from '../src/SurveyRenderer.js';
 
 vi.mock('adp-web-components/components/shift-booking-calendar', () => ({}));

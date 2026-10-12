@@ -1,4 +1,4 @@
-import type { LocalizedString } from '@shiftsoftware/survey-sdk';
+import type { LocalizedString } from '@shift-software/survey-sdk';
 import { useSurveyContext } from '../SurveyContext.js';
 import { localize } from '../locale.js';
 import type { QuestionProps } from './registry.js';

@@ -5,8 +5,8 @@ import {
   type Survey,
   type SubmissionMeta,
   type SurveySubmission,
-} from '@shiftsoftware/survey-sdk';
-import { SurveyRenderer } from '@shiftsoftware/survey-renderer';
+} from '@shift-software/survey-sdk';
+import { SurveyRenderer } from '@shift-software/survey-renderer';
 import { ErrorState } from './ErrorState.js';
 import { isAgentMode, resolveLocale } from './config.js';
 

@@ -34,16 +34,16 @@ export default defineConfig({
   plugins: [react(), mockCalendar],
   resolve: {
     alias: {
-      '@shiftsoftware/survey-renderer/styles.css': fileURLToPath(
+      '@shift-software/survey-renderer/styles.css': fileURLToPath(
         new URL('../../packages/survey-renderer/src/styles.css', import.meta.url),
       ),
-      '@shiftsoftware/survey-renderer': fileURLToPath(
+      '@shift-software/survey-renderer': fileURLToPath(
         new URL('../../packages/survey-renderer/src/index.ts', import.meta.url),
       ),
-      '@shiftsoftware/survey-sdk': fileURLToPath(
+      '@shift-software/survey-sdk': fileURLToPath(
         new URL('../../packages/survey-sdk/src/index.ts', import.meta.url),
       ),
-      '@shiftsoftware/survey-web-component': fileURLToPath(
+      '@shift-software/survey-web-component': fileURLToPath(
         new URL('../../packages/survey-web-component/src/index.ts', import.meta.url),
       ),
     },

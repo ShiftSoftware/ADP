@@ -1,4 +1,4 @@
-import type { QuestionType } from '@shiftsoftware/survey-sdk';
+import type { QuestionType } from '@shift-software/survey-sdk';
 import { useSurveyContext } from '../SurveyContext.js';
 import type { QuestionRegistry } from './registry.js';
 import { SourcedOptionsGate } from './SourcedOptionsGate.js';

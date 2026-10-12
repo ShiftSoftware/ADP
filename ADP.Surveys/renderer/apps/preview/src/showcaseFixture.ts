@@ -1,4 +1,4 @@
-import type { Survey } from '@shiftsoftware/survey-sdk';
+import type { Survey } from '@shift-software/survey-sdk';
 
 /** Showcase fixture — every question type on one screen. Used for visual
  *  verification during renderer development. Localized to English + Arabic

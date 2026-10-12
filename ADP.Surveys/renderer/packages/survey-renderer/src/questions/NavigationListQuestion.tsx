@@ -1,5 +1,5 @@
 import type React from 'react';
-import type { LocalizedString, NavigationOption } from '@shiftsoftware/survey-sdk';
+import type { LocalizedString, NavigationOption } from '@shift-software/survey-sdk';
 import { useSurveyContext } from '../SurveyContext.js';
 import { localize } from '../locale.js';
 import type { QuestionProps } from './registry.js';

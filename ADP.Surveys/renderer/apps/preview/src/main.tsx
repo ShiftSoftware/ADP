@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { SurveyRenderer } from '@shiftsoftware/survey-renderer';
-import '@shiftsoftware/survey-renderer/styles.css';
+import { SurveyRenderer } from '@shift-software/survey-renderer';
+import '@shift-software/survey-renderer/styles.css';
 import { fixtureSurvey } from './fixture.js';
 import { showcaseSurvey } from './showcaseFixture.js';
 
@@ -21,7 +21,7 @@ if (useWebComponent) {
   // Lazy-import so the web-component bundle (which ships React) doesn't load
   // on the default React-renderer code path.
   void (async () => {
-    await import('@shiftsoftware/survey-web-component');
+    await import('@shift-software/survey-web-component');
     const el = document.createElement('shift-survey') as HTMLElement & {
       schema?: unknown;
       onSubmit?: (s: unknown) => unknown;

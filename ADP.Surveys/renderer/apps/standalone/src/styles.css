@@ -1,5 +1,5 @@
 /* Host-layer styles for the standalone app. Renderer styles already ship via
- * @shiftsoftware/survey-renderer/styles.css; this file covers loading + error
+ * @shift-software/survey-renderer/styles.css; this file covers loading + error
  * + landing states only. */
 
 html, body, #root {

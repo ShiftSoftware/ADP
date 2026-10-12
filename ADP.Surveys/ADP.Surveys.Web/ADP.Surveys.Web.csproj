@@ -40,7 +40,7 @@
 
 	<!--
 		wwwroot/js/shift-survey/shift-survey.js is a CHECKED-IN copy of the
-		@shiftsoftware/survey-web-component build, so hosts consuming this NuGet
+		@shift-software/survey-web-component build, so hosts consuming this NuGet
 		package get <shift-survey> without a node toolchain. Nothing in the .NET
 		build produces it, so it can fall behind the renderer source silently —
 		and did, by six weeks, which is how a shipped renderer feature failed to
