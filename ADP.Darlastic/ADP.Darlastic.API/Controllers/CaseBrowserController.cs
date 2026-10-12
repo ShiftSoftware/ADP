@@ -73,7 +73,7 @@ public class CaseBrowserController : ControllerBase
     private RecordPiiView? pii;
 
     /// <summary>What this caller may see of the records, asked of TypeAuth once per request.</summary>
-    private RecordPiiView Pii => pii ??= RecordPiiView.ForCaller(HttpContext, masker, piiOptions);
+    private RecordPiiView Pii => pii ??= RecordPiiView.ForCaller(HttpContext, masker, piiOptions, RecordPiiView.BlockKeyLabels(options));
 
     // Seeing how the engine decided the whole corpus and being trusted to change how it resolves
     // are different permissions, so this rides the StewardQueue node's read grant and its own
@@ -300,7 +300,10 @@ public class CaseBrowserController : ControllerBase
     /// <para>Searches the JSON payloads directly. That is a scan, and it is the right call here:
     /// the staged set is ~10⁴ records, the alternative is denormalising name and phone into columns
     /// the engine would then have to keep in step, and this endpoint is a navigation aid rather
-    /// than a hot path. If the staged set grows an order of magnitude, promote the columns.</para>
+    /// than a hot path. A host whose staged set is orders of magnitude larger turns on
+    /// <see cref="DarlasticApiOptions.RecordSearchIndex"/>: the same values are then found through a
+    /// per-run in-memory index and read back by key (whole names compare ignoring case, trailing
+    /// spaces ignored, as SQL compares them).</para>
     ///
     /// <para>Note the scope: this searches what is STAGED for browsing, not the corpus. Finding an
     /// arbitrary customer is what the golden list is for.</para>
@@ -319,7 +322,9 @@ public class CaseBrowserController : ControllerBase
         take = Math.Clamp(take, 1, 200);
         string term = q.Trim();
 
-        var rows = Pii.PartialSearch
+        var rows = options.RecordSearchIndex
+            ? await SearchByIndexAsync(term, take, ct)
+            : Pii.PartialSearch
             ? await db.Set<StewardRecord>().FromSqlRaw("""
                 SELECT TOP (@take) SourceSystem, SourceRecordId, RunID, Payload
                 FROM Darlastic.StewardRecord
@@ -353,6 +358,41 @@ public class CaseBrowserController : ControllerBase
                 ? ToSide(rec, ids.GetValueOrDefault((r.SourceSystem, r.SourceRecordId)))
                 : new CaseSideDTO { SourceSystem = r.SourceSystem, SourceRecordId = r.SourceRecordId })
             .ToList();
+    }
+
+    /// <summary>
+    /// <see cref="Search"/> through the per-run record index (<see cref="DarlasticApiOptions.RecordSearchIndex"/>):
+    /// the index names the candidate records, and each is kept only if it answers the rule the SQL above applies —
+    /// the record key exactly; for a partial-search caller part of either name or of a phone, for anyone else either
+    /// whole name or the full number.
+    /// </summary>
+    private async Task<List<StewardRecord>> SearchByIndexAsync(string term, int take, CancellationToken ct)
+    {
+        var index = await HttpContext.RequestServices.GetRequiredService<RegistryRunCache>()
+            .GetAsync(db, RecordSearchIndex.CacheName, RecordSearchIndex.BuildAsync, ct);
+        bool partial = Pii.PartialSearch;
+        string digits = new([.. term.Where(char.IsDigit)]);
+        const RecordSearchIndex.Fields none = RecordSearchIndex.Fields.None;
+        var candidates = partial
+            ? index.Find((RecordSearchIndex.Fields.RecordIds, RecordSearchIndex.Fields.Names | RecordSearchIndex.Fields.Phones, term))
+            : index.Find(
+                (RecordSearchIndex.Fields.Names | RecordSearchIndex.Fields.RecordIds, none, term),
+                (RecordSearchIndex.Fields.Phones | RecordSearchIndex.Fields.WeakPhones, none, digits));
+        return await index.RowsAsync(db, candidates, take,
+            row => Revive(row) is { } rec && SearchMatches(rec, term, digits, partial), ct);
+    }
+
+    /// <summary>The rule <see cref="Search"/>'s SQL applies to one record, for the index path.</summary>
+    internal static bool SearchMatches(RealRecord r, string term, string digits, bool partial)
+    {
+        if (string.Equals(r.SourceRecordId, term, StringComparison.Ordinal)) return true;
+        if (partial)
+            return (r.NormName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (r.RawName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (r.Phones?.Any(p => p.Contains(term, StringComparison.OrdinalIgnoreCase)) ?? false);
+        return string.Equals(r.NormName?.TrimEnd(), term, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(r.RawName?.TrimEnd(), term, StringComparison.OrdinalIgnoreCase)
+            || (digits.Length > 0 && ((r.Phones?.Contains(digits) ?? false) || (r.WeakPhones?.Contains(digits) ?? false)));
     }
 
     /// <summary>
@@ -725,7 +765,7 @@ public class CaseBrowserController : ControllerBase
         Phones = Pii.Show(PiiKind.Phone, r.Phones),
         WeakPhones = Pii.Show(PiiKind.Phone, r.WeakPhones),
         NationalId = Pii.Show(PiiKind.Identifier, r.NationalId),
-        City = string.IsNullOrEmpty(r.NormCity) ? null : r.NormCity,
+        City = string.IsNullOrEmpty(r.NormCity) ? null : Pii.ShowCity(r.NormCity),
         Address = string.IsNullOrEmpty(r.RawAddress) ? null : Pii.Show(PiiKind.Address, r.RawAddress),
         Gender = r.Gender,
         Emails = Pii.Show(PiiKind.Email, r.Emails),

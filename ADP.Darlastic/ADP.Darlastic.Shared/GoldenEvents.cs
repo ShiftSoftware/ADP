@@ -25,6 +25,25 @@ public enum GoldenEventType
 
     /// <summary>The vehicle's warranty activation (the customer-at-sale record).</summary>
     Activation = 5,
+
+    // Members below were appended later. New members are only ever APPENDED with the next free
+    // number; a staged payload written by a newer build that an older reader does not know is
+    // skipped on read (see GoldenEventsPayload.Parse), never mislabelled.
+
+    /// <summary>A dealer's retail sale of the vehicle to the customer, new or used (one invoice).</summary>
+    VehicleSale = 6,
+
+    /// <summary>A workshop booking (appointment request) made for the vehicle.</summary>
+    ServiceBooking = 7,
+
+    /// <summary>A test drive the customer took.</summary>
+    TestDrive = 8,
+
+    /// <summary>A price quotation issued to the customer.</summary>
+    Quotation = 9,
+
+    /// <summary>The customer's registration in a customer-facing app.</summary>
+    AppRegistration = 10,
 }
 
 /// <summary>
@@ -45,4 +64,10 @@ public enum GoldenEventLink
     /// <summary>VIN-only event on a VIN with no owner link at all; this golden is the VIN's only
     /// service contact (or the only one whose service window covers the date). Opt-in per tenant.</summary>
     VinContact = 3,
+
+    /// <summary>VIN-only event dated BEFORE the vehicle's first sale, within the window the event's
+    /// source declared (e.g. a pre-delivery inspection); this golden is the single owner of that
+    /// first sale. Hosts should label it as pre-delivery work, not as something the customer did.
+    /// Opt-in per event.</summary>
+    VinPreDelivery = 4,
 }

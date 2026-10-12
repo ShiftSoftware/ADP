@@ -168,11 +168,12 @@ public static class Merge
     /// parameter existed: clustering, queue, catalog and counts are identical either way; on, it
     /// keeps the few categorised pairs that say something about customers (see
     /// <see cref="GoldenReasons.RelationshipCats"/>) and folds them in once the clustering is
-    /// final.</para>
+    /// final. <paramref name="evidenceOptions"/> (defaults when null) words those reasons; it changes
+    /// nothing without per-golden evidence.</para>
     /// </summary>
     public static Result ClusterFromBlocks(IReadOnlyList<RealRecord> records, RealMatcher.BlockingResult blocking,
         double mergeThreshold = 0.90, StewardConstraints? constraints = null,
-        int catalogCap = DefaultCatalogCap, bool perGoldenEvidence = false)
+        int catalogCap = DefaultCatalogCap, bool perGoldenEvidence = false, GoldenEvidenceOptions? evidenceOptions = null)
     {
         int n = records.Count;
         var uf = new UnionFind(n);
@@ -310,7 +311,7 @@ public static class Merge
                 if (records[i].IsOrgPlaceholder) Mark(i, GoldenReason.CompanyOrFleet);
             foreach (var e in mergeEdges)
             {
-                var r = GoldenReasons.OfMergeEdge(e.Flags);
+                var r = GoldenReasons.OfMergeEdge(e.Flags, evidenceOptions ?? GoldenEvidenceOptions.Default);
                 Mark(e.A, r); Mark(e.B, r);
             }
             foreach (var (a, b) in forcedMerge) { Mark(a, GoldenReason.MergedByReviewer); Mark(b, GoldenReason.MergedByReviewer); }
@@ -354,7 +355,8 @@ public static class Merge
 
     /// <summary>The matcher's "two different people" verdicts — the cannot-link constraints of
     /// <see cref="Flags.ConflictAwareClustering"/>. The structured name-part conflicts only ever fire
-    /// under <see cref="Flags.StructuredNames"/>.</summary>
+    /// under <see cref="Flags.StructuredNames"/>, and the first-name conflict also under
+    /// <see cref="Flags.DistinctGivenNames"/>.</summary>
     public const MatchFlags CannotLinkFlags = MatchFlags.NameConflictCap | MatchFlags.IdConflict
         | MatchFlags.GivenNameConflict | MatchFlags.FamilyNameConflict;
 
@@ -522,12 +524,27 @@ public static class Merge
     /// Order-preserving on purpose: 'ali mohammed' must NOT extend to 'mohammed ali kamil'
     /// — name-order inversion is father/son evidence, not a chain slice (those stay for
     /// the steward's enrich/compose action, Phase 5).
+    ///
+    /// <para>How the chosen chain is SHOWN is <paramref name="nameOptions"/>' business (null = the defaults: the
+    /// title-cased match form). With <see cref="GoldenNameOptions.DisplayFromRecordNames"/> on, the
+    /// <c>full_name</c> value is the chain as one of its records wrote it (<see cref="GoldenDisplayName"/>);
+    /// the choice of chain, its <c>WonBy</c> reason and every other attribute are the same either way. The
+    /// options' chain rules (<see cref="GoldenNameOptions.PlaceholderNames"/>, <see cref="GoldenNameOptions.PlaceholderTokens"/>,
+    /// <see cref="GoldenNameOptions.MinimumLetters"/>, <see cref="GoldenNameOptions.PresentableOnly"/>; all off by
+    /// default) take the chains they refuse out of the choice first; with none left there is no <c>full_name</c>.</para>
     /// </summary>
-    public static List<GoldenAttr> SurviveGolden(List<RealRecord> members, NameSurvivalExplain? explain = null)
+    public static List<GoldenAttr> SurviveGolden(List<RealRecord> members, NameSurvivalExplain? explain = null, GoldenNameOptions? nameOptions = null)
     {
         var golden = new List<GoldenAttr>();
 
         var names = members.Where(m => m.NormName.Length > 0).Select(m => m.NormName).ToList();
+        if (nameOptions is { FiltersChains: true } && names.Count > 0)
+        {
+            // Chains the options refuse never stand as the shown name (GoldenNameOptions.MayShow); the best of
+            // the others is chosen exactly as before, and a golden with none left shows no name.
+            var verdicts = new Dictionary<string, bool>(StringComparer.Ordinal);
+            names = names.Where(n => verdicts.TryGetValue(n, out var ok) ? ok : verdicts[n] = nameOptions.MayShow(n, members)).ToList();
+        }
         if (names.Count > 0)
         {
             var groups = names.GroupBy(x => x)
@@ -557,9 +574,11 @@ public static class Merge
                 }
                 explain.Chosen = fullest.Count > 0 ? fullest[0].Name : null;
             }
-            golden.Add(fullest.Count > 0
-                ? new GoldenAttr("full_name", TitleCaseForDisplay(fullest[0].Name), "longest-chain")
-                : new GoldenAttr("full_name", TitleCaseForDisplay(anchor.Name), "confidence-recency"));
+            string chosen = fullest.Count > 0 ? fullest[0].Name : anchor.Name;
+            string shown = nameOptions is { DisplayFromRecordNames: true }
+                ? GoldenDisplayName.Choose(members, chosen, nameOptions) ?? TitleCaseForDisplay(chosen)
+                : TitleCaseForDisplay(chosen);
+            golden.Add(new GoldenAttr("full_name", shown, fullest.Count > 0 ? "longest-chain" : "confidence-recency"));
         }
         // Golden city: most-frequent normalized city (display/probe value; spelling variants of
         // one city count separately — fuzzy city unification is a Phase 4/steward concern).

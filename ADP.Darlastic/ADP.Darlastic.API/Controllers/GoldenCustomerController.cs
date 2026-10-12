@@ -47,6 +47,9 @@ public class GoldenCustomerController : ControllerBase
     /// <summary>Largest page the events endpoint serves.</summary>
     private const int MaxEventsPageSize = 500;
 
+    /// <summary>Length of a vehicle identification number.</summary>
+    private const int VinLength = 17;
+
     /// <summary>Sentinel content hash meaning "delete this downstream" — a redirected-away identity.</summary>
     private const string TombstoneHash = "TOMBSTONE";
 
@@ -74,6 +77,12 @@ public class GoldenCustomerController : ControllerBase
         this.piiProtector = piiProtector;
     }
 
+    /// <summary>How this caller sees a city: as stored, or masked when too few customers share it
+    /// (<see cref="DarlasticApiOptions.CityMinimumShare"/>) and the caller may not see personal data.</summary>
+    private RecordPiiView CityView() => RecordPiiView.ForCaller(HttpContext,
+        HttpContext.RequestServices.GetRequiredService<IPiiMasker>(),
+        HttpContext.RequestServices.GetRequiredService<IOptions<PiiOptions>>().Value);
+
     /// <summary>
     /// Golden-customer grid. Name, phone, email and national ID come back masked for every caller.
     ///
@@ -82,7 +91,8 @@ public class GoldenCustomerController : ControllerBase
     /// The framework's OData guard rewrites those to the raw value, which is why the projection
     /// below fills only <see cref="PiiFieldDTO.Value"/>: the filter still runs in SQL. Callers
     /// without the partial-search permission get whole-value equality; ordering on these members
-    /// is rejected for everyone. Ordinary filters and sorting are unchanged.</para>
+    /// is rejected for everyone. Ordinary filters and sorting are unchanged. A query OData cannot parse or bind
+    /// (a protected member compared as a string, an unknown member) is a 400 with a fixed message.</para>
     ///
     /// <para>An exact phone lookup (an equality, or a contains narrowed to one) passes the input
     /// through the host's <c>IPhoneNumberService</c> before it reaches SQL. Without that service the
@@ -120,14 +130,30 @@ public class GoldenCustomerController : ControllerBase
             // phone lookup, a missing $top. Same status and body as the framework's own list action.
             return StatusCode(ex.HttpStatusCode, new { ex.Message, ex.AdditionalData });
         }
+        catch (Microsoft.OData.ODataException)
+        {
+            // A query OData cannot parse or bind: most often a protected member compared as if it were a string
+            // ("FullName eq '...'", "contains(Phone, '...')"). The caller's mistake, so a 400, never a 500; the
+            // message is fixed and does not repeat the query, which may carry a name or a number.
+            return BadRequest(new { Message = InvalidListQueryMessage });
+        }
 
         // The rows were read with raw values so the filter could match them. Mask every row
         // before it leaves the server.
+        var cities = CityView();
         foreach (var row in result.Value)
+        {
             piiProtector.Protect(row);
+            row.City = cities.ShowCity(row.City);
+        }
 
         return Ok(result);
     }
+
+    /// <summary>The 400 answer to a list query OData cannot parse or bind.</summary>
+    internal const string InvalidListQueryMessage =
+        "The query could not be applied. Filter a protected member (FullName, Phone, Email, IDNumber) on its Display " +
+        "member, e.g. FullName/Display eq '...', and use only the list's own members and OData's functions.";
 
     /// <summary>
     /// One identity by ID, redirect-chased, with its survived attributes — the read a customer-detail
@@ -184,7 +210,7 @@ public class GoldenCustomerController : ControllerBase
         {
             dto.FullName = new PiiFieldDTO { Value = staged.Attribute("full_name") };
             dto.Phone = new PiiFieldDTO { Value = staged.Attribute("phone") };
-            dto.City = staged.Attribute("city");
+            dto.City = CityView().ShowCity(staged.Attribute("city"));
             dto.IDNumber = new PiiFieldDTO { Value = staged.Attribute("national_id") };
             dto.Email = new PiiFieldDTO { Value = staged.Attribute("email") };
             dto.SourceCount = staged.SourceCount;
@@ -240,8 +266,9 @@ public class GoldenCustomerController : ControllerBase
     }
 
     /// <summary>
-    /// One page of the identity's timeline events — workshop visits, inspections, warranty claims,
-    /// recalls, activations — newest first, read from the <c>events</c> artifact the last resolve
+    /// One page of the identity's timeline events — every <see cref="GoldenEventType"/> the tenant's
+    /// feeds supply (workshop visits, sales, inspections, recalls, bookings, test drives, quotations,
+    /// app registrations, …) — newest first, read from the <c>events</c> artifact the last resolve
     /// staged (one clustered-PK seek). Same authorization as <see cref="Detail"/>, and
     /// redirect-chased the same way, so a merged-away ID shows its survivor's timeline.
     ///
@@ -347,6 +374,80 @@ public class GoldenCustomerController : ControllerBase
     }
 
     /// <summary>
+    /// The golden customers linked to one vehicle, from the <c>vinowner</c> artifact the last resolve
+    /// staged for the VIN (one clustered-PK seek): each with its role (<c>owner</c> or
+    /// <c>service-contact</c>) and the period the engine computed, in the engine's order (owners in
+    /// timeline order, then service contacts). Each link is redirect-chased to the surviving identity,
+    /// so a golden merged away since the resolve answers as its survivor. A survivor is listed once:
+    /// when several of the VIN's goldens were merged into it, only its strongest link is kept (owner
+    /// over service contact, then the longer period; see <see cref="VinOwnerPayload.OnePerSurvivor"/>).
+    /// Same authorization as the list and <see cref="Detail"/>.
+    ///
+    /// <para>Name and phone come back masked for every caller, read and protected exactly as
+    /// <see cref="Detail"/> does; <see cref="RevealPii"/> with a link's ID is the only route to a raw
+    /// value. The VIN is trimmed and upper-cased first: 400 when it is not 17 letters or digits, 404
+    /// when the registry has no link to it.</para>
+    /// </summary>
+    [HttpGet("by-vin/{vin}")]
+    [Authorize]
+    public async Task<ActionResult<GoldenCustomerByVinDTO>> ByVin(string vin)
+    {
+        if (!CanReadGoldens())
+            return Forbid();
+
+        var trimmed = vin?.Trim() ?? "";
+        if (trimmed.Length != VinLength || !trimmed.All(char.IsAsciiLetterOrDigit))
+            return BadRequest(new { Message = $"A VIN is {VinLength} letters or digits." });
+
+        // The engine keys every VIN artifact on this canonical form; a VIN it rejects as implausible
+        // can never have been linked.
+        if (Norm.Vin(trimmed) is not { } key)
+            return NotFound();
+
+        var payload = await LoadStagedPayloadAsync(VinOwnerPayload.ArtifactType, key);
+        if (payload is null)
+            return NotFound();
+
+        var links = VinOwnerPayload.Parse(payload).Links;
+        var live = new Dictionary<long, long>();
+        foreach (var link in links)
+            if (!live.ContainsKey(link.GoldenId))
+                live[link.GoldenId] = await ChaseRedirectsAsync(link.GoldenId);
+
+        // Two linked goldens merged since the resolve chase to one survivor: list it once, by its
+        // strongest link (owner over service contact, then the longer period).
+        var dto = new GoldenCustomerByVinDTO { VIN = key };
+        foreach (var (link, liveId) in VinOwnerPayload.OnePerSurvivor(links, live))
+        {
+            var staged = await LoadStagedGoldenAsync(liveId);
+
+            dto.Goldens.Add(new GoldenCustomerVinLinkDTO
+            {
+                ID = liveId.ToString(CultureInfo.InvariantCulture),
+                LinkedID = link.GoldenId.ToString(CultureInfo.InvariantCulture),
+                WasRedirected = liveId != link.GoldenId,
+                Role = link.Role,
+                EffectiveFrom = link.From,
+                EffectiveTo = link.To,
+                SaleCount = link.Sales,
+                ServiceCount = link.Services,
+                FirstSale = link.FirstSale,
+                LastSale = link.LastSale,
+                FirstService = link.FirstService,
+                LastService = link.LastService,
+                Sources = link.Sources.ToList(),
+                AwaitingResolve = staged is null,
+                FullName = new PiiFieldDTO { Value = staged?.Attribute("full_name") },
+                Phone = new PiiFieldDTO { Value = staged?.Attribute("phone") },
+            });
+        }
+
+        // Mask every protected member, in every link, before the response leaves the server.
+        piiProtector.Protect(dto);
+        return Ok(dto);
+    }
+
+    /// <summary>
     /// The staged vehicle-link payload — <c>{"goldenId":N,"links":[{"vin","role","from","to","sales",
     /// "services","firstSale","lastSale","firstService","lastService","sources":[...]}]}</c>, dates as
     /// <c>yyyy-MM-dd</c> or empty — mapped to the DTO. Authoritative producer: the engine's
@@ -443,9 +544,13 @@ public class GoldenCustomerController : ControllerBase
     /// The staged payload of one per-golden artifact (a clustered-PK seek on
     /// <c>(ArtifactType, ArtifactKey)</c>), or null when there is none or it is tombstoned.
     /// </summary>
-    private async Task<string?> LoadStagedPayloadAsync(string artifactType, long live)
+    private Task<string?> LoadStagedPayloadAsync(string artifactType, long live) =>
+        LoadStagedPayloadAsync(artifactType, live.ToString(CultureInfo.InvariantCulture));
+
+    /// <summary>The staged payload of one artifact by its key, or null when there is none or it is
+    /// tombstoned.</summary>
+    private async Task<string?> LoadStagedPayloadAsync(string artifactType, string key)
     {
-        var key = live.ToString(CultureInfo.InvariantCulture);
         var staged = await db.Set<ProjectionState>().AsNoTracking()
             .Where(x => x.ArtifactType == artifactType && x.ArtifactKey == key)
             .Select(x => new { x.ContentHash, x.Payload })
@@ -530,6 +635,7 @@ public class GoldenCustomerController : ControllerBase
                 LastChangedRunID = x.LastChangedRunID,
             })
             .ToListAsync();
+        foreach (var s in sources) s.SourceLabel = options.SourceLabels.GetValueOrDefault(s.SourceSystem);
 
         // Which identities were absorbed into this one. IdentityRedirect is keyed on OldIdentityID,
         // so this direction is a scan — fine while merges are rare, but if a tenant's redirect table

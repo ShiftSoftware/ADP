@@ -90,6 +90,83 @@ public class GoldenReasonTests
     public void MergeEdge_IsExplainedByTheFloorThatFired(MatchFlags flags, GoldenReason expected) =>
         Assert.Equal(expected, GoldenReasons.OfMergeEdge(flags));
 
+    // ---------------------------------------------------------------- phone without a name (option)
+
+    private static readonly GoldenEvidenceOptions PhoneWithoutName = new() { PhoneWithoutNameReason = true };
+
+    [Fact]
+    public void PhoneOnlyEdge_IsMatchingDetails_ByDefault() =>
+        Assert.Equal(GoldenReason.MergedBySimilarDetails,
+            GoldenReasons.OfMergeEdge(MatchFlags.PhonesBoth | MatchFlags.PhoneExact));
+
+    [Fact]
+    public void PhoneOnlyEdge_IsNamed_UnderTheOption()
+    {
+        Assert.Equal(GoldenReason.MergedByPhoneWithoutName,
+            GoldenReasons.OfMergeEdge(MatchFlags.PhonesBoth | MatchFlags.PhoneExact, PhoneWithoutName));
+        // Names on both sides, a company line, or a floor that fired: not a merge without a name.
+        Assert.Equal(GoldenReason.MergedBySimilarDetails,
+            GoldenReasons.OfMergeEdge(MatchFlags.NamesBoth | MatchFlags.PhoneExact, PhoneWithoutName));
+        Assert.Equal(GoldenReason.MergedBySimilarDetails,
+            GoldenReasons.OfMergeEdge(MatchFlags.PhoneExact | MatchFlags.OrgLine, PhoneWithoutName));
+        Assert.Equal(GoldenReason.MergedByReference,
+            GoldenReasons.OfMergeEdge(MatchFlags.PhoneExact | MatchFlags.SameAsMerge | MatchFlags.SameAsRef, PhoneWithoutName));
+    }
+
+    [Fact]
+    public void PhoneWithoutName_IsStaged_OnlyUnderTheOption_AndClustersTheSame()
+    {
+        List<RealRecord> recs =
+        [
+            Rec(0, "src-a", "named-1", "kestrel morrow", "7700000505"),
+            Rec(1, "src-b", "blank-1", "",               "7700000505"),
+        ];
+        Assert.True(RealMatcher.Score(recs[0], recs[1]) >= AutoMerge, "a phone alone combines a nameless record at the defaults");
+
+        var byDefault = Cluster(recs, evidence: true);
+        var named = Merge.ClusterFromBlocks(recs, OneBlock(recs.Count), AutoMerge, null, perGoldenEvidence: true,
+            evidenceOptions: PhoneWithoutName);
+
+        Assert.True(R(byDefault, 1).HasFlag(GoldenReason.MergedBySimilarDetails));
+        Assert.False(R(byDefault, 1).HasFlag(GoldenReason.MergedByPhoneWithoutName));
+        Assert.True(R(named, 0).HasFlag(GoldenReason.MergedByPhoneWithoutName));
+        Assert.True(R(named, 1).HasFlag(GoldenReason.MergedByPhoneWithoutName));
+        Assert.False(R(named, 1).HasFlag(GoldenReason.MergedBySimilarDetails));
+        Assert.Equal(byDefault.Parent, named.Parent);
+        Assert.Equal(byDefault.AutoMergeEdgeList, named.AutoMergeEdgeList);
+    }
+
+    /// <summary>
+    /// Every way an auto-merge edge can clear the line — each floor, and the base-score shapes a
+    /// match-quality harness tells apart (company line, phone with a name missing, corroborated or
+    /// plain weighted score) — is explained by a reason with a plain label, under the default wording
+    /// and under the phone-without-name option. A floor is never reported as "matching details".
+    /// </summary>
+    [Theory]
+    [InlineData(MatchFlags.NamesBoth | MatchFlags.PhoneExact | MatchFlags.NameConsistent, true)]
+    [InlineData(MatchFlags.VinSoldMerge | MatchFlags.VinSoldOverlap, true)]
+    [InlineData(MatchFlags.ServicedVinNameMerge | MatchFlags.VinServiced, true)]
+    [InlineData(MatchFlags.EmailMerge | MatchFlags.EmailExact, true)]
+    [InlineData(MatchFlags.SameAsMerge | MatchFlags.SameAsRef, true)]
+    [InlineData(MatchFlags.NamesBoth | MatchFlags.PhoneExact | MatchFlags.PhoneNameMerge, true)]
+    [InlineData(MatchFlags.NamesBoth | MatchFlags.PhoneExact | MatchFlags.ChainSliceRescue | MatchFlags.AddressBoost, true)]
+    [InlineData(MatchFlags.NamesBoth | MatchFlags.PhoneExact | MatchFlags.OrgLine | MatchFlags.NameConsistent, true)]
+    [InlineData(MatchFlags.NamesBoth | MatchFlags.PhoneExact | MatchFlags.OrgLine, false)]
+    [InlineData(MatchFlags.PhonesBoth | MatchFlags.PhoneExact, false)]
+    [InlineData(MatchFlags.NamesBoth | MatchFlags.AddressBoost | MatchFlags.DobEqual, false)]
+    [InlineData(MatchFlags.NamesBoth | MatchFlags.IdEqual, false)]
+    public void EveryMergeLever_IsExplainedByALabelledReason(MatchFlags flags, bool floor)
+    {
+        foreach (var options in new[] { GoldenEvidenceOptions.Default, PhoneWithoutName })
+        {
+            var r = GoldenReasons.OfMergeEdge(flags, options);
+            Assert.NotEqual(GoldenReason.None, r);
+            foreach (var bit in GoldenReasons.All.Where(b => (r & b) != 0))
+                Assert.True(CaseLabels.Reasons.ContainsKey(bit), $"{bit} has no plain label");
+            if (floor) Assert.False(r.HasFlag(GoldenReason.MergedBySimilarDetails), $"{flags}: a floor reads as matching details");
+        }
+    }
+
     [Fact]
     public void MergeEdge_OnSeveralFloors_CarriesEachOfThem() =>
         Assert.Equal(GoldenReason.MergedByVehicle | GoldenReason.MergedByPhoneAndName,

@@ -31,7 +31,9 @@ namespace ShiftSoftware.ADP.Darlastic.Engine;
 ///   - Empty input against a non-empty registry aborts; so does a removal/deactivation wave above
 ///     MassChangeThreshold, unless DARLASTIC_FORCE=1.
 ///   - Resolve runs are serialized via sp_getapplock — concurrent runs would corrupt the
-///     read-compute-write cycle.
+///     read-compute-write cycle. The lock is Session-owned and released explicitly when the resolve
+///     ends, or when a check right after taking it fails (a pooled connection would otherwise carry
+///     the session, and the lock, back into the pool; an undisposed one would keep it for good).
 ///
 /// Storage: SQL Server, schema [Darlastic], created idempotently on first run. Connection via the
 /// DARLASTIC_SQL env var; defaults to localhost\SQLEXPRESS, database Darlastic (created if absent).
@@ -109,11 +111,25 @@ public static class Registry
     {
         EnsureDatabase();
         var conn = new SqlConnection(ConnectionString);
-        conn.Open();
-        AcquireResolveLock(conn);
-        EnsureSchema(conn);
-        AssertTenant(conn, stampIfMissing: true);
-        return conn;
+        bool locked = false;
+        try
+        {
+            conn.Open();
+            AcquireResolveLock(conn);
+            locked = true;
+            EnsureSchema(conn);
+            AssertTenant(conn, stampIfMissing: true);
+            return conn;
+        }
+        catch
+        {
+            // A check after the lock failed (the schema check, the tenant assert, a command timeout). The caller
+            // never receives this connection, so nothing else would end its session: release the lock and close
+            // it, or every later resolve in this process reads "another resolve is running" until it exits.
+            if (locked) ReleaseResolveLock(conn);
+            conn.Dispose();
+            throw;
+        }
     }
 
     /// <summary>The tenant this process believes it is (DARLASTIC_TENANT; "default" when unset).</summary>
@@ -237,6 +253,34 @@ public static class Registry
         cmd.ExecuteNonQuery();
         if ((int)ret.Value! < 0)
             throw new InvalidOperationException("Another Darlastic resolve is already running (sp_getapplock 'Darlastic.Resolve' denied).");
+    }
+
+    /// <summary>
+    /// Release <see cref="AcquireResolveLock"/>'s lock (best effort, never throws). Closing an unpooled connection
+    /// ends the session and the lock with it, but a POOLED connection goes back to the pool with its session alive,
+    /// and a Session-owned lock would outlive the resolve there. A connection that cannot run the release (broken,
+    /// a reader still open, a transaction pending) is disposed right after by the caller.
+    /// </summary>
+    private static void ReleaseResolveLock(SqlConnection conn)
+    {
+        if (conn.State != System.Data.ConnectionState.Open) return;
+        try
+        {
+            using var cmd = new SqlCommand("sp_releaseapplock", conn) { CommandType = System.Data.CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@Resource", "Darlastic.Resolve");
+            cmd.Parameters.AddWithValue("@LockOwner", "Session");
+            cmd.ExecuteNonQuery();
+        }
+        catch (SqlException) { }
+        catch (InvalidOperationException) { }
+    }
+
+    /// <summary>The resolve lock for the life of one resolve: declared right after its connection, so it is
+    /// released before the connection is disposed (and after every transaction declared later is rolled back or
+    /// committed).</summary>
+    private sealed class HeldResolveLock(SqlConnection conn) : IDisposable
+    {
+        public void Dispose() => ReleaseResolveLock(conn);
     }
 
     private static void EnsureSchema(SqlConnection conn)
@@ -776,11 +820,15 @@ public static class Registry
     /// has any, hash-guarded like every other family; prior <c>events</c> artifacts that no longer
     /// receive an event are tombstoned. Null skips the family entirely — no read, no stage, no
     /// tombstone — so a tenant without event sources is unchanged by construction.
+    /// <paramref name="names"/> says how each golden's name is shown (<see cref="GoldenNameOptions"/>; null =
+    /// the defaults, the title-cased match form). It moves what the name-bearing artifacts carry
+    /// (<c>golden</c>, <c>vinlinks</c>, <c>vinowner</c>, the identity summaries), never a cluster.
     /// </summary>
     public static RunMetrics RunResolve(IReadOnlyList<RealRecord> records, Merge.Result merge,
-        IReadOnlyList<SourceEvent>? events, EventAttachOptions? eventOptions = null)
+        IReadOnlyList<SourceEvent>? events, EventAttachOptions? eventOptions = null, GoldenNameOptions? names = null)
     {
         using var conn = Open();
+        using var resolveLock = new HeldResolveLock(conn);
         var m = new RunMetrics { Records = records.Count };
 
         // ---- prior state (reads are safe: resolve runs are serialized by the applock)
@@ -975,7 +1023,7 @@ public static class Registry
         {
             long id = finalId[root];
             var members = clusters[root].Select(i => records[i]).ToList();
-            var survived = Merge.SurviveGolden(members);
+            var survived = Merge.SurviveGolden(members, nameOptions: names);
             goldenName[id] = survived.FirstOrDefault(g => g.AttrType == "full_name")?.Value ?? "";
             Stage(ArtGolden, id.ToString(CultureInfo.InvariantCulture), GoldenCanonical(id, survived, Key, clusters[root]));
 
@@ -1053,16 +1101,19 @@ public static class Registry
         // Pass 2: the per-VIN ownership timeline (P7). Only sale-grade evidence opens an ownership
         // period; a later sale to a DIFFERENT golden closes the previous owner's period (transfer).
         // Service-only evidence is a "service-contact" observation window, never an ownership claim.
+        // The owner periods come from OwnershipTimeline; a tenant that leaves ambiguous owners'
+        // events unattached also has tied owners SHARE a period there (see
+        // EventAttachOptions.AmbiguousOwnersUnattached), so the vehicle card and the timeline agree.
         var byVin = new Dictionary<string, List<(long Id, VinEvidence E)>>(StringComparer.Ordinal);
         foreach (var kv in vinAgg)
             (byVin.TryGetValue(kv.Key.Vin, out var l) ? l : byVin[kv.Key.Vin] = []).Add((kv.Key.IdentityId, kv.Value));
+        bool tiedOwnersShare = eventOptions?.AmbiguousOwnersUnattached == true;
         var linkPeriod = new Dictionary<(long, string), (DateOnly? From, DateOnly? To, string Role)>();
         foreach (var (vin, entries) in byVin)
         {
-            var owners = entries.Where(x => x.E.Sales > 0)
-                .OrderBy(x => x.E.FirstSale ?? DateOnly.MinValue).ThenBy(x => x.Id).ToList();
-            for (int i = 0; i < owners.Count; i++)
-                linkPeriod[(owners[i].Id, vin)] = (owners[i].E.FirstSale, i + 1 < owners.Count ? owners[i + 1].E.FirstSale : null, "owner");
+            var owners = entries.Where(x => x.E.Sales > 0).Select(x => (x.Id, x.E.FirstSale));
+            foreach (var (ownerId, from, to) in OwnershipTimeline.OwnerPeriods(owners, tiedOwnersShare))
+                linkPeriod[(ownerId, vin)] = (from, to, "owner");
             foreach (var x in entries.Where(x => x.E.Sales == 0))
                 linkPeriod[(x.Id, vin)] = (x.E.FirstService, x.E.LastService, "service-contact");
         }

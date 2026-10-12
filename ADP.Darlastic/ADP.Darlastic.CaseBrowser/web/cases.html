@@ -320,6 +320,10 @@ window.addEventListener("message", e => {
 const api = path => API + path + (API_AUTH ? (path.includes("?") ? "&" : "?") + API_AUTH : "");
 const $ = s => document.querySelector(s);
 const esc = s => (s ?? "").toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// A customer value (name, phone, ID number, customer or record number, address, city), escaped and isolated from the
+// text around it: a right-to-left name and the left-to-right number after it each keep their own direction, so a
+// masked phone after an Arabic-script name still reads "•••• 1234". Empty stays empty (the "(no name)" fallbacks).
+const bdi = s => { const t = esc(s); return t ? `<bdi>${t}</bdi>` : ""; };
 async function getJson(path){
   const r = await fetch(api(path));
   if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
@@ -580,12 +584,12 @@ function reasonChips(keys){
 function goldenRow(g){
   const flagged = isFlagged("cluster:"+g.id) ? `<span class="chip warn">⚑ note</span>` : "";
   const srcs = (g.sourceSystems || []).map(srcLabel);
-  const contact = [g.phone, g.city].filter(Boolean).map(esc).join(" · ");
+  const contact = [g.phone, g.city].filter(Boolean).map(bdi).join(" · ");
   return `<div class="rowcard" data-golden="${esc(g.id)}">
     <div class="countpill ${g.members>1?"":"single"}">${g.members}<small>${g.members===1?"record":"records"}</small></div>
     <div class="pairnames">
-      <div class="nm">${g.needsReview?`<span title="${esc(L.desc("reasons","NeedsReview"))}">⚑ </span>`:""}${esc(g.name)||"<i>(no name)</i>"}${contact?` <span class="small">· ${contact}</span>`:""}</div>
-      <div class="meta">Customer #${esc(g.id)} · ${g.sources} source(s)${srcs.length?`: ${esc(srcs.join(", "))}`:""}</div>
+      <div class="nm">${g.needsReview?`<span title="${esc(L.desc("reasons","NeedsReview"))}">⚑ </span>`:""}${bdi(g.name)||"<i>(no name)</i>"}${contact?` <span class="small">· ${contact}</span>`:""}</div>
+      <div class="meta">Customer #${bdi(g.id)} · ${g.sources} source(s)${srcs.length?`: ${esc(srcs.join(", "))}`:""}</div>
     </div>
     <div class="chips">${reasonChips(g.reasons)}${flagged}</div>
   </div>`;
@@ -601,9 +605,9 @@ function caseRow(c){
   return `<div class="rowcard" data-a="${c.a.idx}" data-b="${c.b.idx}">
     <div class="scorepill ${scoreClass(c.score)}" title="match strength">${pct(c.score)}</div>
     <div class="pairnames">
-      <div class="nm">${esc(c.a.rawName)||"<i>(no name)</i>"} <span class="small">· ${esc(srcLabel(c.a.src))}</span>
-        &nbsp;~&nbsp; ${esc(c.b.rawName)||"<i>(no name)</i>"} <span class="small">· ${esc(srcLabel(c.b.src))}</span></div>
-      <div class="meta">${esc((c.a.phones[0]??c.a.weakPhones[0])??"–")} · ${esc(c.a.city||"–")} ⇄ ${esc((c.b.phones[0]??c.b.weakPhones[0])??"–")} · ${esc(c.b.city||"–")}</div>
+      <div class="nm">${bdi(c.a.rawName)||"<i>(no name)</i>"} <span class="small">· ${esc(srcLabel(c.a.src))}</span>
+        &nbsp;~&nbsp; ${bdi(c.b.rawName)||"<i>(no name)</i>"} <span class="small">· ${esc(srcLabel(c.b.src))}</span></div>
+      <div class="meta">${bdi((c.a.phones[0]??c.a.weakPhones[0])??"–")} · ${bdi(c.a.city||"–")} ⇄ ${bdi((c.b.phones[0]??c.b.weakPhones[0])??"–")} · ${bdi(c.b.city||"–")}</div>
     </div>
     <div class="chips">${chips.join("")}</div>
   </div>`;
@@ -614,7 +618,7 @@ function clusterRow(c){
   return `<div class="rowcard" data-root="${c.root}">
     <div class="countpill">${c.size}<small>records</small></div>
     <div class="pairnames">
-      <div class="nm">${esc(c.goldenName)||"<i>(no name)</i>"}</div>
+      <div class="nm">${bdi(c.goldenName)||"<i>(no name)</i>"}</div>
       <div class="meta">${c.sources} source(s) · Customer #${c.registry?.goldenId ?? c.root}</div>
     </div>
     <div class="chips">${chips.join("")}</div>
@@ -650,8 +654,8 @@ function searchRow(r){
   return `<div class="rowcard" data-idx="${r.idx}">
     <div class="countpill ${r.clusterSize>1?'':'single'}">${r.clusterSize>1?r.clusterSize:1}<small>${r.clusterSize>1?"records":"record"}</small></div>
     <div class="pairnames">
-      <div class="nm">${esc(r.rawName)||"<i>(no name)</i>"} <span class="small">· ${esc(srcLabel(r.src))} #${esc(r.id)}</span></div>
-      <div class="meta">${esc([...r.phones, ...r.weakPhones.map(p=>p+" (incomplete)")].join(" / ")||"no phone")} · ${esc(r.city||"–")}</div>
+      <div class="nm">${bdi(r.rawName)||"<i>(no name)</i>"} <span class="small">· ${esc(srcLabel(r.src))} #${bdi(r.id)}</span></div>
+      <div class="meta">${[...r.phones.map(bdi), ...r.weakPhones.map(p=>bdi(p)+" (incomplete)")].join(" / ")||"no phone"} · ${bdi(r.city||"–")}</div>
     </div>
     <div class="chips">${chips.join("")}</div>
   </div>`;
@@ -763,7 +767,7 @@ function renderDetail(d){
   host.innerHTML = `
   <div class="detail">
     <div class="dhead">
-      <span class="t">${esc(d.a.rawName)||"(no name)"} ~ ${esc(d.b.rawName)||"(no name)"}</span>
+      <span class="t">${bdi(d.a.rawName)||"(no name)"} ~ ${bdi(d.b.rawName)||"(no name)"}</span>
       <span class="scorepill ${scoreClass(d.score)}" style="width:auto;padding:4px 10px" title="match strength">${pct(d.score)}</span>
       <span class="chip">${esc(decisionText(d))}</span>
       ${evidenceChips(d.flags)}
@@ -793,19 +797,19 @@ function renderDetail(d){
       </div>
     </div>
     <div class="dbody">
-      <div class="dpanel"><h5>Record A — ${esc(srcLabel(d.a.src))} #${esc(d.a.id)}</h5>${recordKv(d.a)}</div>
-      <div class="dpanel"><h5>Record B — ${esc(srcLabel(d.b.src))} #${esc(d.b.id)}</h5>${recordKv(d.b)}</div>
+      <div class="dpanel"><h5>Record A — ${esc(srcLabel(d.a.src))} #${bdi(d.a.id)}</h5>${recordKv(d.a)}</div>
+      <div class="dpanel"><h5>Record B — ${esc(srcLabel(d.b.src))} #${bdi(d.b.id)}</h5>${recordKv(d.b)}</div>
       <div class="dpanel" style="grid-column:1/-1"><h5>How they were compared</h5>
         <div class="tracelist">${d.trace.map((t,i)=>
           `<div class="ts" onclick="jumpTrace(${i})"><span><span class="tt">${esc(t.title)}</span><div class="td">${esc(t.detail)}</div></span>
            ${t.conf!=null?`<span class="cf">${pct(t.conf)}</span>`:""}</div>`).join("")}</div>
       </div>
       ${d.cluster ? `<div class="dpanel" style="grid-column:1/-1"><h5>Customer</h5>
-        <div>One customer: <b>${esc(d.cluster.goldenName)}</b> · ${d.cluster.size} records · ${d.cluster.sources} source(s)
+        <div>One customer: <b>${bdi(d.cluster.goldenName)}</b> · ${d.cluster.size} records · ${d.cluster.sources} source(s)
         <span class="linky" onclick="openCluster(${d.cluster.root})">open the customer →</span></div></div>` : ""}
       ${(!d.sameIdentity && (d.clusterA || d.clusterB)) ? `<div class="dpanel" style="grid-column:1/-1"><h5>Currently two customers</h5>
-        ${d.clusterA?`<div>A belongs to <b>${esc(d.clusterA.goldenName)}</b> (${d.clusterA.size} records) <span class="linky" onclick="openCluster(${d.clusterA.root})">open →</span></div>`:""}
-        ${d.clusterB?`<div>B belongs to <b>${esc(d.clusterB.goldenName)}</b> (${d.clusterB.size} records) <span class="linky" onclick="openCluster(${d.clusterB.root})">open →</span></div>`:""}</div>` : ""}
+        ${d.clusterA?`<div>A belongs to <b>${bdi(d.clusterA.goldenName)}</b> (${d.clusterA.size} records) <span class="linky" onclick="openCluster(${d.clusterA.root})">open →</span></div>`:""}
+        ${d.clusterB?`<div>B belongs to <b>${bdi(d.clusterB.goldenName)}</b> (${d.clusterB.size} records) <span class="linky" onclick="openCluster(${d.clusterB.root})">open →</span></div>`:""}</div>` : ""}
       <div class="dpanel" style="grid-column:1/-1"><h5>Your verdict</h5>
         <div class="verdict">
           <button class="vbtn same" onclick="sendVerdict('same')">Same person</button>
@@ -831,13 +835,13 @@ function recordKv(r){
   const vinSrc = s => s === "sale" ? "bought" : "serviced";
   const repaired = [r.mojibake ? L.label("cases","Mojibake") : "", r.arabizi ? L.label("cases","Arabizi") : ""].filter(Boolean);
   return `<div class="kv">
-    <span class="k">name as entered</span><span class="v">${esc(r.rawName)||"–"}</span>
-    <span class="k">name compared</span><span class="v">${esc(r.normName)||"– (not usable)"}${repaired.length?` · <b>${esc(repaired.join(", "))}</b>`:""}</span>
-    <span class="k">phones</span><span class="v">${esc([...r.phones, ...r.weakPhones.map(p=>p+" (incomplete)")].join(" / ")||"–")}</span>
+    <span class="k">name as entered</span><span class="v">${bdi(r.rawName)||"–"}</span>
+    <span class="k">name compared</span><span class="v">${bdi(r.normName)||"– (not usable)"}${repaired.length?` · <b>${esc(repaired.join(", "))}</b>`:""}</span>
+    <span class="k">phones</span><span class="v">${[...r.phones.map(bdi), ...r.weakPhones.map(p=>bdi(p)+" (incomplete)")].join(" / ")||"–"}</span>
     <span class="k">birth date</span><span class="v">${esc(r.dob||"–")}</span>
-    <span class="k">ID number</span><span class="v">${esc(r.natId||"–")}</span>
-    <span class="k">address</span><span class="v">${esc((r.rawAddress||"").replaceAll("|"," | ")||"–")}</span>
-    <span class="k">address compared</span><span class="v">${esc(r.normAddress||"–")}${r.city?` · city “${esc(r.city)}”`:""}</span>
+    <span class="k">ID number</span><span class="v">${bdi(r.natId||"–")}</span>
+    <span class="k">address</span><span class="v">${bdi((r.rawAddress||"").replaceAll("|"," | ")||"–")}</span>
+    <span class="k">address compared</span><span class="v">${bdi(r.normAddress||"–")}${r.city?` · city “${bdi(r.city)}”`:""}</span>
     ${r.vins?.length?`<span class="k">vehicles</span><span class="v">${r.vins.map(v=>`${esc(v.vin)} <b>${esc(vinSrc(v.src))}</b>${v.first?` (${esc(v.first)}${v.last&&v.last!==v.first?"–"+esc(v.last):""})`:""}`).join(" · ")}</span>`:""}
     <span class="k">customer</span><span class="v">${r.clusterSize>1?`one of ${r.clusterSize} records <span class="linky" onclick="openCluster(${r.clusterRoot})">open the customer →</span>`:(r.clusterRoot?`only record <span class="linky" onclick="openCluster(${r.clusterRoot})">open the customer →</span>`:"only record")}</span>
   </div>`;
@@ -854,8 +858,8 @@ function buildCards(d){
   [d.a, d.b].forEach((r, i) => {
     const el = document.createElement("div");
     el.className = "rec"; el.style.setProperty("--c", srcColor(r.src));
-    el.innerHTML = `<div class="src">${esc(srcLabel(r.src))} #${esc(r.id)}</div><div class="nm">${esc(r.rawName)||"(no name)"}</div>
-      <div class="ph">${esc((r.phones[0]??r.weakPhones[0])??"")}</div><div class="ad">${esc(r.normAddress)}</div>`;
+    el.innerHTML = `<div class="src">${esc(srcLabel(r.src))} #${bdi(r.id)}</div><div class="nm">${bdi(r.rawName)||"(no name)"}</div>
+      <div class="ph">${bdi((r.phones[0]??r.weakPhones[0])??"")}</div><div class="ad">${bdi(r.normAddress)}</div>`;
     el.style.top = "0px"; el.style.left = "0px";
     host.appendChild(el);
     el.dataset.lane = i;
@@ -891,7 +895,7 @@ function stepTo(i){
   ["golden","steward","separate"].forEach(z => $("#z-"+z).classList.toggle("lit", s.zone === z));
   const g = $("#goldcard");
   if (s.zone === "golden" && s.golden){
-    g.innerHTML = `<div class="gt">🏆 one customer</div><div class="gn">${esc(s.golden.name)}</div>
+    g.innerHTML = `<div class="gt">🏆 one customer</div><div class="gn">${bdi(s.golden.name)}</div>
       <div class="gp">${s.golden.size} records</div>`;
     g.classList.add("show");
   } else g.classList.remove("show");
@@ -941,7 +945,7 @@ async function openRecord(idx){
   stopPlay(); state.anim = null;
   host.innerHTML = `
   <div class="detail"><div class="dhead">
-      <span class="t">${esc(d.record.rawName)||"(no name)"} <span class="small">· ${esc(srcLabel(d.record.src))} #${esc(d.record.id)}</span></span>
+      <span class="t">${bdi(d.record.rawName)||"(no name)"} <span class="small">· ${esc(srcLabel(d.record.src))} #${bdi(d.record.id)}</span></span>
       <button class="btn x" onclick="closeDetail()">✕ close</button></div>
     <div class="dbody">
       <div class="dpanel"><h5>Record</h5>${recordKv(d.record)}</div>
@@ -954,8 +958,8 @@ async function openRecord(idx){
         ${(d.candidates||[]).length ? d.candidates.map(c => `
           <div class="rowcard" style="margin-bottom:6px" onclick="openCase(${d.record.idx},${c.record.idx})">
             <div class="scorepill ${scoreClass(c.score)}">${pct(c.score)}</div>
-            <div class="pairnames"><div class="nm">${esc(c.record.rawName)||"(no name)"} <span class="small">· ${esc(srcLabel(c.record.src))} #${esc(c.record.id)}</span></div>
-            <div class="meta">${esc((c.record.phones[0]??c.record.weakPhones[0])??"–")} · ${esc(c.record.city||"–")}</div></div>
+            <div class="pairnames"><div class="nm">${bdi(c.record.rawName)||"(no name)"} <span class="small">· ${esc(srcLabel(c.record.src))} #${bdi(c.record.id)}</span></div>
+            <div class="meta">${bdi((c.record.phones[0]??c.record.weakPhones[0])??"–")} · ${bdi(c.record.city||"–")}</div></div>
             <div class="chips">${evidenceChips(c.flags, 4)}</div>
           </div>`).join("") : `<div class="small">${esc(d.note || "No similar records listed.")}</div>`}
       </div>
@@ -968,12 +972,12 @@ async function openRecord(idx){
 function memberRow(m){
   if (m.staged === false) {
     return `<div class="rowcard stub" style="margin-bottom:6px">
-      <div class="pairnames"><div class="nm">${esc(srcLabel(m.src))} #${esc(m.id)}</div>
+      <div class="pairnames"><div class="nm">${esc(srcLabel(m.src))} #${bdi(m.id)}</div>
       <div class="meta">${m.removed ? "no longer in its source" : "details were not loaded in the latest run"}</div></div></div>`;
   }
   return `<div class="rowcard go" style="margin-bottom:6px" onclick="openRecord(${m.idx})">
-    <div class="pairnames"><div class="nm">${esc(m.rawName)||"(no name)"} <span class="small">· ${esc(srcLabel(m.src))} #${esc(m.id)}</span></div>
-    <div class="meta">${esc([...m.phones,...m.weakPhones.map(p=>p+" (incomplete)")].join(" / ")||"no phone")} · ${esc(m.normAddress||m.city||"–")}${m.vins?.length?` · ${m.vins.length} vehicle(s)`:""}</div></div>
+    <div class="pairnames"><div class="nm">${bdi(m.rawName)||"(no name)"} <span class="small">· ${esc(srcLabel(m.src))} #${bdi(m.id)}</span></div>
+    <div class="meta">${[...m.phones.map(bdi),...m.weakPhones.map(p=>bdi(p)+" (incomplete)")].join(" / ")||"no phone"} · ${bdi(m.normAddress||m.city||"–")}${m.vins?.length?` · ${m.vins.length} vehicle(s)`:""}</div></div>
     ${m.mojibake?`<span class="chip cat">${esc(L.label("cases","Mojibake"))}</span>`:""}${m.arabizi?`<span class="chip cat">${esc(L.label("cases","Arabizi"))}</span>`:""}
   </div>`;
 }
@@ -983,8 +987,8 @@ function pairLine(p, withCats){
   const cats = withCats ? (p.cats||[]).map(k => `<span class="chip cat" title="${esc(L.desc("cases",k))}">${esc(L.label("cases",k))}</span>`).join("") : "";
   return `<div class="rowcard ${go?"go":""}" style="margin-bottom:6px" ${go?`onclick="openCase(${p.a},${p.b})"`:""}>
     <div class="scorepill ${scoreClass(p.score)}" title="match strength">${pct(p.score)}</div>
-    <div class="pairnames"><div class="nm">${esc(other.rawName)||"(no name)"} <span class="small">· ${esc(srcLabel(other.src))} #${esc(other.id)}</span></div>
-    <div class="meta">${p.otherCustomer?`Customer #${esc(p.otherCustomer)} <span class="linky" onclick="event.stopPropagation();openCluster('${esc(p.otherCustomer)}')">open →</span>`:"–"}</div></div>
+    <div class="pairnames"><div class="nm">${bdi(other.rawName)||"(no name)"} <span class="small">· ${esc(srcLabel(other.src))} #${bdi(other.id)}</span></div>
+    <div class="meta">${p.otherCustomer?`Customer #${bdi(p.otherCustomer)} <span class="linky" onclick="event.stopPropagation();openCluster('${esc(p.otherCustomer)}')">open →</span>`:"–"}</div></div>
     <div class="chips">${cats}</div>
   </div>`;
 }
@@ -1004,7 +1008,8 @@ async function openCluster(root){
   const byKey = new Map(members.map(m => [`${m.src}:${m.id}`, m]));
   const byIdx = new Map(members.filter(m => m.idx != null).map(m => [m.idx, m]));
   const end = (key, idx) => (key && byKey.get(key)) || byIdx.get(idx) || {src: key ? key.split(":")[0] : "", id: key ? key.slice(key.indexOf(":") + 1) : ""};
-  const nameOf = m => m.rawName ? `${m.rawName} #${m.id}` : `${srcLabel(m.src)} #${m.id}`;
+  // HTML: the name and the record number each isolated (bdi), the source label escaped.
+  const nameOf = m => m.rawName ? `${bdi(m.rawName)} #${bdi(m.id)}` : `${esc(srcLabel(m.src))} #${bdi(m.id)}`;
   const size = d.size ?? members.length;
   const sources = d.sources ?? new Set(members.map(m => m.src)).size;
   const EDGES_SHOWN = 30;
@@ -1012,23 +1017,23 @@ async function openCluster(root){
     : (d.cats||[]).map(k=>`<span class="chip cat" title="${esc(L.desc("clusters",k))}">${esc(L.label("clusters",k))}</span>`).join(""));
   host.innerHTML = `
   <div class="detail"><div class="dhead">
-      <span class="t">🏆 ${esc(name) || "(no name)"}</span>
+      <span class="t">🏆 ${bdi(name) || "(no name)"}</span>
       <span class="chip cat">${size} record${size===1?"":"s"} · ${sources} source(s)</span>
-      ${d.registry?.goldenId?`<span class="chip" style="background:#c9a227;color:#1a1a1a">Customer #${d.registry.goldenId}${d.registry.status===2?" (merged into another)":d.registry.status===3?" (inactive)":""}</span>`:""}
+      ${d.registry?.goldenId?`<span class="chip" style="background:#c9a227;color:#1a1a1a">Customer #${bdi(d.registry.goldenId)}${d.registry.status===2?" (merged into another)":d.registry.status===3?" (inactive)":""}</span>`:""}
       ${chips}
       <button class="btn x" onclick="closeDetail()">✕ close</button></div>
     <div class="dbody">
       <div class="dpanel"><h5>Customer details</h5>
         <div class="kv">${(d.golden||[]).map(g=>{
           const how = g.how || (g.wonBy ? L.label("survival", g.wonBy) : "");
-          return `<span class="k">${esc(g.label || L.label("attributes", g.attrType))}</span><span class="v">${esc(g.value)}${how?` <span class="small">· ${esc(how)}</span>`:""}</span>`;
+          return `<span class="k">${esc(g.label || L.label("attributes", g.attrType))}</span><span class="v">${bdi(g.value)}${how?` <span class="small">· ${esc(how)}</span>`:""}</span>`;
         }).join("") || `<span class="k">–</span><span class="v">nothing recorded</span>`}</div>
         ${ns ? `<h5 style="margin-top:12px">How the name was chosen</h5>
-        <div class="small">Most common spelling: <b class="mono">${esc(ns.anchor??"–")}</b> (${ns.anchorCount} record${ns.anchorCount===1?"":"s"})
-          ${ns.chosen?` → shown in its fullest form <b class="mono">${esc(ns.chosen)}</b>`:` — shown as it is`}</div>
+        <div class="small">Most common spelling: <b class="mono">${bdi(ns.anchor??"–")}</b> (${ns.anchorCount} record${ns.anchorCount===1?"":"s"})
+          ${ns.chosen?` → shown in its fullest form <b class="mono">${bdi(ns.chosen)}</b>`:` — shown as it is`}</div>
         ${ns.extensions.length?`<div class="tracelist" style="margin-top:6px">${ns.extensions.map(e=>
           `<div class="ts"><span class="st">${e.name===ns.chosen?"chosen":"also seen"}</span>
-           <span><span class="tt mono">${esc(e.name)}</span> <span class="small">(${e.count})</span>
+           <span><span class="tt mono">${bdi(e.name)}</span> <span class="small">(${e.count})</span>
            <div class="td">${e.givenAligns?(e.bridge?"continues the common spelling":"same first name, but no record links it — not used"):"different first name — not used"}</div></span></div>`).join("")}</div>`:""}` : ""}
       </div>
       <div class="dpanel"><h5>How the records were joined</h5>
@@ -1038,7 +1043,7 @@ async function openCluster(root){
           const decisive = e.noVin!=null && e.score>=0.90 && e.noVin<0.90;
           return `<div class="ts tracelist" style="display:flex;gap:8px;padding:5px 0;border-bottom:1px dashed #edf0f6;${go?"cursor:pointer":""}" ${go?`onclick="openCase(${e.a},${e.b})"`:""}>
             <span class="cf mono" title="match strength">${pct(e.score)}</span>
-            <span class="td">${esc(nameOf(ea))} ~ ${esc(nameOf(eb))}
+            <span class="td">${nameOf(ea)} ~ ${nameOf(eb)}
               ${e.crossDealer?`<span class="chip">${esc(srcLabel(ea.src))} ↔ ${esc(srcLabel(eb.src))}</span>`:""}
               ${evidenceChips(e.flags, 3)}
               ${decisive?`<span class="chip warn" title="${esc(L.desc("clusters","VinDecisive"))}">${esc(L.label("clusters","VinDecisive"))}</span>`:""}</span></div>`;

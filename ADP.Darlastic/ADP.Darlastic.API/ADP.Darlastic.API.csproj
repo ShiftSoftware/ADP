@@ -48,6 +48,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- The option defaults and the per-run indexes are pinned by unit tests of the internal types. -->
+		<InternalsVisibleTo Include="ADP.Darlastic.API.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\ADP.Darlastic.Data\ADP.Darlastic.Data.csproj" />
 		<!-- The scorer, without its storage half. This is what lets a steward surface show WHY the
 		     engine reached a score: the derivation is a pure function of the two staged records, so

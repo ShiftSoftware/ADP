@@ -3,9 +3,10 @@ using ShiftSoftware.ADP.Darlastic.Shared;
 namespace ShiftSoftware.ADP.Darlastic.Engine;
 
 /// <summary>
-/// One dated customer event from a tenant source — a workshop visit, an inspection, a warranty
-/// claim, a recall, an activation — as an <see cref="IEventFeed"/> yields it. The resolve attaches
-/// it to golden customers and stages one <c>events</c> artifact per golden.
+/// One dated customer event from a tenant source — a workshop visit, a sale, an inspection, a
+/// recall, a booking, … (see <see cref="GoldenEventType"/>) — as an <see cref="IEventFeed"/>
+/// yields it. The resolve attaches it to golden customers and stages one <c>events</c> artifact
+/// per golden.
 ///
 /// An event is linked one of two ways:
 ///   - <b>profile-linked</b>: <see cref="SourceSystem"/> + <see cref="SourceRecordId"/> name the
@@ -46,6 +47,17 @@ public sealed record SourceEvent(
 {
     /// <summary>True when the event names a source profile; false for a VIN-only event.</summary>
     public bool IsProfileLinked => !string.IsNullOrEmpty(SourceSystem) && !string.IsNullOrEmpty(SourceRecordId);
+
+    /// <summary>
+    /// Pre-delivery window, in days, for a VIN-only event that can legitimately happen before the
+    /// customer owns the vehicle (e.g. a pre-delivery inspection). Null (the default) keeps the
+    /// standard rule: an event that predates every ownership period stays unattached. Set, such an
+    /// event goes to the owner of the VIN's FIRST sale when that sale starts at most this many days
+    /// after the event and has exactly one owner, linked as <see cref="GoldenEventLink.VinPreDelivery"/>
+    /// so hosts can label it; otherwise it stays unattached. Ignored for profile-linked and undated
+    /// events, and when zero or negative.
+    /// </summary>
+    public int? AttachBeforeFirstSaleWithinDays { get; init; }
 }
 
 /// <summary>

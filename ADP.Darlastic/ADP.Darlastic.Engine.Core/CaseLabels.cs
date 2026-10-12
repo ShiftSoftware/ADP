@@ -84,6 +84,8 @@ public static class CaseLabels
             "Only one record is known for this customer."),
         [GoldenReason.MergedByPhoneAndName] = new("Merged automatically: same phone and name",
             "Records were combined because they share a phone number and the names agree."),
+        [GoldenReason.MergedByPhoneWithoutName] = new("Merged automatically: same phone, a name missing",
+            "Records were combined on a shared phone number while one of them has no name to compare."),
         [GoldenReason.MergedByVehicle] = Clusters[ClusterCat.VinBridged],
         [GoldenReason.MergedByEmail] = new("Merged by e-mail",
             "Records were combined because they share an e-mail address and the names agree."),
