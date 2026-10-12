@@ -60,6 +60,13 @@ steps:
       workingDir: 'ADP.Surveys/renderer'
       customCommand: 'run build --workspace @shift-software/survey-web-component'
 
+  # Every `exports` / `main` / `types` target must exist in the built package. The workspace
+  # apps alias the packages to `src/`, so nothing else here notices a dist path that was
+  # never produced (0.1.0 shipped without dist/styles.css).
+  - script: node scripts/check-exports.mjs
+    displayName: 'Check package entry points'
+    workingDirectory: 'ADP.Surveys/renderer'
+
   # Gate the publish on green tests. The sandbox and logic evaluator are mirrors of their
   # C# counterparts; shipping a renderer whose parity tests fail means the two halves of
   # the platform disagree about navigation, which surfaces as respondents stuck mid-survey.
