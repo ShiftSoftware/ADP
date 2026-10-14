@@ -520,7 +520,9 @@ export class ShiftPopover {
   }
 
   private onPointerDown = (event: PointerEvent) => {
-    if (this.within(event.composedPath())) return;
+    const path = event.composedPath();
+    // The sheet's backdrop closes on its own click; closing here would drop it before that click, which then lands on the page beneath.
+    if (this.within(path) || (path[0] as Element)?.classList?.contains('pop-backdrop')) return;
 
     this.pointerDismissed = true;
     const release = () => {
@@ -619,6 +621,7 @@ export class ShiftPopover {
     keydown: event => this.onPanelKeyDown(event),
     focus: () => this.focusContent(),
     strayFocus: () => this.focusAnchor(),
+    dismiss: () => this.hide(),
     ready: panel => {
       this.panel = panel;
       panel.addEventListener('pickerChange', this.onContentPick);
