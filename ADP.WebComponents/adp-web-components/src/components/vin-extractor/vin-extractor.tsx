@@ -43,6 +43,15 @@ export class VinExtractor {
   @Prop() language?: LanguageKeys;
   @Prop({ reflect: true }) colorScheme?: VinExtractorColorScheme;
 
+  @Prop() dialogLabel?: string;
+  @Prop() switchCameraLabel?: string;
+  @Prop() closeLabel?: string;
+  @Prop() capturingLabel?: string;
+  @Prop() previewLabel?: string;
+  @Prop() uploadLabel?: string;
+
+  @Prop() permissionsFallback: boolean = false;
+
   @Prop() onExtract?: ((vin: string) => void) | string;
   @Prop() onError?: ((newError: Error) => void) | string;
   @Prop() onProcessing?: ((vin: string) => void) | string;
@@ -288,15 +297,27 @@ export class VinExtractor {
     }
   };
 
+  // Where the Permissions API is missing or does not know 'camera' (older iOS webviews, Firefox), treat it as
+  // not yet asked, so the getUserMedia probe below lets the browser prompt.
+  private queryCameraPermission = async (): Promise<{ state: PermissionState }> => {
+    try {
+      return await navigator.permissions.query({ name: 'camera' as PermissionName });
+    } catch {
+      return { state: 'prompt' };
+    }
+  };
+
   openScanner = async () => {
     try {
       this.abortController?.abort();
       this.abortController = new AbortController();
 
-      const permissionStatus = await navigator.permissions.query({
-        // @ts-ignore
-        name: 'camera',
-      });
+      const permissionStatus = this.permissionsFallback
+        ? await this.queryCameraPermission()
+        : await navigator.permissions.query({
+            // @ts-ignore
+            name: 'camera',
+          });
 
       if (permissionStatus.state === 'prompt') {
         try {
@@ -593,18 +614,26 @@ export class VinExtractor {
     const ariaExpanded = this.isOpen && this.isCameraReady && (this.useOcr || this.readSticker);
     const locale = vinExtractorLocale(this.language);
     const { strings } = locale;
+    const text = (hostText: string | undefined, fallback: string) => hostText || fallback;
 
     return (
       <Host translate="no">
         <slot />
-        <input class="vin-extractor-input" type="file" accept="image/*" aria-label={strings.upload} {...(this.captureEnvironment ? { capture: 'environment' } : {})} hidden />
+        <input
+          class="vin-extractor-input"
+          type="file"
+          accept="image/*"
+          aria-label={text(this.uploadLabel, strings.upload)}
+          {...(this.captureEnvironment ? { capture: 'environment' } : {})}
+          hidden
+        />
         <canvas class="video-canvas vin-extractor-canvas" aria-hidden="true"></canvas>
         {!this.uploaderButtonId && (
           <div
             onClick={() => (this.isOpen = false)}
             role="dialog"
             aria-modal={ariaExpanded.toString()}
-            aria-label={this.title || strings.dialog}
+            aria-label={this.title || text(this.dialogLabel, strings.dialog)}
             aria-hidden={(!ariaExpanded).toString()}
             dir={this.language ? locale.direction : undefined}
             lang={this.language ? (locale.language === 'ku' ? 'ckb' : locale.language) : undefined}
@@ -622,26 +651,35 @@ export class VinExtractor {
             >
               <div class="vin-extractor-heading" part="header">
                 {this.videoInputs.length > 1 ? (
-                  <button type="button" aria-label={strings.switchCamera} onClick={this.switchCamera} class="vin-extractor-control" part="switch-camera">
-                    <svg
-                      width="24"
-                      height="24"
-                      fill="none"
-                      stroke-width="2"
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="vin-extractor-switch-icon"
-                      style={{ rotate: `${this.switchRotateDegree}deg` }}
-                    >
-                      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-                      <path d="M21 3v5h-5" />
-                      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-                      <path d="M8 16H3v5" />
-                    </svg>
+                  <button
+                    type="button"
+                    aria-label={text(this.switchCameraLabel, strings.switchCamera)}
+                    onClick={this.switchCamera}
+                    class="vin-extractor-control"
+                    part="switch-camera"
+                  >
+                    <slot name="switch-camera-icon">
+                      <svg
+                        width="24"
+                        height="24"
+                        fill="none"
+                        stroke-width="2"
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="vin-extractor-switch-icon"
+                        part="switch-camera-icon"
+                        style={{ rotate: `${this.switchRotateDegree}deg` }}
+                      >
+                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                        <path d="M21 3v5h-5" />
+                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                        <path d="M8 16H3v5" />
+                      </svg>
+                    </slot>
                   </button>
                 ) : (
                   <div class="vin-extractor-control-placeholder" aria-hidden="true" />
@@ -649,21 +687,24 @@ export class VinExtractor {
                 <h1 class="vin-extractor-title form-input-label" part="title form-input-label">
                   {this.title}
                 </h1>
-                <button type="button" aria-label={strings.close} onClick={() => (this.isOpen = false)} class="vin-extractor-control" part="close">
-                  <svg
-                    fill="none"
-                    stroke-width="2"
-                    class="vin-extractor-icon"
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M18 6 6 18" />
-                    <path d="m6 6 12 12" />
-                  </svg>
+                <button type="button" aria-label={text(this.closeLabel, strings.close)} onClick={() => (this.isOpen = false)} class="vin-extractor-control" part="close">
+                  <slot name="close-icon">
+                    <svg
+                      fill="none"
+                      stroke-width="2"
+                      class="vin-extractor-icon"
+                      part="close-icon"
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M18 6 6 18" />
+                      <path d="m6 6 12 12" />
+                    </svg>
+                  </slot>
                 </button>
               </div>
               {this.manualCapture && !!this.manualCaptureHint && !this.manualCaptureLoading && (
@@ -677,7 +718,7 @@ export class VinExtractor {
                   part="capture vin-extractor-capture-button"
                   disabled={this.manualCaptureLoading}
                   onClick={this.captureFrame.bind(this, true)}
-                  aria-label={this.manualCaptureLoading ? strings.capturing : this.manualCaptureLabel || strings.capture}
+                  aria-label={this.manualCaptureLoading ? text(this.capturingLabel, strings.capturing) : text(this.manualCaptureLabel, strings.capture)}
                   class={{ 'vin-extractor-capture-button': true, 'vin-extractor-capture-labelled': !!this.manualCaptureLabel }}
                 >
                   {this.manualCaptureLoading ? (
@@ -698,25 +739,27 @@ export class VinExtractor {
                   ) : this.manualCaptureLabel ? (
                     <span part="capture-label">{this.manualCaptureLabel}</span>
                   ) : (
-                    <svg
-                      fill="none"
-                      stroke-width="2"
-                      class="vin-extractor-icon"
-                      part="capture-icon"
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-                      <circle cx="12" cy="13" r="3" />
-                    </svg>
+                    <slot name="capture-icon">
+                      <svg
+                        fill="none"
+                        stroke-width="2"
+                        class="vin-extractor-icon"
+                        part="capture-icon"
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                        <circle cx="12" cy="13" r="3" />
+                      </svg>
+                    </slot>
                   )}
                 </button>
               )}
-              <video autoPlay id="video" playsInline aria-label={strings.preview} class="video-player vin-extractor-preview" part="preview"></video>
+              <video autoPlay id="video" playsInline aria-label={text(this.previewLabel, strings.preview)} class="video-player vin-extractor-preview" part="preview"></video>
             </div>
           </div>
         )}

@@ -115,3 +115,131 @@ describe('page scroll', () => {
     expect(page.doc.body.style.overflow).toBe('auto');
   });
 });
+
+describe('host labels', () => {
+  const allLabels = async (attributes: string) => {
+    const { page, root, instance } = await mount(`manual-capture ${attributes}`);
+    instance.videoInputs = [{} as MediaDeviceInfo, {} as MediaDeviceInfo];
+    await page.waitForChanges();
+    const idle = {
+      dialog: label(root, 'backdrop'),
+      switchCamera: label(root, 'switch-camera'),
+      close: label(root, 'close'),
+      capture: label(root, 'capture'),
+      preview: label(root, 'preview'),
+      upload: root.querySelector('.vin-extractor-input').getAttribute('aria-label'),
+    };
+    instance.manualCaptureLoading = true;
+    await page.waitForChanges();
+    return { ...idle, capturing: label(root, 'capture') };
+  };
+
+  const HOST = 'dialog-label="D" switch-camera-label="S" close-label="C" capturing-label="W" preview-label="P" upload-label="U"';
+
+  it('keeps the English names when nothing is passed', async () => {
+    expect(await allLabels('')).toEqual({
+      dialog: 'VIN Scanner',
+      switchCamera: 'Switch camera',
+      close: 'Close scanner',
+      capture: 'Capture VIN',
+      preview: 'Camera preview',
+      upload: 'Upload VIN image',
+      capturing: 'Capturing...',
+    });
+  });
+
+  it('uses the locale when only language is passed', async () => {
+    expect(await allLabels('language="ru"')).toEqual({
+      dialog: ru.dialog,
+      switchCamera: ru.switchCamera,
+      close: ru.close,
+      capture: ru.capture,
+      preview: ru.preview,
+      upload: ru.upload,
+      capturing: ru.capturing,
+    });
+  });
+
+  it('puts the host text before the locale and the English default', async () => {
+    const expected = { dialog: 'D', switchCamera: 'S', close: 'C', capture: 'Capture VIN', preview: 'P', upload: 'U', capturing: 'W' };
+
+    expect(await allLabels(HOST)).toEqual(expected);
+    expect(await allLabels(`${HOST} language="ar"`)).toEqual({ ...expected, capture: ar.capture });
+  });
+
+  it('treats an empty host text as not passed', async () => {
+    expect((await allLabels('close-label="" language="ru"')).close).toBe(ru.close);
+  });
+
+  it('keeps title as the dialog name over dialogLabel', async () => {
+    expect((await allLabels('title="T" dialog-label="D"')).dialog).toBe('T');
+  });
+});
+
+describe('icon slots', () => {
+  it('wraps each icon in a named slot whose fallback is the icon, with its part', async () => {
+    const { page, root, instance } = await mount('manual-capture');
+    instance.videoInputs = [{} as MediaDeviceInfo, {} as MediaDeviceInfo];
+    await page.waitForChanges();
+
+    for (const name of ['switch-camera-icon', 'close-icon', 'capture-icon']) {
+      const slot = root.querySelector(`slot[name="${name}"]`);
+      expect(slot).not.toBeNull();
+      expect(slot.querySelector(`svg[part="${name}"]`)).not.toBeNull();
+    }
+  });
+
+  it('keeps one unnamed slot for the other children', async () => {
+    const { root } = await mount();
+
+    expect(root.querySelectorAll('slot:not([name])').length).toBe(1);
+  });
+});
+
+describe('permissions fallback', () => {
+  const run = async (attributes: string, permissions: unknown) => {
+    const { page, instance } = await mount(attributes);
+    const getUserMedia = jest.fn(async () => ({ getTracks: () => [{ stop: () => undefined }] }));
+    for (const navigator of new Set([page.win.navigator, globalThis.navigator])) {
+      Object.defineProperty(navigator, 'permissions', { value: permissions, configurable: true });
+      Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia, enumerateDevices: async () => [] }, configurable: true });
+    }
+    const errors: string[] = [];
+    instance.onError = (error: Error) => errors.push(error.message);
+
+    await instance.openScanner();
+    return { getUserMedia, errors };
+  };
+
+  it('is off by default: a missing Permissions API fails before asking for the camera', async () => {
+    const { getUserMedia, errors } = await run('', undefined);
+
+    expect(getUserMedia).not.toHaveBeenCalled();
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).not.toBe('No Camera Found');
+  });
+
+  it('asks for the camera directly when the Permissions API is missing', async () => {
+    const { getUserMedia, errors } = await run('permissions-fallback', undefined);
+
+    expect(getUserMedia).toHaveBeenCalledWith({ video: true });
+    expect(errors).toEqual(['No Camera Found']);
+  });
+
+  it('asks for the camera directly when the query rejects camera', async () => {
+    const { getUserMedia, errors } = await run('permissions-fallback', { query: async () => Promise.reject(new TypeError('camera is not a valid permission name')) });
+
+    expect(getUserMedia).toHaveBeenCalledWith({ video: true });
+    expect(errors).toEqual(['No Camera Found']);
+  });
+
+  it('still honours an answer the Permissions API gives', async () => {
+    const denied = await run('permissions-fallback', { query: async () => ({ state: 'denied' }) });
+    const granted = await run('permissions-fallback', { query: async () => ({ state: 'granted' }) });
+
+    expect(denied.getUserMedia).not.toHaveBeenCalled();
+    expect(denied.errors).toEqual(['no camera access']);
+    expect(granted.getUserMedia).not.toHaveBeenCalled();
+    expect(granted.errors).toEqual(['No Camera Found']);
+  });
+});

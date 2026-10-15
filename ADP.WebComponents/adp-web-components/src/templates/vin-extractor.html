@@ -237,7 +237,9 @@
           <h2 class="eyebrow text-neutral">Theming and API</h2>
           <p class="text-base-content/70 max-w-[70ch] text-sm">
             Style it with the <code>--shift-vin-extractor-*</code> variables (it reads none of the shared <code>--shift-*</code> ones) and the <code>::part</code> names below;
-            <code>language</code> and <code>color-scheme</code> are opt-in. With none of them set it renders exactly as before.
+            <code>language</code> and <code>color-scheme</code> are opt-in, as are the label props and <code>permissions-fallback</code>. With none of them set it renders exactly
+            as before. To replace an icon, give the element a child with <code>slot="close-icon"</code>, <code>slot="switch-camera-icon"</code> or
+            <code>slot="capture-icon"</code> and style it with the page’s own CSS.
           </p>
 
           <div class="flex min-w-0 flex-col gap-6" x-data="apiReference('vin-extractor', { parts: true })">

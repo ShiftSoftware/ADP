@@ -1056,6 +1056,13 @@
           "captureEnvironment",
           "language",
           "colorScheme",
+          "dialogLabel",
+          "switchCameraLabel",
+          "closeLabel",
+          "capturingLabel",
+          "previewLabel",
+          "uploadLabel",
+          "permissionsFallback",
           "onExtract",
           "onError",
           "onProcessing",
@@ -1071,6 +1078,8 @@
           "Open it with open() and close it with close(); the backdrop and the close button also close it. While it is open the page does not scroll: open sets the body’s inline overflow to hidden and close sets it to auto. A page that needs another value restores it itself in onOpenChange.",
           "The strings it renders itself (the accessible names of the dialog, its buttons, the preview and the file input) come from language; title, manualCaptureLabel and manualCaptureHint are the host’s own text and are shown as given.",
           "The header bar, the hint and the capture button sit on the camera picture on phones, so colorScheme leaves them as they are; it changes the popup’s header, its buttons and the backdrop.",
+          "Icons are slots whose fallback is the built-in icon: give the element a child with slot=\"switch-camera-icon\", slot=\"close-icon\" or slot=\"capture-icon\" (an svg or img) and style it with the page’s own CSS; it sits inside the button where the icon was. The capture icon slot shows only while the button has no manualCaptureLabel and no capture is in flight. Children without a slot attribute still go to the default slot, which is where the uploaderButtonId button lives.",
+          "Each accessible name the component writes is the host’s prop when it is not empty, else the language’s string when language is set, else the English default.",
           "Under 768px of viewport width it is a full-screen sheet that slides in; from 768px it is a 600px popup over a dimmed page.",
           "It reads only its own --shift-vin-extractor-* variables, never the shared --shift-* ones, so a page themed for the other components leaves it as it is. Without any of its variables, language or colorScheme it renders exactly as before they existed."
         ]
@@ -1094,7 +1103,14 @@
           "onProcessing": "Called with true when a frame starts being read and false when it is done. A function, or a Blazor method name.",
           "onOpenChange": "Called with true on open and false on close. A function, or a Blazor method name.",
           "language": "en, ar, ku or ru. Unset (default): English names and no direction of its own, so it follows the page. Set: the accessible names the component writes itself are in that language, and ar and ku lay it out right to left in the Arabic font.",
-          "colorScheme": "Unset (default) renders light and adds no attribute. light, dark, or auto (follows prefers-color-scheme)."
+          "colorScheme": "Unset (default) renders light and adds no attribute. light, dark, or auto (follows prefers-color-scheme).",
+          "dialogLabel": "Accessible name of the dialog when there is no title. Otherwise the language’s string, “VIN Scanner” in English.",
+          "switchCameraLabel": "Accessible name of the switch-camera button. Otherwise the language’s string, “Switch camera” in English.",
+          "closeLabel": "Accessible name of the close button. Otherwise the language’s string, “Close scanner” in English.",
+          "capturingLabel": "Accessible name of the capture button while a capture is in flight. Otherwise the language’s string, “Capturing...” in English.",
+          "previewLabel": "Accessible name of the camera picture. Otherwise the language’s string, “Camera preview” in English.",
+          "uploadLabel": "Accessible name of the hidden file input. Otherwise the language’s string, “Upload VIN image” in English.",
+          "permissionsFallback": "Off (default): the camera permission is read from the Permissions API first, and a browser without it (or one that does not know camera) reports an error. On: where that query is missing or fails, the scanner asks for the camera directly and the browser prompts; everything after is unchanged."
         },
         "events": {},
         "methods": {
@@ -1110,11 +1126,13 @@
           "form-input-label": "Older name of title, kept for existing stylesheets.",
           "switch-camera": "Button that switches between the front and the rear camera; only when the device has more than one.",
           "close": "The close button.",
+          "switch-camera-icon": "The built-in icon in the switch-camera button (the fallback of the switch-camera-icon slot).",
+          "close-icon": "The built-in icon in the close button (the fallback of the close-icon slot).",
           "preview": "The live camera picture (a video element).",
           "hint": "The manualCaptureHint line above the capture button.",
           "capture": "The capture button (manualCapture only). Also exposed as vin-extractor-capture-button.",
           "vin-extractor-capture-button": "Older name of capture, kept for existing stylesheets.",
-          "capture-icon": "The camera icon in the capture button when there is no manualCaptureLabel.",
+          "capture-icon": "The built-in camera icon in the capture button when there is no manualCaptureLabel (the fallback of the capture-icon slot).",
           "capture-label": "The manualCaptureLabel text in the capture button.",
           "capture-spinner": "The spinner that replaces the icon or label while a capture is being read."
         },
