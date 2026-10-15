@@ -1037,6 +1037,116 @@
           "--shift-day-strip-weekday-transform": "Type · weekday case"
         }
       }
+    },
+    "vin-extractor": {
+      "wireContract": null,
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": [
+          "title",
+          "useOcr",
+          "ocrEndpoint",
+          "readSticker",
+          "manualCapture",
+          "manualCaptureLabel",
+          "manualCaptureHint",
+          "captureInterval",
+          "skipValidation",
+          "uploaderButtonId",
+          "captureEnvironment",
+          "language",
+          "colorScheme",
+          "onExtract",
+          "onError",
+          "onProcessing",
+          "onOpenChange"
+        ],
+        "methods": ["open", "close"],
+        "owns": ["camera access and lens choice", "frame capture, OCR request and sticker decoding", "VIN validation", "the full-screen sheet on phones and the popup on wider screens", "page scroll lock while open"]
+      },
+      "runtimeAssets": {
+        "locales": null,
+        "notes": [
+          "Results are reported through callback properties, not DOM events: set onExtract, onError, onProcessing and onOpenChange to functions on the element (or, from Blazor, to method names after setBlazorRef). An attribute cannot carry a function.",
+          "Open it with open() and close it with close(); the backdrop and the close button also close it. While it is open the page does not scroll: the body’s inline overflow is set to hidden on open and put back to what it was on close.",
+          "The strings it renders itself (the accessible names of the dialog, its buttons, the preview and the file input) come from language; title, manualCaptureLabel and manualCaptureHint are the host’s own text and are shown as given.",
+          "The header bar, the hint and the capture button sit on the camera picture on phones, so colorScheme leaves them as they are; it changes the popup’s header, its buttons and the backdrop.",
+          "Under 768px of viewport width it is a full-screen sheet that slides in; from 768px it is a 600px popup over a dimmed page."
+        ]
+      },
+      "reference": {
+        "props": {
+          "title": "Text in the header, and the dialog’s accessible name. Without it the header is empty and the dialog is named “VIN Scanner” in language.",
+          "captureInterval": "Milliseconds between automatic captures when manualCapture is off. 2000 by default.",
+          "verbose": "Logs camera, OCR and sticker diagnostics to the console.",
+          "useOcr": "Sends each captured frame to ocrEndpoint and reports the VIN it answers.",
+          "readSticker": "Decodes a barcode or QR code in each captured frame (the decoder library is loaded from a CDN on first use).",
+          "uploaderButtonId": "Id of a button on the page that opens a file picker instead of the camera; the chosen image is read the same way. The camera overlay is not rendered in this mode.",
+          "captureEnvironment": "With uploaderButtonId: asks the device to open the rear camera for a new photo rather than offering existing files.",
+          "manualCapture": "Shows a capture button and reads a frame only when it is pressed, instead of capturing every captureInterval.",
+          "skipValidation": "Reports whatever was read, without checking that it is a valid VIN.",
+          "manualCaptureLabel": "Text on the capture button and its accessible name. Without it the button shows a camera icon and is named “Capture VIN” in language.",
+          "manualCaptureHint": "Short line shown above the capture button (manualCapture only), hidden while a capture is in flight.",
+          "ocrEndpoint": "URL that receives a POST with { image } (base64 PNG) and answers with the VIN as plain text.",
+          "onExtract": "Called with the VIN when one is read. A function, or a Blazor method name after setBlazorRef.",
+          "onError": "Called with the Error when the camera cannot be opened, a request fails or a frame cannot be read. A function, or a Blazor method name.",
+          "onProcessing": "Called with true when a frame starts being read and false when it is done. A function, or a Blazor method name.",
+          "onOpenChange": "Called with true on open and false on close. A function, or a Blazor method name.",
+          "language": "en, ar, ku or ru. Language of the accessible names the component writes itself; ar and ku also lay it out right to left.",
+          "colorScheme": "light (default), dark, or auto (follows prefers-color-scheme)."
+        },
+        "events": {},
+        "methods": {
+          "setBlazorRef": "Blazor only: the .NET object reference whose methods the callback properties name.",
+          "open": "Opens the scanner: asks for the camera, starts it and locks the page scroll.",
+          "close": "Closes the scanner, stops the camera and restores the page scroll."
+        },
+        "parts": {
+          "backdrop": "The full-viewport layer behind the panel (role=dialog); dimmed and blurred from 768px.",
+          "panel": "The scanner itself: the full-screen sheet on phones, the 600px popup from 768px.",
+          "header": "The bar holding the switch-camera button, the title and the close button.",
+          "title": "The header text. Also exposed as form-input-label.",
+          "form-input-label": "Older name of title, kept for existing stylesheets.",
+          "switch-camera": "Button that switches between the front and the rear camera; only when the device has more than one.",
+          "close": "The close button.",
+          "preview": "The live camera picture (a video element).",
+          "hint": "The manualCaptureHint line above the capture button.",
+          "capture": "The capture button (manualCapture only). Also exposed as vin-extractor-capture-button.",
+          "vin-extractor-capture-button": "Older name of capture, kept for existing stylesheets.",
+          "capture-icon": "The camera icon in the capture button when there is no manualCaptureLabel.",
+          "capture-label": "The manualCaptureLabel text in the capture button.",
+          "capture-spinner": "The spinner that replaces the icon or label while a capture is being read."
+        },
+        "cssProperties": {
+          "--shift-vin-extractor-font-family": "Type · Latin and Cyrillic font (falls back to --shift-font-family)",
+          "--shift-vin-extractor-font-family-arabic": "Type · Arabic and Kurdish font (falls back to --shift-font-family-arabic)",
+          "--shift-vin-extractor-backdrop": "Colour · the dimmed page behind the popup (from 768px); darker in the dark scheme",
+          "--shift-vin-extractor-backdrop-blur": "Effect · how much the page behind the popup blurs",
+          "--shift-vin-extractor-surface": "Colour · popup header and its buttons (falls back to --shift-surface)",
+          "--shift-vin-extractor-ink": "Colour · popup title (falls back to --shift-ink)",
+          "--shift-vin-extractor-muted": "Colour · switch-camera and close icons (falls back to --shift-ink-muted)",
+          "--shift-vin-extractor-line": "Colour · border of the header buttons on phones (falls back to --shift-line)",
+          "--shift-vin-extractor-control-surface": "Colour · header button background (#f1f5f9 on phones, the surface in the popup)",
+          "--shift-vin-extractor-control-hover-bg": "Colour · header button background on hover (#cbd5e1 on phones, #f1f5f9 in the popup)",
+          "--shift-vin-extractor-control-hover-ink": "Colour · header button icon and border on hover",
+          "--shift-vin-extractor-bar-surface": "Colour · the translucent header bar over the picture on phones",
+          "--shift-vin-extractor-bar-ink": "Colour · title on that bar",
+          "--shift-vin-extractor-bar-blur": "Effect · blur behind that bar",
+          "--shift-vin-extractor-preview-surface": "Colour · behind the camera picture before it starts",
+          "--shift-vin-extractor-accent": "Colour · capture button fill (falls back to --shift-accent); 75% while a capture is in flight",
+          "--shift-vin-extractor-on-accent": "Colour · capture button icon, label and spinner (falls back to --shift-on-accent)",
+          "--shift-vin-extractor-capture-border": "Colour · capture button border (the on-accent colour by default)",
+          "--shift-vin-extractor-hint-surface": "Colour · hint background",
+          "--shift-vin-extractor-hint-ink": "Colour · hint text",
+          "--shift-vin-extractor-radius": "Shape · popup corner radius (falls back to --shift-radius-lg)",
+          "--shift-vin-extractor-control-radius": "Shape · header button radius (falls back to --shift-radius-md)",
+          "--shift-vin-extractor-capture-radius": "Shape · capture button radius (a pill by default)",
+          "--shift-vin-extractor-hint-radius": "Shape · hint radius (a pill by default)",
+          "--shift-vin-extractor-shadow": "Colour · popup shadow (falls back to --shift-shadow-panel)",
+          "--shift-vin-extractor-header-shadow": "Colour · header bar shadow",
+          "--shift-vin-extractor-capture-shadow": "Colour · capture button shadow"
+        }
+      }
     }
   }
 }

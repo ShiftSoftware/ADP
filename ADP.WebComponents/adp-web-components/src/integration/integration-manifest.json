@@ -3104,6 +3104,354 @@
           "Fonts: Nunito (vanilla, material, soft) or Manrope (sharp, minimal), with Noto Kufi Arabic first for ar and ku — all loaded by the package’s global script. Override with --shift-font-family and --shift-font-family-arabic."
         ]
       }
+    },
+    {
+      "tag": "vin-extractor",
+      "modulePath": "dist/components/vin-extractor.js",
+      "wireContract": null,
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": [
+          "title",
+          "useOcr",
+          "ocrEndpoint",
+          "readSticker",
+          "manualCapture",
+          "manualCaptureLabel",
+          "manualCaptureHint",
+          "captureInterval",
+          "skipValidation",
+          "uploaderButtonId",
+          "captureEnvironment",
+          "language",
+          "colorScheme",
+          "onExtract",
+          "onError",
+          "onProcessing",
+          "onOpenChange"
+        ],
+        "methods": ["open", "close"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
+        "owns": [
+          "camera access and lens choice",
+          "frame capture, OCR request and sticker decoding",
+          "VIN validation",
+          "the full-screen sheet on phones and the popup on wider screens",
+          "page scroll lock while open"
+        ]
+      },
+      "api": {
+        "props": [
+          {
+            "name": "captureEnvironment",
+            "attribute": "capture-environment",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "With uploaderButtonId: asks the device to open the rear camera for a new photo rather than offering existing files."
+          },
+          {
+            "name": "captureInterval",
+            "attribute": "capture-interval",
+            "type": "number",
+            "default": "2000",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Milliseconds between automatic captures when manualCapture is off. 2000 by default."
+          },
+          {
+            "name": "colorScheme",
+            "attribute": "color-scheme",
+            "type": "\"auto\" | \"dark\" | \"light\"",
+            "default": "'light'",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "light (default), dark, or auto (follows prefers-color-scheme)."
+          },
+          {
+            "name": "language",
+            "attribute": "language",
+            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"",
+            "default": "'en'",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "en, ar, ku or ru. Language of the accessible names the component writes itself; ar and ku also lay it out right to left."
+          },
+          {
+            "name": "manualCapture",
+            "attribute": "manual-capture",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Shows a capture button and reads a frame only when it is pressed, instead of capturing every captureInterval."
+          },
+          {
+            "name": "manualCaptureHint",
+            "attribute": "manual-capture-hint",
+            "type": "string",
+            "default": "''",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Short line shown above the capture button (manualCapture only), hidden while a capture is in flight."
+          },
+          {
+            "name": "manualCaptureLabel",
+            "attribute": "manual-capture-label",
+            "type": "string",
+            "default": "''",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Text on the capture button and its accessible name. Without it the button shows a camera icon and is named “Capture VIN” in language."
+          },
+          {
+            "name": "ocrEndpoint",
+            "attribute": "ocr-endpoint",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "URL that receives a POST with { image } (base64 PNG) and answers with the VIN as plain text."
+          },
+          {
+            "name": "onError",
+            "attribute": "on-error",
+            "type": "((newError: Error) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Called with the Error when the camera cannot be opened, a request fails or a frame cannot be read. A function, or a Blazor method name."
+          },
+          {
+            "name": "onExtract",
+            "attribute": "on-extract",
+            "type": "((vin: string) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Called with the VIN when one is read. A function, or a Blazor method name after setBlazorRef."
+          },
+          {
+            "name": "onOpenChange",
+            "attribute": "on-open-change",
+            "type": "((newError: boolean) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Called with true on open and false on close. A function, or a Blazor method name."
+          },
+          {
+            "name": "onProcessing",
+            "attribute": "on-processing",
+            "type": "((vin: string) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Called with true when a frame starts being read and false when it is done. A function, or a Blazor method name."
+          },
+          {
+            "name": "readSticker",
+            "attribute": "read-sticker",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Decodes a barcode or QR code in each captured frame (the decoder library is loaded from a CDN on first use)."
+          },
+          {
+            "name": "skipValidation",
+            "attribute": "skip-validation",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Reports whatever was read, without checking that it is a valid VIN."
+          },
+          {
+            "name": "title",
+            "attribute": "title",
+            "type": "string",
+            "default": "''",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Text in the header, and the dialog’s accessible name. Without it the header is empty and the dialog is named “VIN Scanner” in language."
+          },
+          {
+            "name": "uploaderButtonId",
+            "attribute": "uploader-button-id",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Id of a button on the page that opens a file picker instead of the camera; the chosen image is read the same way. The camera overlay is not rendered in this mode."
+          },
+          {
+            "name": "useOcr",
+            "attribute": "use-ocr",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Sends each captured frame to ocrEndpoint and reports the VIN it answers."
+          },
+          {
+            "name": "verbose",
+            "attribute": "verbose",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Logs camera, OCR and sticker diagnostics to the console."
+          }
+        ],
+        "methods": [
+          { "name": "close", "parameters": "() => Promise<void>", "returns": "Promise<void>", "description": "Closes the scanner, stops the camera and restores the page scroll." },
+          {
+            "name": "open",
+            "parameters": "() => Promise<void>",
+            "returns": "Promise<void>",
+            "description": "Opens the scanner: asks for the camera, starts it and locks the page scroll."
+          },
+          {
+            "name": "setBlazorRef",
+            "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>",
+            "returns": "Promise<void>",
+            "description": "Blazor only: the .NET object reference whose methods the callback properties name."
+          }
+        ],
+        "events": [],
+        "dependencies": [],
+        "parts": [
+          { "name": "backdrop", "description": "The full-viewport layer behind the panel (role=dialog); dimmed and blurred from 768px." },
+          { "name": "panel", "description": "The scanner itself: the full-screen sheet on phones, the 600px popup from 768px." },
+          { "name": "header", "description": "The bar holding the switch-camera button, the title and the close button." },
+          { "name": "title", "description": "The header text. Also exposed as form-input-label." },
+          { "name": "form-input-label", "description": "Older name of title, kept for existing stylesheets." },
+          { "name": "switch-camera", "description": "Button that switches between the front and the rear camera; only when the device has more than one." },
+          { "name": "close", "description": "The close button." },
+          { "name": "preview", "description": "The live camera picture (a video element)." },
+          { "name": "hint", "description": "The manualCaptureHint line above the capture button." },
+          { "name": "capture", "description": "The capture button (manualCapture only). Also exposed as vin-extractor-capture-button." },
+          { "name": "vin-extractor-capture-button", "description": "Older name of capture, kept for existing stylesheets." },
+          { "name": "capture-icon", "description": "The camera icon in the capture button when there is no manualCaptureLabel." },
+          { "name": "capture-label", "description": "The manualCaptureLabel text in the capture button." },
+          { "name": "capture-spinner", "description": "The spinner that replaces the icon or label while a capture is being read." }
+        ],
+        "cssProperties": [
+          {
+            "name": "--shift-vin-extractor-accent",
+            "default": "var(--shift-accent, #ffffff)",
+            "description": "Colour · capture button fill (falls back to --shift-accent); 75% while a capture is in flight"
+          },
+          {
+            "name": "--shift-vin-extractor-backdrop",
+            "default": "var(--_sc-backdrop, rgb(0 0 0 / 0.4))",
+            "description": "Colour · the dimmed page behind the popup (from 768px); darker in the dark scheme"
+          },
+          { "name": "--shift-vin-extractor-backdrop-blur", "default": "1.5px", "description": "Effect · how much the page behind the popup blurs" },
+          { "name": "--shift-vin-extractor-bar-blur", "default": "6px", "description": "Effect · blur behind that bar" },
+          { "name": "--shift-vin-extractor-bar-ink", "default": "#f1f5f9", "description": "Colour · title on that bar" },
+          { "name": "--shift-vin-extractor-bar-surface", "default": "rgb(0 0 0 / 0.3)", "description": "Colour · the translucent header bar over the picture on phones" },
+          { "name": "--shift-vin-extractor-capture-border", "default": "var(--_on-accent)", "description": "Colour · capture button border (the on-accent colour by default)" },
+          { "name": "--shift-vin-extractor-capture-radius", "default": "9999px", "description": "Shape · capture button radius (a pill by default)" },
+          {
+            "name": "--shift-vin-extractor-capture-shadow",
+            "default": "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)",
+            "description": "Colour · capture button shadow"
+          },
+          {
+            "name": "--shift-vin-extractor-control-hover-bg",
+            "default": "var(--_sc-sheet-hover-bg, #cbd5e1)",
+            "description": "Colour · header button background on hover (#cbd5e1 on phones, #f1f5f9 in the popup)"
+          },
+          { "name": "--shift-vin-extractor-control-hover-ink", "default": "var(--_sc-hover-ink, #334155)", "description": "Colour · header button icon and border on hover" },
+          {
+            "name": "--shift-vin-extractor-control-radius",
+            "default": "var(--shift-radius-md, 0.5rem)",
+            "description": "Shape · header button radius (falls back to --shift-radius-md)"
+          },
+          {
+            "name": "--shift-vin-extractor-control-surface",
+            "default": "var(--_sc-control-surface, #f1f5f9)",
+            "description": "Colour · header button background (#f1f5f9 on phones, the surface in the popup)"
+          },
+          {
+            "name": "--shift-vin-extractor-font-family",
+            "default": "var(--shift-font-family, 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif)",
+            "description": "Type · Latin and Cyrillic font (falls back to --shift-font-family)"
+          },
+          {
+            "name": "--shift-vin-extractor-font-family-arabic",
+            "default": "var(--shift-font-family-arabic, 'Noto Kufi Arabic', var(--_font))",
+            "description": "Type · Arabic and Kurdish font (falls back to --shift-font-family-arabic)"
+          },
+          {
+            "name": "--shift-vin-extractor-header-shadow",
+            "default": "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
+            "description": "Colour · header bar shadow"
+          },
+          { "name": "--shift-vin-extractor-hint-ink", "default": "#ffffff", "description": "Colour · hint text" },
+          { "name": "--shift-vin-extractor-hint-radius", "default": "9999px", "description": "Shape · hint radius (a pill by default)" },
+          { "name": "--shift-vin-extractor-hint-surface", "default": "rgb(0 0 0 / 0.55)", "description": "Colour · hint background" },
+          { "name": "--shift-vin-extractor-ink", "default": "var(--shift-ink, var(--_sc-ink, #000000))", "description": "Colour · popup title (falls back to --shift-ink)" },
+          {
+            "name": "--shift-vin-extractor-line",
+            "default": "var(--shift-line, var(--_sc-line, #475569))",
+            "description": "Colour · border of the header buttons on phones (falls back to --shift-line)"
+          },
+          {
+            "name": "--shift-vin-extractor-muted",
+            "default": "var(--shift-ink-muted, var(--_sc-muted, #475569))",
+            "description": "Colour · switch-camera and close icons (falls back to --shift-ink-muted)"
+          },
+          {
+            "name": "--shift-vin-extractor-on-accent",
+            "default": "var(--shift-on-accent, #64748b)",
+            "description": "Colour · capture button icon, label and spinner (falls back to --shift-on-accent)"
+          },
+          { "name": "--shift-vin-extractor-preview-surface", "default": "#000000", "description": "Colour · behind the camera picture before it starts" },
+          { "name": "--shift-vin-extractor-radius", "default": "var(--shift-radius-lg, 0.5rem)", "description": "Shape · popup corner radius (falls back to --shift-radius-lg)" },
+          {
+            "name": "--shift-vin-extractor-shadow",
+            "default": "var(--shift-shadow-panel, 0 4px 6px -1px rgb(0 0 0 / 0.1))",
+            "description": "Colour · popup shadow (falls back to --shift-shadow-panel)"
+          },
+          {
+            "name": "--shift-vin-extractor-surface",
+            "default": "var(--shift-surface, var(--_sc-surface, #ffffff))",
+            "description": "Colour · popup header and its buttons (falls back to --shift-surface)"
+          }
+        ]
+      },
+      "runtimeAssets": {
+        "locales": null,
+        "notes": [
+          "Results are reported through callback properties, not DOM events: set onExtract, onError, onProcessing and onOpenChange to functions on the element (or, from Blazor, to method names after setBlazorRef). An attribute cannot carry a function.",
+          "Open it with open() and close it with close(); the backdrop and the close button also close it. While it is open the page does not scroll: the body’s inline overflow is set to hidden on open and put back to what it was on close.",
+          "The strings it renders itself (the accessible names of the dialog, its buttons, the preview and the file input) come from language; title, manualCaptureLabel and manualCaptureHint are the host’s own text and are shown as given.",
+          "The header bar, the hint and the capture button sit on the camera picture on phones, so colorScheme leaves them as they are; it changes the popup’s header, its buttons and the backdrop.",
+          "Under 768px of viewport width it is a full-screen sheet that slides in; from 768px it is a 600px popup over a dimmed page."
+        ]
+      }
     }
   ]
 }

@@ -18,6 +18,7 @@
     <script type="module" src="/build/shift-components.esm.js"></script>
 
     <script type="module" src="/templates/harness.js"></script>
+    <script type="module" src="/templates/api-reference.js"></script>
     <script defer src="/templates/vendor/alpine.js"></script>
   </head>
 
@@ -230,6 +231,120 @@
               </vin-extractor>
             </li>
           </ol>
+        </section>
+
+        <section class="card bg-base-100 border-base-300 flex flex-col gap-4 border p-4 sm:p-6">
+          <h2 class="eyebrow text-neutral">Theming and API</h2>
+          <p class="text-base-content/70 max-w-[70ch] text-sm">
+            Style it with the <code>--shift-vin-extractor-*</code> variables (each falls back to the shared <code>--shift-*</code> one where there is one) and the
+            <code>::part</code> names below; <code>language</code> and <code>color-scheme</code> work as on the other components.
+          </p>
+
+          <div class="flex min-w-0 flex-col gap-6" x-data="apiReference('vin-extractor', { parts: true })">
+            <h3 class="text-lg font-semibold" id="api-element">
+              <code>vin-extractor</code> API<span class="text-base-content/60 text-sm font-normal" x-show="packageVersion" x-text="' ' + packageVersion"></span>
+            </h3>
+            <p class="text-base-content/60 text-sm" x-show="loading">Loading…</p>
+            <p class="text-error text-sm" x-show="error" x-text="error"></p>
+
+            <template x-if="component">
+              <div class="flex flex-col gap-6">
+                <template x-for="group in groups" :key="group.id">
+                  <section>
+                    <h4 :id="group.id" class="text-base font-semibold">
+                      <button
+                        type="button"
+                        class="hover:text-accent flex w-full cursor-pointer items-center gap-2 text-start transition-colors"
+                        :aria-expanded="String(!shut[group.id])"
+                        :aria-controls="group.id + '-body'"
+                        @click="toggleGroup(group)"
+                      >
+                        <span x-text="group.label"></span>
+                        <span class="badge badge-sm badge-ghost font-normal tabular-nums" x-text="group.count ?? group.rows.length"></span>
+                        <svg
+                          class="api-chevron ms-auto h-3 w-3 shrink-0 opacity-60"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2.5"
+                          stroke-linecap="round"
+                          aria-hidden="true"
+                        >
+                          <path d="m9 6 6 6-6 6" />
+                        </svg>
+                      </button>
+                    </h4>
+
+                    <div class="api-row-body" :id="group.id + '-body'" :data-open="String(!shut[group.id])" x-effect="$el.inert = !!shut[group.id]">
+                      <div>
+                        <input
+                          type="search"
+                          class="input input-bordered input-sm mt-2 max-w-xs"
+                          x-show="group.filterable"
+                          x-model="filter"
+                          placeholder="Filter by name…"
+                          aria-label="Filter CSS variables"
+                        />
+
+                        <template x-for="block in group.roles ?? [{ label: '', rows: group.rows }]" :key="group.id + block.label">
+                          <div>
+                            <p class="eyebrow text-neutral mt-3" x-show="block.label" x-text="block.label"></p>
+                            <ul class="border-base-300 divide-base-300 mt-2 divide-y overflow-hidden rounded-lg border">
+                              <template x-for="row in block.rows" :key="row.id">
+                                <li :id="row.id">
+                                  <button
+                                    type="button"
+                                    class="hover:bg-base-200/60 flex w-full cursor-pointer flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-2.5 text-start"
+                                    :aria-expanded="String(!!open[row.id])"
+                                    :aria-controls="row.id + '-body'"
+                                    @click="toggle(row)"
+                                  >
+                                    <code class="text-sm font-semibold break-all" x-text="row.name"></code>
+                                    <template x-for="tag in row.tags" :key="tag">
+                                      <span class="text-base-content/55 font-mono text-[11px]" x-text="tag"></span>
+                                    </template>
+                                    <svg
+                                      class="api-chevron ms-auto h-3 w-3 shrink-0 self-center opacity-60"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      stroke-width="2.5"
+                                      stroke-linecap="round"
+                                      aria-hidden="true"
+                                    >
+                                      <path d="m9 6 6 6-6 6" />
+                                    </svg>
+                                  </button>
+                                  <div class="api-row-body" :id="row.id + '-body'" :data-open="String(!!open[row.id])" x-effect="$el.inert = !open[row.id]">
+                                    <div>
+                                      <div class="bg-base-200/40 border-base-300 flex flex-col gap-2 border-t px-4 py-3">
+                                        <p class="text-sm" x-text="row.description"></p>
+                                        <p class="text-base-content/60 font-mono text-xs break-all" x-show="row.type && row.type.length > 32" x-text="row.type"></p>
+                                        <pre class="code m-0 text-xs whitespace-pre-wrap [overflow-wrap:anywhere]" x-show="row.example" x-text="row.example"></pre>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </li>
+                              </template>
+                            </ul>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+                  </section>
+                </template>
+
+                <section>
+                  <h4 id="api-notes" class="text-base font-semibold">Behaviour notes</h4>
+                  <ul class="text-base-content/80 mt-2 flex max-w-[80ch] list-disc flex-col gap-1 ps-5 text-sm">
+                    <template x-for="note in notes" :key="note">
+                      <li x-text="note"></li>
+                    </template>
+                  </ul>
+                </section>
+              </div>
+            </template>
+          </div>
         </section>
       </div>
 

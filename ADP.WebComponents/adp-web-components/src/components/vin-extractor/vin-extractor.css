@@ -3,17 +3,73 @@
 
 /*
   The camera overlay: a full-screen sheet that slides in from the side under 768px, and a 600px popup
-  over a dimmed page from 768px. Every value here is the one its Tailwind utilities rendered.
+  over a dimmed page from 768px. Every value: var(--shift-vin-extractor-x, var(--shift-x, <default>)),
+  and the defaults are what the component rendered before it could be themed. The header bar, the hint
+  and the capture button sit on the camera picture, so the colour scheme leaves them as they are.
 */
 :host {
+  --_font: var(--shift-vin-extractor-font-family, var(--shift-font-family, 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif));
+  --_font-arabic: var(--shift-vin-extractor-font-family-arabic, var(--shift-font-family-arabic, 'Noto Kufi Arabic', var(--_font)));
+
+  --_backdrop: var(--shift-vin-extractor-backdrop, var(--_sc-backdrop, rgb(0 0 0 / 0.4)));
+  --_backdrop-blur: var(--shift-vin-extractor-backdrop-blur, 1.5px);
+  --_surface: var(--shift-vin-extractor-surface, var(--shift-surface, var(--_sc-surface, #ffffff)));
+  --_ink: var(--shift-vin-extractor-ink, var(--shift-ink, var(--_sc-ink, #000000)));
+  --_muted: var(--shift-vin-extractor-muted, var(--shift-ink-muted, var(--_sc-muted, #475569)));
+  --_line: var(--shift-vin-extractor-line, var(--shift-line, var(--_sc-line, #475569)));
+  --_hover-ink: var(--shift-vin-extractor-control-hover-ink, var(--_sc-hover-ink, #334155));
+  /* Sheet values; the popup redefines these two below. */
+  --_control-surface: var(--shift-vin-extractor-control-surface, var(--_sc-control-surface, #f1f5f9));
+  --_hover-bg: var(--shift-vin-extractor-control-hover-bg, var(--_sc-sheet-hover-bg, #cbd5e1));
+
+  --_bar-surface: var(--shift-vin-extractor-bar-surface, rgb(0 0 0 / 0.3));
+  --_bar-ink: var(--shift-vin-extractor-bar-ink, #f1f5f9);
+  --_bar-blur: var(--shift-vin-extractor-bar-blur, 6px);
+  --_preview-surface: var(--shift-vin-extractor-preview-surface, #000000);
+  --_accent: var(--shift-vin-extractor-accent, var(--shift-accent, #ffffff));
+  --_on-accent: var(--shift-vin-extractor-on-accent, var(--shift-on-accent, #64748b));
+  --_capture-line: var(--shift-vin-extractor-capture-border, var(--_on-accent));
+  --_hint-surface: var(--shift-vin-extractor-hint-surface, rgb(0 0 0 / 0.55));
+  --_hint-ink: var(--shift-vin-extractor-hint-ink, #ffffff);
+
+  --_radius: var(--shift-vin-extractor-radius, var(--shift-radius-lg, 0.5rem));
+  --_control-radius: var(--shift-vin-extractor-control-radius, var(--shift-radius-md, 0.5rem));
+  --_capture-radius: var(--shift-vin-extractor-capture-radius, 9999px);
+  --_hint-radius: var(--shift-vin-extractor-hint-radius, 9999px);
+  --_shadow: var(--shift-vin-extractor-shadow, var(--shift-shadow-panel, 0 4px 6px -1px rgb(0 0 0 / 0.1)));
+  --_header-shadow: var(--shift-vin-extractor-header-shadow, 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1));
+  --_capture-shadow: var(--shift-vin-extractor-capture-shadow, 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1));
+
   all: initial !important;
   display: block;
-  font-family: 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif !important;
+  /* Important only because all: initial above is; a host themes the face through the variables. */
+  font-family: var(--_font) !important;
 }
 
-*,
-:host * {
-  font-family: inherit !important;
+:host([color-scheme='dark']) {
+  --_sc-backdrop: rgb(2 6 23 / 0.6);
+  --_sc-surface: #0f172a;
+  --_sc-ink: #f1f5f9;
+  --_sc-muted: #94a3b8;
+  --_sc-line: #64748b;
+  --_sc-hover-ink: #f1f5f9;
+  --_sc-hover-bg: #1e293b;
+  --_sc-sheet-hover-bg: #334155;
+  --_sc-control-surface: #1e293b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host([color-scheme='auto']) {
+    --_sc-backdrop: rgb(2 6 23 / 0.6);
+    --_sc-surface: #0f172a;
+    --_sc-ink: #f1f5f9;
+    --_sc-muted: #94a3b8;
+    --_sc-line: #64748b;
+    --_sc-hover-ink: #f1f5f9;
+    --_sc-hover-bg: #1e293b;
+    --_sc-sheet-hover-bg: #334155;
+    --_sc-control-surface: #1e293b;
+  }
 }
 
 .vin-extractor-canvas {
@@ -30,7 +86,12 @@
   justify-content: center;
   width: 100dvw;
   height: 100dvh;
+  font-family: var(--_font);
   pointer-events: none;
+}
+
+.vin-extractor-background[dir='rtl'] {
+  font-family: var(--_font-arabic);
 }
 
 .vin-extractor-container {
@@ -55,36 +116,34 @@
   justify-content: space-between;
   width: 100%;
   padding: 16px;
-  background-color: rgba(0, 0, 0, 0.3);
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  background-color: var(--_bar-surface);
+  box-shadow: var(--_header-shadow);
 }
 
 .vin-extractor-title {
   text-align: center;
   font-size: 18px;
-  color: #f1f5f9;
+  color: var(--_bar-ink);
 }
 
 .vin-extractor-control {
   width: 32px;
   height: 32px;
   padding: 0.25rem;
-  color: #475569;
-  background-color: #f1f5f9;
+  color: var(--_muted);
+  background-color: var(--_control-surface);
   border-width: 1px;
-  border-color: #475569;
-  border-radius: 0.5rem;
+  border-color: var(--_line);
+  border-radius: var(--_control-radius);
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 0.3s;
 }
 
 .vin-extractor-control:hover {
-  color: #334155;
-  background-color: #cbd5e1;
-  border-color: #334155;
+  color: var(--_hover-ink);
+  background-color: var(--_hover-bg);
+  border-color: var(--_hover-ink);
 }
 
 .vin-extractor-control-placeholder {
@@ -110,13 +169,13 @@
   z-index: 10;
   margin: 0;
   padding: 0.25rem 0.75rem;
-  color: #ffffff;
+  color: var(--_hint-ink);
   font-size: 13px;
   line-height: 1.3;
   text-align: center;
   white-space: nowrap;
-  background-color: rgba(0, 0, 0, 0.55);
-  border-radius: 9999px;
+  background-color: var(--_hint-surface);
+  border-radius: var(--_hint-radius);
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -133,14 +192,12 @@
   height: 60px;
   padding-top: 10px;
   padding-bottom: 10px;
-  color: #64748b;
-  background-color: #ffffff;
+  color: var(--_on-accent);
+  background-color: var(--_accent);
   border-width: 1px;
-  border-color: #64748b;
-  border-radius: 9999px;
-  box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  border-color: var(--_capture-line);
+  border-radius: var(--_capture-radius);
+  box-shadow: var(--_capture-shadow);
   outline: 2px solid transparent;
   outline-offset: 2px;
   transform: translateX(-50%);
@@ -160,8 +217,15 @@
   white-space: nowrap;
 }
 
+/* The fill at 75% while a capture is in flight: white over the picture by default, the host's accent when themed. */
 .vin-extractor-capture-button:disabled {
   background-color: rgba(255, 255, 255, 0.75);
+}
+
+@supports (color: color-mix(in srgb, red 50%, transparent)) {
+  .vin-extractor-capture-button:disabled {
+    background-color: color-mix(in srgb, var(--_accent) 75%, transparent);
+  }
 }
 
 .vin-extractor-capture-button:focus {
@@ -190,7 +254,7 @@
   aspect-ratio: 16 / 9;
   object-fit: cover;
   object-position: center;
-  background-color: #000000;
+  background-color: var(--_preview-surface);
 }
 
 @keyframes slideIn {
@@ -253,31 +317,36 @@
   }
 
   .vin-extractor-heading {
-    backdrop-filter: blur(6px) !important;
+    backdrop-filter: blur(var(--_bar-blur)) !important;
   }
 }
 
 @media (min-width: 768px) {
+  :host {
+    --_control-surface: var(--shift-vin-extractor-control-surface, var(--_surface));
+    --_hover-bg: var(--shift-vin-extractor-control-hover-bg, var(--_sc-hover-bg, #f1f5f9));
+  }
+
   .vin-extractor-background {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .vin-extractor-background[aria-hidden='false'] {
     pointer-events: auto !important;
-    backdrop-filter: blur(1.5px);
-    background: rgb(0 0 0 / 0.4);
+    backdrop-filter: blur(var(--_backdrop-blur));
+    background: var(--_backdrop);
   }
 
   .vin-extractor-container {
     width: 600px;
     height: auto;
     overflow: hidden;
-    border-radius: 0.5rem;
+    border-radius: var(--_radius);
   }
 
   .vin-extractor-container.show-container {
     animation: popIn 0.3s ease-out forwards;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    box-shadow: var(--_shadow);
   }
 
   .vin-extractor-container.hide-container {
@@ -288,22 +357,17 @@
     position: relative;
     padding-top: 8px;
     padding-bottom: 8px;
-    background-color: #ffffff;
+    background-color: var(--_surface);
     /* Tailwind's md:!translate-x-0 left an identity transform here; kept so the header's stacking is unchanged. */
     transform: translateX(0);
   }
 
   .vin-extractor-title {
     font-size: 24px;
-    color: #000000;
+    color: var(--_ink);
   }
 
   .vin-extractor-control {
-    background-color: #ffffff;
     border-style: none;
-  }
-
-  .vin-extractor-control:hover {
-    background-color: #f1f5f9;
   }
 }

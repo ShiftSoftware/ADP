@@ -1,11 +1,16 @@
 import { Component, Prop, State, Watch, h, Host, Method, Element } from '@stencil/core';
 import { DotNetObjectReference } from '~features/blazor-ref';
 import validateVin from '~lib/validate-vin';
+import type { LanguageKeys } from '~features/multi-lingual';
+
+import { vinExtractorLocale } from './vin-extractor-locale';
 
 const CAPTURE_INTERVAL = 2000;
 const FACING_MODE_KEY = 'cameraFacingMode';
 
 type CameraFacing = 'environment' | 'user';
+
+export type VinExtractorColorScheme = 'light' | 'dark' | 'auto';
 
 @Component({
   shadow: true,
@@ -35,6 +40,9 @@ export class VinExtractor {
 
   @Prop() ocrEndpoint: string;
 
+  @Prop() language: LanguageKeys = 'en';
+  @Prop({ reflect: true }) colorScheme: VinExtractorColorScheme = 'light';
+
   @Prop() onExtract?: ((vin: string) => void) | string;
   @Prop() onError?: ((newError: Error) => void) | string;
   @Prop() onProcessing?: ((vin: string) => void) | string;
@@ -61,6 +69,7 @@ export class VinExtractor {
   private abortController: AbortController;
   private frameCaptureTimeoutRef: ReturnType<typeof setTimeout>;
   private backCameraDeviceId: string = '';
+  private previousBodyOverflow: string | null = null;
 
   async componentDidLoad() {
     this.videoPlayer = this.el.shadowRoot.querySelector('.video-player');
@@ -319,7 +328,7 @@ export class VinExtractor {
 
       if (!this.manualCapture) this.frameCaptureTimeoutRef = setTimeout(this.captureFrame, this.captureInterval + 300);
 
-      if (document) document.body.style.overflow = 'hidden';
+      this.lockPageScroll();
 
       this.isCameraReady = true;
 
@@ -541,9 +550,25 @@ export class VinExtractor {
       }
       this.videoPlayer.srcObject = null;
     }
-    if (document) document.body.style.overflow = 'auto';
+    this.unlockPageScroll();
     this.containerAnimation = 'hide-container';
   };
+
+  lockPageScroll = () => {
+    if (this.previousBodyOverflow !== null) return;
+    this.previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+  };
+
+  unlockPageScroll = () => {
+    if (this.previousBodyOverflow === null) return;
+    document.body.style.overflow = this.previousBodyOverflow;
+    this.previousBodyOverflow = null;
+  };
+
+  disconnectedCallback() {
+    this.unlockPageScroll();
+  }
 
   stopCamera = () => {
     if (this.streamRef) {
@@ -583,20 +608,25 @@ export class VinExtractor {
   }
   render() {
     const ariaExpanded = this.isOpen && this.isCameraReady && (this.useOcr || this.readSticker);
+    const locale = vinExtractorLocale(this.language);
+    const { strings } = locale;
 
     return (
       <Host translate="no">
         <slot />
-        <input class="vin-extractor-input" type="file" accept="image/*" aria-label="Upload VIN image" {...(this.captureEnvironment ? { capture: 'environment' } : {})} hidden />
+        <input class="vin-extractor-input" type="file" accept="image/*" aria-label={strings.upload} {...(this.captureEnvironment ? { capture: 'environment' } : {})} hidden />
         <canvas class="video-canvas vin-extractor-canvas" aria-hidden="true"></canvas>
         {!this.uploaderButtonId && (
           <div
             onClick={() => (this.isOpen = false)}
             role="dialog"
             aria-modal={ariaExpanded.toString()}
-            aria-label={this.title || 'VIN Scanner'}
+            aria-label={this.title || strings.dialog}
             aria-hidden={(!ariaExpanded).toString()}
+            dir={locale.direction}
+            lang={locale.language === 'ku' ? 'ckb' : locale.language}
             class="vin-extractor-background"
+            part="backdrop"
           >
             <div
               role="document"
@@ -605,10 +635,11 @@ export class VinExtractor {
               onAnimationEnd={() => (this.isAnimating = false)}
               onAnimationStart={() => (this.isAnimating = true)}
               class={{ 'vin-extractor-container': true, [this.containerAnimation]: !!this.containerAnimation }}
+              part="panel"
             >
-              <div class="vin-extractor-heading">
+              <div class="vin-extractor-heading" part="header">
                 {this.videoInputs.length > 1 ? (
-                  <button type="button" aria-label="Switch camera" onClick={this.switchCamera} class="vin-extractor-control">
+                  <button type="button" aria-label={strings.switchCamera} onClick={this.switchCamera} class="vin-extractor-control" part="switch-camera">
                     <svg
                       width="24"
                       height="24"
@@ -632,10 +663,10 @@ export class VinExtractor {
                 ) : (
                   <div class="vin-extractor-control-placeholder" aria-hidden="true" />
                 )}
-                <h1 class="vin-extractor-title form-input-label" part="form-input-label">
+                <h1 class="vin-extractor-title form-input-label" part="title form-input-label">
                   {this.title}
                 </h1>
-                <button type="button" aria-label="Close scanner" onClick={() => (this.isOpen = false)} class="vin-extractor-control">
+                <button type="button" aria-label={strings.close} onClick={() => (this.isOpen = false)} class="vin-extractor-control" part="close">
                   <svg
                     fill="none"
                     stroke-width="2"
@@ -653,17 +684,17 @@ export class VinExtractor {
                 </button>
               </div>
               {this.manualCapture && !!this.manualCaptureHint && !this.manualCaptureLoading && (
-                <p aria-hidden="true" class="vin-extractor-manual-capture-hint">
+                <p aria-hidden="true" class="vin-extractor-manual-capture-hint" part="hint">
                   {this.manualCaptureHint}
                 </p>
               )}
               {this.manualCapture && (
                 <button
                   type="button"
-                  part="vin-extractor-capture-button"
+                  part="capture vin-extractor-capture-button"
                   disabled={this.manualCaptureLoading}
                   onClick={this.captureFrame.bind(this, true)}
-                  aria-label={this.manualCaptureLoading ? 'Capturing...' : this.manualCaptureLabel || 'Capture VIN'}
+                  aria-label={this.manualCaptureLoading ? strings.capturing : this.manualCaptureLabel || strings.capture}
                   class={{ 'vin-extractor-capture-button': true, 'vin-extractor-capture-labelled': !!this.manualCaptureLabel }}
                 >
                   {this.manualCaptureLoading ? (
@@ -677,16 +708,18 @@ export class VinExtractor {
                       stroke-linejoin="round"
                       xmlns="http://www.w3.org/2000/svg"
                       class="vin-extractor-spinner"
+                      part="capture-spinner"
                     >
                       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                     </svg>
                   ) : this.manualCaptureLabel ? (
-                    <span>{this.manualCaptureLabel}</span>
+                    <span part="capture-label">{this.manualCaptureLabel}</span>
                   ) : (
                     <svg
                       fill="none"
                       stroke-width="2"
                       class="vin-extractor-icon"
+                      part="capture-icon"
                       aria-hidden="true"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -700,7 +733,7 @@ export class VinExtractor {
                   )}
                 </button>
               )}
-              <video autoPlay id="video" playsInline aria-label="Camera preview" class="video-player vin-extractor-preview"></video>
+              <video autoPlay id="video" playsInline aria-label={strings.preview} class="video-player vin-extractor-preview" part="preview"></video>
             </div>
           </div>
         )}
