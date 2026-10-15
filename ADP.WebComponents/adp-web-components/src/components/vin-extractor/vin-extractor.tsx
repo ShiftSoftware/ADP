@@ -1,6 +1,10 @@
 import { Component, Prop, State, Watch, h, Host, Method, Element } from '@stencil/core';
 import { DotNetObjectReference } from '~features/blazor-ref';
 import validateVin from '~lib/validate-vin';
+import { CameraIcon } from '~assets/camera-icon';
+import { CloseIcon } from '~assets/close-icon';
+import { LoaderCircleIcon } from '~assets/loader-circle-icon';
+import { SwitchCameraIcon } from '~assets/switch-camera-icon';
 import type { LanguageKeys } from '~features/multi-lingual';
 
 import { vinExtractorLocale } from './vin-extractor-locale';
@@ -659,26 +663,7 @@ export class VinExtractor {
                     part="switch-camera"
                   >
                     <slot name="switch-camera-icon">
-                      <svg
-                        width="24"
-                        height="24"
-                        fill="none"
-                        stroke-width="2"
-                        aria-hidden="true"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="vin-extractor-switch-icon"
-                        part="switch-camera-icon"
-                        style={{ rotate: `${this.switchRotateDegree}deg` }}
-                      >
-                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-                        <path d="M21 3v5h-5" />
-                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-                        <path d="M8 16H3v5" />
-                      </svg>
+                      <SwitchCameraIcon class="vin-extractor-switch-icon" part="switch-camera-icon" style={{ rotate: `${this.switchRotateDegree}deg` }} />
                     </slot>
                   </button>
                 ) : (
@@ -689,21 +674,7 @@ export class VinExtractor {
                 </h1>
                 <button type="button" aria-label={text(this.closeLabel, strings.close)} onClick={() => (this.isOpen = false)} class="vin-extractor-control" part="close">
                   <slot name="close-icon">
-                    <svg
-                      fill="none"
-                      stroke-width="2"
-                      class="vin-extractor-icon"
-                      part="close-icon"
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M18 6 6 18" />
-                      <path d="m6 6 12 12" />
-                    </svg>
+                    <CloseIcon class="vin-extractor-icon" part="close-icon" />
                   </slot>
                 </button>
               </div>
@@ -722,39 +693,12 @@ export class VinExtractor {
                   class={{ 'vin-extractor-capture-button': true, 'vin-extractor-capture-labelled': !!this.manualCaptureLabel }}
                 >
                   {this.manualCaptureLoading ? (
-                    <svg
-                      fill="none"
-                      stroke-width="2"
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="vin-extractor-spinner"
-                      part="capture-spinner"
-                    >
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                    </svg>
+                    <LoaderCircleIcon class="vin-extractor-spinner" part="capture-spinner" />
                   ) : this.manualCaptureLabel ? (
                     <span part="capture-label">{this.manualCaptureLabel}</span>
                   ) : (
                     <slot name="capture-icon">
-                      <svg
-                        fill="none"
-                        stroke-width="2"
-                        class="vin-extractor-icon"
-                        part="capture-icon"
-                        aria-hidden="true"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-                        <circle cx="12" cy="13" r="3" />
-                      </svg>
+                      <CameraIcon class="vin-extractor-icon" part="capture-icon" />
                     </slot>
                   )}
                 </button>
