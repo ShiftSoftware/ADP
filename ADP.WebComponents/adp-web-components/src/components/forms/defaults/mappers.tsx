@@ -16,21 +16,6 @@ const selectedBranch = form => {
   return form.context['companyBranchIdList']?.find(item => item.value === branchValue)?.meta;
 };
 
-// The same list as Identity's calendar settings, until Identity links services to departments itself.
-const SERVICE_DEPARTMENTS: Record<string, string[]> = {
-  'auto-repair-and-maintenance': ['service-center', 'quick-service-center', 'satellite-1', 'satellite-2', 'satellite-3', 'parts-shop'],
-  'parts-counter-sale': ['parts-shop'],
-  'body-and-paint': ['body-shop'],
-  'dio-and-life-style-products': ['showroom', 'parts-shop'],
-  'new-vehicle-sale': ['showroom'],
-  'test-drive': ['showroom'],
-  'installment-sales': ['showroom'],
-  'used-cars': ['showroom'],
-  'used-car-purchase': ['showroom'],
-  insurance: ['showroom'],
-  'insurance-pending': ['showroom'],
-};
-
 /**
  * Resolves the four ids the calendar endpoint needs from the branch the
  * `companyBranchId` field has selected.
@@ -234,11 +219,10 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
   bookingCalendar: ({ form, language, props }) => {
     // Only the listed departments: another department's hours would look bookable but be the wrong ones.
     const { hasBranch, departmentId: preferred, brandId } = resolveBranchTarget({ form, props, anyDepartment: false });
-    const services: string[] = [props?.services ?? []].flat();
-    const wanted = services.flatMap(service => SERVICE_DEPARTMENTS[service] ?? []);
-    const offered: string[] = (selectedBranch(form)?.Departments ?? []).map(d => d.IntegrationId).filter(id => wanted.includes(id));
-    const departments = services.length && !props?.departmentId ? offered : [preferred].filter(Boolean);
-    const merge = props?.mergeDepartments === true && departments.length > 1;
+    const offered: string[] = (selectedBranch(form)?.Departments ?? []).map(d => d.IntegrationId);
+    const listed = [...new Set<string>(props?.departmentPreference ?? ['showroom'])].filter(id => offered.includes(id));
+    const departments = props?.mergeDepartments === true && !props?.departmentId ? listed : [preferred].filter(Boolean);
+    const merge = departments.length > 1;
     const bookable = hasBranch && departments.length > 0;
     const branchId = bookable ? String(form.getValue('companyBranchId')) : '';
     const unavailable = hasBranch && !bookable ? props?.localization?.[language]?.branchUnavailable || bookingStrings(language).branchUnavailable : '';
