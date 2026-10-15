@@ -1,12 +1,20 @@
 import { Component, Prop, State, Watch, h, Host, Method, Element } from '@stencil/core';
 import { DotNetObjectReference } from '~features/blazor-ref';
-import cn from '~lib/cn';
 import validateVin from '~lib/validate-vin';
+import { CameraIcon } from '~assets/camera-icon';
+import { CloseIcon } from '~assets/close-icon';
+import { LoaderCircleIcon } from '~assets/loader-circle-icon';
+import { SwitchCameraIcon } from '~assets/switch-camera-icon';
+import type { LanguageKeys } from '~features/multi-lingual';
+
+import { vinExtractorLocale } from './vin-extractor-locale';
 
 const CAPTURE_INTERVAL = 2000;
 const FACING_MODE_KEY = 'cameraFacingMode';
 
 type CameraFacing = 'environment' | 'user';
+
+export type VinExtractorColorScheme = 'light' | 'dark' | 'auto';
 
 @Component({
   shadow: true,
@@ -35,6 +43,18 @@ export class VinExtractor {
   @Prop() manualCaptureHint: string = '';
 
   @Prop() ocrEndpoint: string;
+
+  @Prop() language?: LanguageKeys;
+  @Prop({ reflect: true }) colorScheme?: VinExtractorColorScheme;
+
+  @Prop() dialogLabel?: string;
+  @Prop() switchCameraLabel?: string;
+  @Prop() closeLabel?: string;
+  @Prop() capturingLabel?: string;
+  @Prop() previewLabel?: string;
+  @Prop() uploadLabel?: string;
+
+  @Prop() permissionsFallback: boolean = false;
 
   @Prop() onExtract?: ((vin: string) => void) | string;
   @Prop() onError?: ((newError: Error) => void) | string;
@@ -281,15 +301,27 @@ export class VinExtractor {
     }
   };
 
+  // Where the Permissions API is missing or does not know 'camera' (older iOS webviews, Firefox), treat it as
+  // not yet asked, so the getUserMedia probe below lets the browser prompt.
+  private queryCameraPermission = async (): Promise<{ state: PermissionState }> => {
+    try {
+      return await navigator.permissions.query({ name: 'camera' as PermissionName });
+    } catch {
+      return { state: 'prompt' };
+    }
+  };
+
   openScanner = async () => {
     try {
       this.abortController?.abort();
       this.abortController = new AbortController();
 
-      const permissionStatus = await navigator.permissions.query({
-        // @ts-ignore
-        name: 'camera',
-      });
+      const permissionStatus = this.permissionsFallback
+        ? await this.queryCameraPermission()
+        : await navigator.permissions.query({
+            // @ts-ignore
+            name: 'camera',
+          });
 
       if (permissionStatus.state === 'prompt') {
         try {
@@ -584,20 +616,33 @@ export class VinExtractor {
   }
   render() {
     const ariaExpanded = this.isOpen && this.isCameraReady && (this.useOcr || this.readSticker);
+    const locale = vinExtractorLocale(this.language);
+    const { strings } = locale;
+    const text = (hostText: string | undefined, fallback: string) => hostText || fallback;
 
     return (
       <Host translate="no">
         <slot />
-        <input class="vin-extractor-input" type="file" accept="image/*" aria-label="Upload VIN image" {...(this.captureEnvironment ? { capture: 'environment' } : {})} hidden />
-        <canvas class="video-canvas hidden" aria-hidden="true"></canvas>
+        <input
+          class="vin-extractor-input"
+          type="file"
+          accept="image/*"
+          aria-label={text(this.uploadLabel, strings.upload)}
+          {...(this.captureEnvironment ? { capture: 'environment' } : {})}
+          hidden
+        />
+        <canvas class="video-canvas vin-extractor-canvas" aria-hidden="true"></canvas>
         {!this.uploaderButtonId && (
           <div
             onClick={() => (this.isOpen = false)}
             role="dialog"
             aria-modal={ariaExpanded.toString()}
-            aria-label={this.title || 'VIN Scanner'}
+            aria-label={this.title || text(this.dialogLabel, strings.dialog)}
             aria-hidden={(!ariaExpanded).toString()}
-            class="vin-extractor-background md:transition-all md:duration-300 fixed flex items-center justify-center w-[100dvw] h-[100dvh] top-0 left-0 z-[9999]"
+            dir={this.language ? locale.direction : undefined}
+            lang={this.language ? (locale.language === 'ku' ? 'ckb' : locale.language) : undefined}
+            class="vin-extractor-background"
+            part="backdrop"
           >
             <div
               role="document"
@@ -605,128 +650,60 @@ export class VinExtractor {
               aria-expanded={ariaExpanded.toString()}
               onAnimationEnd={() => (this.isAnimating = false)}
               onAnimationStart={() => (this.isAnimating = true)}
-              class={cn(
-                'vin-extractor-container md:w-[600px] md:rounded-lg md:overflow-hidden opacity-0 md:h-auto w-full h-full relative transition-all duration-500',
-                this.containerAnimation,
-              )}
+              class={{ 'vin-extractor-container': true, [this.containerAnimation]: !!this.containerAnimation }}
+              part="panel"
             >
-              <div class="vin-extractor-heading items-center md:py-[8px] w-full md:!opacity-100 md:!translate-x-0 p-[16px] md:bg-white bg-black/30 shadow-md z-10 md:relative absolute top-0 left-0 flex justify-between">
+              <div class="vin-extractor-heading" part="header">
                 {this.videoInputs.length > 1 ? (
                   <button
                     type="button"
-                    aria-label="Switch camera"
+                    aria-label={text(this.switchCameraLabel, strings.switchCamera)}
                     onClick={this.switchCamera}
-                    class="size-[32px] md:border-none md:bg-white md:hover:bg-slate-100 bg-slate-100 rounded-lg p-1 hover:text-slate-700 border transition-colors duration-300 hover:bg-slate-300 border-slate-600 text-slate-600 hover:border-slate-700"
+                    class="vin-extractor-control"
+                    part="switch-camera"
                   >
-                    <svg
-                      width="24"
-                      height="24"
-                      fill="none"
-                      stroke-width="2"
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="size-full transition-all duration-300"
-                      style={{ rotate: `${this.switchRotateDegree}deg` }}
-                    >
-                      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-                      <path d="M21 3v5h-5" />
-                      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-                      <path d="M8 16H3v5" />
-                    </svg>
+                    <slot name="switch-camera-icon">
+                      <SwitchCameraIcon class="vin-extractor-switch-icon" part="switch-camera-icon" style={{ rotate: `${this.switchRotateDegree}deg` }} />
+                    </slot>
                   </button>
                 ) : (
-                  <div class="size-8" aria-hidden="true" />
+                  <div class="vin-extractor-control-placeholder" aria-hidden="true" />
                 )}
-                <h1 class="text-center text-[18px] md:text-[24px] md:text-black text-slate-100 form-input-label" part="form-input-label">
+                <h1 class="vin-extractor-title form-input-label" part="title form-input-label">
                   {this.title}
                 </h1>
-                <button
-                  type="button"
-                  aria-label="Close scanner"
-                  onClick={() => (this.isOpen = false)}
-                  class="size-[32px] md:border-none md:bg-white md:hover:bg-slate-100 bg-slate-100 rounded-lg p-1 hover:text-slate-700 border transition-colors duration-300 hover:bg-slate-300 border-slate-600 text-slate-600 hover:border-slate-700"
-                >
-                  <svg
-                    fill="none"
-                    stroke-width="2"
-                    class="size-full"
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M18 6 6 18" />
-                    <path d="m6 6 12 12" />
-                  </svg>
+                <button type="button" aria-label={text(this.closeLabel, strings.close)} onClick={() => (this.isOpen = false)} class="vin-extractor-control" part="close">
+                  <slot name="close-icon">
+                    <CloseIcon class="vin-extractor-icon" part="close-icon" />
+                  </slot>
                 </button>
               </div>
               {this.manualCapture && !!this.manualCaptureHint && !this.manualCaptureLoading && (
-                <p
-                  aria-hidden="true"
-                  class="vin-extractor-manual-capture-hint absolute left-1/2 -translate-x-1/2 bottom-[88px] z-10 m-0 px-3 py-1 rounded-full bg-black/55 text-white text-center text-[13px] leading-[1.3] whitespace-nowrap pointer-events-none"
-                >
+                <p aria-hidden="true" class="vin-extractor-manual-capture-hint" part="hint">
                   {this.manualCaptureHint}
                 </p>
               )}
               {this.manualCapture && (
                 <button
                   type="button"
-                  part="vin-extractor-capture-button"
+                  part="capture vin-extractor-capture-button"
                   disabled={this.manualCaptureLoading}
                   onClick={this.captureFrame.bind(this, true)}
-                  aria-label={this.manualCaptureLoading ? 'Capturing...' : this.manualCaptureLabel || 'Capture VIN'}
-                  class={cn(
-                    'vin-extractor-capture-button absolute disabled:bg-white/75 outline-none cursor-pointer left-1/2 -translate-x-1/2 flex justify-center items-center h-[60px] py-[10px] rounded-full shadow-lg border border-slate-500 text-slate-500 z-10 bg-white bottom-4',
-                    this.manualCaptureLabel ? 'px-6 min-w-[140px] gap-2 text-[15px] font-medium whitespace-nowrap' : 'w-[100px]',
-                  )}
+                  aria-label={this.manualCaptureLoading ? text(this.capturingLabel, strings.capturing) : text(this.manualCaptureLabel, strings.capture)}
+                  class={{ 'vin-extractor-capture-button': true, 'vin-extractor-capture-labelled': !!this.manualCaptureLabel }}
                 >
                   {this.manualCaptureLoading ? (
-                    <svg
-                      fill="none"
-                      stroke-width="2"
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      xmlns="http://www.w3.org/2000/svg"
-                      class={cn('animate-spin animate-spin-v', this.manualCaptureLabel ? 'size-[22px]' : 'size-full')}
-                    >
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                    </svg>
+                    <LoaderCircleIcon class="vin-extractor-spinner" part="capture-spinner" />
                   ) : this.manualCaptureLabel ? (
-                    <span>{this.manualCaptureLabel}</span>
+                    <span part="capture-label">{this.manualCaptureLabel}</span>
                   ) : (
-                    <svg
-                      fill="none"
-                      stroke-width="2"
-                      class="size-full"
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-                      <circle cx="12" cy="13" r="3" />
-                    </svg>
+                    <slot name="capture-icon">
+                      <CameraIcon class="vin-extractor-icon" part="capture-icon" />
+                    </slot>
                   )}
                 </button>
               )}
-              <video
-                autoPlay
-                id="video"
-                playsInline
-                aria-label="Camera preview"
-                class="video-player aspect-video bg-black min-w-full min-h-full object-cover object-center"
-              ></video>
+              <video autoPlay id="video" playsInline aria-label={text(this.previewLabel, strings.preview)} class="video-player vin-extractor-preview" part="preview"></video>
             </div>
           </div>
         )}
