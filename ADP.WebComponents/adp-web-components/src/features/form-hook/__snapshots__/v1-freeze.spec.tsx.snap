@@ -24436,28 +24436,32 @@ exports[`v1 forms freeze shape vin lookup (ar) renders and submits as before: do
                             <template shadowrootmode="open">
                               <slot></slot>
                               <input accept="image/*" aria-label="Upload VIN image" class="vin-extractor-input" hidden="" type="file">
-                              <canvas aria-hidden="true" class="hidden video-canvas"></canvas>
-                              <div aria-hidden="true" aria-label="Scan Your VIN" aria-modal="false" class="fixed flex h-[100dvh] items-center justify-center left-0 md:duration-300 md:transition-all top-0 vin-extractor-background w-[100dvw] z-[9999]" role="dialog">
-                                <div aria-expanded="false" class="duration-500 h-full md:h-auto md:overflow-hidden md:rounded-lg md:w-[600px] opacity-0 relative transition-all vin-extractor-container w-full" role="document">
-                                  <div class="absolute bg-black/30 flex items-center justify-between left-0 md:!opacity-100 md:!translate-x-0 md:bg-white md:py-[8px] md:relative p-[16px] shadow-md top-0 vin-extractor-heading w-full z-10">
-                                    <div aria-hidden="true" class="size-8"></div>
-                                    <h1 class="form-input-label md:text-[24px] md:text-black text-[18px] text-center text-slate-100" part="form-input-label">
+                              <canvas aria-hidden="true" class="video-canvas vin-extractor-canvas"></canvas>
+                              <div aria-hidden="true" aria-label="Scan Your VIN" aria-modal="false" class="vin-extractor-background" part="backdrop" role="dialog">
+                                <div aria-expanded="false" class="vin-extractor-container" part="panel" role="document">
+                                  <div class="vin-extractor-heading" part="header">
+                                    <div aria-hidden="true" class="vin-extractor-control-placeholder"></div>
+                                    <h1 class="form-input-label vin-extractor-title" part="title form-input-label">
                                       Scan Your VIN
                                     </h1>
-                                    <button aria-label="Close scanner" class="bg-slate-100 border border-slate-600 duration-300 hover:bg-slate-300 hover:border-slate-700 hover:text-slate-700 md:bg-white md:border-none md:hover:bg-slate-100 p-1 rounded-lg size-[32px] text-slate-600 transition-colors" type="button">
-                                      <svg aria-hidden="true" class="size-full" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M18 6 6 18"></path>
-                                        <path d="m6 6 12 12"></path>
-                                      </svg>
+                                    <button aria-label="Close scanner" class="vin-extractor-control" part="close" type="button">
+                                      <slot name="close-icon">
+                                        <svg aria-hidden="true" class="vin-extractor-icon" fill="none" part="close-icon" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                          <path d="M18 6 6 18"></path>
+                                          <path d="m6 6 12 12"></path>
+                                        </svg>
+                                      </slot>
                                     </button>
                                   </div>
-                                  <button aria-label="Capture VIN" class="-translate-x-1/2 absolute bg-white border border-slate-500 bottom-4 cursor-pointer disabled:bg-white/75 flex h-[60px] items-center justify-center left-1/2 outline-none py-[10px] rounded-full shadow-lg text-slate-500 vin-extractor-capture-button w-[100px] z-10" part="vin-extractor-capture-button" type="button">
-                                    <svg aria-hidden="true" class="size-full" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
-                                      <circle cx="12" cy="13" r="3"></circle>
-                                    </svg>
+                                  <button aria-label="Capture VIN" class="vin-extractor-capture-button" part="capture vin-extractor-capture-button" type="button">
+                                    <slot name="capture-icon">
+                                      <svg aria-hidden="true" class="vin-extractor-icon" fill="none" part="capture-icon" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
+                                        <circle cx="12" cy="13" r="3"></circle>
+                                      </svg>
+                                    </slot>
                                   </button>
-                                  <video aria-label="Camera preview" autoplay="" class="aspect-video bg-black min-h-full min-w-full object-center object-cover video-player" id="video" playsinline=""></video>
+                                  <video aria-label="Camera preview" autoplay="" class="video-player vin-extractor-preview" id="video" part="preview" playsinline=""></video>
                                 </div>
                               </div>
                             </template>
@@ -24677,28 +24681,32 @@ exports[`v1 forms freeze shape vin lookup (en) renders and submits as before: do
                             <template shadowrootmode="open">
                               <slot></slot>
                               <input accept="image/*" aria-label="Upload VIN image" class="vin-extractor-input" hidden="" type="file">
-                              <canvas aria-hidden="true" class="hidden video-canvas"></canvas>
-                              <div aria-hidden="true" aria-label="Scan Your VIN" aria-modal="false" class="fixed flex h-[100dvh] items-center justify-center left-0 md:duration-300 md:transition-all top-0 vin-extractor-background w-[100dvw] z-[9999]" role="dialog">
-                                <div aria-expanded="false" class="duration-500 h-full md:h-auto md:overflow-hidden md:rounded-lg md:w-[600px] opacity-0 relative transition-all vin-extractor-container w-full" role="document">
-                                  <div class="absolute bg-black/30 flex items-center justify-between left-0 md:!opacity-100 md:!translate-x-0 md:bg-white md:py-[8px] md:relative p-[16px] shadow-md top-0 vin-extractor-heading w-full z-10">
-                                    <div aria-hidden="true" class="size-8"></div>
-                                    <h1 class="form-input-label md:text-[24px] md:text-black text-[18px] text-center text-slate-100" part="form-input-label">
+                              <canvas aria-hidden="true" class="video-canvas vin-extractor-canvas"></canvas>
+                              <div aria-hidden="true" aria-label="Scan Your VIN" aria-modal="false" class="vin-extractor-background" part="backdrop" role="dialog">
+                                <div aria-expanded="false" class="vin-extractor-container" part="panel" role="document">
+                                  <div class="vin-extractor-heading" part="header">
+                                    <div aria-hidden="true" class="vin-extractor-control-placeholder"></div>
+                                    <h1 class="form-input-label vin-extractor-title" part="title form-input-label">
                                       Scan Your VIN
                                     </h1>
-                                    <button aria-label="Close scanner" class="bg-slate-100 border border-slate-600 duration-300 hover:bg-slate-300 hover:border-slate-700 hover:text-slate-700 md:bg-white md:border-none md:hover:bg-slate-100 p-1 rounded-lg size-[32px] text-slate-600 transition-colors" type="button">
-                                      <svg aria-hidden="true" class="size-full" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M18 6 6 18"></path>
-                                        <path d="m6 6 12 12"></path>
-                                      </svg>
+                                    <button aria-label="Close scanner" class="vin-extractor-control" part="close" type="button">
+                                      <slot name="close-icon">
+                                        <svg aria-hidden="true" class="vin-extractor-icon" fill="none" part="close-icon" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                          <path d="M18 6 6 18"></path>
+                                          <path d="m6 6 12 12"></path>
+                                        </svg>
+                                      </slot>
                                     </button>
                                   </div>
-                                  <button aria-label="Capture VIN" class="-translate-x-1/2 absolute bg-white border border-slate-500 bottom-4 cursor-pointer disabled:bg-white/75 flex h-[60px] items-center justify-center left-1/2 outline-none py-[10px] rounded-full shadow-lg text-slate-500 vin-extractor-capture-button w-[100px] z-10" part="vin-extractor-capture-button" type="button">
-                                    <svg aria-hidden="true" class="size-full" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
-                                      <circle cx="12" cy="13" r="3"></circle>
-                                    </svg>
+                                  <button aria-label="Capture VIN" class="vin-extractor-capture-button" part="capture vin-extractor-capture-button" type="button">
+                                    <slot name="capture-icon">
+                                      <svg aria-hidden="true" class="vin-extractor-icon" fill="none" part="capture-icon" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
+                                        <circle cx="12" cy="13" r="3"></circle>
+                                      </svg>
+                                    </slot>
                                   </button>
-                                  <video aria-label="Camera preview" autoplay="" class="aspect-video bg-black min-h-full min-w-full object-center object-cover video-player" id="video" playsinline=""></video>
+                                  <video aria-label="Camera preview" autoplay="" class="video-player vin-extractor-preview" id="video" part="preview" playsinline=""></video>
                                 </div>
                               </div>
                             </template>
