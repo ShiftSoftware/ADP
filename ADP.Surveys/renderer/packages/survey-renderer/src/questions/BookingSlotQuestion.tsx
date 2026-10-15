@@ -29,21 +29,6 @@ type BookingCalendarElement = HTMLElement & {
 
 const LANGUAGES = ['en', 'ar', 'ku', 'ru'];
 
-// The same list as Identity's calendar settings and the forms' bookingCalendar, until Identity links services to departments itself.
-const SERVICE_DEPARTMENTS: Record<string, string[]> = {
-  'auto-repair-and-maintenance': ['service-center', 'quick-service-center', 'satellite-1', 'satellite-2', 'satellite-3', 'parts-shop'],
-  'parts-counter-sale': ['parts-shop'],
-  'body-and-paint': ['body-shop'],
-  'dio-and-life-style-products': ['showroom', 'parts-shop'],
-  'new-vehicle-sale': ['showroom'],
-  'test-drive': ['showroom'],
-  'installment-sales': ['showroom'],
-  'used-cars': ['showroom'],
-  'used-car-purchase': ['showroom'],
-  insurance: ['showroom'],
-  'insurance-pending': ['showroom'],
-};
-
 /** The calendar the stored slot was picked from, per question. A slot only means
  *  something at the branch it came from, so when the respondent goes back and
  *  picks another branch (or department or brand), the slot is cleared. Kept outside
@@ -73,9 +58,8 @@ export function BookingSlotQuestion({ question }: QuestionProps) {
   const calendarApi = resolve('calendarApi', 'url');
   const branchId = resolve('branchId');
   const brandId = resolve('brandId');
-  // The branch's own departments aren't known here, so a service asks all of its departments; one the branch lacks returns no times.
-  const ofServices = [...new Set(resolve('services').split(',').flatMap(service => SERVICE_DEPARTMENTS[service.trim()] ?? []))];
-  const departments = resolve('departmentId') ? [resolve('departmentId')] : question['mergeDepartments'] ? ofServices : ofServices.slice(0, 1);
+  // The branch's own departments aren't known here, so every listed one is asked and their times merged; one the branch lacks returns no times.
+  const departments = [...new Set(resolve('departmentId').split(',').map(department => department.trim()).filter(Boolean))];
   const departmentId = departments.length === 1 ? departments[0]! : '';
   const departmentIds = departments.length > 1 ? departments : undefined;
   const target = [calendarApi, branchId, departments.join(','), brandId].join('\n');

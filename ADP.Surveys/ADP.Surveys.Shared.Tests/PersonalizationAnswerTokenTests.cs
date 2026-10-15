@@ -272,21 +272,19 @@ public class PersonalizationAnswerTokenTests
             Title = LocalizedString.From("en", "When suits you, {{candidate.name}}?"),
             CalendarApi = "https://{{candidate.host}}/api/calendar",
             BranchId = "{{answers.branch}}",
-            DepartmentId = "{{candidate.department}}",
-            Services = "{{candidate.service}}",
+            DepartmentId = "{{candidate.department}}, body-shop",
             BrandId = "{{candidate.brand|default brand}}",
         };
         survey.Screens.Add(new InlineScreenDto { Id = "s1", Questions = { QuestionEntryDto.FromInline(question) } });
 
         PersonalizationTokens.Substitute(survey, Live(survey,
-            ("candidate.name", "Sam"), ("candidate.host", "id.example"), ("candidate.department", "service & parts"), ("candidate.service", "auto-repair-and-maintenance")));
+            ("candidate.name", "Sam"), ("candidate.host", "id.example"), ("candidate.department", "service & parts")));
 
         Assert.Equal("When suits you, Sam?", question.Title["en"]);
         Assert.Equal("https://id.example/api/calendar", question.CalendarApi);
         Assert.Equal("{{answers.branch}}", question.BranchId);
         // Raw: the calendar component encodes the ids when it builds the query.
-        Assert.Equal("service & parts", question.DepartmentId);
-        Assert.Equal("auto-repair-and-maintenance", question.Services);
+        Assert.Equal("service & parts, body-shop", question.DepartmentId);
         Assert.Equal("default brand", question.BrandId);
     }
 
@@ -305,14 +303,13 @@ public class PersonalizationAnswerTokenTests
                     Title = LocalizedString.From("en", "Slot"),
                     CalendarApi = "https://id.example/api/calendar",
                     BranchId = "{{answers.branch}}",
-                    DepartmentId = "{{candidate.department}}",
-                    Services = "{{answers.service}}",
+                    DepartmentId = "{{candidate.department}},{{answers.department}}",
                     BrandId = "{{answers.brand}}",
                 }),
             },
         });
 
-        Assert.Equal(new[] { "answers.branch", "answers.brand", "answers.service", "candidate.department" },
+        Assert.Equal(new[] { "answers.branch", "answers.brand", "answers.department", "candidate.department" },
             PersonalizationTokens.CollectTokenNames(survey).OrderBy(x => x, StringComparer.Ordinal));
     }
 

@@ -161,24 +161,59 @@ describe('bookingSlot question', () => {
     expect(onSubmit.mock.calls[0]![0].answers).toEqual({ branch: 'Pw3xQ', slot: '2026-10-08T10:00' });
   });
 
-  it('with services and no department, books the first of their departments, or all of them merged', async () => {
-    const user = userEvent.setup();
-    const { unmount } = render(<SurveyRenderer schema={fixture({ departmentId: '', services: 'auto-repair-and-maintenance' })} onSubmit={vi.fn()} />);
-    await toSlotScreen(user, 'Xr8pQ');
-    expect(calendar().departmentId).toBe('service-center');
-    expect(calendar().departmentIds).toBeUndefined();
-    unmount();
-
-    render(<SurveyRenderer schema={fixture({ departmentId: '', services: 'body-and-paint, parts-counter-sale', mergeDepartments: true })} onSubmit={vi.fn()} />);
-    await toSlotScreen(user, 'Xr8pQ');
+  it('asks every listed department and merges their times', async () => {
+    render(<SurveyRenderer schema={fixture({ departmentId: 'service-center, body-shop,showroom' })} onSubmit={vi.fn()} />);
+    await toSlotScreen(userEvent.setup(), 'Xr8pQ');
     expect(calendar().departmentId).toBe('');
-    expect(calendar().departmentIds).toEqual(['body-shop', 'parts-shop']);
+    expect(calendar().departmentIds).toEqual(['service-center', 'body-shop', 'showroom']);
   });
 
-  it('an explicit department wins over services', async () => {
-    render(<SurveyRenderer schema={fixture({ services: 'test-drive', mergeDepartments: true })} onSubmit={vi.fn()} />);
+  it('drops blank and repeated departments, and books one department alone', async () => {
+    render(<SurveyRenderer schema={fixture({ departmentId: ' service-center, ,service-center ' })} onSubmit={vi.fn()} />);
     await toSlotScreen(userEvent.setup(), 'Xr8pQ');
     expect(calendar().departmentId).toBe('service-center');
     expect(calendar().departmentIds).toBeUndefined();
+  });
+
+  it('resolves answer tokens inside the department list', async () => {
+    render(<SurveyRenderer schema={fixture({ departmentId: 'showroom, dept-{{answers.branch}}' })} onSubmit={vi.fn()} />);
+    await toSlotScreen(userEvent.setup(), 'Pw3xQ');
+    expect(calendar().departmentIds).toEqual(['showroom', 'dept-Pw3xQ']);
+  });
+
+  it('leaves the calendar without a department when none is listed', async () => {
+    render(<SurveyRenderer schema={fixture({ departmentId: '' })} onSubmit={vi.fn()} />);
+    await toSlotScreen(userEvent.setup(), 'Xr8pQ');
+    expect(calendar().departmentId).toBe('');
+    expect(calendar().departmentIds).toBeUndefined();
+  });
+
+  it('ignores the removed services and mergeDepartments fields', async () => {
+    render(<SurveyRenderer schema={fixture({ departmentId: 'showroom', services: 'anything', mergeDepartments: false })} onSubmit={vi.fn()} />);
+    await toSlotScreen(userEvent.setup(), 'Xr8pQ');
+    expect(calendar().departmentId).toBe('showroom');
+    expect(calendar().departmentIds).toBeUndefined();
+  });
+
+  it('with merged departments, keeps the slot for the same branch and clears it for another', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<SurveyRenderer schema={fixture({ departmentId: 'service-center, body-shop' })} onSubmit={onSubmit} />);
+    const user = userEvent.setup();
+    await toSlotScreen(user, 'Xr8pQ');
+    await pickSlot('2026-10-07T09:00');
+
+    await user.click(back());
+    await user.click(next());
+    expect(calendar().defaultValue).toBe('2026-10-07T09:00');
+
+    await user.click(back());
+    await toSlotScreen(user, 'Pw3xQ');
+    expect(calendar().departmentIds).toEqual(['service-center', 'body-shop']);
+    expect(calendar().defaultValue).toBe('');
+
+    await pickSlot('2026-10-08T10:00');
+    await user.click(next());
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0]![0].answers).toEqual({ branch: 'Pw3xQ', slot: '2026-10-08T10:00' });
   });
 });
