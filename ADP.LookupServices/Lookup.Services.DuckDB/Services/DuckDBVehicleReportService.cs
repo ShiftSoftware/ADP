@@ -886,6 +886,9 @@ public class DuckDBVehicleReportService(
             Map(x => x.VehicleSpecFuelLiter).Index(61);
             Map(x => x.VehicleSpecExteriorColor).Index(62);
             Map(x => x.VehicleSpecInteriorColor).Index(63);
+
+            Map(x => x.ClassificationCodes).Index(64);
+            Map(x => x.ClassificationLabels).Index(65);
         }
     }
 

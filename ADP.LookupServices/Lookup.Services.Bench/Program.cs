@@ -561,6 +561,19 @@ static class ReportParity
         Exec(connection, $"CREATE VIEW ours AS SELECT * FROM read_parquet('{Sql(oursPath)}')");
         Exec(connection, $"CREATE VIEW theirs AS SELECT * FROM read_parquet('{Sql(theirsPath)}')");
 
+        // A production file written before a column existed has nothing to compare it with: name the
+        // column and compare the rest, instead of failing the whole comparison.
+        var productionColumns = new HashSet<string>(StringComparer.Ordinal);
+        using (var describe = connection.CreateCommand())
+        {
+            describe.CommandText = "DESCRIBE theirs";
+            using var described = describe.ExecuteReader();
+            while (described.Read())
+                productionColumns.Add(described.GetString(0));
+        }
+        var notInProduction = columns.Where(c => !productionColumns.Contains(c)).ToList();
+        columns = columns.Where(productionColumns.Contains).ToList();
+
         var keyList = string.Join(", ", key.Select(Quote));
         var joinOn = string.Join(" AND ", key.Select(k => $"o.{Quote(k)} = t.{Quote(k)}"));
         var oursRows = Scalar(connection, "SELECT count(*) FROM ours");
@@ -587,6 +600,8 @@ static class ReportParity
         Console.WriteLine($"PARITY {label}: ours {oursRows:N0} rows / {oursVins:N0} VINs, production {theirsRows:N0} rows / {theirsVins:N0} VINs; " +
                           $"keys in both {matched:N0}, only ours {onlyOurs:N0}, only production {onlyTheirs:N0}; " +
                           $"rows identical {matched - rowsDiffering:N0}, differing {rowsDiffering:N0}");
+        if (notInProduction.Count > 0)
+            Console.WriteLine($"         not in the production file, not compared: {string.Join(", ", notInProduction)}");
         foreach (var (column, count) in differing.Where(pair => pair.Value > 0).OrderByDescending(pair => pair.Value))
         {
             Console.WriteLine($"         {column,-32} {count,10:N0} differ");
@@ -615,6 +630,7 @@ static class ReportParity
         {
             ours = oursPath, production = theirsPath, oursRows, theirsRows, oursVins, theirsVins, matched, onlyOurs, onlyTheirs,
             rowsIdentical = matched - rowsDiffering, rowsDiffering, differingColumns = differing.Where(pair => pair.Value > 0).ToDictionary(pair => pair.Key, pair => pair.Value),
+            notInProduction,
         };
     }
 

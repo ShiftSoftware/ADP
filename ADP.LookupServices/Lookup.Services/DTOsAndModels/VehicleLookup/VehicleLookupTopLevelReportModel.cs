@@ -1,7 +1,13 @@
 using System;
+using ShiftSoftware.ADP.Models;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
+/// <summary>
+/// One row per vehicle in the top-level vehicle report: the lookup's headline fields, flattened into
+/// columns. Text columns hold an empty string when the lookup has no value.
+/// </summary>
+[Docable]
 public class VehicleLookupTopLevelReportModel
 {
     public string VIN { get; set; }
@@ -75,4 +81,16 @@ public class VehicleLookupTopLevelReportModel
     public int? VehicleSpecFuelLiter { get; set; }
     public string VehicleSpecExteriorColor { get; set; }
     public string VehicleSpecInteriorColor { get; set; }
+
+    /// <summary>
+    /// The classification codes the lookup resolved, in its order, separated by a semicolon and a space.
+    /// These are the stable values to filter on. Empty when the host resolves none or configures no classifier.
+    /// </summary>
+    public string ClassificationCodes { get; set; }
+
+    /// <summary>
+    /// The display labels of <see cref="ClassificationCodes"/>, in the same order and with the same
+    /// separator. A classification without a label shows its code. Display text only; filter on the codes.
+    /// </summary>
+    public string ClassificationLabels { get; set; }
 }

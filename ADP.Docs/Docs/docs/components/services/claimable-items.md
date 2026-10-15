@@ -166,7 +166,9 @@ Custom conditions are a closed, fail-closed contract. The supported fields are:
 The optional `LookupOptions.VehicleClassificationResolver` receives the loaded aggregate and independent
 resolved facts once per vehicle evaluation. Its history is the same invoice evidence, with the same
 request consistency, used by the lookup response. Its codes serve all item conditions and its labels
-are returned in `VehicleLookupDTO.Classifications`. Hosts without a resolver do no classification work;
+are returned in `VehicleLookupDTO.Classifications`. The top-level vehicle report lists the same codes and
+labels in its `ClassificationCodes` and `ClassificationLabels` columns, in order and separated by `; `.
+Hosts without a resolver do no classification work;
 ordinary items still evaluate and required classification codes are unmet. Conditions in the array
 remain AND; use `anyOf` below for explicit alternatives. This field currently applies to service items, not configured extended-warranty awards.
 Lookup evaluates eligibility before signing the item. The claim endpoint validates the signature and

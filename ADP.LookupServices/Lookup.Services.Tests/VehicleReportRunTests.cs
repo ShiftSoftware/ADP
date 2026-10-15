@@ -233,6 +233,41 @@ public sealed class VehicleReportRunTests : IDisposable
         static string? Text(System.Data.IDataRecord record, int ordinal) => record.IsDBNull(ordinal) ? null : record.GetString(ordinal);
     }
 
+    [Fact]
+    public async Task TheTopLevelReport_CarriesTheClassificationsEachVehicleResolved()
+    {
+        await VehicleReportRun.RunAsync(new VehicleReportRun.Options
+        {
+            Source = Source(),
+            Lookup = storage => new VehicleLookupService(storage, null, null, new LookupOptions
+            {
+                VehicleLookupStorageSource = Enums.StorageSources.DuckDB,
+                VehicleClassificationResolver = context => context.Aggregate.VIN.EndsWith("1")
+                    ? [new() { Code = "segment:7", Label = "Segment 7" }, new() { Code = "member" }]
+                    : [],
+            }, null),
+            OutputDirectory = outputDirectory,
+            Reports = [VehicleReports.TopLevel],
+            Degree = 2,
+        });
+
+        using var reader = new DuckDBConnection("Data Source=:memory:");
+        reader.Open();
+        using var query = reader.CreateCommand();
+        var topLevel = Path.Combine(outputDirectory, "Vehicle", "vehicle-top-level-report.parquet").Replace('\\', '/');
+        query.CommandText = $"SELECT VIN, ClassificationCodes, ClassificationLabels FROM read_parquet('{topLevel}') ORDER BY VIN";
+        using var rows = query.ExecuteReader();
+        var read = new List<(string Vin, string Codes, string Labels)>();
+        while (rows.Read())
+            read.Add((rows.GetString(0), rows.GetString(1), rows.GetString(2)));
+
+        Assert.Equal(
+        [
+            ("VIN00000000000001", "segment:7; member", "Segment 7; member"),
+            ("VIN00000000000002", "", ""),     // nothing resolved: empty text, like any other missing value
+        ], read);
+    }
+
     /// <summary>
     /// A case production data has: an activation with no country, by a company with no
     /// entry of its own for the vehicle. The ownership evaluator refuses it rather than guess.

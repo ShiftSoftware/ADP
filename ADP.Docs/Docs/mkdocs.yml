@@ -203,6 +203,7 @@ nav:
           - Vehicle Lookup:
               - Vehicle Lookup Result: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleLookupDTO.md
               - Vehicle Identifiers: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleIdentifiersDTO.md
+              - Vehicle Classification: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleClassificationDTO.md
               - Sale Information: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleSaleInformation.md
               - Broker Sale Information: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleBrokerSaleInformation.md
               - End Customer Information: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleSaleEndCustomerInformationDTO.md
@@ -235,6 +236,7 @@ nav:
               - Service Menu Line Part: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceMenuPartDTO.md
               - Request Options: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleLookupRequestOptions.md
               - Service Menu Request Options: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceMenuRequestOptions.md
+              - Top-Level Report Row: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleLookupTopLevelReportModel.md
           - Part Lookup:
               - Part Lookup Result: generated/LookupServices/DTOsAndModels/Part/PartLookupDTO.md
               - Stock Part: generated/LookupServices/DTOsAndModels/Part/StockPartDTO.md
