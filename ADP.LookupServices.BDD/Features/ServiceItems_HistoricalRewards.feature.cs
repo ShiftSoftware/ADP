@@ -111,36 +111,36 @@ namespace LookupServices.BDD.Features
         {
 #line 7
   #line hidden
-            global::Reqnroll.Table table444 = new global::Reqnroll.Table(new string[] {
+            global::Reqnroll.Table table448 = new global::Reqnroll.Table(new string[] {
                         "VIN",
                         "InvoiceDate",
                         "CompanyID",
                         "BranchID",
                         "BrandID"});
-            table444.AddRow(new string[] {
+            table448.AddRow(new string[] {
                         "TEST-REWARD",
                         "2029-01-01",
                         "1",
                         "10",
                         "1"});
 #line 8
-    await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table444, "Given ");
+    await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table448, "Given ");
 #line hidden
-            global::Reqnroll.Table table445 = new global::Reqnroll.Table(new string[] {
+            global::Reqnroll.Table table449 = new global::Reqnroll.Table(new string[] {
                         "ServiceItemID",
                         "Name",
                         "BrandID",
                         "ActiveForMonths",
                         "MaximumMileage",
                         "ProgramRole"});
-            table445.AddRow(new string[] {
+            table449.AddRow(new string[] {
                         "BASE",
                         "Standard service",
                         "1",
                         "12",
                         "40000",
                         ""});
-            table445.AddRow(new string[] {
+            table449.AddRow(new string[] {
                         "REWARD",
                         "Return reward",
                         "1",
@@ -148,9 +148,9 @@ namespace LookupServices.BDD.Features
                         "55000",
                         "Reward"});
 #line 11
-    await testRunner.AndAsync("service items:", ((string)(null)), table445, "And ");
+    await testRunner.AndAsync("service items:", ((string)(null)), table449, "And ");
 #line hidden
-            global::Reqnroll.Table table446 = new global::Reqnroll.Table(new string[] {
+            global::Reqnroll.Table table450 = new global::Reqnroll.Table(new string[] {
                         "Field",
                         "Operator",
                         "ValueMatch",
@@ -159,7 +159,7 @@ namespace LookupServices.BDD.Features
                         "Selection",
                         "Values",
                         "WhenUnmet"});
-            table446.AddRow(new string[] {
+            table450.AddRow(new string[] {
                         "serviceItems.baseSchedule.maximumMileage",
                         "Equals",
                         "",
@@ -168,7 +168,7 @@ namespace LookupServices.BDD.Features
                         "",
                         "40000",
                         "Hide"});
-            table446.AddRow(new string[] {
+            table450.AddRow(new string[] {
                         "serviceHistory.laborLines.packageCode",
                         "ContainsAll",
                         "Milestone",
@@ -177,7 +177,7 @@ namespace LookupServices.BDD.Features
                         "All",
                         "45000,50000",
                         "Lock"});
-            table446.AddRow(new string[] {
+            table450.AddRow(new string[] {
                         "serviceHistory.laborLines.maximumMilestone",
                         "Equals",
                         "",
@@ -187,7 +187,7 @@ namespace LookupServices.BDD.Features
                         "50000",
                         "Miss"});
 #line 15
-    await testRunner.AndAsync("service item \"REWARD\" has eligibility conditions:", ((string)(null)), table446, "And ");
+    await testRunner.AndAsync("service item \"REWARD\" has eligibility conditions:", ((string)(null)), table450, "And ");
 #line hidden
 #line 20
     await testRunner.AndAsync("the free service start date is \"2029-01-01\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -258,7 +258,7 @@ namespace LookupServices.BDD.Features
 #line 24
     await testRunner.GivenAsync(string.Format("reward \"REWARD\" uses historical visits before \"2030-07-01\" with \"{0}\"", mode), ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table447 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table451 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID",
                             "BranchID",
@@ -268,7 +268,7 @@ namespace LookupServices.BDD.Features
                             "PackageCode",
                             "LaborCode",
                             "Odometer"});
-                table447.AddRow(new string[] {
+                table451.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -278,7 +278,7 @@ namespace LookupServices.BDD.Features
                             "ALT MDL 40K",
                             "MAINT",
                             "100"});
-                table447.AddRow(new string[] {
+                table451.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -288,7 +288,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 5K",
                             "MAINT",
                             "100"});
-                table447.AddRow(new string[] {
+                table451.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -298,7 +298,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 50K",
                             "MAINT",
                             "100"});
-                table447.AddRow(new string[] {
+                table451.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -309,7 +309,7 @@ namespace LookupServices.BDD.Features
                             "REPAIR",
                             "100"});
 #line 25
-    await testRunner.AndAsync("labor lines:", ((string)(null)), table447, "And ");
+    await testRunner.AndAsync("labor lines:", ((string)(null)), table451, "And ");
 #line hidden
 #line 31
     await testRunner.WhenAsync("evaluating service items for \"TEST-REWARD\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -317,7 +317,7 @@ namespace LookupServices.BDD.Features
 #line 32
     await testRunner.ThenAsync(string.Format("service item \"REWARD\" has reward outcome \"{0}\"", outcome), ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-                global::Reqnroll.Table table448 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table452 = new global::Reqnroll.Table(new string[] {
                             "Label",
                             "Mileage",
                             "SatisfiedOn",
@@ -326,7 +326,7 @@ namespace LookupServices.BDD.Features
                             "LaborCode",
                             "JobNumber",
                             "InvoiceNumber"});
-                table448.AddRow(new string[] {
+                table452.AddRow(new string[] {
                             "45K",
                             "45000",
                             "2030-08-01",
@@ -335,7 +335,7 @@ namespace LookupServices.BDD.Features
                             "MAINT",
                             "FIRST",
                             "FIRST"});
-                table448.AddRow(new string[] {
+                table452.AddRow(new string[] {
                             "50K",
                             "50000",
                             "2030-10-20",
@@ -345,7 +345,7 @@ namespace LookupServices.BDD.Features
                             "SECOND",
                             "SECOND"});
 #line 33
-    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table448, "And ");
+    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table452, "And ");
 #line hidden
 #line 37
     await testRunner.AndAsync("service item \"REWARD\" has activation \"2030-10-20\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -388,7 +388,7 @@ namespace LookupServices.BDD.Features
 #line 46
     await testRunner.GivenAsync(string.Format("reward \"REWARD\" uses historical visits before \"2030-07-01\" with \"{0}\"", mode), ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table449 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table453 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID",
                             "BranchID",
@@ -398,7 +398,7 @@ namespace LookupServices.BDD.Features
                             "PackageCode",
                             "LaborCode",
                             "Odometer"});
-                table449.AddRow(new string[] {
+                table453.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -408,7 +408,7 @@ namespace LookupServices.BDD.Features
                             "ALT MDL 40K",
                             "MAINT",
                             "100"});
-                table449.AddRow(new string[] {
+                table453.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -418,7 +418,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 45K",
                             "MAINT",
                             "100"});
-                table449.AddRow(new string[] {
+                table453.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -429,7 +429,7 @@ namespace LookupServices.BDD.Features
                             "MAINT",
                             "100"});
 #line 47
-    await testRunner.AndAsync("labor lines:", ((string)(null)), table449, "And ");
+    await testRunner.AndAsync("labor lines:", ((string)(null)), table453, "And ");
 #line hidden
 #line 52
     await testRunner.WhenAsync("evaluating service items for \"TEST-REWARD\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -437,7 +437,7 @@ namespace LookupServices.BDD.Features
 #line 53
     await testRunner.ThenAsync(string.Format("service item \"REWARD\" has reward outcome \"{0}\"", outcome), ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-                global::Reqnroll.Table table450 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table454 = new global::Reqnroll.Table(new string[] {
                             "Label",
                             "Mileage",
                             "SatisfiedOn",
@@ -446,7 +446,7 @@ namespace LookupServices.BDD.Features
                             "LaborCode",
                             "JobNumber",
                             "InvoiceNumber"});
-                table450.AddRow(new string[] {
+                table454.AddRow(new string[] {
                             "45K",
                             "45000",
                             "2030-08-15",
@@ -455,7 +455,7 @@ namespace LookupServices.BDD.Features
                             "MAINT",
                             "FIRST",
                             "FIRST"});
-                table450.AddRow(new string[] {
+                table454.AddRow(new string[] {
                             "50K",
                             "50000",
                             "2030-10-20",
@@ -465,7 +465,7 @@ namespace LookupServices.BDD.Features
                             "SECOND",
                             "SECOND"});
 #line 54
-    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table450, "And ");
+    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table454, "And ");
 #line hidden
 #line 58
     await testRunner.AndAsync("service item \"REWARD\" has activation \"2030-10-20\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -508,7 +508,7 @@ namespace LookupServices.BDD.Features
 #line 67
     await testRunner.GivenAsync(string.Format("reward \"REWARD\" uses historical visits before \"2030-07-01\" with \"{0}\"", mode), ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table451 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table455 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID",
                             "BranchID",
@@ -518,7 +518,7 @@ namespace LookupServices.BDD.Features
                             "PackageCode",
                             "LaborCode",
                             "Odometer"});
-                table451.AddRow(new string[] {
+                table455.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -528,7 +528,7 @@ namespace LookupServices.BDD.Features
                             "ALT MDL 40K",
                             "MAINT",
                             "100"});
-                table451.AddRow(new string[] {
+                table455.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -538,7 +538,7 @@ namespace LookupServices.BDD.Features
                             "OIL-MENU",
                             "OIL-CHANGE",
                             "100"});
-                table451.AddRow(new string[] {
+                table455.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -548,7 +548,7 @@ namespace LookupServices.BDD.Features
                             "OIL-MENU",
                             "OIL-CHANGE",
                             "100"});
-                table451.AddRow(new string[] {
+                table455.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -558,7 +558,7 @@ namespace LookupServices.BDD.Features
                             "OIL-MENU",
                             "OIL-CHANGE",
                             "100"});
-                table451.AddRow(new string[] {
+                table455.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -569,7 +569,7 @@ namespace LookupServices.BDD.Features
                             "OIL-CHANGE",
                             "100"});
 #line 68
-    await testRunner.AndAsync("labor lines:", ((string)(null)), table451, "And ");
+    await testRunner.AndAsync("labor lines:", ((string)(null)), table455, "And ");
 #line hidden
 #line 75
     await testRunner.WhenAsync("evaluating service items for \"TEST-REWARD\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -577,7 +577,7 @@ namespace LookupServices.BDD.Features
 #line 76
     await testRunner.ThenAsync(string.Format("service item \"REWARD\" has reward outcome \"{0}\"", outcome), ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-                global::Reqnroll.Table table452 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table456 = new global::Reqnroll.Table(new string[] {
                             "Label",
                             "Mileage",
                             "SatisfiedOn",
@@ -586,7 +586,7 @@ namespace LookupServices.BDD.Features
                             "LaborCode",
                             "JobNumber",
                             "InvoiceNumber"});
-                table452.AddRow(new string[] {
+                table456.AddRow(new string[] {
                             "45K",
                             "45000",
                             "2030-01-10",
@@ -595,7 +595,7 @@ namespace LookupServices.BDD.Features
                             "OIL-CHANGE",
                             "FIRST",
                             "FIRST"});
-                table452.AddRow(new string[] {
+                table456.AddRow(new string[] {
                             "50K",
                             "50000",
                             "2030-04-10",
@@ -605,7 +605,7 @@ namespace LookupServices.BDD.Features
                             "SECOND",
                             "SECOND"});
 #line 77
-    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table452, "And ");
+    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table456, "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -642,7 +642,7 @@ namespace LookupServices.BDD.Features
 #line 88
     await testRunner.GivenAsync(string.Format("reward \"REWARD\" uses historical visits before \"2030-07-01\" with \"{0}\"", mode), ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table453 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table457 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID",
                             "BranchID",
@@ -652,7 +652,7 @@ namespace LookupServices.BDD.Features
                             "PackageCode",
                             "LaborCode",
                             "Odometer"});
-                table453.AddRow(new string[] {
+                table457.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -662,7 +662,7 @@ namespace LookupServices.BDD.Features
                             "ALT MDL 40K",
                             "MAINT",
                             "100"});
-                table453.AddRow(new string[] {
+                table457.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -672,7 +672,7 @@ namespace LookupServices.BDD.Features
                             "OIL-MENU",
                             "OIL-CHANGE",
                             "100"});
-                table453.AddRow(new string[] {
+                table457.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -682,7 +682,7 @@ namespace LookupServices.BDD.Features
                             "OIL-MENU",
                             "OIL-CHANGE",
                             "100"});
-                table453.AddRow(new string[] {
+                table457.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -692,7 +692,7 @@ namespace LookupServices.BDD.Features
                             "OIL-MENU",
                             "OIL-CHANGE",
                             "100"});
-                table453.AddRow(new string[] {
+                table457.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -702,7 +702,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 55K",
                             "MAINT",
                             "100"});
-                table453.AddRow(new string[] {
+                table457.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -713,7 +713,7 @@ namespace LookupServices.BDD.Features
                             "MAINT",
                             "100"});
 #line 89
-    await testRunner.AndAsync("labor lines:", ((string)(null)), table453, "And ");
+    await testRunner.AndAsync("labor lines:", ((string)(null)), table457, "And ");
 #line hidden
 #line 97
     await testRunner.WhenAsync("evaluating service items for \"TEST-REWARD\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -721,7 +721,7 @@ namespace LookupServices.BDD.Features
 #line 98
     await testRunner.ThenAsync(string.Format("service item \"REWARD\" has reward outcome \"{0}\"", outcome), ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-                global::Reqnroll.Table table454 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table458 = new global::Reqnroll.Table(new string[] {
                             "Label",
                             "Mileage",
                             "SatisfiedOn",
@@ -730,7 +730,7 @@ namespace LookupServices.BDD.Features
                             "LaborCode",
                             "JobNumber",
                             "InvoiceNumber"});
-                table454.AddRow(new string[] {
+                table458.AddRow(new string[] {
                             "45K",
                             "45000",
                             "2030-01-15",
@@ -739,7 +739,7 @@ namespace LookupServices.BDD.Features
                             "OIL-CHANGE",
                             "FIRST",
                             "FIRST"});
-                table454.AddRow(new string[] {
+                table458.AddRow(new string[] {
                             "50K",
                             "50000",
                             "2030-03-15",
@@ -749,7 +749,7 @@ namespace LookupServices.BDD.Features
                             "SECOND",
                             "SECOND"});
 #line 99
-    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table454, "And ");
+    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table458, "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -789,22 +789,22 @@ namespace LookupServices.BDD.Features
 #line 111
     await testRunner.AndAsync("historical jobs from sources 1/10 and 2/20 are confirmed mirrors", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table455 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table459 = new global::Reqnroll.Table(new string[] {
                             "ServiceItemID",
                             "ClaimDate",
                             "CompanyID",
                             "JobNumber",
                             "InvoiceNumber"});
-                table455.AddRow(new string[] {
+                table459.AddRow(new string[] {
                             "BASE",
                             "2029-12-01",
                             "1",
                             "STANDARD",
                             "STANDARD"});
 #line 112
-    await testRunner.AndAsync("item claims:", ((string)(null)), table455, "And ");
+    await testRunner.AndAsync("item claims:", ((string)(null)), table459, "And ");
 #line hidden
-                global::Reqnroll.Table table456 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table460 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID",
                             "BranchID",
@@ -814,7 +814,7 @@ namespace LookupServices.BDD.Features
                             "PackageCode",
                             "LaborCode",
                             "Odometer"});
-                table456.AddRow(new string[] {
+                table460.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -824,7 +824,7 @@ namespace LookupServices.BDD.Features
                             "ALT MDL 40K",
                             "MAINT",
                             "100"});
-                table456.AddRow(new string[] {
+                table460.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -834,7 +834,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 45K",
                             "MAINT",
                             "100"});
-                table456.AddRow(new string[] {
+                table460.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -844,7 +844,7 @@ namespace LookupServices.BDD.Features
                             "",
                             "OIL-CHANGE",
                             "100"});
-                table456.AddRow(new string[] {
+                table460.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -854,7 +854,7 @@ namespace LookupServices.BDD.Features
                             "ADDITIVE44K",
                             "ADDITIVE",
                             "100"});
-                table456.AddRow(new string[] {
+                table460.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -864,7 +864,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 55K",
                             "MAINT",
                             "100"});
-                table456.AddRow(new string[] {
+                table460.AddRow(new string[] {
                             "TEST-REWARD",
                             "2",
                             "20",
@@ -874,7 +874,7 @@ namespace LookupServices.BDD.Features
                             "ALT MDL 40K",
                             "MAINT",
                             "100"});
-                table456.AddRow(new string[] {
+                table460.AddRow(new string[] {
                             "TEST-REWARD",
                             "2",
                             "20",
@@ -884,7 +884,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 45K",
                             "MAINT",
                             "100"});
-                table456.AddRow(new string[] {
+                table460.AddRow(new string[] {
                             "TEST-REWARD",
                             "2",
                             "20",
@@ -894,7 +894,7 @@ namespace LookupServices.BDD.Features
                             "",
                             "OIL-CHANGE",
                             "100"});
-                table456.AddRow(new string[] {
+                table460.AddRow(new string[] {
                             "TEST-REWARD",
                             "2",
                             "20",
@@ -905,7 +905,7 @@ namespace LookupServices.BDD.Features
                             "ADDITIVE",
                             "100"});
 #line 115
-    await testRunner.AndAsync("labor lines:", ((string)(null)), table456, "And ");
+    await testRunner.AndAsync("labor lines:", ((string)(null)), table460, "And ");
 #line hidden
 #line 126
     await testRunner.WhenAsync("evaluating service items for \"TEST-REWARD\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -913,7 +913,7 @@ namespace LookupServices.BDD.Features
 #line 127
     await testRunner.ThenAsync(string.Format("service item \"REWARD\" has reward outcome \"{0}\"", outcome), ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-                global::Reqnroll.Table table457 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table461 = new global::Reqnroll.Table(new string[] {
                             "Label",
                             "Mileage",
                             "SatisfiedOn",
@@ -922,7 +922,7 @@ namespace LookupServices.BDD.Features
                             "LaborCode",
                             "JobNumber",
                             "InvoiceNumber"});
-                table457.AddRow(new string[] {
+                table461.AddRow(new string[] {
                             "45K",
                             "45000",
                             "2029-12-01",
@@ -931,7 +931,7 @@ namespace LookupServices.BDD.Features
                             "MAINT",
                             "FIRST",
                             "FIRST"});
-                table457.AddRow(new string[] {
+                table461.AddRow(new string[] {
                             "50K",
                             "50000",
                             "2030-04-01",
@@ -941,7 +941,7 @@ namespace LookupServices.BDD.Features
                             "SECOND",
                             "SECOND"});
 #line 128
-    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table457, "And ");
+    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table461, "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -978,7 +978,7 @@ namespace LookupServices.BDD.Features
 #line 139
     await testRunner.GivenAsync(string.Format("reward \"REWARD\" uses historical visits before \"2030-07-01\" with \"{0}\"", mode), ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table458 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table462 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID",
                             "BranchID",
@@ -988,7 +988,7 @@ namespace LookupServices.BDD.Features
                             "PackageCode",
                             "LaborCode",
                             "Odometer"});
-                table458.AddRow(new string[] {
+                table462.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -998,7 +998,7 @@ namespace LookupServices.BDD.Features
                             "ALT MDL 40K",
                             "MAINT",
                             "100"});
-                table458.AddRow(new string[] {
+                table462.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1008,7 +1008,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 5K",
                             "MAINT",
                             "100"});
-                table458.AddRow(new string[] {
+                table462.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1018,7 +1018,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 5K",
                             "MAINT",
                             "100"});
-                table458.AddRow(new string[] {
+                table462.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1028,7 +1028,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 5K",
                             "MAINT",
                             "100"});
-                table458.AddRow(new string[] {
+                table462.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1039,7 +1039,7 @@ namespace LookupServices.BDD.Features
                             "MAINT",
                             "100"});
 #line 140
-    await testRunner.AndAsync("labor lines:", ((string)(null)), table458, "And ");
+    await testRunner.AndAsync("labor lines:", ((string)(null)), table462, "And ");
 #line hidden
 #line 147
     await testRunner.WhenAsync("evaluating service items for \"TEST-REWARD\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1047,7 +1047,7 @@ namespace LookupServices.BDD.Features
 #line 148
     await testRunner.ThenAsync(string.Format("service item \"REWARD\" has reward outcome \"{0}\"", outcome), ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-                global::Reqnroll.Table table459 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table463 = new global::Reqnroll.Table(new string[] {
                             "Label",
                             "Mileage",
                             "SatisfiedOn",
@@ -1056,7 +1056,7 @@ namespace LookupServices.BDD.Features
                             "LaborCode",
                             "JobNumber",
                             "InvoiceNumber"});
-                table459.AddRow(new string[] {
+                table463.AddRow(new string[] {
                             "45K",
                             "45000",
                             "2030-06-01",
@@ -1065,7 +1065,7 @@ namespace LookupServices.BDD.Features
                             "MAINT",
                             "FIRST",
                             "FIRST"});
-                table459.AddRow(new string[] {
+                table463.AddRow(new string[] {
                             "50K",
                             "50000",
                             "2030-07-01",
@@ -1075,7 +1075,7 @@ namespace LookupServices.BDD.Features
                             "SECOND",
                             "SECOND"});
 #line 149
-    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table459, "And ");
+    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table463, "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -1143,7 +1143,7 @@ namespace LookupServices.BDD.Features
 #line 160
     await testRunner.GivenAsync(string.Format("reward \"REWARD\" uses historical visits before \"2030-07-01\" with \"{0}\"", mode), ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table460 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table464 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID",
                             "BranchID",
@@ -1153,7 +1153,7 @@ namespace LookupServices.BDD.Features
                             "PackageCode",
                             "LaborCode",
                             "Odometer"});
-                table460.AddRow(new string[] {
+                table464.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1163,7 +1163,7 @@ namespace LookupServices.BDD.Features
                             "ALT MDL 40K",
                             "MAINT",
                             "100"});
-                table460.AddRow(new string[] {
+                table464.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1174,7 +1174,7 @@ namespace LookupServices.BDD.Features
                             "MAINT",
                             "100"});
 #line 161
-    await testRunner.AndAsync("labor lines:", ((string)(null)), table460, "And ");
+    await testRunner.AndAsync("labor lines:", ((string)(null)), table464, "And ");
 #line hidden
 #line 165
     await testRunner.WhenAsync("evaluating service items for \"TEST-REWARD\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1182,7 +1182,7 @@ namespace LookupServices.BDD.Features
 #line 166
     await testRunner.ThenAsync(string.Format("service item \"REWARD\" has reward outcome \"{0}\"", outcome), ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-                global::Reqnroll.Table table461 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table465 = new global::Reqnroll.Table(new string[] {
                             "Label",
                             "Mileage",
                             "SatisfiedOn",
@@ -1191,7 +1191,7 @@ namespace LookupServices.BDD.Features
                             "LaborCode",
                             "JobNumber",
                             "InvoiceNumber"});
-                table461.AddRow(new string[] {
+                table465.AddRow(new string[] {
                             "45K",
                             "45000",
                             string.Format("{0}", date1),
@@ -1200,7 +1200,7 @@ namespace LookupServices.BDD.Features
                             string.Format("{0}", labor1),
                             string.Format("{0}", job1),
                             string.Format("{0}", invoice1)});
-                table461.AddRow(new string[] {
+                table465.AddRow(new string[] {
                             "50K",
                             "50000",
                             string.Format("{0}", date2),
@@ -1210,7 +1210,7 @@ namespace LookupServices.BDD.Features
                             string.Format("{0}", job2),
                             string.Format("{0}", invoice2)});
 #line 167
-    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table461, "And ");
+    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table465, "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -1279,7 +1279,7 @@ namespace LookupServices.BDD.Features
 #line 178
     await testRunner.GivenAsync(string.Format("reward \"REWARD\" uses historical visits before \"2030-07-01\" with \"{0}\"", mode), ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table462 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table466 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID",
                             "BranchID",
@@ -1289,7 +1289,7 @@ namespace LookupServices.BDD.Features
                             "PackageCode",
                             "LaborCode",
                             "Odometer"});
-                table462.AddRow(new string[] {
+                table466.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1299,7 +1299,7 @@ namespace LookupServices.BDD.Features
                             "ALT MDL 40K",
                             "MAINT",
                             "100"});
-                table462.AddRow(new string[] {
+                table466.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1309,7 +1309,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 55K",
                             "MAINT",
                             "100"});
-                table462.AddRow(new string[] {
+                table466.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1319,7 +1319,7 @@ namespace LookupServices.BDD.Features
                             "ADDITIVE44K",
                             "ADDITIVE",
                             "100"});
-                table462.AddRow(new string[] {
+                table466.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1329,7 +1329,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 45K",
                             "MAINT",
                             "100"});
-                table462.AddRow(new string[] {
+                table466.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1340,7 +1340,7 @@ namespace LookupServices.BDD.Features
                             "WASH",
                             "100"});
 #line 179
-    await testRunner.AndAsync("labor lines:", ((string)(null)), table462, "And ");
+    await testRunner.AndAsync("labor lines:", ((string)(null)), table466, "And ");
 #line hidden
 #line 186
     await testRunner.WhenAsync("evaluating service items for \"TEST-REWARD\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1351,7 +1351,7 @@ namespace LookupServices.BDD.Features
 #line 188
     await testRunner.AndAsync(string.Format("service item \"REWARD\" has historical window \"{0}\" through \"{1}\"", windowStart, windowEnd), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table463 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table467 = new global::Reqnroll.Table(new string[] {
                             "Label",
                             "Mileage",
                             "SatisfiedOn",
@@ -1360,7 +1360,7 @@ namespace LookupServices.BDD.Features
                             "LaborCode",
                             "JobNumber",
                             "InvoiceNumber"});
-                table463.AddRow(new string[] {
+                table467.AddRow(new string[] {
                             "45K",
                             "45000",
                             string.Format("{0}", date1),
@@ -1369,7 +1369,7 @@ namespace LookupServices.BDD.Features
                             string.Format("{0}", labor1),
                             string.Format("{0}", job1),
                             string.Format("{0}", invoice1)});
-                table463.AddRow(new string[] {
+                table467.AddRow(new string[] {
                             "50K",
                             "50000",
                             string.Format("{0}", date2),
@@ -1379,7 +1379,7 @@ namespace LookupServices.BDD.Features
                             string.Format("{0}", job2),
                             string.Format("{0}", invoice2)});
 #line 189
-    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table463, "And ");
+    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table467, "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -1448,7 +1448,7 @@ namespace LookupServices.BDD.Features
 #line 200
     await testRunner.GivenAsync(string.Format("reward \"REWARD\" uses historical visits before \"2030-07-01\" with \"{0}\"", mode), ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table464 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table468 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID",
                             "BranchID",
@@ -1458,7 +1458,7 @@ namespace LookupServices.BDD.Features
                             "PackageCode",
                             "LaborCode",
                             "Odometer"});
-                table464.AddRow(new string[] {
+                table468.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1468,7 +1468,7 @@ namespace LookupServices.BDD.Features
                             "ALT MDL 40K",
                             "MAINT",
                             "100"});
-                table464.AddRow(new string[] {
+                table468.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1478,7 +1478,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 55K",
                             "MAINT",
                             "100"});
-                table464.AddRow(new string[] {
+                table468.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1488,7 +1488,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 50K",
                             "MAINT",
                             "100"});
-                table464.AddRow(new string[] {
+                table468.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1498,7 +1498,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 55K",
                             "MAINT",
                             "100"});
-                table464.AddRow(new string[] {
+                table468.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1509,7 +1509,7 @@ namespace LookupServices.BDD.Features
                             "MAINT",
                             "100"});
 #line 201
-    await testRunner.AndAsync("labor lines:", ((string)(null)), table464, "And ");
+    await testRunner.AndAsync("labor lines:", ((string)(null)), table468, "And ");
 #line hidden
 #line 208
     await testRunner.WhenAsync("evaluating service items for \"TEST-REWARD\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1520,7 +1520,7 @@ namespace LookupServices.BDD.Features
 #line 210
     await testRunner.AndAsync(string.Format("service item \"REWARD\" has historical window \"{0}\" through \"{1}\"", windowStart, windowEnd), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table465 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table469 = new global::Reqnroll.Table(new string[] {
                             "Label",
                             "Mileage",
                             "SatisfiedOn",
@@ -1529,7 +1529,7 @@ namespace LookupServices.BDD.Features
                             "LaborCode",
                             "JobNumber",
                             "InvoiceNumber"});
-                table465.AddRow(new string[] {
+                table469.AddRow(new string[] {
                             "45K",
                             "45000",
                             string.Format("{0}", date1),
@@ -1538,7 +1538,7 @@ namespace LookupServices.BDD.Features
                             string.Format("{0}", labor1),
                             string.Format("{0}", job1),
                             string.Format("{0}", invoice1)});
-                table465.AddRow(new string[] {
+                table469.AddRow(new string[] {
                             "50K",
                             "50000",
                             string.Format("{0}", date2),
@@ -1548,7 +1548,7 @@ namespace LookupServices.BDD.Features
                             string.Format("{0}", job2),
                             string.Format("{0}", invoice2)});
 #line 211
-    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table465, "And ");
+    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table469, "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -1585,7 +1585,7 @@ namespace LookupServices.BDD.Features
 #line 222
     await testRunner.GivenAsync(string.Format("reward \"REWARD\" uses historical visits before \"2030-07-01\" with \"{0}\"", mode), ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table466 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table470 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID",
                             "BranchID",
@@ -1595,7 +1595,7 @@ namespace LookupServices.BDD.Features
                             "PackageCode",
                             "LaborCode",
                             "Odometer"});
-                table466.AddRow(new string[] {
+                table470.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1605,7 +1605,7 @@ namespace LookupServices.BDD.Features
                             "ALT MDL 40K",
                             "MAINT",
                             "100"});
-                table466.AddRow(new string[] {
+                table470.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1615,7 +1615,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 45K",
                             "MAINT",
                             "100"});
-                table466.AddRow(new string[] {
+                table470.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1625,7 +1625,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 50K",
                             "MAINT",
                             "100"});
-                table466.AddRow(new string[] {
+                table470.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1635,7 +1635,7 @@ namespace LookupServices.BDD.Features
                             "PGM MDL 55K",
                             "MAINT",
                             "100"});
-                table466.AddRow(new string[] {
+                table470.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1646,7 +1646,7 @@ namespace LookupServices.BDD.Features
                             "MAINT",
                             "100"});
 #line 223
-    await testRunner.AndAsync("labor lines:", ((string)(null)), table466, "And ");
+    await testRunner.AndAsync("labor lines:", ((string)(null)), table470, "And ");
 #line hidden
 #line 230
     await testRunner.WhenAsync("evaluating service items for \"TEST-REWARD\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1654,7 +1654,7 @@ namespace LookupServices.BDD.Features
 #line 231
     await testRunner.ThenAsync(string.Format("service item \"REWARD\" has reward outcome \"{0}\"", outcome), ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-                global::Reqnroll.Table table467 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table471 = new global::Reqnroll.Table(new string[] {
                             "Label",
                             "Mileage",
                             "SatisfiedOn",
@@ -1663,7 +1663,7 @@ namespace LookupServices.BDD.Features
                             "LaborCode",
                             "JobNumber",
                             "InvoiceNumber"});
-                table467.AddRow(new string[] {
+                table471.AddRow(new string[] {
                             "45K",
                             "45000",
                             "2030-02-01",
@@ -1672,7 +1672,7 @@ namespace LookupServices.BDD.Features
                             "MAINT",
                             "FIRST",
                             "FIRST"});
-                table467.AddRow(new string[] {
+                table471.AddRow(new string[] {
                             "50K",
                             "50000",
                             "2030-04-01",
@@ -1682,7 +1682,7 @@ namespace LookupServices.BDD.Features
                             "SECOND",
                             "SECOND"});
 #line 232
-    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table467, "And ");
+    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table471, "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -1719,7 +1719,7 @@ namespace LookupServices.BDD.Features
 #line 243
     await testRunner.GivenAsync(string.Format("reward \"REWARD\" uses historical visits before \"2030-07-01\" with \"{0}\"", mode), ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table468 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table472 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID",
                             "BranchID",
@@ -1729,7 +1729,7 @@ namespace LookupServices.BDD.Features
                             "PackageCode",
                             "LaborCode",
                             "Odometer"});
-                table468.AddRow(new string[] {
+                table472.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1739,7 +1739,7 @@ namespace LookupServices.BDD.Features
                             "ALT MDL 40K",
                             "MAINT",
                             "100"});
-                table468.AddRow(new string[] {
+                table472.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1750,7 +1750,7 @@ namespace LookupServices.BDD.Features
                             "MAINT",
                             "100"});
 #line 244
-    await testRunner.AndAsync("labor lines:", ((string)(null)), table468, "And ");
+    await testRunner.AndAsync("labor lines:", ((string)(null)), table472, "And ");
 #line hidden
 #line 248
     await testRunner.WhenAsync("evaluating service items for \"TEST-REWARD\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1758,7 +1758,7 @@ namespace LookupServices.BDD.Features
 #line 249
     await testRunner.ThenAsync(string.Format("service item \"REWARD\" has reward outcome \"{0}\"", outcome), ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-                global::Reqnroll.Table table469 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table473 = new global::Reqnroll.Table(new string[] {
                             "Label",
                             "Mileage",
                             "SatisfiedOn",
@@ -1767,7 +1767,7 @@ namespace LookupServices.BDD.Features
                             "LaborCode",
                             "JobNumber",
                             "InvoiceNumber"});
-                table469.AddRow(new string[] {
+                table473.AddRow(new string[] {
                             "45K",
                             "45000",
                             "2030-10-01",
@@ -1776,7 +1776,7 @@ namespace LookupServices.BDD.Features
                             "MAINT",
                             "FIRST",
                             "FIRST"});
-                table469.AddRow(new string[] {
+                table473.AddRow(new string[] {
                             "50K",
                             "50000",
                             "-",
@@ -1786,7 +1786,7 @@ namespace LookupServices.BDD.Features
                             "-",
                             "-"});
 #line 250
-    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table469, "And ");
+    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table473, "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -1823,7 +1823,7 @@ namespace LookupServices.BDD.Features
 #line 261
     await testRunner.GivenAsync(string.Format("reward \"REWARD\" uses historical visits before \"2030-07-01\" with \"{0}\"", mode), ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table470 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table474 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID",
                             "BranchID",
@@ -1833,7 +1833,7 @@ namespace LookupServices.BDD.Features
                             "PackageCode",
                             "LaborCode",
                             "Odometer"});
-                table470.AddRow(new string[] {
+                table474.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1843,7 +1843,7 @@ namespace LookupServices.BDD.Features
                             "ALT MDL 40K",
                             "MAINT",
                             "100"});
-                table470.AddRow(new string[] {
+                table474.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1853,7 +1853,7 @@ namespace LookupServices.BDD.Features
                             "OIL-MENU",
                             "OIL-CHANGE",
                             "100"});
-                table470.AddRow(new string[] {
+                table474.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1864,7 +1864,7 @@ namespace LookupServices.BDD.Features
                             "MAINT",
                             "100"});
 #line 262
-    await testRunner.AndAsync("labor lines:", ((string)(null)), table470, "And ");
+    await testRunner.AndAsync("labor lines:", ((string)(null)), table474, "And ");
 #line hidden
 #line 267
     await testRunner.WhenAsync("evaluating service items for \"TEST-REWARD\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1872,7 +1872,7 @@ namespace LookupServices.BDD.Features
 #line 268
     await testRunner.ThenAsync(string.Format("service item \"REWARD\" has reward outcome \"{0}\"", outcome), ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-                global::Reqnroll.Table table471 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table475 = new global::Reqnroll.Table(new string[] {
                             "Label",
                             "Mileage",
                             "SatisfiedOn",
@@ -1881,7 +1881,7 @@ namespace LookupServices.BDD.Features
                             "LaborCode",
                             "JobNumber",
                             "InvoiceNumber"});
-                table471.AddRow(new string[] {
+                table475.AddRow(new string[] {
                             "45K",
                             "45000",
                             "2030-04-01",
@@ -1890,7 +1890,7 @@ namespace LookupServices.BDD.Features
                             "OIL-CHANGE",
                             "FIRST",
                             "FIRST"});
-                table471.AddRow(new string[] {
+                table475.AddRow(new string[] {
                             "50K",
                             "50000",
                             "2030-06-01",
@@ -1900,7 +1900,7 @@ namespace LookupServices.BDD.Features
                             "SECOND",
                             "SECOND"});
 #line 269
-    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table471, "And ");
+    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table475, "And ");
 #line hidden
 #line 273
     await testRunner.AndAsync("service item \"REWARD\" has activation \"2030-06-01\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -1943,7 +1943,7 @@ namespace LookupServices.BDD.Features
 #line 282
     await testRunner.GivenAsync(string.Format("reward \"REWARD\" uses historical visits before \"2030-07-01\" with \"{0}\"", mode), ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table472 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table476 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID",
                             "BranchID",
@@ -1953,7 +1953,7 @@ namespace LookupServices.BDD.Features
                             "PackageCode",
                             "LaborCode",
                             "Odometer"});
-                table472.AddRow(new string[] {
+                table476.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1963,7 +1963,7 @@ namespace LookupServices.BDD.Features
                             "ALT MDL 40K",
                             "MAINT",
                             "100"});
-                table472.AddRow(new string[] {
+                table476.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1973,7 +1973,7 @@ namespace LookupServices.BDD.Features
                             "ADDITIVE44K",
                             "ADDITIVE",
                             "100"});
-                table472.AddRow(new string[] {
+                table476.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1983,7 +1983,7 @@ namespace LookupServices.BDD.Features
                             "",
                             "REPAIR",
                             "100"});
-                table472.AddRow(new string[] {
+                table476.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -1993,7 +1993,7 @@ namespace LookupServices.BDD.Features
                             "",
                             "WASH",
                             "100"});
-                table472.AddRow(new string[] {
+                table476.AddRow(new string[] {
                             "TEST-REWARD",
                             "1",
                             "10",
@@ -2004,7 +2004,7 @@ namespace LookupServices.BDD.Features
                             "MAINT",
                             "100"});
 #line 283
-    await testRunner.AndAsync("labor lines:", ((string)(null)), table472, "And ");
+    await testRunner.AndAsync("labor lines:", ((string)(null)), table476, "And ");
 #line hidden
 #line 290
     await testRunner.WhenAsync("evaluating service items for \"TEST-REWARD\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -2012,7 +2012,7 @@ namespace LookupServices.BDD.Features
 #line 291
     await testRunner.ThenAsync(string.Format("service item \"REWARD\" has reward outcome \"{0}\"", outcome), ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-                global::Reqnroll.Table table473 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table477 = new global::Reqnroll.Table(new string[] {
                             "Label",
                             "Mileage",
                             "SatisfiedOn",
@@ -2021,7 +2021,7 @@ namespace LookupServices.BDD.Features
                             "LaborCode",
                             "JobNumber",
                             "InvoiceNumber"});
-                table473.AddRow(new string[] {
+                table477.AddRow(new string[] {
                             "45K",
                             "45000",
                             "2030-10-01",
@@ -2030,7 +2030,7 @@ namespace LookupServices.BDD.Features
                             "MAINT",
                             "FIRST",
                             "FIRST"});
-                table473.AddRow(new string[] {
+                table477.AddRow(new string[] {
                             "50K",
                             "50000",
                             "-",
@@ -2040,7 +2040,7 @@ namespace LookupServices.BDD.Features
                             "-",
                             "-"});
 #line 292
-    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table473, "And ");
+    await testRunner.AndAsync("service item \"REWARD\" retains historical prerequisites:", ((string)(null)), table477, "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

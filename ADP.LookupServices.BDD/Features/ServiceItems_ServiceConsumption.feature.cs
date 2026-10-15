@@ -112,7 +112,7 @@ namespace LookupServices.BDD.Features
 #line 6
   await testRunner.GivenAsync("service lookup time is \"2026-02-15T00:00:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-            global::Reqnroll.Table table664 = new global::Reqnroll.Table(new string[] {
+            global::Reqnroll.Table table668 = new global::Reqnroll.Table(new string[] {
                         "ServiceItemID",
                         "Name",
                         "ActivationTrigger",
@@ -120,7 +120,7 @@ namespace LookupServices.BDD.Features
                         "CampaignID",
                         "ActiveForMonths",
                         "ServiceConsumption"});
-            table664.AddRow(new string[] {
+            table668.AddRow(new string[] {
                         "OFFER",
                         "Offer",
                         "ManualVinEntry",
@@ -129,18 +129,18 @@ namespace LookupServices.BDD.Features
                         "12",
                         "true"});
 #line 7
-  await testRunner.AndAsync("service items:", ((string)(null)), table664, "And ");
+  await testRunner.AndAsync("service items:", ((string)(null)), table668, "And ");
 #line hidden
-            global::Reqnroll.Table table665 = new global::Reqnroll.Table(new string[] {
+            global::Reqnroll.Table table669 = new global::Reqnroll.Table(new string[] {
                         "VIN",
                         "CampaignID",
                         "RecordedDate"});
-            table665.AddRow(new string[] {
+            table669.AddRow(new string[] {
                         "1FDKF37GXVEB34368",
                         "500",
                         "2026-02-01"});
 #line 10
-  await testRunner.AndAsync("campaign VIN entries:", ((string)(null)), table665, "And ");
+  await testRunner.AndAsync("campaign VIN entries:", ((string)(null)), table669, "And ");
 #line hidden
         }
         
@@ -201,14 +201,14 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 5
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table666 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table670 = new global::Reqnroll.Table(new string[] {
                             "CompanyID",
                             "BranchID",
                             "InvoiceNumber",
                             "OrderDocumentNumber",
                             "InvoiceDate",
                             "PackageCode"});
-                table666.AddRow(new string[] {
+                table670.AddRow(new string[] {
                             "1",
                             "10",
                             "INV-1",
@@ -216,14 +216,14 @@ await this.FeatureBackgroundAsync();
                             "2026-02-02",
                             "GENERAL"});
 #line 15
-  await testRunner.GivenAsync("labor lines:", ((string)(null)), table666, "Given ");
+  await testRunner.GivenAsync("labor lines:", ((string)(null)), table670, "Given ");
 #line hidden
-                global::Reqnroll.Table table667 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table671 = new global::Reqnroll.Table(new string[] {
                             "IgnoreBrokerStock"});
-                table667.AddRow(new string[] {
+                table671.AddRow(new string[] {
                             "false"});
 #line 18
-  await testRunner.WhenAsync("looking up service items for \"1FDKF37GXVEB34368\" with request options:", ((string)(null)), table667, "When ");
+  await testRunner.WhenAsync("looking up service items for \"1FDKF37GXVEB34368\" with request options:", ((string)(null)), table671, "When ");
 #line hidden
 #line 21
   await testRunner.ThenAsync("service item \"OFFER\" has status \"processed\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -232,12 +232,12 @@ await this.FeatureBackgroundAsync();
   await testRunner.AndAsync("service item \"OFFER\" has service evidence dated \"2026-02-02\" and no financial cla" +
                         "im", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table668 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table672 = new global::Reqnroll.Table(new string[] {
                             "IgnoreBrokerStock"});
-                table668.AddRow(new string[] {
+                table672.AddRow(new string[] {
                             "false"});
 #line 23
-  await testRunner.WhenAsync("looking up service items for \"1FDKF37GXVEB34368\" with request options:", ((string)(null)), table668, "When ");
+  await testRunner.WhenAsync("looking up service items for \"1FDKF37GXVEB34368\" with request options:", ((string)(null)), table672, "When ");
 #line hidden
 #line 26
   await testRunner.ThenAsync("service item \"OFFER\" has service evidence dated \"2026-02-02\" and no financial cla" +
@@ -271,27 +271,27 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 5
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table669 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table673 = new global::Reqnroll.Table(new string[] {
                             "CompanyID",
                             "BranchID",
                             "InvoiceNumber",
                             "OrderDocumentNumber",
                             "InvoiceDate"});
-                table669.AddRow(new string[] {
+                table673.AddRow(new string[] {
                             "1",
                             "10",
                             "INV-1",
                             "JOB-1",
                             "2026-01-31"});
 #line 29
-  await testRunner.GivenAsync("labor lines:", ((string)(null)), table669, "Given ");
+  await testRunner.GivenAsync("labor lines:", ((string)(null)), table673, "Given ");
 #line hidden
-                global::Reqnroll.Table table670 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table674 = new global::Reqnroll.Table(new string[] {
                             "IgnoreBrokerStock"});
-                table670.AddRow(new string[] {
+                table674.AddRow(new string[] {
                             "false"});
 #line 32
-  await testRunner.WhenAsync("looking up service items for \"1FDKF37GXVEB34368\" with request options:", ((string)(null)), table670, "When ");
+  await testRunner.WhenAsync("looking up service items for \"1FDKF37GXVEB34368\" with request options:", ((string)(null)), table674, "When ");
 #line hidden
 #line 35
   await testRunner.ThenAsync("service item \"OFFER\" has status \"pending\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -327,27 +327,27 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 5
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table671 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table675 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "BranchID",
                             "BrandID"});
-                table671.AddRow(new string[] {
+                table675.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2025-01-15",
                             "1",
                             "10",
                             "1"});
 #line 39
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table671, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table675, "Given ");
 #line hidden
-                global::Reqnroll.Table table672 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table676 = new global::Reqnroll.Table(new string[] {
                             "IgnoreBrokerStock"});
-                table672.AddRow(new string[] {
+                table676.AddRow(new string[] {
                             "false"});
 #line 42
-  await testRunner.WhenAsync("looking up service items for \"1FDKF37GXVEB34368\" with request options:", ((string)(null)), table672, "When ");
+  await testRunner.WhenAsync("looking up service items for \"1FDKF37GXVEB34368\" with request options:", ((string)(null)), table676, "When ");
 #line hidden
 #line 45
   await testRunner.ThenAsync("service item \"OFFER\" has activation \"2026-02-01\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
