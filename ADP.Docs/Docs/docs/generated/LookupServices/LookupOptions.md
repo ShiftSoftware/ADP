@@ -7,6 +7,7 @@ The main configuration class for the lookup services.
 
 | Property | Summary |
 |----------|---------|
+| VehicleClassificationResolver <div><strong>``Func<VehicleClassificationContext, IReadOnlyList<VehicleClassificationDTO>>?``</strong></div> | Optional host classification from the already-loaded aggregate. Called once per vehicle evaluation, shared by all items and the response. Unconfigured hosts perform no classification. Codes match exactly and case-sensitively; labels never grant eligibility. |
 | ServiceRewardTolerance <div><strong>``ServiceRewardToleranceOptions?``</strong></div> | Optional historical visit policy. Unconfigured hosts retain strict catalog evaluation. |
 | ServiceItemImageUrlResolver <div><strong>``Func<LookupOptionResolverModel<Dictionary<string,string>>, ValueTask<string?>>?``</strong></div> | Resolver delegate that converts a multilingual image dictionary to a resolved image URL for service items. |
 | BrandStandardWarrantyPeriodsInYears <div><strong>``Dictionary<long?, int>``</strong></div> | A dictionary mapping brand IDs to their standard warranty period in years. |

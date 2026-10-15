@@ -132,4 +132,7 @@
   <data name="Branch" xml:space="preserve">
     <value>Филиал</value>
   </data>
+  <data name="Eligibility conditions (JSON)" xml:space="preserve"><value>Условия доступности (JSON)</value></data>
+  <data name="Conditions are AND. Use an anyOf group for alternatives and set whenUnmet on the group. Groups cannot nest. Leave blank or use [] for no extra conditions. Campaign activation and validity still apply." xml:space="preserve"><value>Условия объединяются через AND. Для альтернатив используйте anyOf и задайте whenUnmet для группы. Вложенные группы не поддерживаются. Пустое поле или [] означает отсутствие дополнительных условий. Правила активации и срока действия сохраняются.</value></data>
+  <data name="Enter leaf conditions or non-empty anyOf groups using supported fields and properties. Groups cannot nest; set whenUnmet on the group, not its alternatives." xml:space="preserve"><value>Введите условия или непустые группы anyOf с поддерживаемыми полями и свойствами. Группы нельзя вкладывать друг в друга; whenUnmet задаётся для группы, а не для её альтернатив.</value></data>
 </root>

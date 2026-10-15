@@ -13,7 +13,7 @@ Options passed to the vehicle lookup service to control lookup behavior, languag
 | SSCLogInfo <div><strong>``SSCLogInfo``</strong></div> | The SSC log info to record if InsertSSCLog is true. |
 | InsertCustomerVehcileLookupLog <div><strong>``bool``</strong></div> | Whether to insert a customer vehicle lookup audit log entry. Ignored, like `InsertSSCLog`, when the request asks for an evaluation trace. |
 | CustomerVehicleLookupLogInfo <div><strong>``CustomerVehicleLookupLogInfo``</strong></div> | The customer vehicle lookup log info to record. |
-| VehicleServiceHistoryConsistencyLevel <div><strong>``ConsistencyLevels``</strong></div> | The consistency level for service history queries (defaults to Strong). |
+| VehicleServiceHistoryConsistencyLevel <div><strong>``ConsistencyLevels``</strong></div> | Invoice-group completeness filtering for resolved service history (defaults to Strong). Shared by host classification when configured; not database read consistency. |
 | LookupEndCustomer <div><strong>``bool``</strong></div> | Whether to look up end customer information for the vehicle. |
 | LegacyPaintThickness <div><strong>``bool``</strong></div> | Whether to include the legacy paint thickness format in the response. |
 | GeneratePaintThicknessCertificateUrls <div><strong>``bool``</strong></div> | Whether to generate the Paint Thickness Certificate's signed public URLs (`VehicleLookupDTO.PaintThicknessCertificateUrls`) when the certificate is available. The endpoint decides this per request — typically from a server-side permission check — so the capability URLs are only produced for callers allowed to print the certificate. |

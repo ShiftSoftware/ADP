@@ -16,6 +16,12 @@ namespace ShiftSoftware.ADP.Models.Vehicle;
 [Docable]
 public class EligibilityConditionQualifier
 {
+    /// <summary>Unsupported persisted JSON members make the condition invalid.</summary>
+    [DocIgnore]
+    [System.Text.Json.Serialization.JsonExtensionData]
+    [Newtonsoft.Json.JsonExtensionData]
+    public System.Collections.Generic.IDictionary<string, object> UnsupportedProperties { get; set; }
+
     /// <summary>How the trailing qualifier decides whether a milestone code takes part.</summary>
     public EligibilityConditionQualifierSelection Selection { get; set; }
 

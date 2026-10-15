@@ -53,7 +53,7 @@ public class VehicleLookupRequestOptions
     public bool InsertCustomerVehcileLookupLog { get; set; }
     /// <summary>The customer vehicle lookup log info to record.</summary>
     public CustomerVehicleLookupLogInfo CustomerVehicleLookupLogInfo { get; set; }
-    /// <summary>The consistency level for service history queries (defaults to Strong).</summary>
+    /// <summary>Invoice-group completeness filtering for resolved service history (defaults to Strong). Shared by host classification when configured; not database read consistency.</summary>
     public ConsistencyLevels VehicleServiceHistoryConsistencyLevel { get; set; } = ConsistencyLevels.Strong;
     /// <summary>Whether to look up end customer information for the vehicle.</summary>
     public bool LookupEndCustomer { get; set; }

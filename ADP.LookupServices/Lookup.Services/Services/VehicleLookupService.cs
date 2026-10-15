@@ -148,6 +148,19 @@ public class VehicleLookupService
         // owning dealer even when the activating company's entry has not synced yet.
         VehicleOwnership ownership = new VehicleOwnershipEvaluator(companyDataAggregate).Evaluate(vehicle);
 
+        var historyEvaluator = new VehicleServiceHistoryEvaluator(companyDataAggregate, lookupOptions, serviceProvider);
+        IReadOnlyList<VehicleServiceHistoryEvaluator.VehicleServiceHistoryInvoice> classificationHistory = null;
+        IEnumerable<VehicleServiceHistoryDTO> serviceHistory;
+        if (lookupOptions.VehicleClassificationResolver is null)
+            serviceHistory = await historyEvaluator.Evaluate(requestOptions.LanguageCode, requestOptions.VehicleServiceHistoryConsistencyLevel);
+        else
+        {
+            // Reuse the request's resolved invoice groups for both classification and presentation.
+            classificationHistory = VehicleServiceHistoryEvaluator.GetInvoices(companyDataAggregate,
+                requestOptions.VehicleServiceHistoryConsistencyLevel).ToArray();
+            serviceHistory = await historyEvaluator.Evaluate(requestOptions.LanguageCode, classificationHistory);
+        }
+
         var data = new VehicleLookupDTO()
         {
             VIN = vin,
@@ -156,7 +169,7 @@ public class VehicleLookupService
             PaintThicknessCertificateAvailable = new PaintThicknessCertificateEvaluator(companyDataAggregate, lookupOptions, serviceProvider).EvaluateAvailability(),
             Identifiers = new VehicleIdentifierEvaluator(companyDataAggregate).Evaluate(vehicle),
             VehicleSpecification = await new VehicleSpecificationEvaluator(vehicleLookupStorageService).Evaluate(vehicle, requestOptions),
-            ServiceHistory = await new VehicleServiceHistoryEvaluator(companyDataAggregate, lookupOptions, this.serviceProvider).Evaluate(requestOptions.LanguageCode, requestOptions.VehicleServiceHistoryConsistencyLevel),
+            ServiceHistory = serviceHistory,
             SSC = new VehicleSSCEvaluator(companyDataAggregate, lookupOptions).Evaluate(requestOptions.TraceSSCEvaluation),
             NextServiceDate = companyDataAggregate.LaborLines?.Max(x => x.NextServiceDate),
             Accessories = await new VehicleAccessoriesEvaluator(companyDataAggregate, lookupOptions, serviceProvider).Evaluate(requestOptions.LanguageCode),
@@ -219,6 +232,20 @@ public class VehicleLookupService
                 requestOptions.LanguageCode,
                 serviceProvider);
 
+        IReadOnlyCollection<string> classificationCodes = null;
+        IReadOnlyList<ServiceItemModel> classificationCatalog = null;
+        if (lookupOptions.VehicleClassificationResolver is { } resolver)
+        {
+            classificationCatalog = (await vehicleLookupStorageService.GetServiceItemsAsync() ?? Enumerable.Empty<ServiceItemModel>()).ToArray();
+            var context = new VehicleClassificationContext(companyDataAggregate, lookupOptions.GetUtcNow(),
+                requestOptions.LanguageCode, data.IsAuthorized, classificationHistory,
+                requestOptions.VehicleServiceHistoryConsistencyLevel, classificationCatalog);
+            data.Classifications = (resolver(context) ?? Array.Empty<VehicleClassificationDTO>())
+                .Where(x => x is not null && !string.IsNullOrWhiteSpace(x.Code))
+                .GroupBy(x => x.Code, StringComparer.Ordinal).Select(x => x.First()).ToArray();
+            classificationCodes = new HashSet<string>(data.Classifications.Select(x => x.Code), StringComparer.Ordinal);
+        }
+
         var traceCollector = requestOptions.TraceServiceItemEvaluation
             ? new ServiceItemTraceCollector(vin)
             : ServiceItemTraceCollector.Disabled;
@@ -237,7 +264,10 @@ public class VehicleLookupService
             ownership,
             data.Warranty?.FreeServiceStartDate,
             requestOptions.LanguageCode,
-            data.SaleInformation?.Broker
+            data.SaleInformation?.Broker,
+            classificationCodes,
+            classificationCatalog,
+            data.IsAuthorized
         );
 
         data.ServiceItems = serviceItemsResult.serviceItems;

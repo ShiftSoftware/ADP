@@ -1,3 +1,4 @@
+import type { VehicleClassificationDTO } from './vehicle-classification-dto';
 import type { VehicleIdentifiersDTO } from './vehicle-identifiers-dto';
 import type { VehicleSaleInformation } from './vehicle-sale-information';
 import type { PaintThicknessInspectionDTO } from './paint-thickness-inspection-dto';
@@ -12,6 +13,7 @@ import type { VehicleServiceItemDTO } from './vehicle-service-item-dto';
 import type { AccessoryDTO } from './accessory-dto';
 import type { VehicleServiceMenuDTO } from './vehicle-service-menu-dto';
 export type VehicleLookupDTO = {
+    classifications: VehicleClassificationDTO[];
     vin: string;
     identifiers: VehicleIdentifiersDTO;
     saleInformation: VehicleSaleInformation;

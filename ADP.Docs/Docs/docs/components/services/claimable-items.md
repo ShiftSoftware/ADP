@@ -158,6 +158,84 @@ Custom conditions are a closed, fail-closed contract. The supported fields are:
 | `serviceHistory.laborLines.packageCode` | `ContainsAll`; scope `Latest` with a positive count, or `All` with no count; one or more values; `Exact`, `EndsWith` or `Milestone` matching | Requires package codes across the selected service invoices. |
 | `serviceHistory.laborLines.maximumMilestone` | `Equals`, no scope, exactly one positive mileage; `program` optional, `qualifier` required | Requires the highest milestone the vehicle has reached to equal the configured mileage. |
 | `serviceItems.baseSchedule.maximumMileage` | `Equals`, no scope, exactly one positive invariant-culture integer string | Requires the derived base schedule cap to equal the configured mileage. |
+| `campaignVinEntries.campaignID` | `ContainsAll`, `Exact`, no scope/program/qualifier; one or more positive campaign ID strings | Requires a non-deleted entry for this VIN in every specified campaign. |
+| `vehicleClassifications.code` | `ContainsAll`, `Exact`, no scope/program/qualifier; one or more stable code strings | Requires every code from the optional server-side host classifier. Matching is case-sensitive; labels never grant eligibility. |
+| `isAuthorized` | `Equals`, `Exact`, no scope/program/qualifier; exactly one `"true"` or `"false"` string | Uses the native evaluated vehicle authorization verdict, including official VIN, vehicle entry and SSC evidence. Does not depend on classification tags or a host classifier. Supported inside `anyOf` groups. |
+| `vehicleInspections.companyID` | `ContainsAll`, `Exact`, no program/qualifier; scope `All` with no count and a positive `inspectionTypeID`; one or more positive company ID strings | Requires non-deleted inspections of that type for this VIN by every listed company. For "any of these companies", use an `anyOf` group with one company per alternative. It does not choose which inspection activates the item. |
+
+The optional `LookupOptions.VehicleClassificationResolver` receives the loaded aggregate and independent
+resolved facts once per vehicle evaluation. Its history is the same invoice evidence, with the same
+request consistency, used by the lookup response. Its codes serve all item conditions and its labels
+are returned in `VehicleLookupDTO.Classifications`. Hosts without a resolver do no classification work;
+ordinary items still evaluate and required classification codes are unmet. Conditions in the array
+remain AND; use `anyOf` below for explicit alternatives. This field currently applies to service items, not configured extended-warranty awards.
+Lookup evaluates eligibility before signing the item. The claim endpoint validates the signature and
+its expiry, requires the signed `Claimable` value to be true, and retains the host's QR and permission
+checks. It does not repeat lookup or eligibility evaluation. Eligibility changes take effect on the
+next lookup; an already-issued result remains usable until its signature expires.
+
+An array entry can instead be an **`anyOf` group**: at least one supported leaf must match.
+The outer array remains AND, so a group never bypasses other conditions or the campaign's
+activation trigger, scopes, or validity rules. Configure one item to avoid duplicate benefits
+when multiple alternatives match:
+
+```json
+[
+  {
+    "anyOf": [
+      { "field": "vehicleClassifications.code", "operator": "ContainsAll", "values": ["member"] },
+      { "field": "campaignVinEntries.campaignID", "operator": "ContainsAll", "values": ["500"] }
+    ],
+    "whenUnmet": "Hide"
+  }
+]
+```
+
+`500` and `member` are synthetic examples. `anyOf` must contain one or more ordinary leaf
+conditions. Nested groups, unknown fields/operators/properties, empty alternatives, and mixed
+group/leaf shapes are invalid. All alternatives are validated before any is matched, so a valid
+branch cannot mask a malformed sibling. Null `anyOf` is invalid too.
+
+Set `whenUnmet` on the group: Hide (default), Lock, or Miss applies only when no alternative
+matches. Alternatives must omit `whenUnmet` or use its default Hide; conflicting branch outcomes
+are rejected. Groups do not produce a prerequisite unlock date or infer that an alternative's
+milestone ceiling disqualifies every other branch. Existing top-level Hide/Lock/Miss precedence
+and milestone behavior are unchanged. In particular, an inspection-triggered item still uses
+its qualifying inspection for activation and expiry when either alternative holds.
+
+Campaign membership is an additional eligibility condition, not an activation trigger. For example,
+an inspection-triggered voucher with the following condition still needs a qualifying inspection.
+Membership alone does not activate it, and an inspection without membership does not qualify.
+The inspection remains the activation date and claim identity. Duplicate membership entries do not
+create extra inspection vouchers. Customer contact details are not required by this condition.
+
+```json
+{
+  "eligibilityConditions": [
+    {
+      "field": "campaignVinEntries.campaignID",
+      "operator": "ContainsAll",
+      "values": ["500"],
+      "whenUnmet": "Hide"
+    }
+  ]
+}
+```
+
+The existing claimable-item form has an **Eligibility conditions (JSON)** field. Enter the array
+inside `eligibilityConditions` above, not the enclosing catalog object. The DTO and entity store
+the authored text in `EligibilityConditions`. Blank text, JSON `null`, and `[]` add no conditions.
+Saving and reopening preserves property casing, formatting, and string values, including spaces.
+The API and form validate the array against `EligibilityConditionModel` and reject unknown or duplicate
+properties, invalid value types, unsupported fields, and field shapes the lookup does not read. Every
+leaf, top-level or inside `anyOf`, passes the same shape rules (`EligibilityConditionGroup`), so a
+misspelled field is rejected when saved rather than hiding the item. The lookup evaluator remains the
+runtime authority and fails closed on anything it cannot interpret.
+
+Hosts must add a nullable text column before using the updated module. The module's Cosmos
+replication reads the stored JSON into the existing catalog model, including scope, program,
+qualifier, matching mode, and unmet behavior. Separate snapshot/bulk-report pipelines must carry
+the same JSON. Conditions do not change campaign activation or validity and do not import VINs.
 
 Every declared condition must match. An unknown field or operator, malformed value/scope, missing cap, or insufficient history excludes the item.
 

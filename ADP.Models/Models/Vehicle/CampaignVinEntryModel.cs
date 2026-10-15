@@ -4,10 +4,12 @@ namespace ShiftSoftware.ADP.Models.Vehicle;
 
 /// <summary>
 /// Represents a per-VIN entry recorded against a service campaign.
-/// Used by campaigns whose <see cref="Enums.ClaimableItemCampaignActivationTrigger"/> is
+/// Provides campaign membership evidence for eligibility conditions. Also used by campaigns whose
+/// <see cref="Enums.ClaimableItemCampaignActivationTrigger"/> is
 /// <see cref="Enums.ClaimableItemCampaignActivationTrigger.ManualVinEntry"/> — an admin tags a VIN
 /// as eligible for a specific campaign (e.g., the 500th customer reward), and the evaluator activates
 /// every <see cref="ServiceItemModel"/> in that campaign for the VIN at <see cref="RecordedDate"/>.
+/// Membership conditions do not replace an item's activation trigger.
 /// </summary>
 [Docable]
 public class CampaignVinEntryModel : IPartitionedItem, ICompanyProps

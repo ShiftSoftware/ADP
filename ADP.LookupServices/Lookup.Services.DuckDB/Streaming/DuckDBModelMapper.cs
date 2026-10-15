@@ -141,6 +141,8 @@ internal sealed class DuckDBModelMapper<T> where T : new()
         }
         if (type.IsEnum)
             return (reader, ordinal) => Enum.ToObject(type, Convert.ToInt32(reader.GetValue(ordinal), CultureInfo.InvariantCulture));
+        if (type == typeof(IEnumerable<ShiftSoftware.ADP.Models.Vehicle.EligibilityConditionModel>))
+            return (reader, ordinal) => EligibilityConditionJsonCell.Read(reader.GetValue(ordinal)?.ToString());
         if (IsComplex(type))
         {
             // The storage read these inside a per-property try/catch: an empty or malformed JSON cell

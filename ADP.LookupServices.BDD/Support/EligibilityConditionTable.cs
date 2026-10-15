@@ -22,7 +22,7 @@ internal static class EligibilityConditionTable
 
     private static EligibilityConditionModel ReadRow(DataTableRow row)
     {
-        var hasScope = HasValue(row, "Selection") || HasValue(row, "Count");
+        var hasScope = HasValue(row, "Selection") || HasValue(row, "Count") || HasValue(row, "InspectionTypeID");
 
         var condition = new EligibilityConditionModel
         {
@@ -34,6 +34,7 @@ internal static class EligibilityConditionTable
                     ? Enum.Parse<EligibilityConditionSelection>(row["Selection"])
                     : default,
                 Count = HasValue(row, "Count") ? int.Parse(row["Count"]) : null,
+                InspectionTypeID = HasValue(row, "InspectionTypeID") ? long.Parse(row["InspectionTypeID"]) : null,
             } : null,
             Values = ReadValues(row),
         };

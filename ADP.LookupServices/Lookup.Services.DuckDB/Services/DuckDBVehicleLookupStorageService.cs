@@ -929,6 +929,8 @@ public class DuckDBVehicleLookupStorageService(global::DuckDB.NET.Data.DuckDBCon
         if (underlyingType.IsEnum)
             return Enum.ToObject(underlyingType, Convert.ToInt32(reader.GetValue(ordinal)));
 
+        if (underlyingType == typeof(IEnumerable<ShiftSoftware.ADP.Models.Vehicle.EligibilityConditionModel>))
+            return ShiftSoftware.ADP.Lookup.Services.DuckDB.EligibilityConditionJsonCell.Read(reader.GetValue(ordinal)?.ToString());
         if (IsComplexType(underlyingType))
         {
             var jsonString = reader.GetString(ordinal);

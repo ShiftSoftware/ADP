@@ -17,6 +17,9 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 [Docable]
 public class VehicleLookupDTO
 {
+    /// <summary>Server-resolved host classifications. Labels are display-only.</summary>
+    public IReadOnlyList<VehicleClassificationDTO> Classifications { get; set; } = Array.Empty<VehicleClassificationDTO>();
+
     /// <summary>
     /// The Vehicle Identification Number (VIN) that was looked up.
     /// </summary>

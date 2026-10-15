@@ -415,6 +415,9 @@ public class SharedStepDefinitions
                 InspectionDate = DateTimeOffset.Parse(row["InspectionDate"]),
                 VehicleInspectionTypeID = row.ContainsKey("VehicleInspectionTypeID") && !string.IsNullOrWhiteSpace(row["VehicleInspectionTypeID"])
                     ? long.Parse(row["VehicleInspectionTypeID"]) : 0,
+                VIN = GetOptionalString(row, "VIN")!,
+                CompanyID = GetOptionalLong(row, "CompanyID"),
+                IsDeleted = GetOptionalString(row, "IsDeleted") is { } deleted && bool.Parse(deleted),
             }));
     }
 
@@ -430,6 +433,7 @@ public class SharedStepDefinitions
                 CampaignUniqueReference = GetOptionalString(row, "CampaignUniqueReference"),
                 RecordedDate = DateTimeOffset.Parse(row["RecordedDate"]),
                 CompanyID = GetOptionalLong(row, "CompanyID"),
+                IsDeleted = GetOptionalString(row, "IsDeleted") is { } deleted && bool.Parse(deleted),
             }));
     }
 

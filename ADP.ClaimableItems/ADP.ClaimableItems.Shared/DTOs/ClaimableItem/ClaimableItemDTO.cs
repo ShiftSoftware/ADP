@@ -29,6 +29,8 @@ public class ClaimableItemDTO : ShiftEntityViewAndUpsertDTO
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public DurationType ActiveForDurationType { get; set; }
     public List<ClaimableItemCostDTO> Costs { get; set; } = new();
+    /// <summary>Optional JSON array of eligibility conditions. Preserved as authored.</summary>
+    public string? EligibilityConditions { get; set; }
 
     [Required]
     public ShiftEntitySelectDTO? Campaign { get; set; }

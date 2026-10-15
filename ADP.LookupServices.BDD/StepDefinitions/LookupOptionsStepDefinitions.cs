@@ -47,6 +47,27 @@ public class LookupOptionsStepDefinitions
         _context.Options.TimeProvider = new FixedTimeProvider(new DateTimeOffset(instant, TimeSpan.Zero));
     }
 
+    /// <summary>
+    /// Configures the host's vehicle classification resolver to return the given comma-separated
+    /// codes for every vehicle, exactly as written (codes are compared case-sensitively).
+    /// </summary>
+    [Given("the host classifies the vehicle as {string}")]
+    public void GivenTheHostClassifiesTheVehicleAs(string codes)
+    {
+        var classifications = codes
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Select(code => new VehicleClassificationDTO { Code = code, Label = code })
+            .ToArray();
+
+        _context.Options.VehicleClassificationResolver = _ => classifications;
+    }
+
+    [Given("the host does not classify vehicles")]
+    public void GivenTheHostDoesNotClassifyVehicles()
+    {
+        _context.Options.VehicleClassificationResolver = null;
+    }
+
     [Given("LookupOptions has signature validity duration of {int} minutes")]
     public void GivenSignatureValidityDurationMinutes(int minutes)
     {

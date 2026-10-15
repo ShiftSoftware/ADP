@@ -89,6 +89,81 @@ public sealed class VehicleReportRunTests : IDisposable
         Assert.Empty(Directory.GetFiles(outputDirectory, "*.partial", SearchOption.AllDirectories));
     }
 
+    [Theory]
+    [InlineData("""[{"anyOf":[{"field":"vehicleClassifications.code","values":["member"]},{"field":"campaignVinEntries.campaignID","values":["500"]}]}]""", 2)]
+    [InlineData("""[{"AnyOf":[{"Field":"vehicleClassifications.code","Values":["member"]},{"Field":"campaignVinEntries.campaignID","Values":["500"]}]}]""", 2)]
+    [InlineData("""[{"field":"vehicleClassifications.code","values":["member"]},{"field":"campaignVinEntries.campaignID","values":["500"]}]""", 1)]
+    [InlineData("{", 0)]
+    [InlineData("""[{"anyOf":[]}]""", 0)]
+    [InlineData("""[{"anyOf":[{"field":"vehicleClassifications.code","values":["member"],"operator":"Unsupported"}]}]""", 0)]
+    [InlineData("""[{"anyOf":[{"field":"vehicleClassifications.code","values":["member"]}],"unknown":true}]""", 0)]
+    [InlineData("""[{"field":"vehicleClassifications.code","values":["member"],"values":["member"]}]""", 0)]
+    public async Task Or_conditions_survive_reference_preloading_and_emit_one_row_per_qualifying_vehicle(string conditionsJson, int expectedRows)
+    {
+        using (var connection = new DuckDBConnection($"Data Source={storePath}"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = $$"""
+                CREATE TABLE data.ServingVehicleInspection (id VARCHAR, VIN VARCHAR, VehicleInspectionTypeID BIGINT, InspectionDate TIMESTAMP, IsDeleted BOOLEAN, "_Deleted" BOOLEAN);
+                CREATE TABLE data.ServingCampaignVinEntry (id VARCHAR, VIN VARCHAR, CampaignID BIGINT, IsDeleted BOOLEAN, "_Deleted" BOOLEAN);
+                INSERT INTO data.ServingVehicleInspection VALUES
+                    ('i1', 'VIN00000000000001', 10, TIMESTAMP '2026-01-05', false, false),
+                    ('i2', 'VIN00000000000002', 10, TIMESTAMP '2026-01-05', false, false);
+                INSERT INTO data.ServingCampaignVinEntry VALUES
+                    ('t1', 'VIN00000000000001', 500, false, false),
+                    ('t2', 'VIN00000000000002', 500, false, false);
+                ALTER TABLE data.ServingServiceItem ADD COLUMN IntegrationID VARCHAR;
+                ALTER TABLE data.ServingServiceItem ADD COLUMN CampaignID BIGINT;
+                ALTER TABLE data.ServingServiceItem ADD COLUMN CampaignStartDate TIMESTAMP;
+                ALTER TABLE data.ServingServiceItem ADD COLUMN CampaignEndDate TIMESTAMP;
+                ALTER TABLE data.ServingServiceItem ADD COLUMN VehicleInspectionTypeID BIGINT;
+                ALTER TABLE data.ServingServiceItem ADD COLUMN CampaignActivationTrigger INTEGER;
+                ALTER TABLE data.ServingServiceItem ADD COLUMN CampaignActivationType INTEGER;
+                ALTER TABLE data.ServingServiceItem ADD COLUMN ValidityMode INTEGER;
+                ALTER TABLE data.ServingServiceItem ADD COLUMN ActiveFor INTEGER;
+                ALTER TABLE data.ServingServiceItem ADD COLUMN ActiveForDurationType INTEGER;
+                ALTER TABLE data.ServingServiceItem ADD COLUMN EligibilityConditions VARCHAR;
+                INSERT INTO data.ServingServiceItem (id, IntegrationID, IsDeleted, "_Deleted", CampaignID, CampaignStartDate,
+                    CampaignEndDate, VehicleInspectionTypeID, CampaignActivationTrigger, CampaignActivationType,
+                    ValidityMode, ActiveFor, ActiveForDurationType, EligibilityConditions) VALUES
+                    ('voucher', 'voucher', false, false, 500, TIMESTAMP '2026-01-01', TIMESTAMP '2027-01-01', 10,
+                    {{(int)Models.Enums.ClaimableItemCampaignActivationTrigger.VehicleInspection}},
+                    {{(int)Models.Enums.ClaimableItemCampaignActivationTypes.FirstTriggerOnly}},
+                    {{(int)Models.Enums.ClaimableItemValidityMode.RelativeToActivation}}, 1, {{(int)Models.Enums.DurationType.Months}},
+                    '{{conditionsJson.Replace("'", "''")}}');
+                """;
+            command.ExecuteNonQuery();
+        }
+        var calls = 0;
+        var result = await VehicleReportRun.RunAsync(new VehicleReportRun.Options
+        {
+            Source = BulkLookupSource.HawtaStore(storePath, [AggregateFamilies.VehicleEntry,
+                AggregateFamilies.VehicleInspection, AggregateFamilies.CampaignVinEntry]),
+            Lookup = storage => new VehicleLookupService(storage, options: new LookupOptions
+            {
+                TimeProvider = new OrClock(),
+                VehicleClassificationResolver = context =>
+                {
+                    Interlocked.Increment(ref calls);
+                    Assert.Equal(Enums.ConsistencyLevels.Strong, context.ServiceHistoryConsistencyLevel);
+                    return context.Aggregate.VIN.EndsWith("1") ? [new() { Code = "member" }] : [];
+                },
+            }),
+            OutputDirectory = outputDirectory,
+            Reports = VehicleReports.WithoutBrokerStock,
+            Degree = 1,
+        });
+        Assert.Equal(2, calls);
+        Assert.Equal(2, result.Evaluations);
+        Assert.Equal(expectedRows, RowsIn(Path.Combine(outputDirectory, "ServiceItem", "vehicle-service-items-report.parquet")));
+    }
+
+    private sealed class OrClock : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => new(2026, 1, 10, 0, 0, 0, TimeSpan.Zero);
+    }
+
     [Fact]
     public async Task ReportsSharingARequest_EvaluateOnce_AndDistinctRequestsEvaluateSeparately()
     {

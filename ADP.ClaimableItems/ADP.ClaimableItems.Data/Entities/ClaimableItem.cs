@@ -25,6 +25,8 @@ public class ClaimableItem : ShiftEntity<ClaimableItem>, IEntityHasUniqueHash<Cl
     public ClaimableItemAttachmentFieldBehavior AttachmentFieldBehavior { get; set; }
     public decimal? FixedCost { get; set; }
     public string Costs { get; set; } = default!;
+    /// <summary>Optional JSON array using the existing EligibilityConditionModel contract.</summary>
+    public string? EligibilityConditions { get; set; }
     public long? CampaignID { get; set; }
     public virtual Campaign? Campaign { get; set; }
 

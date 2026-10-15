@@ -153,4 +153,7 @@
   <data name="Invalid signature." xml:space="preserve">
     <value>Invalid signature.</value>
   </data>
+  <data name="Eligibility conditions (JSON)" xml:space="preserve"><value>Eligibility conditions (JSON)</value></data>
+  <data name="Conditions are AND. Use an anyOf group for alternatives and set whenUnmet on the group. Groups cannot nest. Leave blank or use [] for no extra conditions. Campaign activation and validity still apply." xml:space="preserve"><value>Conditions are AND. Use an anyOf group for alternatives and set whenUnmet on the group. Groups cannot nest. Leave blank or use [] for no extra conditions. Campaign activation and validity still apply.</value></data>
+  <data name="Enter leaf conditions or non-empty anyOf groups using supported fields and properties. Groups cannot nest; set whenUnmet on the group, not its alternatives." xml:space="preserve"><value>Enter leaf conditions or non-empty anyOf groups using supported fields and properties. Groups cannot nest; set whenUnmet on the group, not its alternatives.</value></data>
 </root>

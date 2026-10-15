@@ -21,6 +21,7 @@ internal sealed partial class VehicleEligibilityConditionEvaluator
     internal const string ServiceHistoryPackageCodeField = "serviceHistory.laborLines.packageCode";
     internal const string ServiceHistoryMaximumMilestoneField = "serviceHistory.laborLines.maximumMilestone";
     internal const string BaseScheduleMaximumMileageField = "serviceItems.baseSchedule.maximumMileage";
+    internal const string CampaignMembershipField = "campaignVinEntries.campaignID";
 
     // A deployment that configures nothing reads no milestones. That is the intended state rather
     // than a gap: a default convention is one network's writing habits presented as everyone's, and
@@ -30,6 +31,8 @@ internal sealed partial class VehicleEligibilityConditionEvaluator
     private readonly CompanyDataAggregateModel companyDataAggregate;
     private readonly IServiceMilestoneResolver milestoneResolver;
     private readonly bool collectMilestoneNearMisses;
+    private readonly IReadOnlyCollection<string> classificationCodes;
+    private readonly Lazy<bool> isAuthorized;
 
     // Gathered per Evaluate call and reset by it, so one instance can be reused across definitions
     // without carrying the last one's findings into the next.
@@ -39,9 +42,13 @@ internal sealed partial class VehicleEligibilityConditionEvaluator
     internal VehicleEligibilityConditionEvaluator(
         CompanyDataAggregateModel companyDataAggregate,
         LookupOptions options,
-        bool collectMilestoneNearMisses = false)
+        bool collectMilestoneNearMisses = false,
+        IReadOnlyCollection<string> classificationCodes = null,
+        bool? isAuthorized = null)
     {
         this.companyDataAggregate = companyDataAggregate;
+        this.classificationCodes = classificationCodes;
+        this.isAuthorized = new Lazy<bool>(() => isAuthorized ?? new VehicleAuthorizationEvaluator(companyDataAggregate).Evaluate());
         this.milestoneResolver = (options?.ServiceMilestones ?? UnconfiguredMilestoneOptions).GetResolver();
         this.collectMilestoneNearMisses = collectMilestoneNearMisses;
     }
@@ -69,7 +76,10 @@ internal sealed partial class VehicleEligibilityConditionEvaluator
 
         foreach (var condition in conditions ?? Enumerable.Empty<EligibilityConditionModel>())
         {
-            if (condition is null)
+            if (condition is null || !Enum.IsDefined(typeof(EligibilityConditionUnmetBehavior), condition.WhenUnmet)
+                || condition.UnsupportedProperties?.Count > 0
+                || condition.Scope?.UnsupportedProperties?.Count > 0 || condition.Qualifier?.UnsupportedProperties?.Count > 0
+                || (condition.AnyOf is not null && !EligibilityConditionGroup.IsValid(condition)))
                 return Hidden();
 
             if (MatchesCondition(condition, baseScheduleMaximumMileage, out var exceedsMilestoneCeiling))
@@ -134,6 +144,50 @@ internal sealed partial class VehicleEligibilityConditionEvaluator
         out bool exceedsMilestoneCeiling)
     {
         exceedsMilestoneCeiling = false;
+        if (condition.Scope?.InspectionTypeID is not null && condition.Field != "vehicleInspections.companyID") return false;
+        if (condition.AnyOf is not null)
+        {
+            // Validate every alternative before matching any. Children are predicates, not separate
+            // outcomes or activation clocks; only the group owns the failure behavior.
+            return condition.AnyOf.Any(alternative => MatchesCondition(alternative, baseScheduleMaximumMileage, out _));
+        }
+        if (string.Equals(condition.Field, "isAuthorized", StringComparison.Ordinal))
+        {
+            var values = condition.Values?.ToList();
+            return condition.Operator == EligibilityConditionOperator.Equals
+                && condition.ValueMatch == EligibilityConditionValueMatch.Exact
+                && condition.Scope is null && condition.Program is null && condition.Qualifier is null
+                && values is { Count: 1 } && bool.TryParse(values[0], out var expected)
+                && !string.IsNullOrWhiteSpace(companyDataAggregate.VIN)
+                && isAuthorized.Value == expected;
+        }
+        if (string.Equals(condition.Field, "vehicleClassifications.code", StringComparison.Ordinal))
+        {
+            var values = condition.Values?.ToList();
+            return condition.Operator == EligibilityConditionOperator.ContainsAll
+                && condition.ValueMatch == EligibilityConditionValueMatch.Exact
+                && condition.Scope is null && condition.Program is null && condition.Qualifier is null
+                && values is { Count: > 0 } && classificationCodes is not null
+                && values.All(value => !string.IsNullOrWhiteSpace(value)
+                    && classificationCodes.Contains(value, StringComparer.Ordinal));
+        }
+
+        if (string.Equals(condition.Field, CampaignMembershipField, StringComparison.Ordinal))
+            return MatchesCampaignMembership(condition);
+
+        if (string.Equals(condition.Field, "vehicleInspections.companyID", StringComparison.Ordinal))
+        {
+            var values = condition.Values?.ToList();
+            if (condition.Operator != EligibilityConditionOperator.ContainsAll || condition.ValueMatch != EligibilityConditionValueMatch.Exact
+                || condition.Program is not null || condition.Qualifier is not null
+                || condition.Scope?.Selection != EligibilityConditionSelection.All || condition.Scope.Count is not null || condition.Scope.InspectionTypeID is not > 0
+                || values is null || values.Count == 0 || string.IsNullOrWhiteSpace(companyDataAggregate.VIN)) return false;
+            var companies = new HashSet<long?>((companyDataAggregate.VehicleInspections ?? Enumerable.Empty<VehicleInspectionModel>())
+                .Where(i => i is not null && !i.IsDeleted && i.VehicleInspectionTypeID == condition.Scope.InspectionTypeID
+                    && string.Equals(i.VIN, companyDataAggregate.VIN, StringComparison.OrdinalIgnoreCase)).Select(i => i.CompanyID));
+            return values.All(v => long.TryParse(v, NumberStyles.None, CultureInfo.InvariantCulture, out var id) && id > 0 && companies.Contains(id));
+        }
+
         if (string.Equals(condition.Field, ServiceHistoryPackageCodeField, StringComparison.Ordinal))
             return MatchesServiceHistoryCondition(condition);
 
@@ -144,6 +198,32 @@ internal sealed partial class VehicleEligibilityConditionEvaluator
             return MatchesBaseScheduleMaximumMileageCondition(condition, baseScheduleMaximumMileage);
 
         return false;
+    }
+
+    private bool MatchesCampaignMembership(EligibilityConditionModel condition)
+    {
+        var values = condition.Values?.ToList();
+        if (condition.Operator != EligibilityConditionOperator.ContainsAll ||
+            condition.ValueMatch != EligibilityConditionValueMatch.Exact ||
+            condition.Scope is not null || condition.Program is not null || condition.Qualifier is not null ||
+            values is null || values.Count == 0 || string.IsNullOrWhiteSpace(companyDataAggregate.VIN))
+            return false;
+
+        var campaignIds = new List<long>();
+        foreach (var value in values)
+        {
+            if (!long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var id) || id <= 0)
+                return false;
+            campaignIds.Add(id);
+        }
+
+        // Membership is evidence only. The item's existing trigger still controls activation.
+        var memberships = new HashSet<long?>((companyDataAggregate.CampaignVinEntries ?? Enumerable.Empty<CampaignVinEntryModel>())
+            .Where(entry => entry is not null && !entry.IsDeleted &&
+                string.Equals(entry.VIN, companyDataAggregate.VIN, StringComparison.OrdinalIgnoreCase))
+            .Select(entry => entry.CampaignID));
+
+        return campaignIds.All(id => memberships.Contains(id));
     }
 
     private bool MatchesServiceHistoryCondition(EligibilityConditionModel condition)

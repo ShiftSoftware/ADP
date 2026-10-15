@@ -28,7 +28,6 @@
                                TEntitySet="CampaignListDTO"
                                EntitySet="@(CIOptions.Value.ResolvedRoutePrefix + "ServiceCampaign")"
                                For="() => TheItem.Campaign"
-                               Filter="x => x.Add(f => { f.Field = nameof(CampaignListDTO.ActivationTrigger); f.Value = ClaimableItemCampaignActivationTrigger.ManualVinEntry; })"
                                @bind-Value="TheItem.Campaign" />
         </MudItem>
 

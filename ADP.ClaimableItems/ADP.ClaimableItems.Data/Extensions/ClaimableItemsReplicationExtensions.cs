@@ -245,11 +245,11 @@ public static class ClaimableItemsReplicationExtensions
         PackageCode = item.PackageCode!,
         UniqueReference = item.UniqueReference!,
         CampaignID = item.CampaignID,
+        EligibilityConditions = ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ClaimableItem.EligibilityConditionsJson.Parse(item.EligibilityConditions),
         ValidityMode = item.ValidityMode,
         ClaimingMethod = item.ClaimingMethod,
 
-        // Photo and EligibilityConditions are deliberately NOT set: ClaimableItem has no
-        // source for either, so AutoMapper left them at their default too.
+        // Photo has no source on ClaimableItem and remains unset.
     };
 
     /// <summary>The campaign document (Services/ClaimableItemCampaigns), for the trigger and a consumer's catch-up.</summary>

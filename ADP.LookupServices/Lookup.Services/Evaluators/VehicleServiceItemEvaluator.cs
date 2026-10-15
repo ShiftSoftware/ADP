@@ -19,6 +19,8 @@ public partial class VehicleServiceItemEvaluator
     private readonly IVehicleLookupStorageService lookupCosmosService;
     private readonly LookupOptions options;
     private readonly IServiceProvider services;
+    private IReadOnlyCollection<string> classificationCodes;
+    private bool? isAuthorized;
 
     /// <summary>
     /// Optional diagnostic trace collector. Defaults to <see cref="ServiceItemTraceCollector.Disabled"/>
@@ -62,10 +64,16 @@ public partial class VehicleServiceItemEvaluator
         VehicleOwnership ownership,
         DateTime? freeServiceStartDate,
         string languageCode,
-        VehicleBrokerSaleInformation brokerSaleInformation = null)
+        VehicleBrokerSaleInformation brokerSaleInformation = null,
+        IReadOnlyCollection<string> classificationCodes = null,
+        IReadOnlyList<ServiceItemModel> serviceItemCatalog = null,
+        bool? isAuthorized = null)
     {
+        // Resolved once upstream; this evaluator never re-reads history or invokes the host classifier.
+        this.classificationCodes = classificationCodes;
+        this.isAuthorized = isAuthorized;
         var requestedStartDate = freeServiceStartDate;
-        var serviceItems = (await LoadServiceItemCatalog()).ToList();
+        var serviceItems = (serviceItemCatalog ?? await LoadServiceItemCatalog()).ToList();
         (freeServiceStartDate, var showingInactivatedItems) = ResolveActivationMode(vehicle, freeServiceStartDate);
 
         // De facto date (earliest non-deleted ItemClaim.ClaimDate) — same computation
@@ -629,7 +637,7 @@ public partial class VehicleServiceItemEvaluator
             // A historical claim remains visible even if a static filter now hides the definition.
             // Read only its locking milestone clauses for explanatory evidence, never to re-decide
             // the claim or to manufacture a completion from the claim date.
-            var requirements = new VehicleEligibilityConditionEvaluator(companyDataAggregate, options)
+            var requirements = new VehicleEligibilityConditionEvaluator(companyDataAggregate, options, classificationCodes: classificationCodes, isAuthorized: isAuthorized)
                 .Evaluate(item.EligibilityConditions?.Where(condition => condition?.WhenUnmet == EligibilityConditionUnmetBehavior.Lock))
                 .Prerequisites;
             var dto = new VehicleServiceItemDTO
@@ -896,7 +904,7 @@ public partial class VehicleServiceItemEvaluator
         // The static filters answer with facts about the vehicle — its brand, its market, its owner —
         // and an item failing one of those was never this customer's to see. Only the custom
         // conditions can produce something worth showing unclaimable.
-        var evaluator = new VehicleEligibilityConditionEvaluator(companyDataAggregate, options, Trace.IsEnabled);
+        var evaluator = new VehicleEligibilityConditionEvaluator(companyDataAggregate, options, Trace.IsEnabled, classificationCodes, isAuthorized);
         var outcome = evaluator.EvaluateTolerance(item, baseScheduleMaximumMileage, hasCalculatedStart ? freeServiceStartDate : null,
             options.ServiceRewardTolerance, out var toleranceDiagnostic);
         if (toleranceDiagnostic is not null)

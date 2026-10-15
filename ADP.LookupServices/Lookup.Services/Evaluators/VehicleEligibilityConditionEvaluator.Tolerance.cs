@@ -22,6 +22,8 @@ internal sealed partial class VehicleEligibilityConditionEvaluator
             return null;
 
         var conditions = item.EligibilityConditions?.ToList() ?? new();
+        if (conditions.Any(c => c?.AnyOf is not null && !EligibilityConditionGroup.IsValid(c)))
+            return EligibilityConditionOutcome.Hidden;
         var locks = conditions.Where(c => c?.WhenUnmet == EligibilityConditionUnmetBehavior.Lock).ToList();
         var ceilings = conditions.Where(c => c?.Field == ServiceHistoryMaximumMilestoneField).ToList();
         var requirement = locks.Count == 1 ? locks[0] : null;

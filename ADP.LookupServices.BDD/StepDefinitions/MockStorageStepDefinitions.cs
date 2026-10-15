@@ -199,6 +199,33 @@ public class MockStorageStepDefinitions
         item.EligibilityConditions = EligibilityConditionTable.Read(dataTable);
     }
 
+    /// <summary>
+    /// Adds one AnyOf group whose alternatives are the table rows. The group sits alongside the
+    /// item's other conditions (they all still have to hold); only one alternative inside it does.
+    /// </summary>
+    [Given("service item {string} also requires at least one of the following:")]
+    public void GivenServiceItemAlsoRequiresAtLeastOneOf(string serviceItemId, DataTable dataTable) =>
+        AddAnyOfGroup(serviceItemId, dataTable, EligibilityConditionUnmetBehavior.Hide);
+
+    [Given("service item {string} also requires at least one of the following, with WhenUnmet {string}:")]
+    public void GivenServiceItemAlsoRequiresAtLeastOneOfWithWhenUnmet(string serviceItemId, string whenUnmet, DataTable dataTable) =>
+        AddAnyOfGroup(serviceItemId, dataTable, Enum.Parse<EligibilityConditionUnmetBehavior>(whenUnmet));
+
+    private void AddAnyOfGroup(string serviceItemId, DataTable dataTable, EligibilityConditionUnmetBehavior whenUnmet)
+    {
+        var item = _serviceItems.SingleOrDefault(x => x.IntegrationID == serviceItemId);
+        if (item is null)
+            throw new ReqnrollException($"Service item '{serviceItemId}' was not configured.");
+
+        var group = new EligibilityConditionModel
+        {
+            AnyOf = EligibilityConditionTable.Read(dataTable),
+            WhenUnmet = whenUnmet,
+        };
+
+        item.EligibilityConditions = (item.EligibilityConditions ?? []).Append(group).ToList();
+    }
+
     [Given("LookupOptions has broker stock lookup enabled")]
     public void GivenLookupOptionsHasBrokerStockLookupEnabled()
     {
