@@ -3137,7 +3137,7 @@
           "frame capture, OCR request and sticker decoding",
           "VIN validation",
           "the full-screen sheet on phones and the popup on wider screens",
-          "page scroll lock while open"
+          "body overflow hidden while open, auto after close"
         ]
       },
       "api": {
@@ -3166,21 +3166,21 @@
             "name": "colorScheme",
             "attribute": "color-scheme",
             "type": "\"auto\" | \"dark\" | \"light\"",
-            "default": "'light'",
+            "default": null,
             "mutable": false,
             "required": false,
             "reflect": true,
-            "description": "light (default), dark, or auto (follows prefers-color-scheme)."
+            "description": "Unset (default) renders light and adds no attribute. light, dark, or auto (follows prefers-color-scheme)."
           },
           {
             "name": "language",
             "attribute": "language",
             "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"",
-            "default": "'en'",
+            "default": null,
             "mutable": false,
             "required": false,
             "reflect": false,
-            "description": "en, ar, ku or ru. Language of the accessible names the component writes itself; ar and ku also lay it out right to left."
+            "description": "en, ar, ku or ru. Unset (default): English names and no direction of its own, so it follows the page. Set: the accessible names the component writes itself are in that language, and ar and ku lay it out right to left in the Arabic font."
           },
           {
             "name": "manualCapture",
@@ -3324,12 +3324,17 @@
           }
         ],
         "methods": [
-          { "name": "close", "parameters": "() => Promise<void>", "returns": "Promise<void>", "description": "Closes the scanner, stops the camera and restores the page scroll." },
+          {
+            "name": "close",
+            "parameters": "() => Promise<void>",
+            "returns": "Promise<void>",
+            "description": "Closes the scanner, stops the camera and sets the body overflow to auto."
+          },
           {
             "name": "open",
             "parameters": "() => Promise<void>",
             "returns": "Promise<void>",
-            "description": "Opens the scanner: asks for the camera, starts it and locks the page scroll."
+            "description": "Opens the scanner: asks for the camera, starts it and sets the body overflow to hidden."
           },
           {
             "name": "setBlazorRef",
@@ -3357,11 +3362,7 @@
           { "name": "capture-spinner", "description": "The spinner that replaces the icon or label while a capture is being read." }
         ],
         "cssProperties": [
-          {
-            "name": "--shift-vin-extractor-accent",
-            "default": "var(--shift-accent, #ffffff)",
-            "description": "Colour · capture button fill (falls back to --shift-accent); 75% while a capture is in flight"
-          },
+          { "name": "--shift-vin-extractor-accent", "default": "#ffffff", "description": "Colour · capture button fill; 75% while a capture is in flight" },
           {
             "name": "--shift-vin-extractor-backdrop",
             "default": "var(--_sc-backdrop, rgb(0 0 0 / 0.4))",
@@ -3384,26 +3385,14 @@
             "description": "Colour · header button background on hover (#cbd5e1 on phones, #f1f5f9 in the popup)"
           },
           { "name": "--shift-vin-extractor-control-hover-ink", "default": "var(--_sc-hover-ink, #334155)", "description": "Colour · header button icon and border on hover" },
-          {
-            "name": "--shift-vin-extractor-control-radius",
-            "default": "var(--shift-radius-md, 0.5rem)",
-            "description": "Shape · header button radius (falls back to --shift-radius-md)"
-          },
+          { "name": "--shift-vin-extractor-control-radius", "default": "0.5rem", "description": "Shape · header button radius" },
           {
             "name": "--shift-vin-extractor-control-surface",
             "default": "var(--_sc-control-surface, #f1f5f9)",
             "description": "Colour · header button background (#f1f5f9 on phones, the surface in the popup)"
           },
-          {
-            "name": "--shift-vin-extractor-font-family",
-            "default": "var(--shift-font-family, 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif)",
-            "description": "Type · Latin and Cyrillic font (falls back to --shift-font-family)"
-          },
-          {
-            "name": "--shift-vin-extractor-font-family-arabic",
-            "default": "var(--shift-font-family-arabic, 'Noto Kufi Arabic', var(--_font))",
-            "description": "Type · Arabic and Kurdish font (falls back to --shift-font-family-arabic)"
-          },
+          { "name": "--shift-vin-extractor-font-family", "default": "'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif", "description": "Type · Latin and Cyrillic font" },
+          { "name": "--shift-vin-extractor-font-family-arabic", "default": "var(--_font)", "description": "Type · Arabic and Kurdish font" },
           {
             "name": "--shift-vin-extractor-header-shadow",
             "default": "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
@@ -3412,44 +3401,25 @@
           { "name": "--shift-vin-extractor-hint-ink", "default": "#ffffff", "description": "Colour · hint text" },
           { "name": "--shift-vin-extractor-hint-radius", "default": "9999px", "description": "Shape · hint radius (a pill by default)" },
           { "name": "--shift-vin-extractor-hint-surface", "default": "rgb(0 0 0 / 0.55)", "description": "Colour · hint background" },
-          { "name": "--shift-vin-extractor-ink", "default": "var(--shift-ink, var(--_sc-ink, #000000))", "description": "Colour · popup title (falls back to --shift-ink)" },
-          {
-            "name": "--shift-vin-extractor-line",
-            "default": "var(--shift-line, var(--_sc-line, #475569))",
-            "description": "Colour · border of the header buttons on phones (falls back to --shift-line)"
-          },
-          {
-            "name": "--shift-vin-extractor-muted",
-            "default": "var(--shift-ink-muted, var(--_sc-muted, #475569))",
-            "description": "Colour · switch-camera and close icons (falls back to --shift-ink-muted)"
-          },
-          {
-            "name": "--shift-vin-extractor-on-accent",
-            "default": "var(--shift-on-accent, #64748b)",
-            "description": "Colour · capture button icon, label and spinner (falls back to --shift-on-accent)"
-          },
+          { "name": "--shift-vin-extractor-ink", "default": "var(--_sc-ink, #000000)", "description": "Colour · popup title" },
+          { "name": "--shift-vin-extractor-line", "default": "var(--_sc-line, #475569)", "description": "Colour · border of the header buttons on phones" },
+          { "name": "--shift-vin-extractor-muted", "default": "var(--_sc-muted, #475569)", "description": "Colour · switch-camera and close icons" },
+          { "name": "--shift-vin-extractor-on-accent", "default": "#64748b", "description": "Colour · capture button icon, label and spinner" },
           { "name": "--shift-vin-extractor-preview-surface", "default": "#000000", "description": "Colour · behind the camera picture before it starts" },
-          { "name": "--shift-vin-extractor-radius", "default": "var(--shift-radius-lg, 0.5rem)", "description": "Shape · popup corner radius (falls back to --shift-radius-lg)" },
-          {
-            "name": "--shift-vin-extractor-shadow",
-            "default": "var(--shift-shadow-panel, 0 4px 6px -1px rgb(0 0 0 / 0.1))",
-            "description": "Colour · popup shadow (falls back to --shift-shadow-panel)"
-          },
-          {
-            "name": "--shift-vin-extractor-surface",
-            "default": "var(--shift-surface, var(--_sc-surface, #ffffff))",
-            "description": "Colour · popup header and its buttons (falls back to --shift-surface)"
-          }
+          { "name": "--shift-vin-extractor-radius", "default": "0.5rem", "description": "Shape · popup corner radius" },
+          { "name": "--shift-vin-extractor-shadow", "default": "0 4px 6px -1px rgb(0 0 0 / 0.1)", "description": "Colour · popup shadow" },
+          { "name": "--shift-vin-extractor-surface", "default": "var(--_sc-surface, #ffffff)", "description": "Colour · popup header and its buttons" }
         ]
       },
       "runtimeAssets": {
         "locales": null,
         "notes": [
           "Results are reported through callback properties, not DOM events: set onExtract, onError, onProcessing and onOpenChange to functions on the element (or, from Blazor, to method names after setBlazorRef). An attribute cannot carry a function.",
-          "Open it with open() and close it with close(); the backdrop and the close button also close it. While it is open the page does not scroll: the body’s inline overflow is set to hidden on open and put back to what it was on close.",
+          "Open it with open() and close it with close(); the backdrop and the close button also close it. While it is open the page does not scroll: open sets the body’s inline overflow to hidden and close sets it to auto. A page that needs another value restores it itself in onOpenChange.",
           "The strings it renders itself (the accessible names of the dialog, its buttons, the preview and the file input) come from language; title, manualCaptureLabel and manualCaptureHint are the host’s own text and are shown as given.",
           "The header bar, the hint and the capture button sit on the camera picture on phones, so colorScheme leaves them as they are; it changes the popup’s header, its buttons and the backdrop.",
-          "Under 768px of viewport width it is a full-screen sheet that slides in; from 768px it is a 600px popup over a dimmed page."
+          "Under 768px of viewport width it is a full-screen sheet that slides in; from 768px it is a 600px popup over a dimmed page.",
+          "It reads only its own --shift-vin-extractor-* variables, never the shared --shift-* ones, so a page themed for the other components leaves it as it is. Without any of its variables, language or colorScheme it renders exactly as before they existed."
         ]
       }
     }

@@ -3,20 +3,21 @@
 
 /*
   The camera overlay: a full-screen sheet that slides in from the side under 768px, and a 600px popup
-  over a dimmed page from 768px. Every value: var(--shift-vin-extractor-x, var(--shift-x, <default>)),
-  and the defaults are what the component rendered before it could be themed. The header bar, the hint
-  and the capture button sit on the camera picture, so the colour scheme leaves them as they are.
+  over a dimmed page from 768px. Every value: var(--shift-vin-extractor-x, <default>), and the defaults
+  are what the component rendered before it could be themed. It reads no shared --shift-* variable, so a
+  page themed for the other components does not restyle it. The header bar, the hint and the capture
+  button sit on the camera picture, so the colour scheme leaves them as they are.
 */
 :host {
-  --_font: var(--shift-vin-extractor-font-family, var(--shift-font-family, 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif));
-  --_font-arabic: var(--shift-vin-extractor-font-family-arabic, var(--shift-font-family-arabic, 'Noto Kufi Arabic', var(--_font)));
+  --_font: var(--shift-vin-extractor-font-family, 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif);
+  --_font-arabic: var(--shift-vin-extractor-font-family-arabic, var(--_font));
 
   --_backdrop: var(--shift-vin-extractor-backdrop, var(--_sc-backdrop, rgb(0 0 0 / 0.4)));
   --_backdrop-blur: var(--shift-vin-extractor-backdrop-blur, 1.5px);
-  --_surface: var(--shift-vin-extractor-surface, var(--shift-surface, var(--_sc-surface, #ffffff)));
-  --_ink: var(--shift-vin-extractor-ink, var(--shift-ink, var(--_sc-ink, #000000)));
-  --_muted: var(--shift-vin-extractor-muted, var(--shift-ink-muted, var(--_sc-muted, #475569)));
-  --_line: var(--shift-vin-extractor-line, var(--shift-line, var(--_sc-line, #475569)));
+  --_surface: var(--shift-vin-extractor-surface, var(--_sc-surface, #ffffff));
+  --_ink: var(--shift-vin-extractor-ink, var(--_sc-ink, #000000));
+  --_muted: var(--shift-vin-extractor-muted, var(--_sc-muted, #475569));
+  --_line: var(--shift-vin-extractor-line, var(--_sc-line, #475569));
   --_hover-ink: var(--shift-vin-extractor-control-hover-ink, var(--_sc-hover-ink, #334155));
   /* Sheet values; the popup redefines these two below. */
   --_control-surface: var(--shift-vin-extractor-control-surface, var(--_sc-control-surface, #f1f5f9));
@@ -26,24 +27,28 @@
   --_bar-ink: var(--shift-vin-extractor-bar-ink, #f1f5f9);
   --_bar-blur: var(--shift-vin-extractor-bar-blur, 6px);
   --_preview-surface: var(--shift-vin-extractor-preview-surface, #000000);
-  --_accent: var(--shift-vin-extractor-accent, var(--shift-accent, #ffffff));
-  --_on-accent: var(--shift-vin-extractor-on-accent, var(--shift-on-accent, #64748b));
+  --_accent: var(--shift-vin-extractor-accent, #ffffff);
+  --_on-accent: var(--shift-vin-extractor-on-accent, #64748b);
   --_capture-line: var(--shift-vin-extractor-capture-border, var(--_on-accent));
   --_hint-surface: var(--shift-vin-extractor-hint-surface, rgb(0 0 0 / 0.55));
   --_hint-ink: var(--shift-vin-extractor-hint-ink, #ffffff);
 
-  --_radius: var(--shift-vin-extractor-radius, var(--shift-radius-lg, 0.5rem));
-  --_control-radius: var(--shift-vin-extractor-control-radius, var(--shift-radius-md, 0.5rem));
+  --_radius: var(--shift-vin-extractor-radius, 0.5rem);
+  --_control-radius: var(--shift-vin-extractor-control-radius, 0.5rem);
   --_capture-radius: var(--shift-vin-extractor-capture-radius, 9999px);
   --_hint-radius: var(--shift-vin-extractor-hint-radius, 9999px);
-  --_shadow: var(--shift-vin-extractor-shadow, var(--shift-shadow-panel, 0 4px 6px -1px rgb(0 0 0 / 0.1)));
+  --_shadow: var(--shift-vin-extractor-shadow, 0 4px 6px -1px rgb(0 0 0 / 0.1));
   --_header-shadow: var(--shift-vin-extractor-header-shadow, 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1));
   --_capture-shadow: var(--shift-vin-extractor-capture-shadow, 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1));
 
   all: initial !important;
   display: block;
-  /* Important only because all: initial above is; a host themes the face through the variables. */
   font-family: var(--_font) !important;
+}
+
+*,
+:host * {
+  font-family: inherit !important;
 }
 
 :host([color-scheme='dark']) {
@@ -86,12 +91,12 @@
   justify-content: center;
   width: 100dvw;
   height: 100dvh;
-  font-family: var(--_font);
   pointer-events: none;
 }
 
 .vin-extractor-background[dir='rtl'] {
-  font-family: var(--_font-arabic);
+  /* dir is only rendered when the host passes language; important to beat the inherit rule above. */
+  font-family: var(--_font-arabic) !important;
 }
 
 .vin-extractor-container {

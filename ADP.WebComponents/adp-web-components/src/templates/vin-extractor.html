@@ -236,8 +236,8 @@
         <section class="card bg-base-100 border-base-300 flex flex-col gap-4 border p-4 sm:p-6">
           <h2 class="eyebrow text-neutral">Theming and API</h2>
           <p class="text-base-content/70 max-w-[70ch] text-sm">
-            Style it with the <code>--shift-vin-extractor-*</code> variables (each falls back to the shared <code>--shift-*</code> one where there is one) and the
-            <code>::part</code> names below; <code>language</code> and <code>color-scheme</code> work as on the other components.
+            Style it with the <code>--shift-vin-extractor-*</code> variables (it reads none of the shared <code>--shift-*</code> ones) and the <code>::part</code> names below;
+            <code>language</code> and <code>color-scheme</code> are opt-in. With none of them set it renders exactly as before.
           </p>
 
           <div class="flex min-w-0 flex-col gap-6" x-data="apiReference('vin-extractor', { parts: true })">

@@ -40,8 +40,8 @@ export class VinExtractor {
 
   @Prop() ocrEndpoint: string;
 
-  @Prop() language: LanguageKeys = 'en';
-  @Prop({ reflect: true }) colorScheme: VinExtractorColorScheme = 'light';
+  @Prop() language?: LanguageKeys;
+  @Prop({ reflect: true }) colorScheme?: VinExtractorColorScheme;
 
   @Prop() onExtract?: ((vin: string) => void) | string;
   @Prop() onError?: ((newError: Error) => void) | string;
@@ -69,7 +69,6 @@ export class VinExtractor {
   private abortController: AbortController;
   private frameCaptureTimeoutRef: ReturnType<typeof setTimeout>;
   private backCameraDeviceId: string = '';
-  private previousBodyOverflow: string | null = null;
 
   async componentDidLoad() {
     this.videoPlayer = this.el.shadowRoot.querySelector('.video-player');
@@ -328,7 +327,7 @@ export class VinExtractor {
 
       if (!this.manualCapture) this.frameCaptureTimeoutRef = setTimeout(this.captureFrame, this.captureInterval + 300);
 
-      this.lockPageScroll();
+      if (document) document.body.style.overflow = 'hidden';
 
       this.isCameraReady = true;
 
@@ -550,25 +549,9 @@ export class VinExtractor {
       }
       this.videoPlayer.srcObject = null;
     }
-    this.unlockPageScroll();
+    if (document) document.body.style.overflow = 'auto';
     this.containerAnimation = 'hide-container';
   };
-
-  lockPageScroll = () => {
-    if (this.previousBodyOverflow !== null) return;
-    this.previousBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-  };
-
-  unlockPageScroll = () => {
-    if (this.previousBodyOverflow === null) return;
-    document.body.style.overflow = this.previousBodyOverflow;
-    this.previousBodyOverflow = null;
-  };
-
-  disconnectedCallback() {
-    this.unlockPageScroll();
-  }
 
   stopCamera = () => {
     if (this.streamRef) {
@@ -623,8 +606,8 @@ export class VinExtractor {
             aria-modal={ariaExpanded.toString()}
             aria-label={this.title || strings.dialog}
             aria-hidden={(!ariaExpanded).toString()}
-            dir={locale.direction}
-            lang={locale.language === 'ku' ? 'ckb' : locale.language}
+            dir={this.language ? locale.direction : undefined}
+            lang={this.language ? (locale.language === 'ku' ? 'ckb' : locale.language) : undefined}
             class="vin-extractor-background"
             part="backdrop"
           >

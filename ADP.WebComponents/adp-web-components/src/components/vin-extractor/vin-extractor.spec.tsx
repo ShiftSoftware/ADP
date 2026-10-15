@@ -1,4 +1,4 @@
-import { newSpecPage, SpecPage } from '@stencil/core/testing';
+import { newSpecPage } from '@stencil/core/testing';
 
 import vinExtractorSchema from '~locales/vinExtractor/type';
 import ar from '../../locales/vinExtractor/ar.json';
@@ -36,7 +36,7 @@ describe('parts', () => {
 });
 
 describe('language', () => {
-  it('writes its own names in English by default, left to right', async () => {
+  it('writes its own names in English by default and leaves direction and scheme to the page', async () => {
     const { page, root } = await mount('manual-capture');
 
     expect(label(root, 'backdrop')).toBe('VIN Scanner');
@@ -44,12 +44,19 @@ describe('language', () => {
     expect(label(root, 'capture')).toBe('Capture VIN');
     expect(label(root, 'preview')).toBe('Camera preview');
     expect(root.querySelector('.vin-extractor-input').getAttribute('aria-label')).toBe('Upload VIN image');
-    expect(part(root, 'backdrop').getAttribute('dir')).toBe('ltr');
-    expect(page.root.getAttribute('color-scheme')).toBe('light');
+    expect(part(root, 'backdrop').hasAttribute('dir')).toBe(false);
+    expect(part(root, 'backdrop').hasAttribute('lang')).toBe(false);
+    expect(
+      Array.from(page.root.attributes)
+        .map(attribute => attribute.name)
+        .sort(),
+    ).toEqual(['manual-capture', 'translate']);
   });
 
   it('writes them in the given language', async () => {
     const { root } = await mount('manual-capture language="ru"');
+
+    expect(part(root, 'backdrop').getAttribute('dir')).toBe('ltr');
 
     expect(label(root, 'backdrop')).toBe(ru.dialog);
     expect(label(root, 'close')).toBe(ru.close);
@@ -91,45 +98,20 @@ describe('language', () => {
   });
 });
 
+describe('colour scheme', () => {
+  it('reflects only a scheme the host passed', async () => {
+    const { page } = await mount('color-scheme="dark"');
+
+    expect(page.root.getAttribute('color-scheme')).toBe('dark');
+  });
+});
+
 describe('page scroll', () => {
-  const body = (page: SpecPage) => page.doc.body;
-
-  it('puts back the overflow the page had before it opened', async () => {
+  it('sets the body overflow to auto on close, as it always has', async () => {
     const { page, instance } = await mount();
-    body(page).style.overflow = 'clip';
-
-    instance.lockPageScroll();
-    expect(body(page).style.overflow).toBe('hidden');
+    page.doc.body.style.overflow = 'hidden';
 
     instance.closeScanner();
-    expect(body(page).style.overflow).toBe('clip');
-  });
-
-  it('leaves the page alone when it closes without having opened', async () => {
-    const { page, instance } = await mount();
-    body(page).style.overflow = 'scroll';
-
-    instance.closeScanner();
-    expect(body(page).style.overflow).toBe('scroll');
-  });
-
-  it('records the first value only when locked twice', async () => {
-    const { page, instance } = await mount();
-    body(page).style.overflow = '';
-
-    instance.lockPageScroll();
-    instance.lockPageScroll();
-    instance.unlockPageScroll();
-    expect(body(page).style.overflow).toBe('');
-  });
-
-  it('restores it when removed while open', async () => {
-    const { page, instance } = await mount();
-    body(page).style.overflow = 'auto';
-
-    instance.lockPageScroll();
-    page.root.remove();
-    await page.waitForChanges();
-    expect(body(page).style.overflow).toBe('auto');
+    expect(page.doc.body.style.overflow).toBe('auto');
   });
 });

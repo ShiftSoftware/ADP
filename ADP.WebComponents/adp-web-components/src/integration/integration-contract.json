@@ -1062,16 +1062,17 @@
           "onOpenChange"
         ],
         "methods": ["open", "close"],
-        "owns": ["camera access and lens choice", "frame capture, OCR request and sticker decoding", "VIN validation", "the full-screen sheet on phones and the popup on wider screens", "page scroll lock while open"]
+        "owns": ["camera access and lens choice", "frame capture, OCR request and sticker decoding", "VIN validation", "the full-screen sheet on phones and the popup on wider screens", "body overflow hidden while open, auto after close"]
       },
       "runtimeAssets": {
         "locales": null,
         "notes": [
           "Results are reported through callback properties, not DOM events: set onExtract, onError, onProcessing and onOpenChange to functions on the element (or, from Blazor, to method names after setBlazorRef). An attribute cannot carry a function.",
-          "Open it with open() and close it with close(); the backdrop and the close button also close it. While it is open the page does not scroll: the body’s inline overflow is set to hidden on open and put back to what it was on close.",
+          "Open it with open() and close it with close(); the backdrop and the close button also close it. While it is open the page does not scroll: open sets the body’s inline overflow to hidden and close sets it to auto. A page that needs another value restores it itself in onOpenChange.",
           "The strings it renders itself (the accessible names of the dialog, its buttons, the preview and the file input) come from language; title, manualCaptureLabel and manualCaptureHint are the host’s own text and are shown as given.",
           "The header bar, the hint and the capture button sit on the camera picture on phones, so colorScheme leaves them as they are; it changes the popup’s header, its buttons and the backdrop.",
-          "Under 768px of viewport width it is a full-screen sheet that slides in; from 768px it is a 600px popup over a dimmed page."
+          "Under 768px of viewport width it is a full-screen sheet that slides in; from 768px it is a 600px popup over a dimmed page.",
+          "It reads only its own --shift-vin-extractor-* variables, never the shared --shift-* ones, so a page themed for the other components leaves it as it is. Without any of its variables, language or colorScheme it renders exactly as before they existed."
         ]
       },
       "reference": {
@@ -1092,14 +1093,14 @@
           "onError": "Called with the Error when the camera cannot be opened, a request fails or a frame cannot be read. A function, or a Blazor method name.",
           "onProcessing": "Called with true when a frame starts being read and false when it is done. A function, or a Blazor method name.",
           "onOpenChange": "Called with true on open and false on close. A function, or a Blazor method name.",
-          "language": "en, ar, ku or ru. Language of the accessible names the component writes itself; ar and ku also lay it out right to left.",
-          "colorScheme": "light (default), dark, or auto (follows prefers-color-scheme)."
+          "language": "en, ar, ku or ru. Unset (default): English names and no direction of its own, so it follows the page. Set: the accessible names the component writes itself are in that language, and ar and ku lay it out right to left in the Arabic font.",
+          "colorScheme": "Unset (default) renders light and adds no attribute. light, dark, or auto (follows prefers-color-scheme)."
         },
         "events": {},
         "methods": {
           "setBlazorRef": "Blazor only: the .NET object reference whose methods the callback properties name.",
-          "open": "Opens the scanner: asks for the camera, starts it and locks the page scroll.",
-          "close": "Closes the scanner, stops the camera and restores the page scroll."
+          "open": "Opens the scanner: asks for the camera, starts it and sets the body overflow to hidden.",
+          "close": "Closes the scanner, stops the camera and sets the body overflow to auto."
         },
         "parts": {
           "backdrop": "The full-viewport layer behind the panel (role=dialog); dimmed and blurred from 768px.",
@@ -1118,14 +1119,14 @@
           "capture-spinner": "The spinner that replaces the icon or label while a capture is being read."
         },
         "cssProperties": {
-          "--shift-vin-extractor-font-family": "Type · Latin and Cyrillic font (falls back to --shift-font-family)",
-          "--shift-vin-extractor-font-family-arabic": "Type · Arabic and Kurdish font (falls back to --shift-font-family-arabic)",
+          "--shift-vin-extractor-font-family": "Type · Latin and Cyrillic font",
+          "--shift-vin-extractor-font-family-arabic": "Type · Arabic and Kurdish font",
           "--shift-vin-extractor-backdrop": "Colour · the dimmed page behind the popup (from 768px); darker in the dark scheme",
           "--shift-vin-extractor-backdrop-blur": "Effect · how much the page behind the popup blurs",
-          "--shift-vin-extractor-surface": "Colour · popup header and its buttons (falls back to --shift-surface)",
-          "--shift-vin-extractor-ink": "Colour · popup title (falls back to --shift-ink)",
-          "--shift-vin-extractor-muted": "Colour · switch-camera and close icons (falls back to --shift-ink-muted)",
-          "--shift-vin-extractor-line": "Colour · border of the header buttons on phones (falls back to --shift-line)",
+          "--shift-vin-extractor-surface": "Colour · popup header and its buttons",
+          "--shift-vin-extractor-ink": "Colour · popup title",
+          "--shift-vin-extractor-muted": "Colour · switch-camera and close icons",
+          "--shift-vin-extractor-line": "Colour · border of the header buttons on phones",
           "--shift-vin-extractor-control-surface": "Colour · header button background (#f1f5f9 on phones, the surface in the popup)",
           "--shift-vin-extractor-control-hover-bg": "Colour · header button background on hover (#cbd5e1 on phones, #f1f5f9 in the popup)",
           "--shift-vin-extractor-control-hover-ink": "Colour · header button icon and border on hover",
@@ -1133,16 +1134,16 @@
           "--shift-vin-extractor-bar-ink": "Colour · title on that bar",
           "--shift-vin-extractor-bar-blur": "Effect · blur behind that bar",
           "--shift-vin-extractor-preview-surface": "Colour · behind the camera picture before it starts",
-          "--shift-vin-extractor-accent": "Colour · capture button fill (falls back to --shift-accent); 75% while a capture is in flight",
-          "--shift-vin-extractor-on-accent": "Colour · capture button icon, label and spinner (falls back to --shift-on-accent)",
+          "--shift-vin-extractor-accent": "Colour · capture button fill; 75% while a capture is in flight",
+          "--shift-vin-extractor-on-accent": "Colour · capture button icon, label and spinner",
           "--shift-vin-extractor-capture-border": "Colour · capture button border (the on-accent colour by default)",
           "--shift-vin-extractor-hint-surface": "Colour · hint background",
           "--shift-vin-extractor-hint-ink": "Colour · hint text",
-          "--shift-vin-extractor-radius": "Shape · popup corner radius (falls back to --shift-radius-lg)",
-          "--shift-vin-extractor-control-radius": "Shape · header button radius (falls back to --shift-radius-md)",
+          "--shift-vin-extractor-radius": "Shape · popup corner radius",
+          "--shift-vin-extractor-control-radius": "Shape · header button radius",
           "--shift-vin-extractor-capture-radius": "Shape · capture button radius (a pill by default)",
           "--shift-vin-extractor-hint-radius": "Shape · hint radius (a pill by default)",
-          "--shift-vin-extractor-shadow": "Colour · popup shadow (falls back to --shift-shadow-panel)",
+          "--shift-vin-extractor-shadow": "Colour · popup shadow",
           "--shift-vin-extractor-header-shadow": "Colour · header bar shadow",
           "--shift-vin-extractor-capture-shadow": "Colour · capture button shadow"
         }
