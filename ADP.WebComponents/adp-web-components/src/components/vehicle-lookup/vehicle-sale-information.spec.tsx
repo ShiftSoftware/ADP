@@ -1416,6 +1416,8 @@ describe('vehicle-sale-information — the supply chain flag', () => {
   it('reconfigures live: the body shuts over the old layout, swaps unseen and reopens, with no loading state', async () => {
     const page = await newPage(brokerMarketMocks, SHOW_ALL);
     await load(page, FULL_CHAIN_VIN);
+    // The end-customer card holds its own cover for a settle after a vehicle lands; this is about what comes after.
+    await settle(page);
     const heard: string[] = [];
     page.root.addEventListener('verdictChange', (event: CustomEvent<string>) => heard.push(event.detail));
 

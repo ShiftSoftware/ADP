@@ -138,6 +138,55 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
 
   // #endregion
 
+  // #region The end-customer card's own cover
+
+  /** The card stays covered after the panel lifts, while it changes state under the cover. */
+  @State() customerHeld: boolean = false;
+
+  /** The card's state the last time it was uncovered: blank, present, none, brokerStock or silent. */
+  private customerSettled = 'blank';
+  private customerGeneration = 0;
+  private customerLanding = false;
+
+  // Decided in componentWillRender, not here: the lookup clears isError after isLoading, so the
+  // record is only whole by the time the render runs.
+  @Watch('isLoading')
+  holdCustomerCover(newValue: boolean) {
+    if (newValue) {
+      this.releaseCustomer();
+      this.customerLanding = false;
+    } else this.customerLanding = true;
+  }
+
+  private customerState(): string {
+    const record = this.record();
+    const error = this.errorText();
+    if (!record?.vin || error) return 'blank';
+    return endCustomerStatement(record, this.applied, this.locale, readable(record, error)).kind;
+  }
+
+  private settleCustomer() {
+    if (!this.customerLanding) return;
+    this.customerLanding = false;
+
+    const state = this.customerState();
+    if (state === this.customerSettled) return;
+    this.customerSettled = state;
+
+    const generation = ++this.customerGeneration;
+    this.customerHeld = true;
+    setTimeout(() => {
+      if (generation === this.customerGeneration) this.customerHeld = false;
+    }, this.settleMs());
+  }
+
+  private releaseCustomer() {
+    this.customerGeneration++;
+    this.customerHeld = false;
+  }
+
+  // #endregion
+
   // #region Leaving a state
 
   @State() leaving: boolean = false;
@@ -167,6 +216,9 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
   }
 
   private emptyPanel() {
+    this.releaseCustomer();
+    this.customerSettled = 'blank';
+    this.customerLanding = false;
     this.vehicleLookup = undefined;
     this.isError = false;
     this.errorMessage = undefined;
@@ -268,7 +320,7 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
   private layoutSignature?: string;
   private valuesChanged = false;
 
-  private resizeSettle = createResizeSettle(() => this.el.shadowRoot?.querySelectorAll<HTMLElement>('.sale-value.resize-settle') ?? []);
+  private resizeSettle = createResizeSettle(() => this.el.shadowRoot?.querySelectorAll<HTMLElement>('.sale-value.resize-settle, .sale-customer.resize-settle') ?? []);
 
   private signature(): string {
     const record = this.record();
@@ -292,6 +344,7 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
   }
 
   componentWillRender() {
+    this.settleCustomer();
     const signature = this.signature();
     this.valuesChanged = this.layoutSignature !== undefined && this.layoutSignature !== signature;
     if (this.valuesChanged) this.resizeSettle.beforeSwap();
@@ -373,6 +426,7 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
             legs={current.legs}
             chainEnd={current.chainEnd}
             retained={this.retained}
+            customerHeld={this.customerHeld}
           />
         </VehicleInfoLayout>
       </Host>

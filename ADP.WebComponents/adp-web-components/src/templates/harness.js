@@ -292,6 +292,9 @@ const DEFAULTS = {
   ],
   language: true,
   environment: true,
+  // The environment a page opens on when neither the link nor this tab has chosen one. Most pages
+  // are fine on the first; a page whose states only one environment reaches names it here.
+  defaultEnvironment: null,
   today: true,
   theme: true,
   connection: {},
@@ -540,7 +543,7 @@ window.harness = function harness(options = {}) {
         if (!this.environments.length) throw new Error('the generated index contains no environments');
 
         const url = new URL(window.location.href);
-        const selected = chooseEnvironment(this.environments, url.searchParams.get('env'), readStoredEnvironment());
+        const selected = chooseEnvironment(this.environments, url.searchParams.get('env'), readStoredEnvironment(), config.defaultEnvironment);
 
         await this.loadEnvironment(selected.name, true);
       } catch (error) {

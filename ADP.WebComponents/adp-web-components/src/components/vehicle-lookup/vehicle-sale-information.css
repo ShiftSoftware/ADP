@@ -261,12 +261,185 @@
   box-shadow: inset 0 -1px 0 var(--line-soft);
 }
 
-.sale-ec-grid {
-  --sale-columns: 3;
+/* The end customer is the card the field reads first, so it is set apart: a tinted card with the name
+   as its title and the phone and ID number as tiles big enough to tap on a phone. Its colour says the
+   state: blue for a customer on record, amber for none, violet for a broker's stock. */
+/* The card leads the body, so its group takes the grid's top padding rather than the gap it had
+   under the grid. Scoped to .sale-body so it outranks the narrow panels' .sale-group padding. */
+.sale-body .sale-group[data-group='endCustomer'] {
+  padding-top: 12px;
+}
+
+.sale-customer {
+  --customer-tone: var(--blue);
+  --customer-tone-dark: var(--blue-dark);
+  --customer-tint: var(--blue-tint);
 
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(max(160px, (100% - (var(--sale-columns) - 1) * 12px) / var(--sale-columns)), 1fr));
-  gap: 10px 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--customer-tint) 0%, var(--paper) 160%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--customer-tone) 24%, transparent),
+    0 6px 18px rgba(27, 45, 61, 0.06);
+  /* height: this card is a .resize-settle block, and a transition list here replaces that rule's. */
+  transition:
+    height var(--settle) ease,
+    background var(--settle) ease,
+    box-shadow var(--settle) ease;
+}
+
+.sale-customer[data-state='none'] {
+  --customer-tone: var(--amber);
+  --customer-tone-dark: var(--amber-dark);
+  --customer-tint: var(--amber-tint);
+}
+
+.sale-customer[data-state='brokerStock'] {
+  --customer-tone: var(--violet);
+  --customer-tone-dark: var(--violet-dark);
+  --customer-tint: var(--violet-tint);
+}
+
+.sale-customer[data-state='silent'],
+.sale-customer[data-state='blank'] {
+  --customer-tone: var(--muted);
+  --customer-tone-dark: var(--muted);
+  --customer-tint: var(--paper-soft);
+}
+
+.sale-customer-cell {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+  align-items: center;
+}
+
+.sale-customer-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sale-customer .sale-cell-label {
+  margin-bottom: 2px;
+}
+
+.sale-customer-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  color: var(--customer-tone-dark);
+}
+
+.sale-customer-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* The name is the card's title. */
+.sale-customer-cell[data-kind='name'] {
+  grid-column: 1 / -1;
+  padding: 2px 2px 4px;
+}
+
+.sale-customer-cell[data-kind='name'] .sale-customer-icon,
+.sale-customer-cell[data-kind='statement'] .sale-customer-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--paper);
+  background: var(--customer-tone);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--customer-tone) 30%, transparent);
+}
+
+.sale-customer-cell[data-kind='name'] .sale-customer-icon svg,
+.sale-customer-cell[data-kind='statement'] .sale-customer-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.sale-customer-cell[data-kind='name'] .sale-value {
+  font-size: clamp(17px, 3.2cqw, 20px);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+/* Phone and ID number: tiles, at least 56px tall so a thumb finds them. */
+.sale-customer-cell[data-kind='contact'] {
+  min-height: 58px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--line-soft);
+  transition: background var(--settle) ease;
+}
+
+.sale-customer-cell[data-kind='contact'] .sale-customer-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--customer-tint);
+}
+
+.sale-customer-cell[data-kind='contact'] .sale-value {
+  font-size: 15px;
+}
+
+/* The whole phone tile dials: the link's box is stretched over the tile. */
+.sale-customer-dial {
+  color: var(--customer-tone-dark);
+  text-decoration: none;
+}
+
+.sale-customer-dial::after {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  content: '';
+}
+
+.sale-customer-dial:focus-visible {
+  outline: none;
+}
+
+.sale-customer-dial:focus-visible::after {
+  outline: 2px solid var(--customer-tone);
+  outline-offset: 2px;
+}
+
+.sale-customer-cell[data-kind='contact']:has(.sale-customer-dial):hover {
+  background: var(--customer-tint);
+}
+
+/* No customer: the statement is the whole card, and the empty tiles under it say nothing more. */
+.sale-customer-cell[data-kind='statement'] {
+  grid-column: 1 / -1;
+  padding: 2px;
+}
+
+.sale-customer-cell[data-kind='statement'] .sale-cell-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.sale-customer-cell[data-kind='statement'] .sale-value {
+  color: var(--customer-tone-dark);
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.sale-customer:is([data-state='none'], [data-state='brokerStock']) .sale-customer-cell:not([data-kind='statement']) {
+  display: none;
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -426,10 +599,6 @@
     padding: 12px 14px 14px;
   }
 
-  .sale-ec-grid {
-    --sale-columns: 2;
-  }
-
   .sale-group {
     padding: 4px 14px 14px;
   }
@@ -455,6 +624,13 @@
   .sale-leg-cell[data-column='1'],
   .sale-leg-cell[data-column='2'] {
     grid-row: 2;
+  }
+}
+
+@container sale-panel (max-width: 520px) {
+  .sale-customer {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px;
   }
 }
 

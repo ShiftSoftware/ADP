@@ -8,6 +8,11 @@ import { LookupHeadWait, PanelVerdict, StatusBadge } from '~features/vehicle-inf
 
 import { BADGE_GLYPHS } from './glyphs';
 
+import { UserIcon } from '~assets/user-icon';
+import { PhoneIcon } from '~assets/phone-icon';
+import { IdCardIcon } from '~assets/id-card-icon';
+import { TriangleAlertIcon } from '~assets/triangle-alert';
+
 export type SaleLocale = InferType<typeof saleInformationSchema>;
 
 export type SaleRecord = Pick<VehicleLookupDTO, 'vin' | 'isAuthorized' | 'saleInformation'>;
@@ -355,6 +360,71 @@ const SaleCellView: FunctionalComponent<{ cell: SaleCell; blank: boolean; statem
   </div>
 );
 
+// A broker's stock: the vehicle is held, not lost, so it gets a building rather than a warning.
+const StockIcon: FunctionalComponent = () => (
+  <svg fill="none" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+    <path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z" />
+    <path d="M6 18h12" />
+    <path d="M6 14h12" />
+    <rect width="12" height="12" x="6" y="10" />
+  </svg>
+);
+
+type CustomerKind = 'name' | 'contact' | 'statement';
+
+const customerKind = (cell: SaleCell): CustomerKind => (cell.role === 'statement' ? 'statement' : cell.key === 'endCustomerName' ? 'name' : 'contact');
+
+const CustomerIcon: FunctionalComponent<{ cell: SaleCell; statement: EndCustomerStatement }> = ({ cell, statement }) => {
+  if (cell.role === 'statement') return statement.kind === 'brokerStock' ? <StockIcon /> : <TriangleAlertIcon />;
+  if (cell.key === 'endCustomerPhone') return <PhoneIcon />;
+  if (cell.key === 'endCustomerIdNumber') return <IdCardIcon />;
+  return <UserIcon />;
+};
+
+// Digits and a leading plus only: anything else in a stored phone would make the tel: link dial nothing.
+const dialable = (phone: string): string => {
+  const digits = phone.replace(/[^\d+]/g, '').replace(/(?!^)\+/g, '');
+  return digits.replace(/\D/g, '').length >= 5 ? digits : '';
+};
+
+const CustomerCellView: FunctionalComponent<{ cell: SaleCell; blank: boolean; statement: EndCustomerStatement; key?: string }> = ({ cell, blank, statement }) => {
+  const dial = !blank && cell.key === 'endCustomerPhone' && cell.role !== 'statement' ? dialable(cell.text) : '';
+
+  return (
+    <div class="sale-cell sale-customer-cell" data-kind={customerKind(cell)} data-field={cell.key} data-label={cell.label}>
+      <span class="sale-customer-icon" aria-hidden="true">
+        <CustomerIcon cell={cell} statement={statement} />
+      </span>
+      <span class="sale-customer-text">
+        <span class="sale-cell-label">{cell.label}</span>
+        <span class="sale-value" data-role={valueRole(cell)}>
+          <span class="sale-value-content" data-empty={blank ? 'true' : 'false'}>
+            {blank ? (
+              BLANK
+            ) : dial ? (
+              <a class="sale-customer-dial" href={`tel:${dial}`}>
+                <SaleValue cell={cell} statement={statement} />
+              </a>
+            ) : (
+              <SaleValue cell={cell} statement={statement} />
+            )}
+          </span>
+        </span>
+      </span>
+    </div>
+  );
+};
+
+// One skeleton block for the whole card, not one per value. `held` keeps it covered after the panel
+// lifts, while the card changes state under it: it resizes and recolours first, then the cover lifts.
+const CustomerCard: FunctionalComponent<{ cells: SaleCell[]; blank: boolean; statement: EndCustomerStatement; held: boolean }> = ({ cells, blank, statement, held }) => (
+  <div class={{ 'sale-customer': true, 'shift-skeleton': true, 'resize-settle': true, 'loading': held }} data-state={blank ? 'blank' : statement.kind} data-held={held ? 'true' : 'false'}>
+    {cells.map(cell => (
+      <CustomerCellView key={cell.key} cell={cell} blank={blank} statement={statement} />
+    ))}
+  </div>
+);
+
 const SaleLegView: FunctionalComponent<{ leg: SaleLeg; chain: boolean; key?: string }> = ({ leg, chain }) => (
   <li class="sale-leg" data-leg={leg.kind} data-index={leg.index === undefined ? null : String(leg.index)}>
     {chain && <span class="sale-leg-marker" aria-hidden="true" />}
@@ -394,10 +464,11 @@ type Props = {
   legs: SaleLeg[];
   chainEnd?: EndCustomerStatement;
   retained: RetainedLegs;
+  customerHeld: boolean;
 };
 
 export const VehicleSaleInformationPanel: FunctionalComponent<Props> = props => {
-  const { locale, record, error, loading, reconfiguring, headLeaving, verdict, config, legs, retained } = props;
+  const { locale, record, error, loading, reconfiguring, headLeaving, verdict, config, legs, retained, customerHeld } = props;
 
   const vehicleLoaded = !!record?.vin && !error;
   const canRead = readable(record, error);
@@ -409,8 +480,8 @@ export const VehicleSaleInformationPanel: FunctionalComponent<Props> = props => 
   const blank = !vehicleLoaded;
 
   const hasLegs = legs.length > 0 || !!props.chainEnd;
-  const shownLegs = hasLegs ? legs : retained.legs;
   const shownEnd = hasLegs ? props.chainEnd : retained.chainEnd;
+  const shownLegs = hasLegs ? legs : retained.legs;
   const legsOpen = hasLegs && !loading;
 
   return (
@@ -467,24 +538,21 @@ export const VehicleSaleInformationPanel: FunctionalComponent<Props> = props => 
 
           <div class="sale-body collapsible" data-open={reconfiguring ? 'false' : 'true'} aria-hidden={reconfiguring ? 'true' : null}>
             <div class="collapsible-body">
+              {!!customerCells && (
+                <section class="sale-group" data-group="endCustomer" role="group" aria-labelledby="sale-end-customer-label">
+                  <span class="sale-group-label" id="sale-end-customer-label" aria-hidden="true">
+                    {locale.endCustomer}
+                  </span>
+                  <CustomerCard cells={customerCells} blank={blank} statement={statement} held={customerHeld} />
+                </section>
+              )}
+
               <div class="sale-grid" role="group" aria-labelledby="sale-caption">
                 {cells.map(cell => (
                   <SaleCellView key={cell.key} cell={cell} blank={blank} />
                 ))}
               </div>
 
-              {!!customerCells && (
-                <section class="sale-group" data-group="endCustomer" role="group" aria-labelledby="sale-end-customer-label">
-                  <span class="sale-group-label" id="sale-end-customer-label" aria-hidden="true">
-                    {locale.endCustomer}
-                  </span>
-                  <div class="sale-ec-grid">
-                    {customerCells.map(cell => (
-                      <SaleCellView key={cell.key} cell={cell} blank={blank} statement={statement} />
-                    ))}
-                  </div>
-                </section>
-              )}
 
               <div class="sale-legs collapsible" data-open={legsOpen ? 'true' : 'false'} data-empty={hasLegs ? 'false' : 'true'} aria-hidden={legsOpen ? null : 'true'}>
                 <div class="collapsible-body">
