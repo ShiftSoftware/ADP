@@ -19,6 +19,6 @@ public class AccessoryDTO
     public int? JobNumber { get; set; }
     /// <summary>The invoice number of the accessory installation. Null when the source has no invoice number.</summary>
     public int? InvoiceNumber { get; set; }
-    /// <summary>The name of the company that installed the accessory, resolved from the company ID. Null when it cannot be resolved.</summary>
+    /// <summary>The name of the company that installed the accessory, resolved from the company ID. Null when no company name resolver is configured or the company cannot be resolved.</summary>
     public string CompanyName { get; set; }
 }
