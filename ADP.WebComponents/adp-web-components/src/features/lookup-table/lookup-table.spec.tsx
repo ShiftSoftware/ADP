@@ -493,7 +493,10 @@ describe('thumbnail', () => {
     expect(cell.getAttribute('data-media')).toBe('loading');
     expect(cell.querySelector('.lt-media-open').hasAttribute('disabled')).toBe(true);
     expect(cell.querySelector('.lt-media-stand').getAttribute('aria-hidden')).toBe('true');
+    expect(cell.querySelector('.lt-media-open').getAttribute('aria-hidden')).toBe('true');
     expect(imageOf(page).getAttribute('alt')).toBe('');
+    expect(imageOf(page).getAttribute('loading')).toBe('lazy');
+    expect(imageOf(page).getAttribute('decoding')).toBe('async');
     expect(imageOf(page).getAttribute('src')).toBe('https://example.invalid/a.png');
   });
 
@@ -556,6 +559,44 @@ describe('thumbnail', () => {
     expect(stand.getAttribute('role')).toBe('img');
     expect(stand.getAttribute('aria-label')).toBe('Picture did not load');
     expect(cell.querySelector('.lt-media-open').hasAttribute('disabled')).toBe(true);
+    expect(cell.querySelector('.lt-media-open').getAttribute('aria-hidden')).toBe('true');
+  });
+
+  describe('a picture already complete before the listener', () => {
+    const stub = (complete: boolean, naturalWidth: number) => {
+      const proto = Object.getPrototypeOf(document.createElement('img'));
+      Object.defineProperty(proto, 'complete', { configurable: true, get: () => complete });
+      Object.defineProperty(proto, 'naturalWidth', { configurable: true, get: () => naturalWidth });
+      return () => {
+        delete proto.complete;
+        delete proto.naturalWidth;
+      };
+    };
+
+    it('settles to ready without a load event: the button opens and is no longer hidden', async () => {
+      const restore = stub(true, 40);
+      try {
+        const page = await render();
+        await page.waitForChanges();
+        const cell = mediaCell(page);
+        expect(cell.getAttribute('data-media')).toBe('ready');
+        expect(cell.querySelector('.lt-media-open').hasAttribute('disabled')).toBe(false);
+        expect(cell.querySelector('.lt-media-open').hasAttribute('aria-hidden')).toBe(false);
+      } finally {
+        restore();
+      }
+    });
+
+    it('stays at loading when complete with no width: the error event is what fails it', async () => {
+      const restore = stub(true, 0);
+      try {
+        const page = await render();
+        await page.waitForChanges();
+        expect(mediaCell(page).getAttribute('data-media')).toBe('loading');
+      } finally {
+        restore();
+      }
+    });
   });
 
   it('stays failed when the parent re-renders with the same rows, and returns to loading for a different src', async () => {

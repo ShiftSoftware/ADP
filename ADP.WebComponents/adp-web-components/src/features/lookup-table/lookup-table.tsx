@@ -172,8 +172,14 @@ const settleMedia = (image: HTMLImageElement, state: 'ready' | 'failed') => {
 
   const open = cell.querySelector('.lt-media-open');
   if (open) {
-    if (state === 'ready') open.removeAttribute('disabled');
-    else open.setAttribute('disabled', '');
+    if (state === 'ready') {
+      open.removeAttribute('disabled');
+      open.removeAttribute('aria-hidden');
+    } else {
+      // A dead button next to the "did not load" stand-in would announce the picture twice.
+      open.setAttribute('disabled', '');
+      open.setAttribute('aria-hidden', 'true');
+    }
   }
 
   const stand = cell.querySelector('.lt-media-stand');
@@ -183,9 +189,17 @@ const settleMedia = (image: HTMLImageElement, state: 'ready' | 'failed') => {
   }
 };
 
-/** An image that was already in the browser's cache can finish before the listener is attached; this catches it. */
+/**
+ * An image that was already in the browser's cache can finish before the listener is attached; this
+ * catches it. Stencil calls `ref` in createElm, before the element is appended, so the cell cannot
+ * be found yet: the check waits one microtask, by which time the element is in its cell. A complete
+ * picture with no width is a broken one; its `error` event settles it, so it is left at loading.
+ */
 const settleIfComplete = (image: HTMLImageElement | undefined) => {
-  if (image && image.complete === true && image.naturalWidth > 0) settleMedia(image, 'ready');
+  if (!image) return;
+  queueMicrotask(() => {
+    if (image.complete === true && image.naturalWidth > 0) settleMedia(image, 'ready');
+  });
 };
 
 type MediaProps = {
@@ -220,6 +234,7 @@ const MediaBox = ({ src, identity, strings, onOpenMedia }: MediaProps) => {
         type="button"
         class="lt-media-open"
         aria-label={openLabel}
+        aria-hidden="true"
         disabled
         onClick={event => {
           const image = (event.currentTarget as HTMLElement).querySelector('img');
