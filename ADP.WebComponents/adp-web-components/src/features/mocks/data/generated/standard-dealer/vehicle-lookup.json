@@ -580,12 +580,18 @@
       {
         "partNumber": "PZ49E-X2653-ZA",
         "description": "Side Steps",
-        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/side-steps.svg"
+        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/side-steps.svg",
+        "jobNumber": 1,
+        "invoiceNumber": 100001,
+        "companyName": "Sample Motors"
       },
       {
         "partNumber": "PZ323-X2651-ZA",
         "description": "Roof Rails",
-        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/roof-rails.svg"
+        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/roof-rails.svg",
+        "jobNumber": 2,
+        "invoiceNumber": 100001,
+        "companyName": "Sample Motors"
       }
     ],
     "basicModelCode": "MXAA52"

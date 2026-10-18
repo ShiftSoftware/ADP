@@ -444,5 +444,297 @@
     "serviceItems": [],
     "accessories": [],
     "basicModelCode": "DKZD22F"
+  },
+  "ZS8AX5KB2T6720006": {
+    "classifications": [],
+    "vin": "ZS8AX5KB2T6720006",
+    "identifiers": {
+      "vin": "ZS8AX5KB2T6720006",
+      "variant": "88406LM202501",
+      "katashiki": "FZP502K-TRMDVA",
+      "color": "042",
+      "trim": "75",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Meridia",
+      "companyID": "5",
+      "companyName": "Sample Distributor",
+      "branchID": "500",
+      "branchName": "Distributor HQ",
+      "invoiceDate": "2026-05-20",
+      "invoiceNumber": "66427099",
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Sample Distributor",
+        "branchID": "500",
+        "branchName": "Distributor HQ",
+        "invoiceNumber": "66427099",
+        "invoiceDate": "2026-05-20"
+      },
+      "intermediaries": []
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": false,
+      "startState": "AwaitingEndCustomerSale",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": []
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {
+      "modelCode": "88406",
+      "sfx": "LM",
+      "modelYear": 2025
+    },
+    "vehicleSpecification": {
+      "modelCode": "88406",
+      "modelYear": 2025,
+      "modelDescription": "KORRAVA",
+      "variantDescription": "2.0 / Comfort"
+    },
+    "serviceItems": [],
+    "accessories": [
+      {
+        "partNumber": "AX-6001-01",
+        "description": "Spoiler, rear roof",
+        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/accessory.svg",
+        "jobNumber": 61001,
+        "invoiceNumber": 71000001,
+        "companyName": "Sample Dealer"
+      },
+      {
+        "partNumber": "AX-6002-01",
+        "description": "Side steps, powder-coated",
+        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/side-steps.svg",
+        "jobNumber": 61001,
+        "invoiceNumber": 71000001,
+        "companyName": "Sample Dealer"
+      }
+    ],
+    "basicModelCode": "FZP502K"
+  },
+  "ZS8AX5KB6T6720008": {
+    "classifications": [],
+    "vin": "ZS8AX5KB6T6720008",
+    "identifiers": {
+      "vin": "ZS8AX5KB6T6720008",
+      "variant": "88406LM202501",
+      "katashiki": "FZP502K-TRMDVA",
+      "color": "042",
+      "trim": "75",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Meridia",
+      "companyID": "5",
+      "companyName": "Sample Distributor",
+      "branchID": "500",
+      "branchName": "Distributor HQ",
+      "invoiceDate": "2026-05-20",
+      "invoiceNumber": "66427099",
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Sample Distributor",
+        "branchID": "500",
+        "branchName": "Distributor HQ",
+        "invoiceNumber": "66427099",
+        "invoiceDate": "2026-05-20"
+      },
+      "intermediaries": []
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": false,
+      "startState": "AwaitingEndCustomerSale",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": []
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {
+      "modelCode": "88406",
+      "sfx": "LM",
+      "modelYear": 2025
+    },
+    "vehicleSpecification": {
+      "modelCode": "88406",
+      "modelYear": 2025,
+      "modelDescription": "KORRAVA",
+      "variantDescription": "2.0 / Comfort"
+    },
+    "serviceItems": [],
+    "accessories": [
+      {
+        "partNumber": "AX-8001-01-EXTENDED-FITMENT-KIT-REAR-LEFT-OUTBOARD-0001",
+        "description": "Roof rack with aluminium crossbars, lockable load stops, integrated rain channel, wind deflector and anti-theft locking cylinders, fitted and aligned at delivery",
+        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/roof-rack.svg",
+        "jobNumber": 61010,
+        "invoiceNumber": 71010001,
+        "companyName": "Sample Dealer"
+      },
+      {
+        "partNumber": "AX-8002-01",
+        "description": "Mud guards",
+        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/mud-guards.svg",
+        "jobNumber": 61010,
+        "invoiceNumber": 71010001,
+        "companyName": "Sample Dealer"
+      }
+    ],
+    "basicModelCode": "FZP502K"
+  },
+  "ZS8AX5KB8T6720009": {
+    "classifications": [],
+    "vin": "ZS8AX5KB8T6720009",
+    "identifiers": {
+      "vin": "ZS8AX5KB8T6720009",
+      "variant": "88406LM202501",
+      "katashiki": "FZP502K-TRMDVA",
+      "color": "042",
+      "trim": "75",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Meridia",
+      "companyID": "5",
+      "companyName": "Sample Distributor",
+      "branchID": "500",
+      "branchName": "Distributor HQ",
+      "invoiceDate": "2026-05-20",
+      "invoiceNumber": "66427099",
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Sample Distributor",
+        "branchID": "500",
+        "branchName": "Distributor HQ",
+        "invoiceNumber": "66427099",
+        "invoiceDate": "2026-05-20"
+      },
+      "intermediaries": []
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": false,
+      "startState": "AwaitingEndCustomerSale",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": []
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {
+      "modelCode": "88406",
+      "sfx": "LM",
+      "modelYear": 2025
+    },
+    "vehicleSpecification": {
+      "modelCode": "88406",
+      "modelYear": 2025,
+      "modelDescription": "KORRAVA",
+      "variantDescription": "2.0 / Comfort"
+    },
+    "serviceItems": [],
+    "accessories": [
+      {
+        "partNumber": "AX-9001-01",
+        "description": "Floor mats, set of four",
+        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/floor-mats.svg",
+        "companyName": "Sample Dealer"
+      },
+      {
+        "partNumber": "AX-9002-01",
+        "description": "Roof rails, black anodised",
+        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/roof-rails.svg",
+        "invoiceNumber": 71020002,
+        "companyName": "Sample Dealer"
+      }
+    ],
+    "basicModelCode": "FZP502K"
+  },
+  "ZS8AX5KB4T6720010": {
+    "classifications": [],
+    "vin": "ZS8AX5KB4T6720010",
+    "identifiers": {
+      "vin": "ZS8AX5KB4T6720010",
+      "variant": "88406LM202501",
+      "katashiki": "FZP502K-TRMDVA",
+      "color": "042",
+      "trim": "75",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Meridia",
+      "companyID": "5",
+      "companyName": "Sample Distributor",
+      "branchID": "500",
+      "branchName": "Distributor HQ",
+      "invoiceDate": "2026-05-20",
+      "invoiceNumber": "66427099",
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Sample Distributor",
+        "branchID": "500",
+        "branchName": "Distributor HQ",
+        "invoiceNumber": "66427099",
+        "invoiceDate": "2026-05-20"
+      },
+      "intermediaries": []
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": false,
+      "startState": "AwaitingEndCustomerSale",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": []
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {
+      "modelCode": "88406",
+      "sfx": "LM",
+      "modelYear": 2025
+    },
+    "vehicleSpecification": {
+      "modelCode": "88406",
+      "modelYear": 2025,
+      "modelDescription": "KORRAVA",
+      "variantDescription": "2.0 / Comfort"
+    },
+    "serviceItems": [],
+    "accessories": [
+      {
+        "partNumber": "AX-1001-01",
+        "description": "Tow bar, detachable",
+        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/tow-bar.svg",
+        "jobNumber": 61030,
+        "invoiceNumber": 71030001,
+        "companyName": "Sample Dealer"
+      },
+      {
+        "partNumber": "AX-1002-01",
+        "description": "Side steps, powder-coated",
+        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/side-steps.svg",
+        "jobNumber": 61031,
+        "invoiceNumber": 71030002
+      }
+    ],
+    "basicModelCode": "FZP502K"
   }
 }
