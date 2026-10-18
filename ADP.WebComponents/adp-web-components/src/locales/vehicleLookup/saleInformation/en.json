@@ -1,6 +1,6 @@
 {
   "vehicleSaleInformation": "Vehicle sale information",
-  "companyName": "Dealer",
+  "companyName": "Company",
   "branchName": "Branch",
   "sale": "Sale",
   "location": "Location",
@@ -13,7 +13,6 @@
   "endCustomerName": "Name",
   "endCustomerPhone": "Phone",
   "endCustomerIdNumber": "ID number",
-  "endCustomerId": "Customer ID",
   "supplyChain": "Supply chain",
   "distributorName": "Distributor",
   "intermediaryName": "Intermediary",

@@ -142,14 +142,6 @@ export const endCustomerStatement = (record: SaleRecord | undefined, config: Sal
   return { kind: 'none', text: locale.noEndCustomer };
 };
 
-// endCustomer.id is the dealer's customerID, so it is only worth a note when that cell is not already saying it.
-const customerIdNote = (record: SaleRecord | undefined, config: SaleConfig, locale: SaleLocale): Pick<SaleCell, 'note' | 'noteValue' | 'noteDir'> => {
-  const id = normalise(record?.saleInformation?.endCustomer?.id);
-  if (!id || config.hidden.has('endCustomerId')) return {};
-  if (!config.hidden.has('customerID') && same(id, normalise(record?.saleInformation?.customerID))) return {};
-  return { note: `${locale.endCustomerId} ${id}`, noteValue: id, noteDir: 'ltr' };
-};
-
 export const endCustomerCells = (record: SaleRecord | undefined, config: SaleConfig, locale: SaleLocale, canRead: boolean): SaleCell[] | null => {
   if (config.chain || END_CUSTOMER_FIELDS.every(name => config.hidden.has(name))) return null;
 
@@ -164,7 +156,6 @@ export const endCustomerCells = (record: SaleRecord | undefined, config: SaleCon
       label: locale.endCustomerName,
       role: 'word',
       text: normalise(customer?.name),
-      ...(customer ? customerIdNote(record, config, locale) : {}),
     });
   if (shown('endCustomerPhone')) cells.push({ key: 'endCustomerPhone', label: locale.endCustomerPhone, role: 'figure', text: normalise(customer?.phone) });
   if (shown('endCustomerIdNumber')) cells.push({ key: 'endCustomerIdNumber', label: locale.endCustomerIdNumber, role: 'code', text: normalise(customer?.idNumber) });
@@ -277,7 +268,7 @@ export const saleLegs = (record: SaleRecord | undefined, config: SaleConfig, loc
       key: 'endCustomer',
       kind: 'endCustomer',
       role: locale.endCustomer,
-      party: party('endCustomerName', locale.endCustomer, normalise(customer?.name), customerIdNote(record, config, locale)),
+      party: party('endCustomerName', locale.endCustomer, normalise(customer?.name)),
       sub: '',
       cells: [
         ...(shown('endCustomerPhone')

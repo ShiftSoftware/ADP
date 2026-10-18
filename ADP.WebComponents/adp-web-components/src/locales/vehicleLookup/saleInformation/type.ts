@@ -17,7 +17,6 @@ const saleInformationSchema = object({}).concat(
     'endCustomerName',
     'endCustomerPhone',
     'endCustomerIdNumber',
-    'endCustomerId',
     'supplyChain',
     'distributorName',
     'intermediaryName',

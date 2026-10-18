@@ -1,6 +1,6 @@
 {
   "vehicleSaleInformation": "Информация о продаже автомобиля",
-  "companyName": "Дилер",
+  "companyName": "Компания",
   "branchName": "Филиал",
   "sale": "Продажа",
   "location": "Местоположение",
@@ -13,7 +13,6 @@
   "endCustomerName": "Имя",
   "endCustomerPhone": "Телефон",
   "endCustomerIdNumber": "Номер удостоверения",
-  "endCustomerId": "ID клиента",
   "supplyChain": "Цепочка поставок",
   "distributorName": "Дистрибьютор",
   "intermediaryName": "Посредник",

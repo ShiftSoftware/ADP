@@ -1,6 +1,6 @@
 {
   "vehicleSaleInformation": "معلومات بيع المركبة",
-  "companyName": "الوكيل",
+  "companyName": "وكيل شركة تويوتا المعتمد",
   "branchName": "الفرع",
   "sale": "البيع",
   "location": "الموقع",
@@ -13,7 +13,6 @@
   "endCustomerName": "الاسم",
   "endCustomerPhone": "الهاتف",
   "endCustomerIdNumber": "رقم الهوية",
-  "endCustomerId": "معرّف الزبون",
   "supplyChain": "سلسلة التوريد",
   "distributorName": "الموزّع",
   "intermediaryName": "الوسيط",

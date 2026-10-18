@@ -1,6 +1,6 @@
 {
   "vehicleSaleInformation": "زانیاری فرۆشتنی ئۆتۆمبێل",
-  "companyName": "بریکار",
+  "companyName": "کۆمپانیا",
   "branchName": "لق",
   "sale": "فرۆشتن",
   "location": "شوێن",
@@ -13,7 +13,6 @@
   "endCustomerName": "ناو",
   "endCustomerPhone": "تەلەفۆن",
   "endCustomerIdNumber": "ژمارەی ناسنامە",
-  "endCustomerId": "ناسنامەی کڕیار",
   "supplyChain": "زنجیرەی دابینکردن",
   "distributorName": "دابەشکەر",
   "intermediaryName": "ناوبژیوان",

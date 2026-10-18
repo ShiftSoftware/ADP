@@ -358,7 +358,7 @@ describe('vehicle-sale-information — the derivations', () => {
     expect(statement({ companyName: 'X' }, 'endCustomerName,endCustomerPhone').kind).toBe('none');
   });
 
-  it('builds the end-customer cells, notes an id only when it is not already the customer ID, and carries the statement in the first present cell', () => {
+  it('builds the end-customer cells, never notes the end-customer id, and carries the statement in the first present cell', () => {
     const cells = (sale: object | null, hidden = '', canRead = true, chain = false) => endCustomerCells(record(sale), config(hidden, chain), locale, canRead);
 
     expect(cells(FULL_SALE, '', true, true)).toBeNull();
@@ -370,12 +370,8 @@ describe('vehicle-sale-information — the derivations', () => {
       ['endCustomerPhone', 'figure', '+999 655 448 0379', englishLocale.endCustomerPhone],
       ['endCustomerIdNumber', 'code', 'ID-417', englishLocale.endCustomerIdNumber],
     ]);
-    expect(present[0].note).toBe('Customer ID 5');
-
-    const matching = { ...FULL_SALE, customerID: '5' };
-    expect(cells(matching)[0].note).toBeUndefined();
-    expect(cells(matching, 'customerID')[0].note).toBe('Customer ID 5');
-    expect(cells(FULL_SALE, 'endCustomerId')[0].note).toBeUndefined();
+    expect(present[0].note).toBeUndefined();
+    expect(cells(FULL_SALE, 'customerID')[0].note).toBeUndefined();
 
     const none = cells({ companyName: 'X' });
     expect(none.map(cell => [cell.role, cell.text])).toEqual([
@@ -441,7 +437,7 @@ describe('vehicle-sale-information — the derivations', () => {
         ['brokerInvoiceDate', '2025-07-23'],
       ],
     ]);
-    expect([customer.party?.key, customer.party?.text, customer.party?.note, customer.sub]).toEqual(['endCustomerName', 'Sample Customer', 'Customer ID 5', '']);
+    expect([customer.party?.key, customer.party?.text, customer.party?.note, customer.sub]).toEqual(['endCustomerName', 'Sample Customer', undefined, '']);
     expect(customer.cells.map(cell => [cell.key, cell.role, cell.text, cell.column])).toEqual([
       ['endCustomerPhone', 'figure', '+999 655 448 0379', 1],
       ['endCustomerIdNumber', 'code', 'ID-417', 2],
@@ -594,7 +590,7 @@ describe('vehicle-sale-information — the case matrix, vehicle by vehicle', () 
 
     expect(verdict(page)).toBe('positive');
     expect(shadow(page).querySelector('.lookup-summary .status-badge')).toBeNull();
-    expect(text(page, '.sale-title-label')).toBe('Dealer:');
+    expect(text(page, '.sale-title-label')).toBe('Company:');
     expect(text(page, '.sale-title-value')).toBe('Lakeside Auto');
     expect(text(page, '.sale-branch')).toBe('Marlow Street');
     expect(gridValue(page, 'location')).toBe('Vessandria');
@@ -659,17 +655,20 @@ describe('vehicle-sale-information — the case matrix, vehicle by vehicle', () 
     expect(shadow(page).querySelector('.sale-group .sale-value-note')).toBeNull();
   });
 
-  it('[12] notes an end-customer id that differs from the customer ID, in both layouts', async () => {
+  it('[12] never shows the end-customer id, even with the customer ID hidden, in both layouts', async () => {
     const page = await newPage(brokerMarketMocks, SHOW_ALL);
     await load(page, record({ ...FULL_SALE, customerID: '900', endCustomer: { id: '5', name: 'Sample Customer' } }));
 
     expect(text(page, '.sale-group .sale-cell[data-field="endCustomerName"] .sale-value-text')).toBe('Sample Customer');
-    expect(text(page, '.sale-group .sale-cell[data-field="endCustomerName"] .sale-value-note')).toBe('Customer ID 5');
+    expect(shadow(page).querySelector('.sale-group .sale-value-note')).toBeNull();
+    expect(shadow(page).textContent).not.toContain('Customer ID 5');
 
+    page.root.hiddenFields = 'customerID';
     page.root.showSupplyChain = true;
     await page.waitForChanges();
     await settle(page);
-    expect(legNote(page, 'endCustomer')).toBe('Customer ID 5');
+    expect(legNote(page, 'endCustomer')).toBeUndefined();
+    expect(shadow(page).textContent).not.toContain('Customer ID 5');
   });
 
   it('[13] says a broker holds the vehicle when the broker has no invoice', async () => {
@@ -786,7 +785,7 @@ describe('vehicle-sale-information — the case matrix, vehicle by vehicle', () 
 
     await load(page, 'ZS88F5CL80J407317');
     expect(verdict(page)).toBe('positive');
-    expect(text(page, '.sale-title-label')).toBe('Dealer:');
+    expect(text(page, '.sale-title-label')).toBe('Company:');
     expect(text(page, '.sale-title-value')).toBe('—');
     expect(legKinds(page)).toEqual(['distributor', 'intermediary']);
 
@@ -939,13 +938,13 @@ const SAID_VALUES = [
   'BROKER-CITY-LEAK',
   '868686',
   '2031-01-06',
-  'EC-ID-LEAK',
   'EC-NAME-LEAK',
   'EC-PHONE-LEAK',
   'EC-IDNUMBER-LEAK',
 ];
 
 const NEVER_SAID = [
+  'EC-ID-LEAK',
   'COUNTRY-ID-LEAK',
   'SALE-CITY-ID-LEAK',
   'REGION-ID-LEAK',
@@ -1148,10 +1147,8 @@ describe('vehicle-sale-information — the bug fixes', () => {
     );
   });
 
-  it('calls the dealer by the warranty panel s word in every language, with no brand', () => {
-    Object.keys(LOCALES).forEach(lang => expect([lang, LOCALES[lang as 'en'].companyName]).toEqual([lang, WARRANTY[lang as 'en'].dealer]));
-    expect(arabicLocale.companyName).toBe('الوكيل');
-    expect(arabicLocale.companyName.split(' ')).toHaveLength(1);
+  it('keeps the company label it had before the redesign', () => {
+    expect(englishLocale.companyName).toBe('Company');
     expect(arabicLocale.brokerName).not.toBe(arabicLocale.intermediaryName);
   });
 
@@ -1257,17 +1254,12 @@ describe('vehicle-sale-information — hiddenFields', () => {
     }
   });
 
-  it('hides the new names: the non-official broker, the end-customer id and the distributor branch', async () => {
+  it('hides the new names: the non-official broker and the distributor branch', async () => {
     for (const chain of ['', CHAIN]) {
       const broker = await newPage(brokerMarketMocks, `hidden-fields="nonOfficialBrokerName" ${chain}`);
       await load(broker, 'ZS9LK8FV6S6562597');
       expect(legParty(broker, 'broker')).toBe('Keystone Showroom');
       expect(legNote(broker, 'broker')).toBeUndefined();
-
-      const id = await newPage(brokerMarketMocks, `hidden-fields="endCustomerId" ${chain}`);
-      await load(id, record());
-      expect(text(id, '.sale-card')).not.toContain('Customer ID 5');
-      expect(text(id, '.sale-card')).toContain('Sample Customer');
 
       const branch = await newPage(edgeCaseMocks, `hidden-fields="distributorBranchName" ${chain}`);
       await load(branch, 'ZU8MC2VH8T6636219');
@@ -1395,7 +1387,7 @@ describe('vehicle-sale-information — the supply chain flag', () => {
       'Distributor',
       'Intermediary',
       'Intermediary',
-      'Dealer',
+      'Company',
       'Broker',
       englishLocale.endCustomer,
     ]);
@@ -1534,7 +1526,7 @@ describe('vehicle-sale-information — the owner', () => {
     page.root.addEventListener('verdictChange', (event: CustomEvent<string>) => heard.push(event.detail));
 
     expect(verdict(page)).toBe('idle');
-    expect(text(page, '.sale-title-label')).toBe('Dealer:');
+    expect(text(page, '.sale-title-label')).toBe('Company:');
     expect(text(page, '.sale-title-value')).toBe('—');
     expect(shadow(page).querySelector('.lookup-summary .status-badge')).toBeNull();
 
