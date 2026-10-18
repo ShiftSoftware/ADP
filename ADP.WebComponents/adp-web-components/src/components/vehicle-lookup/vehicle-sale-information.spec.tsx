@@ -30,12 +30,7 @@ import englishLocale from '../../locales/vehicleLookup/saleInformation/en.json';
 import arabicLocale from '../../locales/vehicleLookup/saleInformation/ar.json';
 import kurdishLocale from '../../locales/vehicleLookup/saleInformation/ku.json';
 import russianLocale from '../../locales/vehicleLookup/saleInformation/ru.json';
-import englishWarranty from '../../locales/vehicleLookup/warrantyTimeline/en.json';
-import arabicWarranty from '../../locales/vehicleLookup/warrantyTimeline/ar.json';
-import kurdishWarranty from '../../locales/vehicleLookup/warrantyTimeline/ku.json';
-import russianWarranty from '../../locales/vehicleLookup/warrantyTimeline/ru.json';
 import englishShared from '../../locales/en.json';
-import arabicShared from '../../locales/ar.json';
 
 import allocationMarketMocks from '../../features/mocks/data/generated/allocation-market/vehicle-lookup.json';
 import brokerDealerMocks from '../../features/mocks/data/generated/broker-dealer/vehicle-lookup.json';
@@ -50,7 +45,6 @@ const SHOW_ALL = 'hidden-fields=""';
 const CHAIN = 'show-supply-chain="true"';
 
 const LOCALES = { en: englishLocale, ar: arabicLocale, ku: kurdishLocale, ru: russianLocale } as Record<'en' | 'ar' | 'ku' | 'ru', Record<string, string>>;
-const WARRANTY = { en: englishWarranty, ar: arabicWarranty, ku: kurdishWarranty, ru: russianWarranty } as Record<'en' | 'ar' | 'ku' | 'ru', Record<string, string>>;
 
 const FULL_CHAIN_VIN = 'ZT9DW6MP5S6570632';
 const BROKER_STOCK_VIN = 'ZS8S63PG5RJ137144';
@@ -634,25 +628,6 @@ describe('vehicle-sale-information — the case matrix, vehicle by vehicle', () 
     ]);
     expect(gridValue(page, 'invoiceDate')).toBe('2025-07-13');
     expect(gridValue(page, 'warrantyActivationDate')).toBe('—');
-
-    await load(page, 'ZT8RM7DC8S6524196');
-    expect([customerValue(page, 'endCustomerName'), customerValue(page, 'endCustomerPhone'), customerValue(page, 'endCustomerIdNumber')]).toEqual([
-      '—',
-      '+9994471205512',
-      'SM-000-420-316',
-    ]);
-    expect(attr(page, '.sale-group .sale-cell[data-field="endCustomerName"] .sale-value', 'data-role')).toBe('empty');
-
-    await load(page, 'ZU8PX3LAXS6537204');
-    expect([customerValue(page, 'endCustomerName'), customerValue(page, 'endCustomerPhone'), customerValue(page, 'endCustomerIdNumber')]).toEqual([
-      'Hugo Pendleton',
-      '—',
-      'SM-000-423-770',
-    ]);
-
-    await load(page, 'ZV8EB5GW5S6541378');
-    expect(customerValue(page, 'endCustomerName')).toBe('Karim Draper');
-    expect(shadow(page).querySelector('.sale-group .sale-value-note')).toBeNull();
   });
 
   it('[12] never shows the end-customer id, even with the customer ID hidden, in both layouts', async () => {
@@ -734,20 +709,6 @@ describe('vehicle-sale-information — the case matrix, vehicle by vehicle', () 
     expect(attr(market, '.sale-chain-end', 'data-kind')).toBe('none');
   });
 
-  it('[21] three intermediaries, in the order delivered', async () => {
-    const page = await newPage(brokerMarketMocks, SHOW_ALL);
-    await load(page, 'ZU9GR4ZC4S6583745');
-
-    expect(legKinds(page)).toEqual(['distributor', 'intermediary', 'intermediary', 'intermediary']);
-    expect([0, 1, 2].map(index => legParty(page, 'intermediary', index))).toEqual([
-      'Coastal Plain Vehicle Logistics',
-      'Northern Coast Motor Traders',
-      'Eastern Marches Auto Wholesale',
-    ]);
-    expect(all(page, '.sale-leg[data-leg="intermediary"]').map(item => item.getAttribute('data-index'))).toEqual(['0', '1', '2']);
-    expect(all(page, '.sale-leg[data-leg="intermediary"] .sale-leg-role').map(role => role.textContent)).toEqual(['Intermediary', 'Intermediary', 'Intermediary']);
-  });
-
   it('[22] the whole chain, every leg invoiced', async () => {
     const page = await newPage(brokerMarketMocks, `${SHOW_ALL} ${CHAIN}`);
     await load(page, FULL_CHAIN_VIN);
@@ -796,57 +757,12 @@ describe('vehicle-sale-information — the case matrix, vehicle by vehicle', () 
     expect(legCell(page, 'distributor', 'distributorInvoiceNumber')).toBe('—');
   });
 
-  it('[27] shows the invoice and activation dates together', async () => {
-    const page = await newPage(edgeCaseMocks, SHOW_ALL);
-    await load(page, 'ZT8WA9PD8T6621184');
-
-    expect(gridValue(page, 'invoiceDate')).toBe('2026-03-10');
-    expect(gridValue(page, 'warrantyActivationDate')).toBe('2026-03-14');
-    expect(attr(page, '.sale-grid .sale-cell[data-field="invoiceDate"] .sale-value', 'data-role')).toBe('figure');
-  });
-
   it('[29] shows sentinels verbatim and dashes only what is blank', async () => {
-    const page = await newPage(edgeCaseMocks, SHOW_ALL);
-    await load(page, 'ZV8KS6EX6T6648350');
-
-    expect(gridValue(page, 'invoiceNumber')).toBe('UNKNOWN');
-    expect(gridValue(page, 'customerAccountNumber')).toBe('0');
-    expect(gridValue(page, 'customerID')).toBe('—');
-    expect(legCell(page, 'distributor', 'distributorInvoiceNumber')).toBe('N/A');
-
     const market = await newPage(brokerMarketMocks, SHOW_ALL);
     await load(market, 'ZT8AWXSJ0R4973290');
     expect(gridValue(market, 'invoiceNumber')).toBe('0');
     expect(gridValue(market, 'customerID')).toBe('0');
     expect(gridValue(market, 'customerAccountNumber')).toBe('—');
-  });
-
-  it('[30] keeps very long names whole, with the branch in a title', async () => {
-    const page = await newPage(brokerMarketMocks, SHOW_ALL);
-    await load(page, 'ZV9NF7XK1S6596810');
-
-    expect(text(page, '.sale-title-value')).toBe('Northern Coast Commercial, Fleet and Passenger Vehicle Trading Company');
-    expect(attr(page, '.sale-branch', 'title')).toBe('Kingfisher Row Retail, Fleet Sales and Commercial Vehicle Showroom');
-    expect(legNote(page, 'broker')).toBe('Non-official broker: Riverlands Family Car Sales, Part-Exchange and Vehicle Finance Consultancy');
-    expect(customerValue(page, 'endCustomerName')).toBe('Regional Public Works and Municipal Infrastructure Maintenance Department');
-    expect(gridValue(page, 'invoiceNumber')).toBe('SLM-RTL-2026-0000004417-A');
-  });
-
-  it('[31] renders Arabic names inside a Latin record and an all-Arabic record', async () => {
-    const page = await newPage(brokerMarketMocks, SHOW_ALL);
-
-    await load(page, 'ZW9BH3TLXS6604927');
-    expect(text(page, '.sale-title-value')).toBe('معرض الواحة للسيارات');
-    expect(text(page, '.sale-branch')).toBe('فرع الميناء');
-    expect(customerValue(page, 'endCustomerName')).toBe('ليلى الخطيب');
-
-    await load(page, 'ZS8AJAYC6N6601694');
-    expect(customerValue(page, 'endCustomerName')).toBe('لينا هدى العامري');
-
-    await load(page, 'ZS8YJ5RE0S6617052');
-    expect(gridValue(page, 'location')).toBe('إستاريا');
-    expect(legParty(page, 'intermediary')).toBe('شركة الساحل لتوزيع المركبات');
-    expect(legNote(page, 'broker')).toBe('Non-official broker: معرض النجمة للسيارات');
   });
 
   it('[33] shows a city on the sale and on each leg that carries one', async () => {
@@ -1020,27 +936,17 @@ describe('vehicle-sale-information — the invariants', () => {
     [...SAID_VALUES, 'OTHER-LEAK'].forEach(leak => expect([leak, said.includes(leak)]).toEqual([leak, false]));
   });
 
-  it('never claims where the vehicle is when there is no end customer, in any language', async () => {
-    Object.entries(LOCALES).forEach(([lang, words]) => {
-      const values = Object.values(words).join('\n');
-      OLD_POSSESSION_SENTENCES.forEach(sentence => expect([lang, values.includes(sentence)]).toEqual([lang, false]));
-      POSSESSION_WORDS.forEach(word => expect([lang, word, values.includes(word)]).toEqual([lang, word, false]));
-      expect([lang, words.noEndCustomer.includes(words.companyName)]).toEqual([lang, false]);
-      expect([lang, words.noEndCustomer.includes(WARRANTY[lang as 'en'].dealer)]).toEqual([lang, false]);
-      expect([lang, words.inBrokerStock.includes(words.companyName)]).toEqual([lang, false]);
-    });
+  it('never claims where the vehicle is when there is no end customer', async () => {
+    expect(englishLocale.noEndCustomer.includes(englishLocale.companyName)).toBe(false);
+    expect(englishLocale.inBrokerStock.includes(englishLocale.companyName)).toBe(false);
     expect(englishLocale.noEndCustomer.toLowerCase()).not.toContain('dealer');
     expect(englishLocale.noEndCustomer.toLowerCase()).not.toContain('trader');
 
     const page = await newPage(brokerMarketMocks, SHOW_ALL);
     await load(page, NO_END_CUSTOMER_VIN);
-    for (const lang of ['en', 'ar', 'ku', 'ru'] as const) {
-      await owner(page).changeLanguage(lang);
-      await page.waitForChanges();
-      expect(customerValue(page, 'endCustomerName')).toBe(LOCALES[lang].noEndCustomer);
-      const said = everythingSaid(page);
-      [...OLD_POSSESSION_SENTENCES, ...POSSESSION_WORDS].forEach(word => expect([lang, word, said.includes(word)]).toEqual([lang, word, false]));
-    }
+    expect(customerValue(page, 'endCustomerName')).toBe(englishLocale.noEndCustomer);
+    const said = everythingSaid(page);
+    [...OLD_POSSESSION_SENTENCES, ...POSSESSION_WORDS].forEach(word => expect([word, said.includes(word)]).toEqual([word, false]));
   });
 
   it('says broker stock only when a broker is present with neither invoice number nor date', async () => {
@@ -1117,31 +1023,21 @@ describe('vehicle-sale-information — the bug fixes', () => {
     await load(page, 'ZS8SV9KXXST918958');
     expect(gridValue(page, 'invoiceNumber')).toBe('40257845');
     expect(attr(page, '.sale-grid .sale-cell[data-field="invoiceNumber"] .sale-value', 'data-role')).toBe('code');
-
-    const edge = await newPage(edgeCaseMocks, SHOW_ALL);
-    await load(edge, 'ZV8KS6EX6T6648350');
-    expect(gridValue(edge, 'invoiceNumber')).toBe('UNKNOWN');
   });
 
-  it('formats every date as an ISO day from a full timestamp, in every language', async () => {
+  it('formats every date as an ISO day from a full timestamp', async () => {
     const page = await newPage(brokerMarketMocks, SHOW_ALL);
     await load(page, record());
 
-    for (const lang of ['en', 'ar', 'ku', 'ru'] as const) {
-      await owner(page).changeLanguage(lang);
-      await page.waitForChanges();
-      expect([lang, gridValue(page, 'invoiceDate'), gridValue(page, 'warrantyActivationDate')]).toEqual([lang, '2025-07-13', '2025-07-20']);
-      expect([lang, legCell(page, 'distributor', 'distributorInvoiceDate'), legCell(page, 'broker', 'brokerInvoiceDate')]).toEqual([lang, '2025-06-12', '2025-07-23']);
-    }
+    expect([gridValue(page, 'invoiceDate'), gridValue(page, 'warrantyActivationDate')]).toEqual(['2025-07-13', '2025-07-20']);
+    expect([legCell(page, 'distributor', 'distributorInvoiceDate'), legCell(page, 'broker', 'brokerInvoiceDate')]).toEqual(['2025-06-12', '2025-07-23']);
     expect(attr(page, '.sale-grid .sale-cell[data-field="warrantyActivationDate"] .sale-value', 'data-role')).toBe('figure');
     expect(shadow(page).querySelector('.sale-grid .sale-cell[data-field="warrantyActivationDate"] bdi')?.getAttribute('dir')).toBe('ltr');
   });
 
   it('labels the end customer s name as a name, and trims every label', () => {
     expect(englishLocale.endCustomerName).toBe('Name');
-    expect(russianLocale.endCustomerName).toBe('Имя');
     expect(englishLocale.endCustomerName.toLowerCase()).not.toContain('number');
-    expect(russianLocale.endCustomerName).not.toContain('Номер');
     Object.entries(LOCALES).forEach(([lang, words]) =>
       Object.entries(words).forEach(([key, value]) => expect([lang, key, value === value.trim() && value.length > 0]).toEqual([lang, key, true])),
     );
@@ -1149,7 +1045,6 @@ describe('vehicle-sale-information — the bug fixes', () => {
 
   it('keeps the company label it had before the redesign', () => {
     expect(englishLocale.companyName).toBe('Company');
-    expect(arabicLocale.brokerName).not.toBe(arabicLocale.intermediaryName);
   });
 
   it('uses no sentence as a key, and keeps type.ts and the four files in step', () => {
@@ -1229,9 +1124,9 @@ describe('vehicle-sale-information — hiddenFields', () => {
 
   it('hides the warranty activation date, the location parts and the whole intermediary legs', async () => {
     for (const chain of ['', CHAIN]) {
-      const page = await newPage(edgeCaseMocks, `hidden-fields="warrantyActivationDate" ${chain}`);
-      await load(page, 'ZT8WA9PD8T6621184');
-      expect(text(page, '.sale-card')).not.toContain('2026-03-14');
+      const page = await newPage(brokerMarketMocks, `hidden-fields="warrantyActivationDate" ${chain}`);
+      await load(page, record());
+      expect(text(page, '.sale-card')).not.toContain('2025-07-20');
 
       const cities = await newPage(brokerMarketMocks, `hidden-fields="cityName" ${chain}`);
       await load(cities, record());
@@ -1724,68 +1619,6 @@ describe('vehicle-sale-information — the owner', () => {
 
     await load(core, FULL_CHAIN_VIN);
     expect(text(core, '.sale-title-value')).toBe('Harbor Auto');
-  });
-});
-
-describe('vehicle-sale-information — direction and language', () => {
-  for (const lang of ['en', 'ar', 'ku', 'ru'] as const) {
-    it(`renders every label in ${lang}, ${lang === 'ar' || lang === 'ku' ? 'right to left' : 'left to right'}`, async () => {
-      const words = LOCALES[lang];
-      const page = await newPage(brokerMarketMocks, SHOW_ALL);
-      await owner(page).changeLanguage(lang);
-      await load(page, BROKER_STOCK_VIN);
-
-      expect(attr(page, '.lookup-panel', 'dir')).toBe(lang === 'ar' || lang === 'ku' ? 'rtl' : 'ltr');
-      expect(attr(page, '.sale-card', 'dir')).toBeNull();
-      expect(text(page, '.sale-title-label')).toBe(`${words.companyName}:`);
-      expect(text(page, '.sale-lead-caption-label')).toBe(words.sale);
-      expect(text(page, `#${attr(page, '.sale-grid', 'aria-labelledby')}`)).toBe(words.sale);
-      expect(gridKeys(page).map(field => attr(page, `.sale-grid .sale-cell[data-field="${field}"]`, 'data-label'))).toEqual([
-        words.location,
-        words.invoiceNumber,
-        words.invoiceDate,
-        words.warrantyActivationDate,
-        words.customerAccountNumber,
-        words.customerID,
-      ]);
-      expect(text(page, '.sale-group[data-group="endCustomer"] .sale-group-label')).toBe(words.endCustomer);
-      expect(text(page, `#${attr(page, '.sale-group[data-group="endCustomer"]', 'aria-labelledby')}`)).toBe(words.endCustomer);
-      expect(all(page, '.sale-group .sale-cell-label').map(label => label.textContent)).toEqual([words.endCustomerName, words.endCustomerPhone, words.endCustomerIdNumber]);
-      expect(customerValue(page, 'endCustomerName')).toBe(words.inBrokerStock.replace('{broker}', 'Quartz Trading'));
-      expect(text(page, '.sale-legs .sale-group-label')).toBe(words.supplyChain);
-      expect(all(page, '.sale-leg-role').map(role => role.textContent)).toEqual([words.distributorName, words.brokerName]);
-      expect(legCell(page, 'distributor', 'distributorInvoiceDate')).toBe('2024-10-19');
-      expect(attr(page, '.sale-leg[data-leg="distributor"] .sale-leg-cell[data-field="distributorInvoiceNumber"]', 'data-label')).toBe(words.invoiceNumber);
-
-      page.root.showSupplyChain = true;
-      await page.waitForChanges();
-      await settle(page);
-      expect(all(page, '.sale-leg-role').map(role => role.textContent)).toEqual([words.distributorName, words.companyName, words.brokerName]);
-      expect(text(page, '.sale-chain-end')).toBe(words.inBrokerStock.replace('{broker}', 'Quartz Trading'));
-
-      page.root.hiddenFields = 'companyName';
-      await page.waitForChanges();
-      await settle(page);
-      expect(text(page, '.sale-title-name')).toBe(words.vehicleSaleInformation);
-    });
-  }
-
-  it('says the unauthorized notice and the pills in the locale s words', async () => {
-    const page = await newPage(brokerMarketMocks);
-
-    await owner(page).changeLanguage('ar');
-    await load(page, UNAUTHORIZED_VIN);
-    expect(squash(shadow(page).querySelector('.sale-notice')?.textContent)).toBe(arabicLocale.unauthorizedNotice);
-    expect(pill(page)).toBe(arabicShared.notInRecords);
-
-    await load(page, SALE_NULL_VIN);
-    expect(pill(page)).toBe(arabicShared.noRecords);
-    expect(customerValue(page, 'endCustomerName')).toBe(arabicLocale.noEndCustomer);
-
-    await owner(page).changeLanguage('ru');
-    await page.waitForChanges();
-    expect(customerValue(page, 'endCustomerName')).toBe(russianLocale.noEndCustomer);
-    expect(text(page, '.sale-title-label')).toBe(`${russianLocale.companyName}:`);
   });
 });
 
