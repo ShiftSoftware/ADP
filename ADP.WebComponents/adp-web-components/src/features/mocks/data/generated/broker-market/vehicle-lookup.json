@@ -46456,5 +46456,1742 @@
     "vehicleSpecification": {},
     "serviceItems": [],
     "accessories": []
+  },
+  "ZS8HN4KB3S6512083": {
+    "classifications": [],
+    "vin": "ZS8HN4KB3S6512083",
+    "identifiers": {
+      "vin": "ZS8HN4KB3S6512083",
+      "variant": "01476ND202501",
+      "katashiki": "JTY389Z-PMHKPF",
+      "color": "Q23",
+      "trim": "26",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Solmara",
+      "companyID": "3",
+      "companyName": "Harbor Auto",
+      "branchID": "28",
+      "branchName": "Clearwater",
+      "customerAccountNumber": "HP77120",
+      "customerID": "900101",
+      "invoiceDate": "2025-11-10",
+      "invoiceNumber": "63019458",
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Solmara Vehicle Imports",
+        "invoiceNumber": "48210937",
+        "invoiceDate": "2025-11-03"
+      },
+      "intermediaries": [],
+      "regionID": "2",
+      "endCustomer": {
+        "id": "900101",
+        "name": "Elena Whitfield",
+        "phone": "\u002B9994471203958",
+        "idNumber": "SM-000-417-829"
+      }
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": true,
+      "warrantyStartDate": "2025-11-10",
+      "warrantyEndDate": "2028-11-10",
+      "startState": "Started",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": [],
+      "freeServiceStartDate": "2025-11-10"
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {
+      "modelCode": "01476",
+      "sfx": "ND",
+      "modelYear": 2025
+    },
+    "vehicleSpecification": {
+      "modelCode": "01476",
+      "modelYear": 2025,
+      "modelDescription": "DWWB ELDRIS",
+      "variantDescription": "ELDRIS (Sedan 2WD/4-Cyl 1.8L Gasoline/AT/4 Doors/5 Seats)/Mid with Sunroof",
+      "class": "P",
+      "bodyType": " ",
+      "engine": " 1800 ",
+      "cylinders": " 0 ",
+      "lightHeavyType": " ",
+      "doors": " 4 ",
+      "fuel": "P",
+      "transmission": "Automatic",
+      "side": "1",
+      "engineType": " ",
+      "tankCap": " 0 ",
+      "style": "Saloon",
+      "exteriorColor": "HARBOR GREY METALLIC",
+      "interiorColor": "ASH GREY"
+    },
+    "serviceItems": [
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "5,000 KM Free Service Package",
+        "description": "5,000 KM Free Service Package",
+        "title": "5,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2025-11-10",
+        "expiresAt": "2026-05-10",
+        "status": "expired",
+        "statusEnum": "Expired",
+        "packageCode": "XGST JTY389 5K",
+        "cost": 53,
+        "modelCostID": 25204,
+        "serviceItemID": "1592",
+        "maximumMileage": 5000,
+        "claimable": false,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "26uq6NGzjI\u002B7kEzcQmS\u002BkjvK7jBh5DIZGrEOL4dQEYM=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "10,000 KM Free Service Package",
+        "description": "10,000 KM Free Service Package",
+        "title": "10,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2026-05-10",
+        "expiresAt": "2026-08-10",
+        "status": "expired",
+        "statusEnum": "Expired",
+        "packageCode": "XGST JTY389 10K",
+        "cost": 68,
+        "modelCostID": 25249,
+        "serviceItemID": "356",
+        "maximumMileage": 10000,
+        "claimable": false,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "FZWy86fechxp4NYhkFI6x96qKAv7FP7tSLXR9pfuUqE=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "15,000 KM Free Service Package",
+        "description": "15,000 KM Free Service Package",
+        "title": "15,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2026-08-10",
+        "expiresAt": "2026-11-10",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 15K",
+        "cost": 53,
+        "modelCostID": 25294,
+        "serviceItemID": "357",
+        "maximumMileage": 15000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "lBywPK\u002B6llS4RGk338UilBWJTRgXtOSK/bCJruHMbzM=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002720,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "20,000 KM Free Service Package",
+        "description": "20,000 KM Free Service Package",
+        "title": "20,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2026-11-10",
+        "expiresAt": "2027-02-10",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 20K",
+        "cost": 167,
+        "modelCostID": 25339,
+        "serviceItemID": "358",
+        "maximumMileage": 20000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "6uoBz4r6u5boRwmFFYuyMoJlMPOA6nboxlz7GPtxooY=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002725,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "25,000 KM Free Service Package",
+        "description": "25,000 KM Free Service Package",
+        "title": "25,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-02-10",
+        "expiresAt": "2027-05-10",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 25K",
+        "cost": 53,
+        "modelCostID": 25384,
+        "serviceItemID": "359",
+        "maximumMileage": 25000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "yzSw27tncWPKM9UM/jzcQqHBjQPZOHtAzCeyHWMzPtM=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002730,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E25,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "30,000 KM Free Service Package",
+        "description": "30,000 KM Free Service Package",
+        "title": "30,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-05-10",
+        "expiresAt": "2027-08-10",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 30K",
+        "cost": 68,
+        "modelCostID": 25429,
+        "serviceItemID": "360",
+        "maximumMileage": 30000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "yk9oNumGTa/WhItbm5OujfGKuEu8t3BWh5pEPJvR6PM=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002735,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E25,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E30,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "35,000 KM Free Service Package",
+        "description": "35,000 KM Free Service Package",
+        "title": "35,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-08-10",
+        "expiresAt": "2027-11-10",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 35K",
+        "cost": 53,
+        "modelCostID": 25474,
+        "serviceItemID": "361",
+        "maximumMileage": 35000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "EwEa4ObW5Q/eaEom7GazwytLcX1GD6r\u002BPfDlPBZjYWQ=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002740,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E25,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E30,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E35,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "40,000 KM Free Service Package",
+        "description": "40,000 KM Free Service Package",
+        "title": "40,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-11-10",
+        "expiresAt": "2028-03-10",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 40K",
+        "cost": 253,
+        "modelCostID": 25523,
+        "serviceItemID": "362",
+        "maximumMileage": 40000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "Pq5MaHcF7tNx/1xxkb34OiliCn3q0gL9deMhav\u002B7NQQ=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "55,000 KM Service Reward",
+        "description": "55,000 KM Service Reward",
+        "title": "55,000 KM Service Reward",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2028-03-10",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "CHP JTY389 55K",
+        "cost": 38,
+        "modelCostID": 25163,
+        "serviceItemID": "14717",
+        "maximumMileage": 55000,
+        "claimable": false,
+        "lock": {
+          "state": "Locked",
+          "prerequisites": [
+            {
+              "mileage": 45000,
+              "label": "45K",
+              "satisfied": false
+            },
+            {
+              "mileage": 50000,
+              "label": "50K",
+              "satisfied": false
+            }
+          ]
+        },
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": false
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": false
+          }
+        ],
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "0\u002Brkem8Tr9yvg26XT86425WLf/6KT9qLjipDhgvC1R0=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      }
+    ],
+    "accessories": [],
+    "basicModelCode": "JTY389Z"
+  },
+  "ZW8CT2HN3S6553461": {
+    "classifications": [],
+    "vin": "ZW8CT2HN3S6553461",
+    "identifiers": {
+      "vin": "ZW8CT2HN3S6553461",
+      "variant": "01476ND202501",
+      "katashiki": "JTY389Z-PMHKPF",
+      "color": "Q23",
+      "trim": "26",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Solmara",
+      "companyID": "2",
+      "companyName": "Ashford Auto Group",
+      "branchID": "14",
+      "branchName": "Fairmont",
+      "customerAccountNumber": "B90105",
+      "customerID": "900105",
+      "invoiceDate": "2026-06-08",
+      "invoiceNumber": "63040217",
+      "broker": {
+        "brokerID": 9105,
+        "brokerName": "Juniper Motor Park",
+        "invoiceNumber": 7105,
+        "invoiceDate": "2026-08-20"
+      },
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Solmara Vehicle Imports",
+        "invoiceNumber": "48231046",
+        "invoiceDate": "2026-06-01"
+      },
+      "intermediaries": [],
+      "regionID": "2"
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": true,
+      "warrantyStartDate": "2026-08-20",
+      "warrantyEndDate": "2029-08-20",
+      "startState": "Started",
+      "activatedByBrokerName": "Juniper Motor Park",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": [],
+      "freeServiceStartDate": "2026-08-20"
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {
+      "modelCode": "01476",
+      "sfx": "ND",
+      "modelYear": 2025
+    },
+    "vehicleSpecification": {
+      "modelCode": "01476",
+      "modelYear": 2025,
+      "modelDescription": "DWWB ELDRIS",
+      "variantDescription": "ELDRIS (Sedan 2WD/4-Cyl 1.8L Gasoline/AT/4 Doors/5 Seats)/Mid with Sunroof",
+      "class": "P",
+      "bodyType": " ",
+      "engine": " 1800 ",
+      "cylinders": " 0 ",
+      "lightHeavyType": " ",
+      "doors": " 4 ",
+      "fuel": "P",
+      "transmission": "Automatic",
+      "side": "1",
+      "engineType": " ",
+      "tankCap": " 0 ",
+      "style": "Saloon",
+      "exteriorColor": "HARBOR GREY METALLIC",
+      "interiorColor": "ASH GREY"
+    },
+    "serviceItems": [
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "5,000 KM Free Service Package",
+        "description": "5,000 KM Free Service Package",
+        "title": "5,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2026-08-20",
+        "expiresAt": "2027-02-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 5K",
+        "cost": 53,
+        "modelCostID": 25204,
+        "serviceItemID": "1592",
+        "maximumMileage": 5000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "n\u002BnHfIoZBUUXU1X88yHekAI7eWRSu5Itb7TTNN2/8P0=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002710,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E5,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "10,000 KM Free Service Package",
+        "description": "10,000 KM Free Service Package",
+        "title": "10,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-02-20",
+        "expiresAt": "2027-05-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 10K",
+        "cost": 68,
+        "modelCostID": 25249,
+        "serviceItemID": "356",
+        "maximumMileage": 10000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "P9dvYWdoitBes6D6mNmrQD7p63C7O4jmeIJ5ZKhQf2Q=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002715,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E5,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "15,000 KM Free Service Package",
+        "description": "15,000 KM Free Service Package",
+        "title": "15,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-05-20",
+        "expiresAt": "2027-08-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 15K",
+        "cost": 53,
+        "modelCostID": 25294,
+        "serviceItemID": "357",
+        "maximumMileage": 15000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "dKtegOJFGwEKCE/rhazonBYPcqEkyh4/w5endVJ5Xdg=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002720,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E5,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "20,000 KM Free Service Package",
+        "description": "20,000 KM Free Service Package",
+        "title": "20,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-08-20",
+        "expiresAt": "2027-11-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 20K",
+        "cost": 167,
+        "modelCostID": 25339,
+        "serviceItemID": "358",
+        "maximumMileage": 20000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "PBk19yzudFXBu/TeS5MzcHRUgROdDZirGJlvFAkA1mo=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u0027Fuel Injector Cleaner1\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E5,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "Fuel Injector Cleaner1",
+        "description": "Fuel Injector Cleaner1",
+        "title": "Fuel Injector Cleaner1",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-11-20",
+        "expiresAt": "2027-11-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "T7069338222",
+        "cost": 13.1,
+        "modelCostID": 24169,
+        "serviceItemID": "11080",
+        "maximumMileage": 20000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "FbTdf\u002BQHqC9wGpeylLZUa7QGftuzXkuOwJDhmRmZJ6E=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002725,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E5,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003EFuel Injector Cleaner1\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "25,000 KM Free Service Package",
+        "description": "25,000 KM Free Service Package",
+        "title": "25,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-11-20",
+        "expiresAt": "2028-02-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 25K",
+        "cost": 53,
+        "modelCostID": 25384,
+        "serviceItemID": "359",
+        "maximumMileage": 25000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "NsNEcoCozAa0fkGnPhUEpx1sFaxVa3cy3g96qcGfxKg=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002730,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E5,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003EFuel Injector Cleaner1\u003C/li\u003E\u003Cli\u003E25,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "30,000 KM Free Service Package",
+        "description": "30,000 KM Free Service Package",
+        "title": "30,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2028-02-20",
+        "expiresAt": "2028-05-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 30K",
+        "cost": 68,
+        "modelCostID": 25429,
+        "serviceItemID": "360",
+        "maximumMileage": 30000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "g82hiUmSL0Y7HIf4BffBNQ7i9I6VG5FulN/5Ui6py0Y=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002735,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E5,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003EFuel Injector Cleaner1\u003C/li\u003E\u003Cli\u003E25,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E30,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "35,000 KM Free Service Package",
+        "description": "35,000 KM Free Service Package",
+        "title": "35,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2028-05-20",
+        "expiresAt": "2028-08-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 35K",
+        "cost": 53,
+        "modelCostID": 25474,
+        "serviceItemID": "361",
+        "maximumMileage": 35000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "TxyF67FyXimTnv3zbL4zbeaLpDsfujffqCkR09h2tFo=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002740,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E5,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003EFuel Injector Cleaner1\u003C/li\u003E\u003Cli\u003E25,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E30,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E35,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "40,000 KM Free Service Package",
+        "description": "40,000 KM Free Service Package",
+        "title": "40,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2028-08-20",
+        "expiresAt": "2028-12-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 40K",
+        "cost": 253,
+        "modelCostID": 25523,
+        "serviceItemID": "362",
+        "maximumMileage": 40000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "zP8c\u002Bl1NRMETmMJBZDFVhhvQZ97q7cTthYo0UrhMuec=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u0027Fuel Injector Cleaner2\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E5,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003EFuel Injector Cleaner1\u003C/li\u003E\u003Cli\u003E25,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E30,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E35,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "Fuel Injector Cleaner2",
+        "description": "Fuel Injector Cleaner2",
+        "title": "Fuel Injector Cleaner2",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2028-12-20",
+        "expiresAt": "2028-12-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "T7069338222",
+        "cost": 13.1,
+        "modelCostID": 24099,
+        "serviceItemID": "11082",
+        "maximumMileage": 40000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "zDI31NYArpo0r/ii93MA15ZOPhE5QLjpn\u002B6Pj\u002BDhoqY=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "55,000 KM Service Reward",
+        "description": "55,000 KM Service Reward",
+        "title": "55,000 KM Service Reward",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2028-12-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "CHP JTY389 55K",
+        "cost": 38,
+        "modelCostID": 25163,
+        "serviceItemID": "14717",
+        "maximumMileage": 55000,
+        "claimable": false,
+        "lock": {
+          "state": "Locked",
+          "prerequisites": [
+            {
+              "mileage": 45000,
+              "label": "45K",
+              "satisfied": false
+            },
+            {
+              "mileage": 50000,
+              "label": "50K",
+              "satisfied": false
+            }
+          ]
+        },
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": false
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": false
+          }
+        ],
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "KnFf0sWVaKKohIoNYCKZr0StzvoPekTnVsRgMzw7mHo=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      }
+    ],
+    "accessories": [],
+    "basicModelCode": "JTY389Z"
+  },
+  "ZS9LK8FV6S6562597": {
+    "classifications": [],
+    "vin": "ZS9LK8FV6S6562597",
+    "identifiers": {
+      "vin": "ZS9LK8FV6S6562597",
+      "variant": "07593TE202501",
+      "katashiki": "JYL419L-UQKWRD",
+      "color": "Q23",
+      "trim": "26",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Solmara",
+      "companyID": "3",
+      "companyName": "Harbor Auto",
+      "branchID": "27",
+      "branchName": "Glenmore",
+      "customerAccountNumber": "OG90106",
+      "customerID": "900106",
+      "invoiceDate": "2026-02-16",
+      "invoiceNumber": "63029973",
+      "broker": {
+        "brokerID": 9106,
+        "brokerName": "Keystone Showroom",
+        "nonOfficialBrokerName": "Linden Park Car Traders",
+        "invoiceNumber": 7106,
+        "invoiceDate": "2026-03-03"
+      },
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Solmara Vehicle Imports",
+        "invoiceNumber": "48224418",
+        "invoiceDate": "2026-02-09"
+      },
+      "intermediaries": [],
+      "regionID": "2",
+      "endCustomer": {
+        "name": "Petra Lockhart",
+        "phone": "\u002B999 634 118 2096"
+      }
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": true,
+      "warrantyStartDate": "2026-03-03",
+      "warrantyEndDate": "2029-03-03",
+      "startState": "Started",
+      "activatedByBrokerName": "Keystone Showroom",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": [],
+      "freeServiceStartDate": "2026-03-03"
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {
+      "modelCode": "07593",
+      "sfx": "TE",
+      "modelYear": 2025
+    },
+    "vehicleSpecification": {
+      "modelCode": "07593",
+      "modelYear": 2025,
+      "modelDescription": "DWWB ELDRIS HEV",
+      "variantDescription": "ELDRIS HEV (Sedan 2WD/4-Cyl 1.8L HEV Gasoline/AT/4 Doors/5 seats)/Mid With Sunroof",
+      "class": "P",
+      "bodyType": " ",
+      "engine": " 1800 ",
+      "cylinders": " 0 ",
+      "lightHeavyType": " ",
+      "doors": " 4 ",
+      "fuel": "P",
+      "transmission": "Automatic",
+      "side": "1",
+      "engineType": " ",
+      "tankCap": " 0 ",
+      "style": "Saloon",
+      "exteriorColor": "HARBOR GREY METALLIC",
+      "interiorColor": "ASH GREY"
+    },
+    "serviceItems": [
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "5,000 KM Free Service Package",
+        "description": "5,000 KM Free Service Package",
+        "title": "5,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2026-03-03",
+        "expiresAt": "2026-09-03",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JYL419 5K",
+        "cost": 53,
+        "modelCostID": 25205,
+        "serviceItemID": "1592",
+        "maximumMileage": 5000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "8y1MpqYJrVbz\u002BzlD4rLE/668M8gwrIMfuxtUN4Iquno=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002710,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E5,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "10,000 KM Free Service Package",
+        "description": "10,000 KM Free Service Package",
+        "title": "10,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2026-09-03",
+        "expiresAt": "2026-12-03",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JYL419 10K",
+        "cost": 68,
+        "modelCostID": 25250,
+        "serviceItemID": "356",
+        "maximumMileage": 10000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "DDtzk2ZGQCMuGU7vbep55btmXI6C1tYrVF8WmGNyltA=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002715,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E5,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "15,000 KM Free Service Package",
+        "description": "15,000 KM Free Service Package",
+        "title": "15,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2026-12-03",
+        "expiresAt": "2027-03-03",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JYL419 15K",
+        "cost": 53,
+        "modelCostID": 25295,
+        "serviceItemID": "357",
+        "maximumMileage": 15000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "p/5ZjJyIjho/flBMSBjhCMXTP\u002Bglos7NtLzY/lD1WW0=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002720,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E5,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "20,000 KM Free Service Package",
+        "description": "20,000 KM Free Service Package",
+        "title": "20,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-03-03",
+        "expiresAt": "2027-06-03",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JYL419 20K",
+        "cost": 167,
+        "modelCostID": 25340,
+        "serviceItemID": "358",
+        "maximumMileage": 20000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "IYhnvSOJFmCZGVoHwdZElDRA1DuZeQ1ut\u002BEjo6WJF\u002BI=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002725,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E5,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "25,000 KM Free Service Package",
+        "description": "25,000 KM Free Service Package",
+        "title": "25,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-06-03",
+        "expiresAt": "2027-09-03",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JYL419 25K",
+        "cost": 53,
+        "modelCostID": 25385,
+        "serviceItemID": "359",
+        "maximumMileage": 25000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "pdWa1BYT862/0uCs5Yuac9KjJ01/Jk82fGEObHCpFtw=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002730,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E5,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E25,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "30,000 KM Free Service Package",
+        "description": "30,000 KM Free Service Package",
+        "title": "30,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-09-03",
+        "expiresAt": "2027-12-03",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JYL419 30K",
+        "cost": 68,
+        "modelCostID": 25430,
+        "serviceItemID": "360",
+        "maximumMileage": 30000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "Ev\u002BvvcrRaOCwxSUdmo5wp7\u002B4RYskgGbzKCCU4iQU3\u002B8=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002735,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E5,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E25,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E30,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "35,000 KM Free Service Package",
+        "description": "35,000 KM Free Service Package",
+        "title": "35,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-12-03",
+        "expiresAt": "2028-03-03",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JYL419 35K",
+        "cost": 53,
+        "modelCostID": 25475,
+        "serviceItemID": "361",
+        "maximumMileage": 35000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "lSPoE2\u002B3nlaeaFQ7\u002BK2Y2FAhmN\u002Bonnf19UYl/uzKucM=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002740,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E5,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E25,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E30,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E35,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "40,000 KM Free Service Package",
+        "description": "40,000 KM Free Service Package",
+        "title": "40,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2028-03-03",
+        "expiresAt": "2028-07-03",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JYL419 40K",
+        "cost": 277,
+        "modelCostID": 25524,
+        "serviceItemID": "362",
+        "maximumMileage": 40000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "g6IOK76nIZsE7yF/LRVlCDT2bSanZ3P7zChbd3ynK0g=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "55,000 KM Service Reward",
+        "description": "55,000 KM Service Reward",
+        "title": "55,000 KM Service Reward",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2028-07-03",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "CHP JYL419 55K",
+        "cost": 38,
+        "modelCostID": 25164,
+        "serviceItemID": "14717",
+        "maximumMileage": 55000,
+        "claimable": false,
+        "lock": {
+          "state": "Locked",
+          "prerequisites": [
+            {
+              "mileage": 45000,
+              "label": "45K",
+              "satisfied": false
+            },
+            {
+              "mileage": 50000,
+              "label": "50K",
+              "satisfied": false
+            }
+          ]
+        },
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": false
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": false
+          }
+        ],
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "OktRj84\u002BJ7VCajivOaZzKbULV0PMaskexzBejcZtu88=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      }
+    ],
+    "accessories": [],
+    "basicModelCode": "JYL419"
+  },
+  "ZT9DW6MP5S6570632": {
+    "classifications": [],
+    "vin": "ZT9DW6MP5S6570632",
+    "identifiers": {
+      "vin": "ZT9DW6MP5S6570632",
+      "variant": "01476ND202501",
+      "katashiki": "JTY389Z-PMHKPF",
+      "color": "Q23",
+      "trim": "26",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Solmara",
+      "companyID": "3",
+      "companyName": "Harbor Auto",
+      "branchID": "27",
+      "branchName": "Glenmore",
+      "customerAccountNumber": "HP90107",
+      "customerID": "900107",
+      "invoiceDate": "2025-12-20",
+      "invoiceNumber": "52117730",
+      "broker": {
+        "brokerID": 9107,
+        "brokerName": "Atlas Fleet Services",
+        "invoiceNumber": 7107,
+        "invoiceDate": "2026-01-14"
+      },
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Solmara Vehicle Imports",
+        "invoiceNumber": "48218824",
+        "invoiceDate": "2025-12-02"
+      },
+      "intermediaries": [
+        {
+          "companyID": "61",
+          "companyName": "Coastal Plain Vehicle Logistics",
+          "branchID": "610",
+          "branchName": "Harbour Lane",
+          "invoiceNumber": "CPL-25-10442",
+          "invoiceDate": "2025-12-09"
+        },
+        {
+          "companyID": "62",
+          "companyName": "Northern Coast Motor Traders",
+          "branchID": "620",
+          "branchName": "Beacon Hill",
+          "invoiceNumber": "NCT-7731",
+          "invoiceDate": "2025-12-15"
+        }
+      ],
+      "regionID": "2",
+      "endCustomer": {
+        "name": "Omar Holloway",
+        "phone": "\u002B999 640 218 7733",
+        "idNumber": "SM-000-731-560"
+      }
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": true,
+      "warrantyStartDate": "2026-01-14",
+      "warrantyEndDate": "2029-01-14",
+      "startState": "Started",
+      "activatedByBrokerName": "Atlas Fleet Services",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": [],
+      "freeServiceStartDate": "2026-01-14"
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {
+      "modelCode": "01476",
+      "sfx": "ND",
+      "modelYear": 2025
+    },
+    "vehicleSpecification": {
+      "modelCode": "01476",
+      "modelYear": 2025,
+      "modelDescription": "DWWB ELDRIS",
+      "variantDescription": "ELDRIS (Sedan 2WD/4-Cyl 1.8L Gasoline/AT/4 Doors/5 Seats)/Mid with Sunroof",
+      "class": "P",
+      "bodyType": " ",
+      "engine": " 1800 ",
+      "cylinders": " 0 ",
+      "lightHeavyType": " ",
+      "doors": " 4 ",
+      "fuel": "P",
+      "transmission": "Automatic",
+      "side": "1",
+      "engineType": " ",
+      "tankCap": " 0 ",
+      "style": "Saloon",
+      "exteriorColor": "HARBOR GREY METALLIC",
+      "interiorColor": "ASH GREY"
+    },
+    "serviceItems": [
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "5,000 KM Free Service Package",
+        "description": "5,000 KM Free Service Package",
+        "title": "5,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2026-01-14",
+        "expiresAt": "2026-07-14",
+        "status": "expired",
+        "statusEnum": "Expired",
+        "packageCode": "XGST JTY389 5K",
+        "cost": 53,
+        "modelCostID": 25204,
+        "serviceItemID": "1592",
+        "maximumMileage": 5000,
+        "claimable": false,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "OzykAv3eszpTKp4fXpKm866JOXq1WT7cuu1Ur3ScZYU=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "10,000 KM Free Service Package",
+        "description": "10,000 KM Free Service Package",
+        "title": "10,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2026-07-14",
+        "expiresAt": "2026-10-14",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 10K",
+        "cost": 68,
+        "modelCostID": 25249,
+        "serviceItemID": "356",
+        "maximumMileage": 10000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "cadgvZjxwQFOC9ygJ77Ioc6H\u002Bh2UYaWYXL72cfbzZjI=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002715,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "15,000 KM Free Service Package",
+        "description": "15,000 KM Free Service Package",
+        "title": "15,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2026-10-14",
+        "expiresAt": "2027-01-14",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 15K",
+        "cost": 53,
+        "modelCostID": 25294,
+        "serviceItemID": "357",
+        "maximumMileage": 15000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "jmgav4U\u002BzLd15FPzg59gHvUu3rhGOqfmwqbGQmMnEj0=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002720,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "20,000 KM Free Service Package",
+        "description": "20,000 KM Free Service Package",
+        "title": "20,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-01-14",
+        "expiresAt": "2027-04-14",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 20K",
+        "cost": 167,
+        "modelCostID": 25339,
+        "serviceItemID": "358",
+        "maximumMileage": 20000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "hiVosEtQ5Scds6GXPeW2DpKF6slD7bEQ8T7C9ArYZ4Q=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002725,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "25,000 KM Free Service Package",
+        "description": "25,000 KM Free Service Package",
+        "title": "25,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-04-14",
+        "expiresAt": "2027-07-14",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 25K",
+        "cost": 53,
+        "modelCostID": 25384,
+        "serviceItemID": "359",
+        "maximumMileage": 25000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "WMcI1XkumXp5nEyCQkZOy9u8h2hjQ7quDHPdzarN/Y4=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002730,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E25,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "30,000 KM Free Service Package",
+        "description": "30,000 KM Free Service Package",
+        "title": "30,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-07-14",
+        "expiresAt": "2027-10-14",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 30K",
+        "cost": 68,
+        "modelCostID": 25429,
+        "serviceItemID": "360",
+        "maximumMileage": 30000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "W\u002Bipv7lFeKzz040kn2e/bQTDD6xBnbQf63CvxLrN6YQ=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002735,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E25,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E30,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "35,000 KM Free Service Package",
+        "description": "35,000 KM Free Service Package",
+        "title": "35,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-10-14",
+        "expiresAt": "2028-01-14",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 35K",
+        "cost": 53,
+        "modelCostID": 25474,
+        "serviceItemID": "361",
+        "maximumMileage": 35000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "bMGXlWaVa/o69l25zlI4GJSXPOGC0rFe7nxUHKWeEh4=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002740,000 KM Free Service Package\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E15,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E20,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E25,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E30,000 KM Free Service Package\u003C/li\u003E\u003Cli\u003E35,000 KM Free Service Package\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "40,000 KM Free Service Package",
+        "description": "40,000 KM Free Service Package",
+        "title": "40,000 KM Free Service Package",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2028-01-14",
+        "expiresAt": "2028-05-14",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "XGST JTY389 40K",
+        "cost": 253,
+        "modelCostID": 25523,
+        "serviceItemID": "362",
+        "maximumMileage": 40000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "8wRx/hG/voEbP0juLQe5r2q\u002Bu9QiJ305itA9SFlqWCs=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "scan-warning",
+            "imageUrl": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/documents/service-invoice-qr.svg",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "55,000 KM Service Reward",
+        "description": "55,000 KM Service Reward",
+        "title": "55,000 KM Service Reward",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2028-05-14",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "CHP JTY389 55K",
+        "cost": 38,
+        "modelCostID": 25163,
+        "serviceItemID": "14717",
+        "maximumMileage": 55000,
+        "claimable": false,
+        "lock": {
+          "state": "Locked",
+          "prerequisites": [
+            {
+              "mileage": 45000,
+              "label": "45K",
+              "satisfied": false
+            },
+            {
+              "mileage": 50000,
+              "label": "50K",
+              "satisfied": false
+            }
+          ]
+        },
+        "prerequisites": [
+          {
+            "mileage": 45000,
+            "label": "45K",
+            "satisfied": false
+          },
+          {
+            "mileage": 50000,
+            "label": "50K",
+            "satisfied": false
+          }
+        ],
+        "claimingMethodEnum": "ClaimByScanningQRCode",
+        "vehicleInspectionTypeID": "",
+        "signature": "0mKQis1Bfk6dzpulf5dh6EItSmPCpPSggeJR8gRHqpY=",
+        "signatureExpiry": "2026-09-01T00:00:00Z"
+      }
+    ],
+    "accessories": [],
+    "basicModelCode": "JTY389Z"
   }
 }

@@ -157,6 +157,30 @@
           </template>
         </div>
 
+        <!-- Host configuration, handed to the sale panel through children-props. -->
+        <div
+          class="flex flex-wrap items-center gap-x-6 gap-y-2 self-start text-sm"
+          x-data="{ supplyChain: false, fields: 'default' }"
+          x-effect="window.setSaleProps({ supplyChain, fields })"
+        >
+          <label class="flex cursor-pointer items-center gap-2">
+            <input type="checkbox" class="toggle toggle-sm toggle-primary" x-model="supplyChain" />
+            Supply chain
+          </label>
+
+          <div class="flex items-center gap-2">
+            <span class="eyebrow text-neutral" id="sale-hidden-fields-label">Sale hidden fields</span>
+            <div class="join" role="group" aria-labelledby="sale-hidden-fields-label">
+              <button type="button" class="btn btn-xs join-item" :class="fields === 'all' && 'btn-active'" :aria-pressed="fields === 'all'" @click="fields = 'all'">
+                Show all
+              </button>
+              <button type="button" class="btn btn-xs join-item" :class="fields === 'default' && 'btn-active'" :aria-pressed="fields === 'default'" @click="fields = 'default'">
+                Host default
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- No card of the page's own around the component: the component draws the design language's card itself. -->
         <div class="frame">
           <vehicle-lookup
@@ -166,7 +190,7 @@
             active-element="vehicle-specification"
             tab-order="vehicle-specification,vehicle-sale-information,vehicle-accessories,vehicle-warranty-timeline,vehicle-ssc,vehicle-service-history,vehicle-paint-thickness,vehicle-claimable-items"
             ssc-query-string="logCampaignCheck=true"
-            children-props='{"vehicle-claimable-items":{"showTrace":true},"vehicle-ssc":{"showTrace":true},"vehicle-paint-thickness":{"showCertificateButton":true}}'
+            children-props='{"vehicle-claimable-items":{"showTrace":true},"vehicle-ssc":{"showTrace":true},"vehicle-paint-thickness":{"showCertificateButton":true},"vehicle-sale-information":{"showSupplyChain":false}}'
           ></vehicle-lookup>
         </div>
       </div>
@@ -174,5 +198,25 @@
       <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
       <div data-harness-rail x-cloak></div>
     </section>
+
+    <script>
+      let saleDefaultHiddenFields;
+
+      window.setSaleProps = ({ supplyChain, fields }) => {
+        const wrapper = document.querySelector('#subject');
+        const props = JSON.parse(wrapper.getAttribute('children-props') || '{}');
+        const sale = { ...props['vehicle-sale-information'], showSupplyChain: supplyChain };
+
+        // Host default omits the key; once "Show all" has been sent, the component's own default has to be sent back explicitly.
+        if (fields === 'all') {
+          saleDefaultHiddenFields ??= wrapper.shadowRoot?.querySelector('vehicle-sale-information')?.hiddenFields;
+          sale.hiddenFields = '';
+        } else if (saleDefaultHiddenFields !== undefined) sale.hiddenFields = saleDefaultHiddenFields;
+        else delete sale.hiddenFields;
+
+        props['vehicle-sale-information'] = sale;
+        wrapper.setAttribute('children-props', JSON.stringify(props));
+      };
+    </script>
   </body>
 </html>

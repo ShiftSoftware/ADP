@@ -95,7 +95,11 @@ export const createResizeSettle = (blocks: () => Iterable<HTMLElement>): ResizeS
         block.style.transition = 'none';
         block.style.setProperty('--resize-settle-height', `${previous[index]}px`);
       });
-      void items[0].offsetHeight;
+      // The one forced reflow that makes each pin the transition's start. A call, never a bare
+      // property read: the production minifier treats `void el.offsetHeight` as dead code and drops
+      // it, which left the pin and the target in the same style pass and every block landing on its
+      // target in one frame.
+      items.forEach(block => block.getBoundingClientRect());
 
       // Then the stylesheet's transition and the target, in the same task.
       items.forEach((block, index) => {

@@ -8,7 +8,10 @@
     "LookupBrokerStock": true,
     "IncludeInactivatedFreeServiceItems": false,
     "DistributorCompanyID": 5,
-    "IntermediaryCompanyIDs": [],
+    "IntermediaryCompanyIDs": [
+      61,
+      62
+    ],
     "DistributorStockPartLookupQuantityThreshold": 10,
     "ShowPartLookupStockQauntity": false,
     "EnableManufacturerLookup": true,
@@ -427,6 +430,26 @@
       "CompanyId": 15,
       "CompanyName": "Parkside Auto",
       "Branches": []
+    },
+    {
+      "CompanyId": 61,
+      "CompanyName": "Coastal Plain Vehicle Logistics",
+      "Branches": [
+        {
+          "BranchId": 610,
+          "BranchName": "Harbour Lane"
+        }
+      ]
+    },
+    {
+      "CompanyId": 62,
+      "CompanyName": "Northern Coast Motor Traders",
+      "Branches": [
+        {
+          "BranchId": 620,
+          "BranchName": "Beacon Hill"
+        }
+      ]
     }
   ],
   "Countries": [
@@ -107472,6 +107495,272 @@
       "PaintThicknessInspections": [],
       "Accessories": [],
       "ExtendedWarrantyEntries": []
+    },
+    "ZS8HN4KB3S6512083": {
+      "VIN": "ZS8HN4KB3S6512083",
+      "VehicleEntries": [
+        {
+          "id": "ZS8HN4KB3S6512083-5",
+          "BrandID": 1,
+          "BrandHashID": "wZqXv",
+          "ModelYear": 2025,
+          "ExteriorColorCode": "Q23",
+          "InteriorColorCode": "26",
+          "ModelCode": "01476",
+          "Katashiki": "JTY389Z-PMHKPF",
+          "VariantCode": "01476ND202501",
+          "VIN": "ZS8HN4KB3S6512083",
+          "CompanyID": 5,
+          "InvoiceDate": "2025-11-03",
+          "InvoiceNumber": "48210937"
+        },
+        {
+          "id": "ZS8HN4KB3S6512083-3",
+          "BrandID": 1,
+          "BrandHashID": "wZqXv",
+          "ModelYear": 2025,
+          "ExteriorColorCode": "Q23",
+          "InteriorColorCode": "26",
+          "ModelCode": "01476",
+          "Katashiki": "JTY389Z-PMHKPF",
+          "VariantCode": "01476ND202501",
+          "VIN": "ZS8HN4KB3S6512083",
+          "CompanyID": 3,
+          "BranchID": 28,
+          "CountryID": 1,
+          "RegionID": 2,
+          "InvoiceDate": "2025-11-10",
+          "InvoiceNumber": "63019458",
+          "AccountNumber": "HP77120",
+          "CustomerAccountNumber": "HP77120",
+          "CustomerID": "900101"
+        }
+      ],
+      "VehicleServiceActivations": [],
+      "VehicleInspections": [],
+      "CampaignVinEntries": [],
+      "InitialOfficialVINs": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "PaidServiceInvoices": [],
+      "ItemClaims": [],
+      "FreeServiceItemExcludedVINs": [],
+      "FreeServiceItemDateShifts": [],
+      "FreeServiceItemValidityOverrides": [],
+      "WarrantyDateShifts": [],
+      "PaintThicknessInspections": [],
+      "Accessories": [],
+      "ExtendedWarrantyEntries": []
+    },
+    "ZW8CT2HN3S6553461": {
+      "VIN": "ZW8CT2HN3S6553461",
+      "VehicleEntries": [
+        {
+          "id": "ZW8CT2HN3S6553461-5",
+          "BrandID": 1,
+          "BrandHashID": "wZqXv",
+          "ModelYear": 2025,
+          "ExteriorColorCode": "Q23",
+          "InteriorColorCode": "26",
+          "ModelCode": "01476",
+          "Katashiki": "JTY389Z-PMHKPF",
+          "VariantCode": "01476ND202501",
+          "VIN": "ZW8CT2HN3S6553461",
+          "CompanyID": 5,
+          "InvoiceDate": "2026-06-01",
+          "InvoiceNumber": "48231046"
+        },
+        {
+          "id": "ZW8CT2HN3S6553461-2",
+          "BrandID": 1,
+          "BrandHashID": "wZqXv",
+          "ModelYear": 2025,
+          "ExteriorColorCode": "Q23",
+          "InteriorColorCode": "26",
+          "ModelCode": "01476",
+          "Katashiki": "JTY389Z-PMHKPF",
+          "VariantCode": "01476ND202501",
+          "VIN": "ZW8CT2HN3S6553461",
+          "CompanyID": 2,
+          "BranchID": 14,
+          "CountryID": 1,
+          "RegionID": 2,
+          "InvoiceDate": "2026-06-08",
+          "InvoiceNumber": "63040217",
+          "AccountNumber": "B90105",
+          "CustomerAccountNumber": "B90105",
+          "CustomerID": "900105"
+        }
+      ],
+      "VehicleServiceActivations": [],
+      "VehicleInspections": [],
+      "CampaignVinEntries": [],
+      "InitialOfficialVINs": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "PaidServiceInvoices": [],
+      "ItemClaims": [],
+      "FreeServiceItemExcludedVINs": [],
+      "FreeServiceItemDateShifts": [],
+      "FreeServiceItemValidityOverrides": [],
+      "WarrantyDateShifts": [],
+      "PaintThicknessInspections": [],
+      "Accessories": [],
+      "ExtendedWarrantyEntries": []
+    },
+    "ZS9LK8FV6S6562597": {
+      "VIN": "ZS9LK8FV6S6562597",
+      "VehicleEntries": [
+        {
+          "id": "ZS9LK8FV6S6562597-5",
+          "BrandID": 1,
+          "BrandHashID": "wZqXv",
+          "ModelYear": 2025,
+          "ExteriorColorCode": "Q23",
+          "InteriorColorCode": "26",
+          "ModelCode": "07593",
+          "Katashiki": "JYL419L-UQKWRD",
+          "VariantCode": "07593TE202501",
+          "VIN": "ZS9LK8FV6S6562597",
+          "CompanyID": 5,
+          "InvoiceDate": "2026-02-09",
+          "InvoiceNumber": "48224418"
+        },
+        {
+          "id": "ZS9LK8FV6S6562597-3",
+          "BrandID": 1,
+          "BrandHashID": "wZqXv",
+          "ModelYear": 2025,
+          "ExteriorColorCode": "Q23",
+          "InteriorColorCode": "26",
+          "ModelCode": "07593",
+          "Katashiki": "JYL419L-UQKWRD",
+          "VariantCode": "07593TE202501",
+          "VIN": "ZS9LK8FV6S6562597",
+          "CompanyID": 3,
+          "BranchID": 27,
+          "CountryID": 1,
+          "RegionID": 2,
+          "InvoiceDate": "2026-02-16",
+          "InvoiceNumber": "63029973",
+          "AccountNumber": "OG90106",
+          "CustomerAccountNumber": "OG90106",
+          "CustomerID": "900106"
+        }
+      ],
+      "VehicleServiceActivations": [],
+      "VehicleInspections": [],
+      "CampaignVinEntries": [],
+      "InitialOfficialVINs": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "PaidServiceInvoices": [],
+      "ItemClaims": [],
+      "FreeServiceItemExcludedVINs": [],
+      "FreeServiceItemDateShifts": [],
+      "FreeServiceItemValidityOverrides": [],
+      "WarrantyDateShifts": [],
+      "PaintThicknessInspections": [],
+      "Accessories": [],
+      "ExtendedWarrantyEntries": []
+    },
+    "ZT9DW6MP5S6570632": {
+      "VIN": "ZT9DW6MP5S6570632",
+      "VehicleEntries": [
+        {
+          "id": "ZT9DW6MP5S6570632-5",
+          "BrandID": 1,
+          "BrandHashID": "wZqXv",
+          "ModelYear": 2025,
+          "ExteriorColorCode": "Q23",
+          "InteriorColorCode": "26",
+          "ModelCode": "01476",
+          "Katashiki": "JTY389Z-PMHKPF",
+          "VariantCode": "01476ND202501",
+          "VIN": "ZT9DW6MP5S6570632",
+          "CompanyID": 5,
+          "InvoiceDate": "2025-12-02",
+          "InvoiceNumber": "48218824"
+        },
+        {
+          "id": "ZT9DW6MP5S6570632-61",
+          "BrandID": 1,
+          "BrandHashID": "wZqXv",
+          "ModelYear": 2025,
+          "ExteriorColorCode": "Q23",
+          "InteriorColorCode": "26",
+          "ModelCode": "01476",
+          "Katashiki": "JTY389Z-PMHKPF",
+          "VariantCode": "01476ND202501",
+          "VIN": "ZT9DW6MP5S6570632",
+          "CompanyID": 61,
+          "InvoiceDate": "2025-12-09",
+          "BranchID": 610,
+          "CountryID": 1,
+          "InvoiceNumber": "CPL-25-10442"
+        },
+        {
+          "id": "ZT9DW6MP5S6570632-62",
+          "BrandID": 1,
+          "BrandHashID": "wZqXv",
+          "ModelYear": 2025,
+          "ExteriorColorCode": "Q23",
+          "InteriorColorCode": "26",
+          "ModelCode": "01476",
+          "Katashiki": "JTY389Z-PMHKPF",
+          "VariantCode": "01476ND202501",
+          "VIN": "ZT9DW6MP5S6570632",
+          "CompanyID": 62,
+          "InvoiceDate": "2025-12-15",
+          "BranchID": 620,
+          "CountryID": 1,
+          "InvoiceNumber": "NCT-7731"
+        },
+        {
+          "id": "ZT9DW6MP5S6570632-3",
+          "BrandID": 1,
+          "BrandHashID": "wZqXv",
+          "ModelYear": 2025,
+          "ExteriorColorCode": "Q23",
+          "InteriorColorCode": "26",
+          "ModelCode": "01476",
+          "Katashiki": "JTY389Z-PMHKPF",
+          "VariantCode": "01476ND202501",
+          "VIN": "ZT9DW6MP5S6570632",
+          "CompanyID": 3,
+          "BranchID": 27,
+          "CountryID": 1,
+          "RegionID": 2,
+          "InvoiceDate": "2025-12-20",
+          "InvoiceNumber": "52117730",
+          "AccountNumber": "HP90107",
+          "CustomerAccountNumber": "HP90107",
+          "CustomerID": "900107"
+        }
+      ],
+      "VehicleServiceActivations": [],
+      "VehicleInspections": [],
+      "CampaignVinEntries": [],
+      "InitialOfficialVINs": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "PaidServiceInvoices": [],
+      "ItemClaims": [],
+      "FreeServiceItemExcludedVINs": [],
+      "FreeServiceItemDateShifts": [],
+      "FreeServiceItemValidityOverrides": [],
+      "WarrantyDateShifts": [],
+      "PaintThicknessInspections": [],
+      "Accessories": [],
+      "ExtendedWarrantyEntries": []
     }
   },
   "BrokerInitialVehicles": [],
@@ -108299,6 +108588,156 @@
             "Region": "SCE"
           }
         ]
+      }
+    ],
+    "ZW8CT2HN3S6553461": [
+      {
+        "id": "1:9105:ZW8CT2HN3S6553461",
+        "BrandID": 1,
+        "BrokerID": 9105,
+        "VIN": "ZW8CT2HN3S6553461",
+        "Quantity": 0,
+        "Broker": {
+          "ID": 9105,
+          "Name": "Juniper Motor Park",
+          "IsDeleted": false,
+          "AccountNumbers": [
+            {
+              "AccountNumber": "B90105",
+              "CompanyID": 2
+            }
+          ],
+          "RegionID": 2,
+          "RegionHashID": null,
+          "BrandAccesses": [
+            {
+              "BrandID": 1,
+              "Active": true,
+              "AccountStartDate": "2024-01-01T00:00:00",
+              "TerminationDate": null,
+              "LocationCode": "",
+              "CompanyID": 2,
+              "CompanyBranchID": 14,
+              "ServiceCompanies": []
+            }
+          ]
+        },
+        "Transfers": [],
+        "Invoices": [
+          {
+            "ID": 91051,
+            "IsDeleted": false,
+            "InvoiceDate": "2026-08-20T13:40:00+00:00",
+            "IsCompleted": false,
+            "InvoiceNumber": 7105,
+            "CustomerName": null,
+            "CustomerPhone": null,
+            "NonOfficialBrokerName": null,
+            "NonOfficialBrokerPhone": null,
+            "CustomerIDNumber": null
+          }
+        ],
+        "VehilceEntries": []
+      }
+    ],
+    "ZS9LK8FV6S6562597": [
+      {
+        "id": "1:9106:ZS9LK8FV6S6562597",
+        "BrandID": 1,
+        "BrokerID": 9106,
+        "VIN": "ZS9LK8FV6S6562597",
+        "Quantity": 0,
+        "Broker": {
+          "ID": 9106,
+          "Name": "Keystone Showroom",
+          "IsDeleted": false,
+          "AccountNumbers": [
+            {
+              "AccountNumber": "OG90106",
+              "CompanyID": 3
+            }
+          ],
+          "RegionID": 2,
+          "RegionHashID": null,
+          "BrandAccesses": [
+            {
+              "BrandID": 1,
+              "Active": true,
+              "AccountStartDate": "2024-01-01T00:00:00",
+              "TerminationDate": null,
+              "LocationCode": "",
+              "CompanyID": 3,
+              "CompanyBranchID": 27,
+              "ServiceCompanies": []
+            }
+          ]
+        },
+        "Transfers": [],
+        "Invoices": [
+          {
+            "ID": 91061,
+            "IsDeleted": false,
+            "InvoiceDate": "2026-03-03T11:05:00+00:00",
+            "IsCompleted": true,
+            "InvoiceNumber": 7106,
+            "CustomerName": "Petra Lockhart",
+            "CustomerPhone": "+999 634 118 2096",
+            "NonOfficialBrokerName": "Linden Park Car Traders",
+            "NonOfficialBrokerPhone": "+999 634 552 0107",
+            "CustomerIDNumber": null
+          }
+        ],
+        "VehilceEntries": []
+      }
+    ],
+    "ZT9DW6MP5S6570632": [
+      {
+        "id": "1:9107:ZT9DW6MP5S6570632",
+        "BrandID": 1,
+        "BrokerID": 9107,
+        "VIN": "ZT9DW6MP5S6570632",
+        "Quantity": 0,
+        "Broker": {
+          "ID": 9107,
+          "Name": "Atlas Fleet Services",
+          "IsDeleted": false,
+          "AccountNumbers": [
+            {
+              "AccountNumber": "HP90107",
+              "CompanyID": 3
+            }
+          ],
+          "RegionID": 2,
+          "RegionHashID": null,
+          "BrandAccesses": [
+            {
+              "BrandID": 1,
+              "Active": true,
+              "AccountStartDate": "2024-01-01T00:00:00",
+              "TerminationDate": null,
+              "LocationCode": "",
+              "CompanyID": 3,
+              "CompanyBranchID": 27,
+              "ServiceCompanies": []
+            }
+          ]
+        },
+        "Transfers": [],
+        "Invoices": [
+          {
+            "ID": 91071,
+            "IsDeleted": false,
+            "InvoiceDate": "2026-01-14T10:20:00+00:00",
+            "IsCompleted": true,
+            "InvoiceNumber": 7107,
+            "CustomerName": "Omar Holloway",
+            "CustomerPhone": "+999 640 218 7733",
+            "NonOfficialBrokerName": null,
+            "NonOfficialBrokerPhone": null,
+            "CustomerIDNumber": "SM-000-731-560"
+          }
+        ],
+        "VehilceEntries": []
       }
     ]
   },
@@ -109481,6 +109920,20 @@
       ],
       "Gender": "Male",
       "IDNumber": ""
+    },
+    {
+      "id": "900101-3",
+      "CustomerID": "900101",
+      "CompanyID": 3,
+      "FullName": "Elena Whitfield",
+      "PhoneNumbers": [
+        "+9994471203958",
+        "+9994471209001"
+      ],
+      "Address": [
+        "Solmara"
+      ],
+      "IDNumber": "SM-000-417-829"
     }
   ],
   "ServiceItems": [

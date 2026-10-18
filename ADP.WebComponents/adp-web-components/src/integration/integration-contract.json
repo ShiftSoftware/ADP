@@ -35,13 +35,16 @@
       "wireContract": "adp.vehicle-sale-information.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "hiddenFields", "queryString"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "hiddenFields", "queryString", "showSupplyChain"],
         "methods": ["fetchVin"],
         "owns": ["lookup request", "response handling", "loading and error state", "sale information rendering"]
       },
       "runtimeAssets": {
         "locales": "dist/locales",
-        "notes": ["The host may use hiddenFields to apply its approved presentation policy."]
+        "notes": [
+          "The host may use hiddenFields to apply its approved presentation policy.",
+          "showSupplyChain (default false) shows the sale as an ordered chain of legs: distributor, intermediaries, dealer, broker, end customer. Inside vehicle-lookup the host passes it through childrenProps, like showTrace."
+        ]
       }
     },
     "vehicle-accessories": {

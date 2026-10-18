@@ -13,9 +13,10 @@ export function environmentsFrom(index) {
     .map(environment => ({ ...environment, label: environmentLabel(environment.name) }));
 }
 
-/** Query string wins, then this tab's memory, then the first generated entry. */
-export function chooseEnvironment(environments, requested, stored) {
-  return environments.find(environment => environment.name === requested) ?? environments.find(environment => environment.name === stored) ?? environments[0] ?? null;
+/** Query string wins, then this tab's memory, then the page's own default, then the first generated entry. */
+export function chooseEnvironment(environments, requested, stored, fallback) {
+  const named = name => environments.find(environment => environment.name === name);
+  return named(requested) ?? named(stored) ?? named(fallback) ?? environments[0] ?? null;
 }
 
 export function environmentFileUrl(siteRoot, environment, file) {
