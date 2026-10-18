@@ -184,6 +184,13 @@ html[lang='ku'] {
   --leading-heading: 1.25;
 }
 
+/* A tab change re-tags every chip at once; for those frames the tooltips change with no fade, so the
+   rail never shows all of them together. Unlayered, so it beats daisyUI's transition. */
+.harness-retagging .tooltip::before,
+.harness-retagging .tooltip::after {
+  transition: none !important;
+}
+
 /* Unlayered for the same reason: daisyUI's .btn sizing lives in a layer. A tagged chip is a VIN plus a sentence and has to wrap at phone width. */
 [data-harness-fixtures] [role='group'] > span {
   max-width: 100%;
