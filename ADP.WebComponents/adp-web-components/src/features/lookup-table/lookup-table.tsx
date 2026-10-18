@@ -26,7 +26,13 @@ export type CellKind = 'text' | 'code' | 'ref' | 'media';
 
 export type NoticeTone = 'positive' | 'negative' | 'neutral' | 'attention' | 'idle';
 
-export type LeadKind = 'skeleton' | 'columns' | 'notice';
+/**
+ * What the strip shows. The column headings are a fixed structure (they depend on `hiddenFields`
+ * only, never on the data), so they are there before the answer is known; only an outcome that has
+ * no rows to head replaces them with its notice. There is no skeleton: a skeleton would stand for a
+ * shape that is not in doubt (owner, F1, 2026-10-18).
+ */
+export type LeadKind = 'columns' | 'notice';
 
 export type LookupColumn<Row> = {
   /** The hiddenFields name and the column's stable key: 'partNumber', 'jobNumber', ... */
@@ -61,7 +67,7 @@ export type LookupTableProps<Row> = {
   /** The panel's own lead (`tableLead(...)`, or a wrapper of it for a panel with more states). */
   lead: LeadKind;
   notice: { tone: NoticeTone; text: string } | null;
-  /** `data-phase="busy"`: the skeleton darkens and sweeps. */
+  /** `data-phase="busy"`: a lookup is in flight. The strip does not change for it (the headings stay); the attribute is a state hook for the panel's own rules. */
   busy: boolean;
   /** What the body shows: 'rows', or the panel's own kind (rendered from `children`). */
   body: string;
@@ -134,8 +140,15 @@ export const cellText = <Row,>(column: LookupColumn<Row>, row: Row): string | nu
 /** The table roles exist only while there is a table to land in: the body is rows, open, and not reshaping (§ 8). */
 export const tableRoles = (body: string, open: boolean, reshaping: boolean): boolean => body === 'rows' && open && !reshaping;
 
-/** `skeleton` when busy or idle; `columns` only above rows; `notice` otherwise. § 20's `panelLead`, generalised. */
-export const tableLead = ({ busy, idle, body }: { busy: boolean; idle: boolean; body: string }): LeadKind => (busy || idle ? 'skeleton' : body === 'rows' ? 'columns' : 'notice');
+/**
+ * The strip shows the headings whenever there is something to head: idle, in flight, and above rows
+ * (they depend on the configuration alone, so the answer cannot change them). It shows a notice
+ * only for an outcome that has no rows (authorized and empty, unauthorized, a failed lookup, a
+ * panel's own body) and when every column is hidden, where there are no headings to show. § 20's
+ * `panelLead`, generalised, with the skeleton leg removed.
+ */
+export const tableLead = ({ busy, idle, body, columns }: { busy: boolean; idle: boolean; body: string; columns: number }): LeadKind =>
+  columns === 0 ? 'notice' : busy || idle || body === 'rows' ? 'columns' : 'notice';
 
 /** What the body renders: it keeps its outgoing kind while it shuts, so the content slides away instead of blinking out. */
 export const shownBody = (body: string, retained: string): string => (body === 'none' ? retained : body);
@@ -323,8 +336,6 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
   return (
     <div class="lt-grid" role={roles ? 'table' : null} data-phase={busy ? 'busy' : 'settled'} data-stack={tracks.stacked ? 'true' : 'false'} style={style}>
       <div class="lt-lead layer-stack" data-lead={lead}>
-        <div class="layer lt-skeleton" data-active={lead === 'skeleton' ? 'true' : 'false'} aria-hidden="true" />
-
         <div
           class={{ 'layer': true, 'lt-notice': true, [`is-${notice?.tone ?? 'idle'}`]: true }}
           data-active={lead === 'notice' ? 'true' : 'false'}
@@ -335,12 +346,19 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
           <span>{notice?.text ?? ''}</span>
         </div>
 
+        {/*
+          Accessibility of the headings, decided here (F1). They are on screen while idle and in flight,
+          but there is no table then, so the roles follow the rule that already governs the rest: only
+          with open rows (`roles`). Without them the layer is aria-hidden too: a bare "Part number
+          Description Image" with no table around it names a structure that is not there, and the
+          outcome is announced by the notice's role="status", not by headings. The headings are for the eye; a reader meets them as a table when the rows open.
+        */}
         <div
           class="layer lt-columns"
           data-active={lead === 'columns' ? 'true' : 'false'}
           data-reshaping={reshaping ? 'true' : 'false'}
           role={roles ? 'row' : null}
-          aria-hidden={lead === 'columns' ? null : 'true'}
+          aria-hidden={lead === 'columns' && roles ? null : 'true'}
         >
           {columns.map(column => (
             <span

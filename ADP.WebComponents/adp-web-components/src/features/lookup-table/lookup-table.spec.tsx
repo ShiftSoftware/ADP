@@ -202,23 +202,42 @@ describe('derivations', () => {
   });
 
   describe('tableLead', () => {
-    it('is the skeleton while busy, whatever the body is', () => {
-      expect(tableLead({ busy: true, idle: false, body: 'rows' })).toBe('skeleton');
-      expect(tableLead({ busy: true, idle: false, body: 'none' })).toBe('skeleton');
+    // The headings depend on the configuration alone, so the answer cannot change them (owner, F1).
+    const lead = (over: Partial<{ busy: boolean; idle: boolean; body: string; columns: number }> = {}) =>
+      tableLead({ busy: false, idle: false, body: 'rows', columns: 3, ...over });
+
+    it('is the headings while idle, whatever the body is', () => {
+      expect(lead({ idle: true, body: 'none' })).toBe('columns');
+      expect(lead({ idle: true, body: 'rows' })).toBe('columns');
     });
 
-    it('is the skeleton while idle, whatever the body is', () => {
-      expect(tableLead({ busy: false, idle: true, body: 'rows' })).toBe('skeleton');
-      expect(tableLead({ busy: false, idle: true, body: 'none' })).toBe('skeleton');
+    it('is the headings while busy, whatever the body is', () => {
+      expect(lead({ busy: true, body: 'none' })).toBe('columns');
+      expect(lead({ busy: true, body: 'rows' })).toBe('columns');
+      expect(lead({ busy: true, idle: true, body: 'none' })).toBe('columns');
     });
 
-    it('is the columns only above rows', () => {
-      expect(tableLead({ busy: false, idle: false, body: 'rows' })).toBe('columns');
+    it('is the headings above rows', () => {
+      expect(lead({ body: 'rows' })).toBe('columns');
     });
 
-    it('is a notice for any other body', () => {
-      expect(tableLead({ busy: false, idle: false, body: 'none' })).toBe('notice');
-      expect(tableLead({ busy: false, idle: false, body: 'run' })).toBe('notice');
+    it("is a notice for an outcome without rows: empty, unauthorized, error, or a body of the panel's own", () => {
+      expect(lead({ body: 'none' })).toBe('notice');
+      expect(lead({ body: 'run' })).toBe('notice');
+    });
+
+    it('is a notice when every column is hidden, in every state, because there are no headings to show', () => {
+      expect(lead({ columns: 0, body: 'none' })).toBe('notice');
+      expect(lead({ columns: 0, idle: true, body: 'none' })).toBe('notice');
+      expect(lead({ columns: 0, busy: true, body: 'none' })).toBe('notice');
+      expect(lead({ columns: 0, body: 'rows' })).toBe('notice');
+    });
+
+    it('never answers skeleton: the union is columns | notice', () => {
+      const answers = new Set<string>();
+      for (const busy of [false, true])
+        for (const idle of [false, true]) for (const body of ['rows', 'none', 'run']) for (const columns of [0, 3]) answers.add(lead({ busy, idle, body, columns }));
+      expect([...answers].sort()).toEqual(['columns', 'notice']);
     });
   });
 
@@ -436,23 +455,98 @@ describe('layouts', () => {
 
 describe('strip, body and busy state', () => {
   it('sets data-phase="busy" while busy, and "settled" otherwise', async () => {
-    expect(q(await render({ busy: true, lead: 'skeleton', open: false }), '.lt-grid').getAttribute('data-phase')).toBe('busy');
+    expect(q(await render({ busy: true, lead: 'columns', open: false }), '.lt-grid').getAttribute('data-phase')).toBe('busy');
     expect(q(await render(), '.lt-grid').getAttribute('data-phase')).toBe('settled');
   });
 
-  it('always hides the skeleton layer from assistive tech, and hides each inactive layer', async () => {
-    for (const lead of ['skeleton', 'columns', 'notice'] as const) {
-      const page = await render({ lead, notice: { tone: 'neutral', text: 'Words' } });
-      expect(q(page, '.lt-skeleton').getAttribute('aria-hidden')).toBe('true');
+  it('has no skeleton layer: the strip is two layers, the headings and a notice', async () => {
+    const page = await render({ busy: true, lead: 'columns', open: false });
+    expect(qa(page, '.lt-lead > .layer').length).toBe(2);
+    expect(page.body.querySelector('.lt-skeleton')).toBeNull();
+  });
 
-      const layers = { skeleton: '.lt-skeleton', notice: '.lt-notice', columns: '.lt-columns' };
+  it('shows exactly one layer at a time, and hides each inactive layer from assistive tech', async () => {
+    for (const lead of ['columns', 'notice'] as const) {
+      const page = await render({ lead, notice: { tone: 'neutral', text: 'Words' }, body: lead === 'notice' ? 'none' : 'rows', open: lead === 'columns' });
+      const layers = { notice: '.lt-notice', columns: '.lt-columns' };
       for (const [name, selector] of Object.entries(layers)) {
         const active = name === lead;
         expect(q(page, selector).getAttribute('data-active')).toBe(active ? 'true' : 'false');
         if (!active) expect(q(page, selector).getAttribute('aria-hidden')).toBe('true');
-        if (active && name !== 'skeleton') expect(q(page, selector).hasAttribute('aria-hidden')).toBe(false);
+        if (active) expect(q(page, selector).hasAttribute('aria-hidden')).toBe(false);
       }
     }
+  });
+
+  describe('the headings while idle and in flight (F1)', () => {
+    it('are the active layer, with the same cells as above rows, while busy and the body is shut', async () => {
+      const page = await render({ busy: true, lead: 'columns', open: false });
+      expect(q(page, '.lt-lead').getAttribute('data-lead')).toBe('columns');
+      expect(q(page, '.lt-columns').getAttribute('data-active')).toBe('true');
+      expect(qa(page, '.lt-columns > .lt-cell').map(el => el.textContent)).toEqual(ALL.map(column => column.label));
+      expect(q(page, '.lt-notice').getAttribute('data-active')).toBe('false');
+    });
+
+    it('are the active layer while idle with no rows, and there is nothing else in the strip to be shown', async () => {
+      const page = await render({ rows: [], body: 'none', open: false, lead: 'columns' });
+      expect(q(page, '.lt-columns').getAttribute('data-active')).toBe('true');
+      expect(qa(page, '.lt-columns > .lt-cell').length).toBe(ALL.length);
+    });
+
+    it('carry no table roles and are hidden from assistive tech without rows, and get both back when the rows open', async () => {
+      const shut = await render({ busy: true, lead: 'columns', open: false });
+      expect(q(shut, '.lt-columns').hasAttribute('role')).toBe(false);
+      expect(q(shut, '.lt-columns').getAttribute('aria-hidden')).toBe('true');
+      expect(qa(shut, '.lt-columns > .lt-cell').every(cell => !cell.hasAttribute('role'))).toBe(true);
+      expect(roleAttrs(shut)).toEqual([]);
+
+      const open = await render({ lead: 'columns', open: true });
+      expect(q(open, '.lt-columns').getAttribute('role')).toBe('row');
+      expect(q(open, '.lt-columns').hasAttribute('aria-hidden')).toBe(false);
+      expect(qa(open, '.lt-columns > .lt-cell').every(cell => cell.getAttribute('role') === 'columnheader')).toBe(true);
+    });
+
+    it('stay the same elements from idle through busy to rows: the same structure, so nothing re-animates', async () => {
+      const model = base({ rows: [], body: 'none', open: false, lead: 'columns' });
+      const page = await renderHost(model);
+      const strip = q(page, '.lt-columns');
+      const heading = qa(page, '.lt-columns > .lt-cell')[0];
+
+      page.root.model = { ...model, busy: true };
+      await page.waitForChanges();
+      expect(q(page, '.lt-columns')).toBe(strip);
+      expect(qa(page, '.lt-columns > .lt-cell')[0]).toBe(heading);
+      expect(q(page, '.lt-columns').getAttribute('data-active')).toBe('true');
+
+      page.root.model = base({ lead: 'columns' });
+      await page.waitForChanges();
+      expect(q(page, '.lt-columns')).toBe(strip);
+      expect(qa(page, '.lt-columns > .lt-cell')[0]).toBe(heading);
+      expect(q(page, '.lt-columns').getAttribute('data-active')).toBe('true');
+    });
+
+    it('give way to a notice and back by switching the active layer, never by unmounting either', async () => {
+      const model = base({ busy: true, lead: 'columns', open: false });
+      const page = await renderHost(model);
+      const notice = q(page, '.lt-notice');
+      const strip = q(page, '.lt-columns');
+
+      page.root.model = { ...model, busy: false, lead: 'notice', body: 'none', rows: [], notice: { tone: 'neutral', text: 'Not in records' } };
+      await page.waitForChanges();
+      expect(q(page, '.lt-notice')).toBe(notice);
+      expect(q(page, '.lt-columns')).toBe(strip);
+      expect(q(page, '.lt-notice').getAttribute('data-active')).toBe('true');
+      expect(q(page, '.lt-columns').getAttribute('data-active')).toBe('false');
+      expect(q(page, '.lt-notice').textContent.trim()).toBe('Not in records');
+
+      page.root.model = { ...model, busy: true, lead: 'columns', body: 'none', rows: [], notice: { tone: 'neutral', text: 'Not in records' } };
+      await page.waitForChanges();
+      expect(q(page, '.lt-notice')).toBe(notice);
+      expect(q(page, '.lt-columns').getAttribute('data-active')).toBe('true');
+      expect(q(page, '.lt-notice').getAttribute('data-active')).toBe('false');
+      // The outgoing sentence stays in the fading layer, so it fades with its words, not blank.
+      expect(q(page, '.lt-notice').textContent.trim()).toBe('Not in records');
+    });
   });
 
   it('renders the children when the body is not rows, and no rows', async () => {
@@ -463,7 +557,7 @@ describe('strip, body and busy state', () => {
   });
 
   it('keeps the outgoing rows rendered inside a shut body, so they slide away instead of blinking out', async () => {
-    const page = await render({ open: false, lead: 'skeleton', busy: true });
+    const page = await render({ open: false, lead: 'columns', busy: true });
     expect(q(page, '.lt-body').getAttribute('data-open')).toBe('false');
     expect(qa(page, '.lt-row').length).toBe(2);
   });
@@ -615,7 +709,7 @@ describe('thumbnail', () => {
     expect(mediaCell(page).querySelector('.lt-media-stand').hasAttribute('aria-hidden')).toBe(false);
 
     // And again, with an unrelated change (the table goes busy): still failed.
-    page.root.model = { ...model, busy: true, lead: 'skeleton', open: false };
+    page.root.model = { ...model, busy: true, lead: 'columns', open: false };
     await page.waitForChanges();
     expect(mediaCell(page).getAttribute('data-media')).toBe('failed');
 

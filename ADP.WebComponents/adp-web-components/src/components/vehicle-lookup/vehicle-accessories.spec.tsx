@@ -105,16 +105,54 @@ describe('vehicle-accessories — derivations', () => {
     expect(panelBody(state({ hidden: parseHiddenFields(FIELDS.join(',')) }))).toBe('none');
   });
 
-  it('puts the strip on the skeleton while busy or idle, on headings above rows, and on a notice otherwise', () => {
-    expect(panelLead(state(), false)).toBe('columns');
-    expect(panelLead(state(), true)).toBe('skeleton');
-    expect(panelLead(state({ vehicleLoaded: false }), false)).toBe('skeleton');
-    expect(panelLead(state({ accessories: [] }), false)).toBe('notice');
-    expect(panelLead(state({ authorized: false }), false)).toBe('notice');
-    expect(panelLead(state({ hidden: parseHiddenFields(FIELDS.join(',')) }), false)).toBe('notice');
-    // A failed lookup is settled, not idle: the strip says so in a notice (the skeleton would read as still loading).
-    expect(panelLead(state({ vehicleLoaded: false, accessories: undefined, error: 'Failed' }), false)).toBe('notice');
-    expect(panelLead(state({ vehicleLoaded: false, accessories: undefined, error: 'Failed' }), true)).toBe('skeleton');
+  describe('panelLead: the headings depend on hiddenFields alone, so only an outcome without rows replaces them (owner, F1)', () => {
+    const none = parseHiddenFields(FIELDS.join(','));
+    const failed = { vehicleLoaded: false, accessories: undefined, error: 'Failed' };
+
+    it('is the headings when idle: before any lookup', () => {
+      expect(panelLead(state({ vehicleLoaded: false, accessories: undefined }), false)).toBe('columns');
+    });
+
+    it('is the headings while loading, whatever the outgoing state was', () => {
+      expect(panelLead(state(), true)).toBe('columns');
+      expect(panelLead(state({ accessories: [] }), true)).toBe('columns');
+      expect(panelLead(state({ authorized: false }), true)).toBe('columns');
+      expect(panelLead(state({ vehicleLoaded: false, accessories: undefined }), true)).toBe('columns');
+      expect(panelLead(state(failed), true)).toBe('columns');
+    });
+
+    it('is the headings above rows', () => {
+      expect(panelLead(state(), false)).toBe('columns');
+    });
+
+    it('is a notice for an authorized empty list (grey)', () => {
+      expect(panelLead(state({ accessories: [] }), false)).toBe('notice');
+    });
+
+    it('is a notice for an unauthorized vehicle (amber), whatever the DTO carries', () => {
+      expect(panelLead(state({ authorized: false }), false)).toBe('notice');
+      expect(panelLead(state({ authorized: false, accessories: [accessory(1)] as unknown as PanelState['accessories'] }), false)).toBe('notice');
+    });
+
+    it('is a notice for a failed lookup (red): settled, not idle, and the headings would read as still waiting', () => {
+      expect(panelLead(state(failed), false)).toBe('notice');
+    });
+
+    it('is a notice when every column is hidden, in every state, because there are no headings to show', () => {
+      expect(panelLead(state({ hidden: none }), false)).toBe('notice');
+      expect(panelLead(state({ hidden: none }), true)).toBe('notice');
+      expect(panelLead(state({ hidden: none, vehicleLoaded: false, accessories: undefined }), false)).toBe('notice');
+      expect(panelLead(state({ hidden: none, vehicleLoaded: false, accessories: undefined }), true)).toBe('notice');
+    });
+
+    it('never answers skeleton', () => {
+      const answers = new Set<string>();
+      for (const busy of [false, true]) {
+        for (const over of [{}, { accessories: [] }, { authorized: false }, failed, { vehicleLoaded: false, accessories: undefined }, { hidden: none }])
+          answers.add(panelLead(state(over), busy));
+      }
+      expect([...answers].sort()).toEqual(['columns', 'notice']);
+    });
   });
 
   it('says unauthorized in amber, an empty list in grey, never a verdict, and nothing above rows or before a lookup', () => {
@@ -124,6 +162,11 @@ describe('vehicle-accessories — derivations', () => {
     expect(leadNotice(state({ accessories: [] }), locale)).toEqual({ tone: 'idle', text: locale.noAccessories });
     expect(leadNotice(state({ accessories: null }), locale)?.tone).toBe('idle');
     expect(leadNotice(state({ hidden: parseHiddenFields(FIELDS.join(',')) }), locale)).toEqual({ tone: 'idle', text: locale.noFieldsShown });
+    // Also before a lookup: with no columns there are no headings to wait behind.
+    expect(leadNotice(state({ vehicleLoaded: false, accessories: undefined, hidden: parseHiddenFields(FIELDS.join(',')) }), locale)).toEqual({
+      tone: 'idle',
+      text: locale.noFieldsShown,
+    });
     expect(leadNotice(state(), locale)).toBeNull();
     expect(leadNotice(state({ vehicleLoaded: false }), locale)).toBeNull();
     expect(leadNotice(state({ vehicleLoaded: false, error: 'Failed' }), locale)).toEqual({ tone: 'negative', text: 'Failed' });
@@ -301,11 +344,18 @@ type PanelHost = { hiddenFields: string; coreOnly: boolean; shadowRoot: ShadowRo
 const cellsOf = (row: HTMLElement) => Array.from(row.querySelectorAll<HTMLElement>('.lt-cell'));
 
 describe('vehicle-accessories — the states', () => {
-  it('opens idle: a skeleton strip, no rows, no pill, no count, a grey accent and shut disclosure', async () => {
+  it('opens idle: the column headings in the strip, no rows, no pill, no count, a grey accent and shut disclosure', async () => {
     const page = await newPage();
 
     expect(verdict(page)).toBe('idle');
-    expect(lead(page)).toBe('skeleton');
+    // The columns depend on hiddenFields alone, so the strip heads them before any answer: not a skeleton.
+    expect(lead(page)).toBe('columns');
+    expect(headings(page)).toEqual(['Part Number', 'Description', 'Image']);
+    expect(attr(page, '.lt-columns', 'data-active')).toBe('true');
+    expect(shadow(page).querySelector('.lt-skeleton')).toBeNull();
+    // Visible, but not a table: no roles, and hidden from assistive tech until rows open.
+    expect(attr(page, '.lt-columns', 'role')).toBeNull();
+    expect(attr(page, '.lt-columns', 'aria-hidden')).toBe('true');
     expect(attr(page, '.accessories-card', 'data-body')).toBe('none');
     expect(bodyOpen(page)).toBe('false');
     expect(rows(page)).toHaveLength(0);
@@ -453,7 +503,7 @@ describe('vehicle-accessories — the states', () => {
 
     expect(owner(page).isLoading).toBe(true);
     expect(count(page)).toBeNull();
-    expect(lead(page)).toBe('skeleton');
+    expect(lead(page)).toBe('columns');
     expect(attr(page, '.accessories-card', 'data-phase')).toBe('busy');
 
     await pending;
@@ -832,10 +882,59 @@ describe('vehicle-accessories — hiddenFields', () => {
     expect(verdict(page)).toBe('positive');
     expect(text(page, '.accessories-count')).toBe('9 accessories');
   });
+
+  it('hiding every column says so before any lookup too: there are no headings to show while idle or loading', async () => {
+    const page = await newPage(brokerMarketMocks, 'hidden-fields="partNumber,description,image,jobNumber,invoiceNumber,companyName"');
+    expect(lead(page)).toBe('notice');
+    expect(text(page, '.lt-notice')).toBe(englishLocale.noFieldsShown);
+
+    const pending = owner(page).fetchVin(NINE_VIN);
+    await page.waitForChanges();
+    expect(lead(page)).toBe('notice');
+    await pending;
+  });
+
+  it('keeps the same heading elements from idle through loading to rows: one structure, nothing re-animates', async () => {
+    const page = await newPage();
+    const strip = shadow(page).querySelector('.lt-columns');
+    const first = shadow(page).querySelector('.lt-columns > .lt-cell');
+    const seen: Array<string | null | undefined> = [attr(page, '.lt-lead', 'data-lead')];
+
+    const pending = owner(page).fetchVin(NINE_VIN);
+    await page.waitForChanges();
+    seen.push(attr(page, '.lt-lead', 'data-lead'));
+    await pending;
+    await page.waitForChanges();
+    seen.push(attr(page, '.lt-lead', 'data-lead'));
+
+    expect(seen).toEqual(['columns', 'columns', 'columns']);
+    expect(shadow(page).querySelector('.lt-columns')).toBe(strip);
+    expect(shadow(page).querySelector('.lt-columns > .lt-cell')).toBe(first);
+    // Roles arrive with the open rows.
+    expect(attr(page, '.lt-columns', 'role')).toBe('row');
+    expect(shadow(page).querySelector('.lt-columns')?.hasAttribute('aria-hidden')).toBe(false);
+  });
+
+  it('crosses from a notice to the headings while loading and back, through the one strip', async () => {
+    const page = await newPage();
+    await load(page, UNAUTHORIZED_VIN);
+    expect(lead(page)).toBe('notice');
+
+    const pending = owner(page).fetchVin(EMPTY_VIN);
+    await page.waitForChanges();
+    expect(lead(page)).toBe('columns');
+    expect(attr(page, '.lt-columns', 'data-active')).toBe('true');
+    expect(attr(page, '.lt-notice', 'data-active')).toBe('false');
+
+    await pending;
+    await page.waitForChanges();
+    expect(lead(page)).toBe('notice');
+    expect(text(page, '.lt-notice')).toBe(englishLocale.noAccessories);
+  });
 });
 
 describe('vehicle-accessories — leaving and entering', () => {
-  it('goes from loaded to loading to loaded: the body shuts over the outgoing rows, the strip sweeps, the head content leaves', async () => {
+  it('goes from loaded to loading to loaded: the body shuts over the outgoing rows, the headings stay, the head content leaves', async () => {
     const page = await newPage();
     await load(page, NINE_VIN);
     expect(rows(page)).toHaveLength(9);
@@ -846,7 +945,8 @@ describe('vehicle-accessories — leaving and entering', () => {
     expect(attr(page, '.accessories-card', 'data-phase')).toBe('busy');
     expect(attr(page, '.lt-grid', 'data-phase')).toBe('busy');
     expect(shadow(page).querySelector('.lookup-panel')?.classList.contains('loading')).toBe(true);
-    expect(lead(page)).toBe('skeleton');
+    expect(lead(page)).toBe('columns');
+    expect(attr(page, '.lt-columns', 'aria-hidden')).toBe('true');
     expect(bodyOpen(page)).toBe('false');
     expect(attr(page, '.lt-body', 'aria-hidden')).toBe('true');
     expect(rows(page)).toHaveLength(9);
@@ -902,7 +1002,7 @@ describe('vehicle-accessories — leaving and entering', () => {
     expect(verdict(page)).toBe('idle');
     expect(count(page)).toBeNull();
     expect(pill(page)).toBeNull();
-    expect(lead(page)).toBe('skeleton');
+    expect(lead(page)).toBe('columns');
     expect(attr(page, '.accessories-card', 'data-phase')).toBe('settled');
   });
 

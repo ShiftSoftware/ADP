@@ -148,7 +148,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
   // #region Leaving a state
 
-  /** The panel is on its way to empty or to an error: the sheen is on and the body is shutting over its rows. */
+  /** The panel is on its way to empty or to an error: the head leaves and the body is shutting over its rows. */
   @State() leaving: boolean = false;
 
   private leaveGeneration = 0;

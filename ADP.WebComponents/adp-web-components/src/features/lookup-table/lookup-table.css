@@ -10,7 +10,8 @@
  * its rules survive, which silently stops the sheen (the SSC, 2026-09-21).
  *
  * It relies on the family's shared vocabulary from those files: .collapsible, .collapsible-body,
- * .layer-stack, .layer, the colour and --settle tokens, and `lookup-sheen`.
+ * .layer-stack, .layer (the strip's cross-fade between headings and notice), and the colour and
+ * --settle tokens.
  *
  * Breakpoints are UNNAMED container queries. A fragment cannot know the panel's container name, and
  * an unnamed query resolves to the nearest ancestor container, which is the panel's :host (the
@@ -30,8 +31,8 @@
    ------------------------------------------------------------------------------------------- */
 
 :host {
-  /* The strip is this tall in every state, so it is the same band whether it carries the skeleton,
-     the headings or a notice and the body never moves when they swap. A panel that needs another
+  /* The strip is this tall in every state, so it is the same band whether it carries the headings
+     or a notice and the body never moves when they swap. A panel that needs another
      height redeclares it after the import. */
   --lead-height: 38px;
   /* The body never shuts below this: the head's resting height (16 + 30 + 12), so the strip sits
@@ -93,7 +94,7 @@
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Strip: one band, three layers (skeleton, notice, columns)
+   Strip: one band, two layers (the column headings, a notice)
    ------------------------------------------------------------------------------------------- */
 
 .lt-lead {
@@ -109,22 +110,9 @@
   min-height: var(--lead-height);
 }
 
-/* Idle it is the flat grey of a shape with nothing to say; in flight it darkens a shade and the
-   sheen sweeps it (see "Loading" below). The transition list restates the layer primitive's, plus
-   the colour, because declaring `transition` here replaces that one. */
-.lt-skeleton {
-  background-color: var(--line-soft);
-  background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
-  background-repeat: no-repeat;
-  background-size: 45% 100%;
-  background-position: -100% 0;
-  transition:
-    opacity var(--settle) ease,
-    visibility 0s linear var(--settle),
-    background-color var(--settle) ease;
-}
-
-/* The column headings on the recessed paper. A band, so it takes the whole strip. */
+/* The column headings on the recessed paper. A band, so it takes the whole strip. They are shown
+   idle, in flight and above rows -- the columns depend on the configuration, never on the data --
+   and cross-fade with the notice (the .layer primitive) when an outcome has no rows to head. */
 .lt-columns {
   background: var(--paper-soft);
 }
@@ -417,16 +405,12 @@
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Loading: the sheen, and the reshape
+   Loading, and the reshape
    ------------------------------------------------------------------------------------------- */
 
-/* In flight, the strip's skeleton darkens and sweeps. The table holds no skeleton rows: the body
-   shuts, and only the anchors are on screen (motion.md rules 2 and 4). */
-.lt-grid[data-phase='busy'] .lt-skeleton {
-  /* The sheen's resting grey, the same raw value as .sheen in lookup-motion.css (no token exists for it). */
-  background-color: #dcdfe4;
-  animation: lookup-sheen var(--sheen) linear infinite;
-}
+/* In flight the strip does not change: the headings stay where they are, because the columns are
+   known before the answer. The table holds no skeleton rows either: the body shuts, and only the
+   anchors are on screen (motion.md rules 2 and 4). */
 
 /* A live column change: the strip is an anchor and is not swapped. Its band, rules and recessed
    paper stay and only the headings fade, over --settle, while the body is shut; the tracks change
@@ -573,13 +557,12 @@
 
 /* ---------------------------------------------------------------------------------------------
    Reduced motion: every transition above is on a state attribute, so it is kept and made
-   immediate; the sheen repeats and so is stopped, not shortened. lookup-motion.css carries the same
+   immediate; a loop would be stopped, not shortened. lookup-motion.css carries the same
    blanket for the panels that import it; restated for this fragment's own transitions and
    animation so it does not depend on that import order.
    ------------------------------------------------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
-  .lt-skeleton,
   .lt-columns > .lt-cell,
   .lt-columns-label,
   .lt-media-box,

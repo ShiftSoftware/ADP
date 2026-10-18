@@ -78,17 +78,24 @@ export const hasRecords = (state: PanelState): boolean => listed(state).length >
 /** `rows` when there is a list and at least one column to draw it in; `none` otherwise. The body shuts for `none`. */
 export const panelBody = (state: PanelState): 'rows' | 'none' => (hasRecords(state) && columnCount(state.hidden) > 0 ? 'rows' : 'none');
 
-/** The strip's layer: the skeleton while busy or idle, the headings above rows, a notice otherwise. */
-export const panelLead = (state: PanelState, busy: boolean): LeadKind => tableLead({ busy, idle: !state.vehicleLoaded && !state.error, body: panelBody(state) });
+/**
+ * The strip's layer: the column headings while idle, in flight and above rows (they depend on
+ * hiddenFields alone, never on the data), a notice for an outcome without rows -- and when every
+ * column is hidden, where there are no headings to show.
+ */
+export const panelLead = (state: PanelState, busy: boolean): LeadKind =>
+  tableLead({ busy, idle: !state.vehicleLoaded && !state.error, body: panelBody(state), columns: columnCount(state.hidden) });
 
 /**
  * The strip's sentence when there is nothing to list. Never a verdict: an unauthorized vehicle is
  * amber ("not in the records"), an authorized one with nothing on file is grey and says only that,
- * and a host that hid every column is told so in grey. A failed lookup is the one negative sentence. Null above rows and before a lookup.
+ * and a host that hid every column is told so in grey -- before a lookup too, since the headings it
+ * would otherwise show do not exist. A failed lookup is the one negative sentence. Null above rows
+ * and before a lookup.
  */
 export const leadNotice = (state: PanelState, locale: AccessoriesLocale): PanelNotice | null => {
   if (state.error) return { tone: 'negative', text: state.error };
-  if (!state.vehicleLoaded) return null;
+  if (!state.vehicleLoaded) return columnCount(state.hidden) === 0 ? { tone: 'idle', text: locale.noFieldsShown } : null;
   if (state.authorized === false) return { tone: 'neutral', text: locale.unauthorizedNotice };
   if (!hasRecords(state)) return { tone: 'idle', text: locale.noAccessories };
   if (columnCount(state.hidden) === 0) return { tone: 'idle', text: locale.noFieldsShown };
@@ -169,7 +176,7 @@ type Props = {
   language: string;
   state: PanelState;
   verdict: Pick<PanelVerdict, 'state' | 'text'>;
-  /** A lookup is in flight or the panel is leaving: the strip sweeps and the body is shut. */
+  /** A lookup is in flight or the panel is leaving: the head leaves and the body is shut (the strip keeps its headings). */
   busy: boolean;
   /** A live hiddenFields change is in progress: the body is shut while the columns swap. */
   reconfiguring: boolean;

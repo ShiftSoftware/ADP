@@ -7,7 +7,7 @@
  * below.
  *
  * Panel states, as data attributes on .accessories-card: data-verdict, data-phase (busy while a
- * lookup is in flight), data-lead (skeleton | columns | notice) and data-body (rows | none).
+ * lookup is in flight), data-lead (columns | notice) and data-body (rows | none).
  */
 
 /* Order is the table fragment's contract: the reset, the tokens, the wrapper (which brings the
