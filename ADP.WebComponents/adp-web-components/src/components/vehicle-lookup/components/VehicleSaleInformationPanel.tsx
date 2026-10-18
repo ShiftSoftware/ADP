@@ -12,6 +12,7 @@ import { UserIcon } from '~assets/user-icon';
 import { PhoneIcon } from '~assets/phone-icon';
 import { IdCardIcon } from '~assets/id-card-icon';
 import { TriangleAlertIcon } from '~assets/triangle-alert';
+import { WarehouseIcon } from '~assets/warehouse-icon';
 
 export type SaleLocale = InferType<typeof saleInformationSchema>;
 
@@ -360,22 +361,12 @@ const SaleCellView: FunctionalComponent<{ cell: SaleCell; blank: boolean; statem
   </div>
 );
 
-// A broker's stock: the vehicle is held, not lost, so it gets a building rather than a warning.
-const StockIcon: FunctionalComponent = () => (
-  <svg fill="none" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-    <path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z" />
-    <path d="M6 18h12" />
-    <path d="M6 14h12" />
-    <rect width="12" height="12" x="6" y="10" />
-  </svg>
-);
-
 type CustomerKind = 'name' | 'contact' | 'statement';
 
 const customerKind = (cell: SaleCell): CustomerKind => (cell.role === 'statement' ? 'statement' : cell.key === 'endCustomerName' ? 'name' : 'contact');
 
 const CustomerIcon: FunctionalComponent<{ cell: SaleCell; statement: EndCustomerStatement }> = ({ cell, statement }) => {
-  if (cell.role === 'statement') return statement.kind === 'brokerStock' ? <StockIcon /> : <TriangleAlertIcon />;
+  if (cell.role === 'statement') return statement.kind === 'brokerStock' ? <WarehouseIcon /> : <TriangleAlertIcon />;
   if (cell.key === 'endCustomerPhone') return <PhoneIcon />;
   if (cell.key === 'endCustomerIdNumber') return <IdCardIcon />;
   return <UserIcon />;
