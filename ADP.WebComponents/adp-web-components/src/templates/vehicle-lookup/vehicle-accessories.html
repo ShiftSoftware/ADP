@@ -31,13 +31,11 @@
       dir="ltr"
       x-data="harness({
         mocks: 'vehicle-lookup',
-        labels: {
-          ZT8LY7CZ0S2959088: 'no accessories on record',
-          JTMW43FV10D123456: 'no accessories on record',
-          ZV9LMW6D75T151181: 'not in distributor records',
-          UNKNOWN_VIN_12345: 'not in distributor records',
-        },
-        has: vehicle => vehicle?.accessories?.length > 0,
+        defaultEnvironment: 'broker-market',
+        labelsOnly: true,
+        labels: window.harnessTags('vehicle-accessories'),
+        /* Under labelsOnly the tags decide membership; this only answers if that is switched off. */
+        has: vehicle => vehicle?.isAuthorized === false || vehicle?.accessories?.length > 0,
       })"
     >
       <!-- The brief: a one-line title above the component, the about text below it. -->
@@ -50,7 +48,23 @@
         <!-- What the page demonstrates, beside the demo rather than above it: the component is what the page is for. -->
         <aside class="showcase-about border-base-300 border-t border-dashed pt-5">
           <p class="eyebrow text-neutral">About this page</p>
-          <p class="lede text-base-content/70 mt-2 text-sm">Accessories recorded against the VIN. Not every fixture has any — an empty result is a state worth looking at too.</p>
+          <p class="lede text-base-content/70 mt-2 text-sm">
+            What was fitted to the vehicle after it left the factory: one row per part, with its number, description and drawing, and the job, invoice and installing company that
+            fitted it. The head carries the total, and a long list opens on its first ten rows behind a Show all control.
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
+            Each fixture chip says which state it reaches. The main cases live in the <strong class="text-accent">broker-market</strong> environment, which the page opens on; the
+            edge cases — a picture the drawings do not cover, long text, a missing job and invoice, an installing company the environment cannot name — are in
+            <strong class="text-accent">edge-cases</strong>, one switch of the Environment control in the rail away.
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
+            The page starts on <strong class="text-accent">Show all</strong> so all six columns are visible; <strong class="text-accent">Host default</strong> puts back the three
+            columns (job, invoice, company) a host hides unless it says otherwise.
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
+            <strong class="text-accent">Failed pictures</strong> is a showcase-only simulation of the failed-picture case: the generated data cannot produce a dead picture, so this
+            switch reloads the current vehicle with every accessory's picture pointing at an address that does not exist. The component is not changed by it.
+          </p>
         </aside>
       </div>
 
@@ -58,6 +72,32 @@
       <div class="showcase-stage flex flex-col gap-3" :dir="dir">
         <!-- Generated fixtures. This page has no field of its own — the chips are the search — so they get a dashed card above the component. -->
         <div data-harness-fixtures class="card border-base-300 bg-base-100 border border-dashed p-3" x-cloak></div>
+
+        <!-- Host configuration, not harness chrome: what a host sets on the element. -->
+        <div
+          class="card border-base-300 bg-base-100 flex flex-row flex-wrap items-center gap-x-6 gap-y-2 border p-3"
+          x-data="{ failed: false, fields: 'all' }"
+          x-effect="window.accessoriesControls.apply({ fields })"
+        >
+          <div class="flex items-center gap-2 text-sm">
+            <span class="eyebrow text-neutral" id="hidden-fields-label">Hidden fields</span>
+            <div class="join" role="group" aria-labelledby="hidden-fields-label">
+              <button type="button" class="btn btn-xs join-item" :class="fields === 'all' && 'btn-active'" :aria-pressed="fields === 'all'" @click="fields = 'all'">
+                Show all
+              </button>
+              <button type="button" class="btn btn-xs join-item" :class="fields === 'default' && 'btn-active'" :aria-pressed="fields === 'default'" @click="fields = 'default'">
+                Host default
+              </button>
+            </div>
+          </div>
+
+          <label class="flex cursor-pointer items-center gap-2 text-sm">
+            <input type="checkbox" id="failed-pictures" class="toggle toggle-sm toggle-primary" x-model="failed" />
+            Failed pictures
+            <span class="text-base-content/60">(showcase-only simulation of the failed-picture case)</span>
+          </label>
+          <span class="hidden" x-effect="window.accessoriesControls.simulate({ failed, data, fixture })"></span>
+        </div>
 
         <!-- No card of the page's own around the component: the component draws the design language's card itself. -->
         <div class="frame">
@@ -68,5 +108,58 @@
       <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
       <div data-harness-rail x-cloak></div>
     </section>
+
+    <script>
+      const ready = customElements.whenDefined('vehicle-accessories').then(async () => {
+        const subject = document.querySelector('#subject');
+
+        await subject.componentOnReady?.();
+
+        // Read before any control writes it: the component's own default is the "Host default" preset.
+        return { subject, hostDefault: subject.hiddenFields };
+      });
+
+      const DEAD_PICTURE = '/__dead__/accessory.jpg';
+
+      // The mock set with every accessory's picture sent to an address that does not exist.
+      const withDeadPictures = data =>
+        Object.fromEntries(
+          Object.entries(data ?? {}).map(([vin, vehicle]) => [
+            vin,
+            vehicle?.accessories ? { ...vehicle, accessories: vehicle.accessories.map(accessory => ({ ...accessory, image: DEAD_PICTURE })) } : vehicle,
+          ]),
+        );
+
+      let simulated = false;
+      let lastKey = '';
+
+      window.accessoriesControls = {
+        async apply({ fields }) {
+          const { subject, hostDefault } = await ready;
+          const hiddenFields = fields === 'all' ? '' : hostDefault;
+
+          if (subject.hiddenFields !== hiddenFields) subject.hiddenFields = hiddenFields;
+        },
+
+        // Showcase-only: case 7. Re-runs when the switch, the environment's data or the chosen vehicle changes.
+        async simulate({ failed, data, fixture }) {
+          const key = `${failed}|${fixture}|${Object.keys(data ?? {}).length}`;
+
+          if (!failed && !simulated) return;
+          if (key === lastKey) return;
+
+          lastKey = key;
+          simulated = failed;
+
+          const { subject } = await ready;
+
+          // Let the harness finish its own load for this change first, then replace its data.
+          await new Promise(resolve => setTimeout(resolve, 300));
+          await subject.setMockData(failed ? withDeadPictures(data) : data);
+
+          if (fixture && fixture !== 'error') await subject.fetchVin(fixture);
+        },
+      };
+    </script>
   </body>
 </html>
