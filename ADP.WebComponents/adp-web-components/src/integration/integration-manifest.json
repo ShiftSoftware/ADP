@@ -221,6 +221,7 @@
             "required": false
           },
           { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "hiddenFields", "attribute": "hidden-fields", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
@@ -243,13 +244,14 @@
           { "name": "today", "attribute": "today", "type": "string", "default": null, "mutable": false, "required": false }
         ],
         "methods": [
-          { "name": "fetchVin", "parameters": "(newData: VehicleLookupDTO | string, headers?: any) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "clearData", "parameters": "() => Promise<void>", "returns": "Promise<void>" },
+          { "name": "fetchVin", "parameters": "(newData: VehicleLookupDTO | string, headers?: object) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setBlazorRef", "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
           { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
         ],
         "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
-        "dependencies": ["information-table"]
+        "dependencies": []
       },
       "runtimeAssets": { "locales": "dist/locales", "notes": [] }
     },

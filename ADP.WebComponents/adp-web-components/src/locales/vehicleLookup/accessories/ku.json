@@ -1,8 +1,24 @@
 {
   "vehicleAccessories": "ئیکسسواراتەکانی ئۆتۆمبێل",
-  "noData": "هیچ داتایەک لەبەردەستدا نییە.",
   "partNumber": "ژمارەی پارچە",
   "description": "وەسف",
   "image": "وێنە",
-  "expand": "فراوانکردن"
+  "jobNumber": "Job Number",
+  "invoiceNumber": "Invoice Number",
+  "companyName": "Company",
+  "columnsLabel": "Accessory list",
+  "noImage": "No picture on record",
+  "imageFailed": "The picture did not load",
+  "openImage": "Open picture of",
+  "unauthorizedNotice": "This vehicle is not in the distributor's records, so its accessories cannot be listed.",
+  "noAccessories": "No accessories on record for this vehicle.",
+  "noFieldsShown": "No fields are selected to show.",
+  "accessoryCountZero": "{count} accessories",
+  "accessoryCountOne": "{count} accessory",
+  "accessoryCountTwo": "{count} accessories",
+  "accessoryCountFew": "{count} accessories",
+  "accessoryCountMany": "{count} accessories",
+  "accessoryCountOther": "{count} accessories",
+  "showAll": "Show all {count}",
+  "showFewer": "Show fewer"
 }

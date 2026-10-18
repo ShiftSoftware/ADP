@@ -1,90 +1,164 @@
 /* tailwind: off */
+/*
+ * Vehicle accessories — the stylesheet for <vehicle-accessories>, in the component design language.
+ * The card is the wrapper's; this file styles what is particular to this panel: the total in the
+ * head and the "Show all" disclosure under the table. The strip, the rows, the cards at 720px and
+ * under and the thumbnails are the lookup table's (features/lookup-table/lookup-table.css), imported
+ * below.
+ *
+ * Panel states, as data attributes on .accessories-card: data-verdict, data-phase (busy while a
+ * lookup is in flight), data-lead (skeleton | columns | notice) and data-body (rows | none).
+ */
+
+/* Order is the table fragment's contract: the reset, the tokens, the wrapper (which brings the
+   motion primitives and .sr-only — never import lookup-motion.css directly, a second import loses
+   its @keyframes), the head, then the table. */
 @import '../style/base.css';
-@import '../style/shift-skeleton.css';
+@import '../style/lookup-tokens.css';
 @import '../../features/image-viewer/image-viewer.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 @import '../../features/vehicle-info-layout/lookup-head.css';
+@import '../../features/lookup-table/lookup-table.css';
 
 :host {
   display: block;
-  all: initial !important;
-  /* The family's face (lookup-tokens.css); the wrapper's root switches it for an rtl locale. */
-  font-family: var(--font-sans) !important;
 }
 
-*,
-:host * {
-  font-family: inherit !important;
+.accessories-card,
+.accessories-card *,
+.accessories-card *::before,
+.accessories-card *::after {
+  box-sizing: border-box;
 }
 
-.accessories-table-scroll {
-  overflow-x: auto;
-}
-
-.accessories-image-cell {
-  display: flex;
-  width: 100px;
-  height: 100px;
-  margin-left: auto;
-  margin-right: auto;
-  align-items: center;
-  justify-content: center;
-}
-
-.accessories-image-button {
+.accessories-card {
   position: relative;
-  flex-shrink: 0;
-  width: fit-content;
-  margin-left: auto;
-  margin-right: auto;
-  box-shadow: 0 0 #0000;
-  outline: 2px solid transparent;
-  outline-offset: 2px;
-  cursor: pointer;
+  width: 100%;
+  color: var(--ink);
+  /* No font-family: the wrapper's root sets the face for the language and this inherits it. */
+  font-size: 13px;
+  line-height: 1.35;
 }
 
-.accessories-image-overlay {
-  position: absolute;
+/* ---------------------------------------------------------------------------------------------
+   Head: the total
+   ------------------------------------------------------------------------------------------- */
+
+/* A fact, not a verdict, so it is not a pill. Small note: 12px, 600, tabular (design language § 11,
+   "counts"), in --muted -- secondary text, read after the title. It sits in the head's trailing
+   group, where the verdict would be: a record panel with records has no pill, so the group is
+   otherwise empty. */
+.accessories-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Disclosure: "Show all 23 accessories"
+   ------------------------------------------------------------------------------------------- */
+
+/* The row that carries the button. Ruled like a row of the table (--line-soft, § 12), so it reads
+   as the last line of the list. 6px of padding around a 44px button leaves room for the 2px focus
+   outline plus its 2px offset, which the collapsible's overflow:hidden would otherwise clip. */
+.accessories-more-row {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  padding: 6px 14px;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* When collapsing takes the page up under the reader, the button's row is brought back with this much
+   of the list above it, so the reader sees where they were rather than a button at the very top
+   (motion.md rule 10; lib/reveal-below reads scroll-margin-top). */
+.accessories-more {
+  scroll-margin-top: min(40vh, 280px);
+}
+
+/* Interaction is blue (§ 10), a quiet text button: the list is the content, this only reveals more
+   of it. min-height 44px is the smallest touch target a finger can hit; it holds at every width.
+   .2s, the language's one duration shorter than --settle: a press must feel instant (§ 18). */
+.accessories-more-button {
+  display: inline-flex;
+  gap: 8px;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  width: 100%;
-  height: 100%;
-  border-radius: 8px;
-  background-color: rgba(0, 0, 0, 0.4);
-  opacity: 0;
-  pointer-events: none;
-  transition-property: all;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 300ms;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 16px;
+  color: var(--blue-dark);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: background 0.2s ease;
 }
 
-.accessories-image-overlay:hover,
-.accessories-image-button:hover div {
+.accessories-more-button:hover {
+  background: var(--blue-tint);
+}
+
+.accessories-more-button:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 2px;
+}
+
+.accessories-more-chevron {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  transition: transform var(--settle) ease;
+}
+
+.accessories-more-button[aria-expanded='true'] .accessories-more-chevron {
+  transform: rotate(180deg);
+}
+
+/* Both labels share one grid cell and cross-fade, so the words never pop and the button is as wide
+   as the longer of the two whichever shows (no width change on press). The inactive one is also
+   aria-hidden, so it is neither read nor counted in the button's name. */
+.accessories-more-labels {
+  display: grid;
+}
+
+.accessories-more-label {
+  grid-area: 1 / 1;
+  text-align: center;
+  opacity: 0;
+  transition: opacity var(--settle) ease;
+}
+
+.accessories-more-label[data-active='true'] {
   opacity: 1;
 }
 
-.accessories-image-overlay-label {
-  color: #fff;
+/* ---------------------------------------------------------------------------------------------
+   Narrow panels (720 and under): the table turns its rows into cards (lookup-table.css); the
+   disclosure keeps its 44px target and only tightens its row to the card's inset.
+   ------------------------------------------------------------------------------------------- */
+
+@container (max-width: 720px) {
+  .accessories-more-row {
+    padding-inline: 12px;
+  }
 }
 
-.accessories-image {
-  width: auto;
-  height: auto;
-  max-width: 100px;
-  max-height: 100px;
-  border-radius: 8px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  cursor: pointer;
-  transition-property: all;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 300ms;
-}
+/* ---------------------------------------------------------------------------------------------
+   Reduced motion: every transition above is on a state attribute, so it is kept and made
+   immediate. The table's own block is in its fragment.
+   ------------------------------------------------------------------------------------------- */
 
-.accessories-image-button:hover img {
-  box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -4px rgba(0, 0, 0, 0.1);
+@media (prefers-reduced-motion: reduce) {
+  .accessories-more-button,
+  .accessories-more-chevron,
+  .accessories-more-label {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
 }
