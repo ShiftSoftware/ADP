@@ -21,7 +21,5 @@
   "warrantyNotStarted": "لم يبدأ الضمان",
   "awaitingBrokerInvoice": "لم يتم إصدار فاتورة لهذه المركبة بعد من قبل شريك الأعمال الموثوق به التالي: ",
   "awaitingEndCustomerSale": "لم يتم بيع هذه المركبة إلى عميل بعد.",
-  "awaitingActivation": "لم يتم تفعيل ضمان هذه المركبة بعد.",
-  "invoiceDate": "تاريخ الفاتورة",
-  "warrantyActivationDate": "تفعيل الضمان"
+  "awaitingActivation": "لم يتم تفعيل ضمان هذه المركبة بعد."
 }

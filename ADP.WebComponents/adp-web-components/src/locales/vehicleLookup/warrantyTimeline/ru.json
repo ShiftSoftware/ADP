@@ -21,7 +21,5 @@
   "warrantyNotStarted": "Гарантия не началась",
   "awaitingBrokerInvoice": "Счет за этот автомобиль еще не выставлен следующим доверенным деловым партнером: ",
   "awaitingEndCustomerSale": "Этот автомобиль еще не продан клиенту.",
-  "awaitingActivation": "Гарантия этого автомобиля еще не активирована.",
-  "invoiceDate": "Дата счёта",
-  "warrantyActivationDate": "Активация гарантии"
+  "awaitingActivation": "Гарантия этого автомобиля еще не активирована."
 }

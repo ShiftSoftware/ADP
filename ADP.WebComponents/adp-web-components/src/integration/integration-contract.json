@@ -109,16 +109,13 @@
       "wireContract": "adp.vehicle-warranty-timeline.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "hiddenFields", "queryString"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
         "methods": ["fetchVin"],
         "owns": ["lookup request", "response handling", "loading and error state", "warranty coverage rendering"]
       },
       "runtimeAssets": {
         "locales": "dist/locales",
-        "notes": [
-          "Warranty coverage only. Campaign rendering, reCAPTCHA and unauthorized campaign lookup belong to vehicle-ssc.",
-          "The host may use hiddenFields (invoiceDate, warrantyActivationDate) to hide the sale dates shown above the rail."
-        ]
+        "notes": ["Warranty coverage only. Campaign rendering, reCAPTCHA and unauthorized campaign lookup belong to vehicle-ssc."]
       }
     },
     "vehicle-claimable-items": {
