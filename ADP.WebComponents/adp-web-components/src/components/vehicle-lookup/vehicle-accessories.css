@@ -1,3 +1,5 @@
+/* tailwind: off */
+@import '../style/base.css';
 @import '../style/shift-skeleton.css';
 @import '../../features/image-viewer/image-viewer.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
@@ -13,4 +15,76 @@
 *,
 :host * {
   font-family: inherit !important;
+}
+
+.accessories-table-scroll {
+  overflow-x: auto;
+}
+
+.accessories-image-cell {
+  display: flex;
+  width: 100px;
+  height: 100px;
+  margin-left: auto;
+  margin-right: auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.accessories-image-button {
+  position: relative;
+  flex-shrink: 0;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 0 #0000;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  cursor: pointer;
+}
+
+.accessories-image-overlay {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  background-color: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+.accessories-image-overlay:hover,
+.accessories-image-button:hover div {
+  opacity: 1;
+}
+
+.accessories-image-overlay-label {
+  color: #fff;
+}
+
+.accessories-image {
+  width: auto;
+  height: auto;
+  max-width: 100px;
+  max-height: 100px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+.accessories-image-button:hover img {
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1);
 }

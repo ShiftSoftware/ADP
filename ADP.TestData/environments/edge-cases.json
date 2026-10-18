@@ -388,6 +388,242 @@
       "PaidServiceInvoices": [],
       "FreeServiceItemExcludedVINs": [],
       "VehicleInspections": []
+    },
+    "ZS8AX5KB2T6720006": {
+      "VehicleEntries": [
+        {
+          "VIN": "ZS8AX5KB2T6720006",
+          "InvoiceDate": "2026-05-20",
+          "InvoiceNumber": "66427099",
+          "CompanyID": 5,
+          "BranchID": 500,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "88406LM202501",
+          "Katashiki": "FZP502K-TRMDVA",
+          "ExteriorColorCode": "042",
+          "InteriorColorCode": "75",
+          "ModelYear": 2025
+        }
+      ],
+      "InitialOfficialVINs": [
+        {
+          "VIN": "ZS8AX5KB2T6720006",
+          "CompanyID": 5
+        }
+      ],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
+      "Accessories": [
+        {
+          "id": "ZS8AX5KB2T6720006-AX-6001-01",
+          "VIN": "ZS8AX5KB2T6720006",
+          "PartNumber": "AX-6001-01",
+          "PartDescription": "Spoiler, rear roof",
+          "JobNumber": 61001,
+          "InvoiceNumber": 71000001,
+          "Image": "Uploads/accessories/ZS8AX5KB2T6720006/rear-spoiler.jpg",
+          "CompanyID": 10
+        },
+        {
+          "id": "ZS8AX5KB2T6720006-AX-6002-01",
+          "VIN": "ZS8AX5KB2T6720006",
+          "PartNumber": "AX-6002-01",
+          "PartDescription": "Side steps, powder-coated",
+          "JobNumber": 61001,
+          "InvoiceNumber": 71000001,
+          "Image": "Uploads/accessories/ZS8AX5KB2T6720006/side-steps.jpg",
+          "CompanyID": 10
+        }
+      ],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
+    },
+    "ZS8AX5KB6T6720008": {
+      "VehicleEntries": [
+        {
+          "VIN": "ZS8AX5KB6T6720008",
+          "InvoiceDate": "2026-05-20",
+          "InvoiceNumber": "66427099",
+          "CompanyID": 5,
+          "BranchID": 500,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "88406LM202501",
+          "Katashiki": "FZP502K-TRMDVA",
+          "ExteriorColorCode": "042",
+          "InteriorColorCode": "75",
+          "ModelYear": 2025
+        }
+      ],
+      "InitialOfficialVINs": [
+        {
+          "VIN": "ZS8AX5KB6T6720008",
+          "CompanyID": 5
+        }
+      ],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
+      "Accessories": [
+        {
+          "id": "ZS8AX5KB6T6720008-AX-8001-01-EXTENDED-FITMENT-KIT-REAR-LEFT-OUTBOARD-0001",
+          "VIN": "ZS8AX5KB6T6720008",
+          "PartNumber": "AX-8001-01-EXTENDED-FITMENT-KIT-REAR-LEFT-OUTBOARD-0001",
+          "PartDescription": "Roof rack with aluminium crossbars, lockable load stops, integrated rain channel, wind deflector and anti-theft locking cylinders, fitted and aligned at delivery",
+          "JobNumber": 61010,
+          "InvoiceNumber": 71010001,
+          "Image": "Uploads/accessories/ZS8AX5KB6T6720008/roof-rack.jpg",
+          "CompanyID": 10
+        },
+        {
+          "id": "ZS8AX5KB6T6720008-AX-8002-01",
+          "VIN": "ZS8AX5KB6T6720008",
+          "PartNumber": "AX-8002-01",
+          "PartDescription": "Mud guards",
+          "JobNumber": 61010,
+          "InvoiceNumber": 71010001,
+          "Image": "Uploads/accessories/ZS8AX5KB6T6720008/mud-guards.jpg",
+          "CompanyID": 10
+        }
+      ],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
+    },
+    "ZS8AX5KB8T6720009": {
+      "VehicleEntries": [
+        {
+          "VIN": "ZS8AX5KB8T6720009",
+          "InvoiceDate": "2026-05-20",
+          "InvoiceNumber": "66427099",
+          "CompanyID": 5,
+          "BranchID": 500,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "88406LM202501",
+          "Katashiki": "FZP502K-TRMDVA",
+          "ExteriorColorCode": "042",
+          "InteriorColorCode": "75",
+          "ModelYear": 2025
+        }
+      ],
+      "InitialOfficialVINs": [
+        {
+          "VIN": "ZS8AX5KB8T6720009",
+          "CompanyID": 5
+        }
+      ],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
+      "Accessories": [
+        {
+          "id": "ZS8AX5KB8T6720009-AX-9001-01",
+          "VIN": "ZS8AX5KB8T6720009",
+          "PartNumber": "AX-9001-01",
+          "PartDescription": "Floor mats, set of four",
+          "JobNumber": 0,
+          "InvoiceNumber": 0,
+          "Image": "Uploads/accessories/ZS8AX5KB8T6720009/floor-mats.jpg",
+          "CompanyID": 10
+        },
+        {
+          "id": "ZS8AX5KB8T6720009-AX-9002-01",
+          "VIN": "ZS8AX5KB8T6720009",
+          "PartNumber": "AX-9002-01",
+          "PartDescription": "Roof rails, black anodised",
+          "JobNumber": 0,
+          "InvoiceNumber": 71020002,
+          "Image": "Uploads/accessories/ZS8AX5KB8T6720009/roof-rails.jpg",
+          "CompanyID": 10
+        }
+      ],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
+    },
+    "ZS8AX5KB4T6720010": {
+      "VehicleEntries": [
+        {
+          "VIN": "ZS8AX5KB4T6720010",
+          "InvoiceDate": "2026-05-20",
+          "InvoiceNumber": "66427099",
+          "CompanyID": 5,
+          "BranchID": 500,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "88406LM202501",
+          "Katashiki": "FZP502K-TRMDVA",
+          "ExteriorColorCode": "042",
+          "InteriorColorCode": "75",
+          "ModelYear": 2025
+        }
+      ],
+      "InitialOfficialVINs": [
+        {
+          "VIN": "ZS8AX5KB4T6720010",
+          "CompanyID": 5
+        }
+      ],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
+      "Accessories": [
+        {
+          "id": "ZS8AX5KB4T6720010-AX-1001-01",
+          "VIN": "ZS8AX5KB4T6720010",
+          "PartNumber": "AX-1001-01",
+          "PartDescription": "Tow bar, detachable",
+          "JobNumber": 61030,
+          "InvoiceNumber": 71030001,
+          "Image": "Uploads/accessories/ZS8AX5KB4T6720010/tow-bar.jpg",
+          "CompanyID": 10
+        },
+        {
+          "id": "ZS8AX5KB4T6720010-AX-1002-01",
+          "VIN": "ZS8AX5KB4T6720010",
+          "PartNumber": "AX-1002-01",
+          "PartDescription": "Side steps, powder-coated",
+          "JobNumber": 61031,
+          "InvoiceNumber": 71030002,
+          "Image": "Uploads/accessories/ZS8AX5KB4T6720010/side-steps.jpg",
+          "CompanyID": 999
+        }
+      ],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
     }
   },
   "BrokerInitialVehicles": [],

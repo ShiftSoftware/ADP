@@ -167,23 +167,20 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
       partNumber: accessory?.partNumber,
       description: accessory?.description,
       image: () => (
-        <div class="size-[100px] flex mx-auto items-center justify-center">
-          <button
-            onClick={({ target }) => openImageViewer.bind(this)(target as HTMLImageElement, accessory?.image)}
-            class="shrink-0 relative ring-0 outline-none w-fit mx-auto [&_img]:hover:shadow-lg [&_div]:hover:!opacity-100 cursor-pointer"
-          >
-            <div class="absolute flex-col justify-center gap-[4px] size-full flex items-center pointer-events-none hover:opacity-100 rounded-lg opacity-0 bg-black/40 transition-all duration-300">
+        <div class="accessories-image-cell">
+          <button onClick={({ target }) => openImageViewer.bind(this)(target as HTMLImageElement, accessory?.image)} class="accessories-image-button">
+            <div class="accessories-image-overlay">
               <img src={Eye} />
-              <span class="text-white">{texts.expand}</span>
+              <span class="accessories-image-overlay-label">{texts.expand}</span>
             </div>
-            <img class="w-auto h-auto max-w-[100px] max-h-[100px] cursor-pointer shadow-sm rounded-lg transition-all duration-300" src={accessory?.image} />
+            <img class="accessories-image" src={accessory?.image} />
           </button>
         </div>
       ),
     }));
 
     const templateRow = {
-      image: () => <div class="size-[100px] flex mx-auto items-center justify-center">&nbsp;</div>,
+      image: () => <div class="accessories-image-cell">&nbsp;</div>,
     };
 
     return (
@@ -201,7 +198,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
           <LookupHead title={texts.vehicleAccessories} verdict={verdict} />
           <div class="lookup-slide-clip">
             <div class="lookup-slide">
-              <div class="overflow-x-auto">
+              <div class="accessories-table-scroll">
                 <information-table templateRow={templateRow} rows={rows} headers={tableHeaders} isLoading={this.isLoading}></information-table>
               </div>
             </div>
