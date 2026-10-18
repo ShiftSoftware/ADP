@@ -106,7 +106,7 @@ namespace LookupServices.BDD.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehicleAccessories.feature.ndjson", 10);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehicleAccessories.feature.ndjson", 11);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -155,20 +155,20 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table769 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
                             "PartNumber",
                             "PartDescription",
                             "Image"});
-                table769.AddRow(new string[] {
+                table1.AddRow(new string[] {
                             "ACC-001",
                             "Floor mats",
                             "img001.jpg"});
-                table769.AddRow(new string[] {
+                table1.AddRow(new string[] {
                             "ACC-002",
                             "Roof rack",
                             "img002.jpg"});
 #line 6
-  await testRunner.GivenAsync("accessories:", ((string)(null)), table769, "Given ");
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table1, "Given ");
 #line hidden
 #line 10
   await testRunner.AndAsync("the accessory image resolver maps \"img001.jpg\" to \"https://cdn.example.com/img001" +
@@ -215,16 +215,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table770 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table2 = new global::Reqnroll.Table(new string[] {
                             "PartNumber",
                             "PartDescription",
                             "Image"});
-                table770.AddRow(new string[] {
+                table2.AddRow(new string[] {
                             "ACC-001",
                             "Floor mats",
                             "img001.jpg"});
 #line 18
-  await testRunner.GivenAsync("accessories:", ((string)(null)), table770, "Given ");
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table2, "Given ");
 #line hidden
 #line 21
   await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -288,18 +288,18 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table771 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table3 = new global::Reqnroll.Table(new string[] {
                             "PartNumber",
                             "PartDescription",
                             "JobNumber",
                             "InvoiceNumber"});
-                table771.AddRow(new string[] {
+                table3.AddRow(new string[] {
                             "ACC-001",
                             "Floor mats",
                             "1001",
                             "2002"});
 #line 30
-  await testRunner.GivenAsync("accessories:", ((string)(null)), table771, "Given ");
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table3, "Given ");
 #line hidden
 #line 33
   await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -335,18 +335,18 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table772 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table4 = new global::Reqnroll.Table(new string[] {
                             "PartNumber",
                             "PartDescription",
                             "JobNumber",
                             "InvoiceNumber"});
-                table772.AddRow(new string[] {
+                table4.AddRow(new string[] {
                             "ACC-001",
                             "Floor mats",
                             "0",
                             "0"});
 #line 38
-  await testRunner.GivenAsync("accessories:", ((string)(null)), table772, "Given ");
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table4, "Given ");
 #line hidden
 #line 41
   await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -382,16 +382,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table773 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table5 = new global::Reqnroll.Table(new string[] {
                             "PartNumber",
                             "PartDescription",
                             "CompanyID"});
-                table773.AddRow(new string[] {
+                table5.AddRow(new string[] {
                             "ACC-001",
                             "Floor mats",
                             "1"});
 #line 46
-  await testRunner.GivenAsync("accessories:", ((string)(null)), table773, "Given ");
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table5, "Given ");
 #line hidden
 #line 49
   await testRunner.AndAsync("company 1 is named \"Dealer A\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -427,16 +427,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table774 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table6 = new global::Reqnroll.Table(new string[] {
                             "PartNumber",
                             "PartDescription",
                             "CompanyID"});
-                table774.AddRow(new string[] {
+                table6.AddRow(new string[] {
                             "ACC-001",
                             "Floor mats",
                             "2"});
 #line 54
-  await testRunner.GivenAsync("accessories:", ((string)(null)), table774, "Given ");
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table6, "Given ");
 #line hidden
 #line 57
   await testRunner.AndAsync("company 1 is named \"Dealer A\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -472,22 +472,95 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table775 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table7 = new global::Reqnroll.Table(new string[] {
                             "PartNumber",
                             "PartDescription",
                             "CompanyID"});
-                table775.AddRow(new string[] {
+                table7.AddRow(new string[] {
                             "ACC-001",
                             "Floor mats",
                             "1"});
 #line 62
-  await testRunner.GivenAsync("accessories:", ((string)(null)), table775, "Given ");
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table7, "Given ");
 #line hidden
 #line 65
   await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 66
   await testRunner.ThenAsync("accessory \"ACC-001\" has no company name", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Each distinct company is resolved once and names map to the right accessories")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Accessories")]
+        [global::Xunit.TraitAttribute("Description", "Each distinct company is resolved once and names map to the right accessories")]
+        public async global::System.Threading.Tasks.Task EachDistinctCompanyIsResolvedOnceAndNamesMapToTheRightAccessories()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "8";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Each distinct company is resolved once and names map to the right accessories", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 68
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                global::Reqnroll.Table table8 = new global::Reqnroll.Table(new string[] {
+                            "PartNumber",
+                            "PartDescription",
+                            "CompanyID"});
+                table8.AddRow(new string[] {
+                            "ACC-001",
+                            "Floor mats",
+                            "1"});
+                table8.AddRow(new string[] {
+                            "ACC-002",
+                            "Mud flaps",
+                            "1"});
+                table8.AddRow(new string[] {
+                            "ACC-003",
+                            "Roof rails",
+                            "2"});
+                table8.AddRow(new string[] {
+                            "ACC-004",
+                            "Cargo net",
+                            ""});
+#line 69
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table8, "Given ");
+#line hidden
+#line 75
+  await testRunner.AndAsync("company 1 is named \"Dealer A\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 76
+  await testRunner.AndAsync("company 2 is named \"Dealer B\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 77
+  await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 78
+  await testRunner.ThenAsync("accessory \"ACC-001\" has company name \"Dealer A\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 79
+  await testRunner.AndAsync("accessory \"ACC-002\" has company name \"Dealer A\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 80
+  await testRunner.AndAsync("accessory \"ACC-003\" has company name \"Dealer B\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 81
+  await testRunner.AndAsync("accessory \"ACC-004\" has no company name", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 82
+  await testRunner.AndAsync("the company name resolver was called 3 times, once for each of company IDs \"1, 2," +
+                        " null\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
