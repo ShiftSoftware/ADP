@@ -276,7 +276,10 @@
       {
         "partNumber": "PZ49E-X2653-ZA",
         "description": "Side Steps",
-        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/side-steps.svg"
+        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/side-steps.svg",
+        "jobNumber": 1,
+        "invoiceNumber": 200001,
+        "companyName": "Al-Rashid Motors"
       }
     ],
     "basicModelCode": "MXAA52"
@@ -788,11 +791,17 @@
       {
         "partNumber": "PZ323-X2651-ZA",
         "description": "Roof Rails",
-        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/roof-rails.svg"
+        "image": "https://cdn.jsdelivr.net/npm/adp-web-components@latest/dist/mocks/assets/accessories/roof-rails.svg",
+        "jobNumber": 1,
+        "invoiceNumber": 300001,
+        "companyName": "Gulf Auto Services"
       },
       {
         "partNumber": "PZ443-X2650-ZA",
-        "description": "Rubber Floor Mats"
+        "description": "Rubber Floor Mats",
+        "jobNumber": 2,
+        "invoiceNumber": 300001,
+        "companyName": "Gulf Auto Services"
       }
     ],
     "basicModelCode": "AXAH54"

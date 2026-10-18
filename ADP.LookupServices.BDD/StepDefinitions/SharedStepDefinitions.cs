@@ -332,6 +332,9 @@ public class SharedStepDefinitions
                 PartNumber = GetOptionalString(row, "PartNumber"),
                 PartDescription = GetOptionalString(row, "PartDescription"),
                 Image = GetOptionalString(row, "Image"),
+                JobNumber = GetOptionalInt(row, "JobNumber") ?? 0,
+                InvoiceNumber = GetOptionalInt(row, "InvoiceNumber") ?? 0,
+                CompanyID = GetOptionalLong(row, "CompanyID"),
             }));
     }
 
