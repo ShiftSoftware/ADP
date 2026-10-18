@@ -53,6 +53,7 @@ export class ShiftInput implements FormElement, InputField {
   @Prop({ reflect: true }) appearance?: CalendarAppearance;
   @Prop({ reflect: true }) colorScheme: CalendarColorScheme = 'light';
   @Prop({ reflect: true }) size: CalendarSize = 'md';
+  @Prop() mobileSheet: boolean = false;
 
   @Prop() format: string = DEFAULT_FORMAT;
   @Prop() openOnControlClick: boolean = true;
@@ -175,6 +176,10 @@ export class ShiftInput implements FormElement, InputField {
 
   getValue() {
     return this.value;
+  }
+
+  getDisplayValue() {
+    return this.pickerEl ? this.text : '';
   }
 
   partialValidation(validation: AnyObjectSchema): AnyObjectSchema {
@@ -349,7 +354,7 @@ export class ShiftInput implements FormElement, InputField {
     const errorId = `${inputId}-error`;
 
     return (
-      <Host translate="no" data-look={this.form && !this.appearance ? 'form' : undefined}>
+      <Host translate="no" data-in-form={this.form ? '' : undefined} data-look={this.form && !this.appearance ? 'form' : undefined}>
         <div
           class="in-root"
           part="root"
@@ -370,7 +375,13 @@ export class ShiftInput implements FormElement, InputField {
             </label>
           </div>
 
-          <div class="in-control" part="control" ref={element => (this.control = element)} data-focused={this.focused ? '' : undefined} onClick={this.onControlClick}>
+          <div
+            class="in-control"
+            part="control"
+            ref={element => (this.control = element)}
+            data-focused={this.focused || this.expanded ? '' : undefined}
+            onClick={this.onControlClick}
+          >
             <span class="in-prefix" part="prefix">
               <slot name="prefix" />
             </span>

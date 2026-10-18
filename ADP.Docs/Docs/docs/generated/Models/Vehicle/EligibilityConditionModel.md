@@ -6,6 +6,7 @@ A declarative eligibility predicate evaluated against data exposed by the vehicl
 
 | Property | Summary |
 |----------|---------|
+| AnyOf <div><strong>``IEnumerable<EligibilityConditionModel>``</strong></div> | One non-empty OR group of ordinary leaf conditions. Nested groups are unsupported. The group owns WhenUnmet; alternatives must retain the default Hide behavior. Omit field, values, scope, program and qualifier on the group itself. |
 | Field <div><strong>``string``</strong></div> | The fully-qualified vehicle lookup field path to evaluate. Supported paths are defined by the lookup evaluator; this model does not imply arbitrary vehicle lookup traversal. |
 | Operator <div><strong>``EligibilityConditionOperator``</strong></div> | How the configured values are combined across the scoped field values. |
 | ValueMatch <div><strong>``EligibilityConditionValueMatch``</strong></div> | How each configured value is matched against a scoped field value. Defaults to exact matching so catalogs created before this property was added keep their existing behavior. |

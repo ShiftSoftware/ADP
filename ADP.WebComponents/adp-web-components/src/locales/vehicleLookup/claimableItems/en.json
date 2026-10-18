@@ -49,5 +49,16 @@
     "claim": "Claim",
     "claimFailed": "Claim Failed",
     "ok": "OK"
-  }
+  },
+  "requiredService": "Required service",
+  "requirementCompleted": "Completed",
+  "requirementNotClaimable": "Not claimable",
+  "requirementInvoiceDate": "Invoice date",
+  "requirementOdometer": "Odometer (km)",
+  "requirementServiceCode": "Recorded service code",
+  "requirementLaborCode": "Labor code",
+  "requirementWork": "Recorded work",
+  "requirementJobDescription": "Job description",
+  "requirementAwaiting": "No matching service recorded.",
+  "requirementEvidenceUnavailable": "Completion recorded; details unavailable."
 }

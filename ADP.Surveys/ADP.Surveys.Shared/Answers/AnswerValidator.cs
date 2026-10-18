@@ -157,6 +157,7 @@ public static class AnswerValidator
             case SignatureQuestionDto s: ValidateString(s.Id, value, errors, "signature data url"); break;
             case YesNoQuestionDto yn: ValidateYesNo(yn, value, errors); break;
             case NavigationListQuestionDto nl: ValidateOptionId(nl.Id, nl.Options.Select(o => o.Id), value, errors, skipMembership: nl.OptionsSource is not null); break;
+            case BookingSlotQuestionDto bs: ValidateBookingSlot(bs, value, errors); break;
         }
     }
 
@@ -309,6 +310,16 @@ public static class AnswerValidator
             errors.Add(new AnswerError(q.Id, $"DateTime is before minDateTime {q.MinDateTime}."));
         if (!string.IsNullOrEmpty(q.MaxDateTime) && DateTimeOffset.TryParse(q.MaxDateTime, out var max) && dt > max)
             errors.Add(new AnswerError(q.Id, $"DateTime is after maxDateTime {q.MaxDateTime}."));
+    }
+
+    // Shape only: the slot is the branch's wall-clock time with no offset, and availability is
+    // not re-checked here. Parsed exactly so an offset or seconds are rejected rather than
+    // silently reinterpreted in the server's timezone.
+    private static void ValidateBookingSlot(BookingSlotQuestionDto q, JsonElement value, List<AnswerError> errors)
+    {
+        if (value.ValueKind != JsonValueKind.String ||
+            !DateTime.TryParseExact(value.GetString(), BookingSlotQuestionDto.SlotFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+            errors.Add(new AnswerError(q.Id, "Booking slot answer must be a JSON string in yyyy-MM-ddTHH:mm format."));
     }
 
     private static void ValidateString(string questionId, JsonElement value, List<AnswerError> errors, string kind)

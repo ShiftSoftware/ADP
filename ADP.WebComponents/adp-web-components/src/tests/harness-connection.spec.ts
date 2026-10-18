@@ -43,11 +43,14 @@ const memoryStorage = (): StorageLike & { values: Map<string, string> } => {
   };
 };
 
+// A developer's gitignored `*.local` overrides never reach the site (build-website.mjs skips them), so the scan does too.
 const filesUnder = (root: string): string[] =>
-  readdirSync(root, { withFileTypes: true }).flatMap(entry => {
-    const target = path.join(root, entry.name);
-    return entry.isDirectory() ? filesUnder(target) : [target];
-  });
+  readdirSync(root, { withFileTypes: true })
+    .filter(entry => !/\.local(\.[^.]+)?$/.test(entry.name))
+    .flatMap(entry => {
+      const target = path.join(root, entry.name);
+      return entry.isDirectory() ? filesUnder(target) : [target];
+    });
 
 const liveSettings = {
   baseUrl: 'https://api.example.invalid/vehicle/',
@@ -105,7 +108,12 @@ describe('public-demo Connection panel', () => {
       errors: {},
       settings: { baseUrl: liveSettings.baseUrl, headers: {}, queryString: liveSettings.queryString },
     });
-    expect(connection.connectionFields('composite', options).filter(field => field.required).map(field => field.name)).toEqual(['baseUrl']);
+    expect(
+      connection
+        .connectionFields('composite', options)
+        .filter(field => field.required)
+        .map(field => field.name),
+    ).toEqual(['baseUrl']);
     expect(connection.settingsToDraft('composite', validated.settings, options)).toMatchObject({
       baseUrl: liveSettings.baseUrl,
       headersJson: '{}',
@@ -192,12 +200,7 @@ describe('public-demo Connection panel', () => {
       },
     };
 
-    connection.connectProfile(
-      'composite',
-      subject,
-      { baseUrl: liveSettings.baseUrl, headers: {}, queryString: liveSettings.queryString },
-      options,
-    );
+    connection.connectProfile('composite', subject, { baseUrl: liveSettings.baseUrl, headers: {}, queryString: liveSettings.queryString }, options);
 
     expect(subject.childrenProps['vehicle-claimable-items']).toEqual({ showTrace: true, claimEndPoint: '' });
     expect(subject.childrenProps['vehicle-ssc']).toEqual({ showTrace: true, recaptchaKey: '', unauthorizedSscLookupBaseUrl: '' });

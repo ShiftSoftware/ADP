@@ -5,8 +5,8 @@
   Run a local identity service that serves the calendar and company-branch routes on :7071,
   then `npm start` and open http://localhost:3000/templates/prototypes/booking-calendar-live.html
 
-  No form and no structure: the page loads the branch list, builds the ids for v1 or v2 from the chosen
-  branch and hands them to <shift-booking-calendar>. Every calendar request and every slotChange is logged.
+  No form and no structure: the page loads the branch list and hands the chosen branch's hash ID, with a
+  department and a brand, to <shift-booking-calendar>. Every calendar request and every slotChange is logged.
 -->
 <html lang="en" dir="ltr">
   <head>
@@ -205,7 +205,7 @@
     <main>
       <header>
         <h1>Booking calendar · local seed</h1>
-        <p>Branches from the local <code>public/company-branch</code> route; the calendar calls the local v1 or v2 endpoint with the ids built for that version.</p>
+        <p>Branches from the local <code>public/company-branch</code> route; the calendar calls the local calendar endpoint with the branch's hash ID.</p>
       </header>
 
       <section class="card" aria-labelledby="setup-title">
@@ -218,13 +218,6 @@
           <label class="wide"
             >Branch
             <select id="branch"></select>
-          </label>
-          <label
-            >Calendar API
-            <select id="version">
-              <option value="v1">v1 · Integration IDs</option>
-              <option value="v2">v2 · hash IDs</option>
-            </select>
           </label>
           <label
             >Department
@@ -303,10 +296,6 @@
             <dl>
               <dt>calendar-api</dt>
               <dd id="out-api"></dd>
-              <dt>calendar-api-version</dt>
-              <dd id="out-version"></dd>
-              <dt>company-id</dt>
-              <dd id="out-company"></dd>
               <dt>branch-id</dt>
               <dd id="out-branch"></dd>
               <dt>department-id</dt>
@@ -339,7 +328,7 @@
 
     <script>
       const IDENTITY = 'http://localhost:7071/api';
-      const ENDPOINTS = { v1: `${IDENTITY}/public/calendar`, v2: `${IDENTITY}/public/v2/calendar` };
+      const CALENDAR = `${IDENTITY}/public/v2/calendar`;
       const REQUEST_DAYS = 30;
 
       const $ = id => document.getElementById(id);
@@ -347,13 +336,6 @@
       const params = new URLSearchParams(location.search);
 
       let branches = [];
-
-      // Same rule as branchIds() in ~lib/booking-availability, which the page cannot import from the build.
-      const branchIds = (branch, version) => {
-        if (!branch) return { companyId: '', branchId: '' };
-        const [company, id] = version === 'v2' ? [branch.CompanyId, branch.ID] : [branch.CompanyIntegrationId, branch.IntegrationId];
-        return { companyId: company == null ? '' : String(company), branchId: id == null ? '' : String(id) };
-      };
 
       const pad = value => String(value).padStart(2, '0');
       const localDate = date => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -428,13 +410,10 @@
       }
 
       function apply() {
-        const version = $('version').value;
         const branch = currentBranch();
-        const { companyId, branchId } = branchIds(branch, version);
+        const branchId = branch?.ID == null ? '' : String(branch.ID);
         const target = {
-          calendarApi: ENDPOINTS[version],
-          calendarApiVersion: version,
-          companyId,
+          calendarApi: CALENDAR,
           branchId,
           departmentId: $('department').value,
           brandId: $('brand').value,
@@ -444,15 +423,13 @@
         Object.assign(booking, target);
 
         $('out-api').textContent = target.calendarApi;
-        $('out-version').textContent = version;
-        $('out-company').textContent = companyId || '—';
         $('out-branch').textContent = branchId || '—';
         $('out-department').textContent = target.departmentId || '—';
         $('out-brand').textContent = target.brandId || '—';
 
-        const complete = companyId && branchId && target.departmentId && target.brandId;
+        const complete = branchId && target.departmentId && target.brandId;
         const from = target.today || localDate(new Date());
-        const query = new URLSearchParams({ from, to: addDays(from, REQUEST_DAYS), companyId, branchId, departmentId: target.departmentId, brandId: target.brandId });
+        const query = new URLSearchParams({ from, to: addDays(from, REQUEST_DAYS), branchId, departmentId: target.departmentId, brandId: target.brandId });
         const url = complete ? `${target.calendarApi}?${query}` : '';
 
         $('out-url').textContent = url || '— (an id is missing, the field stays idle)';
@@ -479,7 +456,6 @@
         const next = new URLSearchParams({
           brands: $('brands').value,
           branch: $('branch').value,
-          version: $('version').value,
           department: $('department').value,
           brand: $('brand').value,
         });
@@ -513,7 +489,7 @@
         const wanted = keep?.branch ?? $('branch').value;
         fill(
           $('branch'),
-          branches.map(branch => ({ value: branch.ID, label: `${branch.Name} — ${branch.CompanyName} · IID ${branch.IntegrationId} · ${branch.ID}` })),
+          branches.map(branch => ({ value: branch.ID, label: `${branch.Name} — ${branch.CompanyName} · ${branch.ID}` })),
           branches.some(branch => branch.ID === wanted) ? wanted : branches[0]?.ID,
         );
         $('branch').disabled = false;
@@ -522,7 +498,6 @@
       }
 
       for (const [id, key] of [
-        ['version', 'version'],
         ['today', 'today'],
         ['appearance', 'appearance'],
         ['scheme', 'scheme'],
@@ -540,7 +515,7 @@
         fillBranchChoices();
         apply();
       });
-      for (const id of ['version', 'department', 'brand', 'today']) $(id).addEventListener('change', apply);
+      for (const id of ['department', 'brand', 'today']) $(id).addEventListener('change', apply);
       for (const id of ['appearance', 'scheme', 'size', 'language', 'hour-cycle', 'slot-counts']) $(id).addEventListener('change', applyLook);
       for (const button of document.querySelectorAll('[data-clear]')) button.addEventListener('click', () => $(button.dataset.clear).replaceChildren());
 

@@ -32,7 +32,7 @@ public sealed class DuckDBSyncDataDestinationTests : IDisposable
         Price = price,
         InvoiceDate = new DateTime(2026, 7, 15),
         Intermediary = new Intermediary { InvoiceNumber = "INV-1" },
-        Distributor = "TIQ",
+        Distributor = "DIST-1",
     };
 
     [Fact]
@@ -74,7 +74,7 @@ public sealed class DuckDBSyncDataDestinationTests : IDisposable
         Assert.Equal(0.3, Db.Scalar(after, "SELECT LaborHour1 FROM VehicleRow WHERE id = 'A-1'"));
         Assert.Equal("YHG14A", Db.Scalar(after, "SELECT json_extract_string(Labors, '$[0].LaborCode') FROM VehicleRow WHERE id = 'A-1'"));
         Assert.Equal("INV-1", Db.Scalar(after, "SELECT json_extract_string(Intermediary, '$.InvoiceNumber') FROM VehicleRow WHERE id = 'B-1'"));
-        Assert.Equal("TIQ", Db.Scalar(after, "SELECT Distributor FROM VehicleRow WHERE id = 'B-1'"));
+        Assert.Equal("DIST-1", Db.Scalar(after, "SELECT Distributor FROM VehicleRow WHERE id = 'B-1'"));
         Assert.Equal(2L, Db.Scalar(after, "SELECT count(*) FROM VehicleRow"));
 
         Assert.NotNull(change);

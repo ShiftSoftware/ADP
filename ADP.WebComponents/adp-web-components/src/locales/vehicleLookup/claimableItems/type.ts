@@ -59,6 +59,17 @@ const claimableItemsSchema = object({
     'traceTitle',
     'traceLoading',
     'traceFailed',
+    'requiredService',
+    'requirementCompleted',
+    'requirementNotClaimable',
+    'requirementInvoiceDate',
+    'requirementOdometer',
+    'requirementServiceCode',
+    'requirementLaborCode',
+    'requirementWork',
+    'requirementJobDescription',
+    'requirementAwaiting',
+    'requirementEvidenceUnavailable',
   ]),
 );
 

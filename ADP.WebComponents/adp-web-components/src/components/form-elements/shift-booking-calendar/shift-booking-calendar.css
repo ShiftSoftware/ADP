@@ -236,49 +236,7 @@
   transition: visibility 0s linear var(--_settle);
 }
 
-.bc-box[data-view='times'] /* No times at all: the month stays on screen, greyed, and a soft veil over its grid says so; the header keeps working. */
-.bc-empty {
-  position: absolute;
-  inset: var(--_f-top, 52px) 0 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: calc(8px * var(--_sz-space, 1));
-  padding: var(--_gap);
-  border-end-start-radius: var(--_f-radius, 12px);
-  border-end-end-radius: var(--_f-radius, 12px);
-  background: var(--_empty-veil);
-  color: var(--_muted);
-  text-align: center;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity var(--_settle) var(--_ease),
-    visibility 0s linear var(--_settle);
-}
-
-.bc-empty[data-shown] {
-  opacity: 1;
-  visibility: visible;
-  transition:
-    opacity var(--_settle) var(--_ease),
-    visibility 0s;
-}
-
-.bc-empty-art {
-  inline-size: var(--_empty-art);
-  block-size: var(--_empty-art);
-}
-
-.bc-empty-text {
-  color: var(--_ink);
-  font-size: var(--_font-size);
-  font-weight: var(--_back-weight);
-}
-
-.bc-times {
+.bc-box[data-view='times'] .bc-times {
   visibility: visible;
   pointer-events: auto;
   transition: visibility 0s;

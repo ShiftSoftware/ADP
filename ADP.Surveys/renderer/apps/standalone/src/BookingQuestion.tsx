@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import type { LocalizedString } from '@shiftsoftware/survey-sdk';
-import { localize, useSurveyContext, type QuestionProps } from '@shiftsoftware/survey-renderer';
+import type { LocalizedString } from '@shift-software/survey-sdk';
+import { localize, useSurveyContext, type QuestionProps } from '@shift-software/survey-renderer';
 
 export interface BookingTarget {
   calendarApi: string;
@@ -47,12 +47,4 @@ export function bookingQuestion(target: BookingTarget) {
       </div>
     );
   };
-}
-
-declare module 'react' {
-  namespace JSX {
-    interface IntrinsicElements {
-      'shift-booking-calendar': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { 'show-status'?: boolean };
-    }
-  }
 }

@@ -8,7 +8,7 @@
  * API endpoint for partial submissions).
  */
 
-import type { AnswerMap } from '@shiftsoftware/survey-sdk';
+import type { AnswerMap } from '@shift-software/survey-sdk';
 
 /** Minimum of the Storage API the renderer depends on. Makes it trivial to
  *  inject a mock in tests and swap to `sessionStorage` per-deployment. */

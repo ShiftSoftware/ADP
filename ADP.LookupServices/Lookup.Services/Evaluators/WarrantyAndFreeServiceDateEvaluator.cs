@@ -161,7 +161,8 @@ public class WarrantyAndFreeServiceDateEvaluator
         {
             result.WarrantyStartDate = warrantyStartDate;
 
-            if (Options.BrandStandardWarrantyPeriodsInYears.TryGetValue(vehicle.BrandID ?? 0, out var brandStandardWarrantyPeriodsInYears))
+            // Activation and date-shift records may arrive before the vehicle entry.
+            if (Options.BrandStandardWarrantyPeriodsInYears.TryGetValue(vehicle?.BrandID ?? 0, out var brandStandardWarrantyPeriodsInYears))
             {
                 result.WarrantyEndDate = warrantyStartDate?.AddYears(brandStandardWarrantyPeriodsInYears);
             }

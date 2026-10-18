@@ -12,8 +12,9 @@
     recipient goes through, including answer validation and the status flip.
 
     NOT test-only, despite the name. Consuming dashboards show this same dialog to
-    let an agent key in a phoned-in answer on a real customer's behalf (TCA Tickets
-    does it from its follow-up form). Two consequences: the name is kept as-is
+    let an agent enter an answer that a real customer gave by phone, on the
+    customer's behalf. For example, one consumer's ticketing app opens it from its
+    follow-up form. Two consequences: the name is kept as-is
     because renaming it would break those callers, and nothing in here may assume a
     dashboard-test instance — a real instance opened this way personalizes from its
     own event payload exactly as the customer's own link would.

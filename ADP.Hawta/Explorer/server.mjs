@@ -5,19 +5,19 @@ import {join} from 'node:path';
 import {checkEvidence, repositoryRoot} from './evidence.mjs';
 
 const explorerRoot = fileURLToPath(new URL('./', import.meta.url));
+const sharedFiles = new Map(['theme.css', 'engineering.css', 'shell.js', 'overview.js', 'evidence.js'].map(name => ['/shared/' + name, [name, name.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8']]));
+const defaultSharedRoot = fileURLToPath(new URL('../../ADP.Explorer.Shared/', import.meta.url));
 const publicFiles = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/index.html', ['index.html', 'text/html; charset=utf-8']],
-  ['/style.css', ['style.css', 'text/css; charset=utf-8']],
-  ['/animation.js', ['animation.js', 'text/javascript; charset=utf-8']],
+  ['/overview.js', ['overview.js', 'text/javascript; charset=utf-8']],
   ['/mechanisms.js', ['mechanisms.js', 'text/javascript; charset=utf-8']],
   ['/explorer.js', ['explorer.js', 'text/javascript; charset=utf-8']],
-  ['/explorer.css', ['explorer.css', 'text/css; charset=utf-8']],
   ['/evidence.json', ['evidence.json', 'application/json; charset=utf-8']],
   ['/hawta-icon.svg', ['hawta-icon.svg', 'image/svg+xml']],
 ]);
 
-export function createExplorerServer({assetRoot = explorerRoot, sourceRoot = repositoryRoot} = {}) {
+export function createExplorerServer({assetRoot = explorerRoot, sourceRoot = repositoryRoot, sharedRoot = defaultSharedRoot} = {}) {
   return http.createServer(async (request, response) => {
     const send = (status, type, body, headers = {}) => {
       response.writeHead(status, {'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers});
@@ -41,9 +41,10 @@ export function createExplorerServer({assetRoot = explorerRoot, sourceRoot = rep
       } catch { send(503, 'text/plain', 'Evidence check unavailable'); }
       return;
     }
-    const entry = publicFiles.get(url.pathname);
+    const shared = sharedFiles.get(url.pathname);
+    const entry = shared || publicFiles.get(url.pathname);
     if (!entry) { send(404, 'text/plain', 'Not found'); return; }
-    try { send(200, entry[1], await readFile(join(assetRoot, entry[0]))); }
+    try { send(200, entry[1], await readFile(join(shared ? sharedRoot : assetRoot, entry[0]))); }
     catch { send(500, 'text/plain', 'Unable to read Explorer asset'); }
   });
 }

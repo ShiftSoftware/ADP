@@ -382,6 +382,8 @@ public class SharedStepDefinitions
                 ClaimDate = row.ContainsKey("ClaimDate") && !string.IsNullOrWhiteSpace(row["ClaimDate"])
                     ? new DateTimeOffset(DateTime.Parse(row["ClaimDate"]), TimeSpan.Zero) : default,
                 JobNumber = GetOptionalString(row, "JobNumber"),
+                Cost = row.ContainsKey("Cost") && !string.IsNullOrWhiteSpace(row["Cost"])
+                    ? decimal.Parse(row["Cost"], System.Globalization.CultureInfo.InvariantCulture) : 0,
                 InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),
                 CompanyID = GetOptionalLong(row, "CompanyID"),
                 PackageCode = GetOptionalString(row, "PackageCode"),
@@ -413,6 +415,9 @@ public class SharedStepDefinitions
                 InspectionDate = DateTimeOffset.Parse(row["InspectionDate"]),
                 VehicleInspectionTypeID = row.ContainsKey("VehicleInspectionTypeID") && !string.IsNullOrWhiteSpace(row["VehicleInspectionTypeID"])
                     ? long.Parse(row["VehicleInspectionTypeID"]) : 0,
+                VIN = GetOptionalString(row, "VIN")!,
+                CompanyID = GetOptionalLong(row, "CompanyID"),
+                IsDeleted = GetOptionalString(row, "IsDeleted") is { } deleted && bool.Parse(deleted),
             }));
     }
 
@@ -428,6 +433,7 @@ public class SharedStepDefinitions
                 CampaignUniqueReference = GetOptionalString(row, "CampaignUniqueReference"),
                 RecordedDate = DateTimeOffset.Parse(row["RecordedDate"]),
                 CompanyID = GetOptionalLong(row, "CompanyID"),
+                IsDeleted = GetOptionalString(row, "IsDeleted") is { } deleted && bool.Parse(deleted),
             }));
     }
 

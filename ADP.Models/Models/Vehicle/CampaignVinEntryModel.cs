@@ -4,10 +4,12 @@ namespace ShiftSoftware.ADP.Models.Vehicle;
 
 /// <summary>
 /// Represents a per-VIN entry recorded against a service campaign.
-/// Used by campaigns whose <see cref="Enums.ClaimableItemCampaignActivationTrigger"/> is
+/// Provides campaign membership evidence for eligibility conditions. Also used by campaigns whose
+/// <see cref="Enums.ClaimableItemCampaignActivationTrigger"/> is
 /// <see cref="Enums.ClaimableItemCampaignActivationTrigger.ManualVinEntry"/> — an admin tags a VIN
 /// as eligible for a specific campaign (e.g., the 500th customer reward), and the evaluator activates
 /// every <see cref="ServiceItemModel"/> in that campaign for the VIN at <see cref="RecordedDate"/>.
+/// Membership conditions do not replace an item's activation trigger.
 /// </summary>
 [Docable]
 public class CampaignVinEntryModel : IPartitionedItem, ICompanyProps
@@ -31,6 +33,17 @@ public class CampaignVinEntryModel : IPartitionedItem, ICompanyProps
     /// useful for human-readable lookups and auditing.
     /// </summary>
     public string CampaignUniqueReference { get; set; }
+
+    /// <summary>
+    /// Optional menu/package code explicitly assigned to this VIN's activation.
+    /// Overrides the catalog/model-derived display code. When service consumption is
+    /// enabled, a nonblank code also restricts this activation's consumption to that package.
+    /// A blank code preserves the catalog consumption rule.
+    /// </summary>
+    public string PackageCode { get; set; }
+
+    /// <summary>Optional source audit warning when an approved import preserves a noncanonical identifier.</summary>
+    public string SourceIdentifierWarning { get; set; }
 
     /// <summary>
     /// The date this entry was recorded. Used as the activation date for items with

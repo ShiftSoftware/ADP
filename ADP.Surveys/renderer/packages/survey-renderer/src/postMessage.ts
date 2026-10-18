@@ -9,7 +9,7 @@
  *     payload: {...} }
  */
 
-import type { AnswerMap } from '@shiftsoftware/survey-sdk';
+import type { AnswerMap } from '@shift-software/survey-sdk';
 
 export const HOST_MESSAGE_SOURCE = 'adp-surveys';
 export const HOST_MESSAGE_VERSION = 1;

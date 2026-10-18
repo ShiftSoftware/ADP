@@ -93,7 +93,7 @@ describe('shift-input.css error state', () => {
   it('error + focus (and so error + open, which focuses the control) keeps the error border and rings in the error hue', () => {
     const errorFocus = lastRule(':host .in-root[data-invalid] .in-control[data-focused] {');
 
-    expect(errorFocus).toBeGreaterThan(lastRule(":host([data-look='form']) .in-control[data-focused] {"));
+    expect(errorFocus).toBeGreaterThan(lastRule(":host([data-in-form]) .in-control[data-focused] {"));
     expect(errorFocus).toBeGreaterThan(lastRule('\n.in-control[data-focused] {'));
     expect(css.slice(errorFocus, css.indexOf('}', errorFocus))).toMatch(/outline-color: var\(--_danger\);[\s\S]*color-mix\(in srgb, var\(--_danger\) 25%, transparent\)/);
     expect(css).toContain(':host .in-root[data-invalid] .in-control[data-focused] {\n  border-color: var(--_danger);');

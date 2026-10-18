@@ -2,6 +2,7 @@
 
 @inherits ShiftForm<ClaimableItemForm, ClaimableItemDTO>
 @inject IOptions<ClaimableItemsWebOptions> CIOptions
+@inject IStringLocalizer<ClaimableItemsResource> ClaimableItemsLoc
 
 <ShiftEntityForm @bind-Mode="Mode"
                  @bind-Value="TheItem"
@@ -156,6 +157,13 @@
                                        For="() => TheItem.ValidTo" />
             </MudItem>
         }
+        <MudItem Class="pt-2 pb-2" lg="12" md="12" sm="12" xs="12">
+            <MudTextFieldExtended Label="@ClaimableItemsLoc["Eligibility conditions (JSON)"]"
+                                  Lines="8" MaxLines="20" AutoGrow
+                                  For="() => TheItem.EligibilityConditions"
+                                  @bind-Value="TheItem.EligibilityConditions" />
+            <MudText Typo="Typo.caption">@ClaimableItemsLoc["Conditions are AND. Use an anyOf group for alternatives and set whenUnmet on the group. Groups cannot nest. Leave blank or use [] for no extra conditions. Campaign activation and validity still apply."]</MudText>
+        </MudItem>
     </MudGrid>
 
     <MudItem lg="12" md="12" sm="12" xs="12" Class="pt-6">

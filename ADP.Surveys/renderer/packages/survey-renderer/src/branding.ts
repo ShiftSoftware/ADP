@@ -7,7 +7,7 @@
  * agent-assist iframes live inside whatever browser the call-center machine has.
  */
 
-import type { Branding } from '@shiftsoftware/survey-sdk';
+import type { Branding } from '@shift-software/survey-sdk';
 import type { CSSProperties } from 'react';
 
 /** Parse #rgb / #rrggbb / #rrggbbaa into [r,g,b] (alpha ignored). Returns null

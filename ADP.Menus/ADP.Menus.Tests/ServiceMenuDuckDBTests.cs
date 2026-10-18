@@ -380,9 +380,10 @@ public class ServiceMenuDuckDBTests
     // ---- watermarks ----------------------------------------------------------------------------------
 
     /// <summary>
-    /// The incremental contract, tiq-style: the FIRST run of every table is a full pull (no
-    /// watermark), and the next run's pull starts from the DESTINATION's MAX(LastSaveDate) — no
-    /// replication bookkeeping anywhere. An edit stamped later flows through the incremental run.
+    /// The incremental contract, the same idiom the vehicle DuckDB sync uses: the FIRST run of
+    /// every table is a full pull (no watermark), and the next run's pull starts from the
+    /// DESTINATION's MAX(LastSaveDate) — no replication bookkeeping anywhere. An edit stamped
+    /// later flows through the incremental run.
     /// </summary>
     [Fact]
     public async Task ASecondSync_PullsFromTheDestinationWatermark()

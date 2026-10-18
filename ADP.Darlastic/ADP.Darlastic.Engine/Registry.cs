@@ -31,7 +31,9 @@ namespace ShiftSoftware.ADP.Darlastic.Engine;
 ///   - Empty input against a non-empty registry aborts; so does a removal/deactivation wave above
 ///     MassChangeThreshold, unless DARLASTIC_FORCE=1.
 ///   - Resolve runs are serialized via sp_getapplock — concurrent runs would corrupt the
-///     read-compute-write cycle.
+///     read-compute-write cycle. The lock is Session-owned and released explicitly when the resolve
+///     ends, or when a check right after taking it fails (a pooled connection would otherwise carry
+///     the session, and the lock, back into the pool; an undisposed one would keep it for good).
 ///
 /// Storage: SQL Server, schema [Darlastic], created idempotently on first run. Connection via the
 /// DARLASTIC_SQL env var; defaults to localhost\SQLEXPRESS, database Darlastic (created if absent).
@@ -62,6 +64,19 @@ public static class Registry
     internal const string ArtVinLinks = "vinlinks";
     internal const string ArtVinOwner = "vinowner";
     internal const string ArtStamp = "stamp";
+    //   events   — key = goldenId; the golden's timeline events (GoldenEventsPayload). Staged ONLY when
+    //              the host passes event feeds to RunResolve; with none, the family is never read,
+    //              staged or tombstoned. Served from this table (GoldenCustomer/{id}/events) — the
+    //              Cosmos drain skips it (see Projector).
+    internal const string ArtEvents = GoldenEventsPayload.ArtifactType;
+    //   matchconfig — key = "effective"; ONE row: the match configuration the run scored with
+    //              (MatchSettings.ToJson — every switch and list that moves a score, including the
+    //              attested name parts the host computed). Recorded so a surface that re-scores a staged
+    //              pair in another process (the hosted case browser) scores it the way the resolve did.
+    //              Staged only once the configuration is not the engine's defaults (MatchSettings.
+    //              WorthRecording), so a tenant on the defaults gains no row. Hash-guarded like every
+    //              family: the same configuration re-stages nothing. Never drained (see Projector).
+    internal const string ArtMatchConfig = MatchSettings.ArtifactType;
 
     public static string ConnectionString =>
         Environment.GetEnvironmentVariable("DARLASTIC_SQL")
@@ -96,11 +111,25 @@ public static class Registry
     {
         EnsureDatabase();
         var conn = new SqlConnection(ConnectionString);
-        conn.Open();
-        AcquireResolveLock(conn);
-        EnsureSchema(conn);
-        AssertTenant(conn, stampIfMissing: true);
-        return conn;
+        bool locked = false;
+        try
+        {
+            conn.Open();
+            AcquireResolveLock(conn);
+            locked = true;
+            EnsureSchema(conn);
+            AssertTenant(conn, stampIfMissing: true);
+            return conn;
+        }
+        catch
+        {
+            // A check after the lock failed (the schema check, the tenant assert, a command timeout). The caller
+            // never receives this connection, so nothing else would end its session: release the lock and close
+            // it, or every later resolve in this process reads "another resolve is running" until it exits.
+            if (locked) ReleaseResolveLock(conn);
+            conn.Dispose();
+            throw;
+        }
     }
 
     /// <summary>The tenant this process believes it is (DARLASTIC_TENANT; "default" when unset).</summary>
@@ -224,6 +253,34 @@ public static class Registry
         cmd.ExecuteNonQuery();
         if ((int)ret.Value! < 0)
             throw new InvalidOperationException("Another Darlastic resolve is already running (sp_getapplock 'Darlastic.Resolve' denied).");
+    }
+
+    /// <summary>
+    /// Release <see cref="AcquireResolveLock"/>'s lock (best effort, never throws). Closing an unpooled connection
+    /// ends the session and the lock with it, but a POOLED connection goes back to the pool with its session alive,
+    /// and a Session-owned lock would outlive the resolve there. A connection that cannot run the release (broken,
+    /// a reader still open, a transaction pending) is disposed right after by the caller.
+    /// </summary>
+    private static void ReleaseResolveLock(SqlConnection conn)
+    {
+        if (conn.State != System.Data.ConnectionState.Open) return;
+        try
+        {
+            using var cmd = new SqlCommand("sp_releaseapplock", conn) { CommandType = System.Data.CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@Resource", "Darlastic.Resolve");
+            cmd.Parameters.AddWithValue("@LockOwner", "Session");
+            cmd.ExecuteNonQuery();
+        }
+        catch (SqlException) { }
+        catch (InvalidOperationException) { }
+    }
+
+    /// <summary>The resolve lock for the life of one resolve: declared right after its connection, so it is
+    /// released before the connection is disposed (and after every transaction declared later is rolled back or
+    /// committed).</summary>
+    private sealed class HeldResolveLock(SqlConnection conn) : IDisposable
+    {
+        public void Dispose() => ReleaseResolveLock(conn);
     }
 
     private static void EnsureSchema(SqlConnection conn)
@@ -715,6 +772,21 @@ public static class Registry
         public Dictionary<string, int> PendingByType = new(StringComparer.Ordinal);
         public List<string> AbsentSources = [];
 
+        /// <summary>Golden-event attachment, when the run was given event feeds; null otherwise.</summary>
+        public EventAttachResult? Events;
+        /// <summary>Profile-linked events whose profile was not in this run's input and attached through
+        /// the registry's last assignment (frozen absent source, or a record the identity feed skipped).</summary>
+        public int EventsViaPriorAssignment;
+        /// <summary>Largest number of events staged on one golden (payload-size watch).</summary>
+        public int MaxEventsPerGolden;
+
+        /// <summary>The match configuration this run scored with, as recorded (see
+        /// <see cref="MatchSettings"/>); null when the registry does not record one (a tenant that has
+        /// only ever resolved on the engine defaults).</summary>
+        public MatchSettings? MatchSettings;
+        /// <summary>Content hash of the recorded configuration; null when none is recorded.</summary>
+        public string? MatchSettingsHash;
+
         /// <summary>The D3 acceptance: unchanged sources must produce zero deltas of EVERY kind —
         /// not just zero pending artifacts (a silent mass-rehash must fail the banner too).</summary>
         public bool IsZeroDelta =>
@@ -729,12 +801,34 @@ public static class Registry
             $"artifacts pending {ArtifactsPending:N0}" +
             (PendingByType.Count > 0 ? " (" + string.Join(" / ", PendingByType.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => $"{kv.Key} {kv.Value:N0}")) + ")" : "") +
             $"; steward queue {StewardQueued:N0}" +
-            (AbsentSources.Count > 0 ? $"; ABSENT sources frozen: {string.Join(", ", AbsentSources)}" : "");
+            (MatchSettingsHash is not null ? $"; match configuration {MatchSettingsHash[..12]}" : "") +
+            (AbsentSources.Count > 0 ? $"; ABSENT sources frozen: {string.Join(", ", AbsentSources)}" : "") +
+            (Events is not null
+                ? $"\n  {Events.Describe()}" +
+                  (EventsViaPriorAssignment > 0 ? $"\n    profile-linked via the registry's last assignment (profile not in this run's input): {EventsViaPriorAssignment:N0}" : "") +
+                  $"\n    largest timeline: {MaxEventsPerGolden:N0} events on one golden"
+                : "");
     }
 
-    public static RunMetrics RunResolve(IReadOnlyList<RealRecord> records, Merge.Result merge)
+    /// <summary>Resolve without golden events — exactly the behaviour before event feeds existed.</summary>
+    public static RunMetrics RunResolve(IReadOnlyList<RealRecord> records, Merge.Result merge) =>
+        RunResolve(records, merge, events: null);
+
+    /// <summary>
+    /// The batch resolve. When <paramref name="events"/> is non-null the run also attaches them to
+    /// goldens (<see cref="GoldenEventAttach"/>) and stages one <c>events</c> artifact per golden that
+    /// has any, hash-guarded like every other family; prior <c>events</c> artifacts that no longer
+    /// receive an event are tombstoned. Null skips the family entirely — no read, no stage, no
+    /// tombstone — so a tenant without event sources is unchanged by construction.
+    /// <paramref name="names"/> says how each golden's name is shown (<see cref="GoldenNameOptions"/>; null =
+    /// the defaults, the title-cased match form). It moves what the name-bearing artifacts carry
+    /// (<c>golden</c>, <c>vinlinks</c>, <c>vinowner</c>, the identity summaries), never a cluster.
+    /// </summary>
+    public static RunMetrics RunResolve(IReadOnlyList<RealRecord> records, Merge.Result merge,
+        IReadOnlyList<SourceEvent>? events, EventAttachOptions? eventOptions = null, GoldenNameOptions? names = null)
     {
         using var conn = Open();
+        using var resolveLock = new HeldResolveLock(conn);
         var m = new RunMetrics { Records = records.Count };
 
         // ---- prior state (reads are safe: resolve runs are serialized by the applock)
@@ -888,6 +982,8 @@ public static class Registry
             [ArtGolden] = new(StringComparer.Ordinal), [ArtVinLinks] = new(StringComparer.Ordinal),
             [ArtVinOwner] = new(StringComparer.Ordinal), [ArtStamp] = new(StringComparer.Ordinal),
         };
+        if (events is not null) priorArtifacts[ArtEvents] = new(StringComparer.Ordinal);   // read only when this run stages events
+        priorArtifacts[ArtMatchConfig] = new(StringComparer.Ordinal);                        // one row at most
         using (var cmd = new SqlCommand("SELECT ArtifactType, ArtifactKey, ContentHash, CASE WHEN Payload IS NULL THEN 0 ELSE 1 END FROM Darlastic.ProjectionState", conn))
         using (var r = cmd.ExecuteReader())
             while (r.Read())
@@ -919,17 +1015,21 @@ public static class Registry
             (edgesByRoot.TryGetValue(r, out var l) ? l : edgesByRoot[r] = []).Add(e);
         }
         var summaryRows = new List<(long Id, int Members, int Sources, string Name, long Cats)>();
+        // Per-golden evidence (the walk collected reasons per record): summarise EVERY identity, so a
+        // surface can list one row per golden customer. Without it, only the multi-record ones.
+        long[]? recordReasons = merge.RecordReasons;
 
         foreach (var root in orderedRoots)
         {
             long id = finalId[root];
             var members = clusters[root].Select(i => records[i]).ToList();
-            var survived = Merge.SurviveGolden(members);
+            var survived = Merge.SurviveGolden(members, nameOptions: names);
             goldenName[id] = survived.FirstOrDefault(g => g.AttrType == "full_name")?.Value ?? "";
             Stage(ArtGolden, id.ToString(CultureInfo.InvariantCulture), GoldenCanonical(id, survived, Key, clusters[root]));
 
-            // Multi-record identities only: a single-record identity has nothing to explain.
-            if (members.Count > 1)
+            // Multi-record identities only, unless per-golden evidence was asked for: a single-record
+            // identity has no assembly story, but it still has a row in a customer list.
+            if (members.Count > 1 || recordReasons is not null)
             {
                 var cc = ClusterCat.None;
                 if (survived.Any(g => g.AttrType == "full_name" && g.WonBy == "longest-chain")) cc |= ClusterCat.LongestChain;
@@ -949,7 +1049,15 @@ public static class Registry
                         cc |= ClusterCat.VinDecisive;
                 }
 
-                summaryRows.Add((id, members.Count, srcCount, goldenName[id], (long)cc));
+                long staged = (long)cc;
+                if (recordReasons is not null)
+                {
+                    var reasons = GoldenReasons.FromClusterCats(cc);
+                    foreach (var idx in clusters[root]) reasons |= (GoldenReason)recordReasons[idx];
+                    if (members.Count == 1) reasons |= GoldenReason.SingleRecord;
+                    staged = GoldenReasons.Pack(cc, reasons);
+                }
+                summaryRows.Add((id, members.Count, srcCount, goldenName[id], staged));
             }
 
             string gid = id.ToString(CultureInfo.InvariantCulture);
@@ -993,16 +1101,19 @@ public static class Registry
         // Pass 2: the per-VIN ownership timeline (P7). Only sale-grade evidence opens an ownership
         // period; a later sale to a DIFFERENT golden closes the previous owner's period (transfer).
         // Service-only evidence is a "service-contact" observation window, never an ownership claim.
+        // The owner periods come from OwnershipTimeline; a tenant that leaves ambiguous owners'
+        // events unattached also has tied owners SHARE a period there (see
+        // EventAttachOptions.AmbiguousOwnersUnattached), so the vehicle card and the timeline agree.
         var byVin = new Dictionary<string, List<(long Id, VinEvidence E)>>(StringComparer.Ordinal);
         foreach (var kv in vinAgg)
             (byVin.TryGetValue(kv.Key.Vin, out var l) ? l : byVin[kv.Key.Vin] = []).Add((kv.Key.IdentityId, kv.Value));
+        bool tiedOwnersShare = eventOptions?.AmbiguousOwnersUnattached == true;
         var linkPeriod = new Dictionary<(long, string), (DateOnly? From, DateOnly? To, string Role)>();
         foreach (var (vin, entries) in byVin)
         {
-            var owners = entries.Where(x => x.E.Sales > 0)
-                .OrderBy(x => x.E.FirstSale ?? DateOnly.MinValue).ThenBy(x => x.Id).ToList();
-            for (int i = 0; i < owners.Count; i++)
-                linkPeriod[(owners[i].Id, vin)] = (owners[i].E.FirstSale, i + 1 < owners.Count ? owners[i + 1].E.FirstSale : null, "owner");
+            var owners = entries.Where(x => x.E.Sales > 0).Select(x => (x.Id, x.E.FirstSale));
+            foreach (var (ownerId, from, to) in OwnershipTimeline.OwnerPeriods(owners, tiedOwnersShare))
+                linkPeriod[(ownerId, vin)] = (from, to, "owner");
             foreach (var x in entries.Where(x => x.E.Sales == 0))
                 linkPeriod[(x.Id, vin)] = (x.E.FirstService, x.E.LastService, "service-contact");
         }
@@ -1043,6 +1154,67 @@ public static class Registry
             }
             sb.Append("]}");
             Stage(ArtVinOwner, vin, sb.ToString());
+        }
+
+        // Pass 4 (only when the host supplied event feeds): golden timeline events. Profile-linked
+        // events follow their profile — this run's cluster when the profile is in the input, else the
+        // registry's last assignment chased through prior AND this run's redirects (the same hop the
+        // stamp family takes), so a frozen absent source keeps its customers' events attached.
+        // VIN-only events read the ownership timeline computed in pass 2 — the very periods the
+        // vinlinks/vinowner artifacts carry, so the timeline and the vehicle card always agree.
+        var liveEventKeys = new HashSet<string>(StringComparer.Ordinal);
+        if (events is not null)
+        {
+            var currentAssignment = new Dictionary<string, long>(records.Count, StringComparer.Ordinal);
+            foreach (var root in orderedRoots)
+                foreach (var idx in clusters[root])
+                    currentAssignment[Key(idx)] = finalId[root];
+            int viaPrior = 0;
+            long? ProfileGolden(string src, string recId)
+            {
+                string k = src + "|" + recId;
+                if (currentAssignment.TryGetValue(k, out var cur)) return cur;
+                if (!priorProfile.TryGetValue(k, out var p)) return null;
+                long live = Chase(p.IdentityId);
+                if (newRedirect.TryGetValue(live, out var moved)) live = moved;
+                viaPrior++;
+                return live;
+            }
+
+            var periodsByVin = new Dictionary<string, List<VinPeriod>>(StringComparer.Ordinal);
+            foreach (var ((gid, vin), (from, to, role)) in linkPeriod)
+                (periodsByVin.TryGetValue(vin, out var l) ? l : periodsByVin[vin] = []).Add(new VinPeriod(gid, role, from, to));
+            var vinPeriods = periodsByVin.ToDictionary(kv => kv.Key, kv => (IReadOnlyList<VinPeriod>)kv.Value, StringComparer.Ordinal);
+
+            var attached = GoldenEventAttach.Attach(events, ProfileGolden, vinPeriods, eventOptions);
+            foreach (var (gid, list) in attached.ByGolden)
+            {
+                string key = gid.ToString(CultureInfo.InvariantCulture);
+                liveEventKeys.Add(key);
+                Stage(ArtEvents, key, GoldenEventsPayload.Write(gid, list));
+                if (list.Count > m.MaxEventsPerGolden) m.MaxEventsPerGolden = list.Count;
+            }
+            // Full-state, like the ownership families: a golden that no longer receives any event
+            // (merged away, or its events moved) gets its artifact deleted downstream.
+            foreach (var (key, prev) in priorArtifacts[ArtEvents])
+                if (prev.Hash != Tombstone && !liveEventKeys.Contains(key)) artifactRows.Add((ArtEvents, key, Tombstone, null));
+            m.Events = attached;
+            m.EventsViaPriorAssignment = viaPrior;
+        }
+
+        // Pass 5: the match configuration the pair walk scored with — what a surface that re-scores one of
+        // this run's pairs must apply to reach the same decision. Recorded once it is not the engine's
+        // defaults; after that it follows the tenant, back to the defaults included. A host on the
+        // defaults stages nothing here, so its runs are exactly what they were.
+        var settings = merge.Settings ?? MatchSettings.Current;
+        bool recorded = priorArtifacts[ArtMatchConfig].TryGetValue(MatchSettings.ArtifactKey, out var priorConfig)
+                        && priorConfig.Hash != Tombstone;
+        if (settings.WorthRecording(recorded))
+        {
+            string canonical = settings.ToJson();
+            Stage(ArtMatchConfig, MatchSettings.ArtifactKey, canonical);
+            m.MatchSettings = settings;
+            m.MatchSettingsHash = Sha(canonical);
         }
 
         // golden tombstones: ONLY identities redirected away this run — the surviving identity's
@@ -1105,6 +1277,19 @@ public static class Registry
                 $"of the projected ownership corpus (threshold {MassChangeThreshold:P0}). This is the signature of a missing/empty " +
                 "VIN-evidence input (the customer files alone look healthy). If the change is genuine, set DARLASTIC_FORCE=1.");
 
+        // ---- guard: same signature for timelines — an event feed that silently read nothing (or a
+        // publish missing a table) would otherwise wipe every customer's timeline in one run.
+        if (events is not null && !Forced)
+        {
+            int priorEvents = priorArtifacts[ArtEvents].Count(kv => kv.Value.Hash != Tombstone);
+            int eventTombstones = artifactRows.Count(r => r.Type == ArtEvents && r.Hash == Tombstone);
+            if (priorEvents > 0 && (double)eventTombstones / priorEvents > MassChangeThreshold)
+                throw new InvalidOperationException(
+                    $"Refusing to resolve: {eventTombstones:N0} timeline tombstones = {(double)eventTombstones / priorEvents:P1} " +
+                    $"of the staged event artifacts (threshold {MassChangeThreshold:P0}). This is the signature of an empty or " +
+                    "partial event source. If the change is genuine, set DARLASTIC_FORCE=1.");
+        }
+
         // ---- write everything (set-based, deltas only)
         m.RunId = Convert.ToInt32(Scalar(conn,
             "INSERT INTO Darlastic.ResolveRun (StartedUtc) OUTPUT INSERTED.RunID VALUES (SYSUTCDATETIME())"));
@@ -1112,7 +1297,7 @@ public static class Registry
         WriteIdentities(conn, tx, newIdentities, redirects, deactivated, reactivated, m.RunId);
         WriteProfiles(conn, tx, profileRows, removedKeys, m.RunId);
         WriteArtifacts(conn, tx, artifactRows, m.RunId);
-        WriteStewardQueue(conn, tx, records, merge.StewardPairs, merge.Catalog, m.RunId);
+        WriteStewardQueue(conn, tx, records, merge.StewardPairs, merge.Catalog, m.RunId, allRecords: recordReasons is not null);
         m.StewardQueued = merge.StewardPairs.Count;
         // Case evidence rides in the same transaction as the queue: both are derived state from the
         // same walk, and a run that committed one without the other would leave a surface showing
@@ -1359,18 +1544,22 @@ public static class Registry
     /// live trace recompute, instead of re-scoring the whole corpus in memory at startup (the
     /// case browser's minutes/GBs dev-loop shape). Replaced wholesale every run — the queue is a
     /// function of the run, not a delta-disciplined source artifact; IsZeroDelta ignores it.
+    ///
+    /// <para><paramref name="allRecords"/> (per-golden evidence) stages every record, so a surface
+    /// can show all the members of any golden customer, not only those that appear in a queued or
+    /// catalogued pair.</para>
     /// </summary>
     private static void WriteStewardQueue(SqlConnection conn, SqlTransaction tx,
         IReadOnlyList<RealRecord> records, List<(int A, int B, float Score)> pairs,
-        List<Merge.CatalogEntry> catalog, int runId)
+        List<Merge.CatalogEntry> catalog, int runId, bool allRecords = false)
     {
         Exec(conn, tx, "DELETE FROM Darlastic.StewardQueue; DELETE FROM Darlastic.StewardRecord");
-        if (pairs.Count == 0 && catalog.Count == 0) return;
+        if (pairs.Count == 0 && catalog.Count == 0 && !allRecords) return;
 
         // StewardRecord backs BOTH the queue and the catalog: a catalogued case is unreadable
         // without its two records, and re-reading the sources to render one is exactly the cost
         // this staging exists to avoid.
-        var recIdxs = new HashSet<int>();
+        var recIdxs = allRecords ? new HashSet<int>(Enumerable.Range(0, records.Count)) : new HashSet<int>();
         foreach (var p in pairs) { recIdxs.Add(p.A); recIdxs.Add(p.B); }
         foreach (var c in catalog) { recIdxs.Add(c.A); recIdxs.Add(c.B); }
 
@@ -1411,7 +1600,9 @@ public static class Registry
     /// </summary>
     /// <summary>
     /// Persist the per-identity browsing summary. Multi-record identities only — at production scale that
-    /// is ~249K rows out of 919K identities, and the 670K single-record ones have nothing to say.
+    /// is ~249K rows out of 919K identities, and the 670K single-record ones have nothing to say —
+    /// unless the run collected per-golden evidence, in which case every identity has a row and
+    /// <c>Categories</c> carries its <see cref="GoldenReason"/>s in the high 32 bits.
     /// </summary>
     private static void WriteIdentitySummaries(SqlConnection conn, SqlTransaction tx,
         List<(long Id, int Members, int Sources, string Name, long Cats)> rows, int runId)

@@ -154,6 +154,20 @@ public class TriggerSchedulerService
             return;
         }
 
+        // The instance was created in time but has waited past the trigger's deadline — delivery
+        // was paused, the channel kept failing, or a reminder falls after it. A survey about an
+        // event this old is not worth sending, so stop the schedule; an instance never sent is
+        // over, the rest are left to the expiry sweep.
+        if (TriggerDeadline.IsPast(LookupTrigger(instance)?.Deadline, instance.MetaDataJson, now))
+        {
+            AppendDeliveryLog(instance, attempt: 0, status: "past-deadline");
+            instance.NextSendAt = null;
+            if (instance.Status == SurveyInstanceStatus.Pending)
+                instance.Status = SurveyInstanceStatus.Expired;
+            await db.SaveChangesAsync(ct);
+            return;
+        }
+
         var attemptNumber = ComputeAttemptNumber(instance);
         var url = PublicSurveyUrl.Compose(options.PublicSurveyUrlTemplate, instance.PublicID)!;
 

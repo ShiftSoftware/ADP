@@ -13,9 +13,9 @@ namespace ShiftSoftware.ADP.WarrantyClaims.Data.Tests;
 ///
 /// <para>
 /// <b>What this protects.</b> <c>DealerFinancialListDTO</c> is declared
-/// <c>: DistributorFinancialListDTO { }</c> - an empty subclass that adds and removes nothing. Five
-/// distributor-side figures are withheld from the dealer audience purely by the mapper, and the
-/// entity carries a real value for every one of them. If those five stop being withheld, the
+/// <c>: DistributorFinancialListDTO { }</c> - an empty subclass that adds and removes nothing. Six
+/// distributor-side figures (and the margin computed from them) are withheld from the dealer audience purely by the mapper, and the
+/// entity carries a real value for every one of them. If those six stop being withheld, the
 /// endpoint still returns <b>200</b>, the response shape is <b>unchanged</b>, and <b>no compiler
 /// diagnostic fires</b> - the only symptom is that dealers begin receiving the distributor's margin
 /// figures. That is a data-exposure regression with no natural alarm, which is why it gets a
@@ -23,19 +23,20 @@ namespace ShiftSoftware.ADP.WarrantyClaims.Data.Tests;
 /// </para>
 ///
 /// <para>
-/// <b>Why it diffs the two projections instead of listing five names.</b> A test that only asserts
-/// "these five are null" passes just as happily if the dealer map silently stops mapping something
+/// <b>Why it diffs the two projections instead of listing six names.</b> A test that only asserts
+/// "these six are null" passes just as happily if the dealer map silently stops mapping something
 /// else - blanking too much is as wrong as blanking too little. Projecting the SAME entity through
 /// BOTH mappers and diffing every property asserts the stronger and actually-intended property: the
-/// dealer list differs from the distributor list by <b>exactly</b> those five members and nothing
+/// dealer list differs from the distributor list by <b>exactly</b> those members and nothing
 /// else. A member added to either map in future is covered the moment it is declared.
 /// </para>
 /// </summary>
 public class DealerFinancialExposureTests
 {
     /// <summary>
-    /// The complete set of members withheld from dealers, transcribed from the five
-    /// <c>.ForMember(..., x =&gt; x.Ignore())</c> calls on the pre-migration dealer map.
+    /// The complete set of members withheld from dealers: the six <c>.ForMember(..., x =&gt; x.Ignore())</c>
+    /// calls of the original host's dealer map (the extraction carried five; TotalClaimAmountDistributor was
+    /// restored later), plus DistributorMargin, which is computed from TotalClaimAmountDistributor.
     /// </summary>
     private static readonly string[] WithheldFromDealer =
     {
@@ -44,6 +45,8 @@ public class DealerFinancialExposureTests
         "LaborTotalAmountDistributor",
         "SubletTotalAmountDistributor",
         "PartsTotalAmountDistributor",
+        "TotalClaimAmountDistributor",
+        "DistributorMargin",
     };
 
     /// <summary>
@@ -66,12 +69,17 @@ public class DealerFinancialExposureTests
         VIN_CD = "C",
         VIN_VIS = "D",
 
-        // ---- the five that must NOT reach a dealer ----
+        // ---- the six that must NOT reach a dealer (DistributorMargin is computed from the last one) ----
         DistComment1 = "MUST-NOT-LEAK",
         HourTotalDistributor = 11.11m,
         LaborTotalAmountDistributor = 2222.22m,
         SubletTotalAmountDistributor = 3333.33m,
         PartsTotalAmountDistributor = 4444.44m,
+        TotalClaimAmountDistributor = 5555.55m,
+
+        // Shared: the dealer's own total. With it set, the distributor list's margin has a value, so a dealer
+        // margin that is not null is observable.
+        TotalClaimAmount = 1000m,
 
         // ---- shared members, mapped on BOTH maps ----
         ProcessDate = new DateTime(2024, 3, 4, 5, 6, 7, DateTimeKind.Unspecified),
@@ -90,7 +98,7 @@ public class DealerFinancialExposureTests
     };
 
     [Fact]
-    public void The_five_distributor_figures_are_withheld_from_the_dealer_list()
+    public void The_distributor_figures_are_withheld_from_the_dealer_list()
     {
         var dealer = ProjectOne<DealerFinancialListDTO>(SeedClaim());
 
@@ -123,7 +131,7 @@ public class DealerFinancialExposureTests
     }
 
     [Fact]
-    public void Dealer_and_distributor_lists_differ_by_exactly_those_five_members()
+    public void Dealer_and_distributor_lists_differ_by_exactly_the_withheld_members()
     {
         var dealer = ProjectOne<DealerFinancialListDTO>(SeedClaim());
         var distributor = ProjectOne<DistributorFinancialListDTO>(SeedClaim());

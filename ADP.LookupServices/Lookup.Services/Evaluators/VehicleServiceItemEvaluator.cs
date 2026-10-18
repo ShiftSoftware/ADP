@@ -19,6 +19,8 @@ public partial class VehicleServiceItemEvaluator
     private readonly IVehicleLookupStorageService lookupCosmosService;
     private readonly LookupOptions options;
     private readonly IServiceProvider services;
+    private IReadOnlyCollection<string> classificationCodes;
+    private bool? isAuthorized;
 
     /// <summary>
     /// Optional diagnostic trace collector. Defaults to <see cref="ServiceItemTraceCollector.Disabled"/>
@@ -62,10 +64,16 @@ public partial class VehicleServiceItemEvaluator
         VehicleOwnership ownership,
         DateTime? freeServiceStartDate,
         string languageCode,
-        VehicleBrokerSaleInformation brokerSaleInformation = null)
+        VehicleBrokerSaleInformation brokerSaleInformation = null,
+        IReadOnlyCollection<string> classificationCodes = null,
+        IReadOnlyList<ServiceItemModel> serviceItemCatalog = null,
+        bool? isAuthorized = null)
     {
+        // Resolved once upstream; this evaluator never re-reads history or invokes the host classifier.
+        this.classificationCodes = classificationCodes;
+        this.isAuthorized = isAuthorized;
         var requestedStartDate = freeServiceStartDate;
-        var serviceItems = (await LoadServiceItemCatalog()).ToList();
+        var serviceItems = (serviceItemCatalog ?? await LoadServiceItemCatalog()).ToList();
         (freeServiceStartDate, var showingInactivatedItems) = ResolveActivationMode(vehicle, freeServiceStartDate);
 
         // De facto date (earliest non-deleted ItemClaim.ClaimDate) — same computation
@@ -90,11 +98,11 @@ public partial class VehicleServiceItemEvaluator
         long? baseScheduleMaximumMileage;
 
         using (Trace.Stage("BaseScheduleCap"))        baseScheduleMaximumMileage = DeriveBaseScheduleMaximumMileage(serviceItems, vehicle, ownership, freeServiceStartDate);
-        using (Trace.Stage("Eligibility"))            result.AddRange(BuildEligibleFreeItems(serviceItems, vehicle, ownership, freeServiceStartDate, languageCode, baseScheduleMaximumMileage));
+        using (Trace.Stage("Eligibility"))            result.AddRange(BuildEligibleFreeItems(serviceItems, vehicle, ownership, freeServiceStartDate, languageCode, baseScheduleMaximumMileage, !showingInactivatedItems));
         using (Trace.Stage("PaidItems"))              result.AddRange(BuildPaidItems(languageCode));
         using (Trace.Stage("WarrantyRollingExpiry"))  ApplyWarrantyRollingExpiry(result, freeServiceStartDate);
         using (Trace.Stage("InspectionExpansion"))    ApplyVehicleInspectionExpansion(result);
-        using (Trace.Stage("ManualVinExpansion"))     ApplyManualVinEntryExpansion(result);
+        using (Trace.Stage("ManualVinExpansion"))     ApplyManualVinEntryExpansion(result, serviceItems, vehicle);
         using (Trace.Stage("ValidityOverrides"))      ApplyValidityOverrides(result, vehicle);
 
         bool activationRequired;
@@ -152,17 +160,19 @@ public partial class VehicleServiceItemEvaluator
         VehicleOwnership ownership,
         DateTime? freeServiceStartDate,
         string languageCode,
-        long? baseScheduleMaximumMileage)
+        long? baseScheduleMaximumMileage,
+        bool hasCalculatedStart)
     {
-        var eligible = FilterEligibleServiceItems(serviceItems, vehicle, ownership, freeServiceStartDate, baseScheduleMaximumMileage)
+        var eligible = FilterEligibleServiceItems(serviceItems, vehicle, ownership, freeServiceStartDate, baseScheduleMaximumMileage, hasCalculatedStart)
             .OrderByDescending(x => x.Item.MaximumMileage.HasValue)
             .ThenBy(x => x.Item.MaximumMileage);
 
         foreach (var (item, outcome) in eligible)
         {
-            var modelCost = GetModelCost(item.ModelCosts, vehicle?.Katashiki, vehicle?.VariantCode);
+            var modelCost = UsesEntryMenu(item) ? null : GetModelCost(item.ModelCosts, vehicle?.Katashiki, vehicle?.VariantCode);
             var dto = BuildFreeServiceItemDto(item, vehicle, languageCode, modelCost);
             dto.Lock = outcome?.ToLockDTO();
+            dto.Prerequisites = outcome?.Prerequisites.Count > 0 ? outcome.Prerequisites.ToList() : null;
             dto.UnlockedOn = outcome?.UnlockedOn;
             Trace.RecordFreeBuild(item, dto, modelCost, languageCode);
             yield return dto;
@@ -298,7 +308,7 @@ public partial class VehicleServiceItemEvaluator
     /// against <c>CampaignVinEntries</c> — manual-VIN-entry items don't carry an inspection
     /// type, the entry itself targets a campaign.
     /// </summary>
-    private void ApplyManualVinEntryExpansion(List<VehicleServiceItemDTO> result)
+    private void ApplyManualVinEntryExpansion(List<VehicleServiceItemDTO> result, List<ServiceItemModel> catalog, VehicleEntryModel vehicle)
     {
         var manualVinItems = result
             .Where(x => x.TypeEnum == VehcileServiceItemTypes.Free
@@ -315,7 +325,11 @@ public partial class VehicleServiceItemEvaluator
                 .ToList();
             var (selected, fallbackNote) = SelectCampaignVinEntriesForActivation(item.CampaignActivationType, matching);
 
-            var clones = selected.Select(entry => CloneWithCampaignVinEntryActivation(item, entry)).ToList();
+            var definition = catalog.First(x => x.IntegrationID == item.ServiceItemID);
+            var modelApplicable = IsApplicableToVehicleByModel(definition, vehicle);
+            var clones = selected
+                .Where(entry => modelApplicable || CanOverrideModelApplicability(definition, entry))
+                .Select(entry => CloneWithCampaignVinEntryActivation(item, entry, UsesEntryMenu(definition))).ToList();
             newItems.AddRange(clones);
             Trace.RecordManualVinEntryExpansion(item, matching.Count, selected, clones, fallbackNote);
         }
@@ -519,6 +533,12 @@ public partial class VehicleServiceItemEvaluator
     /// </summary>
     private static string ApplyClaimability(VehicleServiceItemDTO item, DateTime nowUtc)
     {
+        if (item.ServiceConsumption is not null)
+        {
+            item.Claimable = false;
+            return "Service-history consumption is display-only; no claim interaction.";
+        }
+
         // Checked before status, and unconditionally: an item on screen to explain itself must never
         // be claimable, whatever status it would otherwise carry. Claimable is part of the signed
         // payload, so this is also what the claim endpoint enforces against.
@@ -614,6 +634,12 @@ public partial class VehicleServiceItemEvaluator
         foreach (var item in matched)
         {
             var claimLine = companyDataAggregate.ItemClaims?.FirstOrDefault(t => t.ServiceItemID == item.IntegrationID);
+            // A historical claim remains visible even if a static filter now hides the definition.
+            // Read only its locking milestone clauses for explanatory evidence, never to re-decide
+            // the claim or to manufacture a completion from the claim date.
+            var requirements = new VehicleEligibilityConditionEvaluator(companyDataAggregate, options, classificationCodes: classificationCodes, isAuthorized: isAuthorized)
+                .Evaluate(item.EligibilityConditions?.Where(condition => condition?.WhenUnmet == EligibilityConditionUnmetBehavior.Lock))
+                .Prerequisites;
             var dto = new VehicleServiceItemDTO
             {
                 ServiceItemID = item.IntegrationID,
@@ -630,6 +656,7 @@ public partial class VehicleServiceItemEvaluator
                 InvoiceNumber = claimLine?.InvoiceNumber,
                 JobNumber = claimLine?.JobNumber,
                 MaximumMileage = item.MaximumMileage,
+                Prerequisites = requirements.Count > 0 ? requirements.ToList() : null,
             };
 
             if (claimLine.CompanyID is { } companyId && companyId != 0 && options.CompanyNameResolver is not null)
@@ -660,7 +687,7 @@ public partial class VehicleServiceItemEvaluator
     private void ApplyDynamicCancellation(IEnumerable<VehicleServiceItemDTO> serviceItems)
     {
         var freeItems = serviceItems
-            .Where(x => x.TypeEnum == VehcileServiceItemTypes.Free && x.MaximumMileage.HasValue)
+            .Where(x => x.TypeEnum == VehcileServiceItemTypes.Free && x.MaximumMileage.HasValue && x.ServiceConsumption is null)
             .OrderBy(x => x.MaximumMileage)
             .ToList();
 
@@ -867,7 +894,8 @@ public partial class VehicleServiceItemEvaluator
         VehicleEntryModel vehicle,
         VehicleOwnership ownership,
         DateTime? freeServiceStartDate,
-        long? baseScheduleMaximumMileage)
+        long? baseScheduleMaximumMileage,
+        bool hasCalculatedStart)
     {
         var staticStage = EvaluateStaticItemEligibility(item, vehicle, ownership, freeServiceStartDate);
         if (staticStage != EligibilityRejectionStage.None)
@@ -876,8 +904,13 @@ public partial class VehicleServiceItemEvaluator
         // The static filters answer with facts about the vehicle — its brand, its market, its owner —
         // and an item failing one of those was never this customer's to see. Only the custom
         // conditions can produce something worth showing unclaimable.
-        var outcome = new VehicleEligibilityConditionEvaluator(companyDataAggregate, options, Trace.IsEnabled)
-            .Evaluate(item.EligibilityConditions, baseScheduleMaximumMileage);
+        var evaluator = new VehicleEligibilityConditionEvaluator(companyDataAggregate, options, Trace.IsEnabled, classificationCodes, isAuthorized);
+        var outcome = evaluator.EvaluateTolerance(item, baseScheduleMaximumMileage, hasCalculatedStart ? freeServiceStartDate : null,
+            options.ServiceRewardTolerance, out var toleranceDiagnostic);
+        if (toleranceDiagnostic is not null)
+            Trace.Note($"Item {item.IntegrationID}: {toleranceDiagnostic}" +
+                (outcome is null ? " Strict catalog evaluation retained." : ""));
+        outcome ??= evaluator.Evaluate(item.EligibilityConditions, baseScheduleMaximumMileage);
 
         var stage = outcome.State switch
         {
@@ -943,7 +976,22 @@ public partial class VehicleServiceItemEvaluator
     /// item's model costs. The all-vehicles rule is gated to skip warranty-activated items
     /// when no vehicle is loaded.
     /// </summary>
-    private static bool IsApplicableToVehicle(ServiceItemModel item, VehicleEntryModel vehicle)
+    private bool IsApplicableToVehicle(ServiceItemModel item, VehicleEntryModel vehicle) =>
+        IsApplicableToVehicleByModel(item, vehicle) ||
+        (companyDataAggregate.CampaignVinEntries?.Any(entry => CanOverrideModelApplicability(item, entry)) ?? false);
+
+    private static bool UsesEntryMenu(ServiceItemModel item) =>
+        item.UseCampaignVinEntryPackageCode && item.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.ManualVinEntry;
+
+    // Opted-in entry menus (even blank), or an explicit nonblank per-VIN menu, bypass
+    // model-cost applicability. Other static/custom filters still apply.
+    private bool CanOverrideModelApplicability(ServiceItemModel item, CampaignVinEntryModel entry) =>
+        item.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.ManualVinEntry &&
+        entry is not null && !entry.IsDeleted && entry.VIN == companyDataAggregate.VIN &&
+        entry.CampaignID == item.CampaignID && (UsesEntryMenu(item) || !string.IsNullOrWhiteSpace(entry.PackageCode)) &&
+        entry.RecordedDate >= item.CampaignStartDate && entry.RecordedDate <= item.CampaignEndDate;
+
+    private static bool IsApplicableToVehicleByModel(ServiceItemModel item, VehicleEntryModel vehicle)
     {
         if (HasMatchingModelCost(item, vehicle)) return true;
 
@@ -980,14 +1028,15 @@ public partial class VehicleServiceItemEvaluator
         VehicleEntryModel vehicle,
         VehicleOwnership ownership,
         DateTime? freeServiceStartDate,
-        long? baseScheduleMaximumMileage)
+        long? baseScheduleMaximumMileage,
+        bool hasCalculatedStart)
     {
         Trace.RecordEligibilityInputCount(serviceItems?.Count() ?? 0);
         Trace.RecordMilestoneReader(options?.ServiceMilestones?.GetResolver());
 
         foreach (var item in serviceItems ?? Enumerable.Empty<ServiceItemModel>())
         {
-            var (stage, outcome) = EvaluateItemEligibility(item, vehicle, ownership, freeServiceStartDate, baseScheduleMaximumMileage);
+            var (stage, outcome) = EvaluateItemEligibility(item, vehicle, ownership, freeServiceStartDate, baseScheduleMaximumMileage, hasCalculatedStart);
             Trace.RecordEligibilityDecision(item, stage, vehicle, ownership, outcome?.Prerequisites, outcome?.MilestoneNearMisses, outcome?.UnlockedOn);
 
             // Locked and missed items pass this point carrying their reason. Everything else that
@@ -1011,6 +1060,7 @@ public partial class VehicleServiceItemEvaluator
         var dto = new VehicleServiceItemDTO
         {
             ServiceItemID = item.IntegrationID,
+            ServiceConsumption = item.ServiceConsumption,
             Name = Utility.GetLocalizedText(item.Name, languageCode),
             Description = Utility.GetLocalizedText(item.PrintoutDescription, languageCode),
             Title = Utility.GetLocalizedText(item.PrintoutTitle, languageCode),
@@ -1106,10 +1156,15 @@ public partial class VehicleServiceItemEvaluator
         return cloned;
     }
 
-    private VehicleServiceItemDTO CloneWithCampaignVinEntryActivation(VehicleServiceItemDTO item, CampaignVinEntryModel entry)
+    private VehicleServiceItemDTO CloneWithCampaignVinEntryActivation(VehicleServiceItemDTO item, CampaignVinEntryModel entry, bool useEntryMenu)
     {
         var cloned = item.Clone();
         cloned.CampaignVinEntryID = entry.id;
+        if (useEntryMenu || !string.IsNullOrWhiteSpace(entry.PackageCode))
+            cloned.PackageCode = entry.PackageCode;
+        // Keep the catalog rule shared and unchanged; this restriction belongs to one activation.
+        if (cloned.ServiceConsumption is not null && !string.IsNullOrWhiteSpace(entry.PackageCode))
+            cloned.ServiceConsumption = new ServiceConsumptionRule { PackageCodes = new[] { entry.PackageCode.Trim() } };
         if (cloned.ValidityModeEnum == ClaimableItemValidityMode.RelativeToActivation)
         {
             cloned.ActivatedAt = entry.RecordedDate.DateTime;
@@ -1132,6 +1187,23 @@ public partial class VehicleServiceItemEvaluator
             item.JobNumber = verdict.wip;
             item.InvoiceNumber = verdict.invoice;
             item.PackageCode = verdict.packageCode ?? item.PackageCode;
+
+            // A real claim remains authoritative. Inference cannot unlock rewards or
+            // cancel scheduled benefits, and never supplies claim metadata or billed cost.
+            if (verdict.status != VehcileServiceItemStatuses.Processed && item.Lock is null &&
+                verdict.status != VehcileServiceItemStatuses.ActivationRequired && item.ServiceConsumption is not null)
+            {
+                item.ServiceConsumptionEvidence = ServiceConsumptionMatcher.Match(
+                    companyDataAggregate, item.ServiceConsumption, item.ActivatedAt,
+                    item.ExpiresAt is null ? null : EffectiveExpiry(item.ExpiresAt.Value, options.TreatServiceItemExpiryAsEndOfDay),
+                    options.GetUtcNow());
+                if (item.ServiceConsumptionEvidence is not null)
+                {
+                    item.Status = "processed";
+                    item.StatusEnum = VehcileServiceItemStatuses.Processed;
+                    item.Cost = null;
+                }
+            }
 
             // Once claimed, the recorded claim cost is authoritative — service item / model
             // cost can change later, but the price billed at claim time must not.

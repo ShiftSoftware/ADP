@@ -1,4 +1,4 @@
-import type { Survey } from '@shiftsoftware/survey-sdk';
+import type { Survey } from '@shift-software/survey-sdk';
 
 /** Showcase fixture — every question type on one screen. Used for visual
  *  verification during renderer development. Localized to English + Arabic
@@ -111,6 +111,16 @@ export const showcaseSurvey: Survey = {
           type: 'signature',
           id: 'sig',
           title: { en: 'Signature — sign here', ar: 'توقيع — وقّع هنا' },
+        },
+        {
+          // Times come from the preview server's stand-in calendar (vite.config.ts).
+          type: 'bookingSlot',
+          id: 'visit',
+          title: { en: 'BookingSlot — preferred visit time', ar: 'موعد — وقت الزيارة المفضل' },
+          calendarApi: '/mock/calendar',
+          branchId: 'showcase-branch',
+          departmentId: 'service',
+          brandId: 'brand',
         },
         {
           type: 'navigationList',

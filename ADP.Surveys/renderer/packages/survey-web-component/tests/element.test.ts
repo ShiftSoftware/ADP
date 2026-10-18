@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { waitFor } from '@testing-library/dom';
-import type { Survey } from '@shiftsoftware/survey-sdk';
+import type { Survey } from '@shift-software/survey-sdk';
 import { ShiftSurveyElement, registerShiftSurvey } from '../src/index.js';
 
 // Ensure the element is registered before any test mounts it.

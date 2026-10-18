@@ -55,6 +55,7 @@ public class QuestionEntryDtoValidator : AbstractValidator<QuestionEntryDto>
                 v.Add(new SignatureQuestionDtoValidator());
                 v.Add(new YesNoQuestionDtoValidator());
                 v.Add(new NavigationListQuestionDtoValidator());
+                v.Add(new BookingSlotQuestionDtoValidator());
             });
         });
     }

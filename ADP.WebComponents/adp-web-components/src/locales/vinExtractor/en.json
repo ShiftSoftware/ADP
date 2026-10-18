@@ -1,0 +1,9 @@
+{
+  "dialog": "VIN Scanner",
+  "switchCamera": "Switch camera",
+  "close": "Close scanner",
+  "capture": "Capture VIN",
+  "capturing": "Capturing...",
+  "preview": "Camera preview",
+  "upload": "Upload VIN image"
+}

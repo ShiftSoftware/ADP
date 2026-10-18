@@ -11,6 +11,18 @@ namespace ShiftSoftware.ADP.Models.Vehicle;
 [Docable]
 public class ServiceItemModel : IIntegrationProps
 {
+    /// <summary>Optional lookup-only consumption rule, separate from offer eligibility.</summary>
+    public ServiceConsumptionRule ServiceConsumption { get; set; }
+
+    /// <summary>
+    /// For ManualVinEntry items, use the activation entry's PackageCode (including blank)
+    /// instead of model-derived menus/costs, and let explicit entry membership satisfy
+    /// model applicability. Other eligibility filters remain unchanged; a nonblank entry
+    /// menu restricts enabled service consumption for that activation.
+    /// Defaults false to preserve ordinary catalog behavior.
+    /// </summary>
+    public bool UseCampaignVinEntryPackageCode { get; set; }
+
     [DocIgnore]
     public string id { get; set; } = default!;
 

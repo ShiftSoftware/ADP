@@ -1,4 +1,4 @@
-import type { SurveyClientError } from '@shiftsoftware/survey-sdk';
+import type { SurveyClientError } from '@shift-software/survey-sdk';
 
 /** Error-state UI for unhappy paths after a schema fetch. Matches the
  *  `PublicSurveyController` semantics: 404 = wrong link, 410 = expired,

@@ -6,8 +6,27 @@ using Xunit;
 namespace LookupServices.BDD.StepDefinitions;
 
 [Binding]
-public class VehicleServiceItemStepDefinitions
+public partial class VehicleServiceItemStepDefinitions
 {
+    [Given("service lookup time is {string}")]
+    public void GivenLookupTime(string value) => _context.Options.TimeProvider = new LookupClock(DateTimeOffset.Parse(value));
+
+    private sealed class LookupClock(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
+    }
+
+    [Then("service item {string} has service evidence dated {string} and no financial claim")]
+    public void ThenServiceEvidence(string id, string date)
+    {
+        var item = GetItem(id);
+        Assert.Equal(DateTime.Parse(date), item.ServiceConsumptionEvidence?.ServiceDate);
+        Assert.Null(item.ClaimDate);
+        Assert.Null(item.Cost);
+        Assert.False(item.Claimable);
+        Assert.Empty(_context.Aggregate.ItemClaims);
+    }
+
     private readonly Support.TestContext _context;
     private IEnumerable<VehicleServiceItemDTO>? _result;
     private bool _activationRequired;
@@ -33,6 +52,12 @@ public class VehicleServiceItemStepDefinitions
 
         var evaluator = new VehicleServiceItemEvaluator(
             _context.StorageService, _context.Aggregate, _context.Options, _context.ServiceProvider);
+
+        if (_context.Options.ServiceRewardTolerance is not null)
+        {
+            _historicalTrace = new(vin);
+            evaluator.Trace = _historicalTrace;
+        }
 
         var (serviceItems, activationRequired) = await evaluator.Evaluate(
             vehicle, ownership, _freeServiceStartDate, language, _context.SaleInformation?.Broker);
@@ -351,6 +376,24 @@ public class VehicleServiceItemStepDefinitions
                 Assert.Null(actual.SatisfiedOn);
             else
                 Assert.Equal(DateTime.Parse(want.SatisfiedOn), actual.SatisfiedOn);
+        }
+    }
+
+    [Then("service item {string} retains requirement evidence:")]
+    public void ThenServiceItemRetainsRequirementEvidence(string serviceItemId, DataTable dataTable)
+    {
+        var item = RequireItem(serviceItemId);
+        Assert.NotNull(item.Prerequisites);
+        Assert.Equal(dataTable.Rows.Count, item.Prerequisites.Count);
+        foreach (var row in dataTable.Rows)
+        {
+            var requirement = Assert.Single(item.Prerequisites, p => p.Mileage == long.Parse(row["Mileage"]));
+            Assert.Equal(row["Label"], requirement.Label);
+            Assert.True(requirement.Satisfied);
+            Assert.Equal(DateTime.Parse(row["InvoiceDate"]), requirement.Evidence!.InvoiceDate);
+            Assert.Equal(row["InvoiceNumber"], requirement.Evidence.InvoiceNumber);
+            Assert.Equal(row["JobNumber"], requirement.Evidence.JobNumber);
+            Assert.Equal(row["PackageCode"], requirement.Evidence.PackageCode);
         }
     }
 

@@ -1,7 +1,5 @@
 import { h, FunctionalComponent } from '@stencil/core';
 
-import cn from '~lib/cn';
-
 import { LoaderIcon } from '~assets/loader-icon';
 
 import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
@@ -44,7 +42,7 @@ export const ClaimableTraceModal: FunctionalComponent<ClaimableTraceModalProps> 
       onCancel={onCancel}
       aria-label={`${locale.traceTitle}${titleSuffix}`}
       dir={locale.sharedLocales.direction}
-      class={cn('claimable-trace-modal', { 'open': isOpen, 'fading-out': fadingOut })}
+      class={{ 'claimable-trace-modal': true, 'open': isOpen, 'fading-out': fadingOut }}
     >
       <div class="trace-modal-header">
         <span class="trace-modal-title">
@@ -58,7 +56,7 @@ export const ClaimableTraceModal: FunctionalComponent<ClaimableTraceModalProps> 
       <div class="trace-modal-body">
         {isLoading && (
           <div class="trace-modal-status">
-            <LoaderIcon class="size-[40px] animate-spin text-[#3071a9]" />
+            <LoaderIcon class="claim-trace-loader" />
             <span>{locale.traceLoading}</span>
           </div>
         )}

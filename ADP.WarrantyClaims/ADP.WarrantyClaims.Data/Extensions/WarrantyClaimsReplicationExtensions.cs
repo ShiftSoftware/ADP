@@ -47,58 +47,67 @@ public static class WarrantyClaimsReplicationExtensions
                 NoSQLConstants.Containers.Vehicles,
                 partitionKeyLevel1Expression: document => document.VIN,
                 partitionKeyLevel2Expression: document => document.ItemType,
-                mapping: w => new WarrantyClaimModel
-                {
-                    id = w.Entity.ID.ToString(),
-                    VIN = w.Entity.VIN,
-                    IsDeleted = w.Entity.IsDeleted,
-                    ClaimNumber = w.Entity.ClaimNumber,
-                    CompanyID = w.Entity.CompanyID,
-                    WarrantyType = w.Entity.WarrantyType,
-                    DateOfReceipt = w.Entity.DateOfReceipt,
-                    DeliveryDate = w.Entity.DeliveryDate,
-                    RepairDate = w.Entity.RepairDate,
-                    RepairCompletionDate = w.Entity.RepairCompletionDate,
-                    Odometer = w.Entity.Odometer,
-                    ProcessDate = w.Entity.ProcessDate,
-                    DistributorProcessDate = w.Entity.DistributorProcessDate,
-
-                    // Both enums are NULLABLE on the entity and NON-nullable on the document, so the
-                    // old map used `!.Value`. Preserved exactly: a null still throws here rather
-                    // than silently publishing default(ClaimStatus), which would be a wrong status
-                    // on a live document instead of a loud failure.
-                    ClaimStatus = w.Entity.ClaimStatus!.Value,
-                    ManufacturerStatus = w.Entity.ManufacturerStatus!.Value,
-
-                    // ---- the five renames; convention derives NONE of these ----
-                    DealerClaimNumber = w.Entity.DealerClaimNo!,          // DealerClaimNo
-                    InvoiceNumber = w.Entity.InvoiceNo!,                  // InvoiceNo
-                    RepairOrderNumber = w.Entity.RepairOrderNo,           // RepairOrderNo
-                    LaborOperationNumberMain = w.Entity.LaborOperationNoMain!, // LaborOperationNoMain
-                    DistributorComment = w.Entity.DistComment1!,          // DistComment1
-
-                    // Franchise key compared against a numeric literal. Carried over verbatim - not
-                    // rewritten into an enum lookup, which would be a behaviour change smuggled into
-                    // a migration. (The profile also carried a COMMENTED-OUT `Brand` mapping; it is
-                    // not live behaviour and is deliberately not resurrected here.)
-                    BrandID = w.Entity.Franchise == Franchises.Toyota.Key ? 2 : 3,
-
-                    // Nested collection with its own rename: OperationNumber -> LaborCode.
-                    LaborLines = w.Entity.WarrantyClaimLaborLines.Select(y => new WarrantyClaimLaborLineModel
-                    {
-                        DistributorHour = y.DistributorHour,
-                        Hour = y.Hour,
-                        ID = y.ID,
-                        LaborCode = y.OperationNumber,
-                        MainOperation = y.MainOperation,
-                        PayCode = y.PayCode,
-                    }),
-
-                    // BrandHashID and CompanyHashID are deliberately not set - the entity has no
-                    // source for either, so the old map left them at their default too.
-                }
+                mapping: w => ToWarrantyClaimModel(w.Entity)
             );
 
         return x;
     }
+
+    /// <summary>
+    /// The warranty-claim document (CompanyData/Vehicles). Reads the claim's labor lines, so load them. The trigger
+    /// <see cref="AddWarrantyClaimsReplication{TDbContext}"/> registers and a consumer's catch-up
+    /// (<c>replication.SetUp&lt;…, WarrantyClaim&gt;(…, q =&gt; q.Include(x =&gt; x.WarrantyClaimLaborLines)).Replicate(…, ToWarrantyClaimModel)</c>)
+    /// map through this one method.
+    /// </summary>
+    public static WarrantyClaimModel ToWarrantyClaimModel(WarrantyClaim claim) => new WarrantyClaimModel
+    {
+        id = claim.ID.ToString(),
+        VIN = claim.VIN,
+        IsDeleted = claim.IsDeleted,
+        ClaimNumber = claim.ClaimNumber,
+        CompanyID = claim.CompanyID,
+        WarrantyType = claim.WarrantyType,
+        DateOfReceipt = claim.DateOfReceipt,
+        DeliveryDate = claim.DeliveryDate,
+        RepairDate = claim.RepairDate,
+        RepairCompletionDate = claim.RepairCompletionDate,
+        Odometer = claim.Odometer,
+        ProcessDate = claim.ProcessDate,
+        DistributorProcessDate = claim.DistributorProcessDate,
+
+        // Both enums are NULLABLE on the entity and NON-nullable on the document, so the
+        // old map used `!.Value`. Preserved exactly: a null still throws here rather
+        // than silently publishing default(ClaimStatus), which would be a wrong status
+        // on a live document instead of a loud failure.
+        ClaimStatus = claim.ClaimStatus!.Value,
+        ManufacturerStatus = claim.ManufacturerStatus!.Value,
+
+        // ---- the five renames; convention derives NONE of these ----
+        DealerClaimNumber = claim.DealerClaimNo!,          // DealerClaimNo
+        InvoiceNumber = claim.InvoiceNo!,                  // InvoiceNo
+        RepairOrderNumber = claim.RepairOrderNo,           // RepairOrderNo
+        LaborOperationNumberMain = claim.LaborOperationNoMain!, // LaborOperationNoMain
+        DistributorComment = claim.DistComment1!,          // DistComment1
+
+        // Franchise key compared against a numeric literal. Carried over verbatim - not
+        // rewritten into an enum lookup, which would be a behaviour change smuggled into
+        // a migration. (The profile also carried a COMMENTED-OUT `Brand` mapping; it is
+        // not live behaviour and is deliberately not resurrected here.)
+        BrandID = claim.Franchise == Franchises.Toyota.Key ? 2 : 3,
+
+        // Nested collection with its own rename: OperationNumber -> LaborCode.
+        LaborLines = claim.WarrantyClaimLaborLines.Select(y => new WarrantyClaimLaborLineModel
+        {
+            DistributorHour = y.DistributorHour,
+            Hour = y.Hour,
+            ID = y.ID,
+            LaborCode = y.OperationNumber,
+            MainOperation = y.MainOperation,
+            PayCode = y.PayCode,
+        }),
+
+        // BrandHashID and CompanyHashID are deliberately not set - the entity has no
+        // source for either, so the old map left them at their default too.
+    };
+
 }

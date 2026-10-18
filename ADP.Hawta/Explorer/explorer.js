@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const {mechanisms, references, explorationFor, illustrativeMotion, particleAt} = window.HawtaEngineering;
-  const motion = window.HawtaMotion;
+  const motion = window.ExplorerMotion;
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const stageMap={collect:'file-gate',snapshot:'row-merge',serving:'projection',cosmos:'replication',publish:'publish'};
@@ -34,7 +34,7 @@
     const target=event.target.closest('[data-select]');if(target)selectExplanation(target.dataset.select);
   });
   $('detail-motion').addEventListener('click',()=>motion.toggle());
-  document.addEventListener('hawta:motion-state',updateMotionControl);
+  document.addEventListener('explorer:motion-state',updateMotionControl);
   document.addEventListener('visibilitychange',()=>{lastFrame=null;});
   window.addEventListener('hashchange',navigate);
 
@@ -59,8 +59,7 @@
     if(name==='evidence')renderEvidence();
   }
   function updateMotionControl() {
-    $('detail-motion').textContent=motion.isPlaying()?'Ⅱ Pause motion':'▶ Resume motion';
-    $('detail-motion').setAttribute('aria-label',motion.isPlaying()?'Pause detail motion':'Resume detail motion');
+    window.ExplorerShell.detailMotion(motion.isPlaying());
     $('scenario-status').textContent=motion.isPlaying()?'Illustrative paths · continuous':'Motion paused';lastFrame=null;
   }
   function renderScenario() {
@@ -189,21 +188,19 @@
     $('layer-choices').innerHTML = '<div class="choices-block"><h2>Current behavior and controls</h2><ul>' + mechanism.policies.map(p => '<li>' + esc(p) + '</li>').join('') + '</ul></div><div class="choices-block"><h2>Assumption or tradeoff</h2><p>' + esc(mechanism.tradeoff) + '</p></div><div class="choices-block"><h2>Alternative to evaluate</h2><p>' + esc(mechanism.alternative) + '</p></div><div class="evidence-caveat">The scenarios are authored demonstrations of these rules. Controls on this page never edit Hawta configuration.</div>';
   }
   async function loadEvidence() {
-    const response=await fetch('evidence.json');
-    if(!response.ok)throw new Error('unavailable');
-    return response.json();
+    return window.ExplorerEvidence.load();
   }
   async function renderEvidence(ids = mechanism.evidence) {
     const request = ++evidenceRequest;
     const requestedMechanism = mechanism.id;
-    $('evidence-status').textContent = 'Checking the captured excerpts against the local source files…';
+    $('evidence-status').textContent = window.ExplorerEvidence.offline ? 'Reading the embedded evidence snapshot…' : 'Checking the captured excerpts against the local source files…';
     $('evidence-list').replaceChildren();
     try {
-      const [evidence, freshness] = await Promise.all([loadEvidence(),fetch('evidence-status.json').then(r=>r.ok?r.json():null).catch(()=>null)]);
+      const [evidence, freshness] = await Promise.all([loadEvidence(),window.ExplorerEvidence.freshness()]);
       if (request !== evidenceRequest || requestedMechanism !== mechanism.id || layer !== 'evidence') return;
       const sameCapture=freshness?.capturedAt===evidence.capturedAt&&freshness?.hashAlgorithm===evidence.hashAlgorithm;
       const statusMap = new Map((sameCapture?freshness.checks:[]).map(check=>[check.id,check]));
-      $('evidence-status').textContent = 'Captured '+evidence.capturedAt.replace('T',' ').slice(0,19)+' UTC. '+(sameCapture ? 'Local file check: '+freshness.checkedAt.replace('T',' ').slice(0,19)+' UTC.' : freshness ? 'Capture changed while loading; reopen Evidence. Freshness unverified.' : 'Live local-file comparison unavailable; treat freshness as unverified.');
+      $('evidence-status').textContent = 'Captured '+evidence.capturedAt.replace('T',' ').slice(0,19)+' UTC. '+(window.ExplorerEvidence.offline ? 'Offline snapshot: current source files have not been checked. Freshness unverified.' : sameCapture ? 'Local file check: '+freshness.checkedAt.replace('T',' ').slice(0,19)+' UTC.' : freshness ? 'Capture changed while loading; reopen Evidence. Freshness unverified.' : 'Live local-file comparison unavailable; treat freshness as unverified.');
       $('evidence-list').innerHTML = '<div class="evidence-caveat">No pipeline timing benchmark is attached to this view. Historical figures inside source comments are context, not validated performance results for this iteration. Source inspection does not establish what is enabled in production.</div>' + ids.map(id => {
         const entry=evidence.entries.find(item=>item.id===id);if(!entry)return '';
         const check=statusMap.get(id),status=check?.sha256===entry.sha256?check.status:undefined;

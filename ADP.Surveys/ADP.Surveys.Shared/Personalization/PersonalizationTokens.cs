@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Options;
+using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types;
 
 namespace ShiftSoftware.ADP.Surveys.Shared.Personalization;
 
@@ -34,9 +35,10 @@ namespace ShiftSoftware.ADP.Surveys.Shared.Personalization;
 /// author typo shows itself rather than silently vanishing) and becomes empty inside a
 /// request field (see <see cref="TokenSurface"/> — an endpoint must never be sent raw
 /// braces). Substitution is a typed tree-walk over the DTO graph, never a
-/// string-replace over raw JSON, and touches exactly two kinds of node: every
-/// <see cref="LocalizedString"/>, and the request fields of every
-/// <see cref="OptionsSourceDto"/>. Ids, expressions and everything else are never
+/// string-replace over raw JSON, and touches exactly three kinds of node: every
+/// <see cref="LocalizedString"/>, the request fields of every
+/// <see cref="OptionsSourceDto"/>, and the calendar request of every
+/// <see cref="BookingSlotQuestionDto"/>. Ids, expressions and everything else are never
 /// rewritten.
 ///
 /// <b>Answer tokens.</b> <c>{{answers.&lt;questionId&gt;}}</c> (and
@@ -129,6 +131,13 @@ public static class PersonalizationTokens
                 Collect(source.Body);
                 if (source.QueryParams is not null) foreach (var v in source.QueryParams.Values) Collect(v);
                 if (source.Headers is not null) foreach (var v in source.Headers.Values) Collect(v);
+            },
+            booking =>
+            {
+                Collect(booking.CalendarApi);
+                Collect(booking.BranchId);
+                Collect(booking.DepartmentId);
+                Collect(booking.BrandId);
             },
             new HashSet<object>(ReferenceEqualityComparer.Instance), depth: 0);
 
@@ -285,6 +294,20 @@ public static class PersonalizationTokens
         SubstituteValues(source.Headers, context, locale, TokenSurface.HeaderValue);
     }
 
+    /// <summary>
+    /// Substitutes tokens in a booking question's calendar request, in place: the endpoint
+    /// (percent-encoded) and the branch, department and brand ids (raw — the calendar
+    /// component encodes them when it builds the URL). Answer tokens stay for the renderer.
+    /// </summary>
+    public static void SubstituteBookingSlot(BookingSlotQuestionDto question, PersonalizationContext context)
+    {
+        var locale = context.DefaultLocale;
+        question.CalendarApi = SubstituteString(question.CalendarApi, context, locale, TokenSurface.Url);
+        question.BranchId = SubstituteString(question.BranchId, context, locale, TokenSurface.QueryValue);
+        question.DepartmentId = SubstituteString(question.DepartmentId, context, locale, TokenSurface.QueryValue);
+        question.BrandId = SubstituteString(question.BrandId, context, locale, TokenSurface.QueryValue);
+    }
+
     private static void SubstituteValues(Dictionary<string, string>? map, PersonalizationContext context, string? locale, TokenSurface surface)
     {
         if (map is null) return;
@@ -389,6 +412,7 @@ public static class PersonalizationTokens
                 }
             },
             source => SubstituteOptionsSource(source, context),
+            booking => SubstituteBookingSlot(booking, context),
             new HashSet<object>(ReferenceEqualityComparer.Instance), depth: 0);
 
         return resolved;
@@ -400,15 +424,18 @@ public static class PersonalizationTokens
     private const int MaxDepth = 16;
 
     /// <summary>
-    /// Shared traversal for every operation that needs each <see cref="LocalizedString"/>
-    /// and each <see cref="OptionsSourceDto"/> in the graph. Both visitors may mutate
-    /// the node they are handed. The source visitor gets the whole DTO and the walk
-    /// does not descend into it: its string maps are request fields, not copy.
+    /// Shared traversal for every operation that needs each <see cref="LocalizedString"/>,
+    /// each <see cref="OptionsSourceDto"/> and each <see cref="BookingSlotQuestionDto"/> in
+    /// the graph. Every visitor may mutate the node it is handed. The source visitor gets the
+    /// whole DTO and the walk does not descend into it: its string maps are request fields,
+    /// not copy. The booking visitor gets the question's request fields; the walk still
+    /// descends into the question for its copy.
     /// </summary>
     private static void Walk(
         object? node,
         Action<LocalizedString> visit,
         Action<OptionsSourceDto> visitSource,
+        Action<BookingSlotQuestionDto> visitBooking,
         HashSet<object> seen,
         int depth)
     {
@@ -436,17 +463,19 @@ public static class PersonalizationTokens
 
         if (!seen.Add(node)) return;
 
+        if (node is BookingSlotQuestionDto booking) visitBooking(booking);
+
         if (node is IDictionary dictionary)
         {
             foreach (var value in dictionary.Values)
-                Walk(value, visit, visitSource, seen, depth + 1);
+                Walk(value, visit, visitSource, visitBooking, seen, depth + 1);
             return;
         }
 
         if (node is IEnumerable enumerable)
         {
             foreach (var item in enumerable)
-                Walk(item, visit, visitSource, seen, depth + 1);
+                Walk(item, visit, visitSource, visitBooking, seen, depth + 1);
             return;
         }
 
@@ -466,7 +495,7 @@ public static class PersonalizationTokens
             {
                 continue; // a throwing getter must never break schema serving
             }
-            Walk(value, visit, visitSource, seen, depth + 1);
+            Walk(value, visit, visitSource, visitBooking, seen, depth + 1);
         }
     }
 

@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { AnswerMap, LabelledOption, Survey, TokenContext } from '@shiftsoftware/survey-sdk';
+import type { AnswerMap, LabelledOption, Survey, TokenContext } from '@shift-software/survey-sdk';
 import type { UiStrings } from './i18n.js';
 
 /** Runtime state shared by every question component in the renderer tree.

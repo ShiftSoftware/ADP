@@ -7,7 +7,7 @@ namespace ShiftSoftware.ADP.Darlastic.Engine;
 /// allocation in the 12.4M-pair hot loop.
 /// </summary>
 [Flags]
-public enum MatchFlags
+public enum MatchFlags : long   // long: persisted as BIGINT; values below bit 31 are unchanged
 {
     None = 0,
     NamesBoth        = 1 << 0,
@@ -38,12 +38,42 @@ public enum MatchFlags
     EmailExact       = 1 << 25,  // a canonical address is shared → 1.00 (weight 0.45); never a penalty when they differ
     EmailMerge       = 1 << 26,  // shared e-mail + names consistent/aligned (or absent) → auto-merge floor fired
     EmailRoleOnly    = 1 << 27,  // a side's only e-mail was a role/shared mailbox (info@, sales@…) — suppressed from matching, still survives to golden
+    GivenNameConflict  = 1 << 28,  // Flags.StructuredNames: both given names known and they do not align; or Flags.DistinctGivenNames: different first names on a shared phone → no floor, held below the steward line
+    FamilyNameConflict = 1 << 29,  // Flags.StructuredNames: both family names known and they do not align → given-only floors withheld, held below the line
+    NamelessHeld       = 1 << 30,  // Flags.NamelessNeedsCorroboration: a nameless pair's single key (phone alone, or a sold VIN against differing phones) held below the line
+    ServicedVinNameMerge = 1L << 31, // Flags.ServicedVinNameFloor: shared serviced VIN + fully consistent names of 2+ words → floor 0.91 (phones may differ)
 }
 
 /// <summary>What normalization did to one record, before any comparison happened.</summary>
 /// <param name="Stage">repair | arabizi | name | phone | address.</param>
 /// <param name="Detail">Human-readable before → after.</param>
 public sealed record NormalizeStep(string Stage, string Detail);
+
+/// <summary>
+/// The kinds of personal value an explanation quotes from the records it describes. A reader who
+/// may not see them gets the explanation with each one written as its kind allows (see
+/// <see cref="ValueQuoter"/>), so the reasoning reads the same and the values do not leak.
+/// </summary>
+public enum QuotedValue
+{
+    Name,
+    Phone,
+    Email,
+    IdNumber,
+    BirthDate,
+    Address,
+
+    /// <summary>The city slot of an address. A reader's quoter usually writes it as recorded (the city is
+    /// shown beside the record); one that shows only cities enough customers share masks the rest.</summary>
+    City,
+}
+
+/// <summary>
+/// Writes one record value into an explanation, as its reader may see it. Called with the exact
+/// value the explanation would otherwise print, never with text around it, so a value containing
+/// quotes, separators or any other punctuation is replaced whole.
+/// </summary>
+public delegate string ValueQuoter(QuotedValue kind, string value);
 
 /// <summary>
 /// The record-level half of the explanation: how raw source text became the text the matcher
@@ -53,27 +83,37 @@ public sealed record NormalizeStep(string Stage, string Detail);
 /// </summary>
 public static class Normalization
 {
-    public static List<NormalizeStep> Steps(RealRecord r)
+    public static List<NormalizeStep> Steps(RealRecord r) => Steps(r, null);
+
+    /// <summary>
+    /// The steps, with every record value written through <paramref name="quote"/>. Without one the
+    /// values appear as recorded. The city goes through the quoter as <see cref="QuotedValue.City"/>,
+    /// so it reads the way the record view beside it shows the city.
+    /// </summary>
+    public static List<NormalizeStep> Steps(RealRecord r, ValueQuoter? quote)
     {
+        string Q(QuotedValue kind, string value) => quote is null ? value : quote(kind, value);
+
         var steps = new List<NormalizeStep>();
         if (r.RawName.Length > 0)
         {
             if (r.NameWasMojibake)
-                steps.Add(new("repair", $"CP1256 mojibake repaired: \"{r.RawName}\" → \"{Mojibake.TryRepair(r.RawName)}\" → transliterated"));
+                steps.Add(new("repair", $"garbled text repaired: \"{Q(QuotedValue.Name, r.RawName)}\" → \"{Q(QuotedValue.Name, Mojibake.TryRepair(r.RawName) ?? "")}\", then written in Latin letters"));
             if (r.NameHadArabizi)
-                steps.Add(new("arabizi", "chat-numeral letters folded (3→a · 7→h · 5→kh …) before transliteration"));
+                steps.Add(new("arabizi", "digits used as letters in chat-style writing (3→a · 7→h · 5→kh …) turned back into letters before writing in Latin letters"));
             steps.Add(new("name", r.NormName.Length > 0
-                ? $"\"{r.RawName}\" → \"{r.NormName}\""
-                : $"\"{r.RawName}\" → dropped (junk/blocklist)"));
+                ? $"\"{Q(QuotedValue.Name, r.RawName)}\" → \"{Q(QuotedValue.Name, r.NormName)}\""
+                : $"\"{Q(QuotedValue.Name, r.RawName)}\" → dropped (not a usable name)"));
         }
         else steps.Add(new("name", "no name in source"));
 
         if (r.Phones.Length + r.WeakPhones.Length > 0)
             steps.Add(new("phone", string.Join(" · ",
-                r.Phones.Select(p => p + " (strong)").Concat(r.WeakPhones.Select(p => p + " (weak 9-digit)")))));
+                r.Phones.Select(p => Q(QuotedValue.Phone, p) + " (full number)")
+                    .Concat(r.WeakPhones.Select(p => Q(QuotedValue.Phone, p) + " (incomplete number)")))));
 
         if (r.NormAddress.Length > 0)
-            steps.Add(new("address", $"\"{r.RawAddress.Replace('|', ' ')}\" → \"{r.NormAddress}\" · city slot \"{r.NormCity}\""));
+            steps.Add(new("address", $"\"{Q(QuotedValue.Address, r.RawAddress.Replace('|', ' '))}\" → \"{Q(QuotedValue.Address, r.NormAddress)}\" · city \"{Q(QuotedValue.City, r.NormCity)}\""));
 
         return steps;
     }
@@ -81,8 +121,9 @@ public static class Normalization
 
 /// <summary>One step of a pair's scoring story, in engine execution order.</summary>
 /// <param name="Stage">Machine key the UI maps to a station: signal | base | gate | address | conflict | decide.</param>
-/// <param name="Title">Short human label ("Name similarity", "Chain-slice rescue").</param>
-/// <param name="Detail">The numbers ("trigram 0.42 · JW 0.78 → blend 0.60 × weight 0.45").</param>
+/// <param name="Title">Short plain-language label ("Names", "Same number, same first name").</param>
+/// <param name="Detail">What the step found, in words a reader of the case browser understands; no
+/// rule codes or thresholds (the running strength is <paramref name="ConfAfter"/>).</param>
 /// <param name="ConfAfter">Running confidence after this step, when it changed or concluded a phase.</param>
 public sealed record TraceStep(string Stage, string Title, string Detail, double? ConfAfter = null);
 
@@ -94,7 +135,17 @@ public sealed record TraceStep(string Stage, string Title, string Detail, double
 /// </summary>
 public sealed class MatchTrace
 {
+    private readonly ValueQuoter? quote;
+
+    public MatchTrace() { }
+
+    /// <summary>A trace whose steps write every record value they quote through <paramref name="quote"/>.</summary>
+    public MatchTrace(ValueQuoter? quote) => this.quote = quote;
+
     public readonly List<TraceStep> Steps = [];
     public void Add(string stage, string title, string detail, double? confAfter = null)
         => Steps.Add(new TraceStep(stage, title, detail, confAfter));
+
+    /// <summary>A record value as this trace's reader may see it: as recorded, unless the trace was given a quoter.</summary>
+    public string Quote(QuotedValue kind, string value) => quote is null ? value : quote(kind, value);
 }

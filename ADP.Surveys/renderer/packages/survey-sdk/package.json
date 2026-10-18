@@ -1,6 +1,6 @@
 {
-  "name": "@shiftsoftware/survey-sdk",
-  "version": "0.1.0",
+  "name": "@shift-software/survey-sdk",
+  "version": "0.1.1",
   "description": "Runtime contract for the ADP Dynamic Surveys platform — expression sandbox, logic evaluator, schema types. Mirrors ADP.Surveys.Shared/Evaluation.",
   "type": "module",
   "main": "./dist/index.js",

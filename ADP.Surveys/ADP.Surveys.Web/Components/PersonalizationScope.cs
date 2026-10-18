@@ -168,5 +168,5 @@ public sealed class PersonalizationScope
     private static bool HasDisplayForm(QuestionType type) => type is
         QuestionType.SingleChoice or QuestionType.MultiChoice or QuestionType.Dropdown
         or QuestionType.NavigationList or QuestionType.YesNo
-        or QuestionType.Date or QuestionType.DateTime;
+        or QuestionType.Date or QuestionType.DateTime or QuestionType.BookingSlot;
 }

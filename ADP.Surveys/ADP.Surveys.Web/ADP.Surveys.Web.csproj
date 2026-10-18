@@ -31,8 +31,7 @@
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.12" />
 		<PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.12" />
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.12" />
-		<!-- Keep the same minimum framework as the other Surveys packages. -->
-		<PackageReference Include="ShiftSoftware.ShiftBlazor" Version="2026.9.26.2" />
+		<PackageReference Include="ShiftSoftware.ShiftBlazor" Version="2026.9.30.2" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -41,7 +40,7 @@
 
 	<!--
 		wwwroot/js/shift-survey/shift-survey.js is a CHECKED-IN copy of the
-		@shiftsoftware/survey-web-component build, so hosts consuming this NuGet
+		@shift-software/survey-web-component build, so hosts consuming this NuGet
 		package get <shift-survey> without a node toolchain. Nothing in the .NET
 		build produces it, so it can fall behind the renderer source silently —
 		and did, by six weeks, which is how a shipped renderer feature failed to

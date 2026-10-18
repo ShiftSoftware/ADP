@@ -17,7 +17,7 @@ namespace ShiftSoftware.ADP.Surveys.Sample.API.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.10")
+                .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -539,6 +539,384 @@ namespace ShiftSoftware.ADP.Surveys.Sample.API.Migrations
                     b.HasAnnotation("SqlServer:TemporalHistoryTableSchema", "Surveys");
                 });
 
+            modelBuilder.Entity("ShiftSoftware.ShiftIdentity.Data.Authentication.AuthThrottleBucket", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset>("WindowStart")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Key");
+
+                    b.HasIndex("WindowStart");
+
+                    b.ToTable("AuthThrottleBuckets", "ShiftIdentity", t =>
+                        {
+                            t.HasCheckConstraint("CK_AuthThrottleBucket", "[Count] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("ShiftSoftware.ShiftIdentity.Data.Authentication.AuthenticationAuditEvent", b =>
+                {
+                    b.Property<Guid>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long?>("ActorUserID")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("OperationID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<long>("SecurityVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("UserID")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("VerificationReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.ToTable("AuthenticationAuditEvents", "ShiftIdentity");
+                });
+
+            modelBuilder.Entity("ShiftSoftware.ShiftIdentity.Data.Authentication.AuthenticationOperation", b =>
+                {
+                    b.Property<Guid>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AppBinding")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Audience")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("ClientID")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("CodeChallenge")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long>("ContactRevision")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Destination")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("External")
+                        .HasColumnType("bit");
+
+                    b.Property<long>("FactorGeneration")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("FailedAttempts")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("HandleDigest")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("varbinary(32)");
+
+                    b.Property<DateTimeOffset?>("MfaProvenAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("OutstandingLinkSlot")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<long?>("OutstandingRecoveryUserID")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid?>("ParentID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("PasswordChangeOrigin")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("PasswordProvenAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<byte[]>("PendingPasswordHash")
+                        .HasMaxLength(256)
+                        .HasColumnType("varbinary(256)");
+
+                    b.Property<byte[]>("PendingPasswordSalt")
+                        .HasMaxLength(128)
+                        .HasColumnType("varbinary(128)");
+
+                    b.Property<long>("PolicyRevision")
+                        .HasColumnType("bigint");
+
+                    b.Property<byte[]>("ProtectedPendingTotpSecret")
+                        .HasMaxLength(1024)
+                        .HasColumnType("varbinary(1024)");
+
+                    b.Property<int>("Purpose")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RecoveryCodeDigest")
+                        .HasMaxLength(32)
+                        .HasColumnType("varbinary(32)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<long>("SecurityVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset?>("SessionAuthenticatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("SessionLegacyCompatibilityExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool?>("SessionMfaSatisfied")
+                        .HasColumnType("bit");
+
+                    b.Property<byte[]>("SourceSessionDigest")
+                        .HasMaxLength(32)
+                        .HasColumnType("varbinary(32)");
+
+                    b.Property<int>("State")
+                        .HasColumnType("int");
+
+                    b.Property<long>("UserID")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("HandleDigest")
+                        .IsUnique()
+                        .HasFilter("[Purpose] IN (11,12)");
+
+                    b.HasIndex("OutstandingLinkSlot")
+                        .IsUnique()
+                        .HasFilter("[OutstandingLinkSlot] IS NOT NULL");
+
+                    b.HasIndex("OutstandingRecoveryUserID")
+                        .IsUnique()
+                        .HasFilter("[OutstandingRecoveryUserID] IS NOT NULL");
+
+                    b.HasIndex("ParentID");
+
+                    b.HasIndex("ExpiresAt", "State");
+
+                    b.HasIndex("UserID", "Purpose", "State");
+
+                    b.ToTable("AuthenticationOperations", "ShiftIdentity", t =>
+                        {
+                            t.HasCheckConstraint("CK_AuthenticationOperation_App", "([State] <> 11 OR ([Purpose] = 10 AND [External] = 1 AND [AppBinding] IS NOT NULL AND [SessionAuthenticatedAt] IS NOT NULL AND [SessionMfaSatisfied] IS NOT NULL)) AND ([Purpose] <> 10 OR [State] IN (2,3,6,9,11))");
+
+                            t.HasCheckConstraint("CK_AuthenticationOperation_Factor", "[ProtectedPendingTotpSecret] IS NULL OR ([Purpose] IN (3,4,5,6) AND [State] = 7)");
+
+                            t.HasCheckConstraint("CK_AuthenticationOperation_LegacyMfa", "[Purpose] <> 12 OR ([State] IN (1,2,3,6) AND [External] = 0 AND DATALENGTH([HandleDigest]) = 32 AND [CodeChallenge] = '' AND ([State] = 1 OR [CompletedAt] IS NOT NULL))");
+
+                            t.HasCheckConstraint("CK_AuthenticationOperation_LegacyRefresh", "[Purpose] <> 11 OR ([State] = 2 AND [External] = 0 AND DATALENGTH([HandleDigest]) = 32 AND [CompletedAt] IS NOT NULL)");
+
+                            t.HasCheckConstraint("CK_AuthenticationOperation_Link", "([State] <> 10 OR [Purpose] IN (7,8,9)) AND ([OutstandingLinkSlot] IS NULL OR ([Purpose] IN (7,8,9) AND [State] = 10))");
+
+                            t.HasCheckConstraint("CK_AuthenticationOperation_Password", "([PasswordChangeOrigin] IS NULL OR [PasswordChangeOrigin] IN (1,2)) AND (([PendingPasswordHash] IS NULL AND [PendingPasswordSalt] IS NULL) OR ([Purpose] = 4 AND [State] IN (1,7) AND [PendingPasswordHash] IS NOT NULL AND [PendingPasswordSalt] IS NOT NULL))");
+
+                            t.HasCheckConstraint("CK_AuthenticationOperation_Recovery", "([RecoveryCodeDigest] IS NULL OR ([Purpose] = 6 AND [State] = 8 AND [ParentID] IS NULL)) AND ([OutstandingRecoveryUserID] IS NULL OR ([Purpose] = 6 AND [ParentID] IS NULL AND [OutstandingRecoveryUserID] = [UserID]))");
+
+                            t.HasCheckConstraint("CK_AuthenticationOperation_SessionCompatibility", "[SessionLegacyCompatibilityExpiresAt] IS NULL OR ([Purpose] = 10 AND [State] = 11)");
+
+                            t.HasCheckConstraint("CK_AuthenticationOperation_State", "[State] IN (1,2,3,4,5,6,7,8,9,10,11) AND [Purpose] IN (1,2,3,4,5,6,7,8,9,10,11,12,13)");
+
+                            t.HasCheckConstraint("CK_AuthenticationOperation_Version", "[SecurityVersion] >= 1 AND [FactorGeneration] >= 1 AND [PolicyRevision] >= 1 AND [FailedAttempts] BETWEEN 0 AND 5 AND [ExpiresAt] > [CreatedAt]");
+                        });
+                });
+
+            modelBuilder.Entity("ShiftSoftware.ShiftIdentity.Data.Authentication.AuthenticationPolicyState", b =>
+                {
+                    b.Property<int>("ID")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("MfaEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("MfaMandatory")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("RequireVerifiedEmail")
+                        .HasColumnType("bit");
+
+                    b.Property<long>("Revision")
+                        .HasColumnType("bigint");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("TotpDigits")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotpPeriodSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotpWindowFuture")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotpWindowPast")
+                        .HasColumnType("int");
+
+                    b.HasKey("ID");
+
+                    b.ToTable("AuthenticationPolicyStates", "ShiftIdentity", t =>
+                        {
+                            t.HasCheckConstraint("CK_AuthenticationPolicyState", "[ID] = 1 AND [Revision] >= 1");
+
+                            t.HasCheckConstraint("CK_AuthenticationPolicyState_Totp", "[TotpDigits] BETWEEN 6 AND 8 AND [TotpPeriodSeconds] BETWEEN 1 AND 300 AND [TotpWindowPast] BETWEEN 0 AND 2 AND [TotpWindowFuture] BETWEEN 0 AND 2");
+                        });
+                });
+
+            modelBuilder.Entity("ShiftSoftware.ShiftIdentity.Data.Authentication.UserSecurityState", b =>
+                {
+                    b.Property<long>("UserID")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ContactRevision")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L);
+
+                    b.Property<int>("DeliveryCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTimeOffset?>("DeliveryWindowStart")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("EmailLookupKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<long>("FactorGeneration")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("FailedProofs")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("FailureWindowStart")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long?>("LastAcceptedTotpStep")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset?>("LastDeliveryAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("LocalMfaRecoveryRequired")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("MfaRecoveryOperationID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("ProtectedTotpSecret")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("RecoveryEmail")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("RecoveryEmailProvenance")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<long?>("RecoveryEmailRevision")
+                        .HasColumnType("bigint");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<long>("SecurityVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("TotpProtectionVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("UsernameLookupKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.HasKey("UserID");
+
+                    b.HasIndex("EmailLookupKey")
+                        .IsUnique()
+                        .HasDatabaseName("IX_UserSecurityStates_EmailLookupKey")
+                        .HasFilter("[EmailLookupKey] IS NOT NULL");
+
+                    b.HasIndex("UsernameLookupKey")
+                        .IsUnique()
+                        .HasDatabaseName("IX_UserSecurityStates_UsernameLookupKey")
+                        .HasFilter("[UsernameLookupKey] IS NOT NULL");
+
+                    b.ToTable("UserSecurityStates", "ShiftIdentity", t =>
+                        {
+                            t.HasCheckConstraint("CK_UserSecurityState_ContactDelivery", "[ContactRevision] >= 1 AND [DeliveryCount] >= 0 AND [RecoveryEmailProvenance] BETWEEN 0 AND 4");
+
+                            t.HasCheckConstraint("CK_UserSecurityState_Lookup", "([UsernameLookupKey] IS NULL AND [EmailLookupKey] IS NULL) OR ([UsernameLookupKey] IS NOT NULL AND DATALENGTH([UsernameLookupKey]) > 0 AND ([EmailLookupKey] IS NULL OR DATALENGTH([EmailLookupKey]) > 0))");
+
+                            t.HasCheckConstraint("CK_UserSecurityState_Version", "[SecurityVersion] >= 1 AND [FactorGeneration] >= 1 AND [FailedProofs] >= 0 AND [TotpProtectionVersion] IN (0,1)");
+                        });
+                });
+
             modelBuilder.Entity("ShiftSoftware.ShiftIdentity.Data.Entities.AccessTree", b =>
                 {
                     b.Property<long>("ID")
@@ -970,7 +1348,8 @@ namespace ShiftSoftware.ADP.Surveys.Sample.API.Migrations
                 {
                     b.Property<long>("ID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
+                        .HasColumnType("bigint")
+                        .HasJsonPropertyName("ID");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ID"));
 
@@ -1014,7 +1393,8 @@ namespace ShiftSoftware.ADP.Surveys.Sample.API.Migrations
                 {
                     b.Property<long>("ID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
+                        .HasColumnType("bigint")
+                        .HasJsonPropertyName("ID");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ID"));
 
@@ -1058,7 +1438,8 @@ namespace ShiftSoftware.ADP.Surveys.Sample.API.Migrations
                 {
                     b.Property<long>("ID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
+                        .HasColumnType("bigint")
+                        .HasJsonPropertyName("ID");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ID"));
 
@@ -1827,6 +2208,24 @@ namespace ShiftSoftware.ADP.Surveys.Sample.API.Migrations
                     b.Navigation("Survey");
                 });
 
+            modelBuilder.Entity("ShiftSoftware.ShiftIdentity.Data.Authentication.AuthenticationOperation", b =>
+                {
+                    b.HasOne("ShiftSoftware.ShiftIdentity.Data.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ShiftSoftware.ShiftIdentity.Data.Authentication.UserSecurityState", b =>
+                {
+                    b.HasOne("ShiftSoftware.ShiftIdentity.Data.Entities.User", null)
+                        .WithOne("SecurityState")
+                        .HasForeignKey("ShiftSoftware.ShiftIdentity.Data.Authentication.UserSecurityState", "UserID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ShiftSoftware.ShiftIdentity.Data.Entities.City", b =>
                 {
                     b.HasOne("ShiftSoftware.ShiftIdentity.Data.Entities.Region", "Region")
@@ -2123,6 +2522,8 @@ namespace ShiftSoftware.ADP.Surveys.Sample.API.Migrations
             modelBuilder.Entity("ShiftSoftware.ShiftIdentity.Data.Entities.User", b =>
                 {
                     b.Navigation("AccessTrees");
+
+                    b.Navigation("SecurityState");
 
                     b.Navigation("TeamUsers");
 

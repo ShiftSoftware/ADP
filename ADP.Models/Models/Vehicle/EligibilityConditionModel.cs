@@ -13,6 +13,31 @@ namespace ShiftSoftware.ADP.Models.Vehicle;
 [Docable]
 public class EligibilityConditionModel
 {
+    private IEnumerable<EligibilityConditionModel> anyOf;
+
+    /// <summary>
+    /// One non-empty OR group of ordinary leaf conditions. Nested groups are unsupported.
+    /// The group owns WhenUnmet; alternatives must retain the default Hide behavior.
+    /// Omit field, values, scope, program and qualifier on the group itself.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Include)]
+    public IEnumerable<EligibilityConditionModel> AnyOf
+    {
+        get => anyOf;
+        set => anyOf = value ?? System.Array.Empty<EligibilityConditionModel>();
+    }
+
+    // Json.NET must read explicit null through the setter (invalid empty group), but omit
+    // absent groups on ordinary leaves when writing. NullValueHandling.Ignore also skips reads.
+    public bool ShouldSerializeAnyOf() => anyOf is not null;
+
+    /// <summary>Retains unsupported JSON members so persisted conditions cannot silently lose a rule.</summary>
+    [DocIgnore]
+    [System.Text.Json.Serialization.JsonExtensionData]
+    [Newtonsoft.Json.JsonExtensionData]
+    public IDictionary<string, object> UnsupportedProperties { get; set; }
+
     /// <summary>
     /// The fully-qualified vehicle lookup field path to evaluate. Supported paths are defined
     /// by the lookup evaluator; this model does not imply arbitrary vehicle lookup traversal.

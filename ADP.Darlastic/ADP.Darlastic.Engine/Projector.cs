@@ -26,6 +26,16 @@ namespace ShiftSoftware.ADP.Darlastic.Engine;
 ///                   docs arrive later, re-stamp with:
 ///                   UPDATE Darlastic.ProjectionState SET Pending = 1 WHERE ArtifactType = 'stamp'.
 ///
+///   - 'events'   -> NOT drained, by design. Golden timelines are served from the registry itself
+///                   (ADP.Darlastic.API's GoldenCustomer/{id}/events reads ProjectionState), there is
+///                   no Cosmos document type for them, and minting one in the shared Customers
+///                   container is a platform-model decision, not a drain detail. The rows stay
+///                   pending, so a future pump drains them without a re-resolve; the drain says so.
+///
+///   - 'matchconfig' -> NOT drained, by design. The match configuration a resolve scored with is read
+///                   from the registry by the hosted explanation (see MatchSettings); it is not a
+///                   customer or vehicle document. The row stays pending; the drain says so.
+///
 ///   - Payloads are staged at resolve time — no engine recompute here. Tombstones DELETE the
 ///     Cosmos doc (404-tolerant). Marks Pending = 0 ONLY where the ContentHash is unchanged since
 ///     the batch was read — a concurrent resolve that re-staged an artifact mid-drain keeps it
@@ -72,6 +82,8 @@ public static class Projector
         public int Upserted, Deleted, Skipped, Failed;
         public int StampsMissingDoc;                       // stamp patches that found no landing doc (marked projected)
         public string? StampsNote;                         // set when the stamp family was skipped
+        public string? EventsNote;                         // set when timeline events are pending (never drained)
+        public string? MatchConfigNote;                    // set when the recorded match configuration is pending (never drained)
         public readonly Dictionary<string, (int Upserted, int Deleted)> PerType = new(StringComparer.Ordinal);
         public long CosmosGoldenCount = -1, CosmosVinLinksCount = -1, CosmosVinOwnerCount = -1;
         public readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> FailureReasons = new();
@@ -85,6 +97,8 @@ public static class Projector
             + (PerType.Count > 0 ? " (" + string.Join(" / ", PerType.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => $"{kv.Key} {kv.Value.Upserted:N0}{(kv.Value.Deleted > 0 ? $"+{kv.Value.Deleted:N0}del" : "")}")) + ")" : "")
             + (StampsMissingDoc > 0 ? $"; {StampsMissingDoc:N0} stamps found no landing doc" : "")
             + (StampsNote is not null ? $"; stamps: {StampsNote}" : "")
+            + (EventsNote is not null ? $"; events: {EventsNote}" : "")
+            + (MatchConfigNote is not null ? $"; matchconfig: {MatchConfigNote}" : "")
             + (CosmosGoldenCount >= 0 ? $"\n  Cosmos now holds {CosmosGoldenCount:N0} golden docs"
                + (CosmosVinLinksCount >= 0 ? $" / {CosmosVinLinksCount:N0} vehicle-link docs" : "")
                + (CosmosVinOwnerCount >= 0 ? $" / {CosmosVinOwnerCount:N0} VIN-ownership docs" : "") : "")
@@ -310,6 +324,10 @@ public static class Projector
         if (stampAddress is not null) await DrainType(Registry.ArtStamp, PumpStamp);
         else if (pendingByType.GetValueOrDefault(Registry.ArtStamp) > 0)
             m.StampsNote = $"{pendingByType[Registry.ArtStamp]:N0} pending, skipped (no landing-doc address mapping wired)";
+        if (pendingByType.GetValueOrDefault(Registry.ArtEvents) > 0)
+            m.EventsNote = $"{pendingByType[Registry.ArtEvents]:N0} pending, not drained (served from the registry by GoldenCustomer/{{id}}/events; no Cosmos document type for timelines)";
+        if (pendingByType.GetValueOrDefault(Registry.ArtMatchConfig) > 0)
+            m.MatchConfigNote = $"{pendingByType[Registry.ArtMatchConfig]:N0} pending, not drained (read from the registry by the hosted explanation; not a Cosmos document)";
 
         m.CosmosGoldenCount = await CountAsync(customers, ModelTypes.GoldenCustomer);
         m.CosmosVinLinksCount = await CountAsync(customers, ModelTypes.GoldenCustomerVehicleLinks);

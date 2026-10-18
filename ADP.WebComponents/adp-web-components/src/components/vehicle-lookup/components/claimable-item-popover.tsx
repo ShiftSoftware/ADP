@@ -2,7 +2,6 @@ import { h, FunctionalComponent } from '@stencil/core';
 
 import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
 
-import cn from '~lib/cn';
 import { formatDateTime } from '~lib/format-date-time';
 
 import { TriangleIcon } from '~assets/triangle-icon';
@@ -102,7 +101,7 @@ const PopoverContent: FunctionalComponent<PopoverContentProps> = ({ item, locale
       {specRows.map(specRow => (
         <div class="popover-specs">
           {specRow.map(row => (
-            <div class={cn('popover-spec', { pkg: specColumns(row) > 1, full: specColumns(row) > 1 && specRow.length === 1 })}>
+            <div class={{ 'popover-spec': true, 'pkg': specColumns(row) > 1, 'full': specColumns(row) > 1 && specRow.length === 1 }}>
               <div class="lab">{locale[row.label]}</div>
               <div class="val" dir="ltr">
                 {detailValue(item, row)}
@@ -113,13 +112,13 @@ const PopoverContent: FunctionalComponent<PopoverContentProps> = ({ item, locale
       ))}
 
       {item?.lock && (
-        <div class={cn('popover-lock', `popover-lock-${item.lock.state}`)}>
+        <div class={{ 'popover-lock': true, [`popover-lock-${item.lock.state}`]: true }}>
           <div class="lab">{lockExplanations[item.lock.state]}</div>
 
           {item.lock.prerequisites?.length > 0 && (
             <div class="popover-lock-prerequisites">
               {item.lock.prerequisites.map(prerequisite => (
-                <div class={cn('popover-prerequisite', { satisfied: prerequisite.satisfied })}>
+                <div class={{ 'popover-prerequisite': true, 'satisfied': prerequisite.satisfied }}>
                   <div class="popover-prerequisite-mark">{prerequisite.satisfied ? <CheckIcon /> : null}</div>
                   <div class="popover-prerequisite-text">
                     <div class="val" dir="ltr">
@@ -140,7 +139,7 @@ const PopoverContent: FunctionalComponent<PopoverContentProps> = ({ item, locale
           screen together — a claim button and, in future, what replaced it once claimed — swap by
           opacity in one place instead of by reflow. Collapsed outright when nothing occupies it,
           which is what lets the card shrink rather than hold an empty band. */}
-      <div class={cn('popover-actions', { 'is-empty': !item?.claimable })}>
+      <div class={{ 'popover-actions': true, 'is-empty': !item?.claimable }}>
         {item?.claimable && (
           <button onClick={() => claim && claim(item)} class="popover-action claim-button">
             <ActivationIcon />
@@ -230,16 +229,16 @@ export const ClaimableItemPopover: FunctionalComponent<ClaimableItemPopoverProps
       aria-expanded={showPopover.toString()}
       dir={locale.sharedLocales.direction}
       style={{ ...verticalStyle, 'left': `${left}px`, '--popover-swap': `${swapMs}ms` }}
-      class={cn('claimable-item-popover', { 'fading-out': fadingOut, 'swapping': swapping })}
+      class={{ 'claimable-item-popover': true, 'claim-detail-surface': true, 'fading-out': fadingOut, 'swapping': swapping }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
       <div class="popover-relative-container">
-        <div class={cn('popover-arrow-icon', { flipped: flipVertically })}>
+        <div class={{ 'popover-arrow-icon': true, 'flipped': flipVertically }}>
           <TriangleIcon class="popover-arrow-icon-svg" />
           <div class="popover-arrow-bottom-line" />
         </div>
-        <div style={{ transform: `translateX(${bodyOffset}px)` }} class="popover-body">
+        <div style={{ transform: `translateX(${bodyOffset}px)` }} class="popover-body claim-detail-card">
           <div class="popover-body-content" style={bodyContentHeight > 0 ? { height: `${bodyContentHeight}px` } : {}}>
             {/* Both renders sit in the same grid cell, so moving from one item to the next is a
                 single cross-fade against a box that resizes on the same clock — rather than the old

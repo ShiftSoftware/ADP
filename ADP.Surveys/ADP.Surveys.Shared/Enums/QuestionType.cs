@@ -46,4 +46,7 @@ public enum QuestionType
 
     [JsonStringEnumMemberName("navigationList")]
     NavigationList,
+
+    [JsonStringEnumMemberName("bookingSlot")]
+    BookingSlot,
 }

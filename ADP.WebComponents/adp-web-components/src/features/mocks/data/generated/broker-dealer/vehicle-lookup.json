@@ -1,5 +1,6 @@
 {
   "JTEHF21A0Y0123456": {
+    "classifications": [],
     "vin": "JTEHF21A0Y0123456",
     "identifiers": {
       "vin": "JTEHF21A0Y0123456",
@@ -50,6 +51,7 @@
     "basicModelCode": "GDJ150"
   },
   "JTMHF33P5D5012345": {
+    "classifications": [],
     "vin": "JTMHF33P5D5012345",
     "identifiers": {
       "vin": "JTMHF33P5D5012345",
@@ -280,6 +282,7 @@
     "basicModelCode": "MXAA52"
   },
   "JTLBR3JR9N5345678": {
+    "classifications": [],
     "vin": "JTLBR3JR9N5345678",
     "identifiers": {
       "vin": "JTLBR3JR9N5345678",
@@ -470,6 +473,7 @@
     "basicModelCode": "GDJ150"
   },
   "JTEBU5JR8L5234567": {
+    "classifications": [],
     "vin": "JTEBU5JR8L5234567",
     "identifiers": {
       "vin": "JTEBU5JR8L5234567",

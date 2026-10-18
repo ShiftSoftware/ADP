@@ -75,6 +75,19 @@ Rastgo deliberately separates concerns the old setup conflated, and leaves the o
 
 ## Documentation
 
+For a local interactive walkthrough, use the **Engineering Explorer** in the ADP
+checkout. It follows the Hawta Explorer's visual language and covers eight
+mechanisms, 26 illustrative scenarios, and captured source evidence.
+
+```sh
+node ADP.Rastgo/Explorer/server.mjs
+```
+
+Open [the local Rastgo Explorer](http://127.0.0.1:4179/). Node.js 22 or newer is
+required; no package install is needed. Run this from a checkout, not the hosted
+documentation site. The Explorer explains implementation behavior and does not
+connect to a live health result store.
+
 | Section | Description |
 |---|---|
 | [Concepts & Principles](concepts.md) | Why the old checks answered the wrong question, and the design principles (passive, federated, source-anchored) that replace them. |

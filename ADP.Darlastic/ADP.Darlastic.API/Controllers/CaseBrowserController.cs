@@ -9,6 +9,8 @@ using ShiftSoftware.ADP.Darlastic.Engine;
 using ShiftSoftware.ADP.Darlastic.Shared;
 using ShiftSoftware.ADP.Darlastic.Shared.ActionTrees;
 using ShiftSoftware.ADP.Darlastic.Shared.DTOs.Cases;
+using ShiftSoftware.ShiftEntity.Core.Pii;
+using ShiftSoftware.ShiftEntity.Model.Dtos;
 using ShiftSoftware.ShiftEntity.EFCore;
 using ShiftSoftware.TypeAuth.Core;
 using System.Security.Claims;
@@ -28,10 +30,18 @@ namespace ShiftSoftware.ADP.Darlastic.API.Controllers;
 /// <c>StewardRecord</c> (the evidence), <c>IdentityEdge</c> (assembly).</para>
 ///
 /// <para><b>Recomputes the derivation, never stages it.</b> A pair's trace is a pure function of
-/// its two staged records, so it is computed per request through <c>ADP.Darlastic.Engine.Core</c>.
-/// Staging it instead would let it go stale against an engine change with nothing to signal that —
-/// and because it is recomputed, the surface can compare live against staged and SAY when the
+/// its two staged records and the match configuration, so it is computed per request through
+/// <c>ADP.Darlastic.Engine.Core</c> — under the configuration the latest resolve recorded
+/// (<see cref="RecordedMatchSettingsAttribute"/>), so the tenant's own rules decide here as they did
+/// there. Staging it instead would let it go stale against an engine change with nothing to signal
+/// that — and because it is recomputed, the surface can compare live against staged and SAY when the
 /// engine has moved (<see cref="CaseDetailDTO.EngineDrift"/>).</para>
+///
+/// <para><b>Personal information follows the golden contract</b> (<see cref="RecordPiiView"/>): names,
+/// phones, ID numbers, e-mails and addresses are masked, including where the engine's explanation
+/// text quotes them, unless the caller holds the host's PII reveal action. Search matches part of a
+/// name or phone only for a caller holding the partial-search action; anyone else matches whole
+/// values.</para>
 ///
 /// <para>Writes go through the host's EF context, matching <c>StewardQueueController</c>: the
 /// engine's own registry path resolves its connection from environment configuration, which is
@@ -39,20 +49,31 @@ namespace ShiftSoftware.ADP.Darlastic.API.Controllers;
 /// </summary>
 [Route("[controller]")]
 [ApiController]
+[RecordedMatchSettings]
 public class CaseBrowserController : ControllerBase
 {
     private readonly ShiftDbContext db;
     private readonly DarlasticApiOptions options;
+    private readonly IPiiMasker masker;
+    private readonly PiiOptions piiOptions;
 
     /// <summary>The engine serializes <c>RealRecord</c> with default options, so the staged payload
     /// carries CLR property names verbatim.</summary>
     private static readonly JsonSerializerOptions PayloadJson = new() { PropertyNameCaseInsensitive = true };
 
-    public CaseBrowserController(ShiftDbContext db, IOptions<DarlasticApiOptions> options)
+    public CaseBrowserController(ShiftDbContext db, IOptions<DarlasticApiOptions> options,
+        IPiiMasker masker, IOptions<PiiOptions> piiOptions)
     {
         this.db = db;
         this.options = options.Value;
+        this.masker = masker;
+        this.piiOptions = piiOptions.Value;
     }
+
+    private RecordPiiView? pii;
+
+    /// <summary>What this caller may see of the records, asked of TypeAuth once per request.</summary>
+    private RecordPiiView Pii => pii ??= RecordPiiView.ForCaller(HttpContext, masker, piiOptions, RecordPiiView.BlockKeyLabels(options));
 
     // Seeing how the engine decided the whole corpus and being trusted to change how it resolves
     // are different permissions, so this rides the StewardQueue node's read grant and its own
@@ -215,7 +236,7 @@ public class CaseBrowserController : ControllerBase
         return new IdentityAssemblyDTO
         {
             IdentityID = identityId,
-            GoldenName = await GoldenNameOf(identityId, ct),
+            GoldenName = Pii.Show(PiiKind.Name, await GoldenNameOf(identityId, ct)),
             MemberCount = members.Count,
             SourceCount = members.Select(m => m.SourceSystem).Distinct().Count(),
             // Only members staged for browsing have evidence; the rest are named by key alone.
@@ -265,7 +286,7 @@ public class CaseBrowserController : ControllerBase
             Identities = [.. page.Select(s => new IdentityListItemDTO
             {
                 IdentityID = s.IdentityID,
-                GoldenName = s.GoldenName,
+                GoldenName = Pii.Show(PiiKind.Name, s.GoldenName),
                 MemberCount = s.MemberCount,
                 SourceCount = s.SourceCount,
                 Categories = NamesOf((ClusterCat)s.Categories),
@@ -279,10 +300,16 @@ public class CaseBrowserController : ControllerBase
     /// <para>Searches the JSON payloads directly. That is a scan, and it is the right call here:
     /// the staged set is ~10⁴ records, the alternative is denormalising name and phone into columns
     /// the engine would then have to keep in step, and this endpoint is a navigation aid rather
-    /// than a hot path. If the staged set grows an order of magnitude, promote the columns.</para>
+    /// than a hot path. A host whose staged set is orders of magnitude larger turns on
+    /// <see cref="DarlasticApiOptions.RecordSearchIndex"/>: the same values are then found through a
+    /// per-run in-memory index and read back by key (whole names compare ignoring case, trailing
+    /// spaces ignored, as SQL compares them).</para>
     ///
-    /// <para>Note the scope: this searches what is STAGED for browsing (queue + catalog), not the
-    /// corpus. Finding an arbitrary customer is what the golden list is for.</para>
+    /// <para>Note the scope: this searches what is STAGED for browsing, not the corpus. Finding an
+    /// arbitrary customer is what the golden list is for.</para>
+    ///
+    /// <para>A record key always matches whole. Part of a name or phone matches only for a caller
+    /// holding the partial-search action; anyone else must give the whole name or number.</para>
     /// </summary>
     [HttpGet("Search")]
     [Authorize]
@@ -294,26 +321,78 @@ public class CaseBrowserController : ControllerBase
 
         take = Math.Clamp(take, 1, 200);
         string term = q.Trim();
-        string like = "%" + term.Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]") + "%";
 
-        var rows = await db.Set<StewardRecord>().FromSqlRaw("""
-            SELECT TOP (@take) SourceSystem, SourceRecordId, RunID, Payload
-            FROM Darlastic.StewardRecord
-            WHERE JSON_VALUE(Payload, '$.NormName') LIKE @like
-               OR JSON_VALUE(Payload, '$.RawName')  LIKE @like
-               OR SourceRecordId = @exact
-               OR EXISTS (SELECT 1 FROM OPENJSON(Payload, '$.Phones') p WHERE p.value LIKE @like)
-            """,
-            new Microsoft.Data.SqlClient.SqlParameter("@take", take),
-            new Microsoft.Data.SqlClient.SqlParameter("@like", like),
-            new Microsoft.Data.SqlClient.SqlParameter("@exact", term))
-            .AsNoTracking().ToListAsync(ct);
+        var rows = options.RecordSearchIndex
+            ? await SearchByIndexAsync(term, take, ct)
+            : Pii.PartialSearch
+            ? await db.Set<StewardRecord>().FromSqlRaw("""
+                SELECT TOP (@take) SourceSystem, SourceRecordId, RunID, Payload
+                FROM Darlastic.StewardRecord
+                WHERE JSON_VALUE(Payload, '$.NormName') LIKE @like
+                   OR JSON_VALUE(Payload, '$.RawName')  LIKE @like
+                   OR SourceRecordId = @exact
+                   OR EXISTS (SELECT 1 FROM OPENJSON(Payload, '$.Phones') p WHERE p.value LIKE @like)
+                """,
+                new Microsoft.Data.SqlClient.SqlParameter("@take", take),
+                new Microsoft.Data.SqlClient.SqlParameter("@like", "%" + term.Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]") + "%"),
+                new Microsoft.Data.SqlClient.SqlParameter("@exact", term))
+                .AsNoTracking().ToListAsync(ct)
+            // Whole values only: the name as written or as normalized, or the full number. An empty
+            // digit string never equals a stored phone, so a name-only query cannot match on phone.
+            : await db.Set<StewardRecord>().FromSqlRaw("""
+                SELECT TOP (@take) SourceSystem, SourceRecordId, RunID, Payload
+                FROM Darlastic.StewardRecord
+                WHERE JSON_VALUE(Payload, '$.NormName') = @exact
+                   OR JSON_VALUE(Payload, '$.RawName')  = @exact
+                   OR SourceRecordId = @exact
+                   OR EXISTS (SELECT 1 FROM OPENJSON(Payload, '$.Phones') p WHERE p.value = @digits)
+                   OR EXISTS (SELECT 1 FROM OPENJSON(Payload, '$.WeakPhones') p WHERE p.value = @digits)
+                """,
+                new Microsoft.Data.SqlClient.SqlParameter("@take", take),
+                new Microsoft.Data.SqlClient.SqlParameter("@exact", term),
+                new Microsoft.Data.SqlClient.SqlParameter("@digits", new string([.. term.Where(char.IsDigit)])))
+                .AsNoTracking().ToListAsync(ct);
 
         var ids = await IdentitiesOf(rows.Select(r => (r.SourceSystem, r.SourceRecordId)), ct);
         return rows.Select(r => Revive(r) is { } rec
                 ? ToSide(rec, ids.GetValueOrDefault((r.SourceSystem, r.SourceRecordId)))
                 : new CaseSideDTO { SourceSystem = r.SourceSystem, SourceRecordId = r.SourceRecordId })
             .ToList();
+    }
+
+    /// <summary>
+    /// <see cref="Search"/> through the per-run record index (<see cref="DarlasticApiOptions.RecordSearchIndex"/>):
+    /// the index names the candidate records, and each is kept only if it answers the rule the SQL above applies —
+    /// the record key exactly; for a partial-search caller part of either name or of a phone, for anyone else either
+    /// whole name or the full number.
+    /// </summary>
+    private async Task<List<StewardRecord>> SearchByIndexAsync(string term, int take, CancellationToken ct)
+    {
+        var index = await HttpContext.RequestServices.GetRequiredService<RegistryRunCache>()
+            .GetAsync(db, RecordSearchIndex.CacheName, RecordSearchIndex.BuildAsync, ct);
+        bool partial = Pii.PartialSearch;
+        string digits = new([.. term.Where(char.IsDigit)]);
+        const RecordSearchIndex.Fields none = RecordSearchIndex.Fields.None;
+        var candidates = partial
+            ? index.Find((RecordSearchIndex.Fields.RecordIds, RecordSearchIndex.Fields.Names | RecordSearchIndex.Fields.Phones, term))
+            : index.Find(
+                (RecordSearchIndex.Fields.Names | RecordSearchIndex.Fields.RecordIds, none, term),
+                (RecordSearchIndex.Fields.Phones | RecordSearchIndex.Fields.WeakPhones, none, digits));
+        return await index.RowsAsync(db, candidates, take,
+            row => Revive(row) is { } rec && SearchMatches(rec, term, digits, partial), ct);
+    }
+
+    /// <summary>The rule <see cref="Search"/>'s SQL applies to one record, for the index path.</summary>
+    internal static bool SearchMatches(RealRecord r, string term, string digits, bool partial)
+    {
+        if (string.Equals(r.SourceRecordId, term, StringComparison.Ordinal)) return true;
+        if (partial)
+            return (r.NormName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (r.RawName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (r.Phones?.Any(p => p.Contains(term, StringComparison.OrdinalIgnoreCase)) ?? false);
+        return string.Equals(r.NormName?.TrimEnd(), term, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(r.RawName?.TrimEnd(), term, StringComparison.OrdinalIgnoreCase)
+            || (digits.Length > 0 && ((r.Phones?.Contains(digits) ?? false) || (r.WeakPhones?.Contains(digits) ?? false)));
     }
 
     /// <summary>
@@ -539,7 +618,9 @@ public class CaseBrowserController : ControllerBase
         // Engine.Core rather than staging a trace that could quietly go stale.
         if (recA is not null && recB is not null)
         {
-            var trace = new MatchTrace();
+            // The trace and the normalization steps quote the records; the engine writes each quoted
+            // value through this caller's masking, so a masked caller reads them masked.
+            var trace = Pii.NewTrace();
             dto.LiveScore = RealMatcher.Explain(recA, recB, trace);
             dto.Trace = [.. trace.Steps.Select(s => new TraceStepDTO
             {
@@ -549,14 +630,16 @@ public class CaseBrowserController : ControllerBase
             // The record-level half of the walkthrough, and why the two were ever compared. Both
             // are pure functions of a single record, so neither needs staging — the same reason
             // the trace does not.
-            dto.NormalizeA = [.. Normalization.Steps(recA).Select(s => new NormalizeStepDTO { Stage = s.Stage, Detail = s.Detail })];
-            dto.NormalizeB = [.. Normalization.Steps(recB).Select(s => new NormalizeStepDTO { Stage = s.Stage, Detail = s.Detail })];
-            dto.SharedBlockKeys = [.. RealMatcher.BlockKeysOf(recA).Intersect(RealMatcher.BlockKeysOf(recB), StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+            dto.NormalizeA = [.. Pii.Normalize(recA).Select(s => new NormalizeStepDTO { Stage = s.Stage, Detail = s.Detail })];
+            dto.NormalizeB = [.. Pii.Normalize(recB).Select(s => new NormalizeStepDTO { Stage = s.Stage, Detail = s.Detail })];
+            dto.SharedBlockKeys = [.. RealMatcher.BlockKeysOf(recA).Intersect(RealMatcher.BlockKeysOf(recB), StringComparer.Ordinal).Order(StringComparer.Ordinal).Select(Pii.BlockKey)];
             dto.Decision = dto.LiveScore >= 0.90 ? "auto-merge" : dto.LiveScore >= 0.80 ? "steward-queue" : "kept-separate";
             if (recA.Dob is { } da && recB.Dob is { } dbo && da.Year > 0 && dbo.Year > 0)
                 dto.DobGapYears = Math.Abs(da.Year - dbo.Year);
             // Tolerance is well below any decision boundary — this flags a real engine change,
-            // not float noise.
+            // not float noise. The live score is computed under the configuration the resolve
+            // recorded, so a difference is the engine or the records moving, not a host that
+            // never saw the tenant's rules.
             dto.EngineDrift = Math.Abs(dto.LiveScore - staged) > 0.0005;
             if (dto.Rules.Count == 0)
             {
@@ -672,19 +755,20 @@ public class CaseBrowserController : ControllerBase
         catch (JsonException) { return null; }   // a corrupt payload loses one case, not the page
     }
 
-    private static CaseSideDTO ToSide(RealRecord r, long? identityId) => new()
+    /// <summary>One record as this caller may see it: personal values masked unless the caller may reveal them.</summary>
+    private CaseSideDTO ToSide(RealRecord r, long? identityId) => new()
     {
         SourceSystem = r.SourceSystem,
         SourceRecordId = r.SourceRecordId,
-        RawName = r.RawName,
-        NormName = r.NormName,
-        Phones = [.. r.Phones],
-        WeakPhones = [.. r.WeakPhones],
-        NationalId = r.NationalId,
-        City = string.IsNullOrEmpty(r.NormCity) ? null : r.NormCity,
-        Address = string.IsNullOrEmpty(r.RawAddress) ? null : r.RawAddress,
+        RawName = Pii.Show(PiiKind.Name, r.RawName),
+        NormName = Pii.Show(PiiKind.Name, r.NormName),
+        Phones = Pii.Show(PiiKind.Phone, r.Phones),
+        WeakPhones = Pii.Show(PiiKind.Phone, r.WeakPhones),
+        NationalId = Pii.Show(PiiKind.Identifier, r.NationalId),
+        City = string.IsNullOrEmpty(r.NormCity) ? null : Pii.ShowCity(r.NormCity),
+        Address = string.IsNullOrEmpty(r.RawAddress) ? null : Pii.Show(PiiKind.Address, r.RawAddress),
         Gender = r.Gender,
-        Emails = r.Emails is null ? [] : [.. r.Emails],
+        Emails = Pii.Show(PiiKind.Email, r.Emails),
         NameWasMojibake = r.NameWasMojibake,
         NameHadArabizi = r.NameHadArabizi,
         IdentityID = identityId,

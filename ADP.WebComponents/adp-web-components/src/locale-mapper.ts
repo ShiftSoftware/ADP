@@ -94,6 +94,9 @@ const localeMapper = {
   "vehicleLookup.warrantyTimeline": [
     "locales/vehicleLookup/warrantyTimeline/"
   ],
+  "vinExtractor": [
+    "locales/vinExtractor/"
+  ],
   "forms*": [
     "locales/forms/"
   ]

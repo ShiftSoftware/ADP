@@ -55,8 +55,10 @@ function cssPropertiesOf(stencilComponent, reference) {
 
   const css = readFileSync(stylesheet, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   const found = new Map();
+  // Public variables always carry the shift- prefix, which the shift-* tags already start with.
+  const prefix = stencilComponent.tag.startsWith('shift-') ? stencilComponent.tag : `shift-${stencilComponent.tag}`;
 
-  for (const match of css.matchAll(new RegExp(`var\\(\\s*(--${stencilComponent.tag}-[\\w-]+)`, 'g'))) {
+  for (const match of css.matchAll(new RegExp(`var\\(\\s*(--${prefix}-[\\w-]+)`, 'g'))) {
     if (!found.has(match[1])) found.set(match[1], fallbackOf(css, match.index + match[0].length));
   }
 

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using ShiftSoftware.ADP.Darlastic.API.Extensions;
+using ShiftSoftware.ShiftEntity.Core.Pii;
 using ShiftSoftware.TypeAuth.Core;
 using System.Reflection;
 using System.Security.Claims;
@@ -27,8 +28,13 @@ namespace ShiftSoftware.ADP.Darlastic.API.Controllers;
 public class CaseBrowserUiController : Controller
 {
     private readonly DarlasticApiOptions options;
+    private readonly PiiOptions piiOptions;
 
-    public CaseBrowserUiController(IOptions<DarlasticApiOptions> options) => this.options = options.Value;
+    public CaseBrowserUiController(IOptions<DarlasticApiOptions> options, IOptions<PiiOptions> piiOptions)
+    {
+        this.options = options.Value;
+        this.piiOptions = piiOptions.Value;
+    }
 
     /// <summary>
     /// The page. Anonymous because it carries no data and no secret — every byte of it is the same
@@ -85,12 +91,20 @@ public class CaseBrowserUiController : Controller
 
         if (!canRead) return Forbid();
 
+        // Names and phones follow the host's PII contract, measured here like everything else a
+        // token carries. Not tied to the module's authorization switch: the golden endpoints check
+        // the PII action whatever that switch says, and the case browser shows the same people.
+        // No TypeAuth at all means nobody can be shown to hold it, so the token is masked.
+        var piiAuth = HttpContext.RequestServices.GetService<ITypeAuthService>();
+        bool canRevealPii = piiAuth?.CanAccess(piiOptions.Action) == true;
+        bool canSearchPii = piiAuth?.CanAccess(piiOptions.PartialSearchAction) == true;
+
         string actor = User.FindFirstValue(ClaimTypes.Email)
             ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? User.Identity?.Name
             ?? "unknown";
 
-        var (token, expires) = CaseBrowserSas.Mint(options, actor, canWrite);
+        var (token, expires) = CaseBrowserSas.Mint(options, actor, canWrite, canRevealPii, canSearchPii);
         string prefix = (options.RoutePrefix ?? "api").Trim('/');
 
         return new JsonResult(new
@@ -104,6 +118,7 @@ public class CaseBrowserUiController : Controller
             // Presentation only — the token itself is what enforces this. Lets a host UI say so up
             // front instead of leaving a read-only steward to discover it by clicking Flag.
             canWrite,
+            canRevealPii,
         });
     }
 

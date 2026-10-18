@@ -5,8 +5,7 @@
 @using ShiftSoftware.ADP.Surveys.Web.Components.QuestionEditors
 
 @* Dispatches on Entry.Inline's concrete QuestionDto subtype and renders the
-   per-type editor. Every one of the 14 question types has a dedicated editor
-   as of Slice 3. QuestionRef entries route to BankRefInspector (Slice 4). *@
+   per-type editor. Every question type has a dedicated editor. QuestionRef entries route to BankRefInspector (Slice 4). *@
 
 @if (Entry is null)
 {
@@ -61,6 +60,9 @@ else
             break;
         case NavigationListQuestionDto q:
             <NavigationListQuestionEditor Question="q" Draft="@Draft" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
+            break;
+        case BookingSlotQuestionDto q:
+            <BookingSlotQuestionEditor Question="q" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
             break;
         default:
             @* Defensive catch-all — should never hit unless a new type lands

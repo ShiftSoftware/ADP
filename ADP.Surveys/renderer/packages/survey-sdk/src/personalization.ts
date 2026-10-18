@@ -218,7 +218,8 @@ export function formatAnswerLabel(
       return declared ?? (yes ? options.yesNoLabels?.yes ?? 'Yes' : options.yesNoLabels?.no ?? 'No');
     }
     case 'date':
-    case 'dateTime': {
+    case 'dateTime':
+    case 'bookingSlot': {
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return value;
       try {

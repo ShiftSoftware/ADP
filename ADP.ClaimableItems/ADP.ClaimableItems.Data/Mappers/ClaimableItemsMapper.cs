@@ -159,13 +159,10 @@ public class ClaimableItemsMapper : ShiftMapperBase
             // Six flattenings through navigations. Flattening is off, and no diagnostic covers a list member that
             // comes back null, so they are written out.
             //
-            // EVERY ONE OF THESE IS GUARDED, INCLUDING THE TWO NON-NULLABLE NAVIGATIONS, and that is not defensive
-            // padding - it is required for correctness on a second caller. This projection runs in TWO places. The
-            // list endpoint runs it as SQL, where an unguarded `e.Campaign.Name` is fine.
-            // ItemClaimCertificateRepository.ViewAsync runs the SAME projection IN MEMORY over an
-            // already-materialized list, and that query Includes ClaimableItem but NOT Campaign - so `e.Campaign` is
-            // genuinely null there and an unguarded dereference throws NullReferenceException. Adding an Include to
-            // "fix" the resulting null CampaignName would be a behaviour change.
+            // Every one of these is guarded, including the two non-nullable navigations. Both callers run this
+            // projection as SQL (the list endpoint, and ItemClaimCertificateRepository.ViewAsync for a certificate's
+            // lines), where the guards are free; they keep the map safe for an in-memory caller, which reads only the
+            // navigations it loaded. (ViewAsync used to project in memory, and CampaignName was null there.)
             .ForMember(d => d.CampaignName, opt => opt.MapFrom(e => e.Campaign != null ? e.Campaign.Name : null!))
             .ForMember(d => d.ClaimableItemName, opt => opt.MapFrom(e => e.ClaimableItem != null ? e.ClaimableItem.Name : null!))
             .ForMember(d => d.ReimbursementCertificateCertificateDate, opt => opt.MapFrom(e => e.ReimbursementCertificate != null ? e.ReimbursementCertificate.CertificateDate : null))

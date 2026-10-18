@@ -232,7 +232,7 @@
 
     int expandedIndex = -1;
 
-    // All 14 question types have a visual editor as of Slice 3.
+    // Every question type has a visual editor.
     static readonly QuestionType[] visuallyEditableTypes = new[]
     {
         QuestionType.Text,
@@ -249,6 +249,7 @@
         QuestionType.Signature,
         QuestionType.YesNo,
         QuestionType.NavigationList,
+        QuestionType.BookingSlot,
     };
 
     static string FormatType(QuestionType t) => t switch
@@ -267,6 +268,7 @@
         QuestionType.Signature => "Signature",
         QuestionType.YesNo => "Yes / No",
         QuestionType.NavigationList => "Navigation list",
+        QuestionType.BookingSlot => "Booking slot (branch calendar)",
         _ => t.ToString(),
     };
 
@@ -342,6 +344,7 @@
             QuestionType.Signature => new SignatureQuestionDto(),
             QuestionType.YesNo => new YesNoQuestionDto(),
             QuestionType.NavigationList => new NavigationListQuestionDto(),
+            QuestionType.BookingSlot => new BookingSlotQuestionDto(),
             _ => throw new NotSupportedException($"Unsupported question type for visual add: {type}"),
         };
         q.Id = GenerateQuestionId(Screen, type);

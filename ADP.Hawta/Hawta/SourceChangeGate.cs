@@ -81,10 +81,10 @@ public sealed record SourceChangeDecision(
 ///
 /// <para><b>Why this exists.</b> Every cadence tick otherwise re-reads the whole file, re-hashes
 /// every row and re-runs the merge, even when the file is byte-identical. That was measured as
-/// acceptable for ONE large file at a LOW cadence (the 409 MB JPM feed, ~7 s idle). It is not the
-/// same question at TIQ's file count run at Hawta's cadence — and raising the cadence is the point
-/// of Hawta, so this gate is what makes the higher frequency affordable rather than an optimization
-/// of what runs today.</para>
+/// acceptable for ONE large file at a LOW cadence (the 409 MB JPM feed, ~7 s idle). That result
+/// does not apply to a deployment with dozens of files read at Hawta's cadence. Raising the
+/// cadence is the point of Hawta, so this gate is what makes the higher frequency affordable
+/// rather than an optimization of what runs today.</para>
 ///
 /// <para><b>It skips on exactly one condition</b> — metadata <see cref="FileProbeStatus.Found"/>,
 /// identical path, length and last-write time, an identical fingerprint, and a stamp inside

@@ -12,6 +12,8 @@ public class CSVSyncDataSourceConfigurations<T> where T : class
     public Func<IEnumerable<T>, ValueTask<IEnumerable<T>>>? ProccessSourceData { get; set; }
     public Func<IEnumerable<T>, IEnumerable<T>, ValueTask<IEnumerable<T>>>? ProccessAddedItems { get; set; }
     public Func<IEnumerable<T>, IEnumerable<T>, ValueTask<IEnumerable<T>>>? ProccessDeletedItems { get; set; }
+    /// <summary>Optional per-import CsvHelper mapping, used consistently for source, diff and baseline records.</summary>
+    public Action<CsvHelper.CsvContext>? ConfigureCsvContext { get; set; }
 
     /// <summary>
     /// Default is true.

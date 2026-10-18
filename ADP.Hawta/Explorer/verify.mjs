@@ -111,7 +111,7 @@ assert.notEqual(hash(['FILTER',10,null]),hash(['FILTER',10,'']));
 assert.notEqual(hash(['ab','c']),hash(['a','bc']));
 
 // Exercise the same shared motion controller used by overview and detail views.
-const animation = await read('animation.js');
+const animation = await read('overview.js') + '\n' + await read('../../ADP.Explorer.Shared/overview.js');
 for (const initiallyReduced of [false,true]) {
   class Element {
     constructor() { this.dataset={};this.listeners={};this.attrs={};this.classList={toggle(){}}; }
@@ -138,7 +138,7 @@ for (const initiallyReduced of [false,true]) {
     requestAnimationFrame:fn=>frames.push(fn),ResizeObserver:class{observe(){}},
     CustomEvent:class{constructor(type,options){this.type=type;this.detail=options.detail;}}};
   vm.runInNewContext(animation,sandbox);
-  const motion=sandbox.window.HawtaMotion;
+  const motion=sandbox.window.ExplorerMotion;
   assert.equal(motion.isPlaying(),!initiallyReduced);
   motion.pause();assert.equal(page.body.dataset.playing,'false');
   motion.resume();assert.equal(page.body.dataset.playing,'true');

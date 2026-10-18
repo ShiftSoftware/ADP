@@ -35,6 +35,7 @@ public class TriggerIngestService
     public async Task<TriggerIngestResult> IngestAsync(TriggerIngestRequest request, CancellationToken ct = default)
     {
         var result = new TriggerIngestResult();
+        var now = DateTimeOffset.UtcNow;
         var matches = await LoadPublishedTriggersForEventKindAsync(request.EventKind, ct);
         result.PublishedTriggers = matches.Count(m => m.Trigger.Enabled);
 
@@ -55,6 +56,11 @@ public class TriggerIngestService
                         if (!LogicEvaluator.EvaluateCondition(match.Trigger.Filter, ctx))
                             continue;
                     }
+
+                    // Too late to be worth surveying. A NoMatch like a filter rejection, so
+                    // the pull cursor moves past it and it is never offered again.
+                    if (TriggerDeadline.IsPast(match.Trigger.Deadline, item.Payload, now))
+                        continue;
 
                     var instance = MaterializeInstance(match.Survey, match.Version, match.Trigger, item);
                     var hashBytes = TriggerHasher.BuildHashBytes(

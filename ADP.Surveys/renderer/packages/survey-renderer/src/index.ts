@@ -12,6 +12,7 @@ export { MultiChoiceQuestion } from './questions/MultiChoiceQuestion.js';
 export { DropdownQuestion } from './questions/DropdownQuestion.js';
 export { DateQuestion } from './questions/DateQuestion.js';
 export { DateTimeQuestion } from './questions/DateTimeQuestion.js';
+export { BookingSlotQuestion } from './questions/BookingSlotQuestion.js';
 export { FileQuestion } from './questions/FileQuestion.js';
 export { SignatureQuestion } from './questions/SignatureQuestion.js';
 export { YesNoQuestion } from './questions/YesNoQuestion.js';

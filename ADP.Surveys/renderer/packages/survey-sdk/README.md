@@ -1,4 +1,4 @@
-# @shiftsoftware/survey-sdk
+# @shift-software/survey-sdk
 
 Runtime contract for the ADP Dynamic Surveys platform.
 
@@ -13,7 +13,7 @@ This package is the TypeScript mirror of the evaluation layer in `ADP.Surveys.Sh
 ## Using it
 
 ```ts
-import { evaluateNext, evaluateBoolean } from '@shiftsoftware/survey-sdk';
+import { evaluateNext, evaluateBoolean } from '@shift-software/survey-sdk';
 
 // Cross-screen routing
 const next = evaluateNext(survey, answers); // → "screen-5" | null

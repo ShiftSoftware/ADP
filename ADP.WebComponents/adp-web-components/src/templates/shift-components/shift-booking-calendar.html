@@ -77,21 +77,18 @@
             [
               '<!-- the label and the status line are opt-in: show-label, show-status -->',
               '<!-- idle: an id is missing -->',
-              '<shift-booking-calendar show-label show-status calendar-api="…" company-id="1" department-id="showroom" brand-id="BRAND"></shift-booking-calendar>',
+              '<shift-booking-calendar show-label show-status calendar-api="…" department-id="showroom" brand-id="BRAND"></shift-booking-calendar>',
               '',
               '<!-- loading → ready, empty or error, from the endpoint -->',
-              '<shift-booking-calendar show-label show-status calendar-api="…" company-id="1" branch-id="42" department-id="showroom" brand-id="BRAND"></shift-booking-calendar>',
+              '<shift-booking-calendar show-label show-status calendar-api="…" branch-id="Xr8pQ" department-id="showroom" brand-id="BRAND"></shift-booking-calendar>',
             ].join('\n'),
         },
         counts: {
           lang: 'HTML',
           code: () =>
-            [
-              '<shift-booking-calendar',
-              '  calendar-api="…" company-id="1" branch-id="42" department-id="showroom" brand-id="BRAND"',
-              '  hour-cycle="h12"',
-              '></shift-booking-calendar>',
-            ].join('\n'),
+            ['<shift-booking-calendar', '  calendar-api="…" branch-id="Xr8pQ" department-id="showroom" brand-id="BRAND"', '  hour-cycle="h12"', '></shift-booking-calendar>'].join(
+              '\n',
+            ),
         },
         standalone: {
           lang: 'JavaScript',
@@ -112,7 +109,7 @@
               '<shift-input name="bookingDate" label="Date and time">',
               '  <shift-booking-calendar',
               '    slot="picker"',
-              '    calendar-api="…" company-id="1" branch-id="42" department-id="service-center" brand-id="BRAND"',
+              '    calendar-api="…" branch-id="Xr8pQ" department-id="service-center" brand-id="BRAND"',
               '    utc-offset="+03:00"',
               '  ></shift-booking-calendar>',
               '</shift-input>',
@@ -125,7 +122,7 @@
           code: () =>
             [
               '<!-- The branch has no times: the month stays, greyed, under a message. show-empty-state="false" turns it off. -->',
-              '<shift-booking-calendar calendar-api="…" company-id="1" branch-id="42" department-id="service-center" brand-id="BRAND"></shift-booking-calendar>',
+              '<shift-booking-calendar calendar-api="…" branch-id="Xr8pQ" department-id="service-center" brand-id="BRAND"></shift-booking-calendar>',
             ].join('\n'),
         },
         trigger: {
@@ -137,7 +134,7 @@
               '',
               '<shift-popover anchor="#booking-date" trigger="anchor" placement="top" appearance="material" size="sm">',
               '  <shift-booking-calendar id="booking-calendar" appearance="material" size="sm"',
-              '    calendar-api="…" company-id="pW0G3" branch-id="KJemJ" department-id="service-center" brand-id="BRAND-A"',
+              '    calendar-api="…" branch-id="Xr8pQ" department-id="service-center" brand-id="BRAND-A"',
               '    value="2026-09-20T10:00:00+03:00"></shift-booking-calendar>',
               '</shift-popover>',
               '',
@@ -152,7 +149,7 @@
         overrideHtml: {
           lang: 'HTML',
           code: () =>
-            '<shift-booking-calendar class="brand-booking" show-label show-status calendar-api="…" company-id="1" branch-id="42" department-id="showroom" brand-id="BRAND"></shift-booking-calendar>',
+            '<shift-booking-calendar class="brand-booking" show-label show-status calendar-api="…" branch-id="Xr8pQ" department-id="showroom" brand-id="BRAND"></shift-booking-calendar>',
         },
         overrideCss: {
           lang: 'CSS',
@@ -195,7 +192,7 @@
       };
 
       window.bookingApiGroups = [
-        { label: 'Branch & request', props: ['calendarApi', 'calendarApiVersion', 'companyId', 'branchId', 'departmentId', 'brandId', 'today'] },
+        { label: 'Branch & request', props: ['calendarApi', 'branchId', 'departmentId', 'brandId', 'today'] },
         {
           label: 'Days & times',
           props: ['disabledWeekdays', 'disabledDates', 'slotCounts', 'fewSlots', 'dayTooltips', 'showToday', 'hourCycle', 'defaultValue'],
@@ -494,7 +491,7 @@
 
         apply(el) {
           el.calendarApi = DATA[this.state === 'idle' ? 'ready' : this.state];
-          el.branchId = this.state === 'idle' ? '' : '42';
+          el.branchId = this.state === 'idle' ? '' : 'Xr8pQ';
         },
       });
 
@@ -504,9 +501,7 @@
 
       const PLAYGROUND = () => ({
         data: 'ready',
-        calendarApiVersion: 'v1',
-        companyId: '1',
-        branchId: '42',
+        branchId: 'Xr8pQ',
         departmentId: 'service-center',
         brandId: 'BRAND',
         today: TODAY,
@@ -537,7 +532,7 @@
       });
 
       const GROUPS = [
-        { id: 'request', label: 'Branch & request', fields: ['data', 'calendarApiVersion', 'companyId', 'branchId', 'departmentId', 'brandId', 'today'] },
+        { id: 'request', label: 'Branch & request', fields: ['data', 'branchId', 'departmentId', 'brandId', 'today'] },
         {
           id: 'days',
           label: 'Days & times',
@@ -560,7 +555,7 @@
       window.triggerExample = () => ({
         label: '',
         value: '',
-        branch: '42',
+        branch: 'Xr8pQ',
         format: 'iso',
 
         pick(detail) {
@@ -643,8 +638,6 @@
 
           subject.appearance = this.appearance;
           subject.calendarApi = DATA[form.data];
-          subject.calendarApiVersion = form.calendarApiVersion;
-          subject.companyId = form.companyId;
           subject.branchId = form.branchId;
           subject.departmentId = form.departmentId;
           subject.brandId = form.brandId;
@@ -689,8 +682,6 @@
           if (form.scheme !== 'light') add('color-scheme', form.scheme);
           if (form.language !== 'en') add('language', form.language);
           add('calendar-api', DATA[form.data]);
-          if (form.calendarApiVersion !== 'v1') add('calendar-api-version', form.calendarApiVersion);
-          add('company-id', form.companyId);
           add('branch-id', form.branchId);
           add('department-id', form.departmentId);
           add('brand-id', form.brandId);
@@ -838,7 +829,6 @@
                       id="states-demo"
                       show-label
                       show-status
-                      company-id="1"
                       department-id="service-center"
                       brand-id="BRAND"
                       today="2026-09-27"
@@ -866,8 +856,7 @@
                 <div class="frame">
                   <shift-booking-calendar
                     calendar-api="booking-availability.json"
-                    company-id="1"
-                    branch-id="42"
+                    branch-id="Xr8pQ"
                     department-id="service-center"
                     brand-id="BRAND"
                     today="2026-09-27"
@@ -892,8 +881,7 @@
                   <div class="frame">
                     <shift-booking-calendar
                       calendar-api="booking-availability.json"
-                      company-id="1"
-                      branch-id="42"
+                      branch-id="Xr8pQ"
                       department-id="service-center"
                       brand-id="BRAND"
                       today="2026-09-27"
@@ -922,8 +910,7 @@
                     show-label
                     show-status
                     calendar-api="booking-availability.json"
-                    company-id="1"
-                    branch-id="42"
+                    branch-id="Xr8pQ"
                     department-id="service-center"
                     brand-id="BRAND"
                     today="2026-09-27"
@@ -957,8 +944,7 @@
                     <shift-booking-calendar
                       slot="picker"
                       calendar-api="booking-availability-many.json"
-                      company-id="1"
-                      branch-id="42"
+                      branch-id="Xr8pQ"
                       department-id="service-center"
                       brand-id="BRAND"
                       today="2026-09-27"
@@ -1001,7 +987,7 @@
                     <div class="flex items-center gap-2">
                       <span>branch-id</span>
                       <div class="flex flex-wrap gap-1">
-                        <template x-for="item in ['42', '43']" :key="item">
+                        <template x-for="item in ['Xr8pQ', 'Mn2vK']" :key="item">
                           <button type="button" class="btn btn-xs" :class="branch === item ? 'btn-primary' : 'btn-ghost border-base-300'" :aria-pressed="String(branch === item)" @click="branch = item" x-text="item"></button>
                         </template>
                       </div>
@@ -1021,7 +1007,6 @@
                       appearance="material"
                       size="sm"
                       calendar-api="booking-availability.json"
-                      company-id="1"
                       :branch-id="branch"
                       department-id="service-center"
                       brand-id="BRAND-A"
@@ -1055,8 +1040,7 @@
                   <shift-booking-calendar
                     id="empty-demo"
                     calendar-api="booking-availability-empty.json"
-                    company-id="1"
-                    branch-id="42"
+                    branch-id="Xr8pQ"
                     department-id="service-center"
                     brand-id="BRAND"
                     today="2026-09-27"
@@ -1194,16 +1178,6 @@
                                         <option :value="item" x-text="item"></option>
                                       </template></select
                                   ></label>
-                                  <label class="studio-row"
-                                    ><span>calendarApiVersion</span
-                                    ><select class="select select-xs select-bordered" x-model="form.calendarApiVersion">
-                                      <option value="v1">v1</option>
-                                      <option value="v2">v2</option>
-                                    </select></label
-                                  >
-                                  <label class="studio-row"
-                                    ><span>companyId</span><input class="input input-xs input-bordered" type="text" x-model.debounce.300ms="form.companyId"
-                                  /></label>
                                   <label class="studio-row"
                                     ><span>branchId <small>empty is idle</small></span
                                     ><input class="input input-xs input-bordered" type="text" x-model.debounce.300ms="form.branchId"
@@ -1378,8 +1352,7 @@
                     id="theme-preview"
                     x-ref="preview"
                     calendar-api="booking-availability.json"
-                    company-id="1"
-                    branch-id="42"
+                    branch-id="Xr8pQ"
                     department-id="service-center"
                     brand-id="BRAND"
                     today="2026-09-27"
@@ -1458,8 +1431,7 @@
                     <shift-booking-calendar
                       class="parts-demo"
                       calendar-api="booking-availability.json"
-                      company-id="1"
-                      branch-id="42"
+                      branch-id="Xr8pQ"
                       department-id="service-center"
                       brand-id="BRAND"
                       today="2026-09-27"
@@ -1470,8 +1442,7 @@
                     <shift-booking-calendar
                       class="parts-demo"
                       calendar-api="booking-availability-invalid.json"
-                      company-id="1"
-                      branch-id="42"
+                      branch-id="Xr8pQ"
                       department-id="service-center"
                       brand-id="BRAND"
                       today="2026-09-27"

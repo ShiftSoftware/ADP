@@ -16,11 +16,12 @@ namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 /// Evaluates the closed declarative condition grammar shared by service-item and
 /// extended-warranty eligibility. Unsupported fields or invalid condition shapes fail closed.
 /// </summary>
-internal sealed class VehicleEligibilityConditionEvaluator
+internal sealed partial class VehicleEligibilityConditionEvaluator
 {
     internal const string ServiceHistoryPackageCodeField = "serviceHistory.laborLines.packageCode";
     internal const string ServiceHistoryMaximumMilestoneField = "serviceHistory.laborLines.maximumMilestone";
     internal const string BaseScheduleMaximumMileageField = "serviceItems.baseSchedule.maximumMileage";
+    internal const string CampaignMembershipField = "campaignVinEntries.campaignID";
 
     // A deployment that configures nothing reads no milestones. That is the intended state rather
     // than a gap: a default convention is one network's writing habits presented as everyone's, and
@@ -30,6 +31,8 @@ internal sealed class VehicleEligibilityConditionEvaluator
     private readonly CompanyDataAggregateModel companyDataAggregate;
     private readonly IServiceMilestoneResolver milestoneResolver;
     private readonly bool collectMilestoneNearMisses;
+    private readonly IReadOnlyCollection<string> classificationCodes;
+    private readonly Lazy<bool> isAuthorized;
 
     // Gathered per Evaluate call and reset by it, so one instance can be reused across definitions
     // without carrying the last one's findings into the next.
@@ -39,9 +42,13 @@ internal sealed class VehicleEligibilityConditionEvaluator
     internal VehicleEligibilityConditionEvaluator(
         CompanyDataAggregateModel companyDataAggregate,
         LookupOptions options,
-        bool collectMilestoneNearMisses = false)
+        bool collectMilestoneNearMisses = false,
+        IReadOnlyCollection<string> classificationCodes = null,
+        bool? isAuthorized = null)
     {
         this.companyDataAggregate = companyDataAggregate;
+        this.classificationCodes = classificationCodes;
+        this.isAuthorized = new Lazy<bool>(() => isAuthorized ?? new VehicleAuthorizationEvaluator(companyDataAggregate).Evaluate());
         this.milestoneResolver = (options?.ServiceMilestones ?? UnconfiguredMilestoneOptions).GetResolver();
         this.collectMilestoneNearMisses = collectMilestoneNearMisses;
     }
@@ -65,13 +72,17 @@ internal sealed class VehicleEligibilityConditionEvaluator
         milestoneNearMisses = null;
 
         var state = EligibilityConditionState.Met;
+        var missedMilestoneCeiling = false;
 
         foreach (var condition in conditions ?? Enumerable.Empty<EligibilityConditionModel>())
         {
-            if (condition is null)
+            if (condition is null || !Enum.IsDefined(typeof(EligibilityConditionUnmetBehavior), condition.WhenUnmet)
+                || condition.UnsupportedProperties?.Count > 0
+                || condition.Scope?.UnsupportedProperties?.Count > 0 || condition.Qualifier?.UnsupportedProperties?.Count > 0
+                || (condition.AnyOf is not null && !EligibilityConditionGroup.IsValid(condition)))
                 return Hidden();
 
-            if (MatchesCondition(condition, baseScheduleMaximumMileage))
+            if (MatchesCondition(condition, baseScheduleMaximumMileage, out var exceedsMilestoneCeiling))
                 continue;
 
             switch (condition.WhenUnmet)
@@ -84,9 +95,10 @@ internal sealed class VehicleEligibilityConditionEvaluator
                     break;
 
                 case EligibilityConditionUnmetBehavior.Miss:
-                    // Locked outranks missed however the conditions are ordered: a customer who has
-                    // not finished their prerequisites has missed nothing, even though the clause
-                    // about going too far is failing at the same time — it fails on a null maximum.
+                    // A failed equality alone does not prove the window was passed: the maximum
+                    // can be absent or below the ceiling. Only a recognized higher milestone can
+                    // override missing prerequisites, after all hiding conditions are checked.
+                    missedMilestoneCeiling |= exceedsMilestoneCeiling;
                     if (state != EligibilityConditionState.Locked)
                         state = EligibilityConditionState.Missed;
                     break;
@@ -95,6 +107,9 @@ internal sealed class VehicleEligibilityConditionEvaluator
                     return Hidden();
             }
         }
+
+        if (missedMilestoneCeiling)
+            state = EligibilityConditionState.Missed;
 
         // An item that ended up eligible can still have passed over codes on the way, and those are
         // the same evidence — a rule that reached its answer through half its history is worth
@@ -123,18 +138,92 @@ internal sealed class VehicleEligibilityConditionEvaluator
             ? EligibilityConditionOutcome.Hidden
             : new EligibilityConditionOutcome(EligibilityConditionState.Hidden, null, milestoneNearMisses);
 
-    private bool MatchesCondition(EligibilityConditionModel condition, long? baseScheduleMaximumMileage)
+    private bool MatchesCondition(
+        EligibilityConditionModel condition,
+        long? baseScheduleMaximumMileage,
+        out bool exceedsMilestoneCeiling)
     {
+        exceedsMilestoneCeiling = false;
+        if (condition.Scope?.InspectionTypeID is not null && condition.Field != "vehicleInspections.companyID") return false;
+        if (condition.AnyOf is not null)
+        {
+            // Validate every alternative before matching any. Children are predicates, not separate
+            // outcomes or activation clocks; only the group owns the failure behavior.
+            return condition.AnyOf.Any(alternative => MatchesCondition(alternative, baseScheduleMaximumMileage, out _));
+        }
+        if (string.Equals(condition.Field, "isAuthorized", StringComparison.Ordinal))
+        {
+            var values = condition.Values?.ToList();
+            return condition.Operator == EligibilityConditionOperator.Equals
+                && condition.ValueMatch == EligibilityConditionValueMatch.Exact
+                && condition.Scope is null && condition.Program is null && condition.Qualifier is null
+                && values is { Count: 1 } && bool.TryParse(values[0], out var expected)
+                && !string.IsNullOrWhiteSpace(companyDataAggregate.VIN)
+                && isAuthorized.Value == expected;
+        }
+        if (string.Equals(condition.Field, "vehicleClassifications.code", StringComparison.Ordinal))
+        {
+            var values = condition.Values?.ToList();
+            return condition.Operator == EligibilityConditionOperator.ContainsAll
+                && condition.ValueMatch == EligibilityConditionValueMatch.Exact
+                && condition.Scope is null && condition.Program is null && condition.Qualifier is null
+                && values is { Count: > 0 } && classificationCodes is not null
+                && values.All(value => !string.IsNullOrWhiteSpace(value)
+                    && classificationCodes.Contains(value, StringComparer.Ordinal));
+        }
+
+        if (string.Equals(condition.Field, CampaignMembershipField, StringComparison.Ordinal))
+            return MatchesCampaignMembership(condition);
+
+        if (string.Equals(condition.Field, "vehicleInspections.companyID", StringComparison.Ordinal))
+        {
+            var values = condition.Values?.ToList();
+            if (condition.Operator != EligibilityConditionOperator.ContainsAll || condition.ValueMatch != EligibilityConditionValueMatch.Exact
+                || condition.Program is not null || condition.Qualifier is not null
+                || condition.Scope?.Selection != EligibilityConditionSelection.All || condition.Scope.Count is not null || condition.Scope.InspectionTypeID is not > 0
+                || values is null || values.Count == 0 || string.IsNullOrWhiteSpace(companyDataAggregate.VIN)) return false;
+            var companies = new HashSet<long?>((companyDataAggregate.VehicleInspections ?? Enumerable.Empty<VehicleInspectionModel>())
+                .Where(i => i is not null && !i.IsDeleted && i.VehicleInspectionTypeID == condition.Scope.InspectionTypeID
+                    && string.Equals(i.VIN, companyDataAggregate.VIN, StringComparison.OrdinalIgnoreCase)).Select(i => i.CompanyID));
+            return values.All(v => long.TryParse(v, NumberStyles.None, CultureInfo.InvariantCulture, out var id) && id > 0 && companies.Contains(id));
+        }
+
         if (string.Equals(condition.Field, ServiceHistoryPackageCodeField, StringComparison.Ordinal))
             return MatchesServiceHistoryCondition(condition);
 
         if (string.Equals(condition.Field, ServiceHistoryMaximumMilestoneField, StringComparison.Ordinal))
-            return MatchesMaximumMilestoneCondition(condition);
+            return MatchesMaximumMilestoneCondition(condition, out exceedsMilestoneCeiling);
 
         if (string.Equals(condition.Field, BaseScheduleMaximumMileageField, StringComparison.Ordinal))
             return MatchesBaseScheduleMaximumMileageCondition(condition, baseScheduleMaximumMileage);
 
         return false;
+    }
+
+    private bool MatchesCampaignMembership(EligibilityConditionModel condition)
+    {
+        var values = condition.Values?.ToList();
+        if (condition.Operator != EligibilityConditionOperator.ContainsAll ||
+            condition.ValueMatch != EligibilityConditionValueMatch.Exact ||
+            condition.Scope is not null || condition.Program is not null || condition.Qualifier is not null ||
+            values is null || values.Count == 0 || string.IsNullOrWhiteSpace(companyDataAggregate.VIN))
+            return false;
+
+        var campaignIds = new List<long>();
+        foreach (var value in values)
+        {
+            if (!long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var id) || id <= 0)
+                return false;
+            campaignIds.Add(id);
+        }
+
+        // Membership is evidence only. The item's existing trigger still controls activation.
+        var memberships = new HashSet<long?>((companyDataAggregate.CampaignVinEntries ?? Enumerable.Empty<CampaignVinEntryModel>())
+            .Where(entry => entry is not null && !entry.IsDeleted &&
+                string.Equals(entry.VIN, companyDataAggregate.VIN, StringComparison.OrdinalIgnoreCase))
+            .Select(entry => entry.CampaignID));
+
+        return campaignIds.All(id => memberships.Contains(id));
     }
 
     private bool MatchesServiceHistoryCondition(EligibilityConditionModel condition)
@@ -238,20 +327,35 @@ internal sealed class VehicleEligibilityConditionEvaluator
         return completedOn;
     }
 
-    private void RecordPrerequisites(List<long> requiredMilestones, Dictionary<long, DateTime?> reached)
+    private void RecordPrerequisites(List<long> requiredMilestones, Dictionary<long, OrderLaborLineModel> reached)
     {
         prerequisites = prerequisites ?? new List<VehicleServiceItemPrerequisiteDTO>();
 
         foreach (var milestone in requiredMilestones)
         {
-            var satisfied = reached.TryGetValue(milestone, out var satisfiedOn);
+            var satisfied = reached.TryGetValue(milestone, out var line);
 
             prerequisites.Add(new VehicleServiceItemPrerequisiteDTO
             {
                 Mileage = milestone,
                 Label = FormatMilestoneLabel(milestone),
                 Satisfied = satisfied,
-                SatisfiedOn = satisfied ? satisfiedOn : null,
+                SatisfiedOn = line?.InvoiceDate,
+                Evidence = line is null ? null : new VehicleServiceItemPrerequisiteEvidenceDTO
+                {
+                    InvoiceDate = line.InvoiceDate,
+                    Odometer = line.Odometer,
+                    PackageCode = line.PackageCode,
+                    ServiceCode = line.ServiceCode,
+                    LaborCode = line.LaborCode,
+                    ServiceDescription = line.ServiceDescription,
+                    JobDescription = line.JobDescription,
+                    InvoiceNumber = line.InvoiceNumber,
+                    JobNumber = line.OrderDocumentNumber,
+                    LineID = line.LineID,
+                    CompanyID = line.CompanyID,
+                    BranchID = line.BranchID,
+                },
             });
         }
     }
@@ -277,8 +381,11 @@ internal sealed class VehicleEligibilityConditionEvaluator
     /// a vehicle that has not started must be told apart from one that has finished.
     /// </para>
     /// </summary>
-    private bool MatchesMaximumMilestoneCondition(EligibilityConditionModel condition)
+    private bool MatchesMaximumMilestoneCondition(
+        EligibilityConditionModel condition,
+        out bool exceedsMilestoneCeiling)
     {
+        exceedsMilestoneCeiling = false;
         var values = condition.Values?.ToList();
         if (condition.Operator != EligibilityConditionOperator.Equals ||
             condition.ValueMatch != EligibilityConditionValueMatch.Exact ||
@@ -297,7 +404,12 @@ internal sealed class VehicleEligibilityConditionEvaluator
             .ToList();
 
         var reached = CollectMilestones(invoices, programs, qualifier);
-        return reached.Count > 0 && reached.Keys.Max() == requiredMilestone;
+        if (reached.Count == 0)
+            return false;
+
+        var maximum = reached.Keys.Max();
+        exceedsMilestoneCeiling = maximum > requiredMilestone;
+        return maximum == requiredMilestone;
     }
 
     /// <summary>
@@ -343,12 +455,12 @@ internal sealed class VehicleEligibilityConditionEvaluator
     /// serviced twice, or split across two invoices, is one milestone reached — the number of lines
     /// carries no meaning here, and the earliest date is when the customer actually did it.
     /// </summary>
-    private Dictionary<long, DateTime?> CollectMilestones(
+    private Dictionary<long, OrderLaborLineModel> CollectMilestones(
         IEnumerable<VehicleServiceHistoryEvaluator.VehicleServiceHistoryInvoice> invoices,
         HashSet<string> programs,
         MilestoneQualifierFilter qualifier)
     {
-        var reached = new Dictionary<long, DateTime?>();
+        var reached = new Dictionary<long, OrderLaborLineModel>();
 
         foreach (var line in invoices.SelectMany(invoice =>
                      invoice.LaborLines ?? Enumerable.Empty<OrderLaborLineModel>()))
@@ -381,10 +493,10 @@ internal sealed class VehicleEligibilityConditionEvaluator
 
             var performedOn = line?.InvoiceDate;
 
-            if (!reached.TryGetValue(reading.Milestone, out var firstOn))
-                reached[reading.Milestone] = performedOn;
-            else if (performedOn is not null && (firstOn is null || performedOn < firstOn))
-                reached[reading.Milestone] = performedOn;
+            if (!reached.TryGetValue(reading.Milestone, out var firstLine))
+                reached[reading.Milestone] = line;
+            else if (performedOn is not null && (firstLine.InvoiceDate is null || performedOn < firstLine.InvoiceDate))
+                reached[reading.Milestone] = line;
         }
 
         return reached;

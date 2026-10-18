@@ -37,4 +37,5 @@
 	<ItemGroup Condition="'$(BenchProfileDir)' != ''">
 		<Compile Include="$(BenchProfileDir)\**\*.cs" Link="Profiles\%(RecursiveDir)%(Filename)%(Extension)" />
 	</ItemGroup>
+  <Import Project="$(BenchProfileDir)\Profile.targets" Condition="'$(BenchProfileDir)' != '' AND Exists('$(BenchProfileDir)\Profile.targets')" />
 </Project>

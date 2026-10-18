@@ -34,7 +34,8 @@ export type QuestionType =
   | 'file'
   | 'signature'
   | 'yesNo'
-  | 'navigationList';
+  | 'navigationList'
+  | 'bookingSlot';
 
 /** Accumulated answer map passed to the logic evaluator and the sandbox. Keys are
  *  question ids (banked or inline); values are the raw JSON-like answer values. */

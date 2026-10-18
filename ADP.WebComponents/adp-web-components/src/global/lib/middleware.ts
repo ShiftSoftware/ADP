@@ -2,8 +2,10 @@
   // Manrope is the vehicle-lookup family's Latin/Cyrillic face (lookup-tokens.css, --font-sans);
   // Noto Kufi Arabic its Arabic/Kurdish one and the legacy components'; Nunito the other
   // components' Latin face.
+  // A host that sets its own fonts opts out with `window.adpWebComponentsFonts = false`, set before
+  // the first component loads; the stylesheet is then never requested. Nothing else here depends on it.
   const href = 'https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Noto+Kufi+Arabic:wght@100..900&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap';
-  if (!document.querySelector(`link[href="${href}"]`)) {
+  if (window['adpWebComponentsFonts'] !== false && !document.querySelector(`link[href="${href}"]`)) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = href;

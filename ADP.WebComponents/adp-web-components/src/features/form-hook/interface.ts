@@ -102,6 +102,7 @@ export type FormFieldParams = Record<string, Params>;
 
 export interface FormElement {
   getValue?: () => any;
+  getDisplayValue?: () => string;
   validate?: () => AnyObjectSchema;
   reset: (newValue?: unknown) => void;
   partialValidation?: (validation: AnyObjectSchema) => AnyObjectSchema;

@@ -3,6 +3,9 @@ trigger:
     include:
       - release-web-components-*
 
+# PR runs disabled: production must only ever be reached by a manual run (see .shift/guides/pipeline-pr-triggers.md)
+pr: none
+
 variables:
   - group: Deployment
 

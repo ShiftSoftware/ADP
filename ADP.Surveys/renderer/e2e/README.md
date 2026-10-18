@@ -6,7 +6,7 @@ Live integration tests against the running Sample.API + DB. Each harness seeds a
 
 1. **`dotnet build` once** at repo root.
 2. **`npm install`** at `ADP.Surveys/renderer/` (sets up the npm workspace).
-3. **`npm run build --workspaces --if-present`** at `ADP.Surveys/renderer/` — `run.ts` imports `@shiftsoftware/survey-sdk` from its built `dist/`. Skipping this gives `ERR_MODULE_NOT_FOUND` on `survey-sdk/dist/index.js`.
+3. **`npm run build --workspaces --if-present`** at `ADP.Surveys/renderer/` — `run.ts` imports `@shift-software/survey-sdk` from its built `dist/`. Skipping this gives `ERR_MODULE_NOT_FOUND` on `survey-sdk/dist/index.js`.
 4. **Sample.API running** on `http://localhost:5134` — `cd samples/ADP.Surveys.Sample.API && dotnet run`. The harness logs in as `SuperUser` / `OneTwo` and writes via authenticated CRUD. Set `SURVEYS_API=http://localhost:5135` (or wherever) to drive a second instance instead — handy when the one on :5134 is a debugger session you don't want to restart: `dotnet build samples/ADP.Surveys.Sample.API -o <scratch dir>` then `dotnet <scratch dir>/ADP.Surveys.Sample.API.dll --urls http://localhost:5135 --contentRoot <scratch dir> --environment Development`.
 5. **`SurveysSample` DB present** on `localhost\sqlexpress` with EF migrations applied (`dotnet ef database update` from `samples/ADP.Surveys.Sample.API`). The harness uses `sqlcmd` to seed `SurveyInstance` rows and to verify persistence.
 6. **For the browser harness only:**

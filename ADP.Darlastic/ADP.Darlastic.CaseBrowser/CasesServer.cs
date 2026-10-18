@@ -173,6 +173,10 @@ public static class CasesServer
                 audits = auditsByKey.Values.Sum(l => l.Count),
                 goldPairs = goldByKey.Count,
                 flags = flags.Count,
+                // The page carries no names of its own: the one definition rides with the data.
+                // This server indexes pairs in memory and has no golden list to serve.
+                labels = CaseLabels.Wire(),
+                features = new { goldens = false, export = true, reveal = true, partialSearch = true },
             });
         });
 
@@ -372,7 +376,7 @@ public static class CasesServer
                 {
                     n!["resolution"] = (body.Resolution ?? "").Trim();
                     n["status"] = string.IsNullOrWhiteSpace(body.Status) ? "addressed" : body.Status!.Trim();
-                    n["resolvedBy"] = string.IsNullOrWhiteSpace(body.ResolvedBy) ? "Claude" : body.ResolvedBy!.Trim();
+                    n["resolvedBy"] = string.IsNullOrWhiteSpace(body.ResolvedBy) ? "reviewer" : body.ResolvedBy!.Trim();
                     n["resolvedAt"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
                     SaveFlags();
                 }
@@ -545,6 +549,7 @@ public static class CasesServer
             score = Math.Round(score, 3),
             band = RealMatcher.BandLabel(RealMatcher.Band(score)),
             decision = score >= 0.90 ? "auto-merge" : score >= 0.80 ? "steward-queue" : "kept-separate",
+            decisionLabel = CaseLabels.Decision(score).Label,
             flags = FlagNames(flags),
             trace = trace.Steps.Select(s => new { s.Stage, s.Title, s.Detail, conf = s.ConfAfter is { } c ? Math.Round(c, 3) : (double?)null }).ToList(),
             dobGap = DobGap(ra, rb),

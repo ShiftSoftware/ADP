@@ -43,11 +43,30 @@
            goldens (service records often carry no name) to the top of the first page. *@
         <Sort Property="x => x.SourceCount" Direction="SortDirection.Descending" />
 
-        <PropertyColumnExtended Property="x => x.FullName" Title="Name" />
-        <PropertyColumnExtended Property="x => x.Phone" Title="Phone" />
+        @* Name, phone, email and ID number arrive masked. Filtering on Display works (the server matches the
+           raw value); sorting is off because the server rejects ordering on protected members for
+           everyone. Each cell offers a one-field reveal to users with the PII reveal permission. *@
+        <PropertyColumnExtended Property="x => x.FullName!.Display" Title="Name" Sortable="false">
+            <CellTemplate Context="cell">
+                <PiiRevealValue Field="@cell.Item.FullName" RecordId="@cell.Item.ID" Member="@nameof(GoldenCustomerListDTO.FullName)" />
+            </CellTemplate>
+        </PropertyColumnExtended>
+        <PropertyColumnExtended Property="x => x.Phone!.Display" Title="Phone" Sortable="false">
+            <CellTemplate Context="cell">
+                <PiiRevealValue Field="@cell.Item.Phone" RecordId="@cell.Item.ID" Member="@nameof(GoldenCustomerListDTO.Phone)" />
+            </CellTemplate>
+        </PropertyColumnExtended>
         <PropertyColumnExtended Property="x => x.City" Title="City" />
-        <PropertyColumnExtended Property="x => x.IDNumber" Title="ID Number" />
-        <PropertyColumnExtended Property="x => x.Email" Title="Email" />
+        <PropertyColumnExtended Property="x => x.IDNumber!.Display" Title="ID Number" Sortable="false">
+            <CellTemplate Context="cell">
+                <PiiRevealValue Field="@cell.Item.IDNumber" RecordId="@cell.Item.ID" Member="@nameof(GoldenCustomerListDTO.IDNumber)" />
+            </CellTemplate>
+        </PropertyColumnExtended>
+        <PropertyColumnExtended Property="x => x.Email!.Display" Title="Email" Sortable="false">
+            <CellTemplate Context="cell">
+                <PiiRevealValue Field="@cell.Item.Email" RecordId="@cell.Item.ID" Member="@nameof(GoldenCustomerListDTO.Email)" />
+            </CellTemplate>
+        </PropertyColumnExtended>
 
         @* Kept a PropertyColumn (not a TemplateColumn) so server-side sort and filter on SourceCount
            still work — PropertyColumnExtended only supplies its default cell renderer when none is
@@ -81,7 +100,8 @@
         var parameters = new DialogParameters<GoldenSourcesDialog>
         {
             { x => x.ID, row.ID! },
-            { x => x.FullName, row.FullName },
+            // The masked name. The dialog title never needs the raw value.
+            { x => x.FullName, row.FullName?.Display },
         };
 
         return DialogService.ShowAsync<GoldenSourcesDialog>(

@@ -74,9 +74,12 @@ public class VehicleServiceHistoryEvaluator
         return invoices;
     }
 
-    public async Task<IEnumerable<VehicleServiceHistoryDTO>> Evaluate(string languageCode, ConsistencyLevels consistencyLevel)
+    public Task<IEnumerable<VehicleServiceHistoryDTO>> Evaluate(string languageCode, ConsistencyLevels consistencyLevel) =>
+        Evaluate(languageCode, GetInvoices(this.CompanyDataAggregate, consistencyLevel));
+
+    /// <summary>Formats already-resolved invoice evidence. Presentation does not change classification inputs.</summary>
+    public async Task<IEnumerable<VehicleServiceHistoryDTO>> Evaluate(string languageCode, IEnumerable<VehicleServiceHistoryInvoice> allInvoices)
     {
-        var allInvoices = GetInvoices(this.CompanyDataAggregate, consistencyLevel);
 
         var serviceHistory = new List<VehicleServiceHistoryDTO>();
 
@@ -90,7 +93,7 @@ public class VehicleServiceHistoryEvaluator
                 AccountNumber = invoice.LaborLines?.FirstOrDefault()?.AccountNumber ?? invoice.PartLines?.FirstOrDefault()?.AccountNumber,
                 CompanyName = null,
                 BranchName = null,
-                ServiceDate = GetMaxServiceDate(invoice.LaborLines, invoice.PartLines),
+                ServiceDate = invoice.ServiceDate,
                 Mileage = invoice.LaborLines?.Max(x => x.Odometer),
                 ServiceType = invoice.LaborLines.Where(x => x.JobDescription is not null)?.FirstOrDefault()?.JobDescription,
                 LaborLines = invoice.LaborLines?.Select(l => new VehicleLaborDTO
@@ -137,6 +140,8 @@ public class VehicleServiceHistoryEvaluator
 
     public class VehicleServiceHistoryInvoice
     {
+        public DateTime? ServiceDate => GetMaxServiceDate(LaborLines, PartLines);
+
         public long? CompanyID { get; }
         public long? BranchID { get; }
         public string InvoiceNumber { get; }

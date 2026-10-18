@@ -115,6 +115,8 @@ public sealed class VehicleReportRowsTests
         Assert.Equal(new DateTime(2027, 1, 1), row.WarrantyEndDate);
         Assert.Equal(string.Empty, row.SaleCompanyName);
         Assert.Null(row.SaleBrokerId);
+        Assert.Equal(string.Empty, row.ClassificationCodes);
+        Assert.Equal(string.Empty, row.ClassificationLabels);
     }
 
     [Fact]
@@ -151,6 +153,39 @@ public sealed class VehicleReportRowsTests
             Assert.Null(empty.WarrantyDistributorExtendedStartDate);
             Assert.Null(empty.WarrantyDistributorExtendedEndDate);
         }
+    }
+
+    [Fact]
+    public void TopLevel_ListsTheResolvedClassifications_CodesAndLabelsInTheSameOrder()
+    {
+        var row = VehicleReportRows.TopLevel("JTDBR32E0X0000001", new VehicleLookupDTO
+        {
+            VIN = "JTDBR32E0X0000001",
+            Classifications =
+            [
+                new VehicleClassificationDTO { Code = "segment:7", Label = "Segment 7" },
+                null!,
+                new VehicleClassificationDTO { Code = " ", Label = "No code" },
+                new VehicleClassificationDTO { Code = "member" },
+            ],
+        }, distributorCompanyID: null);
+
+        // Blank entries are dropped and a missing label shows its code, so the n-th label belongs to the n-th code.
+        Assert.Equal("segment:7; member", row.ClassificationCodes);
+        Assert.Equal("Segment 7; member", row.ClassificationLabels);
+    }
+
+    [Fact]
+    public void TopLevelCsvExport_MapsEveryReportColumn_InTheModelsOrder()
+    {
+        // The per-VIN CSV export lists its columns by hand, so a column added to the model must be added there too.
+        var mapType = typeof(DuckDBVehicleReportService).GetNestedType("VehicleLookupTopLevelReportModelCsvMap", System.Reflection.BindingFlags.NonPublic);
+        Assert.NotNull(mapType);
+        var map = (CsvHelper.Configuration.ClassMap)Activator.CreateInstance(mapType!)!;
+
+        Assert.Equal(
+            typeof(VehicleLookupTopLevelReportModel).GetProperties().Select(p => p.Name),
+            map.MemberMaps.OrderBy(m => m.Data.Index).Select(m => m.Data.Member!.Name));
     }
 
     [Fact]

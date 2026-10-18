@@ -18,6 +18,7 @@
     <None Include="$(MSBuildThisFileDirectory)src\global\**\*" />
     <None Include="$(MSBuildThisFileDirectory)src\index.ts" />
     <None Include="$(MSBuildThisFileDirectory)src\index.html" />
+    <None Include="$(MSBuildThisFileDirectory)src\integration\host-loader.js" />
     <None Include="$(MSBuildThisFileDirectory)src\locale-mapper.ts" />
     <None Include="$(MSBuildThisFileDirectory)src\locales\**\*" />
     <None Include="$(MSBuildThisFileDirectory)src\templates\**\*" />
@@ -32,5 +33,7 @@
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)src\features\mocks\data\generated\standard-dealer\part-lookup.json" />
     <Content Include="$(MSBuildThisFileDirectory)src\features\mocks\data\generated\standard-dealer\vehicle-lookup.json" />
+    <Content Include="$(MSBuildThisFileDirectory)src\integration\integration-contract.json" />
+    <Content Include="$(MSBuildThisFileDirectory)src\integration\integration-manifest.json" />
   </ItemGroup>
 </Project>

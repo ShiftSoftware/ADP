@@ -28,7 +28,7 @@ export class FormStepper implements FormElement {
     if (!template) return '';
 
     return template.replace(/\$\{(.*?)\}/g, (_, fieldName: string) => {
-      const value = this.form?.getValue(fieldName?.trim());
+      const value = this.form?.getDisplayValue(fieldName?.trim());
       return value != null ? String(value) : '';
     });
   }

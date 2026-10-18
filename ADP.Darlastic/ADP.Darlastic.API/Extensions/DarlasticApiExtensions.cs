@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using ShiftSoftware.ADP.Darlastic.Data.Extensions;
+using ShiftSoftware.ADP.Darlastic.Engine;
 using ShiftSoftware.ADP.Darlastic.Shared.ActionTrees;
 using ShiftSoftware.ShiftEntity.Core;
+using ShiftSoftware.ShiftEntity.Core.Pii;
 using ShiftSoftware.ShiftEntity.EFCore;
 using ShiftSoftware.TypeAuth.AspNetCore;
 using ShiftSoftware.TypeAuth.AspNetCore.Extensions;
@@ -16,7 +19,7 @@ public static class DarlasticApiExtensions
     /// module pattern). The consumer is responsible for AddControllers, AddShiftEntityWeb,
     /// AddShiftIdentity, AddTypeAuth, etc. — this only wires Darlastic's own model contributor
     /// (so the host DbContext picks up the registry entities + golden view without registering
-    /// it manually), route convention, action tree, and application part.
+    /// it manually), route convention, action tree, application part, and the PII protector.
     ///
     /// The resolve ENGINE stays out of process (a host's sync agent / the dev spike) — these
     /// endpoints only read what it writes, which is why there are no repositories here.
@@ -35,6 +38,20 @@ public static class DarlasticApiExtensions
 
         services.AddScoped<ShiftDbContext>(sp => sp.GetRequiredService<TDbContext>());
 
+        // The golden-customer endpoints mask name, phone and email with the framework's PII
+        // protection, so the protector must exist even in a host that forgot to register it.
+        // TryAdd-based, so a host's own call and its options still apply. The host decides who
+        // may reveal: it grants PiiOptions.Action (PiiActionTree.Reveal by default).
+        services.AddShiftEntityPii();
+
+        // The match configuration the registry's latest resolve recorded, read once per resolve and
+        // applied to every request that re-scores a staged pair (RecordedMatchSettingsAttribute).
+        services.TryAddSingleton<RecordedMatchSettings>();
+
+        // What readers derive from the whole registry once per resolve run (the case browser's golden row
+        // index, the cities enough customers share). Holds nothing until an option asks for one.
+        services.TryAddSingleton<RegistryRunCache>();
+
         // Registry model (tables + the GoldenCustomer view) lands in the host's DbContext model;
         // the host's own migrations create and version everything under options.Schema.
         //
@@ -52,6 +69,8 @@ public static class DarlasticApiExtensions
         services.Configure<MvcOptions>(mvcOptions =>
         {
             mvcOptions.Conventions.Add(new DarlasticRoutePrefixConvention(options.RoutePrefix));
+            // Cities rarer than DarlasticApiOptions.CityMinimumShare are masked on every module surface.
+            mvcOptions.Conventions.Add(new CityDisclosureConvention());
         });
 
         mvcBuilder.AddApplicationPart(typeof(DarlasticApiExtensions).Assembly);

@@ -6,6 +6,12 @@ namespace ShiftSoftware.ADP.Models.Vehicle;
 [Docable]
 public class EligibilityConditionScope
 {
+    /// <summary>Unsupported persisted JSON members make the condition invalid.</summary>
+    [DocIgnore]
+    [System.Text.Json.Serialization.JsonExtensionData]
+    [Newtonsoft.Json.JsonExtensionData]
+    public System.Collections.Generic.IDictionary<string, object> UnsupportedProperties { get; set; }
+
     /// <summary>
     /// The collection selection strategy. This is the difference between "is this the case right
     /// now" and "has this ever happened", so it decides whether a condition about something the
@@ -19,6 +25,9 @@ public class EligibilityConditionScope
     /// selection, which fails closed rather than quietly disregarding a number the author wrote.
     /// </summary>
     public int? Count { get; set; }
+
+    /// <summary>Required type filter for vehicleInspections.companyID; unsupported for other fields.</summary>
+    public long? InspectionTypeID { get; set; }
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

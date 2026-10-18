@@ -155,6 +155,8 @@ export class ShiftPopover {
   @Prop({ reflect: true }) size: PopoverSize = 'md';
   @Prop() trigger: PopoverTrigger = 'manual';
   @Prop({ reflect: true }) disabled: boolean = false;
+  // Off by default: inside an embedded webview the viewport is only part of the screen, so a sheet pinned to its bottom edge looks broken.
+  @Prop() mobileSheet: boolean = false;
 
   @Event({ bubbles: true, composed: true }) openChange!: EventEmitter<PopoverOpenChangeDetail>;
 
@@ -184,7 +186,7 @@ export class ShiftPopover {
     if (typeof window === 'undefined' || !window.matchMedia) return;
 
     this.sheetQuery = window.matchMedia(SHEET_QUERY);
-    this.sheet = this.sheetQuery.matches;
+    this.sheet = this.wantsSheet();
     this.sheetQuery.addEventListener?.('change', this.onSheetChange);
   }
 
@@ -222,6 +224,11 @@ export class ShiftPopover {
   @Watch('disabled')
   onDisabledChange(disabled: boolean) {
     if (disabled && this.open) this.hide();
+  }
+
+  @Watch('mobileSheet')
+  onMobileSheetChange() {
+    this.onSheetChange();
   }
 
   @Watch('open')
@@ -495,8 +502,12 @@ export class ShiftPopover {
     if (placement.side !== this.side) this.side = placement.side;
   }
 
-  private onSheetChange = (event: MediaQueryListEvent) => {
-    this.sheet = event.matches;
+  private wantsSheet(): boolean {
+    return this.mobileSheet && !!this.sheetQuery?.matches;
+  }
+
+  private onSheetChange = () => {
+    this.sheet = this.wantsSheet();
     this.syncScrollLock();
     if (this.open) this.schedule();
   };
@@ -509,7 +520,9 @@ export class ShiftPopover {
   }
 
   private onPointerDown = (event: PointerEvent) => {
-    if (this.within(event.composedPath())) return;
+    const path = event.composedPath();
+    // The sheet's backdrop closes on its own click; closing here would drop it before that click, which then lands on the page beneath.
+    if (this.within(path) || (path[0] as Element)?.classList?.contains('pop-backdrop')) return;
 
     this.pointerDismissed = true;
     const release = () => {
@@ -608,6 +621,7 @@ export class ShiftPopover {
     keydown: event => this.onPanelKeyDown(event),
     focus: () => this.focusContent(),
     strayFocus: () => this.focusAnchor(),
+    dismiss: () => this.hide(),
     ready: panel => {
       this.panel = panel;
       panel.addEventListener('pickerChange', this.onContentPick);

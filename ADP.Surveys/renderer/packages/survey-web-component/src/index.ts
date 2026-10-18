@@ -1,3 +1,4 @@
+import './library-fonts.js'; // first: see the file
 import { ShiftSurveyElement } from './ShiftSurveyElement.js';
 
 export { ShiftSurveyElement };

@@ -31,19 +31,20 @@ public class CampaignVinEntryRepository
     {
         var upserted = await base.UpsertAsync(entity, dto, actionType, userId, idempotencyKey, disableDefaultDataLevelAccess, disableGlobalFilters);
 
-        // Guard: only campaigns whose trigger is ManualVinEntry are valid targets here. The UI filters
-        // the picker, but the API accepts any CampaignID, so re-check server-side. Uses db.Set<Campaign>()
+        // A VIN entry can also supply membership evidence to an inspection campaign's conditions.
+        // It does not activate that campaign; the inspection remains the activation/claim identity.
+        // Re-check server-side. Uses db.Set<Campaign>()
         // (not a module-specific DbSet) so the module works against any consumer ShiftDbContext.
         var campaignTrigger = await db.Set<Campaign>()
             .Where(x => x.ID == upserted.CampaignID)
             .Select(x => (ClaimableItemCampaignActivationTrigger?)x.ActivationTrigger)
             .FirstOrDefaultAsync();
 
-        if (campaignTrigger != ClaimableItemCampaignActivationTrigger.ManualVinEntry)
+        if (campaignTrigger is null || !Enum.IsDefined(campaignTrigger.Value))
         {
             throw new ShiftEntityException(new Message(
                 "Error",
-                "The selected campaign's activation trigger is not ManualVinEntry."));
+                "Select an existing campaign with a supported activation trigger."));
         }
 
         return upserted;

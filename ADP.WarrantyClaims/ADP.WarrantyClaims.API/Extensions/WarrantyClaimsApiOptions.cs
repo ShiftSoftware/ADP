@@ -8,9 +8,19 @@ public class WarrantyClaimsApiOptions
     /// <summary>
     /// Optional absolute paths to consumer-supplied .frx templates replacing the module-embedded
     /// print defaults (the sanctioned rebranding hook — e.g. substitute a certificate with your own
-    /// legal text). Leave the paths null (default) to print the byte-frozen embedded templates.
+    /// legal text). Leave the paths null (default) to print the embedded templates. They take the
+    /// company name, logo and contact details from
+    /// <see cref="Cases.Shared.Printing.ICompanyInfoProvider"/>, so an override is needed only to
+    /// change other text or the layout.
     /// </summary>
     public WarrantyClaimsReportOverrides ReportOverrides { get; set; } = new();
+
+    /// <summary>
+    /// The code the manufacturer assigned to this distributor. The warranty claim printout shows it
+    /// as the Dist Code. The manufacturer CSV export writes it to the FDIST (distributor) and CLMNT
+    /// (claimant) columns. Null (default) leaves those fields empty.
+    /// </summary>
+    public string? DistributorCode { get; set; }
 
     /// <summary>
     /// The TypeAuth action node gating the WarrantyClaim CRUD controller (and the SAS print-invoice

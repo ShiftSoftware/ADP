@@ -148,9 +148,12 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
 
         await syncProgressIndicators.LogInformation("Processing the source data with the provided function to make it ready for comparison.");
 
-        var items = await ReadCsvFile(path, this.Configurations.HasHeaderRecord);
+        // Incremental preparation already removed the header for the line diff.
+        // Full-source preparation keeps it because the add reader consumes the original file.
+        var hasHeader = this.Configurations.FullSourceSync && this.Configurations.HasHeaderRecord;
+        var items = await ReadCsvFile(path, hasHeader);
         var processedItems = await this.Configurations.ProccessSourceData(items);
-        await WriteCsvFile(path, processedItems, false);
+        await WriteCsvFile(path, processedItems, hasHeader);
     }
 
     private async ValueTask ProccessAddedAndDeletedItems(IEnumerable<ISyncEngineLogger> syncProgressIndicators)

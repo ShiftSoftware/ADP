@@ -1,0 +1,9 @@
+{
+  "DuckDb": "C:\\mounts\\adp-sync-agent-destination\\company-data-write.duckdb",
+  "HashIdSettings": {
+    "AcceptUnencodedIds": false,
+    "Salt": "+[ow97^i%c-d!m6adEke!ik@",
+    "MinHashLength": 5,
+    "Alphabet": null
+  }
+}

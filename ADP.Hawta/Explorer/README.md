@@ -92,10 +92,12 @@ but cannot perform local source comparisons; the UI reports freshness unverified
 
 ## Structure
 
-- `index.html`, `animation.js`: overview, theme/motion controls and mobile inspector.
+- `index.html`, `overview.js`: overview content and connection/explanation data.
 - `mechanisms.js`: authored scenarios, stable event identities, state reducer and
   complete scene models. `explorer.js` renders them and the inspection layers.
-- `style.css`, `explorer.css`: shared semantic theme and responsive layout.
+- `ADP.Explorer.Shared`: the shared header, overview/detail DOM, semantic themes,
+  responsive layout, motion controller and mobile overview inspector. Both
+  Hawta and Rastgo consume these assets through their bounded local servers.
 - `evidence-sources.mjs`, `evidence.mjs`, `capture-evidence.mjs`: public source
   catalog, bounded reads, normalized hashing and explicit capture.
 - `server.mjs`, `start.ps1`: local serving. `verify.mjs` and
@@ -112,3 +114,16 @@ observation times. No recorded-run adapter, import or telemetry connection exist
 A future adapter must supply actual resource names and observation evidence from
 run data and preserve unknown states; it must not infer measurements from the
 illustrative particle clock or authored scenarios.
+
+Keep `ADP.Explorer.Shared` beside `ADP.Hawta` when relocating this checkout.
+For a portable single HTML file, run:
+
+```sh
+node ADP.Explorer.Shared/export.mjs hawta /path/to/hawta.html --single-file
+```
+
+Open or share that generated file; it embeds styles, scripts, icons, scenarios
+and evidence. Its offline evidence does not claim to check current source files.
+The [shared export workflow](../../ADP.Explorer.Shared/README.md) also supports
+asset folders. Opening the checkout's source `Explorer/index.html` directly is
+not the standalone workflow: use the server for that entry or generate an export.

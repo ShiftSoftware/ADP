@@ -49,5 +49,16 @@
     "claim": "Claim",
     "claimFailed": "فشلت المطالبة",
     "ok": "حسناً"
-  }
+  },
+  "requiredService": "صيانة مطلوبة",
+  "requirementCompleted": "مكتملة",
+  "requirementNotClaimable": "غير قابلة للمطالبة",
+  "requirementInvoiceDate": "تاريخ الفاتورة",
+  "requirementOdometer": "قراءة العداد (كم)",
+  "requirementServiceCode": "رمز الخدمة المسجل",
+  "requirementLaborCode": "رمز العمل",
+  "requirementWork": "الأعمال المسجلة",
+  "requirementJobDescription": "وصف أمر العمل",
+  "requirementAwaiting": "لم تُسجّل صيانة مطابقة.",
+  "requirementEvidenceUnavailable": "تم تسجيل الإكمال؛ التفاصيل غير متاحة."
 }

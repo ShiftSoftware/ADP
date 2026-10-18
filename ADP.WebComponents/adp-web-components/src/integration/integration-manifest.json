@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "adp-web-components",
-  "packageVersion": "0.4.9",
+  "packageVersion": "0.4.17",
   "outputFamily": "per-component",
   "components": [
     {
@@ -606,7 +606,7 @@
           { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
         ],
         "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
-        "dependencies": ["vehicle-item-claim-form", "shift-tabs"]
+        "dependencies": ["vehicle-item-claim-form", "shift-tabs", "vehicle-service-requirement"]
       },
       "runtimeAssets": {
         "locales": "dist/locales",
@@ -1377,16 +1377,17 @@
       "host": {
         "properties": [
           "calendarApi",
-          "calendarApiVersion",
-          "companyId",
           "branchId",
           "departmentId",
+          "departmentIds",
           "brandId",
           "today",
           "disabledWeekdays",
           "disabledDates",
           "slotCounts",
           "hourCycle",
+          "labelFormat",
+          "dayTitleFormat",
           "name",
           "form",
           "label",
@@ -1428,7 +1429,16 @@
             "reflect": true,
             "description": "vanilla, material, soft, sharp or minimal. Unset renders vanilla."
           },
-          { "name": "branchId", "attribute": "branch-id", "type": "string", "default": null, "mutable": false, "required": false, "reflect": false, "description": "Branch id." },
+          {
+            "name": "branchId",
+            "attribute": "branch-id",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "The branch’s hash ID. The field stays idle until branch, department and brand are all set."
+          },
           {
             "name": "brandId",
             "attribute": "brand-id",
@@ -1447,17 +1457,7 @@
             "mutable": false,
             "required": false,
             "reflect": false,
-            "description": "Full URL of the calendar endpoint for calendarApiVersion, e.g. …/api/public/calendar (v1) or …/api/public/v2/calendar (v2)."
-          },
-          {
-            "name": "calendarApiVersion",
-            "attribute": "calendar-api-version",
-            "type": "\"v1\" | \"v2\"",
-            "default": "'v1'",
-            "mutable": false,
-            "required": false,
-            "reflect": false,
-            "description": "v1 (default) or v2: which kind of company and branch id the endpoint takes. The host passes the matching ids; branchIds() in ~lib/booking-availability builds them from a company-branch record."
+            "description": "Full URL of the calendar endpoint. It is called with from, to, branchId, departmentId and brandId."
           },
           {
             "name": "changeCallback",
@@ -1480,14 +1480,14 @@
             "description": "light (default), dark, or auto (follows prefers-color-scheme; for hosts that are themselves dark-aware)."
           },
           {
-            "name": "companyId",
-            "attribute": "company-id",
-            "type": "string",
+            "name": "dayTitleFormat",
+            "attribute": "day-title-format",
+            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string",
             "default": null,
             "mutable": false,
             "required": false,
             "reflect": false,
-            "description": "Company id of the branch. The field stays idle until company, branch, department and brand are all set."
+            "description": "The chosen day’s title over its times, beside Change date: a date-fns pattern, or one per language, as labelFormat. Unset: the language’s default (English EEE, d MMM; Arabic d MMMM)."
           },
           {
             "name": "dayTooltips",
@@ -1518,6 +1518,15 @@
             "required": false,
             "reflect": false,
             "description": "Department Integration ID, e.g. showroom or service-center."
+          },
+          {
+            "name": "departmentIds",
+            "type": "string[]",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Several Department Integration IDs, set as a property. Asked in parallel and shown together, each time once and in order; used instead of departmentId."
           },
           {
             "name": "disabledDates",
@@ -1597,6 +1606,16 @@
             "required": false,
             "reflect": false,
             "description": "Field label. A form’s localization label wins."
+          },
+          {
+            "name": "labelFormat",
+            "attribute": "label-format",
+            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "How the picked slot is labelled (the field’s text, pickerChange’s label, a form’s review step): a date-fns pattern, e.g. EEEE d MMMM · h:mm a, or one per language, e.g. { \"en\": \"EEE d MMM, h:mm a\", \"ar\": \"EEEE d MMMM\" }. Month and day names, AM/PM and digits are the calendar’s own for the language. Unset, or a language it does not cover: the language’s default (English d MMM, HH:mm; Arabic d MMMM، H:mm), with h:mm a under hourCycle h12. An unusable pattern falls back to that default. A label wider than the field ends in an ellipsis."
           },
           {
             "name": "language",
@@ -1715,7 +1734,7 @@
             "mutable": true,
             "required": false,
             "reflect": false,
-            "description": "The current value, written in valueFormat. Settable in ISO (any offset) or in valueFormat: a time the branch has is chosen; any other readable value is kept and labelled; empty clears. The calendar clears it itself only when the branch, company, department or brand changes after it was set."
+            "description": "The current value, written in valueFormat. Settable in ISO (any offset) or in valueFormat: a time the branch has is chosen; any other readable value is kept and labelled; empty clears. The calendar clears it itself only when the branch, department or brand changes after it was set."
           },
           {
             "name": "valueFormat",
@@ -1910,11 +1929,11 @@
         "locales": null,
         "notes": [
           "One request per branch, from today: the endpoint’s booking delay counts from the request’s from date, so the field never pages forward. The days shown are whatever the response holds; days without times are dropped.",
-          "calendarApiVersion picks the ids: v1 sends the branch’s Integration IDs, v2 its hash IDs, under the same query names. calendarApi must be that version’s endpoint. Default v1.",
-          "Responses are cached per branch, department, brand, version, language and day for the page’s lifetime; errors are not cached and nothing retries on its own. A stale request is cancelled when the branch changes.",
+          "In a v1 form structure (type bookingCalendar) departmentPreference lists the departments it may book, in order (default [\"showroom\"]). A branch with none of them is not bookable: the field is disabled and its hint says so (booking locale branchUnavailable, or the node’s localization[lang].branchUnavailable). It never falls back to another department, whose hours would look bookable but be the wrong ones. With mergeDepartments: true it asks every listed department the branch has, in parallel, and shows their times together, each once and in order. An explicit departmentId still wins. The older bookingSlot and bookingDate fields still fall back to the branch’s first department.",
+          "Responses are cached per branch, department, brand, language and day for the page’s lifetime; errors are not cached and nothing retries on its own. A stale request is cancelled when the branch changes.",
           "The submitted value and the slotChange detail are exactly branch-slot-picker’s: value YYYY-MM-DDTHH:mm, detail { date, raw, value } with raw as the endpoint sent it.",
           "States: idle (no branch yet), loading, ready, empty (no times at the branch) and error (with Try again). No day is chosen on load; the calendar opens on the month of the first open day. Reopening a day keeps the chosen time when that day has it, otherwise clears it.",
-          "The calendar owns its value. A value that is not one of the branch's times (a past booking, or one made elsewhere) is kept and labelled, never cleared by the calendar. The value is cleared only when companyId, branchId, departmentId or brandId changes after it was set: an id filled in for the first time is not a change, and neither is a host setting an id and the value in the same pass (a record loaded into the form). calendarApi, calendarApiVersion and today changing keep it. A clear fires pickerChange with value \"\" and complete false.",
+          "The calendar owns its value. A value that is not one of the branch's times (a past booking, or one made elsewhere) is kept and labelled, never cleared by the calendar. The value is cleared only when branchId, departmentId or brandId changes after it was set: an id filled in for the first time is not a change, and neither is a host setting an id and the value in the same pass (a record loaded into the form). calendarApi and today changing keep it. A clear fires pickerChange with value \"\" and complete false.",
           "Hosting with your own input: <shift-popover anchor=\"#input\" placement=\"top\" appearance=\"material\" size=\"sm\"> around <shift-booking-calendar appearance=\"material\" size=\"sm\">. Toggle the popover on the input's click, show pickerChange's label in the input and store its value; the popover closes itself when a time is picked. The calendar stays a separate element because the popover carries its content onto <body> and the calendar's views live in its own shadow root; shift-input type picker is the one-element field for pages that use shift-input.",
           "Two views in one box: picking an open day switches from the days to that day's times, the header rolling from the month to the day and the content sliding toward the start (mirrored in RTL). Change date or Escape reverses it. The box keeps the calendar's size in both views and every state; a long day scrolls inside it. Nothing below the field moves: the status row has a fixed height and also carries the validation message.",
           "Inside the field the calendar always fills the box; --shift-booking-calendar-max-inline-size and -min-inline-size set its width.",
@@ -1928,7 +1947,7 @@
       "wireContract": null,
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["anchor", "open", "label", "offset", "trigger", "disabled", "placement", "language", "appearance", "colorScheme", "size"],
+        "properties": ["anchor", "open", "label", "offset", "trigger", "disabled", "placement", "mobileSheet", "language", "appearance", "colorScheme", "size"],
         "methods": ["show", "hide", "toggle"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["portaled panel holding the slotted content", "anchored positioning and bottom sheet", "dismissal and focus return", "appearance and colour scheme of the panel"]
@@ -1996,6 +2015,16 @@
             "description": "en, ar, ku or ru. Language of the default dialog name."
           },
           {
+            "name": "mobileSheet",
+            "attribute": "mobile-sheet",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Off (default): the panel stays anchored at every width. On: under 600px of viewport width it becomes a bottom sheet with a backdrop. Leave it off for pages shown inside an app’s webview."
+          },
+          {
             "name": "offset",
             "attribute": "offset",
             "type": "number",
@@ -2023,7 +2052,7 @@
             "mutable": false,
             "required": false,
             "reflect": true,
-            "description": "The preferred side. bottom (default): below the anchor, above when only above has room. top: above the anchor, below when only below has room. With room on neither side it takes the larger one and the content scrolls. The bottom sheet under 600px is the same for both."
+            "description": "The preferred side. bottom (default): below the anchor, above when only above has room. top: above the anchor, below when only below has room. With room on neither side it takes the larger one and the content scrolls. The bottom sheet (mobileSheet, under 600px) is the same for both."
           },
           {
             "name": "size",
@@ -2071,7 +2100,7 @@
         "dependencies": ["shift-popover-panel", "shift-portal"],
         "parts": [
           { "name": "panel", "description": "The portaled panel. Style it as shift-popover-panel::part(panel), or through a class given to the popover." },
-          { "name": "sheet", "description": "State part beside panel while it is a bottom sheet (viewport under 600px)." },
+          { "name": "sheet", "description": "State part beside panel while it is a bottom sheet (mobileSheet, viewport under 600px)." },
           { "name": "backdrop", "description": "The overlay behind a bottom sheet; tapping it closes the sheet. Sheet mode only." }
         ],
         "cssProperties": [
@@ -2113,7 +2142,7 @@
           "The content is slotted: the children of shift-popover move into a shift-popover-panel element that shift-portal appends to <body>, so no overflow or stacking context on the page clips them. Keep references to your content elements; do not look them up inside the popover after it loads. Children added later move too.",
           "The panel receives the popover’s appearance, color-scheme and size attributes and its classes. It inherits nothing from where the popover sits, so set --shift-* variables on :root or on a class you give the popover.",
           "Positioning, placement bottom (default): below the anchor, aligned to its inline start (its right edge in RTL, from the anchor’s computed direction); above when there is no room below. It never covers the anchor: when neither side has room it takes the larger side and caps its height to it, and the content scrolls inside the panel. Shifted sideways to stay 8px inside the viewport; re-placed on scroll of any ancestor, on resize and when the anchor or the content resizes. It never scrolls the page. When the anchor scrolls out of sight the panel closes. placement top is the mirror: above the anchor, below when only below has room, and the larger side when neither has.",
-          "Under 600px of viewport width the panel is a bottom sheet whatever the placement: full width, at most 82dvh, sliding up from the bottom edge.",
+          "With mobileSheet, under 600px of viewport width the panel is a bottom sheet whatever the placement: full width, at most 82dvh, sliding up from the bottom edge. Off by default, so the panel stays anchored at every width: a page inside an app’s webview fills only part of the screen, and a sheet there would sit at the bottom of the webview and dim only the webview.",
           "Dismissal: pointer-down outside the panel and the anchor, Escape (focus returns to the anchor), Tab out of the panel (Shift+Tab from its first control returns to the anchor; Tab from its last moves to the control after the anchor), focus moving to any element that is neither the anchor nor a popover panel, a pickerChange with complete true from the content (a time or date picked in shift-booking-calendar or shift-calendar), and hide() from the content.",
           "Focus on open: content with a setFocus() method (shift-calendar has one) is asked to focus itself; otherwise the first control in the content gets focus. show({ focus: false }) leaves focus where it is.",
           "Wire a separate trigger button to toggle(): the pointer-down on it closes an open panel and the click that follows is ignored, so the button closes rather than reopens.",
@@ -2152,6 +2181,7 @@
           "appearance",
           "colorScheme",
           "size",
+          "mobileSheet",
           "format",
           "openOnControlClick",
           "month",
@@ -2427,6 +2457,16 @@
             "required": false,
             "reflect": false,
             "description": "Earliest date (inclusive), YYYY-MM-DD; earlier typed dates are refused. Passed to the calendar (type=\"date\")."
+          },
+          {
+            "name": "mobileSheet",
+            "attribute": "mobile-sheet",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Passed to the field’s popover: on, the calendar or picker opens as a bottom sheet under 600px of viewport width. Off by default; leave it off for pages shown inside an app’s webview."
           },
           {
             "name": "month",
@@ -3077,6 +3117,405 @@
           "The strip’s height never changes with selection, month labels, badges, highlightToday or the colour scheme; only another size, another density (appearance), the caption row, or the phone layout below a 600px viewport (roomier cards, as in the booking prototype) changes it.",
           "Appearance and colour scheme follow .shift form-appearances: every value resolves as --shift-day-strip-x, then --shift-x, then the appearance, then the vanilla baseline, so host variables win in light and dark. The component never sets --shift-* itself.",
           "Fonts: Nunito (vanilla, material, soft) or Manrope (sharp, minimal), with Noto Kufi Arabic first for ar and ku — all loaded by the package’s global script. Override with --shift-font-family and --shift-font-family-arabic."
+        ]
+      }
+    },
+    {
+      "tag": "vin-extractor",
+      "modulePath": "dist/components/vin-extractor.js",
+      "wireContract": null,
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": [
+          "title",
+          "useOcr",
+          "ocrEndpoint",
+          "readSticker",
+          "manualCapture",
+          "manualCaptureLabel",
+          "manualCaptureHint",
+          "captureInterval",
+          "skipValidation",
+          "uploaderButtonId",
+          "captureEnvironment",
+          "language",
+          "colorScheme",
+          "dialogLabel",
+          "switchCameraLabel",
+          "closeLabel",
+          "capturingLabel",
+          "previewLabel",
+          "uploadLabel",
+          "permissionsFallback",
+          "onExtract",
+          "onError",
+          "onProcessing",
+          "onOpenChange"
+        ],
+        "methods": ["open", "close"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
+        "owns": [
+          "camera access and lens choice",
+          "frame capture, OCR request and sticker decoding",
+          "VIN validation",
+          "the full-screen sheet on phones and the popup on wider screens",
+          "body overflow hidden while open, auto after close"
+        ]
+      },
+      "api": {
+        "props": [
+          {
+            "name": "captureEnvironment",
+            "attribute": "capture-environment",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "With uploaderButtonId: asks the device to open the rear camera for a new photo rather than offering existing files."
+          },
+          {
+            "name": "captureInterval",
+            "attribute": "capture-interval",
+            "type": "number",
+            "default": "2000",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Milliseconds between automatic captures when manualCapture is off. 2000 by default."
+          },
+          {
+            "name": "capturingLabel",
+            "attribute": "capturing-label",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Accessible name of the capture button while a capture is in flight. Otherwise the language’s string, “Capturing...” in English."
+          },
+          {
+            "name": "closeLabel",
+            "attribute": "close-label",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Accessible name of the close button. Otherwise the language’s string, “Close scanner” in English."
+          },
+          {
+            "name": "colorScheme",
+            "attribute": "color-scheme",
+            "type": "\"auto\" | \"dark\" | \"light\"",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "Unset (default) renders light and adds no attribute. light, dark, or auto (follows prefers-color-scheme)."
+          },
+          {
+            "name": "dialogLabel",
+            "attribute": "dialog-label",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Accessible name of the dialog when there is no title. Otherwise the language’s string, “VIN Scanner” in English."
+          },
+          {
+            "name": "language",
+            "attribute": "language",
+            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "en, ar, ku or ru. Unset (default): English names and no direction of its own, so it follows the page. Set: the accessible names the component writes itself are in that language, and ar and ku lay it out right to left in the Arabic font."
+          },
+          {
+            "name": "manualCapture",
+            "attribute": "manual-capture",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Shows a capture button and reads a frame only when it is pressed, instead of capturing every captureInterval."
+          },
+          {
+            "name": "manualCaptureHint",
+            "attribute": "manual-capture-hint",
+            "type": "string",
+            "default": "''",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Short line shown above the capture button (manualCapture only), hidden while a capture is in flight."
+          },
+          {
+            "name": "manualCaptureLabel",
+            "attribute": "manual-capture-label",
+            "type": "string",
+            "default": "''",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Text on the capture button and its accessible name. Without it the button shows a camera icon and is named “Capture VIN” in language."
+          },
+          {
+            "name": "ocrEndpoint",
+            "attribute": "ocr-endpoint",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "URL that receives a POST with { image } (base64 PNG) and answers with the VIN as plain text."
+          },
+          {
+            "name": "onError",
+            "attribute": "on-error",
+            "type": "((newError: Error) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Called with the Error when the camera cannot be opened, a request fails or a frame cannot be read. A function, or a Blazor method name."
+          },
+          {
+            "name": "onExtract",
+            "attribute": "on-extract",
+            "type": "((vin: string) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Called with the VIN when one is read. A function, or a Blazor method name after setBlazorRef."
+          },
+          {
+            "name": "onOpenChange",
+            "attribute": "on-open-change",
+            "type": "((newError: boolean) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Called with true on open and false on close. A function, or a Blazor method name."
+          },
+          {
+            "name": "onProcessing",
+            "attribute": "on-processing",
+            "type": "((vin: string) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Called with true when a frame starts being read and false when it is done. A function, or a Blazor method name."
+          },
+          {
+            "name": "permissionsFallback",
+            "attribute": "permissions-fallback",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Off (default): the camera permission is read from the Permissions API first, and a browser without it (or one that does not know camera) reports an error. On: where that query is missing or fails, the scanner asks for the camera directly and the browser prompts; everything after is unchanged."
+          },
+          {
+            "name": "previewLabel",
+            "attribute": "preview-label",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Accessible name of the camera picture. Otherwise the language’s string, “Camera preview” in English."
+          },
+          {
+            "name": "readSticker",
+            "attribute": "read-sticker",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Decodes a barcode or QR code in each captured frame (the decoder library is loaded from a CDN on first use)."
+          },
+          {
+            "name": "skipValidation",
+            "attribute": "skip-validation",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Reports whatever was read, without checking that it is a valid VIN."
+          },
+          {
+            "name": "switchCameraLabel",
+            "attribute": "switch-camera-label",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Accessible name of the switch-camera button. Otherwise the language’s string, “Switch camera” in English."
+          },
+          {
+            "name": "title",
+            "attribute": "title",
+            "type": "string",
+            "default": "''",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Text in the header, and the dialog’s accessible name. Without it the header is empty and the dialog is named “VIN Scanner” in language."
+          },
+          {
+            "name": "uploadLabel",
+            "attribute": "upload-label",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Accessible name of the hidden file input. Otherwise the language’s string, “Upload VIN image” in English."
+          },
+          {
+            "name": "uploaderButtonId",
+            "attribute": "uploader-button-id",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Id of a button on the page that opens a file picker instead of the camera; the chosen image is read the same way. The camera overlay is not rendered in this mode."
+          },
+          {
+            "name": "useOcr",
+            "attribute": "use-ocr",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Sends each captured frame to ocrEndpoint and reports the VIN it answers."
+          },
+          {
+            "name": "verbose",
+            "attribute": "verbose",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Logs camera, OCR and sticker diagnostics to the console."
+          }
+        ],
+        "methods": [
+          {
+            "name": "close",
+            "parameters": "() => Promise<void>",
+            "returns": "Promise<void>",
+            "description": "Closes the scanner, stops the camera and sets the body overflow to auto."
+          },
+          {
+            "name": "open",
+            "parameters": "() => Promise<void>",
+            "returns": "Promise<void>",
+            "description": "Opens the scanner: asks for the camera, starts it and sets the body overflow to hidden."
+          },
+          {
+            "name": "setBlazorRef",
+            "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>",
+            "returns": "Promise<void>",
+            "description": "Blazor only: the .NET object reference whose methods the callback properties name."
+          }
+        ],
+        "events": [],
+        "dependencies": [],
+        "parts": [
+          { "name": "backdrop", "description": "The full-viewport layer behind the panel (role=dialog); dimmed and blurred from 768px." },
+          { "name": "panel", "description": "The scanner itself: the full-screen sheet on phones, the 600px popup from 768px." },
+          { "name": "header", "description": "The bar holding the switch-camera button, the title and the close button." },
+          { "name": "title", "description": "The header text. Also exposed as form-input-label." },
+          { "name": "form-input-label", "description": "Older name of title, kept for existing stylesheets." },
+          { "name": "switch-camera", "description": "Button that switches between the front and the rear camera; only when the device has more than one." },
+          { "name": "close", "description": "The close button." },
+          { "name": "switch-camera-icon", "description": "The built-in icon in the switch-camera button (the fallback of the switch-camera-icon slot)." },
+          { "name": "close-icon", "description": "The built-in icon in the close button (the fallback of the close-icon slot)." },
+          { "name": "preview", "description": "The live camera picture (a video element)." },
+          { "name": "hint", "description": "The manualCaptureHint line above the capture button." },
+          { "name": "capture", "description": "The capture button (manualCapture only). Also exposed as vin-extractor-capture-button." },
+          { "name": "vin-extractor-capture-button", "description": "Older name of capture, kept for existing stylesheets." },
+          { "name": "capture-icon", "description": "The built-in camera icon in the capture button when there is no manualCaptureLabel (the fallback of the capture-icon slot)." },
+          { "name": "capture-label", "description": "The manualCaptureLabel text in the capture button." },
+          { "name": "capture-spinner", "description": "The spinner that replaces the icon or label while a capture is being read." }
+        ],
+        "cssProperties": [
+          { "name": "--shift-vin-extractor-accent", "default": "#ffffff", "description": "Colour · capture button fill; 75% while a capture is in flight" },
+          {
+            "name": "--shift-vin-extractor-backdrop",
+            "default": "var(--_sc-backdrop, rgb(0 0 0 / 0.4))",
+            "description": "Colour · the dimmed page behind the popup (from 768px); darker in the dark scheme"
+          },
+          { "name": "--shift-vin-extractor-backdrop-blur", "default": "1.5px", "description": "Effect · how much the page behind the popup blurs" },
+          { "name": "--shift-vin-extractor-bar-blur", "default": "6px", "description": "Effect · blur behind that bar" },
+          { "name": "--shift-vin-extractor-bar-ink", "default": "#f1f5f9", "description": "Colour · title on that bar" },
+          { "name": "--shift-vin-extractor-bar-surface", "default": "rgb(0 0 0 / 0.3)", "description": "Colour · the translucent header bar over the picture on phones" },
+          { "name": "--shift-vin-extractor-capture-border", "default": "var(--_on-accent)", "description": "Colour · capture button border (the on-accent colour by default)" },
+          { "name": "--shift-vin-extractor-capture-radius", "default": "9999px", "description": "Shape · capture button radius (a pill by default)" },
+          {
+            "name": "--shift-vin-extractor-capture-shadow",
+            "default": "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)",
+            "description": "Colour · capture button shadow"
+          },
+          {
+            "name": "--shift-vin-extractor-control-hover-bg",
+            "default": "var(--_sc-sheet-hover-bg, #cbd5e1)",
+            "description": "Colour · header button background on hover (#cbd5e1 on phones, #f1f5f9 in the popup)"
+          },
+          { "name": "--shift-vin-extractor-control-hover-ink", "default": "var(--_sc-hover-ink, #334155)", "description": "Colour · header button icon and border on hover" },
+          { "name": "--shift-vin-extractor-control-radius", "default": "0.5rem", "description": "Shape · header button radius" },
+          {
+            "name": "--shift-vin-extractor-control-surface",
+            "default": "var(--_sc-control-surface, #f1f5f9)",
+            "description": "Colour · header button background (#f1f5f9 on phones, the surface in the popup)"
+          },
+          { "name": "--shift-vin-extractor-font-family", "default": "'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif", "description": "Type · Latin and Cyrillic font" },
+          { "name": "--shift-vin-extractor-font-family-arabic", "default": "var(--_font)", "description": "Type · Arabic and Kurdish font" },
+          {
+            "name": "--shift-vin-extractor-header-shadow",
+            "default": "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
+            "description": "Colour · header bar shadow"
+          },
+          { "name": "--shift-vin-extractor-hint-ink", "default": "#ffffff", "description": "Colour · hint text" },
+          { "name": "--shift-vin-extractor-hint-radius", "default": "9999px", "description": "Shape · hint radius (a pill by default)" },
+          { "name": "--shift-vin-extractor-hint-surface", "default": "rgb(0 0 0 / 0.55)", "description": "Colour · hint background" },
+          { "name": "--shift-vin-extractor-ink", "default": "var(--_sc-ink, #000000)", "description": "Colour · popup title" },
+          { "name": "--shift-vin-extractor-line", "default": "var(--_sc-line, #475569)", "description": "Colour · border of the header buttons on phones" },
+          { "name": "--shift-vin-extractor-muted", "default": "var(--_sc-muted, #475569)", "description": "Colour · switch-camera and close icons" },
+          { "name": "--shift-vin-extractor-on-accent", "default": "#64748b", "description": "Colour · capture button icon, label and spinner" },
+          { "name": "--shift-vin-extractor-preview-surface", "default": "#000000", "description": "Colour · behind the camera picture before it starts" },
+          { "name": "--shift-vin-extractor-radius", "default": "0.5rem", "description": "Shape · popup corner radius" },
+          { "name": "--shift-vin-extractor-shadow", "default": "0 4px 6px -1px rgb(0 0 0 / 0.1)", "description": "Colour · popup shadow" },
+          { "name": "--shift-vin-extractor-surface", "default": "var(--_sc-surface, #ffffff)", "description": "Colour · popup header and its buttons" }
+        ]
+      },
+      "runtimeAssets": {
+        "locales": null,
+        "notes": [
+          "Results are reported through callback properties, not DOM events: set onExtract, onError, onProcessing and onOpenChange to functions on the element (or, from Blazor, to method names after setBlazorRef). An attribute cannot carry a function.",
+          "Open it with open() and close it with close(); the backdrop and the close button also close it. While it is open the page does not scroll: open sets the body’s inline overflow to hidden and close sets it to auto. A page that needs another value restores it itself in onOpenChange.",
+          "The strings it renders itself (the accessible names of the dialog, its buttons, the preview and the file input) come from language; title, manualCaptureLabel and manualCaptureHint are the host’s own text and are shown as given.",
+          "The header bar, the hint and the capture button sit on the camera picture on phones, so colorScheme leaves them as they are; it changes the popup’s header, its buttons and the backdrop.",
+          "Icons are slots whose fallback is the built-in icon: give the element a child with slot=\"switch-camera-icon\", slot=\"close-icon\" or slot=\"capture-icon\" (an svg or img) and style it with the page’s own CSS; it sits inside the button where the icon was. The capture icon slot shows only while the button has no manualCaptureLabel and no capture is in flight. Children without a slot attribute still go to the default slot, which is where the uploaderButtonId button lives.",
+          "Each accessible name the component writes is the host’s prop when it is not empty, else the language’s string when language is set, else the English default.",
+          "Under 768px of viewport width it is a full-screen sheet that slides in; from 768px it is a 600px popup over a dimmed page.",
+          "It reads only its own --shift-vin-extractor-* variables, never the shared --shift-* ones, so a page themed for the other components leaves it as it is. Without any of its variables, language or colorScheme it renders exactly as before they existed."
         ]
       }
     }

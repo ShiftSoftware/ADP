@@ -6,7 +6,7 @@ import {
   type FetchedOption,
   type LocalizedString,
   type OptionsSource,
-} from '@shiftsoftware/survey-sdk';
+} from '@shift-software/survey-sdk';
 import { useSurveyContext } from '../SurveyContext.js';
 import { localize } from '../locale.js';
 import type { QuestionComponent } from './registry.js';

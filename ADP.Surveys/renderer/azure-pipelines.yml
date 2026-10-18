@@ -1,8 +1,8 @@
 # Publishes the three survey renderer packages to npm.
 #
-#   @shiftsoftware/survey-sdk            runtime contract, expression sandbox, logic evaluator
-#   @shiftsoftware/survey-renderer       React renderer (depends on the sdk)
-#   @shiftsoftware/survey-web-component  <shift-survey> custom element (bundles both)
+#   @shift-software/survey-sdk            runtime contract, expression sandbox, logic evaluator
+#   @shift-software/survey-renderer       React renderer (depends on the sdk)
+#   @shift-software/survey-web-component  <shift-survey> custom element (bundles both)
 #
 # They version and release together — the renderer and web-component pin the sdk by
 # caret range, and the sandbox/evaluator parity discipline means a mixed-version install
@@ -18,6 +18,9 @@ trigger:
   tags:
     include:
       - release-survey-renderer-*
+
+# PR runs disabled: production must only ever be reached by a manual run (see .shift/guides/pipeline-pr-triggers.md)
+pr: none
 
 variables:
   - group: Deployment
@@ -41,21 +44,28 @@ steps:
     inputs:
       command: 'custom'
       workingDir: 'ADP.Surveys/renderer'
-      customCommand: 'run build --workspace @shiftsoftware/survey-sdk'
+      customCommand: 'run build --workspace @shift-software/survey-sdk'
 
   - task: Npm@1
     displayName: 'Build survey-renderer'
     inputs:
       command: 'custom'
       workingDir: 'ADP.Surveys/renderer'
-      customCommand: 'run build --workspace @shiftsoftware/survey-renderer'
+      customCommand: 'run build --workspace @shift-software/survey-renderer'
 
   - task: Npm@1
     displayName: 'Build survey-web-component'
     inputs:
       command: 'custom'
       workingDir: 'ADP.Surveys/renderer'
-      customCommand: 'run build --workspace @shiftsoftware/survey-web-component'
+      customCommand: 'run build --workspace @shift-software/survey-web-component'
+
+  # Every `exports` / `main` / `types` target must exist in the built package. The workspace
+  # apps alias the packages to `src/`, so nothing else here notices a dist path that was
+  # never produced (0.1.0 shipped without dist/styles.css).
+  - script: node scripts/check-exports.mjs
+    displayName: 'Check package entry points'
+    workingDirectory: 'ADP.Surveys/renderer'
 
   # Gate the publish on green tests. The sandbox and logic evaluator are mirrors of their
   # C# counterparts; shipping a renderer whose parity tests fail means the two halves of
@@ -77,7 +87,7 @@ steps:
       customCommand: 'run typecheck --workspaces --if-present'
 
   - task: Npm@1
-    displayName: 'Publish @shiftsoftware/survey-sdk'
+    displayName: 'Publish @shift-software/survey-sdk'
     condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/release'))
     inputs:
       command: 'publish'
@@ -85,7 +95,7 @@ steps:
       publishEndpoint: 'NPM'
 
   - task: Npm@1
-    displayName: 'Publish @shiftsoftware/survey-renderer'
+    displayName: 'Publish @shift-software/survey-renderer'
     condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/release'))
     inputs:
       command: 'publish'
@@ -93,7 +103,7 @@ steps:
       publishEndpoint: 'NPM'
 
   - task: Npm@1
-    displayName: 'Publish @shiftsoftware/survey-web-component'
+    displayName: 'Publish @shift-software/survey-web-component'
     condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/release'))
     inputs:
       command: 'publish'

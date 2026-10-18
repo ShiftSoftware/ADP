@@ -2,7 +2,12 @@
    "just work": header has a fixed height, body fills the remaining space, iframe is
    100% of the body. The iframe itself owns scrolling; we never try to size to content. */
 .claimable-trace-modal {
-  @apply fixed inset-0 flex-col bg-white opacity-0 pointer-events-none;
+  pointer-events: none;
+  position: fixed;
+  inset: 0px;
+  flex-direction: column;
+  background-color: rgb(255 255 255 / 1);
+  opacity: 0;
   width: 100%;
   height: 100%;
   max-width: none;
@@ -27,7 +32,8 @@
 }
 
 .claimable-trace-modal.open {
-  @apply opacity-100 pointer-events-auto;
+  pointer-events: auto;
+  opacity: 1;
 }
 
 .claimable-trace-modal.fading-out {
@@ -35,45 +41,112 @@
 }
 
 .trace-modal-header {
-  @apply shrink-0 flex items-center justify-between px-[20px] py-[14px] border-b border-[#e1e6ec] bg-[#f4f7fa];
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom-width: 1px;
+  border-color: rgb(225 230 236 / 1);
+  background-color: rgb(244 247 250 / 1);
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 14px;
+  padding-bottom: 14px;
 }
 
 .trace-modal-title {
-  @apply font-semibold text-[16px] text-[#1d2735];
+  font-size: 16px;
+  font-weight: 600;
+  color: rgb(29 39 53 / 1);
 }
 
 .trace-modal-close {
-  @apply text-[28px] leading-none text-[#5a6b7a] hover:text-[#1d2735] cursor-pointer bg-transparent border-0 px-[10px] py-[2px] rounded;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  border-width: 0px;
+  background-color: transparent;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  font-size: 28px;
+  line-height: 1;
+  color: rgb(90 107 122 / 1);
+}
+
+.trace-modal-close:hover {
+  color: rgb(29 39 53 / 1);
+}
+
+.trace-modal-close {
   outline: none;
 }
 
 .trace-modal-close:focus-visible {
-  @apply ring-2 ring-[#3071a9];
+  box-shadow:
+    0 0 0 0px #fff,
+    0 0 0 calc(2px + 0px) rgb(48 113 169 / 1),
+    0 0 #0000;
 }
 
 .trace-modal-body {
-  @apply flex-1 min-h-0 relative bg-[#fafbfc];
+  position: relative;
+  min-height: 0px;
+  flex: 1 1 0%;
+  background-color: rgb(250 251 252 / 1);
 }
 
 .trace-modal-status {
-  @apply absolute inset-0 flex flex-col items-center justify-center gap-[12px] text-[#5a6b7a] text-[15px];
+  position: absolute;
+  inset: 0px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 15px;
+  color: rgb(90 107 122 / 1);
 }
 
 .trace-modal-error {
-  @apply text-[#a84444];
+  color: rgb(168 68 68 / 1);
 }
 
 /* width/height 100% of the flex-filled body, block display kills the inline-baseline gap,
    border:0 removes the legacy 2px iframe border. The iframe owns its own scrollbar. */
 .trace-modal-iframe {
-  @apply block w-full h-full;
+  display: block;
+  height: 100%;
+  width: 100%;
   border: 0;
 }
 
 /* Trace trigger — beside the verdict pill in the panel's head. Yellow/warning palette
    to signal "this is a debug/trace tool, not a regular action." */
 .trace-trigger-button {
-  @apply flex items-center justify-center size-[32px] rounded-full border border-[#e0c97a] bg-white text-[#c08a0e] hover:text-[#8a6d3b] hover:border-[#c08a0e] hover:bg-[#fcf8e3] cursor-pointer transition duration-200 shadow-sm;
+  display: flex;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border-width: 1px;
+  border-color: rgb(224 201 122 / 1);
+  background-color: rgb(255 255 255 / 1);
+  color: rgb(192 138 14 / 1);
+  box-shadow:
+    0 0 #0000,
+    0 0 #0000,
+    0 1px 2px 0 rgb(0 0 0 / 0.05);
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+.trace-trigger-button:hover {
+  border-color: rgb(192 138 14 / 1);
+  background-color: rgb(252 248 227 / 1);
+  color: rgb(138 109 59 / 1);
 }
 
 .trace-trigger-button svg {
@@ -85,4 +158,16 @@
 .trace-trigger-button[data-empty='true'] {
   opacity: 0;
   pointer-events: none;
+}
+
+.claim-trace-loader {
+  width: 40px;
+  height: 40px;
+  color: #3071a9;
+  animation: claim-trace-spin 1s linear infinite;
+}
+@keyframes claim-trace-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

@@ -15,6 +15,12 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services;
 /// </summary>
 public static class VehicleReportRows
 {
+    /// <summary>
+    /// Joins the classification codes and labels of a top-level row. Both columns use it, so the n-th
+    /// label belongs to the n-th code.
+    /// </summary>
+    public const string ClassificationSeparator = "; ";
+
     public static string NormalizeVin(string vin)
     {
         return vin?.Trim()?.ToUpperInvariant();
@@ -227,6 +233,12 @@ public static class VehicleReportRows
             .Where(x => long.TryParse(x?.ProviderCompanyID, out var providerCompanyID) && providerCompanyID == distributorCompanyID)
             .ToList();
 
+        // The lookup already drops blank codes and duplicates; a hand-built DTO gets the same treatment of
+        // blanks. A missing label falls back to its code so the two columns stay aligned.
+        var classifications = (lookup?.Classifications ?? Array.Empty<VehicleClassificationDTO>())
+            .Where(x => x is not null && !string.IsNullOrWhiteSpace(x.Code))
+            .ToList();
+
         return new VehicleLookupTopLevelReportModel
         {
             VIN = vin ?? string.Empty,
@@ -300,6 +312,10 @@ public static class VehicleReportRows
             VehicleSpecFuelLiter = vehicleSpecification?.FuelLiter,
             VehicleSpecExteriorColor = vehicleSpecification?.ExteriorColor ?? string.Empty,
             VehicleSpecInteriorColor = vehicleSpecification?.InteriorColor ?? string.Empty,
+
+            ClassificationCodes = string.Join(ClassificationSeparator, classifications.Select(x => x.Code)),
+            ClassificationLabels = string.Join(ClassificationSeparator,
+                classifications.Select(x => string.IsNullOrWhiteSpace(x.Label) ? x.Code : x.Label)),
         };
     }
 

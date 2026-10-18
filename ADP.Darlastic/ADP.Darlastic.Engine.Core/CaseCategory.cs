@@ -74,7 +74,10 @@ public static class CaseCategories
         // Stock' was tagged both). NameConflict caps to 0.55 and ID conflict ×0.3 — both land
         // < 0.90. DobConflict no longer penalizes (2026-06-22) and the org guard only WITHHOLDS
         // the person floor (identical org names still merge on the base) — neither is a veto.
-        if (phoneExact && s < 0.90 && (f & (MatchFlags.NameConflictCap | MatchFlags.IdConflict)) != 0)
+        // The structured given/family-name conflicts (set only under Flags.StructuredNames) are the
+        // same kind of verdict: they hold the pair below the steward line.
+        if (phoneExact && s < 0.90 && (f & (MatchFlags.NameConflictCap | MatchFlags.IdConflict
+                | MatchFlags.GivenNameConflict | MatchFlags.FamilyNameConflict)) != 0)
             cats |= CaseCat.ConflictVetoed;
         if ((f & MatchFlags.OrgLine) != 0) cats |= CaseCat.OrgLine;
 
@@ -92,13 +95,14 @@ public static class CaseCategories
         // (exact phone+given, chain-slice address rescue, both 0.91), and without the guard those
         // ride-alongs showed up tagged BOTH Auto-merged AND "VIN review (NOT merged)".
         if (s < 0.90 && (f & MatchFlags.VinSoldOverlap) != 0 && (f & MatchFlags.VinSoldMerge) == 0
-            && (f & MatchFlags.NamesBoth) != 0 && RealMatcher.GivenNamesMatch(ra.NormName, rb.NormName))
+            && (f & MatchFlags.NamesBoth) != 0 && RealMatcher.GivenNamesMatch(ra, rb))
             cats |= CaseCat.VinReview;
 
         if (phoneExact && s < 0.90
             && (f & MatchFlags.NamesBoth) != 0
-            && (f & (MatchFlags.NameConsistent | MatchFlags.NameConflictCap | MatchFlags.ChainSliceRescue | MatchFlags.OrgLine)) == 0
-            && RealMatcher.FirstTokensAlign(ra.NormName, rb.NormName))
+            && (f & (MatchFlags.NameConsistent | MatchFlags.NameConflictCap | MatchFlags.ChainSliceRescue | MatchFlags.OrgLine
+                     | MatchFlags.GivenNameConflict | MatchFlags.FamilyNameConflict)) == 0
+            && RealMatcher.FirstTokensAlign(ra, rb))
             cats |= CaseCat.Increment;
 
         // Script-recovery tags ride along on cases interesting for another reason, plus any

@@ -63,6 +63,11 @@ public static class Merge
         /// set that silently stops applying is indistinguishable from one that never worked.</summary>
         public int StewardUnmatchedConstraints;
 
+        /// <summary>Flags.ConflictAwareClustering: candidate pairs the matcher itself judged to be two
+        /// people (the cannot-link constraints), and the auto-merge edges skipped because applying them
+        /// would have put such a pair into one identity. Both 0 when the option is off.</summary>
+        public int CannotLinkPairs, ConflictBlockedEdges;
+
         // ---------------------------------------------------------------- case evidence
         // The resolve's pair walk is the ONLY pass that sees the whole corpus. Everything below is
         // collected during it because no later query can recover it: a surface that re-derives
@@ -85,6 +90,25 @@ public static class Merge
         /// <summary>The per-category cap applied to <see cref="Catalog"/>. Recorded so a surface can
         /// say "showing 500 of 437,238" instead of implying it holds everything.</summary>
         public int CatalogCap;
+
+        /// <summary>
+        /// Per record index, the <see cref="GoldenReason"/> bits the pair walk established for it —
+        /// how its auto-merge edges were justified, whether it is queued, and what its categorised
+        /// pairs say about its customer. A golden's reasons are the OR over its members.
+        ///
+        /// <para>Null unless the walk was asked for per-golden evidence. Its presence is also what
+        /// tells the registry to stage evidence for every identity and record rather than only the
+        /// multi-record identities and the queued or catalogued records.</para>
+        /// </summary>
+        public long[]? RecordReasons;
+
+        /// <summary>
+        /// The match configuration the walk scored with (<see cref="MatchSettings.Current"/> when it
+        /// began). The registry records it with the run, so a surface that re-scores one of this run's
+        /// pairs later — in another process — can score it the way this run did. Null for a result
+        /// built by hand.
+        /// </summary>
+        public MatchSettings? Settings;
     }
 
     /// <summary>One auto-merge edge: two records joined, and the evidence that joined them.</summary>
@@ -137,13 +161,23 @@ public static class Merge
     /// <see cref="StewardConstraints"/>). They are resolved to record INDICES once, up front, so
     /// the inner loop — which runs into the tens of millions of pairs — stays a packed-long set
     /// probe and never builds a pair-key string per candidate.</para>
+    ///
+    /// <para><paramref name="perGoldenEvidence"/> (off by default) additionally fills
+    /// <see cref="Result.RecordReasons"/>, which is what lets a browsing surface list one row per
+    /// golden customer with plain reasons. Off, the walk does exactly what it did before the
+    /// parameter existed: clustering, queue, catalog and counts are identical either way; on, it
+    /// keeps the few categorised pairs that say something about customers (see
+    /// <see cref="GoldenReasons.RelationshipCats"/>) and folds them in once the clustering is
+    /// final. <paramref name="evidenceOptions"/> (defaults when null) words those reasons; it changes
+    /// nothing without per-golden evidence.</para>
     /// </summary>
     public static Result ClusterFromBlocks(IReadOnlyList<RealRecord> records, RealMatcher.BlockingResult blocking,
         double mergeThreshold = 0.90, StewardConstraints? constraints = null,
-        int catalogCap = DefaultCatalogCap)
+        int catalogCap = DefaultCatalogCap, bool perGoldenEvidence = false, GoldenEvidenceOptions? evidenceOptions = null)
     {
         int n = records.Count;
         var uf = new UnionFind(n);
+        var settings = MatchSettings.Current;
 
         // Resolve pair-key constraints to packed index pairs. Records are keyed by (source, id);
         // a decision naming a record this run didn't load simply doesn't apply — counted, not fatal,
@@ -172,6 +206,26 @@ public static class Merge
         var steward = new List<(int, int, float)>();
         var seen = new HashSet<long>();
 
+        // Flags.ConflictAwareClustering: the walk only COLLECTS auto-merge edges and the matcher's own
+        // "two people" verdicts; the unions happen after it, strongest edge first, refusing any union
+        // that would join a cannot-link pair. Off, the walk unions in place exactly as before.
+        bool conflictAware = Flags.ConflictAwareClustering;
+        var deferred = conflictAware ? new List<(int A, int B, double Score, MatchFlags Flags)>() : null;
+        var cannotLink = conflictAware ? new Dictionary<int, List<int>>() : null;
+        int cannotLinkPairs = 0;
+        // A steward's "different" is the strongest such verdict: under the option it also keeps the
+        // pair from being chained together through third records, not only off this one edge.
+        if (cannotLink is not null)
+            foreach (var packed in forcedSeparate.OrderBy(p => p))
+                AddCannotLink((int)(packed >> 32), (int)(uint)packed);
+
+        void AddCannotLink(int a, int b)
+        {
+            (cannotLink!.TryGetValue(a, out var la) ? la : cannotLink[a] = []).Add(b);
+            (cannotLink.TryGetValue(b, out var lb) ? lb : cannotLink[b] = []).Add(a);
+            cannotLinkPairs++;
+        }
+
         // Case evidence, collected in this same walk. The flags overload of Score costs nothing —
         // MatchFlags are bit-ors already set on ScoreCore's own path — so categorising here is a
         // dictionary bump per decision-relevant pair, not a second scoring pass.
@@ -180,6 +234,9 @@ public static class Merge
         var catKept = new Dictionary<CaseCat, int>(CaseCategories.All.Length);
         var catalog = new List<CatalogEntry>(1 << 13);
         foreach (var c in CaseCategories.All) { catCounts[c] = 0; catKept[c] = 0; }
+        // Pairs whose categories describe the customers, kept only for per-golden evidence. Whether
+        // the two records end up in one customer is not known until the walk is over.
+        var relationshipPairs = perGoldenEvidence ? new List<(int A, int B, CaseCat Cats)>() : null;
 
         foreach (var block in blocking.Blocks)
             for (int i = 0; i < block.Count; i++)
@@ -205,12 +262,17 @@ public static class Merge
                                 if (catKept[c] < catalogCap) { catKept[c]++; keep = true; }
                             }
                         if (keep) catalog.Add(new CatalogEntry(a, b, (float)s, flags, cats));
+                        if (relationshipPairs is not null && (cats & GoldenReasons.RelationshipCats) != 0)
+                            relationshipPairs.Add((a, b, cats));
                     }
+
+                    if (cannotLink is not null && (flags & CannotLinkFlags) != 0) AddCannotLink(a, b);
 
                     if (s >= mergeThreshold)
                     {
                         // A steward who said "different" outranks the score on THIS edge.
                         if (forcedSeparate.Contains(packed)) { vetoed++; continue; }
+                        if (deferred is not null) { deferred.Add((a, b, s, flags)); continue; }
                         uf.Union(a, b); edges++;
                         // Recorded even when the Union is redundant (both already joined via a
                         // third record): corroborating edges are evidence a steward reads, and
@@ -227,13 +289,40 @@ public static class Merge
         // Steward "same" verdicts union AFTER the score walk and BEFORE the transitive filter
         // below, so a pair the steward settled also settles every band pair it transitively
         // resolves — the human's decision propagates exactly as an auto-merge edge would.
+        // Under conflict-aware clustering they go first: a human verdict is not subject to the
+        // matcher's constraints, and the constrained edges then see the clusters it made.
         foreach (var (a, b) in forcedMerge) if (uf.Union(a, b)) edges++;
+
+        int blocked = deferred is null ? 0 : UnionWithCannotLink(uf, deferred, cannotLink!, mergeEdges, ref edges);
 
         // A pair judged [0.80,0.90) can still land in the SAME identity via other edges
         // (transitive auto-merge) — that is a settled question, not steward work. Filter when
         // the union-find is final (adversarial review 2026-07-19 measured 32% of the raw band
         // already-merged on a full tenant corpus).
         steward.RemoveAll(p => uf.Find(p.Item1) == uf.Find(p.Item2));
+
+        long[]? recordReasons = null;
+        if (relationshipPairs is not null)
+        {
+            recordReasons = new long[n];
+            void Mark(int i, GoldenReason r) => recordReasons[i] |= (long)r;
+
+            for (int i = 0; i < n; i++)
+                if (records[i].IsOrgPlaceholder) Mark(i, GoldenReason.CompanyOrFleet);
+            foreach (var e in mergeEdges)
+            {
+                var r = GoldenReasons.OfMergeEdge(e.Flags, evidenceOptions ?? GoldenEvidenceOptions.Default);
+                Mark(e.A, r); Mark(e.B, r);
+            }
+            foreach (var (a, b) in forcedMerge) { Mark(a, GoldenReason.MergedByReviewer); Mark(b, GoldenReason.MergedByReviewer); }
+            foreach (var (a, b, _) in steward) { Mark(a, GoldenReason.NeedsReview); Mark(b, GoldenReason.NeedsReview); }
+            foreach (var (a, b, cats) in relationshipPairs)
+            {
+                var r = GoldenReasons.OfPair(cats, uf.Find(a) == uf.Find(b));
+                if (r == GoldenReason.None) continue;
+                Mark(a, r); Mark(b, r);
+            }
+        }
 
         var parent = uf.Parent;
         var size = new Dictionary<int, int>();
@@ -251,13 +340,81 @@ public static class Merge
             StewardVetoedEdges = vetoed,
             StewardSuppressedPairs = suppressed,
             StewardUnmatchedConstraints = unmatched,
+            CannotLinkPairs = cannotLinkPairs,
+            ConflictBlockedEdges = blocked,
             AutoMergeEdgeList = mergeEdges,
             CategoryCounts = catCounts,
             Catalog = catalog,
             CatalogCap = catalogCap,
+            RecordReasons = recordReasons,
+            Settings = settings,
         };
         foreach (var v in size.Values) result.ClusterSizeHistogram[v] = result.ClusterSizeHistogram.GetValueOrDefault(v) + 1;
         return result;
+    }
+
+    /// <summary>The matcher's "two different people" verdicts — the cannot-link constraints of
+    /// <see cref="Flags.ConflictAwareClustering"/>. The structured name-part conflicts only ever fire
+    /// under <see cref="Flags.StructuredNames"/>, and the first-name conflict also under
+    /// <see cref="Flags.DistinctGivenNames"/>.</summary>
+    public const MatchFlags CannotLinkFlags = MatchFlags.NameConflictCap | MatchFlags.IdConflict
+        | MatchFlags.GivenNameConflict | MatchFlags.FamilyNameConflict;
+
+    /// <summary>
+    /// Conflict-aware union (<see cref="Flags.ConflictAwareClustering"/>). Edges are applied strongest
+    /// first (ties in record order, so the result is deterministic); an edge between two clusters that
+    /// would put a cannot-link pair into one identity is skipped and counted. Applied and redundant
+    /// edges are recorded exactly as the in-walk union records them; skipped ones are not, because they
+    /// did not merge anything. The typical skip is a record with a partial name (surname only,
+    /// patronymic only) whose consistent-name edges reach two relatives: it joins the cluster its
+    /// strongest edge points at, and the relatives stay apart.
+    /// </summary>
+    private static int UnionWithCannotLink(UnionFind uf, List<(int A, int B, double Score, MatchFlags Flags)> edges,
+        Dictionary<int, List<int>> cannotLink, List<MergeEdge> mergeEdges, ref long edgeCount)
+    {
+        edges.Sort((x, y) =>
+        {
+            int c = y.Score.CompareTo(x.Score);
+            if (c == 0) c = x.A.CompareTo(y.A);
+            return c != 0 ? c : x.B.CompareTo(y.B);
+        });
+
+        // Constrained members per current root: only records that carry a cannot-link can block.
+        var constrained = new Dictionary<int, List<int>>();
+        foreach (var r in cannotLink.Keys)
+        {
+            int root = uf.Find(r);
+            (constrained.TryGetValue(root, out var l) ? l : constrained[root] = []).Add(r);
+        }
+
+        int blocked = 0;
+        foreach (var (a, b, s, f) in edges)
+        {
+            int ra = uf.Find(a), rb = uf.Find(b);
+            if (ra != rb)
+            {
+                if (Conflicts(ra, rb)) { blocked++; continue; }
+                uf.Union(a, b);
+                int root = uf.Find(a), other = root == ra ? rb : ra;
+                if (constrained.Remove(other, out var moved))
+                    (constrained.TryGetValue(root, out var l) ? l : constrained[root] = []).AddRange(moved);
+            }
+            edgeCount++;
+            mergeEdges.Add(new MergeEdge(a, b, (float)s, f));
+        }
+        return blocked;
+
+        // A cannot-link between two clusters needs a constrained member on each side; walk the
+        // smaller side's constrained members and look for a partner inside the other cluster.
+        bool Conflicts(int ra, int rb)
+        {
+            if (!constrained.TryGetValue(ra, out var la) || !constrained.TryGetValue(rb, out var lb)) return false;
+            var (members, otherRoot) = la.Count <= lb.Count ? (la, rb) : (lb, ra);
+            foreach (var m in members)
+                foreach (var p in cannotLink[m])
+                    if (uf.Find(p) == otherRoot) return true;
+            return false;
+        }
     }
 
     /// <summary>
@@ -367,12 +524,27 @@ public static class Merge
     /// Order-preserving on purpose: 'ali mohammed' must NOT extend to 'mohammed ali kamil'
     /// — name-order inversion is father/son evidence, not a chain slice (those stay for
     /// the steward's enrich/compose action, Phase 5).
+    ///
+    /// <para>How the chosen chain is SHOWN is <paramref name="nameOptions"/>' business (null = the defaults: the
+    /// title-cased match form). With <see cref="GoldenNameOptions.DisplayFromRecordNames"/> on, the
+    /// <c>full_name</c> value is the chain as one of its records wrote it (<see cref="GoldenDisplayName"/>);
+    /// the choice of chain, its <c>WonBy</c> reason and every other attribute are the same either way. The
+    /// options' chain rules (<see cref="GoldenNameOptions.PlaceholderNames"/>, <see cref="GoldenNameOptions.PlaceholderTokens"/>,
+    /// <see cref="GoldenNameOptions.MinimumLetters"/>, <see cref="GoldenNameOptions.PresentableOnly"/>; all off by
+    /// default) take the chains they refuse out of the choice first; with none left there is no <c>full_name</c>.</para>
     /// </summary>
-    public static List<GoldenAttr> SurviveGolden(List<RealRecord> members, NameSurvivalExplain? explain = null)
+    public static List<GoldenAttr> SurviveGolden(List<RealRecord> members, NameSurvivalExplain? explain = null, GoldenNameOptions? nameOptions = null)
     {
         var golden = new List<GoldenAttr>();
 
         var names = members.Where(m => m.NormName.Length > 0).Select(m => m.NormName).ToList();
+        if (nameOptions is { FiltersChains: true } && names.Count > 0)
+        {
+            // Chains the options refuse never stand as the shown name (GoldenNameOptions.MayShow); the best of
+            // the others is chosen exactly as before, and a golden with none left shows no name.
+            var verdicts = new Dictionary<string, bool>(StringComparer.Ordinal);
+            names = names.Where(n => verdicts.TryGetValue(n, out var ok) ? ok : verdicts[n] = nameOptions.MayShow(n, members)).ToList();
+        }
         if (names.Count > 0)
         {
             var groups = names.GroupBy(x => x)
@@ -402,9 +574,11 @@ public static class Merge
                 }
                 explain.Chosen = fullest.Count > 0 ? fullest[0].Name : null;
             }
-            golden.Add(fullest.Count > 0
-                ? new GoldenAttr("full_name", TitleCaseForDisplay(fullest[0].Name), "longest-chain")
-                : new GoldenAttr("full_name", TitleCaseForDisplay(anchor.Name), "confidence-recency"));
+            string chosen = fullest.Count > 0 ? fullest[0].Name : anchor.Name;
+            string shown = nameOptions is { DisplayFromRecordNames: true }
+                ? GoldenDisplayName.Choose(members, chosen, nameOptions) ?? TitleCaseForDisplay(chosen)
+                : TitleCaseForDisplay(chosen);
+            golden.Add(new GoldenAttr("full_name", shown, fullest.Count > 0 ? "longest-chain" : "confidence-recency"));
         }
         // Golden city: most-frequent normalized city (display/probe value; spelling variants of
         // one city count separately — fuzzy city unification is a Phase 4/steward concern).
@@ -444,7 +618,7 @@ public static class Merge
     }
 
     /// <summary>Display casing for golden name/city: the survived value is match-normalized
-    /// (lowercased); title-case it for presentation ("aza asim" → "Aza Asim"). Deterministic
+    /// (lowercased); title-case it for presentation ("sample person" → "Sample Person"). Deterministic
     /// (InvariantCulture) so the golden payload hash stays stable across runs. Matching is
     /// unaffected — the matcher reads each source record's NormName, never the golden's stored name.</summary>
     private static string TitleCaseForDisplay(string s) =>

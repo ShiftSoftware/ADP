@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ShiftSoftware.ADP.Darlastic.Engine;
 
 /// <summary>
@@ -43,9 +45,21 @@ public sealed record RealRecord(
                                   // Canonicalized for comparison by Norm.Email at match time, NOT at ingest — the stored
                                   // value stays the one the customer supplied. Always ingested + survived to the golden;
                                   // participates in MATCHING only where Flags.EmailMatching is on (per-tenant).
-    string[]? SameAsRefs = null); // source-asserted same-entity references to OTHER profiles, as "sourceSystem|sourceRecordId"
+    string[]? SameAsRefs = null,  // source-asserted same-entity references to OTHER profiles, as "sourceSystem|sourceRecordId"
                                   // keys (e.g. a CRM ticket carrying the DMS customer key it was raised for). An explicit
                                   // FK the matcher treats as king-key-grade evidence — still name-gated, never blind.
+    // Structured name parts, in NormName's normalized form, set by a feed that KNOWS them (a form
+    // with separate given/family fields, or a parsed full name whose order is certain). Null = unknown.
+    // Read only under Flags.StructuredNames; never hashed (derived from RawName like NormName) and
+    // omitted from serialized payloads when null, so records of feeds that never set them are unchanged.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? GivenName = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? FamilyName = null,
+    // Set by a feed that blanked the name because the source typed a placeholder into the name field
+    // ("n/a", "customer", an e-mail address): the record names nobody, which a feed can tell apart from a
+    // record that simply has no name. Read only under Flags.PlaceholderNamesNeedCorroboration; never hashed
+    // (derived from RawName like NormName) and omitted from serialized payloads when false, so records of
+    // feeds that never set it are unchanged.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool NamePlaceholder = false);
 
 /// <summary>Where a VIN↔customer link came from — they are NOT equal-strength (domain expert, 2026-06-22).
 /// A vehicle SALE binds the VIN to the buyer at point of sale (high-accuracy entry); a SERVICE visit

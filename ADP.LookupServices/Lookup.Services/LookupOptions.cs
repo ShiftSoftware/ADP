@@ -18,6 +18,16 @@ namespace ShiftSoftware.ADP.Lookup.Services;
 [Docable]
 public class LookupOptions
 {
+    /// <summary>
+    /// Optional host classification from the already-loaded aggregate. Called once per vehicle
+    /// evaluation, shared by all items and the response. Unconfigured hosts perform no classification.
+    /// Codes match exactly and case-sensitively; labels never grant eligibility.
+    /// </summary>
+    public Func<VehicleClassificationContext, IReadOnlyList<VehicleClassificationDTO>>? VehicleClassificationResolver { get; set; }
+
+    /// <summary>Optional historical visit policy. Unconfigured hosts retain strict catalog evaluation.</summary>
+    public ServiceRewardToleranceOptions? ServiceRewardTolerance { get; set; }
+
     /// <summary>Resolver delegate that converts a multilingual image dictionary to a resolved image URL for service items.</summary>
     public Func<LookupOptionResolverModel<Dictionary<string,string>>, ValueTask<string?>>? ServiceItemImageUrlResolver { get; set; }
     /// <summary>A dictionary mapping brand IDs to their standard warranty period in years.</summary>

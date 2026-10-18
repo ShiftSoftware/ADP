@@ -66,8 +66,8 @@ public abstract class FileMetadataProbe
 /// <see cref="DirectoryInfo.EnumerateFiles()"/> yields <see cref="FileInfo"/> objects whose
 /// <see cref="FileInfo.Length"/> and <see cref="FileInfo.LastWriteTimeUtc"/> are already populated
 /// from the enumeration buffer, so a folder of any size costs a handful of round trips instead of
-/// two per file. That is invisible at TCA's four feeds and is the difference that matters once a
-/// registry carries dozens.
+/// two per file. For a deployment with four feeds the difference is too small to notice. It
+/// matters once a registry carries dozens of feeds.
 ///
 /// <para><b>Enumeration failure is never an answer.</b> A folder that will not enumerate falls back
 /// to per-file probing, and a per-file failure reports <see cref="FileProbeStatus.Unavailable"/>.

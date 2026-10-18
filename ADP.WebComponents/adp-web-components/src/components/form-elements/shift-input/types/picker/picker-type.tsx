@@ -151,6 +151,7 @@ export const pickerType: InputType<Partial<PickerField>> = {
         appearance={picker.appearance as HTMLShiftPopoverElement['appearance']}
         colorScheme={picker.colorScheme as HTMLShiftPopoverElement['colorScheme']}
         size={picker.size as HTMLShiftPopoverElement['size']}
+        mobileSheet={field.mobileSheet}
         onOpenChange={(event: CustomEvent<{ open: boolean }>) => {
           event.stopPropagation();
           field.expanded = event.detail.open;

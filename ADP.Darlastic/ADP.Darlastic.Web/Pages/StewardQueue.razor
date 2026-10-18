@@ -31,7 +31,7 @@
         <MudStack Spacing="0">
             <MudText Typo="Typo.h5">Steward Queue</MudText>
             <MudText Typo="Typo.caption" Class="mud-text-secondary">
-                Candidate pairs the engine could not decide — closest calls first
+                @(Plain ? "Pairs of records that may be the same customer — closest calls first" : "Candidate pairs the engine could not decide — closest calls first")
             </MudText>
         </MudStack>
         <MudStack Row Spacing="2" AlignItems="AlignItems.Center">
@@ -41,7 +41,7 @@
                     @_page.Total open case@(_page.Total == 1 ? "" : "s")
                 </MudChip>
             }
-            <MudTooltip Text="Reload the queue from the last resolve run">
+            <MudTooltip Text="@(Plain ? "Reload the list" : "Reload the queue from the last resolve run")">
                 <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="@(() => Load(_skip))" Disabled="_loading" />
             </MudTooltip>
         </MudStack>
@@ -58,15 +58,31 @@
     else if (_page is null || _page.Cases.Count == 0)
     {
         <MudAlert Severity="Severity.Success" Dense>
-            Nothing queued. Either every candidate pair was decisive enough for the engine to settle on its
-            own, or no resolve run has staged a queue into this database yet.
+            @if (Plain)
+            {
+                <text>Nothing to review. Either every pair of records was clear enough to settle automatically, or
+                    no customer data has been processed into this database yet.</text>
+            }
+            else
+            {
+                <text>Nothing queued. Either every candidate pair was decisive enough for the engine to settle on its
+                    own, or no resolve run has staged a queue into this database yet.</text>
+            }
         </MudAlert>
     }
     else
     {
         <MudAlert Severity="Severity.Info" Dense>
-            Verdicts are replayed by the <b>next resolve run</b> — golden records keep their current shape
-            until then. Decided pairs never return to this queue.
+            @if (Plain)
+            {
+                <text>Your decisions apply at the <b>next data refresh</b> — customers keep their current shape
+                    until then. Decided pairs never return to this list.</text>
+            }
+            else
+            {
+                <text>Verdicts are replayed by the <b>next resolve run</b> — golden records keep their current shape
+                    until then. Decided pairs never return to this queue.</text>
+            }
         </MudAlert>
 
         @foreach (var c in _page.Cases)
@@ -75,25 +91,38 @@
                 <MudStack Spacing="3">
                     <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="flex-wrap">
                         <MudStack Row Spacing="1" AlignItems="AlignItems.Center" Class="flex-wrap">
-                            <MudTooltip Text="The engine's confidence that these are the same person">
-                                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="@ScoreColor(c.Score)">
-                                    @c.Score.ToString("F3")
+                            @if (Plain)
+                            {
+                                @* A plain cue instead of the matcher's score; no run number. *@
+                                <MudTooltip Text="How closely the two records agree">
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="@ScoreColor(c.Score)">
+                                        @LikenessCue(c.Score)
+                                    </MudChip>
+                                </MudTooltip>
+                            }
+                            else
+                            {
+                                <MudTooltip Text="The engine's confidence that these are the same person">
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="@ScoreColor(c.Score)">
+                                        @c.Score.ToString("F3")
+                                    </MudChip>
+                                </MudTooltip>
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">
+                                    run @c.RunID
                                 </MudChip>
-                            </MudTooltip>
-                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">
-                                run @c.RunID
-                            </MudChip>
+                            }
                             @if (c.StandingVerdict is not null)
                             {
-                                <MudTooltip Text="Recorded since the last resolve — not replayed yet">
+                                <MudTooltip Text="@(Plain ? "Recorded — applies at the next data refresh" : "Recorded since the last resolve — not replayed yet")">
                                     <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info">
-                                        @c.StandingVerdict — awaiting next run
+                                        @(Plain ? PlainVerdict(c.StandingVerdict) + " — applies at the next refresh" : c.StandingVerdict + " — awaiting next run")
                                     </MudChip>
                                 </MudTooltip>
                             }
                         </MudStack>
-                        <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="font-family: monospace;">
-                            @c.PairKey
+                        @* The pair's key, with the host's plain source names in place of the slugs when it gives them. *@
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="@(Labelled(c) ? null : "font-family: monospace;")">
+                            @PairCaption(c)
                         </MudText>
                     </MudStack>
 
@@ -229,9 +258,9 @@
 
             Snackbar.Add(
                 result?.IsConstraint == true
-                    ? "Recorded — the next resolve run will apply it."
+                    ? Plain ? "Recorded — it applies at the next data refresh." : "Recorded — the next resolve run will apply it."
                     : verdict == StewardVerdict.Release
-                        ? "Verdict withdrawn — the engine decides this pair again."
+                        ? Plain ? "Decision withdrawn — the pair is open again." : "Verdict withdrawn — the engine decides this pair again."
                         : "Noted. The case stays open.",
                 Severity.Success);
         }
@@ -245,9 +274,44 @@
         }
     }
 
+    private static bool Labelled(StewardCaseDTO c) => c.A?.SourceLabel is not null || c.B?.SourceLabel is not null;
+
+    /// <summary>The pair key as written ("source:id~source:id"), each source the host names shown by that name
+    /// ("Name #id"). Unchanged when the host names no source.</summary>
+    private static string PairCaption(StewardCaseDTO c)
+    {
+        if (!Labelled(c)) return c.PairKey;
+        var labels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var r in new[] { c.A, c.B })
+            if (r?.SourceLabel is { } label) labels[r.SourceSystem] = label;
+        return string.Join(" ~ ", c.PairKey.Split('~').Select(side =>
+        {
+            int colon = side.IndexOf(':');
+            return colon > 0 && labels.TryGetValue(side[..colon], out var label) ? $"{label} #{side[(colon + 1)..]}" : side;
+        }));
+    }
+
+    /// <summary><see cref="DarlasticWebOptions.PlainLanguageStewardQueue"/>: the page for business users.</summary>
+    private bool Plain => DarlasticOptions.PlainLanguageStewardQueue;
+
+    /// <summary>The plain cue for a queued pair's score: the band <see cref="ScoreColor"/> marks as the closest calls
+    /// reads "Strong likeness", the rest "Borderline".</summary>
+    internal static string LikenessCue(float score) => score >= StrongLikeness ? "Strong likeness" : "Borderline";
+
+    private const float StrongLikeness = 0.88f;
+
+    /// <summary>A standing verdict in the words of the page's buttons.</summary>
+    internal static string PlainVerdict(string verdict) => verdict switch
+    {
+        StewardVerdict.Merge => "Same person",
+        StewardVerdict.Separate => "Different people",
+        StewardVerdict.Defer => "Can't tell yet",
+        _ => "Decided",
+    };
+
     private static Color ScoreColor(float score) => score switch
     {
-        >= 0.88f => Color.Warning,   // nearly auto-merged — the closest calls
+        >= StrongLikeness => Color.Warning,   // nearly auto-merged — the closest calls
         >= 0.84f => Color.Info,
         _ => Color.Default,
     };
@@ -262,14 +326,15 @@
         <MudPaper Outlined Class="pa-3" Style="height: 100%;">
             <MudStack Spacing="2">
                 <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                    <MudText Typo="Typo.subtitle2" Style="font-family: monospace;">@r.SourceSystem</MudText>
+                    @* The host's plain name for the source when it gives one; the slug otherwise. *@
+                    <MudText Typo="Typo.subtitle2" Style="@(r.SourceLabel is null ? "font-family: monospace;" : null)">@(r.SourceLabel ?? r.SourceSystem)</MudText>
                     <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="font-family: monospace;">
                         #@r.SourceRecordId
                     </MudText>
                 </MudStack>
 
                 <MudText Typo="Typo.h6">@(string.IsNullOrWhiteSpace(r.RawName) ? "(no name)" : r.RawName)</MudText>
-                @if (!string.IsNullOrWhiteSpace(r.NormName) && !string.Equals(r.NormName, r.RawName, StringComparison.OrdinalIgnoreCase))
+                @if (!Plain && !string.IsNullOrWhiteSpace(r.NormName) && !string.Equals(r.NormName, r.RawName, StringComparison.OrdinalIgnoreCase))
                 {
                     <MudTooltip Text="How the matcher reads this name — transliterated and normalized">
                         <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="font-family: monospace;">
@@ -298,7 +363,7 @@
                 @Field("Address", r.Address, false)
                 @Field("National ID", r.NationalId, string.Equals(r.NationalId, other?.NationalId, StringComparison.Ordinal))
 
-                @if (r.IdentityID is not null)
+                @if (!Plain && r.IdentityID is not null)
                 {
                     <MudText Typo="Typo.caption" Class="mud-text-secondary">
                         Currently identity <b>@r.IdentityID</b>

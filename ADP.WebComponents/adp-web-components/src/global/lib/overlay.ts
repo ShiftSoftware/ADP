@@ -19,7 +19,7 @@
  *
  * Promotion is not free: the top layer cannot be overridden by a host's z-index, so a host can no
  * longer place its own toast or nav above us. A modal should outrank those anyway, so it always
- * promotes. A hover card should not, so it promotes only when staying put would actually clip it.
+ * promotes. A hover card promotes only when an ancestor contains it or isolates its stacking order.
  */
 
 const cagingWillChange = /\b(transform|perspective|filter|backdrop-filter|contain)\b/;
@@ -27,6 +27,10 @@ const cagingContain = /\b(paint|layout|strict|content)\b/;
 
 const isCagingStyle = (style: CSSStyleDeclaration) => {
   if (!style) return false;
+
+  // An isolated panel body traps the overlay below sibling chrome, such as the card's accent bar,
+  // even though fixed positioning still lets it extend outside the body.
+  if (style.isolation === 'isolate') return true;
 
   if (style.transform && style.transform !== 'none') return true;
   if (style.perspective && style.perspective !== 'none') return true;
@@ -43,7 +47,7 @@ const isCagingStyle = (style: CSSStyleDeclaration) => {
 
 /**
  * Walks up from the element, stepping out of every shadow root on the way, looking for an ancestor
- * that would become the containing block for a `position: fixed` child.
+ * that would contain a `position: fixed` child or isolate its stacking order.
  */
 export const isCaged = (element?: Element | null): boolean => {
   if (!element || typeof getComputedStyle !== 'function') return false;

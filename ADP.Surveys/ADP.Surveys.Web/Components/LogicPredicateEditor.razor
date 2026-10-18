@@ -98,6 +98,10 @@
         gap: 8px;
         align-items: start;
     }
+    .predicate__slot {
+        display: grid;
+        gap: 4px;
+    }
     .predicate__value-placeholder {
         display: flex;
         align-items: center;
@@ -245,6 +249,15 @@
         {
             if (isArrayOp) RenderCsv(builder, numeric: false);
             else RenderDate(builder, includeTime: q is DateTimeQuestionDto);
+            return;
+        }
+
+        // Booking slot: the answer is the branch's wall-clock time with no offset, and rules
+        // compare strings, so the value is written in the answer's own shape.
+        if (q is BookingSlotQuestionDto)
+        {
+            if (isArrayOp) RenderCsv(builder, numeric: false);
+            else RenderSlot(builder);
             return;
         }
 
@@ -409,6 +422,43 @@
         }));
         b.AddAttribute(4, "ReadOnly", ReadOnly);
         b.CloseComponent();
+    }
+
+    void RenderSlot(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b)
+    {
+        var culture = System.Globalization.CultureInfo.InvariantCulture;
+        DateTime? slot = DateTime.TryParseExact(ValueAsString(), BookingSlotQuestionDto.SlotFormat, culture, System.Globalization.DateTimeStyles.None, out var parsed)
+            ? parsed
+            : null;
+
+        async Task Store(DateTime? date, TimeSpan? time)
+        {
+            Predicate.Value = date.HasValue
+                ? JsonSerializer.SerializeToElement((date.Value.Date + (time ?? TimeSpan.Zero)).ToString(BookingSlotQuestionDto.SlotFormat, culture))
+                : null;
+            await Changed.InvokeAsync();
+        }
+
+        b.OpenElement(0, "div");
+        b.AddAttribute(1, "class", "predicate__slot");
+
+        b.OpenComponent<MudBlazor.MudDatePicker>(2);
+        b.AddAttribute(3, "Label", "Date (branch time)");
+        b.AddAttribute(4, "Date", slot?.Date);
+        b.AddAttribute(5, "DateChanged", EventCallback.Factory.Create<DateTime?>(this, d => Store(d, slot?.TimeOfDay)));
+        b.AddAttribute(6, "ReadOnly", ReadOnly);
+        b.CloseComponent();
+
+        // The time needs a date to attach to.
+        b.OpenComponent<MudBlazor.MudTimePicker>(7);
+        b.AddAttribute(8, "Label", "Time");
+        b.AddAttribute(9, "Time", slot?.TimeOfDay);
+        b.AddAttribute(10, "TimeChanged", EventCallback.Factory.Create<TimeSpan?>(this, t => Store(slot, t)));
+        b.AddAttribute(11, "ReadOnly", ReadOnly);
+        b.AddAttribute(12, "Disabled", slot is null);
+        b.CloseComponent();
+
+        b.CloseElement();
     }
 
     string ValueAsString()

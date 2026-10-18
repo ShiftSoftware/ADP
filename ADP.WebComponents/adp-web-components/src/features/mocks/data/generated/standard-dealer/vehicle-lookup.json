@@ -1,5 +1,6 @@
 {
   "ZT8P9NAL1LG988010": {
+    "classifications": [],
     "vin": "ZT8P9NAL1LG988010",
     "identifiers": {
       "vin": "ZT8P9NAL1LG988010",
@@ -498,7 +499,19 @@
               "mileage": 35000,
               "label": "35K",
               "satisfied": true,
-              "satisfiedOn": "2025-03-10T00:00:00"
+              "satisfiedOn": "2025-03-10T00:00:00",
+              "evidence": {
+                "invoiceDate": "2025-03-10T00:00:00",
+                "odometer": 35100,
+                "packageCode": "PGM MDL100 35K",
+                "laborCode": "LAB-PER-35",
+                "serviceDescription": "Periodic Maintenance",
+                "jobDescription": "35,000 KM periodic service",
+                "invoiceNumber": "INV-2025-003",
+                "jobNumber": "WO-2025-003",
+                "companyID": 1,
+                "branchID": 10
+              }
             },
             {
               "mileage": 40000,
@@ -507,6 +520,31 @@
             }
           ]
         },
+        "prerequisites": [
+          {
+            "mileage": 35000,
+            "label": "35K",
+            "satisfied": true,
+            "satisfiedOn": "2025-03-10T00:00:00",
+            "evidence": {
+              "invoiceDate": "2025-03-10T00:00:00",
+              "odometer": 35100,
+              "packageCode": "PGM MDL100 35K",
+              "laborCode": "LAB-PER-35",
+              "serviceDescription": "Periodic Maintenance",
+              "jobDescription": "35,000 KM periodic service",
+              "invoiceNumber": "INV-2025-003",
+              "jobNumber": "WO-2025-003",
+              "companyID": 1,
+              "branchID": 10
+            }
+          },
+          {
+            "mileage": 40000,
+            "label": "40K",
+            "satisfied": false
+          }
+        ],
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
         "signature": "5E2CdzdxoARNW2Wp7ThFUBo6Kk32Ab7Sz4D/jlj4MjQ=",
@@ -553,6 +591,7 @@
     "basicModelCode": "MXAA52"
   },
   "JTMW43FV10D123456": {
+    "classifications": [],
     "vin": "JTMW43FV10D123456",
     "identifiers": {
       "vin": "JTMW43FV10D123456",
@@ -772,6 +811,18 @@
             }
           ]
         },
+        "prerequisites": [
+          {
+            "mileage": 35000,
+            "label": "35K",
+            "satisfied": false
+          },
+          {
+            "mileage": 40000,
+            "label": "40K",
+            "satisfied": false
+          }
+        ],
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
         "signature": "muNGHl39WmJZa2LJdHWF6jnzymmjrVEMdqtUVhln4Xk=",
@@ -782,6 +833,7 @@
     "basicModelCode": "AXAH54"
   },
   "UNKNOWN_VIN_12345": {
+    "classifications": [],
     "vin": "UNKNOWN_VIN_12345",
     "identifiers": {
       "vin": "UNKNOWN_VIN_12345"

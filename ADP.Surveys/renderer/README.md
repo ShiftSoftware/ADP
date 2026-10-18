@@ -7,9 +7,9 @@ React + Vite renderer, SDK, and web-component wrapper for the ADP Dynamic Survey
 ```
 renderer/
 ├── packages/
-│   ├── survey-sdk/            @shiftsoftware/survey-sdk — runtime contract, expression sandbox, logic evaluator
-│   ├── survey-renderer/       @shiftsoftware/survey-renderer — React UI (Phase 3 Part A.2)
-│   └── survey-web-component/  @shiftsoftware/survey-web-component — thin wrapper (Phase 3 Part A.3)
+│   ├── survey-sdk/            @shift-software/survey-sdk — runtime contract, expression sandbox, logic evaluator
+│   ├── survey-renderer/       @shift-software/survey-renderer — React UI (Phase 3 Part A.2)
+│   └── survey-web-component/  @shift-software/survey-web-component — thin wrapper (Phase 3 Part A.3)
 └── apps/
     └── standalone/            Deployable Vite app mounting the renderer at /s/:instanceId (Phase 3 Part D)
 ```
@@ -31,8 +31,10 @@ build before testing. (`apps/standalone` is exempt — it aliases the packages t
 
 ## Deploying the customer-facing app
 
-`apps/standalone` is what respondents actually open. One deployment per consumer, as an
-Azure Static Web App — see `apps/standalone/azure-pipelines.yml` (tag `release-survey-app-*`).
+Each consumer ships its own customer-facing app from its own repo: a thin, branded shell that
+mounts `@shift-software/survey-renderer` from npm and deploys wherever that consumer hosts static
+sites. `apps/standalone` is the reference shell for such an app and the target of local
+development and the e2e harness; ADP itself deploys nothing.
 
 Two things make or break a deployment:
 

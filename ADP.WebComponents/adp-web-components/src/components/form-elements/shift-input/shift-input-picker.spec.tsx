@@ -20,7 +20,7 @@ const day = (date: string, ...times: string[]) => ({ Date: date, Times: times.ma
 const DAYS = [day('2026-10-01', '08:00 AM', '10:00 AM', '01:00 PM', '03:30 PM'), day('2026-10-03', '09:00 AM')];
 
 const TARGET =
-  'calendar-api="https://calendar.example/api/public/calendar" company-id="1" branch-id="42" department-id="service-center" brand-id="BRAND-A" today="2026-09-28" utc-offset="+03:00"';
+  'calendar-api="https://calendar.example/api/public/calendar" branch-id="Xr8pQ" department-id="service-center" brand-id="BRAND-A" today="2026-09-28" utc-offset="+03:00"';
 
 let requests: string[];
 
@@ -117,7 +117,7 @@ describe('slotIso', () => {
 
 describe('shift-input hosting a picker', () => {
   it('moves the picker into its popover, read-only, with no idle text', async () => {
-    const { page, picker } = await inForm('is-disabled="true"', 'calendar-api="https://calendar.example/api/public/calendar" company-id="1"');
+    const { page, picker } = await inForm('is-disabled="true"', 'calendar-api="https://calendar.example/api/public/calendar"');
 
     expect(picker.parentElement.tagName).not.toBe('SHIFT-INPUT');
     expect(picker.hasAttribute('slot')).toBe(false);
@@ -125,6 +125,28 @@ describe('shift-input hosting a picker', () => {
     expect((field(page).querySelector('.in-input') as HTMLInputElement).readOnly).toBe(true);
     expect(hint(page).hasAttribute('data-shown')).toBe(false);
     expect(requests).toEqual([]);
+  });
+
+  it('keeps the focused look while its popover is open, though focus is inside the picker', async () => {
+    const { page } = await inForm('');
+    const control = () => field(page).querySelector('.in-control');
+
+    expect(control().hasAttribute('data-focused')).toBe(false);
+
+    (field(page).querySelector('.in-calendar-button') as HTMLButtonElement).click();
+    await settle(page);
+    expect(control().hasAttribute('data-focused')).toBe(true);
+
+    await (field(page).querySelector('shift-popover') as HTMLShiftPopoverElement).hide();
+    await settle(page);
+    expect(control().hasAttribute('data-focused')).toBe(false);
+  });
+
+  it('hands mobile-sheet to its popover, off by default', async () => {
+    const popover = (page: SpecPage) => field(page).querySelector('shift-popover') as HTMLShiftPopoverElement;
+
+    expect(popover((await inForm('')).page).mobileSheet).toBe(false);
+    expect(popover((await inForm('mobile-sheet="true"')).page).mobileSheet).toBe(true);
   });
 
   it('reads required from the form context, blocks an empty submit, and submits the picked slot as ISO with an offset', async () => {
@@ -142,7 +164,8 @@ describe('shift-input hosting a picker', () => {
 
     await pick(page, '2026-10-01', '13:00');
 
-    expect(text(page)).toBe('Thu, 1 Oct 2026, 13:00');
+    expect(text(page)).toBe('1 Oct, 13:00');
+    expect(hook.getDisplayValue('bookingDate' as never)).toBe('1 Oct, 13:00');
     expect(hook.getInputState('bookingDate').isError).toBe(false);
 
     hook.submit();
@@ -228,19 +251,19 @@ describe('shift-input hosting a picker', () => {
 
 describe('bookingCalendar mapper', () => {
   const branch = {
+    ID: 'Xr8pQ',
     IntegrationId: '42',
-    CompanyIntegrationId: '1',
-    Departments: [{ IntegrationId: 'showroom' }, { IntegrationId: 'service-center' }],
+    Departments: [{ IntegrationId: 'showroom' }, { IntegrationId: 'service-center' }, { IntegrationId: 'parts-shop' }],
     Brands: [{ IntegrationId: 'BRAND-A' }],
   };
   const formWith = (value: string) =>
-    ({ addWatcher: () => undefined, getValue: () => value, context: { companyBranchIdList: [{ value: 'b1', meta: branch }] } }) as unknown as FormHook<unknown>;
+    ({ addWatcher: () => undefined, getValue: () => value, context: { companyBranchIdList: [{ value: branch.ID, meta: branch }] } }) as unknown as FormHook<unknown>;
 
   type VNode = { $tag$: string; $attrs$: Record<string, unknown>; $children$: VNode[] };
 
   it('renders shift-input with a headless booking calendar fed by the selected branch', () => {
     const vnode = getFormMappers().bookingCalendar({
-      form: formWith('b1'),
+      form: formWith('Xr8pQ'),
       language: 'en',
       props: { name: 'bookingDate', calendarApi: 'https://calendar.example/api/public/calendar', departmentPreference: ['service-center'], utcOffset: '+03:00', showToday: false },
     }) as unknown as VNode;
@@ -251,8 +274,7 @@ describe('bookingCalendar mapper', () => {
     expect(picker.$tag$).toBe('shift-booking-calendar');
     expect(picker.$attrs$).toMatchObject({
       slot: 'picker',
-      companyId: '1',
-      branchId: '42',
+      branchId: 'Xr8pQ',
       departmentId: 'service-center',
       brandId: 'BRAND-A',
       utcOffset: '+03:00',
@@ -268,5 +290,91 @@ describe('bookingCalendar mapper', () => {
 
     expect(vnode.$attrs$).toMatchObject({ isDisabled: true });
     expect(vnode.$children$[0].$attrs$).toMatchObject({ branchId: '' });
+  });
+
+  it('books only a listed department: a branch without one is disabled, loads nothing and says why', () => {
+    const render = (props: Record<string, unknown>) =>
+      getFormMappers().bookingCalendar({
+        form: formWith('Xr8pQ'),
+        language: 'en',
+        props: { name: 'bookingDate', departmentPreference: ['quick-service-center'], ...props },
+      }) as unknown as VNode;
+    const vnode = render({});
+
+    expect(vnode.$attrs$).toMatchObject({ isDisabled: true, hint: 'Online booking isn’t available at this branch' });
+    expect(vnode.$children$[0].$attrs$).toMatchObject({ branchId: '', departmentId: '' });
+    expect(render({ localization: { en: { branchUnavailable: 'Call the branch to book' } } }).$attrs$).toMatchObject({ hint: 'Call the branch to book' });
+  });
+
+  it('books the first listed department the branch has', () => {
+    const render = (props: Record<string, unknown>) =>
+      getFormMappers().bookingCalendar({ form: formWith('Xr8pQ'), language: 'en', props: { name: 'bookingDate', ...props } }) as unknown as VNode;
+
+    const picker = render({ departmentPreference: ['quick-service-center', 'parts-shop', 'service-center'] }).$children$[0];
+    expect(picker.$attrs$).toMatchObject({ branchId: 'Xr8pQ', departmentId: 'parts-shop' });
+    expect(picker.$attrs$.departmentIds).toBeUndefined();
+    expect(render({}).$children$[0].$attrs$).toMatchObject({ departmentId: 'showroom' });
+  });
+
+  it('mergeDepartments asks every listed department the branch has, in the listed order', () => {
+    const render = (props: Record<string, unknown>) =>
+      getFormMappers().bookingCalendar({ form: formWith('Xr8pQ'), language: 'en', props: { name: 'bookingDate', mergeDepartments: true, ...props } }) as unknown as VNode;
+
+    expect(render({ departmentPreference: ['service-center', 'quick-service-center', 'parts-shop'] }).$children$[0].$attrs$).toMatchObject({
+      branchId: 'Xr8pQ',
+      departmentId: '',
+      departmentIds: ['service-center', 'parts-shop'],
+    });
+    expect(render({ departmentPreference: ['parts-shop', 'service-center'] }).$children$[0].$attrs$).toMatchObject({ departmentIds: ['parts-shop', 'service-center'] });
+    expect(render({ departmentPreference: ['body-shop'] }).$attrs$).toMatchObject({ isDisabled: true, hint: 'Online booking isn’t available at this branch' });
+    expect(render({}).$children$[0].$attrs$).toMatchObject({ departmentId: 'showroom' });
+  });
+
+  it('mergeDepartments books one department alone, without a list', () => {
+    const render = (props: Record<string, unknown>) =>
+      getFormMappers().bookingCalendar({ form: formWith('Xr8pQ'), language: 'en', props: { name: 'bookingDate', mergeDepartments: true, ...props } }) as unknown as VNode;
+
+    const single = render({ departmentPreference: ['service-center', 'service-center', 'body-shop'] }).$children$[0];
+    expect(single.$attrs$).toMatchObject({ departmentId: 'service-center' });
+    expect(single.$attrs$.departmentIds).toBeUndefined();
+  });
+
+  it('an explicit departmentId wins over the merged list', () => {
+    const picker = (
+      getFormMappers().bookingCalendar({
+        form: formWith('Xr8pQ'),
+        language: 'en',
+        props: { name: 'bookingDate', mergeDepartments: true, departmentPreference: ['service-center', 'parts-shop'], departmentId: 'body-shop' },
+      }) as unknown as VNode
+    ).$children$[0];
+
+    expect(picker.$attrs$).toMatchObject({ departmentId: 'body-shop' });
+    expect(picker.$attrs$.departmentIds).toBeUndefined();
+  });
+
+  it('services no longer picks departments: departmentPreference does', () => {
+    const render = (props: Record<string, unknown>) =>
+      getFormMappers().bookingCalendar({ form: formWith('Xr8pQ'), language: 'en', props: { name: 'bookingDate', ...props } }) as unknown as VNode;
+
+    expect(render({ services: 'auto-repair-and-maintenance', departmentPreference: ['service-center'] }).$children$[0].$attrs$).toMatchObject({ departmentId: 'service-center' });
+    expect(render({ services: 'auto-repair-and-maintenance' }).$children$[0].$attrs$).toMatchObject({ departmentId: 'showroom' });
+  });
+
+  it('the older bookingDate field still falls back to the branch’s first department', () => {
+    const vnode = getFormMappers().bookingDate({
+      form: formWith('Xr8pQ'),
+      language: 'en',
+      props: { name: 'bookingDate', departmentPreference: ['quick-service-center'] },
+    }) as unknown as VNode;
+
+    expect(vnode.$attrs$).toMatchObject({ departmentId: 'showroom', isDisabled: false });
+  });
+
+  it('passes mobileSheet from the structure to shift-input, and leaves it unset otherwise', () => {
+    const render = (props: Record<string, unknown>) =>
+      getFormMappers().bookingCalendar({ form: formWith('Xr8pQ'), language: 'en', props: { name: 'bookingDate', ...props } }) as unknown as VNode;
+
+    expect(render({ mobileSheet: true }).$attrs$).toMatchObject({ mobileSheet: true });
+    expect(render({}).$attrs$).not.toHaveProperty('mobileSheet');
   });
 });

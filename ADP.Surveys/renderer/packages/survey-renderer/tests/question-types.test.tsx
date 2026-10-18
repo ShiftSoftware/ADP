@@ -7,7 +7,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Survey } from '@shiftsoftware/survey-sdk';
+import type { Survey } from '@shift-software/survey-sdk';
 import { SurveyRenderer } from '../src/SurveyRenderer.js';
 
 function schemaWith(question: Record<string, unknown>): Survey {

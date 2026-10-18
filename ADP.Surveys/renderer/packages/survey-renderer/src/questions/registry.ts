@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import type { QuestionType } from '@shiftsoftware/survey-sdk';
+import type { QuestionType } from '@shift-software/survey-sdk';
 
 /** The raw, schema-shaped question record passed to each component. Typed as
  *  `Record<string, unknown>` at this layer so new question types can be added

@@ -202,6 +202,60 @@
                                 </MudButton>
                             }
 
+                            <div class="triggers-panel__sublabel mt-3">Deadline</div>
+                            <div class="triggers-panel__sublabel-help">
+                                Counted from the event's own date: past it, no survey is created or sent —
+                                however the event came to arrive late (back-entered, re-sent by the source,
+                                or held up). Late events are still read; this decides whether they are still
+                                worth a survey.
+                            </div>
+                            @if (trigger.Deadline is null)
+                            {
+                                @if (!ReadOnly)
+                                {
+                                    <MudButton StartIcon="@Icons.Material.Filled.EventBusy"
+                                               Size="Size.Small"
+                                               Variant="Variant.Text"
+                                               Color="Color.Primary"
+                                               OnClick="@(() => AddDeadline(idx))">
+                                        Add deadline
+                                    </MudButton>
+                                }
+                                else
+                                {
+                                    <div class="triggers-panel__hint">
+                                        No deadline — an event is surveyed however late it arrives.
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="triggers-panel__list-row">
+                                    <div class="triggers-panel__list-row-main">
+                                        <MudTextField T="string"
+                                                      Value="@DeadlineFieldName(trigger.Deadline)"
+                                                      ValueChanged="@(v => OnDeadlineFieldChanged(idx, v))"
+                                                      Label="Event date (candidate.)"
+                                                      Placeholder="field name (e.g. closedDate)"
+                                                      Margin="Margin.Dense"
+                                                      ReadOnly="@ReadOnly" />
+                                    </div>
+                                    <div class="triggers-panel__list-row-main">
+                                        <TriggerDurationField Value="@trigger.Deadline.Within"
+                                                              ValueChanged="@(v => OnDeadlineWithinChanged(idx, v))"
+                                                              ReadOnly="@ReadOnly"
+                                                              Label="Within" />
+                                    </div>
+                                    @if (!ReadOnly)
+                                    {
+                                        <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                                       Size="Size.Small"
+                                                       OnClick="@(() => RemoveDeadline(idx))"
+                                                       title="Remove deadline" />
+                                    }
+                                </div>
+                            }
+
                             <div class="triggers-panel__sublabel mt-3">Dedup recipe</div>
                             <div class="triggers-panel__sublabel-help">
                                 Field references that combine into the instance's <code>UniqueHash</code> —
@@ -627,6 +681,42 @@
     {
         var draft = EnsureDraft();
         draft.Triggers[idx].Schedule.Reminders[rIdx] = value ?? "";
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    // ---- Deadline ----
+
+    static string DeadlineFieldName(TriggerDeadlineDto deadline)
+        => deadline.Field.StartsWith(TriggerDeadlineDtoValidator.CandidatePrefix, StringComparison.Ordinal)
+            ? deadline.Field[TriggerDeadlineDtoValidator.CandidatePrefix.Length..]
+            : deadline.Field;
+
+    async Task AddDeadline(int idx)
+    {
+        var draft = EnsureDraft();
+        draft.Triggers[idx].Deadline = new TriggerDeadlineDto { Within = "7d" };
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task RemoveDeadline(int idx)
+    {
+        var draft = EnsureDraft();
+        draft.Triggers[idx].Deadline = null;
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task OnDeadlineFieldChanged(int idx, string value)
+    {
+        var draft = EnsureDraft();
+        var name = (value ?? "").Trim();
+        draft.Triggers[idx].Deadline!.Field = name.Length == 0 ? "" : TriggerDeadlineDtoValidator.CandidatePrefix + name;
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task OnDeadlineWithinChanged(int idx, string value)
+    {
+        var draft = EnsureDraft();
+        draft.Triggers[idx].Deadline!.Within = value ?? "";
         await DraftChanged.InvokeAsync(draft);
     }
 

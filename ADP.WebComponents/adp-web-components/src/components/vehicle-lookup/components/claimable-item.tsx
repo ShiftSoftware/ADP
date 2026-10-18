@@ -1,8 +1,6 @@
 import { InferType } from 'yup';
 import { h, FunctionalComponent } from '@stencil/core';
 
-import cn from '~lib/cn';
-
 import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
 
 import expiredIcon from '~assets/expired.svg';
@@ -56,7 +54,7 @@ export const ClaimableItem: FunctionalComponent<ClaimableItemProps> = ({ item, l
   const lockState = item?.lock?.state;
 
   return (
-    <div class={cn('claimable-item', { [item.status]: addStatusClass && !lockState, [`lock-${lockState}`]: !!lockState })}>
+    <div class={{ 'claimable-item': true, [item.status]: addStatusClass && !lockState, [`lock-${lockState}`]: !!lockState }}>
       <div class="claimable-item-container">
         <div
           ref={el => (headerEl = el as HTMLDivElement)}

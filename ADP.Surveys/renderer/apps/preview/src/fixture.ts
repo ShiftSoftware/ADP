@@ -1,4 +1,4 @@
-import type { Survey } from '@shiftsoftware/survey-sdk';
+import type { Survey } from '@shift-software/survey-sdk';
 
 /** Flow fixture used by the preview app — identical in shape to what the E2E
  *  harness exercises against the real API, so the two channels stay aligned.

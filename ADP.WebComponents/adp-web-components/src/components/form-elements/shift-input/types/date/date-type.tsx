@@ -157,6 +157,7 @@ export const dateType: InputType<DateFieldProps> = {
         appearance={field.appearance}
         colorScheme={field.colorScheme}
         size={field.size}
+        mobileSheet={field.mobileSheet}
         onOpenChange={(event: CustomEvent<{ open: boolean }>) => {
           event.stopPropagation();
           field.expanded = event.detail.open;

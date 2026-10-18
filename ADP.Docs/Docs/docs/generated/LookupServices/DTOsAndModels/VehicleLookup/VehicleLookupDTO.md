@@ -7,6 +7,7 @@ The main result returned by the vehicle lookup service.
 
 | Property | Summary |
 |----------|---------|
+| Classifications <div><strong>``IReadOnlyList<VehicleClassificationDTO>``</strong></div> | Server-resolved host classifications. Labels are display-only. |
 | VIN <div><strong>``string``</strong></div> | The Vehicle Identification Number (VIN) that was looked up. |
 | Identifiers <div><strong>``VehicleIdentifiersDTO``</strong></div> | The vehicle's [identifiers](/generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleIdentifiersDTO.html) (VIN, Variant, Katashiki, Color, Trim, Brand). |
 | SaleInformation <div><strong>``VehicleSaleInformation``</strong></div> | The vehicle's [sale information](/generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleSaleInformation.html) including invoice date, dealer, and broker details. |

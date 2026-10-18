@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import type { LocalizedString } from '@shiftsoftware/survey-sdk';
+import type { LocalizedString } from '@shift-software/survey-sdk';
 import { useSurveyContext } from '../SurveyContext.js';
 import { localize } from '../locale.js';
 import { formatUi } from '../i18n.js';

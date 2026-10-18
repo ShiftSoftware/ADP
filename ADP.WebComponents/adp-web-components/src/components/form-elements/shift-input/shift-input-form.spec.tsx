@@ -29,7 +29,7 @@ const locale = {
   'sharedFormLocales': {},
 };
 
-async function mountForm(required: boolean, defaultValue?: string, type: 'date' | 'text' = 'date') {
+async function mountForm(required: boolean, defaultValue?: string, type: 'date' | 'text' = 'date', appearance?: HTMLShiftInputElement['appearance']) {
   const submitted: Values[] = [];
   const context = {
     el: null as HTMLElement,
@@ -47,7 +47,7 @@ async function mountForm(required: boolean, defaultValue?: string, type: 'date' 
     template: () => (
       <div id="form-root">
         <form onSubmit={form.formController.onSubmit} onInput={form.formController.onInput}>
-          <shift-input type={type} name="visitDate" form={form} today="2026-09-27" min="2026-09-01" defaultValue={defaultValue} />
+          <shift-input type={type} name="visitDate" form={form} today="2026-09-27" min="2026-09-01" defaultValue={defaultValue} appearance={appearance} />
         </form>
       </div>
     ),
@@ -78,6 +78,17 @@ async function submit(page: SpecPage, form: FormHook<Values>) {
 }
 
 describe('shift-input type=date through ~features/form-hook', () => {
+  it('behaves like the form’s own fields whatever its appearance, and wears their look only with none chosen', async () => {
+    const host = async (appearance?: HTMLShiftInputElement['appearance']) => (await mountForm(false, undefined, 'date', appearance)).page.body.querySelector('shift-input');
+    const plain = await host();
+    const sharp = await host('sharp');
+
+    expect(plain.hasAttribute('data-in-form')).toBe(true);
+    expect(plain.getAttribute('data-look')).toBe('form');
+    expect(sharp.hasAttribute('data-in-form')).toBe(true);
+    expect(sharp.hasAttribute('data-look')).toBe(false);
+  });
+
   it('takes label, placeholder and required from the form schema and locale', async () => {
     const { page } = await mountForm(true);
 

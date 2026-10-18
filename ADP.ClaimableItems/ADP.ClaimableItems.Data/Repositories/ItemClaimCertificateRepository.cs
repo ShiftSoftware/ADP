@@ -73,12 +73,8 @@ public class ItemClaimCertificateRepository : ShiftRepository<ShiftDbContext, Ce
     {
         var dto = await base.ViewAsync(entity);
 
-        // The Cases Certificate carries no claim collections — load the lines by FK.
-        var claims = await this.db.Set<Entities.ItemClaim>()
-            .Include(x => x.ClaimableItem)
-            .Where(x => x.ReimbursementCertificateID == entity.ID)
-            .ToListAsync();
-
+        // The Cases Certificate carries no claim collections — the lines are the claims that point at it.
+        //
         // Routed through the ItemClaim REPOSITORY's list mapping, deliberately - not straight through
         // the mapper. The map itself is the same either way (ClaimableItemsMapper's ItemClaim ->
         // ItemClaimListDTO: the "[]"-aware HasAttachment, the CampaignName / ClaimableItemName
@@ -86,12 +82,14 @@ public class ItemClaimCertificateRepository : ShiftRepository<ShiftDbContext, Ce
         // override MapToList to fill the members this module cannot (see ItemClaimRepository), and
         // these lines must agree with the very same rows its list endpoint serves.
         //
-        // AsQueryable() over the already-materialized list runs the projection in memory
-        // (EnumerableQuery compiles the expression) rather than issuing SQL, so the Include above
-        // still supplies the navigations the flattenings read.
-        dto.ReimbursementItemClaims = this.itemClaimRepository
-            .MapToList(claims.AsQueryable())
-            .ToList();
+        // Projected as SQL over the claims query, as the list endpoint projects it. An override may join
+        // the consumer's own tables (for example its inspection results), and only a query provider can
+        // run such a join: projecting a materialized list in memory failed with "must be reducible node".
+        // The SQL projection also reads each claim's campaign, so CampaignName is filled, as the original
+        // host's certificate view filled it (it loaded the lines together with the certificate's campaign).
+        dto.ReimbursementItemClaims = await this.itemClaimRepository
+            .MapToList(this.db.Set<Entities.ItemClaim>().Where(x => x.ReimbursementCertificateID == entity.ID))
+            .ToListAsync();
 
         return dto;
     }
@@ -362,6 +360,8 @@ public class ItemClaimCertificateRepository : ShiftRepository<ShiftDbContext, Ce
     // source (embedded default / consumer override), the company info (ICompanyInfoProvider), the
     // date formatter (IPrintoutDateFormatter) and the hashid decode type change — everything else,
     // including the Campaign printout templating, is byte-identical.
+    // One fix since the move: in invoice mode the report callback skips the objects that only the
+    // certificate template has. The original code did not skip them, so every invoice print failed.
     public override async Task<Stream> PrintAsync(string id)
     {
         var companyInfoProvider = PrintingServices.GetRequiredCompanyInfoProvider(this.db);
@@ -434,6 +434,11 @@ public class ItemClaimCertificateRepository : ShiftRepository<ShiftDbContext, Ce
                 (report.FindObject("TextFooterAddress") as FastReport.TextObject)!.Text = distributorInfo.Address;
                 (report.FindObject("TextFooterContactDetails") as FastReport.TextObject)!.Text = $"{distributorInfo.Phone}\r\n{distributorInfo.Website}";
 
+                // The objects below exist only in the certificate template: the campaign's header
+                // and body text, the sign and stamp band, and the Model / Katashiki column. The
+                // invoice template has none of them, so FindObject returns null for each one.
+                if (IsInvoiceMode)
+                    return;
 
                 (report.FindObject("CellHeading") as FastReport.TextObject)!.Text =
                 certificateCampaign?.CertificatePrintoutHeader?

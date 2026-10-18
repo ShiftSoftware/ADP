@@ -1,5 +1,5 @@
 /**
- * Client-side mirror of `ADP.Surveys.Shared/Answers/AnswerValidator.cs` â€”
+ * Client-side mirror of `ADP.Surveys.Shared/Answers/AnswerValidator.cs` —
  * the per-type constraint checks (type shape, min/max, length, pattern,
  * option-validity). Parity discipline: if a check changes on one side it must
  * change on the other in the same commit; `tests/answer-validator.test.ts`
@@ -8,7 +8,7 @@
  * Deliberate deviations from the C# side, both documented in STATUS.md:
  *  - Errors carry a stable machine `code` + `params` in addition to the
  *    English `message`, so the renderer can localize per-locale (the C# side
- *    returns developer-facing English strings â€” fine for a 400 payload, not
+ *    returns developer-facing English strings — fine for a 400 payload, not
  *    for inline UI in an Arabic survey).
  *  - Presence/required is NOT checked here. The server enforces required
  *    path-aware via ComputeVisitedScreens; the renderer's own required gate
@@ -31,6 +31,7 @@ export type AnswerValidationCode =
   | 'minDate'
   | 'maxDate'
   | 'invalidDateTime'
+  | 'invalidBookingSlot'
   | 'minDateTime'
   | 'maxDateTime'
   | 'empty';
@@ -38,13 +39,13 @@ export type AnswerValidationCode =
 export interface AnswerValidationError {
   questionId: string;
   code: AnswerValidationCode;
-  /** Numeric/string parameters for message templating (`n`, `min`, `max`â€¦). */
+  /** Numeric/string parameters for message templating (`n`, `min`, `max`…). */
   params?: Record<string, string | number>;
   /** English fallback mirroring the C# AnswerValidator copy. */
   message: string;
 }
 
-/** Loosely-typed wire question â€” the SDK's `Screen.questions` is `unknown[]`;
+/** Loosely-typed wire question — the SDK's `Screen.questions` is `unknown[]`;
  *  this module reads only the constraint fields it needs. */
 type WireQuestion = Record<string, unknown>;
 
@@ -57,7 +58,7 @@ const err = (
 
 const isFiniteNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
-/** Strict `yyyy-MM-dd` â€” mirrors C# `DateOnly.TryParseExact`. */
+/** Strict `yyyy-MM-dd` — mirrors C# `DateOnly.TryParseExact`. */
 function parseIsoDate(raw: string): number | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
   const [y, m, d] = raw.split('-').map((p) => Number.parseInt(p, 10)) as [number, number, number];
@@ -67,7 +68,16 @@ function parseIsoDate(raw: string): number | null {
   return dt.getTime();
 }
 
-/** Lenient ISO 8601 â€” mirrors C# `DateTimeOffset.TryParse` closely enough. */
+/** `yyyy-MM-ddTHH:mm` naming a real date and time — mirrors C# `DateTime.TryParseExact`. */
+function isBookingSlot(raw: string): boolean {
+  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if (!m) return false;
+  const [y = 0, mo = 0, d = 0, h = 0, mi = 0] = m.slice(1).map(Number);
+  const date = new Date(Date.UTC(y, mo - 1, d));
+  return date.getUTCMonth() === mo - 1 && date.getUTCDate() === d && h < 24 && mi < 60;
+}
+
+/** Lenient ISO 8601 — mirrors C# `DateTimeOffset.TryParse` closely enough. */
 function parseIsoDateTime(raw: string): number | null {
   const t = Date.parse(raw);
   return Number.isNaN(t) ? null : t;
@@ -76,7 +86,7 @@ function parseIsoDateTime(raw: string): number | null {
 /**
  * Validates one present answer value against its question's type + constraints.
  * Mirrors `AnswerValidator.ValidateAnswer`'s per-type switch. Callers must not
- * pass absent answers â€” presence/required is the caller's concern.
+ * pass absent answers — presence/required is the caller's concern.
  */
 export function validateAnswerValue(question: WireQuestion, value: unknown): AnswerValidationError[] {
   const id = question['id'] as string;
@@ -96,7 +106,7 @@ export function validateAnswerValue(question: WireQuestion, value: unknown): Ans
       if (isFiniteNumber(maxLength) && value.length > maxLength)
         errors.push(err(id, 'maxLength', `Answer length ${value.length} exceeds maxLength ${maxLength}.`, { n: maxLength, actual: value.length }));
       if (typeof pattern === 'string' && pattern.length > 0) {
-        // An invalid regex in the schema fails open (no error) â€” the publish
+        // An invalid regex in the schema fails open (no error) — the publish
         // validator owns schema quality; the client must not crash on it.
         try {
           if (!new RegExp(pattern).test(value)) {
@@ -151,7 +161,7 @@ export function validateAnswerValue(question: WireQuestion, value: unknown): Ans
     }
 
     case 'nps': {
-      // C# reads the value with GetInt32(), which rejects non-integers â€” the
+      // C# reads the value with GetInt32(), which rejects non-integers — the
       // client mirrors that as an explicit type error instead of a crash.
       if (!isFiniteNumber(value) || !Number.isInteger(value)) {
         errors.push(err(id, 'type', 'NPS answer must be a JSON number.'));
@@ -171,7 +181,7 @@ export function validateAnswerValue(question: WireQuestion, value: unknown): Ans
         errors.push(err(id, 'type', 'Choice answer must be a JSON string (option id).'));
         break;
       }
-      // Sourced questions (optionsSource != null) skip membership â€” the option
+      // Sourced questions (optionsSource != null) skip membership — the option
       // list lives on an external endpoint, unknowable at the schema level.
       // Mirrors the C# relaxation; the choice widgets themselves only offer
       // fetched options, so membership is enforced by construction in the UI.
@@ -284,7 +294,14 @@ export function validateAnswerValue(question: WireQuestion, value: unknown): Ans
       break;
     }
 
-    // Unknown types fail open â€” the registry renders an unsupported-type
+    case 'bookingSlot': {
+      // The branch's wall-clock time, no offset. Shape only — availability is the endpoint's.
+      if (typeof value !== 'string' || !isBookingSlot(value))
+        errors.push(err(id, 'invalidBookingSlot', 'Booking slot answer must be a JSON string in yyyy-MM-ddTHH:mm format.'));
+      break;
+    }
+
+    // Unknown types fail open — the registry renders an unsupported-type
     // placeholder; there's nothing meaningful to validate.
   }
 
@@ -293,7 +310,7 @@ export function validateAnswerValue(question: WireQuestion, value: unknown): Ans
 
 /**
  * Shape-checks every PRESENT answer for a screen's questions. Absent answers
- * (undefined / null) are skipped â€” required/presence enforcement belongs to
+ * (undefined / null) are skipped — required/presence enforcement belongs to
  * the renderer's required gate (client) and the path-aware server validator.
  */
 export function validatePresentAnswers(

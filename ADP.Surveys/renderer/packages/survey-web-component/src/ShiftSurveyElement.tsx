@@ -1,6 +1,6 @@
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { SurveyRenderer } from '@shiftsoftware/survey-renderer';
+import { SurveyRenderer } from '@shift-software/survey-renderer';
 // Relative path on purpose — the renderer's `exports` map is strict and doesn't
 // whitelist `?inline`; reaching through the workspace path is the most robust
 // way to inline the stylesheet at build time.
@@ -9,7 +9,7 @@ import {
   SurveyClient,
   type Survey,
   type SurveySubmission,
-} from '@shiftsoftware/survey-sdk';
+} from '@shift-software/survey-sdk';
 
 /**
  * `<shift-survey>` — custom-element wrapper around `<SurveyRenderer>`.

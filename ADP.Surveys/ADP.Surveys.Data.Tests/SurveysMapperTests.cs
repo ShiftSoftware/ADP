@@ -14,7 +14,7 @@ namespace ShiftSoftware.ADP.Surveys.Data.Tests;
 /// The maps in <c>Mappers/SurveysMapper.cs</c>, run through the mapper a host resolves. Each rule there was a
 /// repository's <c>UseGeneratedMapper</c> configuration before it became a <c>CreateMap</c>; the assertions are what the
 /// previous generated maps did, so a map that stopped doing it shows up here. What
-/// <see cref="FrameworkCompatibilityTests"/> already pins - the draft round trip, the ignored PublishedVersionNumber and
+/// <see cref="SurveyMappingRegressionTests"/> already pins - the draft round trip, the ignored PublishedVersionNumber and
 /// Locked, the kept BankEntryID, the empty tags and the soft-delete-aware response count - is not repeated.
 /// </summary>
 public class SurveysMapperTests

@@ -73,6 +73,7 @@ public class BankQuestionDtoValidator : AbstractValidator<BankQuestionDto>
             v.Add(new SignatureQuestionDtoValidator());
             v.Add(new YesNoQuestionDtoValidator());
             v.Add(new NavigationListQuestionDtoValidator());
+            v.Add(new BookingSlotQuestionDtoValidator());
         });
         RuleFor(x => x).Must(x => x.Question.Id == x.Id)
             .When(x => x.Question is not null && !string.IsNullOrEmpty(x.Id))

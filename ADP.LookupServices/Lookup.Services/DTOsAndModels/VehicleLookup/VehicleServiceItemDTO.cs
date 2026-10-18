@@ -20,6 +20,14 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 [Docable]
 public class VehicleServiceItemDTO
 {
+    /// <summary>Inferred service evidence, separate from persisted claim metadata and cost.</summary>
+    public ServiceConsumptionEvidenceDTO? ServiceConsumptionEvidence { get; set; }
+
+    [DocIgnore]
+    [JsonIgnore]
+    [TypeScriptIgnore]
+    public ShiftSoftware.ADP.Models.Vehicle.ServiceConsumptionRule? ServiceConsumption { get; set; }
+
     private const string ActivationAndExpiryDateFormat = "yyyy-MM-dd";
 
     /// <summary>The <see cref="VehicleServiceItemGroup">group</see> this service item belongs to (for UI tab grouping).</summary>
@@ -93,6 +101,12 @@ public class VehicleServiceItemDTO
     /// a reward whose validity starts when it unlocks has no honest date to show before then.
     /// </summary>
     public VehicleServiceItemLockDTO? Lock { get; set; }
+
+    /// <summary>
+    /// Expected service milestones and their evidence, retained after unlocking and claiming.
+    /// These are information about this item's requirements, never additional claimable items.
+    /// </summary>
+    public List<VehicleServiceItemPrerequisiteDTO>? Prerequisites { get; set; }
 
     [DocIgnore]
     [JsonIgnore]

@@ -1,4 +1,4 @@
-import type { LocalizedString } from '@shiftsoftware/survey-sdk';
+import type { LocalizedString } from '@shift-software/survey-sdk';
 
 /** Minimal locale lookup. Prefers the caller's `locale`, falls back to the
  *  survey's `defaultLocale`, then any first value on the object. Empty on miss.

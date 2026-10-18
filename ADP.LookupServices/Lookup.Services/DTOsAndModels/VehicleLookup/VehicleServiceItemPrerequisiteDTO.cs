@@ -32,4 +32,7 @@ public class VehicleServiceItemPrerequisiteDTO
     /// service performed twice reports when the prerequisite was met rather than when it was repeated.
     /// </summary>
     public DateTime? SatisfiedOn { get; set; }
+
+    /// <summary>The actual matched history line; its recorded code never replaces the expected label.</summary>
+    public VehicleServiceItemPrerequisiteEvidenceDTO? Evidence { get; set; }
 }
