@@ -5,6 +5,7 @@ import saleInformationSchema from '~locales/vehicleLookup/saleInformation/type';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import { LookupHeadWait, PanelVerdict, StatusBadge } from '~features/vehicle-info-layout';
+import { parseHiddenFields } from '~features/lookup-table';
 
 import { BADGE_GLYPHS } from './glyphs';
 
@@ -38,13 +39,8 @@ const BLANK = ' ';
 
 const END_CUSTOMER_FIELDS = ['endCustomerName', 'endCustomerPhone', 'endCustomerIdNumber'];
 
-export const parseHiddenFields = (raw?: string): Set<string> =>
-  new Set(
-    (raw ?? '')
-      .split(',')
-      .map(field => field.trim())
-      .filter(Boolean),
-  );
+// Moved to the lookup table (it owns the hiddenFields grammar now); re-exported so existing importers keep working.
+export { parseHiddenFields };
 
 export const sameConfig = (a: SaleConfig, b: SaleConfig): boolean => a.chain === b.chain && a.hidden.size === b.hidden.size && [...a.hidden].every(name => b.hidden.has(name));
 
