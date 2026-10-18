@@ -63,8 +63,9 @@ public class VehicleServiceHistoryEvaluator
                 var actualPartCount = invoice.PartLines?.Count ?? 0;
                 var actualLaborCount = invoice.LaborLines?.Count ?? 0;
 
-                if ((actualLaborCount > 0 && numberOfPartLinesAccordingToLaborRecords != actualPartCount) ||
-                    (actualPartCount > 0 && numberOfLaborLinesAccordingToPartRecords != actualLaborCount))
+                // A negative expected count means the source does not know it, so that side is not checked.
+                if ((actualLaborCount > 0 && numberOfPartLinesAccordingToLaborRecords >= 0 && numberOfPartLinesAccordingToLaborRecords != actualPartCount) ||
+                    (actualPartCount > 0 && numberOfLaborLinesAccordingToPartRecords >= 0 && numberOfLaborLinesAccordingToPartRecords != actualLaborCount))
                     continue;
             }
 

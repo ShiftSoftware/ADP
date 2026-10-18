@@ -33,6 +33,7 @@ internal sealed partial class VehicleEligibilityConditionEvaluator
     private readonly bool collectMilestoneNearMisses;
     private readonly IReadOnlyCollection<string> classificationCodes;
     private readonly Lazy<bool> isAuthorized;
+    private readonly long? campaignInspectionTypeID;
 
     // Gathered per Evaluate call and reset by it, so one instance can be reused across definitions
     // without carrying the last one's findings into the next.
@@ -44,9 +45,11 @@ internal sealed partial class VehicleEligibilityConditionEvaluator
         LookupOptions options,
         bool collectMilestoneNearMisses = false,
         IReadOnlyCollection<string> classificationCodes = null,
-        bool? isAuthorized = null)
+        bool? isAuthorized = null,
+        long? campaignInspectionTypeID = null)
     {
         this.companyDataAggregate = companyDataAggregate;
+        this.campaignInspectionTypeID = campaignInspectionTypeID;
         this.classificationCodes = classificationCodes;
         this.isAuthorized = new Lazy<bool>(() => isAuthorized ?? new VehicleAuthorizationEvaluator(companyDataAggregate).Evaluate());
         this.milestoneResolver = (options?.ServiceMilestones ?? UnconfiguredMilestoneOptions).GetResolver();
@@ -178,12 +181,16 @@ internal sealed partial class VehicleEligibilityConditionEvaluator
         if (string.Equals(condition.Field, "vehicleInspections.companyID", StringComparison.Ordinal))
         {
             var values = condition.Values?.ToList();
+            // A scope without a type reads the inspections of the type that activates the item's own
+            // campaign, so the condition follows the campaign when it moves to another type. Outside an
+            // inspection-activated campaign there is no such type and the condition fails closed.
+            var inspectionTypeID = condition.Scope?.InspectionTypeID ?? campaignInspectionTypeID;
             if (condition.Operator != EligibilityConditionOperator.ContainsAll || condition.ValueMatch != EligibilityConditionValueMatch.Exact
                 || condition.Program is not null || condition.Qualifier is not null
-                || condition.Scope?.Selection != EligibilityConditionSelection.All || condition.Scope.Count is not null || condition.Scope.InspectionTypeID is not > 0
+                || condition.Scope?.Selection != EligibilityConditionSelection.All || condition.Scope.Count is not null || inspectionTypeID is not > 0
                 || values is null || values.Count == 0 || string.IsNullOrWhiteSpace(companyDataAggregate.VIN)) return false;
             var companies = new HashSet<long?>((companyDataAggregate.VehicleInspections ?? Enumerable.Empty<VehicleInspectionModel>())
-                .Where(i => i is not null && !i.IsDeleted && i.VehicleInspectionTypeID == condition.Scope.InspectionTypeID
+                .Where(i => i is not null && !i.IsDeleted && i.VehicleInspectionTypeID == inspectionTypeID
                     && string.Equals(i.VIN, companyDataAggregate.VIN, StringComparison.OrdinalIgnoreCase)).Select(i => i.CompanyID));
             return values.All(v => long.TryParse(v, NumberStyles.None, CultureInfo.InvariantCulture, out var id) && id > 0 && companies.Contains(id));
         }

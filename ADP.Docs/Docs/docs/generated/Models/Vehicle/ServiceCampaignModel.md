@@ -14,7 +14,7 @@ Represents a service campaign that offers Service Items to vehicles.
 | ExpireDate <div><strong>``DateTime``</strong></div> | The date after which this campaign expires. |
 | BrandIDs <div><strong>``IEnumerable<long?>``</strong></div> | The brand IDs this campaign targets. |
 | CountryIDs <div><strong>``IEnumerable<long?>``</strong></div> | The country IDs this campaign is available in. |
-| CompanyIDs <div><strong>``IEnumerable<long?>``</strong></div> | The company IDs this campaign is available for. |
+| CompanyIDs <div><strong>``IEnumerable<long?>``</strong></div> | The company IDs this campaign is available for: the vehicle's owner, or for an inspection-activated campaign the inspecting company, whose inspection must then be the one that activates it. |
 | ActivationTrigger <div><strong>``ClaimableItemCampaignActivationTrigger``</strong></div> | What triggers this campaign to activate (e.g., on vehicle sale or manually). |
 | ActivationType <div><strong>``ClaimableItemCampaignActivationTypes``</strong></div> | The activation type for this campaign (e.g., Automatic, Manual). |
 | VehicleInspectionTypeID <div><strong>``long?``</strong></div> | The vehicle inspection type required for this campaign, if any. |

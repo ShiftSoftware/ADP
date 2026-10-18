@@ -50,7 +50,8 @@ public class ServiceCampaignModel
     public IEnumerable<long?> CountryIDs { get; set; }
 
     /// <summary>
-    /// The company IDs this campaign is available for.
+    /// The company IDs this campaign is available for: the vehicle's owner, or for an inspection-activated
+    /// campaign the inspecting company, whose inspection must then be the one that activates it.
     /// </summary>
     public IEnumerable<long?> CompanyIDs { get; set; }
 

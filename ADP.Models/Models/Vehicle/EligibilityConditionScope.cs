@@ -26,7 +26,11 @@ public class EligibilityConditionScope
     /// </summary>
     public int? Count { get; set; }
 
-    /// <summary>Required type filter for vehicleInspections.companyID; unsupported for other fields.</summary>
+    /// <summary>
+    /// Inspection type filter for vehicleInspections.companyID; unsupported for other fields. When
+    /// omitted, the type that activates the item's own campaign is used, and an item whose campaign
+    /// is not activated by inspection fails the condition.
+    /// </summary>
     public long? InspectionTypeID { get; set; }
 }
 

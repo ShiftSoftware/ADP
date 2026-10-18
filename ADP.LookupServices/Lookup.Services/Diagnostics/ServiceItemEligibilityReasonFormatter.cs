@@ -48,7 +48,9 @@ internal static class ServiceItemEligibilityReasonFormatter
         ClaimableItemCampaignActivationTrigger.WarrantyActivation =>
             $"freeServiceStartDate not within [{Fmt(item.CampaignStartDate)}, {Fmt(item.CampaignEndDate)}].",
         ClaimableItemCampaignActivationTrigger.VehicleInspection =>
-            $"No matching VehicleInspection for typeID={item.VehicleInspectionTypeID} within [{Fmt(item.CampaignStartDate)}, {Fmt(item.CampaignEndDate)}].",
+            $"No matching VehicleInspection for typeID={item.VehicleInspectionTypeID}"
+            + (item.CompanyIDs?.Any() == true ? $" by companyIDs=[{Join(item.CompanyIDs)}]" : "")
+            + $" within [{Fmt(item.CampaignStartDate)}, {Fmt(item.CampaignEndDate)}].",
         ClaimableItemCampaignActivationTrigger.ManualVinEntry =>
             $"No matching CampaignVinEntry for campaignID={item.CampaignID} within [{Fmt(item.CampaignStartDate)}, {Fmt(item.CampaignEndDate)}].",
         _ => $"CampaignActivationTrigger={item.CampaignActivationTrigger} did not satisfy the campaign-window rule.",

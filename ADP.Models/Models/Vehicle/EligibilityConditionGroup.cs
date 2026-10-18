@@ -49,7 +49,7 @@ public static class EligibilityConditionGroup
             case "vehicleInspections.companyID":
                 return leaf.Operator == EligibilityConditionOperator.ContainsAll && leaf.ValueMatch == EligibilityConditionValueMatch.Exact
                     && leaf.Program is null && leaf.Qualifier is null && values.All(PositiveInteger)
-                    && leaf.Scope?.Selection == EligibilityConditionSelection.All && leaf.Scope.Count is null && leaf.Scope.InspectionTypeID > 0;
+                    && leaf.Scope?.Selection == EligibilityConditionSelection.All && leaf.Scope.Count is null && leaf.Scope.InspectionTypeID is null or > 0;
             case "vehicleClassifications.code":
                 return plain && leaf.Operator == EligibilityConditionOperator.ContainsAll;
             case "campaignVinEntries.campaignID":
