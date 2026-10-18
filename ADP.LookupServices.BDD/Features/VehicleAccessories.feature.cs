@@ -26,8 +26,8 @@ namespace LookupServices.BDD.Features
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Vehicle Accessories", "  Vehicle accessories are listed with their part numbers, descriptions,\r\n  and im" +
-                "ages. Image URLs are resolved through a configurable resolver.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Vehicle Accessories", "  Vehicle accessories are listed with their part numbers, descriptions,\n  and ima" +
+                "ges. Image URLs are resolved through a configurable resolver.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "VehicleAccessories.feature"
 #line hidden
@@ -106,7 +106,7 @@ namespace LookupServices.BDD.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehicleAccessories.feature.ndjson", 5);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehicleAccessories.feature.ndjson", 10);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -262,6 +262,232 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
 #line 26
   await testRunner.ThenAsync("there are 0 accessories", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Job number and invoice number are mapped through")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Accessories")]
+        [global::Xunit.TraitAttribute("Description", "Job number and invoice number are mapped through")]
+        public async global::System.Threading.Tasks.Task JobNumberAndInvoiceNumberAreMappedThrough()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "3";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Job number and invoice number are mapped through", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 29
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                global::Reqnroll.Table table771 = new global::Reqnroll.Table(new string[] {
+                            "PartNumber",
+                            "PartDescription",
+                            "JobNumber",
+                            "InvoiceNumber"});
+                table771.AddRow(new string[] {
+                            "ACC-001",
+                            "Floor mats",
+                            "1001",
+                            "2002"});
+#line 30
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table771, "Given ");
+#line hidden
+#line 33
+  await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 34
+  await testRunner.ThenAsync("accessory \"ACC-001\" has job number 1001", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 35
+  await testRunner.AndAsync("accessory \"ACC-001\" has invoice number 2002", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Zero job number and invoice number map to null")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Accessories")]
+        [global::Xunit.TraitAttribute("Description", "Zero job number and invoice number map to null")]
+        public async global::System.Threading.Tasks.Task ZeroJobNumberAndInvoiceNumberMapToNull()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "4";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Zero job number and invoice number map to null", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 37
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                global::Reqnroll.Table table772 = new global::Reqnroll.Table(new string[] {
+                            "PartNumber",
+                            "PartDescription",
+                            "JobNumber",
+                            "InvoiceNumber"});
+                table772.AddRow(new string[] {
+                            "ACC-001",
+                            "Floor mats",
+                            "0",
+                            "0"});
+#line 38
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table772, "Given ");
+#line hidden
+#line 41
+  await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 42
+  await testRunner.ThenAsync("accessory \"ACC-001\" has no job number", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 43
+  await testRunner.AndAsync("accessory \"ACC-001\" has no invoice number", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Company name is resolved from the company ID")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Accessories")]
+        [global::Xunit.TraitAttribute("Description", "Company name is resolved from the company ID")]
+        public async global::System.Threading.Tasks.Task CompanyNameIsResolvedFromTheCompanyID()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "5";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Company name is resolved from the company ID", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 45
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                global::Reqnroll.Table table773 = new global::Reqnroll.Table(new string[] {
+                            "PartNumber",
+                            "PartDescription",
+                            "CompanyID"});
+                table773.AddRow(new string[] {
+                            "ACC-001",
+                            "Floor mats",
+                            "1"});
+#line 46
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table773, "Given ");
+#line hidden
+#line 49
+  await testRunner.AndAsync("company 1 is named \"Dealer A\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 50
+  await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 51
+  await testRunner.ThenAsync("accessory \"ACC-001\" has company name \"Dealer A\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Unresolved company leaves the company name null")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Accessories")]
+        [global::Xunit.TraitAttribute("Description", "Unresolved company leaves the company name null")]
+        public async global::System.Threading.Tasks.Task UnresolvedCompanyLeavesTheCompanyNameNull()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "6";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Unresolved company leaves the company name null", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 53
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                global::Reqnroll.Table table774 = new global::Reqnroll.Table(new string[] {
+                            "PartNumber",
+                            "PartDescription",
+                            "CompanyID"});
+                table774.AddRow(new string[] {
+                            "ACC-001",
+                            "Floor mats",
+                            "2"});
+#line 54
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table774, "Given ");
+#line hidden
+#line 57
+  await testRunner.AndAsync("company 1 is named \"Dealer A\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 58
+  await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 59
+  await testRunner.ThenAsync("accessory \"ACC-001\" has no company name", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="No company name resolver leaves the company name null")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Accessories")]
+        [global::Xunit.TraitAttribute("Description", "No company name resolver leaves the company name null")]
+        public async global::System.Threading.Tasks.Task NoCompanyNameResolverLeavesTheCompanyNameNull()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "7";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("No company name resolver leaves the company name null", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 61
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                global::Reqnroll.Table table775 = new global::Reqnroll.Table(new string[] {
+                            "PartNumber",
+                            "PartDescription",
+                            "CompanyID"});
+                table775.AddRow(new string[] {
+                            "ACC-001",
+                            "Floor mats",
+                            "1"});
+#line 62
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table775, "Given ");
+#line hidden
+#line 65
+  await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 66
+  await testRunner.ThenAsync("accessory \"ACC-001\" has no company name", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

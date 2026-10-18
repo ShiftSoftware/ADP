@@ -26,11 +26,19 @@ public class VehicleAccessoriesEvaluator
         {
             var image = await GetAccessoryImageFullUrl(accessory.Image, languageCode);
 
+            string companyName = null;
+            if (Options?.CompanyNameResolver is not null)
+                companyName = await Options.CompanyNameResolver(new(accessory.CompanyID, languageCode, ServiceProvider));
+
             return new AccessoryDTO
             {
                 PartNumber = accessory.PartNumber,
                 Description = accessory.PartDescription,
-                Image = image
+                Image = image,
+                // 0 is the source's "no value".
+                JobNumber = accessory.JobNumber == 0 ? null : accessory.JobNumber,
+                InvoiceNumber = accessory.InvoiceNumber == 0 ? null : accessory.InvoiceNumber,
+                CompanyName = companyName
             };
         });
 

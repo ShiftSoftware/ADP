@@ -24,3 +24,43 @@ Scenario: Accessories without image resolver return raw image value
 Scenario: No accessories returns empty list
   When evaluating accessories with language "en"
   Then there are 0 accessories
+
+
+Scenario: Job number and invoice number are mapped through
+  Given accessories:
+    | PartNumber | PartDescription | JobNumber | InvoiceNumber |
+    | ACC-001    | Floor mats      | 1001      | 2002          |
+  When evaluating accessories with language "en"
+  Then accessory "ACC-001" has job number 1001
+  And accessory "ACC-001" has invoice number 2002
+
+Scenario: Zero job number and invoice number map to null
+  Given accessories:
+    | PartNumber | PartDescription | JobNumber | InvoiceNumber |
+    | ACC-001    | Floor mats      | 0         | 0             |
+  When evaluating accessories with language "en"
+  Then accessory "ACC-001" has no job number
+  And accessory "ACC-001" has no invoice number
+
+Scenario: Company name is resolved from the company ID
+  Given accessories:
+    | PartNumber | PartDescription | CompanyID |
+    | ACC-001    | Floor mats      | 1         |
+  And company 1 is named "Dealer A"
+  When evaluating accessories with language "en"
+  Then accessory "ACC-001" has company name "Dealer A"
+
+Scenario: Unresolved company leaves the company name null
+  Given accessories:
+    | PartNumber | PartDescription | CompanyID |
+    | ACC-001    | Floor mats      | 2         |
+  And company 1 is named "Dealer A"
+  When evaluating accessories with language "en"
+  Then accessory "ACC-001" has no company name
+
+Scenario: No company name resolver leaves the company name null
+  Given accessories:
+    | PartNumber | PartDescription | CompanyID |
+    | ACC-001    | Floor mats      | 1         |
+  When evaluating accessories with language "en"
+  Then accessory "ACC-001" has no company name

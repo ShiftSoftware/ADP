@@ -15,4 +15,10 @@ public class AccessoryDTO
     public string Description { get; set; }
     /// <summary>URL of an image of the installed accessory.</summary>
     public string Image { get; set; }
+    /// <summary>The job number of the accessory installation. Null when the source has no job number.</summary>
+    public int? JobNumber { get; set; }
+    /// <summary>The invoice number of the accessory installation. Null when the source has no invoice number.</summary>
+    public int? InvoiceNumber { get; set; }
+    /// <summary>The name of the company that installed the accessory, resolved from the company ID. Null when it cannot be resolved.</summary>
+    public string CompanyName { get; set; }
 }
