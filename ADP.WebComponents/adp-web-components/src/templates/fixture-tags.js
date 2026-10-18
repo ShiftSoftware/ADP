@@ -96,7 +96,7 @@ export const FIXTURE_TAGS = {
 
     /* edge-cases — one variation each. */
     ZS8AX5KB2T6720006: 'a picture the drawings do not cover · the generic carton',
-    ZS8AX5KB6T6720008: 'long text · a 160-character description and a 55-character part number',
+    ZS8AX5KB6T6720008: 'long text · a 161-character description and a 55-character part number',
     ZS8AX5KB8T6720009: 'no job and no invoice number · shown as dashes',
     ZS8AX5KB4T6720010: 'an installing company the environment cannot name',
   },
