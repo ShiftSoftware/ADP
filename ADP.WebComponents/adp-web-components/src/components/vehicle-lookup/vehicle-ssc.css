@@ -330,6 +330,14 @@
   background: var(--blue-tint);
 }
 
+/* Hover highlight, the same --row-hover as the shared table (pointer devices only, background
+   only). An open row keeps its blue tint; notices and headings are not .ssc-row. */
+@media (hover: hover) {
+  .ssc-row:not([data-open='true']):hover {
+    background: var(--row-hover);
+  }
+}
+
 .ssc-row > .ssc-cell {
   padding: 12px;
 }

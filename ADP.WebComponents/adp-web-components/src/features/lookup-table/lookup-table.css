@@ -242,6 +242,18 @@
   border-top: 1px solid var(--line-soft);
 }
 
+.lt-row {
+  transition: background var(--settle) ease;
+}
+
+/* Hover highlight (pointer devices only, background only so nothing shifts). Only data rows are
+   .lt-row: notices, headings and a shut body (hidden, aria-hidden) never carry it. */
+@media (hover: hover) {
+  .lt-row:hover {
+    background: var(--row-hover);
+  }
+}
+
 .lt-row > .lt-cell {
   /* Centred, so a 56px thumbnail and a one-line value share a middle line instead of the text
      hanging from the top. */
@@ -563,6 +575,7 @@
    ------------------------------------------------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
+  .lt-row,
   .lt-columns > .lt-cell,
   .lt-columns-label,
   .lt-media-box,
