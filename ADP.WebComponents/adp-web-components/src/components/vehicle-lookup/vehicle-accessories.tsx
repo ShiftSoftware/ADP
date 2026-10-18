@@ -453,6 +453,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
       authorized: this.vehicleLookup?.isAuthorized,
       accessories: this.vehicleLookup?.accessories,
       hidden: this.applied,
+      error: this.errorText(),
     };
   }
 

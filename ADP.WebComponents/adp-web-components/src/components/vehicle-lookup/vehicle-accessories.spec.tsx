@@ -112,8 +112,9 @@ describe('vehicle-accessories — derivations', () => {
     expect(panelLead(state({ accessories: [] }), false)).toBe('notice');
     expect(panelLead(state({ authorized: false }), false)).toBe('notice');
     expect(panelLead(state({ hidden: parseHiddenFields(FIELDS.join(',')) }), false)).toBe('notice');
-    // The state an error leaves behind is not a vehicle: the strip stays on the skeleton, the pill speaks.
-    expect(panelLead(state({ vehicleLoaded: false, accessories: undefined }), false)).toBe('skeleton');
+    // A failed lookup is settled, not idle: the strip says so in a notice (the skeleton would read as still loading).
+    expect(panelLead(state({ vehicleLoaded: false, accessories: undefined, error: 'Failed' }), false)).toBe('notice');
+    expect(panelLead(state({ vehicleLoaded: false, accessories: undefined, error: 'Failed' }), true)).toBe('skeleton');
   });
 
   it('says unauthorized in amber, an empty list in grey, never a verdict, and nothing above rows or before a lookup', () => {
@@ -125,6 +126,7 @@ describe('vehicle-accessories — derivations', () => {
     expect(leadNotice(state({ hidden: parseHiddenFields(FIELDS.join(',')) }), locale)).toEqual({ tone: 'idle', text: locale.noFieldsShown });
     expect(leadNotice(state(), locale)).toBeNull();
     expect(leadNotice(state({ vehicleLoaded: false }), locale)).toBeNull();
+    expect(leadNotice(state({ vehicleLoaded: false, error: 'Failed' }), locale)).toEqual({ tone: 'negative', text: 'Failed' });
 
     for (const input of [state({ accessories: [] }), state({ authorized: false }), state({ accessories: null })]) {
       expect(['positive', 'negative']).not.toContain(leadNotice(input, locale)?.tone);
@@ -427,7 +429,7 @@ describe('vehicle-accessories — the states', () => {
     expect(moreOpen(page)).toBe('false');
   });
 
-  it('an error: the negative pill carries it, the strip stays on the skeleton, and there is no count', async () => {
+  it('an error: the negative pill carries it, the strip settles to a negative notice, and there is no count', async () => {
     const page = await newPage();
     await load(page, NINE_VIN);
     expect(count(page)).not.toBeNull();
@@ -438,7 +440,8 @@ describe('vehicle-accessories — the states', () => {
     expect(verdict(page)).toBe('negative');
     expect(pill(page)?.classList.contains('is-negative')).toBe(true);
     expect(squash(pill(page)?.textContent)).toBe('Wrong response format');
-    expect(lead(page)).toBe('skeleton');
+    expect(lead(page)).toBe('notice');
+    expect(squash(page.root.shadowRoot.querySelector('.lt-notice')?.textContent)).toContain('Wrong response format');
     expect(count(page)).toBeNull();
     expect(bodyOpen(page)).toBe('false');
   });

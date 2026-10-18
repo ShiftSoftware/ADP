@@ -21,6 +21,8 @@ export type PanelState = {
   /** The DTO's list, whatever it holds: a list the distributor may not show is dropped by `listed`. */
   accessories?: AccessoryDTO[] | null;
   hidden: ReadonlySet<string>;
+  /** The lookup failed: the sentence the strip says in the negative tone (the pill carries the same words). */
+  error?: string;
 };
 
 export type PanelNotice = { tone: NoticeTone; text: string };
@@ -77,14 +79,15 @@ export const hasRecords = (state: PanelState): boolean => listed(state).length >
 export const panelBody = (state: PanelState): 'rows' | 'none' => (hasRecords(state) && columnCount(state.hidden) > 0 ? 'rows' : 'none');
 
 /** The strip's layer: the skeleton while busy or idle, the headings above rows, a notice otherwise. */
-export const panelLead = (state: PanelState, busy: boolean): LeadKind => tableLead({ busy, idle: !state.vehicleLoaded, body: panelBody(state) });
+export const panelLead = (state: PanelState, busy: boolean): LeadKind => tableLead({ busy, idle: !state.vehicleLoaded && !state.error, body: panelBody(state) });
 
 /**
  * The strip's sentence when there is nothing to list. Never a verdict: an unauthorized vehicle is
  * amber ("not in the records"), an authorized one with nothing on file is grey and says only that,
- * and a host that hid every column is told so in grey. Null above rows and before a lookup.
+ * and a host that hid every column is told so in grey. A failed lookup is the one negative sentence. Null above rows and before a lookup.
  */
 export const leadNotice = (state: PanelState, locale: AccessoriesLocale): PanelNotice | null => {
+  if (state.error) return { tone: 'negative', text: state.error };
   if (!state.vehicleLoaded) return null;
   if (state.authorized === false) return { tone: 'neutral', text: locale.unauthorizedNotice };
   if (!hasRecords(state)) return { tone: 'idle', text: locale.noAccessories };
