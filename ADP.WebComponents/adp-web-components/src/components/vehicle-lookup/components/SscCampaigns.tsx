@@ -1,7 +1,6 @@
 import { FunctionalComponent, h } from '@stencil/core';
 import { InferType } from 'yup';
 
-import cn from '~lib/cn';
 
 import sscSchema from '~locales/vehicleLookup/ssc/type';
 import { SscDTO } from '~types/generated/vehicle-lookup/ssc-dto';
@@ -280,13 +279,13 @@ const PartChip = ({ partNumber, isAvailable, locale }: { partNumber: string; isA
 
 /** A region the card gains and loses. The grid track animates so it slides rather than pops (lookup-motion.css). */
 const Collapsible: FunctionalComponent<{ open: boolean; className?: string }> = ({ open, className }, children) => (
-  <div class={cn('collapsible', className)} data-open={open ? 'true' : 'false'} aria-hidden={open ? null : 'true'}>
+  <div class={{ 'collapsible': true, [className ?? '']: !!className }} data-open={open ? 'true' : 'false'} aria-hidden={open ? null : 'true'}>
     <div class="collapsible-body">{children}</div>
   </div>
 );
 
 const EvidencePill = ({ positive, text }: { positive: boolean; text: string }) => (
-  <span class={cn('evidence-pill', positive ? 'is-positive' : 'is-negative')}>
+  <span class={{ 'evidence-pill': true, 'is-positive': positive, 'is-negative': !positive }}>
     <Glyph kind={positive ? 'positive' : 'negative'} className="evidence-pill-icon" />
     <span>{text}</span>
   </span>
@@ -305,7 +304,7 @@ const MatchedCode = ({ laborCode, campaignLaborCode, locale }: { laborCode: stri
 );
 
 const ClaimEvidence = ({ claim, locale }: { claim: SscRepairTraceWarrantyClaimDTO; locale: SscLocale }) => (
-  <li class={cn('trace-item', { 'is-selected': claim.selected, 'is-dim': !claim.matches && !claim.selected })}>
+  <li class={{ 'trace-item': true, 'is-selected': claim.selected, 'is-dim': !claim.matches && !claim.selected }}>
     <div class="trace-item-head">
       <strong class="trace-item-title">
         {locale.traceClaim} {claim.claimNumber || claim.dealerClaimNumber || '—'}
@@ -331,7 +330,7 @@ const ClaimEvidence = ({ claim, locale }: { claim: SscRepairTraceWarrantyClaimDT
 );
 
 const LineEvidence = ({ line, locale }: { line: SscRepairTraceLaborLineDTO; locale: SscLocale }) => (
-  <li class={cn('trace-item', { 'is-selected': line.selected })}>
+  <li class={{ 'trace-item': true, 'is-selected': line.selected }}>
     <div class="trace-item-head">
       <strong class="trace-item-title">
         {locale.traceInvoice} {line.invoiceNumber || '—'}
@@ -386,7 +385,7 @@ const SscTrace: FunctionalComponent<{ locale: SscLocale; item: SscDTO; trace?: S
           <span class="trace-label">{locale.traceTitle}</span>
           <span class="trace-head-code">{item.sscCode}</span>
         </div>
-        <div class={cn('ssc-trace-status', { 'is-error': !!error })}>{error || locale.traceUnavailable}</div>
+        <div class={{ 'ssc-trace-status': true, 'is-error': !!error }}>{error || locale.traceUnavailable}</div>
       </div>
     );
 
@@ -402,7 +401,7 @@ const SscTrace: FunctionalComponent<{ locale: SscLocale; item: SscDTO; trace?: S
         <span class="trace-head-code">{item.sscCode}</span>
       </div>
 
-      <div class={cn('trace-verdict', repaired ? 'is-positive' : 'is-negative')}>
+      <div class={{ 'trace-verdict': true, 'is-positive': repaired, 'is-negative': !repaired }}>
         <Glyph kind={repaired ? 'positive' : 'negative'} className="trace-verdict-icon" />
         <strong>{verdictText(source, locale)}</strong>
         {repaired && item.repairDate && <span class="trace-verdict-date">{item.repairDate}</span>}
@@ -545,12 +544,12 @@ export const SscCampaigns: FunctionalComponent<Props> = (props, children) => {
 
       {/* lookup-slide: the region under the head that travels on a composite's tab switch, clipped so it passes under the head, never over it. */}
       <div class="lookup-slide-clip">
-        <div class={cn('ssc-grid lookup-slide', { 'has-trace': showTrace })} role={shown === 'rows' && bodyOpen ? 'table' : null}>
+        <div class={{ 'ssc-grid': true, 'lookup-slide': true, 'has-trace': showTrace }} role={shown === 'rows' && bodyOpen ? 'table' : null}>
           <div class="ssc-lead layer-stack" data-lead={lead}>
             <div class="layer ssc-lead-skeleton" data-active={lead === 'skeleton' ? 'true' : 'false'} aria-hidden="true" />
 
             <div
-              class={cn('layer ssc-lead-notice', notice && `is-${notice.tone}`)}
+              class={{ 'layer': true, 'ssc-lead-notice': true, [`is-${notice?.tone ?? 'none'}`]: !!notice }}
               data-active={lead === 'notice' ? 'true' : 'false'}
               role="status"
               aria-hidden={lead === 'notice' ? null : 'true'}
