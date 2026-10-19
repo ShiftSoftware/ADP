@@ -436,7 +436,8 @@
                                     <div class="menu-field-row">
                                         <MudSelectExtended T="MenuType"
                                                            Label="Menu Type"
-                                                           AnchorOrigin="Origin.BottomCenter"
+                                                           AnchorOrigin="Origin.BottomLeft"
+                                                           TransformOrigin="Origin.TopLeft"
                                                            @bind-Value="selectedVariant.MenuType"
                                                            Disabled="!CanManageVariants">
                                             @foreach (var menuType in Enum.GetValues<MenuType>())
