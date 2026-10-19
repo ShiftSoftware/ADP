@@ -72,9 +72,7 @@ public class MenuDuckDBLookupFunctions
             BasicModelCode = basicModelCode,
             Language = request.Query["language"].FirstOrDefault(),
             CountryID = long.TryParse(request.Query["countryId"].FirstOrDefault(), out var countryId) ? countryId : null,
-            FreeFilter = Enum.TryParse<ServiceMenuFreeFilter>(request.Query["freeFilter"].FirstOrDefault(), ignoreCase: true, out var freeFilter)
-                ? freeFilter
-                : ServiceMenuFreeFilter.All,
+            MenuTypes = MenuTypeQuery.Parse(request),
         };
 
         try

@@ -1,3 +1,4 @@
+using ShiftSoftware.ADP.Models.Enums;
 using System;
 
 namespace ShiftSoftware.ADP.Models.Service.DuckDB;
@@ -88,7 +89,7 @@ public class MenuVariantDuckDBModel : IServiceMenuDuckDBRow
     public string StandaloneMenuPostfix { get; set; }
     public decimal LabourRate { get; set; }
     public decimal? DiscountPercentage { get; set; }
-    public bool IsFree { get; set; }
+    public MenuType MenuType { get; set; }
     public bool HasStandaloneItems { get; set; }
     public bool IsDeleted { get; set; }
     public DateTimeOffset LastSaveDate { get; set; }

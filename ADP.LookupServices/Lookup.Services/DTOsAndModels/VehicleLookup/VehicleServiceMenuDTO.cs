@@ -15,7 +15,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 ///
 /// <para><b>Read <see cref="Status"/> before reading <see cref="Services"/>.</b> An empty list means five
 /// different things — no join key, no menu authored for the model, a menu that generates nothing, every
-/// variant excluded by <see cref="VehicleServiceMenuRequestOptions.FreeFilter"/>, or a menu subsystem that
+/// variant excluded by <see cref="VehicleServiceMenuRequestOptions.MenuTypes"/>, or a menu subsystem that
 /// could not be consulted. The status separates the first, second and last; the filter you sent separates
 /// the other two, which both arrive as <see cref="VehicleServiceMenuStatus.Found"/> with nothing in it. A
 /// menu fault never fails the VIN lookup; it arrives here as

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.ServiceMenu;
 using ShiftSoftware.ADP.Menus.Generation;
+using ShiftSoftware.ADP.Models.Enums;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -66,7 +67,7 @@ public class ServiceMenuGenerationEvaluator
 
     /// <summary>
     /// Generates every line the documents produce under <paramref name="config"/>, for the variants
-    /// <paramref name="freeFilter"/> selects.
+    /// <paramref name="menuTypes"/> selects.
     ///
     /// Returns an empty list when the partition holds no live variant. It also returns an empty list
     /// when variants exist but nothing qualifies — an interval whose group carries no labour detail
@@ -74,8 +75,9 @@ public class ServiceMenuGenerationEvaluator
     /// it is the behaviour being matched. A filter that excludes every variant is a third way to get an
     /// empty list, and the caller is the one holding the filter, so it is the one that can tell them apart.
     /// </summary>
-    /// <param name="freeFilter">
-    /// Which variants to generate, by their free-of-charge flag. Applied to the aggregated request
+    /// <param name="menuTypes">
+    /// Which variants to generate, by their <see cref="MenuType"/>; null or empty generates every variant.
+    /// Applied to the aggregated request
     /// BEFORE <see cref="MenuCodeGenerator"/> runs, so an excluded variant is never generated — which
     /// also means an excluded variant can never raise the exception below.
     /// </param>
@@ -88,7 +90,7 @@ public class ServiceMenuGenerationEvaluator
     public IReadOnlyList<GeneratedMenuLine> Evaluate(
         ServiceMenuDocuments documents,
         MenuGenerationConfig config,
-        ServiceMenuFreeFilter freeFilter = ServiceMenuFreeFilter.All)
+        IReadOnlyCollection<MenuType> menuTypes = null)
     {
         if (documents is null || documents.IsEmpty)
             return [];
@@ -99,8 +101,8 @@ public class ServiceMenuGenerationEvaluator
         // are SHARED with the DMS export, which has no such notion. Applying it to the neutral request
         // keeps the generator's input honest — it still receives "the variants to generate", and merely
         // receives fewer of them.
-        if (freeFilter != ServiceMenuFreeFilter.All)
-            request.Variants.RemoveAll(variant => variant.IsFree != (freeFilter == ServiceMenuFreeFilter.FreeOnly));
+        if (menuTypes is { Count: > 0 })
+            request.Variants.RemoveAll(variant => !menuTypes.Contains(variant.MenuType));
 
         if (request.Variants.Count == 0)
             return [];

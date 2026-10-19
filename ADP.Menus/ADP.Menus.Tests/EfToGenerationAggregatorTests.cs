@@ -6,6 +6,7 @@ using ShiftSoftware.ADP.Menus.Data.DataServices;
 using ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ADP.Menus.Generation;
 using ShiftSoftware.ADP.Menus.Shared;
+using ShiftSoftware.ADP.Menus.Shared.Enums;
 
 namespace ShiftSoftware.ADP.Menus.Tests;
 
@@ -291,24 +292,37 @@ public class EfToGenerationAggregatorTests
     }
 
     /// <summary>
-    /// The export's adapter carries the variant's free-of-charge flag too. It has no use for it — the DMS
-    /// export neither filters nor prices on it — but the two adapters feed ONE request type, and a field
-    /// only one of them fills is a field that disagrees the moment anything reads it from both.
+    /// The export's adapter carries the variant's menu type too. It has no use for it — the DMS export
+    /// neither filters nor prices on it — but the two adapters feed ONE request type, and a field only one
+    /// of them fills is a field that disagrees the moment anything reads it from both.
     /// </summary>
-    [Fact]
-    public void TheFreeFlag_ReachesTheGenerationRequest()
+    [Theory]
+    [InlineData(MenuType.Paid)]
+    [InlineData(MenuType.Free)]
+    [InlineData(MenuType.Contract)]
+    public void TheMenuType_ReachesTheGenerationRequest(MenuType menuType)
     {
         var fixture = MenuGraphFixture.Build();
-        var variant = fixture.Variants.Single();
-        variant.IsFree = true;
+        fixture.Variants.Single().MenuType = menuType;
 
         var request = EfToGenerationAggregator.Build(fixture.Variants, fixture.LabourRateMappings, fixture.BrandMappings);
 
-        Assert.True(request.Variants.Single().IsFree);
+        Assert.Equal(menuType.ToString(), request.Variants.Single().MenuType.ToString());
+    }
 
-        variant.IsFree = false;
-        Assert.False(EfToGenerationAggregator.Build(fixture.Variants, fixture.LabourRateMappings, fixture.BrandMappings)
-            .Variants.Single().IsFree);
+    /// <summary>
+    /// The menus module declares its own <see cref="MenuType"/> (it ships to the Blazor client, which must
+    /// not pull in ADP.Models) and the documents and generator carry ADP.Models' one. The adapters convert
+    /// between them by value, so the two must agree on every name AND value — a member added to one and
+    /// not the other, or renumbered, would silently retype a variant on its way to the lookup.
+    /// </summary>
+    [Fact]
+    public void TheTwoMenuTypeEnums_AgreeOnEveryNameAndValue()
+    {
+        static IEnumerable<(string, int)> Members<TEnum>() where TEnum : struct, Enum =>
+            Enum.GetValues<TEnum>().Select(value => (value.ToString(), Convert.ToInt32(value)));
+
+        Assert.Equal(Members<MenuType>(), Members<ShiftSoftware.ADP.Models.Enums.MenuType>());
     }
 
     [Fact]

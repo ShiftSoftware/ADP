@@ -120,7 +120,7 @@ public static class MenuCodeGenerator
                 Model = variant.Model,
                 VariantID = variant.VariantID,
                 VariantName = variant.VariantName,
-                IsFree = variant.IsFree,
+                MenuType = variant.MenuType,
 
                 LabourRate = ResolveLabourRate(variant, config),
                 PrimaryLabourRate = variant.LabourRate,
@@ -199,7 +199,7 @@ public static class MenuCodeGenerator
                 Model = variant.Model,
                 VariantID = variant.VariantID,
                 VariantName = variant.VariantName,
-                IsFree = variant.IsFree,
+                MenuType = variant.MenuType,
 
                 LabourRate = ResolveLabourRate(variant, config),
                 PrimaryLabourRate = variant.LabourRate,
@@ -261,7 +261,7 @@ public static class MenuCodeGenerator
                 Model = variant.Model,
                 VariantID = variant.VariantID,
                 VariantName = variant.VariantName,
-                IsFree = variant.IsFree,
+                MenuType = variant.MenuType,
 
                 LabourRate = ResolveLabourRate(variant, config),
                 PrimaryLabourRate = variant.LabourRate,

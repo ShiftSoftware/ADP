@@ -29,7 +29,10 @@ public class MenuDuckDBMapper : ShiftMapperBase
     {
         CreateMap<Menu, MenuDuckDBModel>();
         CreateMap<VehicleModel, MenuVehicleModelDuckDBModel>();
-        CreateMap<MenuVariant, MenuVariantDuckDBModel>();
+        // The entity's MenuType is the menus module's own enum and the row's is ADP.Models'; the name match
+        // skips a property whose type differs, so the cast is spelled out.
+        CreateMap<MenuVariant, MenuVariantDuckDBModel>()
+            .ForMember(d => d.MenuType, opt => opt.MapFrom(e => (ShiftSoftware.ADP.Models.Enums.MenuType)e.MenuType));
         CreateMap<MenuVariantLabourRate, MenuVariantLabourRateDuckDBModel>();
         CreateMap<MenuPeriodicAvailability, MenuPeriodicAvailabilityDuckDBModel>();
         CreateMap<MenuLabourDetails, MenuLabourDetailsDuckDBModel>();

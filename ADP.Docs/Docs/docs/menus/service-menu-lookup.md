@@ -105,20 +105,21 @@ results by `LineKey` — never by `Code`, which is language-dependent by constru
 the request: a variant id is a primary key inside the menus database and nothing outside it holds one. Each
 `ServiceMenuVariantDTO` carries its id and authored name so a UI can present the choice.
 
-### Free menus
+### Menu types
 
-A variant can be authored **free of charge** (the *Free Menu* flag on the Menu tab of a menu variant). That
-travels through replication to `ServiceMenuVariantDTO.IsFree` on the nested shape and to
-`VehicleServiceMenuLineDTO.IsFree` on every line of the flat one.
+Every variant has a **menu type** — `Paid` (the default), `Free` or `Contract` — picked from the *Menu Type*
+field on the Menu tab of a menu variant. That travels through replication to
+`ServiceMenuVariantDTO.MenuType` on the nested shape and to `VehicleServiceMenuLineDTO.MenuType` on every line
+of the flat one, serialized as the name (`"Free"`), not a number.
 
-`FreeFilter` narrows a request to one kind or the other:
+`MenuTypes` narrows a request to any subset of them; null or empty returns every variant:
 
 ```csharp
 var freeMenus = await serviceMenuLookupService.GetMenuAsync(new ServiceMenuLookupRequest
 {
     BasicModelCode = "ABC12",
     Language = "en",
-    FreeFilter = ServiceMenuFreeFilter.FreeOnly,   // All (default) | FreeOnly | PaidOnly
+    MenuTypes = [MenuType.Free],   // any of Paid | Free | Contract; null (default) = all
 });
 ```
 
@@ -126,11 +127,15 @@ The same option exists on `VehicleServiceMenuRequestOptions` for the VIN path. I
 variant it excludes contributes neither its scheduled nor its standalone services — and it is applied before
 generation, so an excluded variant costs nothing to skip.
 
-!!! warning "The flag does not change any price"
-    Nothing zeroes a total for a free variant: `LabourTotalPrice`, `PartsTotalPrice` and `TotalPrice` are
-    generated exactly as they are for any other variant, and the DMS export's figures are untouched. Read
-    `IsFree` and render *"free"* instead of the total — a UI that prints the total verbatim quotes a customer
-    for a menu the catalogue calls free.
+!!! warning "The menu type does not change any price"
+    Nothing zeroes a total for a free or contract variant: `LabourTotalPrice`, `PartsTotalPrice` and
+    `TotalPrice` are generated exactly as they are for a paid one, and the DMS export's figures are untouched.
+    Read `MenuType` and render *"free"* (or *"under contract"*) instead of the total — a UI that prints the
+    total verbatim quotes a customer for a menu the catalogue calls free.
+
+!!! note "Documents written before the field existed read as `Paid`"
+    Until a catch-up sweep (Cosmos) or a full reload (DuckDB) rewrites them, variants replicated while the
+    field was still the `IsFree` flag come back as `Paid` — including the ones that were free.
 
 A filter that excludes every variant returns **no variants with `NotFound = false`** (and, on the vehicle
 lookup, `Status = Found` with no services). That is not the same as a model with no menu — the menu exists,
@@ -149,7 +154,7 @@ and this request asked for a part of it that is empty.
 | Parts | `Parts[]` (`PartNumber`, `Quantity`, `UnitPrice`, `TotalPrice`, `HasCountryPrice`), `PartsTotalPrice` |
 | Total | `DiscountPercentage`, `DiscountAmount`, `TotalPrice` |
 
-The variant carries `VariantID`, `VariantName`, `BrandID`, `BrandCode`, `DiscountPercentage` and `IsFree`.
+The variant carries `VariantID`, `VariantName`, `BrandID`, `BrandCode`, `DiscountPercentage` and `MenuType`.
 On the vehicle lookup's flat shape those variant-level fields travel on each line instead, since there is no
 variant object to hang them on.
 
@@ -185,7 +190,7 @@ var vehicle = await vehicleLookupService.LookupAsync(vin, new VehicleLookupReque
         Include = true,        // the switch; everything below is optional
         CountryID = 2,
         TransferRate = 1.15m,
-        FreeFilter = ServiceMenuFreeFilter.All,   // All | FreeOnly | PaidOnly
+        MenuTypes = null,      // all variants; or e.g. [MenuType.Paid, MenuType.Contract]
     },
 });
 

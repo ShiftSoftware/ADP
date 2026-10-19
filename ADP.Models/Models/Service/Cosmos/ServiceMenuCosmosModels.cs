@@ -1,3 +1,4 @@
+using ShiftSoftware.ADP.Models.Enums;
 using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.Service.Cosmos;
@@ -222,13 +223,13 @@ public class MenuVariantCosmosModel : IPartitionedItem
     public decimal? DiscountPercentage { get; set; }
 
     /// <summary>
-    /// The variant's menu is offered free of charge. Carried, never computed on: it changes no generated
-    /// price, so a reader that filters or renders on it owns that decision.
+    /// How the variant's menu is offered — paid, free or under contract. Carried, never computed on: it
+    /// changes no generated price, so a reader that filters or renders on it owns that decision.
     ///
-    /// <para>Defaults to <c>false</c>, so documents written before this field existed read as not-free
-    /// until a catch-up sweep refreshes them.</para>
+    /// <para>Defaults to <see cref="MenuType.Paid"/>, so documents written before this field existed read
+    /// as paid until a catch-up sweep refreshes them.</para>
     /// </summary>
-    public bool IsFree { get; set; }
+    public MenuType MenuType { get; set; }
 
     public bool HasStandaloneItems { get; set; }
 

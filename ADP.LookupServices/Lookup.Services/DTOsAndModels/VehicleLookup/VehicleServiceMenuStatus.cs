@@ -37,7 +37,7 @@ public enum VehicleServiceMenuStatus
     /// <summary>
     /// A menu was found for the derived code. <c>Services</c> can still be empty: a menu whose every
     /// variant is deleted, whose intervals carry no labour details, or whose variants were all excluded by
-    /// <c>VehicleServiceMenuRequestOptions.FreeFilter</c>, exists and generates nothing — a different
+    /// <c>VehicleServiceMenuRequestOptions.MenuTypes</c>, exists and generates nothing — a different
     /// thing from having no menu, and usually rendered differently.
     /// </summary>
     Found = 2,

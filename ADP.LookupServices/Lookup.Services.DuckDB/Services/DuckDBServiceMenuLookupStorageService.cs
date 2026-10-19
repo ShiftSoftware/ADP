@@ -251,7 +251,7 @@ public class DuckDBServiceMenuLookupStorageService : IServiceMenuLookupStorageSe
                 StandaloneMenuPostfix = variant.StandaloneMenuPostfix,
                 LabourRate = variant.LabourRate,
                 DiscountPercentage = variant.DiscountPercentage,
-                IsFree = variant.IsFree,
+                MenuType = variant.MenuType,
                 HasStandaloneItems = variant.HasStandaloneItems,
 
                 // Joined live from the Menu row — in Cosmos this flag must be flattened onto the

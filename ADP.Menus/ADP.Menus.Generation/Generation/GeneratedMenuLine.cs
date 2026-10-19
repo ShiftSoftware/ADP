@@ -1,3 +1,4 @@
+using ShiftSoftware.ADP.Models.Enums;
 using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Menus.Generation;
@@ -130,11 +131,11 @@ public class GeneratedMenuLine
     public string VariantName { get; set; }
 
     /// <summary>
-    /// The variant's "menu is free of charge" flag, stamped onto every line it produced. It takes part in
-    /// no arithmetic — the money fields below are the same whether it is set or not — so a consumer that
+    /// The variant's menu type (paid, free or contract), stamped onto every line it produced. It takes
+    /// part in no arithmetic — the money fields below are the same whatever it is — so a consumer that
     /// quotes a free menu as 0 does that itself.
     /// </summary>
-    public bool IsFree { get; set; }
+    public MenuType MenuType { get; set; }
 
     // ---- source-row correlation ---------------------------------------------------------------
 

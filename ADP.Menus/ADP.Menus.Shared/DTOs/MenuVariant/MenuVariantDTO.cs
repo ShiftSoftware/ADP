@@ -3,6 +3,7 @@ using ShiftSoftware.ADP.Menus.Shared.DTOs.LabourDetails;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.LabourRate;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.Menu;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.ServiceInterval;
+using ShiftSoftware.ADP.Menus.Shared.Enums;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
 using System.ComponentModel.DataAnnotations;
 
@@ -37,8 +38,8 @@ public class MenuVariantDTO : ShiftEntityViewAndUpsertDTO
 
     public decimal? DiscountPercentage { get; set; }
 
-    /// <summary>The variant's menu is offered free of charge. A flag only — it changes no price.</summary>
-    public bool IsFree { get; set; }
+    /// <summary>How the variant's menu is offered — paid, free or under contract. A label only — it changes no price.</summary>
+    public MenuType MenuType { get; set; }
 
     public bool HasStandaloneItems { get; set; }
 

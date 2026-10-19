@@ -1,5 +1,6 @@
 using ShiftSoftware.ADP.Menus.Data.DataServices;
 using ShiftSoftware.ADP.Menus.Generation;
+using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Service.Cosmos;
 
 namespace ShiftSoftware.ADP.Menus.Tests;
@@ -177,43 +178,46 @@ public class CosmosToGenerationAggregatorTests
     }
 
     /// <summary>
-    /// The variant's free-of-charge flag survives every hop: EF row → replication mapper → Cosmos
-    /// document → aggregator → generated line. It is authored per variant and read per line, and there is
-    /// no other way to find out whether the two ends agree.
+    /// The variant's menu type survives every hop: EF row → replication mapper → Cosmos document →
+    /// aggregator → generated line. It is authored per variant and read per line, and there is no other
+    /// way to find out whether the two ends agree.
     /// </summary>
-    [Fact]
-    public void TheFreeFlag_SurvivesTheRoundTrip()
+    [Theory]
+    [InlineData(MenuCosmosDocumentFixture.PaidVariantID, MenuType.Paid)]
+    [InlineData(MenuCosmosDocumentFixture.FreeVariantID, MenuType.Free)]
+    [InlineData(MenuCosmosDocumentFixture.ContractVariantID, MenuType.Contract)]
+    public void TheMenuType_SurvivesTheRoundTrip(long variantID, MenuType menuType)
     {
-        var documents = MenuCosmosDocumentFixture.WithFreeAndPaidVariants();
+        var documents = MenuCosmosDocumentFixture.WithEveryMenuType();
 
         // On the document, as replication wrote it.
-        Assert.True(documents.Variants.Single(variant => variant.VariantID == MenuCosmosDocumentFixture.FreeVariantID).IsFree);
-        Assert.False(documents.Variants.Single(variant => variant.VariantID == MenuCosmosDocumentFixture.PaidVariantID).IsFree);
+        Assert.Equal(menuType, documents.Variants.Single(variant => variant.VariantID == variantID).MenuType);
 
         // On the neutral request the generator is handed.
         var request = CosmosToGenerationAggregator.Build(documents);
-        Assert.True(request.Variants.Single(variant => variant.VariantID == MenuCosmosDocumentFixture.FreeVariantID).IsFree);
-        Assert.False(request.Variants.Single(variant => variant.VariantID == MenuCosmosDocumentFixture.PaidVariantID).IsFree);
+        Assert.Equal(menuType, request.Variants.Single(variant => variant.VariantID == variantID).MenuType);
 
-        // And on every line each variant produced — periodic and standalone alike.
-        var lines = Generate(documents);
+        // And on every line the variant produced — periodic and standalone alike.
+        var lines = Generate(documents).Where(line => line.VariantID == variantID).ToList();
         Assert.NotEmpty(lines);
-        Assert.All(lines, line => Assert.Equal(line.VariantID == MenuCosmosDocumentFixture.FreeVariantID, line.IsFree));
-        Assert.Contains(lines, line => line.IsFree && line.IsStandalone);
-        Assert.Contains(lines, line => line.IsFree && !line.IsStandalone);
+        Assert.All(lines, line => Assert.Equal(menuType, line.MenuType));
+        Assert.Contains(lines, line => line.IsStandalone);
+        Assert.Contains(lines, line => !line.IsStandalone);
     }
 
     /// <summary>
-    /// A document written before the field existed reads as not-free rather than throwing or defaulting
-    /// to free — the safe direction, since "free" is the claim that gives something away.
+    /// A document written before the field existed reads as paid rather than throwing or defaulting to
+    /// free — the safe direction, since "free" is the claim that gives something away.
     /// </summary>
     [Fact]
-    public void ADocumentWithoutTheFreeFlag_ReadsAsNotFree()
+    public void ADocumentWithoutTheMenuType_ReadsAsPaid()
     {
+        Assert.Equal(MenuType.Paid, default(MenuType));
+
         var documents = MenuCosmosDocumentFixture.Build();
 
-        Assert.All(documents.Variants, variant => Assert.False(variant.IsFree));
-        Assert.All(Generate(documents), line => Assert.False(line.IsFree));
+        Assert.All(documents.Variants, variant => Assert.Equal(MenuType.Paid, variant.MenuType));
+        Assert.All(Generate(documents), line => Assert.Equal(MenuType.Paid, line.MenuType));
     }
 
     // ---- what the aggregator filters, and what it must not -----------------------------------------

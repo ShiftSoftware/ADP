@@ -2,7 +2,7 @@ import type { VehicleServiceMenuPartDTO } from './vehicle-service-menu-part-dto'
 export type VehicleServiceMenuLineDTO = {
     variantID: number;
     variantName: string;
-    isFree: boolean;
+    menuType: 'Paid' | 'Free' | 'Contract';
     lineKey: string;
     code: string;
     labourCode: string;

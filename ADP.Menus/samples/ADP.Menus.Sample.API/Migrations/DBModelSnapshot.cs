@@ -467,9 +467,6 @@ namespace ShiftSoftware.ADP.Menus.Sample.API.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsFree")
-                        .HasColumnType("bit");
-
                     b.Property<decimal>("LabourRate")
                         .HasPrecision(12, 2)
                         .HasColumnType("decimal(12,2)");
@@ -495,6 +492,9 @@ namespace ShiftSoftware.ADP.Menus.Sample.API.Migrations
                     b.Property<string>("MenuPrefix")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("MenuType")
+                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()

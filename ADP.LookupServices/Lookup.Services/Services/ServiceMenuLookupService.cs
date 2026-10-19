@@ -83,11 +83,11 @@ public class ServiceMenuLookupService
         if (documents.IsEmpty)
             return result;
 
-        // NotFound is answered by the partition, above — the free filter runs after it and can legitimately
+        // NotFound is answered by the partition, above — the menu-type filter runs after it and can legitimately
         // leave Variants empty on a model that HAS a menu. Do not fold the two together.
         result.NotFound = false;
         result.Variants = ServiceMenuScheduleEvaluator.Evaluate(
-            generationEvaluator.Evaluate(documents, config, request.FreeFilter));
+            generationEvaluator.Evaluate(documents, config, request.MenuTypes));
 
         return result;
     }
@@ -123,7 +123,7 @@ public class ServiceMenuLookupService
         var config = await generationEvaluator.ResolveConfigAsync(request);
         var documents = await storageService.GetMenuDocumentsAsync(request.BasicModelCode, cancellationToken);
 
-        return generationEvaluator.Evaluate(documents, config, request.FreeFilter);
+        return generationEvaluator.Evaluate(documents, config, request.MenuTypes);
     }
 
     /// <summary>
@@ -148,7 +148,7 @@ public class ServiceMenuLookupService
     /// through the vehicle lookup, whose menu section already contains these faults per vehicle.</para>
     /// </summary>
     /// <param name="sharedRequest">
-    /// The configuration every code generates under: country, language, transfer rate and free filter.
+    /// The configuration every code generates under: country, language, transfer rate and menu-type filter.
     /// Its <see cref="ServiceMenuLookupRequest.BasicModelCode"/> is ignored — the codes come from
     /// <paramref name="basicModelCodes"/>. Null means all defaults, exactly like the single lookup.
     /// </param>
@@ -177,12 +177,12 @@ public class ServiceMenuLookupService
             };
 
             // The same two-step answer as the single lookup: NotFound comes from the stored documents,
-            // and the free filter runs after it — a model whose menu the filter empties is still Found.
+            // and the menu-type filter runs after it — a model whose menu the filter empties is still Found.
             if (!documents.IsEmpty)
             {
                 result.NotFound = false;
                 result.Variants = ServiceMenuScheduleEvaluator.Evaluate(
-                    generationEvaluator.Evaluate(documents, config, sharedRequest?.FreeFilter ?? ServiceMenuFreeFilter.All));
+                    generationEvaluator.Evaluate(documents, config, sharedRequest?.MenuTypes));
             }
 
             results.Add(result);
