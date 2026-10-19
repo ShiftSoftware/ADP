@@ -373,5 +373,76 @@
     "serviceItems": [],
     "accessories": [],
     "basicModelCode": "FZP502K"
+  },
+  "ZU8MC2VH8T6636219": {
+    "classifications": [],
+    "vin": "ZU8MC2VH8T6636219",
+    "identifiers": {
+      "vin": "ZU8MC2VH8T6636219",
+      "variant": "50127RD202601",
+      "katashiki": "DKZD22F-HWQLM",
+      "color": "254",
+      "trim": "26",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Meridia",
+      "companyID": "10",
+      "companyName": "Sample Dealer",
+      "branchID": "100",
+      "branchName": "Main Showroom",
+      "invoiceDate": "2026-04-09",
+      "invoiceNumber": "90331472",
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Sample Distributor",
+        "branchID": "500",
+        "branchName": "Distributor HQ",
+        "invoiceNumber": "55120938"
+      },
+      "intermediaries": [
+        {
+          "companyID": "7",
+          "companyName": "Regional Importer",
+          "branchID": "700",
+          "branchName": "Importer Hub",
+          "invoiceDate": "2026-04-02"
+        }
+      ]
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": true,
+      "warrantyStartDate": "2026-04-09",
+      "warrantyEndDate": "2029-04-09",
+      "startState": "Started",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": [],
+      "freeServiceStartDate": "2026-04-09"
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {
+      "modelCode": "50127",
+      "sfx": "RD",
+      "modelYear": 2026
+    },
+    "vehicleSpecification": {
+      "modelCode": "50127",
+      "modelYear": 2026,
+      "modelDescription": "VELDIN",
+      "variantDescription": "1.8 / Base",
+      "cylinders": " 0 ",
+      "doors": " 0 ",
+      "fuel": "Petrol",
+      "tankCap": " 0 "
+    },
+    "serviceItems": [],
+    "accessories": [],
+    "basicModelCode": "DKZD22F"
   }
 }

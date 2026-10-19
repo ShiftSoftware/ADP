@@ -201,6 +201,7 @@ public class OrderPartLineModel:
 
     /// <summary>
     /// The number of corresponding labor lines associated with the parent order of this line.
+    /// A negative value means the source does not know it, and Strong consistency then does not check it.
     /// </summary>
     public int NumberOfLaborLines { get; set; }
 

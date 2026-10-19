@@ -123,25 +123,25 @@ Scenario: An activation without a company refuses the lookup
   When resolving ownership for "ZS9ZZRTY30K493785"
   Then ownership resolution fails because the service activation is incomplete
 
-# --- Ownership filters apply even when the VIN has no vehicle entries at all ---
-# Inspection-triggered items don't require a vehicle entry; their company/country
-# eligibility must still follow the activation's ownership — an unknown owner matches
-# nothing scoped (fail closed), never everything.
+# --- Inspection-triggered items scope by the inspecting company, not the owner ---
+# An inspection-activated campaign's companies are the companies whose inspections
+# activate it, so one inspection type can serve several campaigns, each for its own
+# companies. The owner (here the activation's company 10) plays no part.
 
-Scenario: Inspection items follow the activation ownership when no entry exists
+Scenario: Inspection items follow the inspecting company, not the activation ownership
   Given vehicle service activations:
     | CompanyID | CountryID | WarrantyActivationDate |
     | 10        | 7         | 2026-06-02             |
   And vehicle inspections:
-    | id     | InspectionDate | VehicleInspectionTypeID |
-    | INSP-A | 2026-06-05     | 7                       |
+    | id     | InspectionDate | VehicleInspectionTypeID | CompanyID |
+    | INSP-A | 2026-06-05     | 7                       | 1         |
   And service items:
     | ServiceItemID | Name       | ActivationTrigger | ActivationType   | VehicleInspectionTypeID | CompanyID | ActiveForMonths |
     | SI-CO10       | Inspect 10 | VehicleInspection | FirstTriggerOnly | 7                       | 10        | 12              |
     | SI-CO1        | Inspect 1  | VehicleInspection | FirstTriggerOnly | 7                       | 1         | 12              |
   When evaluating service items for "ZS9ZZRTY30K493785" with language "en"
-  Then service item "SI-CO10" is in the result
-  And service item "SI-CO1" is not in the result
+  Then service item "SI-CO1" is in the result
+  And service item "SI-CO10" is not in the result
 
 # --- Country: the activation's company sits in a different country than the stock entry ---
 

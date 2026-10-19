@@ -292,6 +292,9 @@ const DEFAULTS = {
   ],
   language: true,
   environment: true,
+  // The environment a page opens on when neither the link nor this tab has chosen one. Most pages
+  // are fine on the first; a page whose states only one environment reaches names it here.
+  defaultEnvironment: null,
   today: true,
   theme: true,
   connection: {},
@@ -383,6 +386,8 @@ window.harness = function harness(options = {}) {
     // Which component's tags the rail is showing. Null on a single-component
     // page, which then uses the page's own `labels`.
     activeComponent: null,
+    // True for the frames a tab change re-tags the chips in, so their tooltips cannot animate.
+    retagging: false,
     // How many fixtures `has` filtered out. Shown, never silently dropped.
     hidden: 0,
     fixture: null,
@@ -422,6 +427,12 @@ window.harness = function harness(options = {}) {
       // in what order, is the page's own answer and is the same on every tab -- one VIN list for
       // the whole page, so changing tab re-tags the chips instead of replacing them.
       this.activeComponent = name;
+
+      // Re-tagging changes every chip's tooltip text at once. With the tooltip fade live, a browser
+      // that animates the change shows the whole rail's tooltips together and fades them out.
+      this.retagging = true;
+      const frame = callback => (typeof requestAnimationFrame === 'function' ? requestAnimationFrame(callback) : setTimeout(callback, 16));
+      frame(() => frame(() => (this.retagging = false)));
     },
 
     /** Two different cuts: "no data" would be a lie for the tagged-list one. */
@@ -540,7 +551,7 @@ window.harness = function harness(options = {}) {
         if (!this.environments.length) throw new Error('the generated index contains no environments');
 
         const url = new URL(window.location.href);
-        const selected = chooseEnvironment(this.environments, url.searchParams.get('env'), readStoredEnvironment());
+        const selected = chooseEnvironment(this.environments, url.searchParams.get('env'), readStoredEnvironment(), config.defaultEnvironment);
 
         await this.loadEnvironment(selected.name, true);
       } catch (error) {
@@ -1002,12 +1013,15 @@ function summarise(response) {
  * takes, so a page with a field follows `fixture` to fill it.
  */
 const FIXTURES = /* html */ `
-  <div class="flex flex-col">
+  <div class="flex flex-col" :class="retagging && 'harness-retagging'">
     <div class="flex flex-wrap gap-1.5" role="group" aria-label="Fixtures">
       <template x-for="item in fixtures" :key="item.value">
         <!-- On the wrapper, not the button: the native title waits ~1s, and the button clips its
-             own overflow for the marker, which would clip a tooltip drawn from it. -->
-        <span class="inline-flex" :class="{ 'tooltip tooltip-bottom': tagsAsMarker && item.note }" :data-tip="(tagsAsMarker && item.note) || null">
+             own overflow for the marker, which would clip a tooltip drawn from it. The class is on
+             every VIN chip in every tab and only the text changes: toggling it per tab created and
+             destroyed each tooltip, and a created one could flash in before fading out. An empty
+             data-tip is daisyUI's "no tooltip", so an untagged chip still shows nothing on hover. -->
+        <span class="inline-flex" :class="{ 'tooltip tooltip-bottom': tagsAsMarker && item.vin }" :data-tip="tagsAsMarker && item.vin ? item.note || '' : null">
         <button
           type="button"
           class="btn btn-xs relative overflow-hidden ps-1.5 font-mono font-normal"

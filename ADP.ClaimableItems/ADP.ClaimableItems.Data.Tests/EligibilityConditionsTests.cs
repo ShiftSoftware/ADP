@@ -133,7 +133,7 @@ public class EligibilityConditionsTests
     // Top-level leaves follow the same shape rules as alternatives; each of these would hide the item for every vehicle.
     [InlineData("""[{"field":"campaignVinEntries.campaignId","values":["500"]}]""")]
     [InlineData("""[{"field":"isAuthorized","operator":"Equals","values":["maybe"]}]""")]
-    [InlineData("""[{"field":"vehicleInspections.companyID","values":["5"],"scope":{"selection":"All"}}]""")]
+    [InlineData("""[{"field":"vehicleInspections.companyID","values":["5"],"scope":{"selection":"All","inspectionTypeID":0}}]""")]
     [InlineData("""[{"field":"serviceHistory.laborLines.packageCode","values":["45000"]}]""")]
     public void Api_validator_rejects_invalid_json_instead_of_dropping_conditions(string json)
     {
@@ -158,6 +158,7 @@ public class EligibilityConditionsTests
     [Theory]
     [InlineData("""[{"field":"isAuthorized","operator":"Equals","values":["false"]}]""")]
     [InlineData("""[{"field":"vehicleInspections.companyID","values":["5"],"scope":{"selection":"All","inspectionTypeID":10},"whenUnmet":"Lock"}]""")]
+    [InlineData("""[{"field":"vehicleInspections.companyID","values":["5"],"scope":{"selection":"All"}}]""")]
     [InlineData("""[{"field":"vehicleClassifications.code","values":["member"],"whenUnmet":"Miss"}]""")]
     public void Supported_top_level_leaves_keep_their_own_unmet_behavior(string json) =>
         Assert.True(EligibilityConditionsJson.IsValid(json));

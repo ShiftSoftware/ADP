@@ -101,7 +101,7 @@ public partial class VehicleServiceItemEvaluator
         using (Trace.Stage("Eligibility"))            result.AddRange(BuildEligibleFreeItems(serviceItems, vehicle, ownership, freeServiceStartDate, languageCode, baseScheduleMaximumMileage, !showingInactivatedItems));
         using (Trace.Stage("PaidItems"))              result.AddRange(BuildPaidItems(languageCode));
         using (Trace.Stage("WarrantyRollingExpiry"))  ApplyWarrantyRollingExpiry(result, freeServiceStartDate);
-        using (Trace.Stage("InspectionExpansion"))    ApplyVehicleInspectionExpansion(result);
+        using (Trace.Stage("InspectionExpansion"))    ApplyVehicleInspectionExpansion(result, serviceItems);
         using (Trace.Stage("ManualVinExpansion"))     ApplyManualVinEntryExpansion(result, serviceItems, vehicle);
         using (Trace.Stage("ValidityOverrides"))      ApplyValidityOverrides(result, vehicle);
 
@@ -277,7 +277,7 @@ public partial class VehicleServiceItemEvaluator
         return $"Anchored on unlock {item.UnlockedOn:yyyy-MM-dd}; rolling slot ran to {rollingExpiry:yyyy-MM-dd} and stays taken.";
     }
 
-    private void ApplyVehicleInspectionExpansion(List<VehicleServiceItemDTO> result)
+    private void ApplyVehicleInspectionExpansion(List<VehicleServiceItemDTO> result, List<ServiceItemModel> catalog)
     {
         var inspectionItems = result
             .Where(x => x.TypeEnum == VehcileServiceItemTypes.Free
@@ -289,8 +289,9 @@ public partial class VehicleServiceItemEvaluator
         var newItems = new List<VehicleServiceItemDTO>();
         foreach (var item in inspectionItems)
         {
+            var definition = catalog.First(x => x.IntegrationID == item.ServiceItemID);
             var matching = (companyDataAggregate.VehicleInspections ?? Enumerable.Empty<VehicleInspectionModel>())
-                .Where(x => x.VehicleInspectionTypeID.ToString() == item.VehicleInspectionTypeID)
+                .Where(x => x.VehicleInspectionTypeID.ToString() == item.VehicleInspectionTypeID && IsByCampaignCompany(definition, x))
                 .ToList();
             var (selected, fallbackNote) = SelectInspectionsForActivation(item.CampaignActivationType, matching);
 
@@ -637,7 +638,8 @@ public partial class VehicleServiceItemEvaluator
             // A historical claim remains visible even if a static filter now hides the definition.
             // Read only its locking milestone clauses for explanatory evidence, never to re-decide
             // the claim or to manufacture a completion from the claim date.
-            var requirements = new VehicleEligibilityConditionEvaluator(companyDataAggregate, options, classificationCodes: classificationCodes, isAuthorized: isAuthorized)
+            var requirements = new VehicleEligibilityConditionEvaluator(companyDataAggregate, options, classificationCodes: classificationCodes, isAuthorized: isAuthorized,
+                    campaignInspectionTypeID: CampaignInspectionTypeID(item))
                 .Evaluate(item.EligibilityConditions?.Where(condition => condition?.WhenUnmet == EligibilityConditionUnmetBehavior.Lock))
                 .Prerequisites;
             var dto = new VehicleServiceItemDTO
@@ -904,7 +906,8 @@ public partial class VehicleServiceItemEvaluator
         // The static filters answer with facts about the vehicle — its brand, its market, its owner —
         // and an item failing one of those was never this customer's to see. Only the custom
         // conditions can produce something worth showing unclaimable.
-        var evaluator = new VehicleEligibilityConditionEvaluator(companyDataAggregate, options, Trace.IsEnabled, classificationCodes, isAuthorized);
+        var evaluator = new VehicleEligibilityConditionEvaluator(companyDataAggregate, options, Trace.IsEnabled, classificationCodes, isAuthorized,
+            CampaignInspectionTypeID(item));
         var outcome = evaluator.EvaluateTolerance(item, baseScheduleMaximumMileage, hasCalculatedStart ? freeServiceStartDate : null,
             options.ServiceRewardTolerance, out var toleranceDiagnostic);
         if (toleranceDiagnostic is not null)
@@ -938,6 +941,9 @@ public partial class VehicleServiceItemEvaluator
         return EligibilityRejectionStage.None;
     }
 
+    private static long? CampaignInspectionTypeID(ServiceItemModel item) =>
+        item.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.VehicleInspection ? item.VehicleInspectionTypeID : null;
+
     private static bool MatchesBrand(ServiceItemModel item, VehicleEntryModel vehicle) =>
         vehicle is null || item.BrandIDs is null || item.BrandIDs.Any(a => a == vehicle.BrandID);
 
@@ -946,8 +952,15 @@ public partial class VehicleServiceItemEvaluator
     // company. No vehicle-null leniency here: an unknown (null) owner matches nothing
     // scoped, so another company's items can never leak in (fail closed).
 
+    // An inspection-activated campaign's companies are the inspecting companies, not the owner:
+    // only their inspections activate it (IsWithinCampaignWindow, ApplyVehicleInspectionExpansion),
+    // so one inspection type can serve several campaigns, each for its own companies.
     private static bool MatchesCompany(ServiceItemModel item, VehicleOwnership ownership) =>
-        item.CompanyIDs is null || !item.CompanyIDs.Any() || item.CompanyIDs.Any(a => a == ownership?.CompanyID);
+        item.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.VehicleInspection
+        || item.CompanyIDs is null || !item.CompanyIDs.Any() || item.CompanyIDs.Any(a => a == ownership?.CompanyID);
+
+    private static bool IsByCampaignCompany(ServiceItemModel item, VehicleInspectionModel inspection) =>
+        item.CompanyIDs is null || !item.CompanyIDs.Any() || item.CompanyIDs.Any(a => a == inspection.CompanyID);
 
     private static bool MatchesCountry(ServiceItemModel item, VehicleOwnership ownership) =>
         item.CountryIDs is null || !item.CountryIDs.Any() || item.CountryIDs.Any(a => a == ownership?.CountryID);
@@ -960,6 +973,7 @@ public partial class VehicleServiceItemEvaluator
             ClaimableItemCampaignActivationTrigger.VehicleInspection =>
                 companyDataAggregate.VehicleInspections?.Any(i =>
                     i.VehicleInspectionTypeID == item.VehicleInspectionTypeID &&
+                    IsByCampaignCompany(item, i) &&
                     i.InspectionDate >= item.CampaignStartDate &&
                     i.InspectionDate <= item.CampaignEndDate) ?? false,
             ClaimableItemCampaignActivationTrigger.ManualVinEntry =>
