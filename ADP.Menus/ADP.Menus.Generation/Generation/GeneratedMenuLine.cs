@@ -61,7 +61,8 @@ public class GeneratedMenuLine
     public string LabourCode { get; set; }
 
     /// <summary>
-    /// Periodic lines: the service interval's description, verbatim (NOT language-resolved).
+    /// Periodic lines: the service interval's description for the variant's menu type, verbatim (NOT
+    /// language-resolved).
     /// Standalone lines: the replacement item's friendly name, or the standalone group's name.
     /// </summary>
     public string Description { get; set; }

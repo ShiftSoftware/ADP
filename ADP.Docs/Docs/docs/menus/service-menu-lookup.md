@@ -112,6 +112,10 @@ field on the Menu tab of a menu variant. That travels through replication to
 `ServiceMenuVariantDTO.MenuType` on the nested shape and to `VehicleServiceMenuLineDTO.MenuType` on every line
 of the flat one, serialized as the name (`"Free"`), not a number.
 
+The type also picks a scheduled line's `Description`: each service interval is authored with a *Paid*, a
+*Free* and a *Contract* description, and a line takes the one for its variant's type. Standalone lines are
+unaffected — they carry the item's or group's name.
+
 `MenuTypes` narrows a request to any subset of them; null or empty returns every variant:
 
 ```csharp

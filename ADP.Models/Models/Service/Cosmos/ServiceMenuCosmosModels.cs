@@ -58,8 +58,21 @@ public class ServiceIntervalCosmosModel
 
     public string Code { get; set; }
 
-    /// <summary>Used verbatim as a periodic line's description — never language-resolved.</summary>
-    public string Description { get; set; }
+    /// <summary>
+    /// The periodic-line description for a <see cref="MenuType.Paid"/> variant. The three descriptions
+    /// are picked by the variant's <see cref="MenuVariantCosmosModel.MenuType"/> and used verbatim —
+    /// never language-resolved.
+    ///
+    /// <para>Documents written while the interval had a single <c>Description</c> carry none of the
+    /// three until a catch-up sweep refreshes them, and their lines read with no description.</para>
+    /// </summary>
+    public string PaidDescription { get; set; }
+
+    /// <summary>The periodic-line description for a <see cref="MenuType.Free"/> variant.</summary>
+    public string FreeDescription { get; set; }
+
+    /// <summary>The periodic-line description for a <see cref="MenuType.Contract"/> variant.</summary>
+    public string ContractDescription { get; set; }
 
     public int ValueInMeter { get; set; }
 

@@ -841,13 +841,17 @@ namespace ShiftSoftware.ADP.Menus.Sample.API.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("ContractDescription")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTimeOffset>("CreateDate")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<long?>("CreatedByUserID")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("Description")
+                    b.Property<string>("FreeDescription")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -869,6 +873,10 @@ namespace ShiftSoftware.ADP.Menus.Sample.API.Migrations
 
                     b.Property<long?>("LastSavedByUserID")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("PaidDescription")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<long>("ServiceIntervalGroupID")
                         .HasColumnType("bigint");

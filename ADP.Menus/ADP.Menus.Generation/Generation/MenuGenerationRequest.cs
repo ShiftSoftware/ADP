@@ -217,10 +217,28 @@ public class MenuGenerationServiceInterval
     public string Code { get; set; }
 
     /// <summary>
-    /// Used verbatim as a periodic line's description — NOT language-resolved, matching the source
-    /// behaviour. A multi-language value stored here surfaces raw.
+    /// The periodic-line description for a <see cref="MenuType.Paid"/> variant. Which of the three a line
+    /// gets is <see cref="DescriptionFor"/>'s call. Used verbatim — NOT language-resolved, matching the
+    /// source behaviour. A multi-language value stored here surfaces raw.
     /// </summary>
-    public string Description { get; set; }
+    public string PaidDescription { get; set; }
+
+    /// <summary>The periodic-line description for a <see cref="MenuType.Free"/> variant.</summary>
+    public string FreeDescription { get; set; }
+
+    /// <summary>The periodic-line description for a <see cref="MenuType.Contract"/> variant.</summary>
+    public string ContractDescription { get; set; }
+
+    /// <summary>
+    /// The description a periodic line of a variant typed <paramref name="menuType"/> carries. A value
+    /// outside the enum reads as <see cref="MenuType.Paid"/>, the same default the type itself has.
+    /// </summary>
+    public string DescriptionFor(MenuType menuType) => menuType switch
+    {
+        MenuType.Free => FreeDescription,
+        MenuType.Contract => ContractDescription,
+        _ => PaidDescription,
+    };
 
     public int ValueInMeter { get; set; }
     public long GroupID { get; set; }

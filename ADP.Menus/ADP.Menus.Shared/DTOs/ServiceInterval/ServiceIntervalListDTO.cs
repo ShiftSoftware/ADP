@@ -9,6 +9,5 @@ public class ServiceIntervalListDTO : ShiftEntityListDTO
     public string Code { get; set; }
     public string FullName { get; set; }
     public int ValueInMeter { get; set; }
-    public string? Description { get; set; }
     public string ServiceIntervalGroupName { get; set; }
 }

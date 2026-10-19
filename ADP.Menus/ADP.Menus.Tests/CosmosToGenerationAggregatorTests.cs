@@ -206,6 +206,29 @@ public class CosmosToGenerationAggregatorTests
     }
 
     /// <summary>
+    /// A scheduled line carries the interval description authored for its variant's menu type — each
+    /// variant picks its own, from the same interval. Standalone lines are unaffected: they carry the
+    /// item's or group's name whatever the type.
+    /// </summary>
+    [Theory]
+    [InlineData(MenuCosmosDocumentFixture.PaidVariantID, "Plain description")]
+    [InlineData(MenuCosmosDocumentFixture.FreeVariantID, "Plain description (free)")]
+    [InlineData(MenuCosmosDocumentFixture.ContractVariantID, "Plain description (contract)")]
+    public void APeriodicLine_TakesTheDescriptionOfItsMenuType(long variantID, string expected)
+    {
+        var lines = Generate(MenuCosmosDocumentFixture.WithEveryMenuType())
+            .Where(line => line.VariantID == variantID)
+            .ToList();
+
+        Assert.Equal(expected, Assert.Single(lines, line => line.LineType == MenuLineType.Periodic && line.MenuCodeSegment == "S01").Description);
+
+        var paidStandalone = Generate(MenuCosmosDocumentFixture.Build())
+            .Where(line => line.IsStandalone)
+            .Select(line => line.Description);
+        Assert.Equal(paidStandalone, lines.Where(line => line.IsStandalone).Select(line => line.Description));
+    }
+
+    /// <summary>
     /// A document written before the field existed reads as paid rather than throwing or defaulting to
     /// free — the safe direction, since "free" is the claim that gives something away.
     /// </summary>

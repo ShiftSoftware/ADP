@@ -13,7 +13,15 @@ public class ServiceIntervalDTO : ShiftEntityViewAndUpsertDTO
 
     [Required]
     public int? ValueInMeter { get; set; }
-    public string? Description { get; set; }
+
+    /// <summary>The description a scheduled line of a <c>Paid</c> variant carries.</summary>
+    public string? PaidDescription { get; set; }
+
+    /// <summary>The description a scheduled line of a <c>Free</c> variant carries.</summary>
+    public string? FreeDescription { get; set; }
+
+    /// <summary>The description a scheduled line of a <c>Contract</c> variant carries.</summary>
+    public string? ContractDescription { get; set; }
 
     [ServiceIntervalGroupHashId]
     [Required]

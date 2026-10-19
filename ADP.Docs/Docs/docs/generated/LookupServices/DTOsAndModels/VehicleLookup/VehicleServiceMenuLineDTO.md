@@ -13,7 +13,7 @@ One service on the vehicle's menu — the DMS menu code and labour code, and the
 | LineKey <div><strong>``string``</strong></div> | Stable identity of this line, independent of language — use it to correlate the same service across language requests. Never key on `Code` for that: it is language-dependent by construction. |
 | Code <div><strong>``string``</strong></div> | The generated menu code, as the DMS knows it. |
 | LabourCode <div><strong>``string``</strong></div> | The generated labour operation code. |
-| Description <div><strong>``string``</strong></div> | The service interval's description for a scheduled service; the item's or group's name for a standalone one. |
+| Description <div><strong>``string``</strong></div> | The service interval's description for a scheduled service — the one authored for `MenuType`; the item's or group's name for a standalone one. |
 | LineType <div><strong>``ServiceMenuLineType``</strong></div> | What produced this line. Serialized as a string so the generated TypeScript union is honest about the wire format. |
 | IsStandalone <div><strong>``bool``</strong></div> | Convenience over `LineType`; both standalone shapes report true. |
 | ServiceIntervalCode <div><strong>``string``</strong></div> | The service interval's code. Null on standalone services. |

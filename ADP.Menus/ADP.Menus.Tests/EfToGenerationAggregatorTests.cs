@@ -123,7 +123,7 @@ public class EfToGenerationAggregatorTests
             Code = "S01",
             FullName = "Interval 501",
             ValueInMeter = 10000,
-            Description = "Member of the group",
+            PaidDescription = "Member of the group",
             ServiceIntervalGroupID = group.ID,
             ServiceIntervalGroup = group,
         };
@@ -134,7 +134,7 @@ public class EfToGenerationAggregatorTests
             Code = "S02",
             FullName = "Interval 502",
             ValueInMeter = 20000,
-            Description = "Points at the group by FK only",
+            PaidDescription = "Points at the group by FK only",
             ServiceIntervalGroupID = group.ID,
             ServiceIntervalGroup = group,
         };

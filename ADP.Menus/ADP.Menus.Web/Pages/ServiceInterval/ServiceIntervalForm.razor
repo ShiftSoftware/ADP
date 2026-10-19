@@ -26,18 +26,59 @@
                           @bind-Value="TheItem.ValueInMeter"
                           For="@(() => TheItem.ValueInMeter)" />
 
-    <MudTextFieldExtended OnlyValidateIfDirty="true"
-                          Label="Description"
-                          @bind-Value="TheItem.Description"
-                          For="@(() => TheItem.Description)" />
-
     <ShiftAutocomplete Label="Service Interval Group"
                                    @bind-Value="TheItem.ServiceIntervalGroup"
                                    TEntitySet="ServiceIntervalGroupListDTO"
                                    EntitySet="@($"{MenuOptions.ResolvedRoutePrefix}ServiceIntervalGroup")"
                                    For="() => TheItem.ServiceIntervalGroup" />
 
+    @* The three are one thing — the interval's description, once per menu type — so they sit in one card. *@
+    <MudPaper Outlined="true" Class="service-interval-descriptions">
+        <MudText Typo="Typo.subtitle1" Class="service-interval-descriptions__title">Descriptions</MudText>
+        <MudText Typo="Typo.body2" Class="service-interval-descriptions__hint">
+            A scheduled menu line shows the description for its variant's menu type.
+        </MudText>
+
+        <MudTextFieldExtended OnlyValidateIfDirty="true"
+                              Label="Paid"
+                              @bind-Value="TheItem.PaidDescription"
+                              For="@(() => TheItem.PaidDescription)" />
+
+        <MudTextFieldExtended OnlyValidateIfDirty="true"
+                              Label="Free"
+                              @bind-Value="TheItem.FreeDescription"
+                              For="@(() => TheItem.FreeDescription)" />
+
+        <MudTextFieldExtended OnlyValidateIfDirty="true"
+                              Label="Contract"
+                              @bind-Value="TheItem.ContractDescription"
+                              For="@(() => TheItem.ContractDescription)" />
+    </MudPaper>
+
 </ShiftEntityForm>
+
+<style>
+    /* Matches the menu form's section cards (menu-section-card / menu-section-title). */
+    .service-interval-descriptions {
+        padding: 16px 20px;
+        margin-top: 24px;
+        background-color: var(--mud-palette-surface);
+    }
+
+    .service-interval-descriptions__title {
+        margin: 0 0 4px 0;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-size: 0.8rem;
+        color: var(--mud-palette-primary);
+    }
+
+    .service-interval-descriptions__hint {
+        margin: 0 0 8px 0;
+        color: var(--mud-palette-text-secondary);
+    }
+</style>
 
 @code {
     private MenuWebOptions MenuOptions => MenuOptionsAccessor.Value;

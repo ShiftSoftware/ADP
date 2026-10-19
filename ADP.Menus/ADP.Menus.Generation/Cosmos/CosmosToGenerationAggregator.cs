@@ -349,7 +349,9 @@ public static class CosmosToGenerationAggregator
             Code = interval.Code,
 
             // Verbatim, NOT language-resolved — matching the source (open item O10).
-            Description = interval.Description,
+            PaidDescription = interval.PaidDescription,
+            FreeDescription = interval.FreeDescription,
+            ContractDescription = interval.ContractDescription,
 
             ValueInMeter = interval.ValueInMeter,
 

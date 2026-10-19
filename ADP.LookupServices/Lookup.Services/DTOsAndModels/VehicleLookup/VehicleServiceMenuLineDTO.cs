@@ -63,8 +63,8 @@ public class VehicleServiceMenuLineDTO
     public string LabourCode { get; set; }
 
     /// <summary>
-    /// The service interval's description for a scheduled service; the item's or group's name for a standalone
-    /// one.
+    /// The service interval's description for a scheduled service — the one authored for <see cref="MenuType"/>;
+    /// the item's or group's name for a standalone one.
     /// </summary>
     public string Description { get; set; }
 

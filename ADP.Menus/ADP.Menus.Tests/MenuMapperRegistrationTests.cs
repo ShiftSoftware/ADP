@@ -108,7 +108,7 @@ public class MenuMapperRegistrationTests
         foreach (var (entity, document) in ReplicatedDocuments)
             Assert.True(mapper.CanMap(entity, document), $"{entity.Name} -> {document.Name}");
 
-        var interval = new ServiceInterval(501) { Code = "S1", FullName = "Interval 1", Description = "d", ServiceIntervalGroupID = 61 };
+        var interval = new ServiceInterval(501) { Code = "S1", FullName = "Interval 1", PaidDescription = "d", ServiceIntervalGroupID = 61 };
         var document501 = MenuCosmosDocuments.Map(mapper, interval);
         Assert.Equal("501", document501.id);
         Assert.Equal(501, document501.ServiceIntervalID);

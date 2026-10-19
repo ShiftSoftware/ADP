@@ -244,7 +244,9 @@ public static class EfToGenerationAggregator
         intervals[source.ID] = new MenuGenerationServiceInterval
         {
             Code = source.Code,
-            Description = source.Description,
+            PaidDescription = source.PaidDescription,
+            FreeDescription = source.FreeDescription,
+            ContractDescription = source.ContractDescription,
             ValueInMeter = source.ValueInMeter,
 
             // Carried for consumers; the generator never uses it to decide group membership.

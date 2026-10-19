@@ -59,31 +59,45 @@ public class MenuExportService
 
         // Materialised rather than returned lazily: report exporters walk the sequence more than once
         // (once to size the parts columns, once to write the rows), and the fold is not cheap.
-        return MenuCodeGenerator.Generate(request, config).Select(MapToReportLine).ToList();
+        return MenuCodeGenerator.Generate(request, config)
+            .Select(line => MapToReportLine(line, request.Reference))
+            .ToList();
     }
 
-    private static MenuLineDTO MapToReportLine(GeneratedMenuLine line) => new()
+    private static MenuLineDTO MapToReportLine(GeneratedMenuLine line, MenuGenerationReferenceData reference)
     {
-        Code = line.Code,
-        BrandID = line.BrandID,
-        BasicModelCode = line.BasicModelCode,
-        Model = line.Model,
-        Description = line.Description,
-        LabourCode = line.LabourCode,
-        LabourRate = line.LabourRate,
-        AllowedTime = line.AllowedTime,
-        Consumable = line.Consumable,
-        DiscountPercentage = line.DiscountPercentage,
-        IsStandalone = line.IsStandalone,
-        Parts = line.Parts.Select(part => new MenuLinePartDTO
-        {
-            PartNumber = part.PartNumber,
-            Quantity = part.Quantity,
+        // A scheduled line names its interval; the report gets all three of its descriptions beside the
+        // one the generator picked, read from the same reference data the generator read.
+        var interval = line.ServiceIntervalID is long intervalId && reference.Intervals.TryGetValue(intervalId, out var found)
+            ? found
+            : null;
 
-            // Never null here — IncludePartCost is set above. An unpriced part already resolves to 0
-            // inside the generator, which is the export's historical fallback.
-            Cost = part.Cost.GetValueOrDefault(),
-            Price = part.Price,
-        }).ToList(),
-    };
+        return new()
+        {
+            Code = line.Code,
+            BrandID = line.BrandID,
+            BasicModelCode = line.BasicModelCode,
+            Model = line.Model,
+            Description = line.Description,
+            PaidDescription = interval?.PaidDescription,
+            FreeDescription = interval?.FreeDescription,
+            ContractDescription = interval?.ContractDescription,
+            LabourCode = line.LabourCode,
+            LabourRate = line.LabourRate,
+            AllowedTime = line.AllowedTime,
+            Consumable = line.Consumable,
+            DiscountPercentage = line.DiscountPercentage,
+            IsStandalone = line.IsStandalone,
+            Parts = line.Parts.Select(part => new MenuLinePartDTO
+            {
+                PartNumber = part.PartNumber,
+                Quantity = part.Quantity,
+
+                // Never null here — IncludePartCost is set above. An unpriced part already resolves to 0
+                // inside the generator, which is the export's historical fallback.
+                Cost = part.Cost.GetValueOrDefault(),
+                Price = part.Price,
+            }).ToList(),
+        };
+    }
 }

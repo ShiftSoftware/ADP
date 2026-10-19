@@ -167,7 +167,9 @@ public class ServiceIntervalDuckDBModel : IServiceMenuDuckDBRow
 {
     public long ID { get; set; }
     public string Code { get; set; }
-    public string Description { get; set; }
+    public string PaidDescription { get; set; }
+    public string FreeDescription { get; set; }
+    public string ContractDescription { get; set; }
     public int ValueInMeter { get; set; }
 
     /// <summary>Also the group membership: a group's intervals are the rows carrying its id here.</summary>
