@@ -178,8 +178,8 @@ async function settle(page: SpecPage, ms = 1500) {
 
 type Screen = { width: number; coarse: boolean; listeners: (() => void)[]; resize: (width: number) => void };
 
-async function mount(structure: Structure, width: number | null = 390, props: Record<string, unknown> = {}, pointer: 'fine' | 'coarse' = 'fine') {
-  const page = await newSpecPage({ components: COMPONENTS, html: '' });
+async function mount(structure: Structure, width: number | null = 390, props: Record<string, unknown> = {}, pointer: 'fine' | 'coarse' = 'fine', components = COMPONENTS) {
+  const page = await newSpecPage({ components, html: '' });
   const listeners: (() => void)[] = [];
   const screen: Screen = {
     width: width ?? 1024,
@@ -314,6 +314,16 @@ describe('select drawer: opting in', () => {
 
     expect(drawerOpen(page, 'year')).toBe(true);
     expect(page.body.querySelector('shift-select-dropdown.year-select')).toBeNull();
+  });
+
+  it('without shift-popover defined, as on a per-component host that did not load it, always keeps the dropdown', async () => {
+    const withoutPopover = COMPONENTS.filter(component => component !== ShiftPopover && component !== ShiftPopoverPanel);
+    const { page } = await mount(form({ selectDrawer: 'always' }), 390, {}, 'fine', withoutPopover);
+    await open(page, 'year');
+
+    expect(dropdownOpen(page, 'year')).toBe(true);
+    expect(sheetOf(page, 'year')).toBeNull();
+    expect(triggerOf(page, 'year').hasAttribute('role')).toBe(false);
   });
 
   it('a field setting wins over the form: off keeps the dropdown, a field value opts in alone', async () => {
