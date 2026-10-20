@@ -18,6 +18,8 @@
 }
 .error-message {
   @apply text-[12px] -translate-y-full text-red-500 opacity-0 transition !duration-300;
+  color: var(--shift-form-error-ink, rgb(239 68 68/var(--tw-text-opacity,1)));
+  font-size: var(--shift-form-error-font-size, 12px);
 }
 
 .display-error-message {
@@ -30,10 +32,12 @@
 
 .form-input-label {
   @apply mb-[4px];
+  margin-bottom: var(--shift-form-label-gap, 4px);
 }
 
 .form-input-label-required-star {
   @apply ms-0.5 text-red-600;
+  color: var(--shift-form-required-ink, rgb(220 38 38/var(--tw-text-opacity,1)));
 }
 
 .form-input-container {
@@ -42,6 +46,7 @@
 
 .form-input-label-container.disabled .form-input-container {
   @apply opacity-75;
+  opacity: var(--shift-form-container-disabled-opacity, .75);
 }
 
 .form-input-prefix {
@@ -54,10 +59,20 @@
 
 .form-input-label-container.disabled .form-input-style {
   @apply opacity-50;
+  opacity: var(--shift-form-field-disabled-opacity, .5);
 }
 
 .form-input-style {
   @apply border border-slate-300 appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none disabled:bg-white flex-1 py-[6px] px-[12px] transition !duration-300 rounded-md outline-none enabled:focus:border-slate-600 enabled:focus:shadow-[0_0_0_0.2rem_rgba(71,85,105,0.25)] w-full;
+  border-color: var(--shift-form-field-line, rgb(203 213 225/var(--tw-border-opacity,1)));
+  border-width: var(--shift-form-field-line-width, 1px);
+  border-radius: var(--shift-form-field-radius, .375rem);
+  padding: var(--shift-form-field-padding, 6px 12px);
+}
+
+.form-input-style:focus:enabled {
+  border-color: var(--shift-form-field-focus-line, rgb(71 85 105/var(--tw-border-opacity,1)));
+  --tw-shadow: var(--shift-form-field-focus-shadow, 0 0 0 0.2rem rgba(71,85,105,.25));
 }
 
 .form-file-input {
@@ -140,10 +155,16 @@
 
 .form-input-textarea-style {
   @apply resize-none h-[200px] py-[6px] px-[12px];
+  height: var(--shift-form-textarea-height, 200px);
 }
 
 .form-input-error-style {
   @apply !border-red-500 enabled:focus:shadow-[0_0_0_0.2rem_rgba(239,68,68,0.25)];
+  border-color: var(--shift-form-field-error-line, rgb(239 68 68/var(--tw-border-opacity,1))) !important;
+}
+
+.form-input-error-style:focus:enabled {
+  --tw-shadow: var(--shift-form-field-error-focus-shadow, 0 0 0 0.2rem rgba(239,68,68,.25));
 }
 
 /* .form-input-select {
@@ -160,6 +181,7 @@
 
 .form-input-select-icon {
   @apply size-[24px] text-[#9CA3AF] pointer-events-auto;
+  color: var(--shift-form-select-icon-ink, rgb(156 163 175/var(--tw-text-opacity,1)));
 }
 
 .form-input-container.disabled .form-input-select-icon {
