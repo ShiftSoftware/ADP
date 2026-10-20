@@ -9,7 +9,7 @@ import CoverageTimeline, { panelVerdict } from './components/CoverageTimeline';
 import { VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
-import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
+import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageCode, LanguagePacksInput, MultiLingual, registerLanguagePacks, sharedLocalesSchema } from '~features/multi-lingual';
 
 /**
  * Warranty coverage as a single dated rail: the standard warranty followed by every
@@ -27,7 +27,8 @@ import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, Language
 export class VehicleWarrantyTimeline implements MultiLingual, VehicleInfoLayoutInterface, VehicleLookupComponent, BlazorInvokable {
   // #region Localization
 
-  @Prop() language: LanguageKeys = 'en';
+  @Prop() language: LanguageCode = 'en';
+  @Prop() languagePacks?: LanguagePacksInput;
 
   @State() locale: ComponentLocale<typeof warrantyTimelineSchema> = {
     sharedLocales: sharedLocalesSchema.getDefault(),
@@ -35,11 +36,12 @@ export class VehicleWarrantyTimeline implements MultiLingual, VehicleInfoLayoutI
   };
 
   async componentWillLoad() {
+    registerLanguagePacks(this.languagePacks, 2);
     await this.changeLanguage(this.language);
   }
 
   @Watch('language')
-  async changeLanguage(newLanguage: LanguageKeys) {
+  async changeLanguage(newLanguage: LanguageCode) {
     const [sharedLocales, locale] = await Promise.all([getSharedLocal(newLanguage), getLocaleLanguage(newLanguage, 'vehicleLookup.warrantyTimeline', warrantyTimelineSchema)]);
     this.locale = { sharedLocales, ...locale };
   }

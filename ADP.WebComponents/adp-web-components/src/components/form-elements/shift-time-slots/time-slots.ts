@@ -6,6 +6,8 @@ import en from '../../../locales/booking/en.json';
 import ku from '../../../locales/booking/ku.json';
 import ru from '../../../locales/booking/ru.json';
 
+import { bundledStrings } from '~features/multi-lingual/language-packs';
+
 import { CalendarNumerals, formatDigits } from '../shift-calendar/calendar-locale';
 
 export type HourCycle = 'h23' | 'h12';
@@ -13,7 +15,7 @@ export type BookingStrings = InferType<typeof bookingSchema>;
 
 const STRINGS: Record<string, BookingStrings> = { en, ar, ku, ru };
 
-export const bookingStrings = (language: string): BookingStrings => STRINGS[language] ?? STRINGS.en;
+export const bookingStrings = (language: string): BookingStrings => bundledStrings('booking', language, STRINGS);
 
 const TIME = /^([01]\d|2[0-3]):([0-5]\d)$/;
 

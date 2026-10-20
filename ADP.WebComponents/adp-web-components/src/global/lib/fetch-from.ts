@@ -1,4 +1,4 @@
-import { LanguageKeys } from '~features/multi-lingual';
+import { LanguageCode } from '~features/multi-lingual';
 
 export type QueryString = Record<string, string | number | boolean | undefined | null> | string | undefined;
 
@@ -12,7 +12,7 @@ export type EndpointObject = {
 
 export type Endpoint = string | EndpointObject;
 
-export type FetchFromProps = { headers?: any; method?: 'POST' | 'GET'; language?: LanguageKeys; body?: object; signal?: AbortSignal; query?: QueryString; additionalPath?: string };
+export type FetchFromProps = { headers?: any; method?: 'POST' | 'GET'; language?: LanguageCode; body?: object; signal?: AbortSignal; query?: QueryString; additionalPath?: string };
 
 export function buildQueryArray(query?: QueryString): string[] {
   if (!query) return [];

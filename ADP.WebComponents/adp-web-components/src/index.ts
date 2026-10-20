@@ -9,3 +9,5 @@
  */
 
 export type * from './components.d.ts';
+export type { LanguageCode, LanguageKeys } from './features/multi-lingual/types';
+export type { LanguageMeta, LanguagePackNamespace, LanguagePacks, LanguagePacksInput } from './features/multi-lingual/language-packs';

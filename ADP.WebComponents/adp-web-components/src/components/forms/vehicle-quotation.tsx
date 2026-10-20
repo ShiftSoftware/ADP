@@ -20,7 +20,7 @@ import {
   getMarketingValues,
   resolveIsMobileForm,
 } from '~features/form-hook';
-import { GeneralFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
+import { GeneralFormLocal, LanguageCode, LanguageKeys, LanguagePacksInput, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 import getLanguageFromUrl from '~lib/get-language-from-url';
 import cn from '~lib/cn';
 import { LoaderIcon } from '~assets/loader-icon';
@@ -34,7 +34,8 @@ declare const grecaptcha: Grecaptcha;
 })
 export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>, MultiLingual {
   // #region Localization
-  @Prop({ mutable: true, reflect: true }) language: LanguageKeys;
+  @Prop({ mutable: true, reflect: true }) language: LanguageCode;
+  @Prop() languagePacks?: LanguagePacksInput;
 
   @State() locale: GeneralFormLocal = { sharedFormLocales: sharedFormLocalesSchema.getDefault() };
 

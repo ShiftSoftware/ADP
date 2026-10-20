@@ -1,11 +1,11 @@
 import { AnyObjectSchema } from 'yup';
 
-import { ComponentLocale, LanguageKeys } from './types';
+import { ComponentLocale, LanguageCode } from './types';
 
 export interface MultiLingual {
-  language: LanguageKeys;
+  language: LanguageCode;
   locale: ComponentLocale<AnyObjectSchema>;
 
   componentWillLoad: () => Promise<void>;
-  changeLanguage: (newLanguage: LanguageKeys) => Promise<void>;
+  changeLanguage: (newLanguage: LanguageCode) => Promise<void>;
 }

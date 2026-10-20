@@ -20,6 +20,7 @@ export const CALENDAR_PROPS = [
   'disabled',
   'label',
   'language',
+  'languagePacks',
   'appearance',
   'colorScheme',
   'size',

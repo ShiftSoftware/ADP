@@ -1,7 +1,7 @@
 import { forceUpdate } from '@stencil/core';
 import { AnyObjectSchema, SchemaDescription } from 'yup';
 
-import { LanguageKeys, SharedFormLocales } from '~features/multi-lingual';
+import { LanguageCode, SharedFormLocales } from '~features/multi-lingual';
 
 import { Field, FormElement, FormHookInterface, FormStateOptions, Step, Subscribers, ValidationType, WatchCallback, Watchers } from './interface';
 
@@ -85,7 +85,7 @@ export class FormHook<T> {
     this.subscribers = this.subscribers.filter(({ name }) => name !== formName);
   };
 
-  getStepLabels = (language: LanguageKeys = 'en', selectedStep?: number): Step => {
+  getStepLabels = (language: LanguageCode = 'en', selectedStep?: number): Step => {
     if (!selectedStep) selectedStep = this.formStructure?.currentStep;
 
     let step: Step = {
@@ -160,7 +160,7 @@ export class FormHook<T> {
 
   getFormErrors = () => this.formErrors;
 
-  getFormLocale = (): [{ sharedFormLocales: SharedFormLocales }, LanguageKeys] => [this.context.locale, this.context.language];
+  getFormLocale = (): [{ sharedFormLocales: SharedFormLocales }, LanguageCode] => [this.context.locale, this.context.language];
 
   setCachedValues = (newValues: Partial<T>) => {
     this.cachedValues = newValues;

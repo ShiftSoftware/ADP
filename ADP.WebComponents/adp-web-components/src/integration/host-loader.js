@@ -1,4 +1,5 @@
 const documentStateKey = Symbol.for('shiftsoftware.adp-web-components.integration-state');
+const hostConfigKey = Symbol.for('shiftsoftware.adp-web-components.host-config');
 
 function getDocumentState() {
   const global = globalThis;
@@ -79,4 +80,44 @@ export async function loadIntegrationManifest(manifestUrl) {
   }
 
   return response.json();
+}
+
+function getHostConfig() {
+  const global = globalThis;
+  const config = global[hostConfigKey];
+  if (config && typeof config === 'object' && !Array.isArray(config)) return config;
+
+  global[hostConfigKey] = {};
+  return global[hostConfigKey];
+}
+
+function isLanguagePacksStore(value) {
+  return !!value && typeof value === 'object' && !Array.isArray(value) && typeof value.revision === 'number' && !!value.layers && typeof value.layers === 'object';
+}
+
+// Same store shape as src/features/multi-lingual/language-packs.ts; this file cannot import it.
+function registerGlobalLanguagePacks(config, input) {
+  if (input === undefined || input === null || input === '') return;
+
+  let store = config.languagePacks;
+  if (!isLanguagePacksStore(store)) {
+    const previous = store;
+    store = { revision: 0, layers: { 1: [], 2: [], 3: [] } };
+    if (previous !== undefined && previous !== null) store.layers[1].push({ input: previous });
+    config.languagePacks = store;
+  }
+
+  if (!Array.isArray(store.layers[1])) store.layers[1] = [];
+  const entries = store.layers[1];
+  const existing = entries.findIndex(entry => entry.input === input);
+  if (existing > -1) entries.splice(existing, 1);
+  entries.push({ input });
+  store.revision += 1;
+}
+
+/** Document-wide settings read by every ADP tag; unknown keys are ignored so older builds accept newer options. */
+export function configureAdpHost(options = {}) {
+  const config = getHostConfig();
+
+  if (options && Object.prototype.hasOwnProperty.call(options, 'languagePacks')) registerGlobalLanguagePacks(config, options.languagePacks);
 }

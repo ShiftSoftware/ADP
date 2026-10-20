@@ -9,7 +9,7 @@ import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-s
 import { LookupHead, VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { RequestHeadersProvider, resolveRequestHeaders, setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent } from '~features/vehicle-lookup-component';
-import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
+import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageCode, LanguagePacksInput, MultiLingual, registerLanguagePacks, sharedLocalesSchema } from '~features/multi-lingual';
 
 import { ClaimableItem } from './components/claimable-item';
 import { ClaimableItemPopover, PopoverTarget } from './components/claimable-item-popover';
@@ -41,16 +41,18 @@ const isAwaitingClaim = (item: VehicleServiceItemDTO) => item.status === 'pendin
 })
 export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInterface, VehicleLookupComponent, BlazorInvokable {
   // #region Localization
-  @Prop() language: LanguageKeys = 'en';
+  @Prop() language: LanguageCode = 'en';
+  @Prop() languagePacks?: LanguagePacksInput;
 
   @State() locale: ComponentLocale<typeof dynamicClaimSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...dynamicClaimSchema.getDefault() };
 
   async componentWillLoad() {
+    registerLanguagePacks(this.languagePacks, 2);
     await this.changeLanguage(this.language);
   }
 
   @Watch('language')
-  async changeLanguage(newLanguage: LanguageKeys) {
+  async changeLanguage(newLanguage: LanguageCode) {
     const [sharedLocales, locale] = await Promise.all([getSharedLocal(newLanguage), getLocaleLanguage(newLanguage, 'vehicleLookup.claimableItems', dynamicClaimSchema)]);
     this.locale = { sharedLocales, ...locale };
   }

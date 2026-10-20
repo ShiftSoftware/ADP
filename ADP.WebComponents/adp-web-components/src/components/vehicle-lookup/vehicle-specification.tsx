@@ -13,7 +13,7 @@ import { VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerd
 import { VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState } from '~features/vehicle-lookup-component/vehicle-lookup-api-integration';
-import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
+import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageCode, LanguagePacksInput, MultiLingual, registerLanguagePacks, sharedLocalesSchema } from '~features/multi-lingual';
 
 /** The --settle token (lookup-tokens.css) when the stylesheet cannot be read, as in tests. */
 const DEFAULT_SETTLE_MS = 480;
@@ -34,11 +34,13 @@ const DEFAULT_SETTLE_MS = 480;
 export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInterface, VehicleLookupComponent, BlazorInvokable {
   // #region Localization
 
-  @Prop() language: LanguageKeys = 'en';
+  @Prop() language: LanguageCode = 'en';
+  @Prop() languagePacks?: LanguagePacksInput;
 
   @State() locale: ComponentLocale<typeof specificationSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...specificationSchema.getDefault() };
 
   async componentWillLoad() {
+    registerLanguagePacks(this.languagePacks, 2);
     await this.changeLanguage(this.language);
   }
 
@@ -47,7 +49,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
    * say a lookup had happened.
    */
   @Watch('language')
-  async changeLanguage(newLanguage: LanguageKeys) {
+  async changeLanguage(newLanguage: LanguageCode) {
     const [sharedLocales, locale] = await Promise.all([getSharedLocal(newLanguage), getLocaleLanguage(newLanguage, 'vehicleLookup.specification', specificationSchema)]);
     this.locale = { sharedLocales, ...locale };
   }

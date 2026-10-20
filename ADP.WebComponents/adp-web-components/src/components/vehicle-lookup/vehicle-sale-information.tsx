@@ -31,7 +31,7 @@ import { VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerd
 import { VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState } from '~features/vehicle-lookup-component/vehicle-lookup-api-integration';
-import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
+import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageCode, LanguagePacksInput, MultiLingual, registerLanguagePacks, sharedLocalesSchema } from '~features/multi-lingual';
 
 const DEFAULT_SETTLE_MS = 480;
 
@@ -43,17 +43,19 @@ const DEFAULT_SETTLE_MS = 480;
 export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutInterface, VehicleLookupComponent, BlazorInvokable {
   // #region Localization
 
-  @Prop() language: LanguageKeys = 'en';
+  @Prop() language: LanguageCode = 'en';
+  @Prop() languagePacks?: LanguagePacksInput;
 
   @State() locale: ComponentLocale<typeof saleInformationSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...saleInformationSchema.getDefault() };
 
   async componentWillLoad() {
+    registerLanguagePacks(this.languagePacks, 2);
     this.applied = this.requestedConfig();
     await this.changeLanguage(this.language);
   }
 
   @Watch('language')
-  async changeLanguage(newLanguage: LanguageKeys) {
+  async changeLanguage(newLanguage: LanguageCode) {
     const [sharedLocales, locale] = await Promise.all([getSharedLocal(newLanguage), getLocaleLanguage(newLanguage, 'vehicleLookup.saleInformation', saleInformationSchema)]);
     this.locale = { sharedLocales, ...locale };
   }

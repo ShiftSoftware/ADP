@@ -1,4 +1,5 @@
-import { LanguageKeys } from '~features/multi-lingual';
+import type { LanguageCode, LanguageKeys } from '~features/multi-lingual/types';
+import { packLanguageFromUrl } from '~features/multi-lingual/language-packs';
 
 const LANGUAGE_MAP: Record<string, LanguageKeys> = {
   en: 'en',
@@ -16,7 +17,7 @@ const LANGUAGE_MAP: Record<string, LanguageKeys> = {
   russian: 'ru',
 };
 
-export default function getLanguageFromUrl(): LanguageKeys {
+export default function getLanguageFromUrl(): LanguageCode {
   if (typeof window === 'undefined') return 'en';
 
   const { pathname, search } = window.location;
@@ -39,5 +40,5 @@ export default function getLanguageFromUrl(): LanguageKeys {
     }
   }
 
-  return 'en';
+  return packLanguageFromUrl(queryLang, path) ?? 'en';
 }

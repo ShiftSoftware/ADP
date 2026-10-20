@@ -7,13 +7,17 @@ import ku from '../../../locales/calendar/ku.json';
 import ru from '../../../locales/calendar/ru.json';
 
 import { dateParts, monthParts, Weekday, weekdayOf } from '~lib/calendar-date';
+import type { LanguageCode } from '~features/multi-lingual/types';
+import { bundledStrings, isKnownLanguage, langTag, languageMeta, memoizeWithPacks, packsRegistered } from '~features/multi-lingual/language-packs';
+
+export { langTag };
 
 export type CalendarLanguage = 'en' | 'ar' | 'ku' | 'ru';
 export type CalendarNumerals = 'latn' | 'arab';
 export type CalendarStrings = InferType<typeof calendarSchema>;
 
 export interface CalendarLocale {
-  language: CalendarLanguage;
+  language: LanguageCode;
   direction: 'ltr' | 'rtl';
   weekStartsOn: Weekday;
   numerals: CalendarNumerals;
@@ -28,7 +32,20 @@ const LOCALES: Record<CalendarLanguage, CalendarLocale> = {
   ru: { language: 'ru', direction: 'ltr', weekStartsOn: 1, numerals: 'latn', strings: ru },
 };
 
-export const calendarLocale = (language: string): CalendarLocale => LOCALES[language as CalendarLanguage] ?? LOCALES.en;
+const STRINGS: Record<string, CalendarStrings> = { en, ar, ku, ru };
+
+export function calendarLocale(language: string): CalendarLocale {
+  const builtIn = LOCALES[language as CalendarLanguage] ?? LOCALES.en;
+  if (!packsRegistered()) return builtIn;
+
+  const code = isKnownLanguage(language) ? language : builtIn.language;
+
+  return memoizeWithPacks(`calendar-locale|${code}`, () => {
+    const { direction, weekStartsOn, numerals } = languageMeta(code);
+
+    return { language: code, direction, weekStartsOn, numerals, strings: bundledStrings('calendar', code, STRINGS) };
+  });
+}
 
 const ARABIC_INDIC_ZERO = 0x0660;
 
