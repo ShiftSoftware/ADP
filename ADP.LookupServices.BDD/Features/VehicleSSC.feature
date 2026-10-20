@@ -3,7 +3,8 @@ Feature: Vehicle Safety Service Campaigns (SSC)
 	Each SSC is checked for repair status by looking at three sources, in order; the first that holds
 	decides both the verdict and the repair date, and is reported as the repair source:
 	1. Direct RepairDate on the SSC record
-	2. Matching warranty claim (by campaign code in distributor comment, or by labor code)
+	2. Matching warranty claim (by campaign code in distributor comment, or by labor code) in a
+	   qualifying status — Accepted, Certified or Invoiced unless the deployment configures its own list
 	3. Matching labor line (by labor code with invoice status X or C)
 	A labor code matches directly or through a configured group of interchangeable codes: dealer
 	systems sometimes book a campaign under a sibling operation code, and the deployment declares
@@ -51,6 +52,39 @@ Scenario: Warranty claim with non-matching status is ignored
 	And warranty claims:
 		| ClaimStatus          | RepairCompletionDate | DistributorComment |
 		| RejectedPermanently  | 2024-04-01           | Repair for SSC-001 |
+	When Checking "1G1ZC5E17BF283048"
+	Then SSC "SSC-001" is marked as not repaired
+
+Scenario: Pending warranty claim is ignored by default
+	Given SSC affected vehicles:
+		| VIN               | CampaignCode | Description   | LaborCode1 |
+		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+	And warranty claims:
+		| ClaimStatus    | RepairCompletionDate | LaborCode |
+		| PendingProcess | 2024-04-01           | LAB001    |
+	When Checking "1G1ZC5E17BF283048"
+	Then SSC "SSC-001" is marked as not repaired
+
+Scenario: Pending warranty claim counts when the deployment qualifies pending claims
+	Given qualifying SSC warranty claim statuses are "PendingProcess, Accepted, Certified, Invoiced"
+	And SSC affected vehicles:
+		| VIN               | CampaignCode | Description   | LaborCode1 |
+		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+	And warranty claims:
+		| ClaimStatus    | RepairCompletionDate | LaborCode |
+		| PendingProcess | 2024-04-01           | LAB001    |
+	When Checking "1G1ZC5E17BF283048"
+	Then SSC "SSC-001" is marked as repaired
+	And SSC "SSC-001" has repair date "2024-04-01"
+
+Scenario: A configured status list replaces the default
+	Given qualifying SSC warranty claim statuses are "PendingProcess"
+	And SSC affected vehicles:
+		| VIN               | CampaignCode | Description   | LaborCode1 |
+		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+	And warranty claims:
+		| ClaimStatus | RepairCompletionDate | LaborCode |
+		| Accepted    | 2024-04-01           | LAB001    |
 	When Checking "1G1ZC5E17BF283048"
 	Then SSC "SSC-001" is marked as not repaired
 

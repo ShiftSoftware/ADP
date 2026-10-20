@@ -16,7 +16,8 @@ namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 /// <para>Three sources are consulted in order, and the first that holds decides the verdict and the repair date:</para>
 /// <list type="number">
 /// <item>The SSC record's own repair date.</item>
-/// <item>The most recently completed warranty claim in a qualifying status (Accepted, Certified, Invoiced) that
+/// <item>The most recently completed warranty claim in a qualifying status
+/// (<see cref="LookupOptions.SSCQualifyingWarrantyClaimStatuses"/>; Accepted, Certified, Invoiced by default) that
 /// references the campaign — the campaign code appears in the distributor comment, or a claim labor line carries
 /// one of the campaign's labor operation codes.</item>
 /// <item>The most recent invoiced service-history labor line (invoice status X or C) carrying one of the
@@ -28,11 +29,11 @@ namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 /// </summary>
 public class VehicleSSCEvaluator
 {
-    private static readonly ClaimStatus[] QualifyingClaimStatuses = { ClaimStatus.Accepted, ClaimStatus.Certified, ClaimStatus.Invoiced };
     private static readonly string[] QualifyingInvoiceStatuses = { "X", "C" };
 
     private readonly CompanyDataAggregateModel aggregate;
     private readonly SSCLaborCodeEquivalence equivalence;
+    private readonly HashSet<ClaimStatus> qualifyingClaimStatuses;
 
     public VehicleSSCEvaluator(CompanyDataAggregateModel companyDataAggregateCosmosModel)
         : this(companyDataAggregateCosmosModel, null)
@@ -45,6 +46,8 @@ public class VehicleSSCEvaluator
         this.equivalence = lookupOptions?.SSCInterchangeableLaborCodeGroups is { Count: > 0 } groups
             ? new SSCLaborCodeEquivalence(groups)
             : SSCLaborCodeEquivalence.Empty;
+        this.qualifyingClaimStatuses = new HashSet<ClaimStatus>(
+            lookupOptions?.SSCQualifyingWarrantyClaimStatuses ?? LookupOptions.DefaultSSCQualifyingWarrantyClaimStatuses);
     }
 
     public IEnumerable<SscDTO> Evaluate() => Evaluate(includeTrace: false);
@@ -120,7 +123,7 @@ public class VehicleSSCEvaluator
 
         foreach (var claim in warrantyClaims)
         {
-            var statusQualifies = QualifyingClaimStatuses.Contains(claim.ClaimStatus);
+            var statusQualifies = qualifyingClaimStatuses.Contains(claim.ClaimStatus);
 
             var campaignCodeInComment =
                 !string.IsNullOrEmpty(campaignCode) && (claim.DistributorComment?.Contains(campaignCode) ?? false);
