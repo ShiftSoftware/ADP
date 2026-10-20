@@ -93,6 +93,8 @@ const respond = (body: unknown, status = 200) => ({
 });
 
 const sent: string[] = [];
+let branches: { ID: number; Name: string }[] = BRANCHES;
+let branchGate: Promise<void> | null = null;
 
 async function fakeFetch(input: unknown, init: { method?: string; body?: string } = {}) {
   const url = String(input);
@@ -103,7 +105,10 @@ async function fakeFetch(input: unknown, init: { method?: string; body?: string 
     sent.push(init.body);
     return respond({ id: 7 });
   }
-  if (url.startsWith(`${API}/branches`)) return respond(BRANCHES);
+  if (url.startsWith(`${API}/branches`)) {
+    if (branchGate) await branchGate;
+    return respond(branches);
+  }
 
   throw new Error(`unexpected request ${url}`);
 }
@@ -160,6 +165,8 @@ afterAll(() => {
 
 beforeEach(() => {
   sent.length = 0;
+  branches = BRANCHES;
+  branchGate = null;
 });
 
 async function settle(page: SpecPage, ms = 1500) {
@@ -169,13 +176,15 @@ async function settle(page: SpecPage, ms = 1500) {
   }
 }
 
-type Screen = { width: number; resize: (width: number) => void };
+type Screen = { width: number; coarse: boolean; listeners: (() => void)[]; resize: (width: number) => void };
 
-async function mount(structure: Structure, width: number | null = 390, props: Record<string, unknown> = {}) {
+async function mount(structure: Structure, width: number | null = 390, props: Record<string, unknown> = {}, pointer: 'fine' | 'coarse' = 'fine') {
   const page = await newSpecPage({ components: COMPONENTS, html: '' });
   const listeners: (() => void)[] = [];
   const screen: Screen = {
     width: width ?? 1024,
+    coarse: pointer === 'coarse',
+    listeners,
     resize: (next: number) => {
       screen.width = next;
       listeners.forEach(listener => listener());
@@ -186,6 +195,7 @@ async function mount(structure: Structure, width: number | null = 390, props: Re
   else
     (page.win as unknown as Record<string, unknown>).matchMedia = (query: string) => ({
       get matches() {
+        if (query === '(pointer: coarse)') return screen.coarse;
         return query === '(max-width: 599px)' && screen.width < 600;
       },
       addEventListener: (_: string, listener: () => void) => listeners.push(listener),
@@ -216,6 +226,9 @@ const drawerBox = (page: SpecPage, name: string) => (sheetOf(page, name)?.parent
 const dropdownBox = (page: SpecPage, name: string) => page.body.querySelector(`shift-select-dropdown.${name}-select`)?.shadowRoot?.querySelector('.shift-select-container') ?? null;
 const rows = (page: SpecPage, name: string) => Array.from(sheetOf(page, name).shadowRoot.querySelectorAll('[role="option"]')) as HTMLElement[];
 const searchOf = (page: SpecPage, name: string) => sheetOf(page, name).shadowRoot.querySelector('input.search') as HTMLInputElement | null;
+const formSelectOf = (page: SpecPage, name: string) =>
+  Array.from(formRoot(page).querySelectorAll('form-select')).find(el => el.name === name) as HTMLElement & { selectDrawer?: string; fetcherKey?: unknown };
+const listOf = (page: SpecPage, name: string) => sheetOf(page, name).shadowRoot.querySelector('[role="listbox"]') as HTMLElement;
 const shadowValue = (page: SpecPage, name: string) => (formRoot(page).querySelector(`input.shadow-input[name="${name}"]`) as HTMLInputElement)?.value;
 
 const drawerOpen = (page: SpecPage, name: string) => {
@@ -249,7 +262,7 @@ describe('select drawer: resolving the setting', () => {
 });
 
 describe('select drawer: unset', () => {
-  it('renders and opens the dropdown with the same DOM as before the drawer existed', async () => {
+  it('pins the unset render, closed and with the dropdown open (the 0.4.17 equality is proven by the external harness)', async () => {
     const { page } = await mount(form(), 390);
     const closed = serializeNodeToHtml(page.body as never, { prettyHtml: true, serializeShadowRoot: true });
 
@@ -337,6 +350,45 @@ describe('select drawer: opting in', () => {
     expect(drawerOpen(page, 'year')).toBe(false);
     expect(dropdownOpen(page, 'year')).toBe(false);
     expect(selectOf(page, 'year').isOpen).toBe(false);
+  });
+
+  it('selectDrawer can change at runtime: on, then off, and the breakpoint listener follows it', async () => {
+    const { page, screen } = await mount(form(), 390);
+    expect(screen.listeners).toHaveLength(0);
+
+    formSelectOf(page, 'year').selectDrawer = 'mobile';
+    await settle(page, 300);
+    expect(screen.listeners.length).toBeGreaterThan(0);
+
+    await open(page, 'year');
+    expect(drawerOpen(page, 'year')).toBe(true);
+    expect(dropdownOpen(page, 'year')).toBe(false);
+    escape(page, 'year');
+    await settle(page, 300);
+
+    formSelectOf(page, 'year').selectDrawer = 'off';
+    await settle(page, 300);
+    expect(screen.listeners).toHaveLength(0);
+    expect(sheetOf(page, 'year')).toBeNull();
+    expect(triggerOf(page, 'year').hasAttribute('role')).toBe(false);
+
+    await open(page, 'year');
+    expect(dropdownOpen(page, 'year')).toBe(true);
+  });
+
+  // Mock-doc does not disconnect shadow-root descendants when their host is removed, so each select is removed itself.
+  it('a select taken off the page removes its breakpoint listeners', async () => {
+    const { page, screen } = await mount(form({ selectDrawer: 'mobile' }), 390);
+    const perSelect = screen.listeners.length / 2;
+    expect(perSelect).toBeGreaterThan(0);
+
+    selectOf(page, 'year').remove();
+    await settle(page, 300);
+    expect(screen.listeners).toHaveLength(perSelect);
+
+    selectOf(page, 'companyBranchId').remove();
+    await settle(page, 300);
+    expect(screen.listeners).toHaveLength(0);
   });
 });
 
@@ -483,6 +535,94 @@ describe('select drawer: inside the drawer', () => {
     expect(rows(page, 'year')[1].getAttribute('aria-selected')).toBe('true');
   });
 
+  it('the clear icon clears without opening the drawer; without the drawer it still opens the dropdown', async () => {
+    const clearAndLook = async (drawer: boolean) => {
+      const { page } = await mount(form(drawer ? { selectDrawer: 'always' } : {}), drawer ? 390 : 1024);
+      await open(page, 'companyBranchId');
+      const north = drawer
+        ? rows(page, 'companyBranchId')[0]
+        : (Array.from(page.body.querySelector('shift-select-dropdown.companyBranchId-select').shadowRoot.querySelectorAll('button')).find(
+            button => button.textContent.trim() === 'North',
+          ) as HTMLElement);
+      fire(page, north, 'click');
+      await settle(page, 300);
+      expect(shadowValue(page, 'companyBranchId')).toBe('11');
+
+      fire(page, selectOf(page, 'companyBranchId').querySelector('.form-input-select-icon.cross'), 'click');
+      await settle(page, 300);
+
+      return { page, value: shadowValue(page, 'companyBranchId'), isOpen: selectOf(page, 'companyBranchId').isOpen };
+    };
+
+    const drawer = await clearAndLook(true);
+    expect(drawer.value).toBe('');
+    expect(drawer.isOpen).toBe(false);
+    expect(drawerOpen(drawer.page, 'companyBranchId')).toBe(false);
+
+    const dropdown = await clearAndLook(false);
+    expect(dropdown.value).toBe('');
+    expect(dropdown.isOpen).toBe(true);
+    expect(dropdownOpen(dropdown.page, 'companyBranchId')).toBe(true);
+  });
+
+  it('a list that arrives while the drawer is open fades in, a list there at open does not', async () => {
+    let release: () => void;
+    branchGate = new Promise(resolve => (release = resolve));
+    const { page } = await mount(form({ selectDrawer: 'always' }), 390);
+
+    await open(page, 'companyBranchId');
+    expect(rows(page, 'companyBranchId')).toHaveLength(0);
+    expect(sheetOf(page, 'companyBranchId').shadowRoot.querySelector('[part="spinner"]')).not.toBeNull();
+
+    release();
+    await settle(page, 300);
+    expect(rows(page, 'companyBranchId')).toHaveLength(3);
+    expect(listOf(page, 'companyBranchId').hasAttribute('data-waited')).toBe(true);
+
+    escape(page, 'companyBranchId');
+    await settle(page, 300);
+    await open(page, 'companyBranchId');
+    expect(listOf(page, 'companyBranchId').hasAttribute('data-waited')).toBe(false);
+
+    const css = readFileSync(join(__dirname, 'shift-select-sheet.css'), 'utf8');
+    expect(css).toMatch(/\.list\[data-waited\]:not\(:empty\)\s*\{\s*animation: select-sheet-enter var\(--_quick\) var\(--_curve\) both;/);
+  });
+
+  it('options swapped to a list without the pick open the drawer on the full new list', async () => {
+    const { page } = await mount(form({ selectDrawer: 'always' }), 390);
+    await open(page, 'companyBranchId');
+    fire(page, rows(page, 'companyBranchId')[2], 'click');
+    await settle(page, 300);
+    expect(triggerOf(page, 'companyBranchId').value).toBe('Northeast');
+
+    branches = [
+      { ID: 21, Name: 'Central' },
+      { ID: 22, Name: 'West' },
+    ];
+    formSelectOf(page, 'companyBranchId').fetcherKey = 'swapped';
+    await settle(page, 300);
+    expect(triggerOf(page, 'companyBranchId').value).toBe('');
+
+    await open(page, 'companyBranchId');
+    expect(drawerOpen(page, 'companyBranchId')).toBe(true);
+    expect(rows(page, 'companyBranchId').map(row => row.textContent.trim())).toEqual(['Central', 'West']);
+  });
+
+  it('text typed into the dropdown does not filter the drawer after the screen narrows', async () => {
+    const { page, screen } = await mount(form({ selectDrawer: 'mobile' }), 1024);
+    const trigger = triggerOf(page, 'companyBranchId');
+    trigger.value = 'sou';
+    fire(page, trigger, 'input');
+    await settle(page, 300);
+
+    screen.resize(390);
+    await settle(page, 300);
+    await open(page, 'companyBranchId');
+
+    expect(drawerOpen(page, 'companyBranchId')).toBe(true);
+    expect(rows(page, 'companyBranchId').map(row => row.textContent.trim())).toEqual(['North', 'South', 'Northeast']);
+  });
+
   it('the trigger is read-only in drawer mode, so tapping it never brings up a keyboard on the page', async () => {
     const { page } = await mount(form({ selectDrawer: 'always' }), 390);
 
@@ -492,7 +632,7 @@ describe('select drawer: inside the drawer', () => {
 });
 
 describe('select drawer: search', () => {
-  it('a searchable select gets a search field that takes focus and filters the drawer’s own list', async () => {
+  it('a searchable select gets a search field that takes focus on a fine pointer and filters the drawer’s own list', async () => {
     const { page } = await mount(form({ selectDrawer: 'always' }), 390);
     const focused = focusLog(page, 'companyBranchId');
     await open(page, 'companyBranchId');
@@ -531,6 +671,48 @@ describe('select drawer: search', () => {
     expect(triggerOf(page, 'companyBranchId').value).toBe('Northeast');
     expect(shadowValue(page, 'companyBranchId')).toBe('13');
     expect(selectOf(page, 'companyBranchId').getAttribute('search-value')).toBeNull();
+  });
+
+  it('on a coarse pointer the search field is there but focus goes to the selected row, or the first, so no keyboard rises', async () => {
+    const { page } = await mount(form({ selectDrawer: 'always' }), 390, {}, 'coarse');
+    const focused = focusLog(page, 'companyBranchId');
+    await open(page, 'companyBranchId');
+
+    expect(searchOf(page, 'companyBranchId')).not.toBeNull();
+    expect(focused).not.toContain(searchOf(page, 'companyBranchId'));
+    expect(focused[focused.length - 1]).toBe(rows(page, 'companyBranchId')[0]);
+
+    fire(page, rows(page, 'companyBranchId')[1], 'click');
+    await settle(page, 300);
+    await open(page, 'companyBranchId');
+
+    expect(focused).not.toContain(searchOf(page, 'companyBranchId'));
+    expect(focused[focused.length - 1]).toBe(rows(page, 'companyBranchId')[1]);
+    expect(rows(page, 'companyBranchId')[1].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('Enter in the search picks the only match, and with more than one moves focus to the first row', async () => {
+    const { page } = await mount(form({ selectDrawer: 'always' }), 390);
+    const focused = focusLog(page, 'companyBranchId');
+    await open(page, 'companyBranchId');
+    const search = searchOf(page, 'companyBranchId');
+
+    search.value = 'north';
+    fire(page, search, 'input');
+    await settle(page, 50);
+    key(page, search, 'Enter');
+    expect(focused[focused.length - 1]).toBe(rows(page, 'companyBranchId')[0]);
+    expect(drawerOpen(page, 'companyBranchId')).toBe(true);
+
+    search.value = 'sou';
+    fire(page, search, 'input');
+    await settle(page, 50);
+    key(page, search, 'Enter');
+    await settle(page, 300);
+
+    expect(drawerOpen(page, 'companyBranchId')).toBe(false);
+    expect(triggerOf(page, 'companyBranchId').value).toBe('South');
+    expect(shadowValue(page, 'companyBranchId')).toBe('12');
   });
 
   it('the search is empty again on the next open', async () => {

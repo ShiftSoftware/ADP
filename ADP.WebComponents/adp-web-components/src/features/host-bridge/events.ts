@@ -1,4 +1,4 @@
-import { startSubmitTrace, submitTrace } from './adp-fetch';
+import { releaseSubmitTrace, startSubmitTrace, submitTrace } from './adp-fetch';
 
 export type AdpFormErrorCode = 'http' | 'network' | 'upload' | 'config' | 'unknown';
 
@@ -107,7 +107,9 @@ function sentPayload(el: object): Record<string, unknown> {
 export function emitFormSubmitted(el: HTMLElement | undefined, data: unknown) {
   if (!el) return;
 
-  dispatchFormEvent(el, 'adp-form-submitted', { data: toJson(data), payload: sentPayload(el) });
+  const payload = sentPayload(el);
+  releaseSubmitTrace(el);
+  dispatchFormEvent(el, 'adp-form-submitted', { data: toJson(data), payload });
 }
 
 export function httpStatusOf(error: unknown): number | undefined {
@@ -139,6 +141,7 @@ export function emitFormError(el: HTMLElement | undefined, error: unknown, messa
   const status = httpStatusOf(error);
   if (status !== undefined) detail.status = status;
   detail.code = formErrorCode(el, error);
+  releaseSubmitTrace(el);
 
   dispatchFormEvent(el, 'adp-form-error', detail);
 }

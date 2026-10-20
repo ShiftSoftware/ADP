@@ -71,6 +71,7 @@ export const config: Config = {
         { src: 'features/mocks/data/assets', dest: 'dist/mocks/assets' },
         { src: 'integration/integration-manifest.json', dest: 'dist/integration-manifest.json' },
         { src: 'integration/host-loader.js', dest: 'dist/host-loader.js' },
+        { src: 'integration/host-loader.d.ts', dest: 'dist/host-loader.d.ts' },
         { src: 'templates/production-host', dest: 'dist/templates/production-host' },
       ],
       customElementsExportBehavior: 'auto-define-custom-elements',

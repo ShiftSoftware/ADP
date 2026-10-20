@@ -9,6 +9,9 @@ import { popoverStrings } from './shift-popover/popover-locale';
 
 const NAVIGATION_KEYS = ['ArrowDown', 'ArrowUp', 'Home', 'End'];
 
+// On touch, focusing the search would raise the on-screen keyboard over the list the moment the drawer opens.
+const coarsePointer = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && !!window.matchMedia('(pointer: coarse)')?.matches;
+
 /**
  * @part search - the search field pinned above the list, rendered only for a searchable select.
  * @part list - the listbox.
@@ -50,6 +53,7 @@ export class ShiftSelectSheet {
   private searchBoxEl: HTMLElement | null = null;
   private listEl: HTMLElement | null = null;
   private measurePending = false;
+  private listWaited = false;
 
   // The search is reset as the sheet opens rather than as it closes, so the closing sheet keeps its content while it slides away.
   @Watch('open')
@@ -60,6 +64,7 @@ export class ShiftSelectSheet {
     this.activeIndex = -1;
     this.lockedHeight = null;
     this.measurePending = this.searchable;
+    this.listWaited = false;
   }
 
   componentDidRender() {
@@ -74,7 +79,7 @@ export class ShiftSelectSheet {
     const scroller = this.scroller();
     if (scroller) scroller.scrollTop = 0;
 
-    if (this.searchEl) {
+    if (this.searchEl && !coarsePointer()) {
       this.searchEl.focus({ preventScroll: true });
       return;
     }
@@ -151,10 +156,12 @@ export class ShiftSelectSheet {
   };
 
   private onSearchKeyDown = (event: KeyboardEvent) => {
-    if (event.key !== 'ArrowDown') return;
+    if (event.key !== 'ArrowDown' && event.key !== 'Enter') return;
 
     event.preventDefault();
-    this.focusRow(0);
+    const options = this.visibleOptions();
+    if (event.key === 'Enter' && options.length === 1) this.pick(options[0]);
+    else this.focusRow(0);
   };
 
   private onListKeyDown = (event: KeyboardEvent) => {
@@ -202,6 +209,7 @@ export class ShiftSelectSheet {
     const selectedIndex = options.findIndex(option => option.value === this.selectedValue);
     const tabStop = this.activeIndex >= 0 && this.activeIndex < options.length ? this.activeIndex : Math.max(selectedIndex, 0);
     const searchLabel = popoverStrings(this.language).search;
+    if (this.open && !options.length) this.listWaited = true;
 
     return (
       <Host style={this.lockedHeight ? { minBlockSize: `${this.lockedHeight}px` } : undefined}>
@@ -225,7 +233,15 @@ export class ShiftSelectSheet {
             </div>
           )}
 
-          <div class="list" part="list" role="listbox" aria-label={this.label || undefined} ref={el => (this.listEl = el as HTMLElement)} onKeyDown={this.onListKeyDown}>
+          <div
+            class="list"
+            part="list"
+            role="listbox"
+            aria-label={this.label || undefined}
+            data-waited={this.listWaited ? '' : undefined}
+            ref={el => (this.listEl = el as HTMLElement)}
+            onKeyDown={this.onListKeyDown}
+          >
             {options.map((option, index) => {
               const selected = option.value === this.selectedValue;
 

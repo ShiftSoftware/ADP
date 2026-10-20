@@ -7,11 +7,16 @@ const manifestPath = resolve(projectRoot, 'dist/integration-manifest.json');
 const templatePath = resolve(projectRoot, 'dist/templates/production-host/vehicle-service-history.html');
 const componentPath = resolve(projectRoot, 'dist/components/vehicle-service-history.js');
 const loaderPath = resolve(projectRoot, 'dist/host-loader.js');
+const loaderTypesPath = resolve(projectRoot, 'dist/host-loader.d.ts');
 
-for (const file of [manifestPath, templatePath, componentPath, loaderPath]) {
+for (const file of [manifestPath, templatePath, componentPath, loaderPath, loaderTypesPath]) {
   if (!existsSync(file)) {
     throw new Error(`Published integration artifact is missing: ${file}`);
   }
+}
+
+if (resolve(projectRoot, packageJson.exports?.['./host-loader']?.types ?? '') !== loaderTypesPath) {
+  throw new Error('package.json does not point the host-loader export at its type declarations.');
 }
 
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));

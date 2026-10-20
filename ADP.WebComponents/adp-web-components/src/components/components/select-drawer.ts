@@ -13,7 +13,6 @@ export function resolveSelectDrawer(field: unknown, form: unknown): SelectDrawer
   return selectDrawerMode(field) ?? selectDrawerMode(form);
 }
 
-// Empty unless opted in, so the select renders exactly as before for every other host.
 export function selectDrawerProps(
   field: unknown,
   form: unknown,

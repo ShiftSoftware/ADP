@@ -328,6 +328,19 @@ describe('form events', () => {
     }
   });
 
+  it('ready fires once per element, in step with formReadyCallback, and a language change does not fire it again', async () => {
+    const formReadyCallback = jest.fn();
+    const { page, el, seen } = await mount(contactForm(), { formReadyCallback });
+
+    (el as unknown as { language: string }).language = 'ru';
+    await settle(page);
+    (el as unknown as { language: string }).language = 'en';
+    await settle(page);
+
+    expect(of(seen, 'adp-form-ready')).toHaveLength(1);
+    expect(formReadyCallback).toHaveBeenCalledTimes(1);
+  });
+
   it('without a successCallback the dialog still opens and the event still fires', async () => {
     const { page, el, seen } = await mount(contactForm());
     const openDialog = jest.spyOn(await el.getForm(), 'openDialog');

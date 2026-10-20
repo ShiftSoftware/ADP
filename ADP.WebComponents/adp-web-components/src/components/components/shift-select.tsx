@@ -114,9 +114,12 @@ export class ShiftSelect {
   };
 
   openDropdown = () => {
-    if (!this.drawerNow()) this.adjustDropdownPosition();
+    const drawer = this.drawerNow();
+    if (!drawer) this.adjustDropdownPosition();
 
-    this.updateContext({ isOpen: true });
+    // The drawer has its own search, so a leftover dropdown filter would only hide options behind a read-only trigger.
+    if (drawer && this.searchValue && !this.options.some(item => item.value === this.selectedValue)) this.updateContext({ isOpen: true, searchValue: '' });
+    else this.updateContext({ isOpen: true });
   };
 
   async componentDidLoad() {
@@ -207,7 +210,7 @@ export class ShiftSelect {
     const selectButton = this.el.getElementsByClassName('form-input-select')[0] as HTMLDivElement;
 
     selectButton.focus();
-    if (!this.isOpen) this.openDropdown();
+    if (!this.isOpen && !this.drawerNow()) this.openDropdown();
   };
 
   private renderDrawer(mode: SelectDrawerMode, drawerNow: boolean) {

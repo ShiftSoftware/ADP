@@ -51,6 +51,10 @@ export function submitTrace(element: object | undefined): SubmitTrace | undefine
   return element ? traces.get(element) : undefined;
 }
 
+export function releaseSubmitTrace(element: object | undefined) {
+  if (element) traces.delete(element);
+}
+
 function traced(request: Promise<Response>, init: RequestInit, info: AdpRequestInfo): Promise<Response> {
   if (!info.element) return request;
 

@@ -1,10 +1,6 @@
 /* tailwind: off */
 @import '../style/base.css';
 
-/*
-  The option list of a select opened as a drawer. It sits in shift-popover's panel, which draws the chrome,
-  caps the height and scrolls; this draws only the search, the rows and the empty state.
-*/
 :host {
   --_ink: var(--shift-ink, #1e293b);
   --_muted: var(--shift-ink-muted, #64748b);
@@ -59,6 +55,11 @@
 .list {
   display: flex;
   flex-direction: column;
+}
+
+/* Only rows that arrive after the drawer opened empty fade in; a list there at open rides in with the sheet. */
+.list[data-waited]:not(:empty) {
+  animation: select-sheet-enter var(--_quick) var(--_curve) both;
 }
 
 .option {

@@ -25,6 +25,7 @@
       "types": "./dist/components/*.d.ts"
     },
     "./host-loader": {
+      "types": "./dist/host-loader.d.ts",
       "import": "./dist/host-loader.js"
     },
     "./integration-manifest": "./dist/integration-manifest.json",

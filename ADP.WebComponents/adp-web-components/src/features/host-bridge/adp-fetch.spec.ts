@@ -5,7 +5,8 @@ import ts from 'typescript';
 
 import { version } from '../../../package.json';
 import { fetchPackageFile } from '~lib/package-files';
-import { adpFetch, formRequestInfo, optionsRequestInfo, requestInfo } from './adp-fetch';
+import { adpFetch, formRequestInfo, optionsRequestInfo, requestInfo, submitTrace } from './adp-fetch';
+import { emitFormError, emitFormLoading, emitFormSubmitted, formErrorCode } from './events';
 import { HOST_CONFIG_KEY, peekHostConfig } from './host-config';
 
 // host-loader.js is shipped as plain ESM, which Jest does not transform.
@@ -177,5 +178,85 @@ describe('configureAdpHost({ assetsBaseUrl })', () => {
 
     expect(peekHostConfig()).toEqual({});
     expect(String(fetchMock.mock.calls[0][0])).toContain(`adp-web-components@${version}/dist/locales/en.json`);
+  });
+});
+
+describe('submit trace', () => {
+  const listen = (el: HTMLElement, type: string) => {
+    const seen: unknown[] = [];
+    el.addEventListener(type, (event: Event) => seen.push((event as CustomEvent).detail));
+    return seen;
+  };
+
+  it('submit and upload resolve to the same response and reject with the same reason', async () => {
+    const el = element();
+    const response = ok(201);
+    const failure = new TypeError('Failed to fetch');
+
+    globalThis.fetch = jest.fn(async () => response) as unknown as typeof fetch;
+    await expect(adpFetch('https://example.invalid/submit', {}, requestInfo('submit', el))).resolves.toBe(response);
+    await expect(adpFetch('https://example.invalid/sign', {}, requestInfo('upload', el, 'file'))).resolves.toBe(response);
+
+    globalThis.fetch = jest.fn(async () => {
+      throw failure;
+    }) as unknown as typeof fetch;
+    await expect(adpFetch('https://example.invalid/sign', {}, requestInfo('upload', el, 'file'))).rejects.toBe(failure);
+  });
+
+  it('a non-ok upload whose server error is thrown before the submit reports code upload, then the trace is dropped', async () => {
+    const el = element();
+    const errors = listen(el, 'adp-form-error');
+    globalThis.fetch = jest.fn(async () => ok(403)) as unknown as typeof fetch;
+
+    emitFormLoading(el, true);
+    const response = await adpFetch('https://example.invalid/sign', { method: 'POST' }, requestInfo('upload', el, 'file'));
+    expect(response.ok).toBe(false);
+
+    const serverError = Object.assign(new Error('Signature expired'), { fromServer: true });
+    emitFormError(el, serverError, 'Signature expired');
+
+    expect(errors).toEqual([{ message: 'Signature expired', code: 'upload' }]);
+    expect(submitTrace(el)).toBeUndefined();
+  });
+
+  it('a server error from the upload code path is upload even without a failed request on record', () => {
+    const el = element();
+    emitFormLoading(el, true);
+
+    expect(formErrorCode(el, Object.assign(new Error('Blob refused'), { fromServer: true }))).toBe('upload');
+    expect(formErrorCode(el, new Error('Blob refused'))).toBe('unknown');
+  });
+
+  it('the sent body is read for adp-form-submitted and then dropped', async () => {
+    const el = element();
+    const submitted = listen(el, 'adp-form-submitted');
+    globalThis.fetch = jest.fn(async () => ok()) as unknown as typeof fetch;
+
+    emitFormLoading(el, true);
+    await adpFetch('https://example.invalid/submit', { method: 'POST', body: JSON.stringify({ name: 'Test Person' }) }, requestInfo('submit', el));
+    expect(submitTrace(el).body).toBe('{"name":"Test Person"}');
+
+    emitFormSubmitted(el, { id: 7 });
+
+    expect(submitted).toEqual([{ data: { id: 7 }, payload: { name: 'Test Person' } }]);
+    expect(submitTrace(el)).toBeUndefined();
+  });
+
+  it('a rejected submit is read as network for adp-form-error and then dropped', async () => {
+    const el = element();
+    const errors = listen(el, 'adp-form-error');
+    const failure = new TypeError('Failed to fetch');
+    globalThis.fetch = jest.fn(async () => {
+      throw failure;
+    }) as unknown as typeof fetch;
+
+    emitFormLoading(el, true);
+    await expect(adpFetch('https://example.invalid/submit', { method: 'POST', body: '{}' }, requestInfo('submit', el))).rejects.toBe(failure);
+    expect(submitTrace(el).rejections.size).toBe(1);
+
+    emitFormError(el, failure, 'Failed to fetch');
+
+    expect(errors).toEqual([{ message: 'Failed to fetch', code: 'network' }]);
+    expect(submitTrace(el)).toBeUndefined();
   });
 });

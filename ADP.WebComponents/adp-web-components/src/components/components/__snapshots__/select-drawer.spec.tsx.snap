@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`select drawer: unset renders and opens the dropdown with the same DOM as before the drawer existed: closed 1`] = `
+exports[`select drawer: unset pins the unset render, closed and with the dropdown open (the 0.4.17 equality is proven by the external harness): closed 1`] = `
 "<general-form language="en" translate="no">
   <template shadowrootmode="open">
     <div part="shift-form">
@@ -363,7 +363,7 @@ exports[`select drawer: unset renders and opens the dropdown with the same DOM a
 </shift-select-dropdown>"
 `;
 
-exports[`select drawer: unset renders and opens the dropdown with the same DOM as before the drawer existed: dropdown open 1`] = `
+exports[`select drawer: unset pins the unset render, closed and with the dropdown open (the 0.4.17 equality is proven by the external harness): dropdown open 1`] = `
 "<general-form language="en" translate="no">
   <template shadowrootmode="open">
     <div part="shift-form">

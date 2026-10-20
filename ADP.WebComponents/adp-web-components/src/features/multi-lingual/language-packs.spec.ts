@@ -328,6 +328,15 @@ describe('language packs: bundled strings', () => {
     expect(langTag(locale.language)).toBe('uz-Latn');
   });
 
+  it('a uz pack leaves the built-in ar calendar locale as it was', () => {
+    const builtIn = JSON.parse(JSON.stringify(calendarLocale('ar')));
+    registerLanguagePacks({ languages: { uz: { intl: 'uz-Latn' } }, strings: { calendar: { uz: { months, today: 'Bugun' } } } });
+
+    expect(packsRegistered()).toBe(true);
+    expect(calendarLocale('ar')).toEqual(builtIn);
+    expect(calendarLocale('ar').direction).toBe('rtl');
+  });
+
   it('a registration after the first read applies from the next read', () => {
     registerLanguagePacks({ languages: { uz: {} } });
     expect(popoverStrings('uz')).toEqual(popoverEn);
