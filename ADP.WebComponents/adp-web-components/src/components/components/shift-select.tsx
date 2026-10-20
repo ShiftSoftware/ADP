@@ -232,6 +232,7 @@ export class ShiftSelect {
   };
 
   clearInput = () => {
+    this.syncDrawerDefined();
     this.updateContext({ searchValue: '', selectedValue: '' });
 
     const selectButton = this.el.getElementsByClassName('form-input-select')[0] as HTMLDivElement;

@@ -412,6 +412,41 @@ describe('select drawer: opting in', () => {
     expect(page.body.querySelector('shift-select-dropdown.year-select')).toBeNull();
   });
 
+  it('shift-select-sheet defined after a pick: the clear icon clears without opening the drawer or the dropdown', async () => {
+    const { page } = await mount(form({ selectDrawer: 'always' }), 390, {}, 'fine', withoutSheet);
+    await open(page, 'companyBranchId');
+    const north = Array.from(page.body.querySelector('shift-select-dropdown.companyBranchId-select').shadowRoot.querySelectorAll('button')).find(
+      button => button.textContent.trim() === 'North',
+    ) as HTMLElement;
+    fire(page, north, 'click');
+    await settle(page, 300);
+    expect(shadowValue(page, 'companyBranchId')).toBe('11');
+    expect(dropdownOpen(page, 'companyBranchId')).toBe(false);
+
+    defineSheetLate(page);
+    await settle(page, 100);
+
+    fire(page, selectOf(page, 'companyBranchId').querySelector('.form-input-select-icon.cross'), 'click');
+    await settle(page, 300);
+
+    expect(shadowValue(page, 'companyBranchId')).toBe('');
+    expect(selectOf(page, 'companyBranchId').isOpen).toBe(false);
+    expect(drawerOpen(page, 'companyBranchId')).toBe(false);
+    expect(dropdownOpen(page, 'companyBranchId')).toBe(false);
+  });
+
+  it('opted in with shift-select-sheet missing: Enter, Space and ArrowDown on the trigger are not swallowed and open nothing, as on master', async () => {
+    const { page } = await mount(form({ selectDrawer: 'always' }), 390, {}, 'fine', withoutSheet);
+
+    for (const name of ['Enter', ' ', 'ArrowDown']) {
+      expect(key(page, triggerOf(page, 'year'), name)).toBe(true);
+      await settle(page, 300);
+      expect(dropdownOpen(page, 'year')).toBe(false);
+      expect(drawerOpen(page, 'year')).toBe(false);
+      expect(selectOf(page, 'year').isOpen).toBe(false);
+    }
+  });
+
   it('a field setting wins over the form: off keeps the dropdown, a field value opts in alone', async () => {
     const { page } = await mount(form({ selectDrawer: 'mobile' }, { selectDrawer: 'off' }), 390);
     await open(page, 'year');
