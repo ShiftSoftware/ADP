@@ -82,7 +82,7 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
 
       const vehicleEndpoint = props.vehicleApi as string;
 
-      const response = await adpFetch(vehicleEndpoint, { signal, headers: { 'Accept-Language': language } }, optionsRequestInfo(context));
+      const response = await adpFetch(optionsRequestInfo(context), vehicleEndpoint, { signal, headers: { 'Accept-Language': language } });
 
       let options;
       let defaultIndex = -1;
@@ -137,7 +137,7 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
     const fetcher: FormSelectFetcher = async ({ signal, context }): Promise<FormSelectItem[]> => {
       const dealerEndpoint = props?.branchApi as string;
 
-      const response = await adpFetch(dealerEndpoint, { signal, headers: { 'Accept-Language': language } }, optionsRequestInfo(context));
+      const response = await adpFetch(optionsRequestInfo(context), dealerEndpoint, { signal, headers: { 'Accept-Language': language } });
 
       const options = (await response.json()).map(dealer => ({
         label: dealer.Name,
@@ -155,7 +155,7 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
     const fetcher: FormSelectFetcher = async ({ signal, context }): Promise<FormSelectItem[]> => {
       const dealerEndpoint = props?.vacancyApi as string;
 
-      const response = await adpFetch(dealerEndpoint, { signal, headers: { 'Accept-Language': language } }, optionsRequestInfo(context));
+      const response = await adpFetch(optionsRequestInfo(context), dealerEndpoint, { signal, headers: { 'Accept-Language': language } });
 
       const options = (await response.json()).map(dealer => ({
         label: dealer.Title,
@@ -173,7 +173,7 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
     const fetcher: FormSelectFetcher = async ({ signal, context }): Promise<FormSelectItem[]> => {
       const dealerEndpoint = props?.cityApi as string;
 
-      const response = await adpFetch(dealerEndpoint, { signal, headers: { 'Accept-Language': language } }, optionsRequestInfo(context));
+      const response = await adpFetch(optionsRequestInfo(context), dealerEndpoint, { signal, headers: { 'Accept-Language': language } });
 
       const options = (await response.json()).map(dealer => ({
         label: dealer.Name,
@@ -332,7 +332,7 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
     const fetcher: FormSelectFetcher = async ({ signal, context }): Promise<FormSelectItem[]> => {
       const currentVehiclesEndpoint = form.context.structure?.data.currentVehiclesApi as string;
 
-      const response = await adpFetch(currentVehiclesEndpoint, { signal, headers: { 'Accept-Language': 'en' } }, optionsRequestInfo(context));
+      const response = await adpFetch(optionsRequestInfo(context), currentVehiclesEndpoint, { signal, headers: { 'Accept-Language': 'en' } });
 
       const options = (await response.json()).filter(vehicle => vehicle.name !== 'Other');
 
@@ -412,7 +412,7 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
     const fetcher: FormSelectFetcher = async ({ signal, context }): Promise<FormSelectItem[]> => {
       const currentVehiclesEndpoint = props?.brandApi as string;
 
-      const response = await adpFetch(currentVehiclesEndpoint, { signal, headers: { 'Accept-Language': 'en' } }, optionsRequestInfo(context));
+      const response = await adpFetch(optionsRequestInfo(context), currentVehiclesEndpoint, { signal, headers: { 'Accept-Language': 'en' } });
 
       const options = (await response.json()).filter(vehicle => vehicle.name !== 'Other');
 

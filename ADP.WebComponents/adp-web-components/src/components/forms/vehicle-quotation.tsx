@@ -21,7 +21,7 @@ import {
   resolveIsMobileForm,
 } from '~features/form-hook';
 import { GeneralFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
-import { adpFetch, computeValidity, requestInfo } from '~features/host-bridge';
+import { adpFetch, requestInfo } from '~features/host-bridge';
 import getLanguageFromUrl from '~lib/get-language-from-url';
 import cn from '~lib/cn';
 import { LoaderIcon } from '~assets/loader-icon';
@@ -36,8 +36,6 @@ declare const grecaptcha: Grecaptcha;
 export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>, MultiLingual {
   // #region Localization
   @Prop({ mutable: true, reflect: true }) language: LanguageKeys;
-  @Prop() emitValidity?: boolean;
-  @Prop() emitSize?: boolean;
 
   @State() locale: GeneralFormLocal = { sharedFormLocales: sharedFormLocalesSchema.getDefault() };
 
@@ -147,15 +145,11 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
       if (this.structure?.data?.extraPayload) payload = { ...payload, ...this.structure?.data?.extraPayload };
 
-      const response = await adpFetch(
-        requestEndpoint,
-        {
-          headers,
-          method: 'POST',
-          body: JSON.stringify(payload),
-        },
-        requestInfo('submit', this.el),
-      );
+      const response = await adpFetch(requestInfo('submit', this.el), requestEndpoint, {
+        headers,
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
 
       if (response?.ok) {
         const result = await response?.json().catch(() => ({}));
@@ -184,7 +178,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
         const errorText = contentType.includes('application/json') ? ((await response.json().catch(() => ({})))?.message?.body ?? '') : await response.text().catch(() => '');
 
-        throw Object.assign(new Error(errorText), { status: response.status });
+        throw new Error(errorText);
       }
     } catch (error) {
       console.error(error);
@@ -209,11 +203,6 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   @Method()
   async submit() {
     await handleFormSubmit(this);
-  }
-
-  @Method()
-  async getValidity() {
-    return await computeValidity(this.form);
   }
 
   @State() structureRendered = false;

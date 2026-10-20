@@ -229,15 +229,11 @@ export class FormFile implements FormElement {
       height: null,
     }));
 
-    const response = await adpFetch(
-      this.signUrl,
-      {
-        headers: formHeaders,
-        body: JSON.stringify(payload),
-        method: this.signMethod || 'POST',
-      },
-      formRequestInfo('upload', this.form, this.name),
-    );
+    const response = await adpFetch(formRequestInfo('upload', this.form, this.name), this.signUrl, {
+      headers: formHeaders,
+      body: JSON.stringify(payload),
+      method: this.signMethod || 'POST',
+    });
 
     if (!response.ok) throw await this.responseError(response);
 
@@ -267,19 +263,15 @@ export class FormFile implements FormElement {
   private async uploadToSignedUrl(files: File[], signedFiles: { uploadUrl: string; headers: Record<string, string> }[]) {
     await Promise.all(
       (files || []).map(async (file, idx) => {
-        const response = await adpFetch(
-          signedFiles?.[idx]?.uploadUrl,
-          {
-            method: 'PUT',
-            headers: {
-              'Content-Type': file.type || 'application/octet-stream',
-              'x-ms-blob-type': 'BlockBlob',
-              ...signedFiles?.[idx]?.headers,
-            },
-            body: file,
+        const response = await adpFetch(formRequestInfo('upload', this.form, this.name), signedFiles?.[idx]?.uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': file.type || 'application/octet-stream',
+            'x-ms-blob-type': 'BlockBlob',
+            ...signedFiles?.[idx]?.headers,
           },
-          formRequestInfo('upload', this.form, this.name),
-        );
+          body: file,
+        });
 
         if (!response.ok) throw await this.responseError(response);
       }),

@@ -571,6 +571,7 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
     const headers = await resolveRequestHeaders(this);
 
     const response = await adpFetch(
+      requestInfo('lookup', this.el),
       `${this.unauthorizedSscLookupBaseUrl}${newVehicleLookup?.vin}/${newVehicleLookup?.sscLogId}?${this.unauthorizedSscLookupQueryString}`,
       {
         signal: this.abortController.signal,
@@ -579,7 +580,6 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
           'Ssc-Recaptcha-Token': recaptchaToken,
         },
       },
-      requestInfo('lookup', this.el),
     );
 
     const vinResponse = await response.json();
@@ -746,7 +746,7 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
         // must never join a trace request — this is a re-read, not a lookup. vehicle-ssc.spec.tsx pins it.
         const query = [this.queryString, 'trace=ssc'].filter(Boolean).join('&');
         const headers = await resolveRequestHeaders(this);
-        const httpResponse = await adpFetch(`${this.baseUrl}${vin}?${query}`, { headers, signal }, requestInfo('lookup', this.el));
+        const httpResponse = await adpFetch(requestInfo('lookup', this.el), `${this.baseUrl}${vin}?${query}`, { headers, signal });
 
         if (!httpResponse.ok) throw new Error(`HTTP ${httpResponse.status}`);
 

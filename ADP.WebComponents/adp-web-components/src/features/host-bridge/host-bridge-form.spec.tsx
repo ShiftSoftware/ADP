@@ -33,8 +33,21 @@ import { ShiftSelect } from '../../components/components/shift-select';
 import { ShiftSelectDropdown } from '../../components/components/shift-select-dropdown';
 import { ShiftPortal } from '../../components/components/shift-portal';
 import { FlexibleContainer } from '../../components/components/flexible-container';
+import ts from 'typescript';
+
 import { HOST_CONFIG_KEY } from './host-config';
 import { AdpRequestInfo } from './adp-fetch';
+import { FORM_VALIDITY_KEY } from './validity';
+
+// host-loader.js is shipped as plain ESM, which Jest does not transform.
+const { getFormValidity } = (() => {
+  const { outputText } = ts.transpileModule(readFileSync(join(__dirname, '../../integration/host-loader.js'), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021 },
+  });
+  const module = { exports: {} };
+  new Function('exports', 'module', outputText)(module.exports, module);
+  return module.exports as { getFormValidity: (form: Element) => Promise<unknown> };
+})();
 
 const COMPONENTS = [
   GeneralForm,
@@ -67,7 +80,6 @@ type Seen = { type: string; detail: unknown; bubbles: boolean; composed: boolean
 type FormHost = HTMLElement & {
   submit: () => Promise<void>;
   getForm: () => Promise<{ updateStep: (step: number) => void; openDialog: () => void }>;
-  getValidity: () => Promise<unknown>;
 };
 
 const contactForm = (data: Record<string, unknown> = {}): Structure => ({
@@ -201,7 +213,15 @@ beforeEach(() => {
 
 afterEach(() => {
   delete (globalThis as Record<symbol, unknown>)[HOST_CONFIG_KEY];
+  delete (globalThis as Record<symbol, unknown>)[FORM_VALIDITY_KEY];
 });
+
+const EVENTS = { formEvents: true };
+
+const configure = (options: Record<string, unknown>) => {
+  const scope = globalThis as Record<symbol, Record<string, unknown>>;
+  scope[HOST_CONFIG_KEY] = { ...scope[HOST_CONFIG_KEY], ...options };
+};
 
 async function settle(page: SpecPage, ms = 2000) {
   for (let elapsed = 0; elapsed < ms; elapsed += 50) {
@@ -210,7 +230,8 @@ async function settle(page: SpecPage, ms = 2000) {
   }
 }
 
-async function mount(structure: Structure, props: Record<string, unknown> = {}, listen = true) {
+async function mount(structure: Structure, props: Record<string, unknown> = {}, listen = true, host: Record<string, unknown> | null = EVENTS) {
+  if (host) configure(host);
   const page = await newSpecPage({ components: COMPONENTS, html: '' });
   if (!page.win.matchMedia) (page.win as unknown as Record<string, unknown>).matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
 
@@ -242,7 +263,7 @@ const submitCalls = () => fetchMock.mock.calls.filter(([url]) => String(url).sta
 
 describe('adpFetch routing in a form', () => {
   it('unset: the submit reaches the global fetch with the same two arguments as before', async () => {
-    const { page, el } = await mount(contactForm());
+    const { page, el } = await mount(contactForm(), {}, true, null);
     await fill(page, el, 'name', 'Test Person');
     await fill(page, el, 'email', 'person@example.com');
 
@@ -357,8 +378,8 @@ describe('form events', () => {
   it('error: an HTTP failure carries its status and code, after errorCallback, whose false still suppresses the message', async () => {
     submitAnswer = async () => respond({ message: { body: 'Plate already booked' } }, 422);
     const order: string[] = [];
-    const errorCallback = jest.fn(async (error: { status?: number }, message: string) => {
-      order.push(`errorCallback:${error.status}:${message}`);
+    const errorCallback = jest.fn(async (_error: Error, message: string) => {
+      order.push(`errorCallback:${message}`);
       return false;
     });
 
@@ -370,8 +391,9 @@ describe('form events', () => {
     await settle(page);
 
     expect(details(seen, 'adp-form-error')).toEqual([{ message: 'Plate already booked', status: 422, code: 'http' }]);
-    expect(order).toEqual(['errorCallback:422:Plate already booked', 'error']);
+    expect(order).toEqual(['errorCallback:Plate already booked', 'error']);
     expect(errorCallback.mock.calls[0][0]).toBeInstanceOf(Error);
+    expect(Object.keys(errorCallback.mock.calls[0][0])).toEqual([]);
     expect(((await el.getForm()) as unknown as { context: { errorMessage?: string } }).context.errorMessage).toBeFalsy();
     expect(details(seen, 'adp-form-submitted')).toEqual([]);
     roundTrips(details(seen, 'adp-form-error')[0]);
@@ -399,6 +421,51 @@ describe('form events', () => {
     expect(((await config.el.getForm()) as unknown as { context: { errorMessage?: string } }).context.errorMessage).toBe('Request endpoint is not configured');
   });
 
+  it('a resubmit while the first successCallback is pending gives each submitted event its own payload', async () => {
+    const release: (() => void)[] = [];
+    const successCallback = jest.fn(() => new Promise<boolean>(resolve => release.push(() => resolve(false))));
+    let answer = 0;
+    submitAnswer = async () => respond({ id: ++answer });
+
+    const { page, el, seen } = await mount(contactForm(), { successCallback });
+    await fill(page, el, 'name', 'First Person');
+    await fill(page, el, 'email', 'first@example.com');
+    await el.submit();
+    await settle(page);
+
+    await fill(page, el, 'name', 'Second Person');
+    await fill(page, el, 'email', 'second@example.com');
+    await el.submit();
+    await settle(page);
+
+    expect(release).toHaveLength(2);
+    release[1]();
+    await settle(page, 100);
+    release[0]();
+    await settle(page, 100);
+
+    const [first, second] = submitCalls().map(([, init]) => JSON.parse((init as { body: string }).body));
+    expect(first).toEqual(expect.objectContaining({ name: 'First Person' }));
+    expect(second).toEqual(expect.objectContaining({ name: 'Second Person' }));
+    expect(details(seen, 'adp-form-submitted')).toEqual([
+      { data: { id: 2 }, payload: second },
+      { data: { id: 1 }, payload: first },
+    ]);
+  });
+
+  it('without configureAdpHost no form event fires, and a submit still works', async () => {
+    const formReadyCallback = jest.fn();
+    const { page, el, seen } = await mount(contactForm(), { formReadyCallback }, true, null);
+    await fill(page, el, 'name', 'Test Person');
+    await fill(page, el, 'email', 'person@example.com');
+    await el.submit();
+    await settle(page);
+
+    expect(formReadyCallback).toHaveBeenCalledTimes(1);
+    expect(submitCalls()).toHaveLength(1);
+    expect(seen).toEqual([]);
+  });
+
   it('step-change reports the step, the previous one, the count and the labels, in both directions', async () => {
     const { page, el, seen } = await mount(steppedForm());
     await fill(page, el, 'name', 'Test Person');
@@ -419,8 +486,8 @@ describe('form events', () => {
 });
 
 describe('validity', () => {
-  it('with emit-validity: once on render, then only when valid or the invalid fields change, without showing errors', async () => {
-    const { page, el, seen } = await mount(contactForm(), { emitValidity: true });
+  it('with formValidity: once on render, then only when valid or the invalid fields change, without showing errors', async () => {
+    const { page, el, seen } = await mount(contactForm(), {}, true, { formValidity: true });
 
     expect(details(seen, 'adp-form-validity-change')).toEqual([{ valid: false, step: 1, invalidFields: ['name', 'email'] }]);
     expect(el.shadowRoot.innerHTML).not.toContain('name-require');
@@ -442,7 +509,7 @@ describe('validity', () => {
   });
 
   it('follows the current step only', async () => {
-    const { page, el, seen } = await mount(steppedForm(), { emitValidity: true });
+    const { page, el, seen } = await mount(steppedForm(), {}, true, { formValidity: true });
     await fill(page, el, 'name', 'Test Person');
     await el.submit();
     await settle(page);
@@ -454,18 +521,26 @@ describe('validity', () => {
     ]);
   });
 
-  it('without emit-validity no validity event fires, and getValidity still answers', async () => {
+  it('without formValidity no validity event fires, and getFormValidity still answers', async () => {
     const { page, el, seen } = await mount(contactForm());
 
     await fill(page, el, 'name', 'Test Person');
-    expect(await el.getValidity()).toEqual({ valid: false, step: 1, invalidFields: ['email'] });
+    expect(await getFormValidity(el)).toEqual({ valid: false, step: 1, invalidFields: ['email'] });
 
     await fill(page, el, 'email', 'person@example.com');
-    const validity = await el.getValidity();
+    const validity = await getFormValidity(el);
 
     expect(validity).toEqual({ valid: true, step: 1, invalidFields: [] });
     roundTrips(validity);
     expect(of(seen, 'adp-form-validity-change')).toHaveLength(0);
+  });
+
+  it('without configureAdpHost nothing is registered and getFormValidity answers the empty default', async () => {
+    const { page, el } = await mount(contactForm(), {}, true, null);
+    await fill(page, el, 'name', 'Test Person');
+
+    expect((globalThis as Record<symbol, unknown>)[FORM_VALIDITY_KEY]).toBeUndefined();
+    expect(await getFormValidity(el)).toEqual({ valid: false, step: 1, invalidFields: [] });
   });
 });
 
@@ -473,15 +548,15 @@ describe('size', () => {
   const formObservers = (el: Element) => observations.filter(observation => observation.targets.includes(el));
   const entry = (width: number, height: number) => ({ borderBoxSize: [{ inlineSize: width, blockSize: height }] });
 
-  it('without emit-size nothing observes the form', async () => {
+  it('without formSize nothing observes the form', async () => {
     const { el, seen } = await mount(contactForm());
 
     expect(formObservers(el)).toHaveLength(0);
     expect(of(seen, 'adp-form-size-change')).toHaveLength(0);
   });
 
-  it('with emit-size: rounded border-box size, only on change, at most once per frame, released when removed', async () => {
-    const { page, el, seen } = await mount(contactForm(), { emitSize: true });
+  it('with formSize: rounded border-box size, only on change, at most once per frame, released when removed', async () => {
+    const { page, el, seen } = await mount(contactForm(), {}, true, { formEvents: true, formSize: true });
     const [observer] = formObservers(el);
     expect(formObservers(el)).toHaveLength(1);
 
@@ -510,18 +585,18 @@ describe('size', () => {
 });
 
 describe('opting in changes no DOM', () => {
-  it('a form with every listener, emit-validity and emit-size renders the same DOM as one without', async () => {
-    const plain = await mount(contactForm(), {}, false);
-    const opted = await mount(contactForm(), { emitValidity: true, emitSize: true }, true);
-
-    for (const { page, el } of [plain, opted]) {
+  it('a form with every listener and every host option renders the same DOM as one without configureAdpHost', async () => {
+    const html = (el: HTMLElement) => serializeNodeToHtml(el as never, { prettyHtml: true, serializeShadowRoot: true });
+    const filled = async ({ page, el }: { page: SpecPage; el: HTMLElement }) => {
       await fill(page, el, 'name', 'Te');
       await fill(page, el, 'email', 'person@example.com');
-    }
+      return html(el);
+    };
 
-    const html = (el: HTMLElement) => serializeNodeToHtml(el as never, { prettyHtml: true, serializeShadowRoot: true });
+    const plain = await filled(await mount(contactForm(), {}, false, null));
+    const opted = await mount(contactForm(), {}, true, { formEvents: true, formValidity: true, formSize: true });
 
+    expect(await filled(opted)).toBe(plain);
     expect(of(opted.seen, 'adp-form-validity-change').length).toBeGreaterThan(0);
-    expect(html(opted.el)).toBe(html(plain.el));
   });
 });

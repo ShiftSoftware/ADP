@@ -7,7 +7,7 @@ import { AnyObjectSchema } from 'yup';
 import { Grecaptcha } from '~lib/recaptcha';
 import { formatISO, parse } from 'date-fns';
 import { now } from '~lib/clock';
-import { adpFetch, afterFormReady, emitFormError, emitFormLoading, emitFormSubmitted, observeSize, requestInfo } from '~features/host-bridge';
+import { adpFetch, afterFormCreated, afterFormReady, emitFormLoading, formErrorEmitter, formSubmittedEmitter, requestInfo } from '~features/host-bridge';
 
 /**
  * `data` is optional on the structure type, and `Object.hasOwn(undefined, ...)`
@@ -45,24 +45,23 @@ export const formLanguageChange = async (formContext: FormLanguageChange, newLan
 };
 
 export type FormErrorHandler = {
-  el?: HTMLElement;
   errorMessage: string;
   locale: Record<string, any>;
   errorCallback?: (error: any, message: string) => Promise<void | boolean>;
 };
 
 export const formErrorHandler = async (formContext: FormErrorHandler, error: any) => {
+  const emitError = formErrorEmitter(formContext, error);
   const message = error?.message || error?.Message?.Body || error?.message?.body || formContext.locale?.sharedFormLocales?.errors?.wildCard || '';
 
   let openDefaultDialog = true;
   if (formContext?.errorCallback) openDefaultDialog = !!(await formContext.errorCallback(error, message));
 
   if (openDefaultDialog) formContext.errorMessage = message;
-  emitFormError(formContext.el, error, message);
+  emitError(message);
 };
 
 export type FormLoadingHandler = {
-  el?: HTMLElement;
   isLoading: boolean;
   loadingChanges?: (loading: boolean) => void;
 };
@@ -70,7 +69,7 @@ export type FormLoadingHandler = {
 export const formLoadingHandler = async (formContext: FormLoadingHandler, isLoading: boolean) => {
   formContext.isLoading = isLoading;
   if (formContext.loadingChanges) formContext.loadingChanges(isLoading);
-  emitFormLoading(formContext.el, isLoading);
+  emitFormLoading(formContext, isLoading);
 };
 
 export type FormSuccessHandler = {
@@ -84,6 +83,7 @@ export type FormSuccessHandler = {
 };
 
 export const formSuccessHandler = async (formContext: FormSuccessHandler, data: any) => {
+  const emitSubmitted = formSubmittedEmitter(formContext);
   let openDefaultDialog = true;
   if (formContext.successCallback) openDefaultDialog = !!(await formContext.successCallback(data, formContext.locale['Form submitted successfully.'] || ''));
 
@@ -101,7 +101,7 @@ export const formSuccessHandler = async (formContext: FormSuccessHandler, data: 
       window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' });
     }
   }
-  emitFormSubmitted(formContext.el, data);
+  emitSubmitted(data);
 };
 
 export type FormDidLoadHandler<B> = {
@@ -148,7 +148,7 @@ export const formDidLoadHandler = async <T, B>(formContext: FormDidLoadHandler<B
   }
 
   formContext.form = new FormHook<B>(formContext, validator);
-  if (formContext.emitSize) observeSize(formContext.el);
+  afterFormCreated(formContext);
 };
 
 export type FormGetFormHandler = {
@@ -168,8 +168,6 @@ export const handleFormSubmit = async (formContext: HandleFormSubmit) => {
 };
 
 export type FormStructureRenderedHandler = {
-  el?: HTMLElement;
-  form?: object;
   formReadyCallback?: () => void;
 };
 
@@ -314,16 +312,12 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
     // Deferred uploads must land before the record is created — a failure here aborts the submit.
     await Promise.all(Object.values(context.form.pendingRequests).map(req => req()));
 
-    const response = await adpFetch(
-      requestEndpoint,
-      {
-        headers: header,
-        method: context.structure?.data?.requestMethod || 'POST',
+    const response = await adpFetch(requestInfo('submit', context.el), requestEndpoint, {
+      headers: header,
+      method: context.structure?.data?.requestMethod || 'POST',
 
-        ...(context.structure?.data?.requestMethod?.toLowerCase() === 'get' ? {} : { body: JSON.stringify(payload) }),
-      },
-      requestInfo('submit', context.el),
-    );
+      ...(context.structure?.data?.requestMethod?.toLowerCase() === 'get' ? {} : { body: JSON.stringify(payload) }),
+    });
 
     if (response.ok) {
       const result = await response.json().catch(() => ({}));
@@ -347,7 +341,7 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
         errorText = await response.text().catch(() => '');
       }
 
-      throw Object.assign(new Error(errorText), { status: response.status });
+      throw new Error(errorText);
     }
   } catch (error) {
     console.error(error);

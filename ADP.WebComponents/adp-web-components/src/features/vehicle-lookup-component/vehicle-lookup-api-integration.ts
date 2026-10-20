@@ -114,11 +114,10 @@ export const getVehicleLookup = async (context: VehicleLookupComponent, generalP
     // queryString alone, so a logging flag placed in lookupQueryString never rides on a re-read.
     const query = [context?.queryString, context?.lookupQueryString].filter(Boolean).join('&');
 
-    const response = await adpFetch(
-      `${context?.baseUrl}${vin}?${query}`,
-      { signal: context?.abortController.signal, headers: componentHeaders },
-      requestInfo('lookup', context?.el),
-    );
+    const response = await adpFetch(requestInfo('lookup', context?.el), `${context?.baseUrl}${vin}?${query}`, {
+      signal: context?.abortController.signal,
+      headers: componentHeaders,
+    });
 
     const newData = (await response.json()) as VehicleLookupDTO;
 

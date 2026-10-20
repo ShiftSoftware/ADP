@@ -1,11 +1,8 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import type { FormSelectItem } from '~features/form-hook';
-import type { LanguageCode } from '~features/multi-lingual';
 import Loader from '~assets/loader.svg';
 import { TickIcon } from '~assets/tick-icon';
-
-import { popoverStrings } from './shift-popover/popover-locale';
 
 const NAVIGATION_KEYS = ['ArrowDown', 'ArrowUp', 'Home', 'End'];
 
@@ -33,7 +30,7 @@ export class ShiftSelectSheet {
   @Prop() name: string = '';
   @Prop() open: boolean = false;
   @Prop() label?: string;
-  @Prop() language: LanguageCode = 'en';
+  @Prop() searchLabel?: string;
   @Prop() hasTick: boolean = true;
   @Prop() searchable: boolean = false;
   @Prop() isLoading?: boolean;
@@ -110,7 +107,7 @@ export class ShiftSelectSheet {
     return null;
   }
 
-  // A filtered list must not shrink the sheet under the reader's thumb, so it keeps the height it opened with.
+  // A filtered list keeps the height the sheet opened with, so the rows under the reader's thumb do not jump.
   private lockHeight() {
     const scroller = this.scroller();
     if (!scroller) return;
@@ -208,7 +205,6 @@ export class ShiftSelectSheet {
     const options = this.visibleOptions();
     const selectedIndex = options.findIndex(option => option.value === this.selectedValue);
     const tabStop = this.activeIndex >= 0 && this.activeIndex < options.length ? this.activeIndex : Math.max(selectedIndex, 0);
-    const searchLabel = popoverStrings(this.language).search;
     if (this.open && !options.length) this.listWaited = true;
 
     return (
@@ -222,8 +218,8 @@ export class ShiftSelectSheet {
                 part="search"
                 type="text"
                 value={this.query}
-                placeholder={searchLabel}
-                aria-label={searchLabel}
+                placeholder={this.searchLabel}
+                aria-label={this.searchLabel}
                 autocomplete="off"
                 spellcheck={false}
                 enterKeyHint="search"

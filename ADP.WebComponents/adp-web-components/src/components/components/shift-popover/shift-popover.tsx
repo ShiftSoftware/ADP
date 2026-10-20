@@ -184,13 +184,11 @@ export class ShiftPopover {
   private readonly panelInTemplate = false;
 
   connectedCallback() {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !window.matchMedia) return;
 
-    if (window.matchMedia) {
-      this.sheetQuery = window.matchMedia(SHEET_QUERY);
-      this.sheetQuery.addEventListener?.('change', this.onSheetChange);
-    }
+    this.sheetQuery = window.matchMedia(SHEET_QUERY);
     this.sheet = this.wantsSheet();
+    this.sheetQuery.addEventListener?.('change', this.onSheetChange);
   }
 
   componentDidLoad() {

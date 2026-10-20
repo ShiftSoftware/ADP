@@ -5,10 +5,12 @@ import cn from '~lib/cn';
 import { ArrowUpIcon } from '~assets/arrow-up-icon';
 import { AddIcon } from '~assets/add-icon';
 import getCustomClassesForPortal from '~lib/get-custom-classes-for-portal';
-import type { LanguageCode } from '~features/multi-lingual';
 
 import { SHEET_QUERY } from './shift-popover/sheet-query';
 import { SelectDrawerMode, selectDrawerMode } from './select-drawer';
+
+// Referenced by a variable, so Stencil adds no import of the popover to every form: hosts without a drawer keep their bundles and stylesheets.
+const Popover = 'shift-popover';
 
 @Component({
   shadow: false,
@@ -42,7 +44,7 @@ export class ShiftSelect {
   @Prop() fullRenderOption?: (option: FormSelectItem, isSelected: boolean, handleSelection: (option: FormSelectItem) => void) => any;
   @Prop() selectDrawer?: SelectDrawerMode | 'off';
   @Prop() drawerLabel?: string;
-  @Prop() language?: LanguageCode;
+  @Prop() drawerSearchLabel?: string;
 
   @State() dropdownAncestorClasses = '';
   @State() narrow = false;
@@ -63,11 +65,13 @@ export class ShiftSelect {
   }
 
   connectedCallback() {
-    this.syncSheetQuery();
+    if (this.selectDrawer !== undefined) this.syncSheetQuery();
   }
 
+  // Without a defined shift-popover (a per-component host that did not load it) the dropdown stays.
   private drawerMode(): SelectDrawerMode | undefined {
-    return selectDrawerMode(this.selectDrawer);
+    const mode = selectDrawerMode(this.selectDrawer);
+    return mode && typeof customElements !== 'undefined' && customElements.get(Popover) ? mode : undefined;
   }
 
   private drawerNow(): boolean {
@@ -76,7 +80,7 @@ export class ShiftSelect {
   }
 
   private syncSheetQuery() {
-    const wanted = this.drawerMode() === 'mobile' && typeof window !== 'undefined' && !!window.matchMedia;
+    const wanted = selectDrawerMode(this.selectDrawer) === 'mobile' && typeof window !== 'undefined' && !!window.matchMedia;
 
     if (wanted && !this.sheetQuery) {
       this.sheetQuery = window.matchMedia(SHEET_QUERY);
@@ -215,11 +219,10 @@ export class ShiftSelect {
 
   private renderDrawer(mode: SelectDrawerMode, drawerNow: boolean) {
     return (
-      <shift-popover
+      <Popover
         open={this.isOpen && drawerNow}
         anchor={drawerNow ? this.getInputEl() || undefined : undefined}
         label={this.drawerLabel || undefined}
-        language={this.language}
         mobileSheet={mode === 'mobile'}
         alwaysSheet={mode === 'always'}
         onOpenChange={this.onDrawerOpenChange}
@@ -229,7 +232,7 @@ export class ShiftSelect {
           name={this.name}
           open={this.isOpen && drawerNow}
           label={this.drawerLabel}
-          language={this.language}
+          searchLabel={this.drawerSearchLabel}
           hasTick={this.hasTick}
           searchable={this.searchable}
           isLoading={this.isLoading}
@@ -241,7 +244,7 @@ export class ShiftSelect {
           fetchingErrorText={this.fetchingErrorText}
           handleSelection={this.handleSelection}
         />
-      </shift-popover>
+      </Popover>
     );
   }
 
@@ -284,7 +287,7 @@ export class ShiftSelect {
             readOnly={!this.searchable || drawerNow}
             onInput={this.onSearchInput}
             onClick={this.toggleDropdown}
-            onKeyDown={this.onTriggerKeyDown}
+            onKeyDown={drawerMode ? this.onTriggerKeyDown : undefined}
             {...triggerAria}
             placeholder={this.placeholder}
             class={cn('form-input-style form-input-select', {

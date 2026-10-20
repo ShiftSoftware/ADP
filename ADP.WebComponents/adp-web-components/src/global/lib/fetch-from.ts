@@ -81,5 +81,5 @@ export function fetchFrom(endpoint: Endpoint, props: FetchFromProps = {}) {
 
   const url = `${endpointObject.url + (props?.additionalPath || '')}${queryString}`;
 
-  return adpFetch(url, config, requestInfo('lookup', props?.host));
+  return adpFetch(requestInfo('lookup', props?.host), url, config);
 }

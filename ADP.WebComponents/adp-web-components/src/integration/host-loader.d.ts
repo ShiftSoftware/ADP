@@ -45,6 +45,15 @@ export interface AdpHostOptions {
   languagePacks?: AdpLanguagePacksInput | null;
   fetch?: AdpFetch | null;
   assetsBaseUrl?: string | URL | null;
+  formEvents?: boolean | null;
+  formValidity?: boolean | null;
+  formSize?: boolean | null;
+}
+
+export interface AdpFormValidity {
+  valid: boolean;
+  step: number;
+  invalidFields: string[];
 }
 
 export interface LoadComponentOptions {
@@ -75,3 +84,5 @@ export function loadComponent(options: LoadComponentOptions): Promise<void>;
 export function loadIntegrationManifest(manifestUrl: string | URL): Promise<AdpIntegrationManifest>;
 
 export function configureAdpHost(options?: AdpHostOptions): void;
+
+export function getFormValidity(form: Element): Promise<AdpFormValidity>;

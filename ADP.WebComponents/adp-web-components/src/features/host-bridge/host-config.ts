@@ -21,3 +21,5 @@ export function hostConfig(): HostConfig {
 
   return config;
 }
+
+export const hostFlag = (name: string): boolean => peekHostConfig()?.[name] === true;

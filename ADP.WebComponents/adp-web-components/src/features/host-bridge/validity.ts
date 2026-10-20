@@ -1,6 +1,7 @@
 import { AnyObjectSchema } from 'yup';
 
 import { AdpFormValidity, dispatchFormEvent } from './events';
+import { hostFlag } from './host-config';
 
 // FormHook keeps these private, and forms v1 is frozen, so validity reads them as submit does instead of widening FormHook.
 type FormInternals = {
@@ -10,7 +11,7 @@ type FormInternals = {
   getValues?: () => Record<string, unknown>;
   hasItemInStructure?: (target: string) => boolean;
   formStructure?: { currentStep?: number };
-  context?: { el?: HTMLElement; emitValidity?: boolean };
+  context?: { el?: HTMLElement };
 };
 
 const fieldOf = (path: string) => path.split(/[.[]/)[0];
@@ -85,5 +86,18 @@ export function scheduleValidity(form: object | undefined) {
 }
 
 export function scheduleValidityIfOptedIn(form: object | undefined) {
-  if ((form as FormInternals | undefined)?.context?.emitValidity) scheduleValidity(form);
+  if (hostFlag('formValidity')) scheduleValidity(form);
+}
+
+// host-loader.js reads this map by the same symbol; it cannot import the components.
+export const FORM_VALIDITY_KEY = Symbol.for('shiftsoftware.adp-web-components.form-validity');
+
+type ValidityReaders = WeakMap<object, () => Promise<AdpFormValidity>>;
+
+export function registerFormValidity(context: { el?: HTMLElement; form?: unknown } | undefined) {
+  if (!context?.el) return;
+
+  const scope = globalThis as typeof globalThis & { [FORM_VALIDITY_KEY]?: ValidityReaders };
+  if (!scope[FORM_VALIDITY_KEY]) scope[FORM_VALIDITY_KEY] = new WeakMap();
+  scope[FORM_VALIDITY_KEY].set(context.el, () => computeValidity(context.form));
 }

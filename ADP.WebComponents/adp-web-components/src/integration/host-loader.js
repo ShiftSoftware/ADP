@@ -1,5 +1,6 @@
 const documentStateKey = Symbol.for('shiftsoftware.adp-web-components.integration-state');
 const hostConfigKey = Symbol.for('shiftsoftware.adp-web-components.host-config');
+const formValidityKey = Symbol.for('shiftsoftware.adp-web-components.form-validity');
 
 function getDocumentState() {
   const global = globalThis;
@@ -111,9 +112,23 @@ export function configureAdpHost(options = {}) {
     else delete config.fetch;
   }
 
+  for (const flag of ['formEvents', 'formValidity', 'formSize']) {
+    if (!options || !Object.prototype.hasOwnProperty.call(options, flag)) continue;
+    if (options[flag] === true) config[flag] = true;
+    else delete config[flag];
+  }
+
   if (options && Object.prototype.hasOwnProperty.call(options, 'assetsBaseUrl')) {
     const base = options.assetsBaseUrl instanceof URL ? options.assetsBaseUrl.href : options.assetsBaseUrl;
     if (typeof base === 'string' && base) config.assetsBaseUrl = base;
     else delete config.assetsBaseUrl;
   }
+}
+
+/** The current step's validity of a form created after configureAdpHost; computed on demand, it never shows errors. */
+export async function getFormValidity(form) {
+  const read = globalThis[formValidityKey]?.get?.(form);
+  if (typeof read === 'function') return read();
+
+  return { valid: false, step: 1, invalidFields: [] };
 }

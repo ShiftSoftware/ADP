@@ -1,4 +1,5 @@
-import { releaseSubmitTrace, startSubmitTrace, submitTrace } from './adp-fetch';
+import { SubmitTrace, startSubmitTrace, takeSubmitTrace } from './adp-fetch';
+import { hostFlag } from './host-config';
 
 export type AdpFormErrorCode = 'http' | 'network' | 'upload' | 'config' | 'unknown';
 
@@ -46,13 +47,21 @@ export function dispatchFormEvent<K extends AdpFormEventType>(el: EventTarget | 
   el.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
 }
 
+const NOOP = () => {};
+
+const formEvents = () => hostFlag('formEvents');
+
+const elementOf = (context: object | undefined) => (context as { el?: HTMLElement } | undefined)?.el;
+
 export function emitFormReady(el: HTMLElement | undefined) {
-  if (el) dispatchFormEvent(el, 'adp-form-ready', { tag: el.tagName.toLowerCase() });
+  if (el && formEvents()) dispatchFormEvent(el, 'adp-form-ready', { tag: el.tagName.toLowerCase() });
 }
 
 const loadingStates = new WeakMap<object, boolean>();
 
-export function emitFormLoading(el: HTMLElement | undefined, loading: boolean) {
+export function emitFormLoading(context: object | undefined, loading: boolean) {
+  if (!formEvents()) return;
+  const el = elementOf(context);
   if (!el) return;
 
   const next = !!loading;
@@ -80,6 +89,7 @@ function stepLabels(form: StepSource, step: number): AdpStepLabels {
 }
 
 export function emitFormStep(form: StepSource | undefined) {
+  if (!formEvents()) return;
   const el = form?.context?.el;
   const step = form?.formStructure?.currentStep;
   if (!el || typeof step !== 'number') return;
@@ -92,8 +102,8 @@ export function emitFormStep(form: StepSource | undefined) {
   dispatchFormEvent(el, 'adp-form-step-change', { step, previousStep, stepCount, labels: stepLabels(form, step) });
 }
 
-function sentPayload(el: object): Record<string, unknown> {
-  const body = submitTrace(el)?.body;
+function sentPayload(trace: SubmitTrace | undefined): Record<string, unknown> {
+  const body = trace?.body;
   if (typeof body !== 'string') return {};
 
   try {
@@ -104,26 +114,20 @@ function sentPayload(el: object): Record<string, unknown> {
   }
 }
 
-export function emitFormSubmitted(el: HTMLElement | undefined, data: unknown) {
-  if (!el) return;
+// Called as a handler starts, before its awaited callback, so a quick resubmit cannot swap this attempt's trace for its own.
+export function formSubmittedEmitter(context: object | undefined): (data: unknown) => void {
+  if (!formEvents()) return NOOP;
+  const el = elementOf(context);
+  if (!el) return NOOP;
 
-  const payload = sentPayload(el);
-  releaseSubmitTrace(el);
-  dispatchFormEvent(el, 'adp-form-submitted', { data: toJson(data), payload });
+  const payload = sentPayload(takeSubmitTrace(el));
+
+  return data => dispatchFormEvent(el, 'adp-form-submitted', { data: toJson(data), payload });
 }
 
-export function httpStatusOf(error: unknown): number | undefined {
-  if (typeof error !== 'object' || error === null) return undefined;
-  if (!Object.prototype.hasOwnProperty.call(error, 'status')) return undefined;
+export function formErrorCode(trace: SubmitTrace | undefined, error: unknown): AdpFormErrorCode {
+  if (trace?.status !== undefined) return 'http';
 
-  const status = (error as { status?: unknown }).status;
-  return typeof status === 'number' && Number.isFinite(status) ? status : undefined;
-}
-
-export function formErrorCode(el: object | undefined, error: unknown): AdpFormErrorCode {
-  if (httpStatusOf(error) !== undefined) return 'http';
-
-  const trace = submitTrace(el);
   const rejectedBy = trace?.rejections.get(error);
   if (rejectedBy === 'submit') return 'network';
   if (rejectedBy === 'upload') return 'upload';
@@ -134,14 +138,20 @@ export function formErrorCode(el: object | undefined, error: unknown): AdpFormEr
   return 'unknown';
 }
 
-export function emitFormError(el: HTMLElement | undefined, error: unknown, message: unknown) {
-  if (!el) return;
+export function formErrorEmitter(context: object | undefined, error: unknown): (message: unknown) => void {
+  if (!formEvents()) return NOOP;
+  const el = elementOf(context);
+  if (!el) return NOOP;
 
-  const detail: AdpFormEventDetails['adp-form-error'] = { message: typeof message === 'string' ? message : '' };
-  const status = httpStatusOf(error);
-  if (status !== undefined) detail.status = status;
-  detail.code = formErrorCode(el, error);
-  releaseSubmitTrace(el);
+  const trace = takeSubmitTrace(el);
+  const code = formErrorCode(trace, error);
+  const status = trace?.status;
 
-  dispatchFormEvent(el, 'adp-form-error', detail);
+  return message => {
+    const detail: AdpFormEventDetails['adp-form-error'] = { message: typeof message === 'string' ? message : '' };
+    if (status !== undefined) detail.status = status;
+    detail.code = code;
+
+    dispatchFormEvent(el, 'adp-form-error', detail);
+  };
 }

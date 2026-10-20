@@ -97,7 +97,7 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   @State() leavingTime: string | null = null;
   @State() announced: boolean = false;
 
-  private loader = createAvailabilityLoader((url, init) => adpFetch(url, init, requestInfo('calendar', this.form?.context?.el ?? this.el, this.name)));
+  private loader = createAvailabilityLoader((url, init) => adpFetch(requestInfo('calendar', this.form?.context?.el ?? this.el, this.name), url, init));
   private syncQueued = false;
   private loadWanted = false;
   private current = '';

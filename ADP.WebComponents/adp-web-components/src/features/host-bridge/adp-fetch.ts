@@ -1,4 +1,4 @@
-import { peekHostConfig } from './host-config';
+import { HostConfig, peekHostConfig } from './host-config';
 
 export type AdpRequestKind = 'submit' | 'options' | 'calendar' | 'upload' | 'lookup';
 
@@ -11,9 +11,10 @@ export interface AdpRequestInfo {
 
 export type AdpFetch = (url: string, init: RequestInit, info: AdpRequestInfo) => Promise<Response>;
 
-type SubmitTrace = {
+export type SubmitTrace = {
   sent: boolean;
   body?: unknown;
+  status?: number;
   uploadFailed: boolean;
   rejections: Map<unknown, AdpRequestKind>;
 };
@@ -22,8 +23,8 @@ const traces = new WeakMap<object, SubmitTrace>();
 
 const newTrace = (): SubmitTrace => ({ sent: false, uploadFailed: false, rejections: new Map() });
 
-export function hostFetch(): AdpFetch | undefined {
-  const candidate = peekHostConfig()?.fetch;
+export function hostFetch(config: HostConfig | undefined = peekHostConfig()): AdpFetch | undefined {
+  const candidate = config?.fetch;
 
   return typeof candidate === 'function' ? (candidate as AdpFetch) : undefined;
 }
@@ -51,39 +52,44 @@ export function submitTrace(element: object | undefined): SubmitTrace | undefine
   return element ? traces.get(element) : undefined;
 }
 
-export function releaseSubmitTrace(element: object | undefined) {
-  if (element) traces.delete(element);
+export function takeSubmitTrace(element: object | undefined): SubmitTrace | undefined {
+  const trace = submitTrace(element);
+  if (trace) traces.delete(element);
+
+  return trace;
 }
 
-function traced(request: Promise<Response>, init: RequestInit, info: AdpRequestInfo): Promise<Response> {
-  if (!info.element) return request;
+// Observes beside the caller instead of chaining, so the caller's await settles on the same tick as an untraced request.
+function observe(request: Promise<Response>, init: RequestInit, info: AdpRequestInfo) {
+  if (!info.element) return;
 
-  let trace = traces.get(info.element);
-  if (!trace) {
-    trace = newTrace();
-    traces.set(info.element, trace);
-  }
+  if (!traces.has(info.element)) traces.set(info.element, newTrace());
+  const trace = traces.get(info.element);
 
   if (info.kind === 'submit') {
     trace.sent = true;
     trace.body = init?.body;
   }
 
-  return request.then(
+  request.then(
     response => {
-      if (info.kind === 'upload' && !response?.ok) trace.uploadFailed = true;
-      return response;
+      if (response?.ok) return;
+      if (info.kind === 'upload') trace.uploadFailed = true;
+      else if (typeof response?.status === 'number') trace.status = response.status;
     },
     reason => {
       trace.rejections.set(reason, info.kind);
       if (info.kind === 'upload') trace.uploadFailed = true;
-      throw reason;
     },
   );
 }
 
-export function adpFetch(url: string, init: RequestInit, info: AdpRequestInfo): Promise<Response> {
-  const override = hostFetch();
+// Info comes first so each call site keeps its init object as the last argument and its old one-line shape.
+export function adpFetch(info: AdpRequestInfo, url: string, init: RequestInit): Promise<Response> {
+  const config = peekHostConfig();
+  if (!config) return fetch(url, init);
+
+  const override = hostFetch(config);
 
   let request: Promise<Response>;
   if (override) {
@@ -94,5 +100,7 @@ export function adpFetch(url: string, init: RequestInit, info: AdpRequestInfo): 
     }
   } else request = fetch(url, init);
 
-  return info.kind === 'submit' || info.kind === 'upload' ? traced(request, init, info) : request;
+  if (config.formEvents === true && (info.kind === 'submit' || info.kind === 'upload')) observe(request, init, info);
+
+  return request;
 }
