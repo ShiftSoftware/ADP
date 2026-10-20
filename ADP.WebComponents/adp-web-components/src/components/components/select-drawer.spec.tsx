@@ -237,6 +237,9 @@ const drawerOpen = (page: SpecPage, name: string) => {
 };
 const dropdownOpen = (page: SpecPage, name: string) => !!dropdownBox(page, name)?.classList.contains('shift-select-container-open');
 
+const withoutSheet = COMPONENTS.filter(component => component !== ShiftSelectSheet);
+const defineSheetLate = (page: SpecPage) => win(page).customElements.define('shift-select-sheet', class extends (win(page).HTMLElement as typeof HTMLElement) {});
+
 async function open(page: SpecPage, name: string) {
   fire(page, triggerOf(page, name), 'click');
   await settle(page, 300);
@@ -327,7 +330,6 @@ describe('select drawer: opting in', () => {
   });
 
   it('with shift-popover defined but not shift-select-sheet, always keeps the dropdown; with both defined it opens the drawer', async () => {
-    const withoutSheet = COMPONENTS.filter(component => component !== ShiftSelectSheet);
     const bare = await mount(form({ selectDrawer: 'always' }), 390, {}, 'fine', withoutSheet);
     expect(win(bare.page).customElements.get('shift-popover')).toBeDefined();
     expect(win(bare.page).customElements.get('shift-select-sheet')).toBeUndefined();
@@ -346,6 +348,45 @@ describe('select drawer: opting in', () => {
     expect(sheetOf(full.page, 'year')).not.toBeNull();
     expect(dropdownOpen(full.page, 'year')).toBe(false);
     expect(triggerOf(full.page, 'year').getAttribute('role')).toBe('combobox');
+  });
+
+  it('shift-select-sheet defined after the select rendered: the drawer is used from the next open', async () => {
+    const { page } = await mount(form({ selectDrawer: 'always' }), 390, {}, 'fine', withoutSheet);
+    expect(triggerOf(page, 'year').hasAttribute('role')).toBe(false);
+
+    defineSheetLate(page);
+    await settle(page, 100);
+
+    expect(triggerOf(page, 'year').getAttribute('role')).toBe('combobox');
+    await open(page, 'year');
+    expect(drawerOpen(page, 'year')).toBe(true);
+    expect(sheetOf(page, 'year')).not.toBeNull();
+    expect(dropdownOpen(page, 'year')).toBe(false);
+  });
+
+  it('shift-select-sheet defined while the dropdown is open: the open dropdown is not converted, the drawer comes after it closes', async () => {
+    const { page } = await mount(form({ selectDrawer: 'always' }), 390, {}, 'fine', withoutSheet);
+    await open(page, 'year');
+    expect(dropdownOpen(page, 'year')).toBe(true);
+
+    defineSheetLate(page);
+    await settle(page, 100);
+    (selectOf(page, 'year') as SelectHost & { placeholder: string }).placeholder = 'Pick a year';
+    await settle(page, 100);
+
+    expect(dropdownOpen(page, 'year')).toBe(true);
+    expect(drawerOpen(page, 'year')).toBe(false);
+    expect(sheetOf(page, 'year')).toBeNull();
+    expect(triggerOf(page, 'year').hasAttribute('role')).toBe(false);
+
+    key(page, page.body, 'Escape');
+    await settle(page, 300);
+    expect(dropdownOpen(page, 'year')).toBe(false);
+    expect(triggerOf(page, 'year').getAttribute('role')).toBe('combobox');
+
+    await open(page, 'year');
+    expect(drawerOpen(page, 'year')).toBe(true);
+    expect(dropdownOpen(page, 'year')).toBe(false);
   });
 
   it('a field setting wins over the form: off keeps the dropdown, a field value opts in alone', async () => {
@@ -761,6 +802,19 @@ describe('select drawer: search', () => {
     await open(page, 'companyBranchId');
     expect(searchOf(page, 'companyBranchId').value).toBe('');
     expect(rows(page, 'companyBranchId')).toHaveLength(3);
+  });
+
+  it('the search label follows the form language, and drawerSearchLabel still overrides it', async () => {
+    const { page } = await mount(form({ selectDrawer: 'always' }), 390, { language: 'ru' });
+    await open(page, 'companyBranchId');
+
+    expect(searchOf(page, 'companyBranchId').getAttribute('placeholder')).toBe('Поиск');
+    expect(searchOf(page, 'companyBranchId').getAttribute('aria-label')).toBe('Поиск');
+
+    (selectOf(page, 'companyBranchId') as SelectHost & { drawerSearchLabel: string }).drawerSearchLabel = 'Find a branch';
+    await settle(page, 100);
+    expect(searchOf(page, 'companyBranchId').getAttribute('placeholder')).toBe('Find a branch');
+    expect(searchOf(page, 'companyBranchId').getAttribute('aria-label')).toBe('Find a branch');
   });
 
   it('a select that is not searchable gets no search field', async () => {

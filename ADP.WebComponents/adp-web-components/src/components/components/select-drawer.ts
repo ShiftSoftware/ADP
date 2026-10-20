@@ -1,4 +1,4 @@
-import { popoverStrings } from './shift-popover/popover-locale';
+import type { LanguageKeys } from '~features/multi-lingual';
 
 export type SelectDrawerMode = 'mobile' | 'always';
 export type SelectDrawerSetting = SelectDrawerMode | 'off';
@@ -16,10 +16,10 @@ export function resolveSelectDrawer(field: unknown, form: unknown): SelectDrawer
 export function selectDrawerProps(
   field: unknown,
   form: unknown,
-  language: string,
+  language: LanguageKeys,
   label: string,
-): { selectDrawer?: SelectDrawerMode; drawerLabel?: string; drawerSearchLabel?: string } {
+): { selectDrawer?: SelectDrawerMode; drawerLabel?: string; drawerLanguage?: LanguageKeys } {
   const selectDrawer = resolveSelectDrawer(field, form);
 
-  return selectDrawer ? { selectDrawer, drawerLabel: label, drawerSearchLabel: popoverStrings(language).search } : {};
+  return selectDrawer ? { selectDrawer, drawerLabel: label, drawerLanguage: language } : {};
 }

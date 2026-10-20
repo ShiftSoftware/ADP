@@ -555,7 +555,7 @@ describe('size', () => {
     expect(of(seen, 'adp-form-size-change')).toHaveLength(0);
   });
 
-  it('with formSize: rounded border-box size, only on change, at most once per frame, released when removed', async () => {
+  it('with formSize: rounded border-box size, only on change, at most once per frame, silent while detached', async () => {
     const { page, el, seen } = await mount(contactForm(), {}, true, { formEvents: true, formSize: true });
     const [observer] = formObservers(el);
     expect(formObservers(el)).toHaveLength(1);
@@ -578,9 +578,37 @@ describe('size', () => {
 
     el.remove();
     observer.callback([entry(0, 0)]);
-    expect(observer.disconnected).toBe(true);
+    expect(observer.disconnected).toBe(false);
     expect(of(seen, 'adp-form-size-change')).toHaveLength(2);
     await settle(page, 100);
+  });
+
+  it('with formSize: a form moved to another parent keeps publishing its size', async () => {
+    const { page, el, seen } = await mount(contactForm(), {}, true, { formEvents: true, formSize: true });
+    const [observer] = formObservers(el);
+
+    observer.callback([entry(320, 480)]);
+    await settle(page, 100);
+
+    const parent = page.doc.createElement('section');
+    page.body.appendChild(parent);
+    el.remove();
+    observer.callback([entry(0, 0)]);
+    await settle(page, 100);
+    expect(details(seen, 'adp-form-size-change')).toEqual([{ width: 320, height: 480 }]);
+
+    parent.appendChild(el);
+    await settle(page, 100);
+    observer.callback([entry(600, 420)]);
+    await settle(page, 100);
+    observer.callback([entry(600, 420)]);
+
+    expect(formObservers(el)).toHaveLength(1);
+    expect(observer.disconnected).toBe(false);
+    expect(details(seen, 'adp-form-size-change')).toEqual([
+      { width: 320, height: 480 },
+      { width: 600, height: 420 },
+    ]);
   });
 });
 

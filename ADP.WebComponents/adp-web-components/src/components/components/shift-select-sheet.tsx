@@ -1,8 +1,11 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import type { FormSelectItem } from '~features/form-hook';
+import type { LanguageKeys } from '~features/multi-lingual';
 import Loader from '~assets/loader.svg';
 import { TickIcon } from '~assets/tick-icon';
+
+import { popoverStrings } from './shift-popover/popover-locale';
 
 const NAVIGATION_KEYS = ['ArrowDown', 'ArrowUp', 'Home', 'End'];
 
@@ -31,6 +34,7 @@ export class ShiftSelectSheet {
   @Prop() open: boolean = false;
   @Prop() label?: string;
   @Prop() searchLabel?: string;
+  @Prop() language?: LanguageKeys;
   @Prop() hasTick: boolean = true;
   @Prop() searchable: boolean = false;
   @Prop() isLoading?: boolean;
@@ -206,6 +210,7 @@ export class ShiftSelectSheet {
     const selectedIndex = options.findIndex(option => option.value === this.selectedValue);
     const tabStop = this.activeIndex >= 0 && this.activeIndex < options.length ? this.activeIndex : Math.max(selectedIndex, 0);
     if (this.open && !options.length) this.listWaited = true;
+    const searchLabel = this.searchable ? this.searchLabel || popoverStrings(this.language || 'en').search : undefined;
 
     return (
       <Host style={this.lockedHeight ? { minBlockSize: `${this.lockedHeight}px` } : undefined}>
@@ -218,8 +223,8 @@ export class ShiftSelectSheet {
                 part="search"
                 type="text"
                 value={this.query}
-                placeholder={this.searchLabel}
-                aria-label={this.searchLabel}
+                placeholder={searchLabel}
+                aria-label={searchLabel}
                 autocomplete="off"
                 spellcheck={false}
                 enterKeyHint="search"

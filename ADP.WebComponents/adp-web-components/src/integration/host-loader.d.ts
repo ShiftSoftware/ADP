@@ -35,7 +35,7 @@ export type AdpRequestKind = 'submit' | 'options' | 'calendar' | 'upload' | 'loo
 export interface AdpRequestInfo {
   kind: AdpRequestKind;
   tag: string;
-  element: HTMLElement;
+  element?: HTMLElement;
   field?: string;
 }
 

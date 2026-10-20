@@ -24,7 +24,7 @@ export function observeSize(el: HTMLElement | undefined) {
   let waiting = false;
 
   const publish = (size: Size) => {
-    if (last && last.width === size.width && last.height === size.height) return false;
+    if (!el.isConnected || (last && last.width === size.width && last.height === size.height)) return false;
 
     last = size;
     dispatchFormEvent(el, 'adp-form-size-change', { width: size.width, height: size.height });
@@ -42,12 +42,9 @@ export function observeSize(el: HTMLElement | undefined) {
     }
   };
 
+  // A detached form is skipped rather than unobserved, so a host that moves or re-parents it keeps getting sizes.
   const observer = new ResizeObserver(entries => {
-    if (!el.isConnected) {
-      observer.disconnect();
-      observed.delete(el);
-      return;
-    }
+    if (!el.isConnected) return;
 
     const entry = entries[entries.length - 1];
     const size = measure(el, entry);

@@ -1,6 +1,7 @@
-import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Element, Host, Prop, State, Watch, forceUpdate, h } from '@stencil/core';
 import { FormSelectItem } from '../../components';
 import cn from '~lib/cn';
+import type { LanguageKeys } from '~features/multi-lingual';
 
 import { ArrowUpIcon } from '~assets/arrow-up-icon';
 import { AddIcon } from '~assets/add-icon';
@@ -12,6 +13,8 @@ import { SelectDrawerMode, selectDrawerMode } from './select-drawer';
 // Referenced by variables, so Stencil adds neither the popover nor the sheet to every form: hosts without a drawer keep their bundles, stylesheets and registry.
 const Popover = 'shift-popover';
 const Sheet = 'shift-select-sheet';
+
+const drawerTagsDefined = () => typeof customElements !== 'undefined' && !!customElements.get(Popover) && !!customElements.get(Sheet);
 
 @Component({
   shadow: false,
@@ -46,6 +49,7 @@ export class ShiftSelect {
   @Prop() selectDrawer?: SelectDrawerMode | 'off';
   @Prop() drawerLabel?: string;
   @Prop() drawerSearchLabel?: string;
+  @Prop() drawerLanguage?: LanguageKeys;
 
   @State() dropdownAncestorClasses = '';
   @State() narrow = false;
@@ -55,6 +59,9 @@ export class ShiftSelect {
   private dropdownEl: HTMLElement | null = null;
   private boundKeyDown = (e: KeyboardEvent) => this.handleKeyDown(e);
   private sheetQuery?: MediaQueryList;
+  private drawerDefined = false;
+  private drawerChecked = false;
+  private awaitingDrawer = false;
 
   setDropdownRef = (el: HTMLElement | null) => {
     this.dropdownEl = el;
@@ -63,16 +70,47 @@ export class ShiftSelect {
   @Watch('selectDrawer')
   onSelectDrawerChange() {
     this.syncSheetQuery();
+    this.syncDrawerDefined();
+  }
+
+  @Watch('isOpen')
+  onIsOpenChange(open: boolean) {
+    if (!open) this.syncDrawerDefined();
   }
 
   connectedCallback() {
-    if (this.selectDrawer !== undefined) this.syncSheetQuery();
+    if (this.selectDrawer === undefined) return;
+
+    this.syncSheetQuery();
+    this.syncDrawerDefined();
   }
 
   // Without both shift-popover and shift-select-sheet defined (a per-component host that did not load them) the dropdown stays.
   private drawerMode(): SelectDrawerMode | undefined {
     const mode = selectDrawerMode(this.selectDrawer);
-    return mode && typeof customElements !== 'undefined' && customElements.get(Popover) && customElements.get(Sheet) ? mode : undefined;
+    return mode && this.drawerDefined ? mode : undefined;
+  }
+
+  // Tags defined after the first render switch the select to the drawer, but never while its list is open.
+  private syncDrawerDefined() {
+    if (!selectDrawerMode(this.selectDrawer) || this.drawerDefined || (this.isOpen && this.drawerChecked)) return;
+
+    this.drawerChecked = true;
+    this.drawerDefined = drawerTagsDefined();
+    if (!this.drawerDefined) this.awaitDrawerTags();
+  }
+
+  private awaitDrawerTags() {
+    if (this.awaitingDrawer || typeof customElements === 'undefined' || typeof customElements.whenDefined !== 'function') return;
+
+    this.awaitingDrawer = true;
+    Promise.all([customElements.whenDefined(Popover), customElements.whenDefined(Sheet)]).then(() => {
+      this.awaitingDrawer = false;
+      if (this.isOpen) return;
+
+      this.syncDrawerDefined();
+      if (this.drawerDefined) forceUpdate(this);
+    });
   }
 
   private drawerNow(): boolean {
@@ -234,6 +272,7 @@ export class ShiftSelect {
           open={this.isOpen && drawerNow}
           label={this.drawerLabel}
           searchLabel={this.drawerSearchLabel}
+          language={this.drawerLanguage}
           hasTick={this.hasTick}
           searchable={this.searchable}
           isLoading={this.isLoading}
