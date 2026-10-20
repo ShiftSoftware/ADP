@@ -9,8 +9,9 @@ import getCustomClassesForPortal from '~lib/get-custom-classes-for-portal';
 import { SHEET_QUERY } from './shift-popover/sheet-query';
 import { SelectDrawerMode, selectDrawerMode } from './select-drawer';
 
-// Referenced by a variable, so Stencil adds no import of the popover to every form: hosts without a drawer keep their bundles and stylesheets.
+// Referenced by variables, so Stencil adds neither the popover nor the sheet to every form: hosts without a drawer keep their bundles, stylesheets and registry.
 const Popover = 'shift-popover';
+const Sheet = 'shift-select-sheet';
 
 @Component({
   shadow: false,
@@ -68,10 +69,10 @@ export class ShiftSelect {
     if (this.selectDrawer !== undefined) this.syncSheetQuery();
   }
 
-  // Without a defined shift-popover (a per-component host that did not load it) the dropdown stays.
+  // Without both shift-popover and shift-select-sheet defined (a per-component host that did not load them) the dropdown stays.
   private drawerMode(): SelectDrawerMode | undefined {
     const mode = selectDrawerMode(this.selectDrawer);
-    return mode && typeof customElements !== 'undefined' && customElements.get(Popover) ? mode : undefined;
+    return mode && typeof customElements !== 'undefined' && customElements.get(Popover) && customElements.get(Sheet) ? mode : undefined;
   }
 
   private drawerNow(): boolean {
@@ -227,7 +228,7 @@ export class ShiftSelect {
         alwaysSheet={mode === 'always'}
         onOpenChange={this.onDrawerOpenChange}
       >
-        <shift-select-sheet
+        <Sheet
           class={this.dropdownAncestorClasses}
           name={this.name}
           open={this.isOpen && drawerNow}

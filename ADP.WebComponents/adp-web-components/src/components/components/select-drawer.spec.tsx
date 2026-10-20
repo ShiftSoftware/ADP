@@ -326,6 +326,28 @@ describe('select drawer: opting in', () => {
     expect(triggerOf(page, 'year').hasAttribute('role')).toBe(false);
   });
 
+  it('with shift-popover defined but not shift-select-sheet, always keeps the dropdown; with both defined it opens the drawer', async () => {
+    const withoutSheet = COMPONENTS.filter(component => component !== ShiftSelectSheet);
+    const bare = await mount(form({ selectDrawer: 'always' }), 390, {}, 'fine', withoutSheet);
+    expect(win(bare.page).customElements.get('shift-popover')).toBeDefined();
+    expect(win(bare.page).customElements.get('shift-select-sheet')).toBeUndefined();
+    await open(bare.page, 'year');
+
+    expect(dropdownOpen(bare.page, 'year')).toBe(true);
+    expect(selectOf(bare.page, 'year').querySelector('shift-popover') ?? bare.page.body.querySelector('shift-popover')).toBeNull();
+    expect(sheetOf(bare.page, 'year')).toBeNull();
+    expect(triggerOf(bare.page, 'year').hasAttribute('role')).toBe(false);
+
+    const full = await mount(form({ selectDrawer: 'always' }), 390);
+    expect(win(full.page).customElements.get('shift-select-sheet')).toBeDefined();
+    await open(full.page, 'year');
+
+    expect(drawerOpen(full.page, 'year')).toBe(true);
+    expect(sheetOf(full.page, 'year')).not.toBeNull();
+    expect(dropdownOpen(full.page, 'year')).toBe(false);
+    expect(triggerOf(full.page, 'year').getAttribute('role')).toBe('combobox');
+  });
+
   it('a field setting wins over the form: off keeps the dropdown, a field value opts in alone', async () => {
     const { page } = await mount(form({ selectDrawer: 'mobile' }, { selectDrawer: 'off' }), 390);
     await open(page, 'year');
