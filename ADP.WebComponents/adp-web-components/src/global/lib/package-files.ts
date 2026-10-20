@@ -1,6 +1,7 @@
 import { Build } from '@stencil/core';
 
 import { version } from '../../../package.json';
+import { peekHostConfig } from '~features/host-bridge/host-config';
 
 /**
  * Where the package's own files — the locale strings under `locales/`, the generated fixtures and
@@ -26,6 +27,13 @@ export function devFileBase(): string {
   return script?.src ? new URL('../', script.src).href : new URL('/', document.baseURI).href;
 }
 
+export function hostFileBase(): string | undefined {
+  const base = peekHostConfig()?.assetsBaseUrl;
+  if (typeof base !== 'string' || !base) return undefined;
+
+  return new URL(base.endsWith('/') ? base : `${base}/`, document.baseURI).href;
+}
+
 /** The CDN copy of this version's `dist/`, with a trailing slash. */
 export function cdnFileBase(tag: string = version): string {
   return `${CDN}${tag}/dist/`;
@@ -37,6 +45,9 @@ export function cdnFileBase(tag: string = version): string {
  * non-ok answer means to them.
  */
 export async function fetchPackageFile(path: string): Promise<Response> {
+  const hostBase = hostFileBase();
+  if (hostBase) return fetch(new URL(path, hostBase).href);
+
   if (Build.isDev) return fetch(devFileBase() + path);
 
   const pinned = await fetch(cdnFileBase() + path);

@@ -21,6 +21,7 @@ import {
   resolveIsMobileForm,
 } from '~features/form-hook';
 import { GeneralFormLocal, LanguageCode, LanguageKeys, LanguagePacksInput, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
+import { adpFetch, computeValidity, requestInfo } from '~features/host-bridge';
 import getLanguageFromUrl from '~lib/get-language-from-url';
 import cn from '~lib/cn';
 import { LoaderIcon } from '~assets/loader-icon';
@@ -36,6 +37,8 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   // #region Localization
   @Prop({ mutable: true, reflect: true }) language: LanguageCode;
   @Prop() languagePacks?: LanguagePacksInput;
+  @Prop() emitValidity?: boolean;
+  @Prop() emitSize?: boolean;
 
   @State() locale: GeneralFormLocal = { sharedFormLocales: sharedFormLocalesSchema.getDefault() };
 
@@ -145,11 +148,15 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
       if (this.structure?.data?.extraPayload) payload = { ...payload, ...this.structure?.data?.extraPayload };
 
-      const response = await fetch(requestEndpoint, {
-        headers,
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      const response = await adpFetch(
+        requestEndpoint,
+        {
+          headers,
+          method: 'POST',
+          body: JSON.stringify(payload),
+        },
+        requestInfo('submit', this.el),
+      );
 
       if (response?.ok) {
         const result = await response?.json().catch(() => ({}));
@@ -178,7 +185,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
         const errorText = contentType.includes('application/json') ? ((await response.json().catch(() => ({})))?.message?.body ?? '') : await response.text().catch(() => '');
 
-        throw new Error(errorText);
+        throw Object.assign(new Error(errorText), { status: response.status });
       }
     } catch (error) {
       console.error(error);
@@ -203,6 +210,11 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   @Method()
   async submit() {
     await handleFormSubmit(this);
+  }
+
+  @Method()
+  async getValidity() {
+    return await computeValidity(this.form);
   }
 
   @State() structureRendered = false;

@@ -10,6 +10,7 @@ import { ChevronLeftIcon } from '~assets/chevron-left-icon';
 
 import '~lib/middleware';
 import { BookingAvailability, BookingDay, createAvailabilityLoader, isCompleteTarget, slotValue } from '~lib/booking-availability';
+import { adpFetch, requestInfo } from '~features/host-bridge';
 import { blockReason, buildAvailability } from '~lib/calendar-availability';
 import { monthOf } from '~lib/calendar-date';
 import { formatPickerValue, readPickerValue, valueOffset } from '~lib/picker';
@@ -96,7 +97,7 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   @State() leavingTime: string | null = null;
   @State() announced: boolean = false;
 
-  private loader = createAvailabilityLoader();
+  private loader = createAvailabilityLoader((url, init) => adpFetch(url, init, requestInfo('calendar', this.form?.context?.el ?? this.el, this.name)));
   private syncQueued = false;
   private loadWanted = false;
   private current = '';

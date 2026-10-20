@@ -114,7 +114,7 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
       // other lookups — instead it hands us a callback we invoke on every submit.
       const headers = await smartInvokable.bind(this)(this.getHeaders);
 
-      const response = await fetchFrom(this.manufacturerPartLookupEndpoint, { language: this.language, body: requestPayload, method: 'POST', headers });
+      const response = await fetchFrom(this.manufacturerPartLookupEndpoint, { language: this.language, body: requestPayload, method: 'POST', headers, host: this.el });
 
       if (!response.ok) {
         throw new Error(`Request failed with status ${response.status}`);

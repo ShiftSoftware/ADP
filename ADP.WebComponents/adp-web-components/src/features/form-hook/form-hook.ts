@@ -2,6 +2,7 @@ import { forceUpdate } from '@stencil/core';
 import { AnyObjectSchema, SchemaDescription } from 'yup';
 
 import { LanguageCode, SharedFormLocales } from '~features/multi-lingual';
+import { afterFormStepUpdate, scheduleValidity } from '~features/host-bridge';
 
 import { Field, FormElement, FormHookInterface, FormStateOptions, Step, Subscribers, ValidationType, WatchCallback, Watchers } from './interface';
 
@@ -284,6 +285,7 @@ export class FormHook<T> {
 
     this.backButtonContexts.forEach(backButton => forceUpdate(backButton));
     this.rerender({ rerenderAll: true });
+    afterFormStepUpdate(this);
   };
 
   private submitForm = async () => {
@@ -441,6 +443,7 @@ export class FormHook<T> {
       if (watch) watch({ form: this, values });
 
       if (this.watchers['all']) this.watchers['all']({ form: this, values });
+      if (this.context.emitValidity) scheduleValidity(this);
     }, 50);
 
     if (strict) {

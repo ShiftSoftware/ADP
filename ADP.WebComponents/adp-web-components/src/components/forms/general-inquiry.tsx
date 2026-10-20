@@ -2,6 +2,7 @@ import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stenci
 
 import { FormElementMapper, FormElementStructure, FormHook, FormHookInterface, FormSelectFetcher, FormSelectItem, functionHooks } from '~features/form-hook';
 import { GeneralFormLocal, LanguageCode, LanguageKeys, LanguagePacksInput, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
+import { computeValidity } from '~features/host-bridge';
 import getLanguageFromUrl from '~lib/get-language-from-url';
 import cn from '~lib/cn';
 import { LoaderIcon } from '~assets/loader-icon';
@@ -40,6 +41,8 @@ export class GeneralInquiryForm implements FormHookInterface<any>, MultiLingual 
   // #region Localization
   @Prop({ mutable: true, reflect: true }) language: LanguageCode;
   @Prop() languagePacks?: LanguagePacksInput;
+  @Prop() emitValidity?: boolean;
+  @Prop() emitSize?: boolean;
 
   @State() locale: GeneralFormLocal = { sharedFormLocales: sharedFormLocalesSchema.getDefault() };
 
@@ -101,6 +104,11 @@ export class GeneralInquiryForm implements FormHookInterface<any>, MultiLingual 
   @Method()
   async submit() {
     await functionHooks.handleFormSubmit(this);
+  }
+
+  @Method()
+  async getValidity() {
+    return await computeValidity(this.form);
   }
 
   @State() structureRendered = false;

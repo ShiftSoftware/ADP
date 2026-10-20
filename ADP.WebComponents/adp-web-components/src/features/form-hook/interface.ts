@@ -58,6 +58,8 @@ export interface FormHookInterface<T> {
   extraPayload?: object;
   isMobileForm?: boolean;
   localeLanguage?: string;
+  emitValidity?: boolean;
+  emitSize?: boolean;
   language?: LanguageCode;
   renderedFields?: string[];
   structureRendered?: boolean;

@@ -11,3 +11,5 @@
 export type * from './components.d.ts';
 export type { LanguageCode, LanguageKeys } from './features/multi-lingual/types';
 export type { LanguageMeta, LanguagePackNamespace, LanguagePacks, LanguagePacksInput } from './features/multi-lingual/language-packs';
+export type { AdpFetch, AdpRequestInfo, AdpRequestKind } from './features/host-bridge/adp-fetch';
+export type { AdpFormErrorCode, AdpFormEventDetails, AdpFormEventType, AdpFormValidity, AdpStepLabels } from './features/host-bridge/events';

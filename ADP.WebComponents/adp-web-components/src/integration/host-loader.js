@@ -120,4 +120,15 @@ export function configureAdpHost(options = {}) {
   const config = getHostConfig();
 
   if (options && Object.prototype.hasOwnProperty.call(options, 'languagePacks')) registerGlobalLanguagePacks(config, options.languagePacks);
+
+  if (options && Object.prototype.hasOwnProperty.call(options, 'fetch')) {
+    if (typeof options.fetch === 'function') config.fetch = options.fetch;
+    else delete config.fetch;
+  }
+
+  if (options && Object.prototype.hasOwnProperty.call(options, 'assetsBaseUrl')) {
+    const base = options.assetsBaseUrl instanceof URL ? options.assetsBaseUrl.href : options.assetsBaseUrl;
+    if (typeof base === 'string' && base) config.assetsBaseUrl = base;
+    else delete config.assetsBaseUrl;
+  }
 }

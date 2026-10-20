@@ -1,4 +1,5 @@
 import { LanguageCode } from '~features/multi-lingual';
+import { adpFetch, requestInfo } from '~features/host-bridge';
 
 export type QueryString = Record<string, string | number | boolean | undefined | null> | string | undefined;
 
@@ -12,7 +13,16 @@ export type EndpointObject = {
 
 export type Endpoint = string | EndpointObject;
 
-export type FetchFromProps = { headers?: any; method?: 'POST' | 'GET'; language?: LanguageCode; body?: object; signal?: AbortSignal; query?: QueryString; additionalPath?: string };
+export type FetchFromProps = {
+  headers?: any;
+  method?: 'POST' | 'GET';
+  language?: LanguageCode;
+  body?: object;
+  signal?: AbortSignal;
+  query?: QueryString;
+  additionalPath?: string;
+  host?: HTMLElement;
+};
 
 export function buildQueryArray(query?: QueryString): string[] {
   if (!query) return [];
@@ -71,5 +81,5 @@ export function fetchFrom(endpoint: Endpoint, props: FetchFromProps = {}) {
 
   const url = `${endpointObject.url + (props?.additionalPath || '')}${queryString}`;
 
-  return fetch(url, config);
+  return adpFetch(url, config, requestInfo('lookup', props?.host));
 }
