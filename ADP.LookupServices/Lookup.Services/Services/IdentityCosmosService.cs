@@ -10,6 +10,11 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services;
 
 public class IdentityCosmosService : IIdentityCosmosService
 {
+    // Identity's container with one document per branch, partitioned by /id, carrying every field of
+    // CompanyBranchModel. Framework releases after 2026.10.15.1 name it
+    // IdentityDatabaseAndContainerNames.BranchContainerName.
+    private const string BranchContainerName = "Branches";
+
     private readonly LookUpCosmosClient client;
 
     public IdentityCosmosService(LookUpCosmosClient client)
@@ -42,7 +47,7 @@ public class IdentityCosmosService : IIdentityCosmosService
     {
         var container = client.GetContainer(
             IdentityDatabaseAndContainerNames.DatabaseName,
-            IdentityDatabaseAndContainerNames.CompanyBranchContainerName
+            BranchContainerName
         );
 
         var queryable = container.GetItemLinqQueryable<CompanyBranchModel>(true)
@@ -227,13 +232,12 @@ public class IdentityCosmosService : IIdentityCosmosService
 
         var container = client.GetContainer(
             IdentityDatabaseAndContainerNames.DatabaseName,
-            IdentityDatabaseAndContainerNames.CompanyBranchContainerName
+            BranchContainerName
         );
 
         try
         {
-            var pb = new PartitionKeyBuilder().Add(id.ToString()).Add(CompanyBranchContainerItemTypes.Branch);
-            var response = await container.ReadItemAsync<CompanyBranchModel>(id!.ToString(), pb.Build());
+            var response = await container.ReadItemAsync<CompanyBranchModel>(id!.ToString(), new PartitionKey(id.ToString()));
 
             if (response.StatusCode != System.Net.HttpStatusCode.OK)
                 return null;
