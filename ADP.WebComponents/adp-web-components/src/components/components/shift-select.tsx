@@ -1,10 +1,14 @@
-import { Component, Element, Host, Prop, State, h } from '@stencil/core';
+import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 import { FormSelectItem } from '../../components';
 import cn from '~lib/cn';
 
 import { ArrowUpIcon } from '~assets/arrow-up-icon';
 import { AddIcon } from '~assets/add-icon';
 import getCustomClassesForPortal from '~lib/get-custom-classes-for-portal';
+import type { LanguageCode } from '~features/multi-lingual';
+
+import { SHEET_QUERY } from './shift-popover/sheet-query';
+import { SelectDrawerMode, selectDrawerMode } from './select-drawer';
 
 @Component({
   shadow: false,
@@ -36,16 +40,72 @@ export class ShiftSelect {
   @Prop() renderOption?: (option: FormSelectItem, isSelected: boolean) => any;
   @Prop() updateContext!: (newValues: Partial<{ isOpen: boolean; searchValue: string; selectedValue: string }>) => void;
   @Prop() fullRenderOption?: (option: FormSelectItem, isSelected: boolean, handleSelection: (option: FormSelectItem) => void) => any;
+  @Prop() selectDrawer?: SelectDrawerMode | 'off';
+  @Prop() drawerLabel?: string;
+  @Prop() language?: LanguageCode;
 
   @State() dropdownAncestorClasses = '';
+  @State() narrow = false;
 
   @Element() el!: HTMLElement;
 
   private dropdownEl: HTMLElement | null = null;
   private boundKeyDown = (e: KeyboardEvent) => this.handleKeyDown(e);
+  private sheetQuery?: MediaQueryList;
 
   setDropdownRef = (el: HTMLElement | null) => {
     this.dropdownEl = el;
+  };
+
+  @Watch('selectDrawer')
+  onSelectDrawerChange() {
+    this.syncSheetQuery();
+  }
+
+  connectedCallback() {
+    this.syncSheetQuery();
+  }
+
+  private drawerMode(): SelectDrawerMode | undefined {
+    return selectDrawerMode(this.selectDrawer);
+  }
+
+  private drawerNow(): boolean {
+    const mode = this.drawerMode();
+    return mode === 'always' || (mode === 'mobile' && this.narrow);
+  }
+
+  private syncSheetQuery() {
+    const wanted = this.drawerMode() === 'mobile' && typeof window !== 'undefined' && !!window.matchMedia;
+
+    if (wanted && !this.sheetQuery) {
+      this.sheetQuery = window.matchMedia(SHEET_QUERY);
+      this.sheetQuery.addEventListener?.('change', this.onSheetQueryChange);
+    } else if (!wanted && this.sheetQuery) {
+      this.sheetQuery.removeEventListener?.('change', this.onSheetQueryChange);
+      this.sheetQuery = undefined;
+    }
+
+    this.narrow = !!this.sheetQuery?.matches;
+  }
+
+  // Crossing the breakpoint swaps the dropdown for the drawer, so whichever layer is open closes first.
+  private onSheetQueryChange = () => {
+    const before = this.drawerNow();
+    this.narrow = !!this.sheetQuery?.matches;
+    if (this.isOpen && before !== this.drawerNow()) this.updateContext({ isOpen: false });
+  };
+
+  private onTriggerKeyDown = (event: KeyboardEvent) => {
+    if (!this.drawerNow() || this.isOpen || this.disableInput || !['Enter', ' ', 'ArrowDown'].includes(event.key)) return;
+
+    event.preventDefault();
+    this.openDropdown();
+  };
+
+  private onDrawerOpenChange = (event: CustomEvent<{ open: boolean }>) => {
+    event.stopPropagation();
+    if (!event.detail.open && this.isOpen) this.updateContext({ isOpen: false });
   };
 
   toggleDropdown = () => {
@@ -54,7 +114,7 @@ export class ShiftSelect {
   };
 
   openDropdown = () => {
-    this.adjustDropdownPosition();
+    if (!this.drawerNow()) this.adjustDropdownPosition();
 
     this.updateContext({ isOpen: true });
   };
@@ -103,11 +163,12 @@ export class ShiftSelect {
   };
 
   handleKeyDown(event: KeyboardEvent) {
-    if (!this.isOpen) return;
+    if (!this.isOpen || this.drawerNow()) return;
     if (event.key === 'Escape') this.updateContext({ isOpen: false });
   }
 
   closeDropdown = (event: MouseEvent) => {
+    if (this.drawerNow()) return;
     const path = event.composedPath();
     if (path.includes(this.el)) return;
     if (this.dropdownEl && path.includes(this.dropdownEl)) return;
@@ -119,14 +180,16 @@ export class ShiftSelect {
     document.removeEventListener('keydown', this.boundKeyDown);
     window.removeEventListener('resize', this.handleResize);
     window.removeEventListener('scroll', this.handleScroll, true);
+    this.sheetQuery?.removeEventListener?.('change', this.onSheetQueryChange);
+    this.sheetQuery = undefined;
   }
 
   handleResize = () => {
-    if (this.isOpen) this.adjustDropdownPosition();
+    if (this.isOpen && !this.drawerNow()) this.adjustDropdownPosition();
   };
 
   handleScroll = (event: Event) => {
-    if (!this.isOpen) return;
+    if (!this.isOpen || this.drawerNow()) return;
     const target = event.target as Node;
     if (this.dropdownEl && (this.dropdownEl === target || this.dropdownEl.contains(target))) return;
     this.adjustDropdownPosition();
@@ -147,12 +210,47 @@ export class ShiftSelect {
     if (!this.isOpen) this.openDropdown();
   };
 
+  private renderDrawer(mode: SelectDrawerMode, drawerNow: boolean) {
+    return (
+      <shift-popover
+        open={this.isOpen && drawerNow}
+        anchor={drawerNow ? this.getInputEl() || undefined : undefined}
+        label={this.drawerLabel || undefined}
+        language={this.language}
+        mobileSheet={mode === 'mobile'}
+        alwaysSheet={mode === 'always'}
+        onOpenChange={this.onDrawerOpenChange}
+      >
+        <shift-select-sheet
+          class={this.dropdownAncestorClasses}
+          name={this.name}
+          open={this.isOpen && drawerNow}
+          label={this.drawerLabel}
+          language={this.language}
+          hasTick={this.hasTick}
+          searchable={this.searchable}
+          isLoading={this.isLoading}
+          direction={this.direction}
+          options={this.options}
+          selectedValue={this.selectedValue}
+          reverseOptions={this.reverseOptions}
+          noSelectionText={this.noSelectionText}
+          fetchingErrorText={this.fetchingErrorText}
+          handleSelection={this.handleSelection}
+        />
+      </shift-popover>
+    );
+  }
+
   render() {
     const selectedItem = this.options.find(item => this.selectedValue === item.value);
+    const drawerMode = this.drawerMode();
+    const drawerNow = this.drawerNow();
+    const triggerAria = drawerMode ? { 'role': 'combobox', 'aria-expanded': String(this.isOpen) } : {};
 
     const dropdownProps = {
       name: this.name,
-      isOpen: this.isOpen,
+      isOpen: drawerNow ? false : this.isOpen,
       options: this.options,
       hasTick: this.hasTick,
       hasArrow: this.hasArrow,
@@ -179,10 +277,12 @@ export class ShiftSelect {
             type="text"
             disabled={this.disableInput}
             part={`${this.name}-input-select form-input-select`}
-            value={this.searchable ? this.searchValue : selectedItem?.label || ''}
-            readOnly={!this.searchable}
+            value={this.searchable && !drawerNow ? this.searchValue : selectedItem?.label || ''}
+            readOnly={!this.searchable || drawerNow}
             onInput={this.onSearchInput}
             onClick={this.toggleDropdown}
+            onKeyDown={this.onTriggerKeyDown}
+            {...triggerAria}
             placeholder={this.placeholder}
             class={cn('form-input-style form-input-select', {
               'form-input-error-style': this.isError,
@@ -204,7 +304,8 @@ export class ShiftSelect {
             // @ts-ignore
             false && <shift-select-dropdown />
           }
-          <shift-portal tag="shift-select-dropdown" inheritedClasses={this.dropdownAncestorClasses} componentProps={dropdownProps} />
+          {drawerMode !== 'always' && <shift-portal tag="shift-select-dropdown" inheritedClasses={this.dropdownAncestorClasses} componentProps={dropdownProps} />}
+          {drawerMode && this.renderDrawer(drawerMode, drawerNow)}
         </div>
       </Host>
     );

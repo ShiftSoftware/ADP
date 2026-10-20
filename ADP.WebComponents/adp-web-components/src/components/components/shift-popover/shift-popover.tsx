@@ -7,6 +7,7 @@ import type { PickerChangeDetail } from '~lib/picker';
 import '~lib/middleware';
 
 import { popoverStrings } from './popover-locale';
+import { SHEET_QUERY } from './sheet-query';
 import { placePanel, visiblePart, Box, PopoverPlacement } from './popover-position';
 import type { PopoverAppearance, PopoverColorScheme, PopoverPanelHandlers, PopoverSize } from './shift-popover-panel';
 
@@ -20,7 +21,6 @@ export interface PopoverShowOptions {
   focus?: boolean;
 }
 
-const SHEET_QUERY = '(max-width: 599px)';
 const VIEWPORT_MARGIN = 8;
 
 const openByAnchor = new Map<HTMLElement, { hide: () => Promise<void> }>();
@@ -159,6 +159,7 @@ export class ShiftPopover {
   @Prop({ reflect: true }) disabled: boolean = false;
   // Off by default: inside an embedded webview the viewport is only part of the screen, so a sheet pinned to its bottom edge looks broken.
   @Prop() mobileSheet: boolean = false;
+  @Prop() alwaysSheet: boolean = false;
 
   @Event({ bubbles: true, composed: true }) openChange!: EventEmitter<PopoverOpenChangeDetail>;
 
@@ -189,11 +190,13 @@ export class ShiftPopover {
   }
 
   connectedCallback() {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
+    if (typeof window === 'undefined') return;
 
-    this.sheetQuery = window.matchMedia(SHEET_QUERY);
+    if (window.matchMedia) {
+      this.sheetQuery = window.matchMedia(SHEET_QUERY);
+      this.sheetQuery.addEventListener?.('change', this.onSheetChange);
+    }
     this.sheet = this.wantsSheet();
-    this.sheetQuery.addEventListener?.('change', this.onSheetChange);
   }
 
   componentDidLoad() {
@@ -233,6 +236,7 @@ export class ShiftPopover {
   }
 
   @Watch('mobileSheet')
+  @Watch('alwaysSheet')
   onMobileSheetChange() {
     this.onSheetChange();
   }
@@ -509,7 +513,7 @@ export class ShiftPopover {
   }
 
   private wantsSheet(): boolean {
-    return this.mobileSheet && !!this.sheetQuery?.matches;
+    return this.alwaysSheet || (this.mobileSheet && !!this.sheetQuery?.matches);
   }
 
   private onSheetChange = () => {

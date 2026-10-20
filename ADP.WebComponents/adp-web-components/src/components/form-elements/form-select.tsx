@@ -9,6 +9,7 @@ import { FormElement, FormInputMeta, FormSelectFetcher, FormSelectItem, FormInpu
 import { FormInputLabel } from './components/form-input-label';
 import { FormErrorMessage } from './components/form-error-message';
 import { getNestedValue } from '~lib/get-nested-value';
+import { SelectDrawerSetting, selectDrawerProps } from '../components/select-drawer';
 
 @Component({
   shadow: false,
@@ -35,6 +36,7 @@ export class FormSelect implements FormElement {
   @Prop({ mutable: true }) clearable = false;
   @Prop({ mutable: true }) defaultValue: string;
   @Prop() localization?: FormInputLocalization = {};
+  @Prop() selectDrawer?: SelectDrawerSetting;
 
   @State() searchValue = '';
   @State() isOpen: boolean = false;
@@ -187,6 +189,7 @@ export class FormSelect implements FormElement {
             fetchingErrorText={
               !this.fetchingErrorMessage ? '' : getNestedValue(locale, this.fetchingErrorMessage) || this.fetchingErrorMessage || locale?.sharedFormLocales?.errors?.wildCard
             }
+            {...selectDrawerProps(this.selectDrawer, this.form.context?.structure?.data?.selectDrawer, this.language, label)}
           >
             <form-shadow-input name={this.name} form={this.form} value={this.selectedValue} />
           </shift-select>
