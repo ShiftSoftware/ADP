@@ -350,21 +350,38 @@ describe('select drawer: opting in', () => {
     expect(triggerOf(full.page, 'year').getAttribute('role')).toBe('combobox');
   });
 
-  it('shift-select-sheet defined after the select rendered: the drawer is used from the next open', async () => {
+  it('shift-select-sheet defined after the select rendered: the closed select is untouched and the drawer is used from the next open', async () => {
     const { page } = await mount(form({ selectDrawer: 'always' }), 390, {}, 'fine', withoutSheet);
     expect(triggerOf(page, 'year').hasAttribute('role')).toBe(false);
+    const closed = selectOf(page, 'year').outerHTML;
 
     defineSheetLate(page);
     await settle(page, 100);
 
-    expect(triggerOf(page, 'year').getAttribute('role')).toBe('combobox');
+    expect(selectOf(page, 'year').outerHTML).toBe(closed);
+    expect(dropdownBox(page, 'year')).not.toBeNull();
     await open(page, 'year');
     expect(drawerOpen(page, 'year')).toBe(true);
     expect(sheetOf(page, 'year')).not.toBeNull();
     expect(dropdownOpen(page, 'year')).toBe(false);
+    expect(triggerOf(page, 'year').getAttribute('role')).toBe('combobox');
+    expect(triggerOf(page, 'year').getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('shift-select-sheet defined while the dropdown is open: the open dropdown is not converted, the drawer comes after it closes', async () => {
+  it('shift-select-sheet defined after the select rendered: Enter on the closed trigger opens the drawer', async () => {
+    const { page } = await mount(form({ selectDrawer: 'always' }), 390, {}, 'fine', withoutSheet);
+
+    defineSheetLate(page);
+    await settle(page, 100);
+
+    key(page, triggerOf(page, 'year'), 'Enter');
+    await settle(page, 300);
+    expect(drawerOpen(page, 'year')).toBe(true);
+    expect(dropdownOpen(page, 'year')).toBe(false);
+    expect(triggerOf(page, 'year').getAttribute('role')).toBe('combobox');
+  });
+
+  it('shift-select-sheet defined while the dropdown is open: the dropdown stays and closes as a dropdown, the drawer comes on the next open', async () => {
     const { page } = await mount(form({ selectDrawer: 'always' }), 390, {}, 'fine', withoutSheet);
     await open(page, 'year');
     expect(dropdownOpen(page, 'year')).toBe(true);
@@ -380,13 +397,19 @@ describe('select drawer: opting in', () => {
     expect(triggerOf(page, 'year').hasAttribute('role')).toBe(false);
 
     key(page, page.body, 'Escape');
-    await settle(page, 300);
+    await page.waitForChanges();
+    expect(dropdownBox(page, 'year')).not.toBeNull();
     expect(dropdownOpen(page, 'year')).toBe(false);
-    expect(triggerOf(page, 'year').getAttribute('role')).toBe('combobox');
+    expect(sheetOf(page, 'year')).toBeNull();
+
+    await settle(page, 300);
+    expect(dropdownBox(page, 'year')).not.toBeNull();
+    expect(triggerOf(page, 'year').hasAttribute('role')).toBe(false);
 
     await open(page, 'year');
     expect(drawerOpen(page, 'year')).toBe(true);
     expect(dropdownOpen(page, 'year')).toBe(false);
+    expect(page.body.querySelector('shift-select-dropdown.year-select')).toBeNull();
   });
 
   it('a field setting wins over the form: off keeps the dropdown, a field value opts in alone', async () => {

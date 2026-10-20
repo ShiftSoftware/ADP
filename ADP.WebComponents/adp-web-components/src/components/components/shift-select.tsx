@@ -1,4 +1,4 @@
-import { Component, Element, Host, Prop, State, Watch, forceUpdate, h } from '@stencil/core';
+import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 import { FormSelectItem } from '../../components';
 import cn from '~lib/cn';
 import type { LanguageKeys } from '~features/multi-lingual';
@@ -61,7 +61,6 @@ export class ShiftSelect {
   private sheetQuery?: MediaQueryList;
   private drawerDefined = false;
   private drawerChecked = false;
-  private awaitingDrawer = false;
 
   setDropdownRef = (el: HTMLElement | null) => {
     this.dropdownEl = el;
@@ -71,11 +70,6 @@ export class ShiftSelect {
   onSelectDrawerChange() {
     this.syncSheetQuery();
     this.syncDrawerDefined();
-  }
-
-  @Watch('isOpen')
-  onIsOpenChange(open: boolean) {
-    if (!open) this.syncDrawerDefined();
   }
 
   connectedCallback() {
@@ -91,26 +85,12 @@ export class ShiftSelect {
     return mode && this.drawerDefined ? mode : undefined;
   }
 
-  // Tags defined after the first render switch the select to the drawer, but never while its list is open.
+  // Tags defined after the first render take effect only as the list opens, so an open or closing dropdown is never swapped out.
   private syncDrawerDefined() {
     if (!selectDrawerMode(this.selectDrawer) || this.drawerDefined || (this.isOpen && this.drawerChecked)) return;
 
     this.drawerChecked = true;
     this.drawerDefined = drawerTagsDefined();
-    if (!this.drawerDefined) this.awaitDrawerTags();
-  }
-
-  private awaitDrawerTags() {
-    if (this.awaitingDrawer || typeof customElements === 'undefined' || typeof customElements.whenDefined !== 'function') return;
-
-    this.awaitingDrawer = true;
-    Promise.all([customElements.whenDefined(Popover), customElements.whenDefined(Sheet)]).then(() => {
-      this.awaitingDrawer = false;
-      if (this.isOpen) return;
-
-      this.syncDrawerDefined();
-      if (this.drawerDefined) forceUpdate(this);
-    });
   }
 
   private drawerNow(): boolean {
@@ -140,7 +120,10 @@ export class ShiftSelect {
   };
 
   private onTriggerKeyDown = (event: KeyboardEvent) => {
-    if (!this.drawerNow() || this.isOpen || this.disableInput || !['Enter', ' ', 'ArrowDown'].includes(event.key)) return;
+    if (this.isOpen || this.disableInput || !['Enter', ' ', 'ArrowDown'].includes(event.key)) return;
+
+    this.syncDrawerDefined();
+    if (!this.drawerNow()) return;
 
     event.preventDefault();
     this.openDropdown();
@@ -157,6 +140,7 @@ export class ShiftSelect {
   };
 
   openDropdown = () => {
+    this.syncDrawerDefined();
     const drawer = this.drawerNow();
     if (!drawer) this.adjustDropdownPosition();
 
@@ -327,7 +311,7 @@ export class ShiftSelect {
             readOnly={!this.searchable || drawerNow}
             onInput={this.onSearchInput}
             onClick={this.toggleDropdown}
-            onKeyDown={drawerMode ? this.onTriggerKeyDown : undefined}
+            onKeyDown={selectDrawerMode(this.selectDrawer) ? this.onTriggerKeyDown : undefined}
             {...triggerAria}
             placeholder={this.placeholder}
             class={cn('form-input-style form-input-select', {
