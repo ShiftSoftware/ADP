@@ -38,7 +38,7 @@ describe('host-loader type declarations', () => {
 
   it('accept every configureAdpHost option the loader reads', () => {
     const options: Required<Parameters<typeof Loader.configureAdpHost>[0]> = {
-      languagePacks: { languages: { uz: { intl: 'uz-Latn' } }, strings: { popover: { uz: { dialog: 'Oyna' } } } },
+      languagePacks: { languages: { uz: { direction: 'ltr' } }, strings: { popover: { uz: { dialog: 'Oyna' } } } },
       fetch: async (url, init) => fetch(url, init),
       assetsBaseUrl: new URL('https://example.invalid/adp/'),
     };

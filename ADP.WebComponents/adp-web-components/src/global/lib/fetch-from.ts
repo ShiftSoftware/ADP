@@ -1,4 +1,4 @@
-import { LanguageCode } from '~features/multi-lingual';
+import { LanguageKeys } from '~features/multi-lingual';
 import { adpFetch, requestInfo } from '~features/host-bridge';
 
 export type QueryString = Record<string, string | number | boolean | undefined | null> | string | undefined;
@@ -16,7 +16,7 @@ export type Endpoint = string | EndpointObject;
 export type FetchFromProps = {
   headers?: any;
   method?: 'POST' | 'GET';
-  language?: LanguageCode;
+  language?: LanguageKeys;
   body?: object;
   signal?: AbortSignal;
   query?: QueryString;

@@ -1,7 +1,7 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import distributerSchema from '~locales/partLookup/distributor/type';
-import { ComponentLocale, getLocaleLanguage, getSharedLocal, LanguageCode, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
+import { ComponentLocale, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 import { FormHook, FormHookInterface, FormInputMeta, FormSelectFetcher, FormSelectItem } from '~features/form-hook';
 import { InferType, number, object, string } from 'yup';
 import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
@@ -51,7 +51,7 @@ export type Locale = ComponentLocale<typeof distributerSchema>;
 export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<ManufacturerPartLookupValidation>, BlazorInvokable {
   // #region Localization
 
-  @Prop({ mutable: true }) language: LanguageCode;
+  @Prop({ mutable: true }) language: LanguageKeys;
 
   @State() locale: ComponentLocale<typeof distributerSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...distributerSchema.getDefault() };
 
@@ -61,7 +61,7 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
   }
 
   @Watch('language')
-  async changeLanguage(newLanguage: LanguageCode) {
+  async changeLanguage(newLanguage: LanguageKeys) {
     const [sharedLocales, locale] = await Promise.all([getSharedLocal(newLanguage), getLocaleLanguage(newLanguage, 'partLookup.distributor', distributerSchema)]);
     this.locale = { sharedLocales, ...locale };
   }

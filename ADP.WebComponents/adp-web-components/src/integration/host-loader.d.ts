@@ -18,7 +18,6 @@ export type AdpLanguagePackNamespace =
 
 export interface AdpLanguageMeta {
   direction?: 'ltr' | 'rtl';
-  intl?: string | string[];
   weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   numerals?: 'latn' | 'arab';
 }

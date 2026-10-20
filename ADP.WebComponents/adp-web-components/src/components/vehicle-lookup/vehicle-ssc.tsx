@@ -23,7 +23,7 @@ import {
   setVehicleLookupData,
   setVehicleLookupErrorState,
 } from '~features/vehicle-lookup-component';
-import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageCode, LanguagePacksInput, MultiLingual, registerLanguagePacks, sharedLocalesSchema } from '~features/multi-lingual';
+import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
 declare const grecaptcha: Grecaptcha;
 
@@ -73,18 +73,16 @@ const isAbort = (error: unknown) => (error as DOMException)?.name === 'AbortErro
 export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, VehicleLookupComponent, BlazorInvokable {
   // #region Localization
 
-  @Prop() language: LanguageCode = 'en';
-  @Prop() languagePacks?: LanguagePacksInput;
+  @Prop() language: LanguageKeys = 'en';
 
   @State() locale: ComponentLocale<typeof sscSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...sscSchema.getDefault() };
 
   async componentWillLoad() {
-    registerLanguagePacks(this.languagePacks, 2);
     await this.changeLanguage(this.language);
   }
 
   @Watch('language')
-  async changeLanguage(newLanguage: LanguageCode) {
+  async changeLanguage(newLanguage: LanguageKeys) {
     const [sharedLocales, locale] = await Promise.all([getSharedLocal(newLanguage), getLocaleLanguage(newLanguage, 'vehicleLookup.ssc', sscSchema)]);
     this.locale = { sharedLocales, ...locale };
   }

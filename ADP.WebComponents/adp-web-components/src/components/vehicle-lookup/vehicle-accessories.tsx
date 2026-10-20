@@ -12,7 +12,7 @@ import { LookupHead, VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState
 import { closeImageViewer, ImageViewer, ImageViewerInterface, openImageViewer } from '~features/image-viewer';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
-import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageCode, LanguagePacksInput, MultiLingual, registerLanguagePacks, sharedLocalesSchema } from '~features/multi-lingual';
+import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
 @Component({
   shadow: true,
@@ -22,18 +22,16 @@ import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, Language
 export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterface, ImageViewerInterface, VehicleLookupComponent, BlazorInvokable {
   // #region Localization
 
-  @Prop() language: LanguageCode = 'en';
-  @Prop() languagePacks?: LanguagePacksInput;
+  @Prop() language: LanguageKeys = 'en';
 
   @State() locale: ComponentLocale<typeof accessoriesSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...accessoriesSchema.getDefault() };
 
   async componentWillLoad() {
-    registerLanguagePacks(this.languagePacks, 2);
     await this.changeLanguage(this.language);
   }
 
   @Watch('language')
-  async changeLanguage(newLanguage: LanguageCode) {
+  async changeLanguage(newLanguage: LanguageKeys) {
     const [sharedLocales, locale] = await Promise.all([getSharedLocal(newLanguage), getLocaleLanguage(newLanguage, 'vehicleLookup.accessories', accessoriesSchema)]);
     this.locale = { sharedLocales, ...locale };
   }

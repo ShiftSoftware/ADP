@@ -1,7 +1,7 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import { FormElementMapper, FormElementStructure, FormHook, FormHookInterface, functionHooks } from '~features/form-hook';
-import { GeneralFormLocal, LanguageCode, LanguageKeys, LanguagePacksInput, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
+import { GeneralFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 import { computeValidity } from '~features/host-bridge';
 import getLanguageFromUrl from '~lib/get-language-from-url';
 import cn from '~lib/cn';
@@ -20,8 +20,7 @@ const elementMapper: FormElementMapper<any, any> = getFormMappers();
 })
 export class SSCLookupForm implements FormHookInterface<any>, MultiLingual {
   // #region Localization
-  @Prop({ mutable: true, reflect: true }) language: LanguageCode;
-  @Prop() languagePacks?: LanguagePacksInput;
+  @Prop({ mutable: true, reflect: true }) language: LanguageKeys;
   @Prop() emitValidity?: boolean;
   @Prop() emitSize?: boolean;
 

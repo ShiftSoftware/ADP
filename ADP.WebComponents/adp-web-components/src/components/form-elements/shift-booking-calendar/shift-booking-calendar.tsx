@@ -3,7 +3,7 @@ import { AnyObjectSchema, string } from 'yup';
 
 import { FormHook } from '~features/form-hook/form-hook';
 import { FormElement, FormInputLocalization, FormInputMeta, getInputLocalization } from '~features/form-hook';
-import type { LanguageCode, LanguageKeys } from '~features/multi-lingual';
+import type { LanguageKeys } from '~features/multi-lingual';
 import { BlazorInvokable, BlazorInvokableFunction, DotNetObjectReference, smartInvokable } from '~features/blazor-ref';
 
 import { ChevronLeftIcon } from '~assets/chevron-left-icon';
@@ -19,7 +19,7 @@ import type { PickerChangeDetail, PickerStatusDetail } from '~lib/picker';
 
 import { y } from '../../forms/defaults/validation';
 import type { BranchSlotSelection } from '../branch-slot-picker';
-import { calendarLocale, dateLabel, formatDigits, langTag, monthTitle } from '../shift-calendar/calendar-locale';
+import { calendarLocale, dateLabel, formatDigits, monthTitle } from '../shift-calendar/calendar-locale';
 import type { CalendarAppearance, CalendarColorScheme, CalendarDayMetaMap, CalendarSize } from '../shift-calendar/shift-calendar';
 import { bookingStrings, fill, formatTime, HourCycle } from '../shift-time-slots/time-slots';
 
@@ -76,7 +76,7 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   @Prop() wrapperClass?: string;
   @Prop() isRequired: boolean = false;
   @Prop() isDisabled: boolean = false;
-  @Prop() language: LanguageCode = 'en';
+  @Prop() language: LanguageKeys = 'en';
   @Prop() localization?: FormInputLocalization = {};
   @Prop({ mutable: true }) defaultValue?: string;
 
@@ -791,7 +791,7 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
           part="root"
           id={this.wrapperId}
           dir={locale.direction}
-          lang={langTag(locale.language)}
+          lang={locale.language === 'ku' ? 'ckb' : locale.language}
           role="group"
           aria-labelledby={this.labelId}
           aria-disabled={disabled ? 'true' : undefined}

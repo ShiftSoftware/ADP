@@ -3,7 +3,7 @@ import { AnyObjectSchema } from 'yup';
 
 import { FormHook } from '~features/form-hook/form-hook';
 
-import { LanguageCode, LanguageKeys } from '~features/multi-lingual';
+import { LanguageKeys } from '~features/multi-lingual';
 
 export type FormAppearance = 'vanilla' | 'material' | 'soft' | 'sharp' | 'minimal';
 export type FormColorScheme = 'light' | 'dark' | 'auto';
@@ -60,7 +60,7 @@ export interface FormHookInterface<T> {
   localeLanguage?: string;
   emitValidity?: boolean;
   emitSize?: boolean;
-  language?: LanguageCode;
+  language?: LanguageKeys;
   renderedFields?: string[];
   structureRendered?: boolean;
   getMobileToken?: () => string;

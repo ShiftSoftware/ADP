@@ -1,7 +1,7 @@
 import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 import { AnyObjectSchema, string } from 'yup';
 
-import type { LanguageCode } from '~features/multi-lingual';
+import type { LanguageKeys } from '~features/multi-lingual';
 import type { FormHook } from '~features/form-hook/form-hook';
 import type { FormElement } from '~features/form-hook/interface';
 import type { FormInputLocalization, FormInputMeta } from '~features/form-hook/inputs/form-input';
@@ -10,7 +10,7 @@ import { getNestedValue } from '~lib/get-nested-value';
 import '~lib/middleware';
 
 import type { CalendarAppearance, CalendarColorScheme, CalendarDayMetaMap, CalendarMonthChangeDetail, CalendarSize } from '../shift-calendar/shift-calendar';
-import { CalendarNumerals, calendarLocale, langTag } from '../shift-calendar/calendar-locale';
+import { CalendarNumerals, calendarLocale } from '../shift-calendar/calendar-locale';
 import { DEFAULT_FORMAT } from './types/date/date-format';
 import { InputStrings, inputStrings } from './input-locale';
 import { INPUT_TYPES, ShiftInputType } from './types';
@@ -48,7 +48,7 @@ export class ShiftInput implements FormElement, InputField {
   @Prop() inputmode?: string;
   @Prop() errorMessage?: string;
   @Prop() form?: FormHook<Record<string, unknown>>;
-  @Prop() language: LanguageCode = 'en';
+  @Prop() language: LanguageKeys = 'en';
   @Prop() localization?: FormInputLocalization<{ hint?: string; unavailableMessage?: string }> = {};
   @Prop({ reflect: true }) appearance?: CalendarAppearance;
   @Prop({ reflect: true }) colorScheme: CalendarColorScheme = 'light';
@@ -359,7 +359,7 @@ export class ShiftInput implements FormElement, InputField {
           class="in-root"
           part="root"
           dir={locale.direction}
-          lang={langTag(locale.language)}
+          lang={locale.language === 'ku' ? 'ckb' : locale.language}
           data-type={this.type}
           data-picker={this.pickerEl ? '' : undefined}
           aria-busy={this.pickerBusy ? 'true' : undefined}

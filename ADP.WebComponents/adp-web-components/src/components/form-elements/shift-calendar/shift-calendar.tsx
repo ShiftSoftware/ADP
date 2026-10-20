@@ -1,7 +1,6 @@
 import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
-import type { LanguageCode } from '~features/multi-lingual';
-import { registerLanguagePacks, type LanguagePacksInput } from '~features/multi-lingual/language-packs';
+import type { LanguageKeys } from '~features/multi-lingual';
 
 import { ChevronLeftIcon } from '~assets/chevron-left-icon';
 import { ChevronRightIcon } from '~assets/chevron-right-icon';
@@ -30,7 +29,7 @@ import {
 import type { PickerChangeDetail } from '~lib/picker';
 
 import { moveFocus } from './calendar-keyboard';
-import { CalendarLocale, CalendarNumerals, calendarLocale, dateLabel, formatDigits, langTag } from './calendar-locale';
+import { CalendarLocale, CalendarNumerals, calendarLocale, dateLabel, formatDigits } from './calendar-locale';
 import {
   canPage,
   CalendarView,
@@ -153,8 +152,7 @@ export class ShiftCalendar {
 
   @Prop() today?: string;
   @Prop() highlightToday: boolean = false;
-  @Prop() language: LanguageCode = 'en';
-  @Prop() languagePacks?: LanguagePacksInput;
+  @Prop() language: LanguageKeys = 'en';
   @Prop() weekStartsOn?: number;
   @Prop() numerals?: CalendarNumerals;
   @Prop() label?: string;
@@ -196,8 +194,6 @@ export class ShiftCalendar {
   private headingId = `shift-calendar-heading-${Math.random().toString(36).slice(2, 10)}`;
 
   componentWillLoad() {
-    registerLanguagePacks(this.languagePacks, 2);
-
     const month = this.clampToRange(parseMonth(this.month) ?? this.openingMonth());
 
     this.shownMonth = month;
@@ -1001,7 +997,7 @@ export class ShiftCalendar {
           class="cal-root"
           part="root"
           dir={locale.direction}
-          lang={langTag(locale.language)}
+          lang={locale.language === 'ku' ? 'ckb' : locale.language}
           role="group"
           aria-label={this.label || strings.calendar}
           aria-disabled={this.disabled ? 'true' : undefined}

@@ -6,7 +6,7 @@
       "wireContract": "adp.vehicle-lookup.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["activeElement", "baseUrl", "childrenProps", "disableVinValidation", "hiddenTabs", "language", "languagePacks", "queryString", "sscQueryString"],
+        "properties": ["activeElement", "baseUrl", "childrenProps", "disableVinValidation", "hiddenTabs", "language", "queryString", "sscQueryString"],
         "methods": ["fetchVin"],
         "owns": ["vehicle lookup request", "response distribution to child components", "active child rendering"]
       },
@@ -22,7 +22,7 @@
       "wireContract": "adp.vehicle-specification.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "languagePacks", "coreOnly", "disableVinValidation", "queryString"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
         "methods": ["fetchVin"],
         "owns": ["lookup request", "response handling", "loading and error state", "vehicle specification rendering"]
       },
@@ -35,7 +35,7 @@
       "wireContract": "adp.vehicle-sale-information.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "languagePacks", "coreOnly", "disableVinValidation", "hiddenFields", "queryString", "showSupplyChain"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "hiddenFields", "queryString", "showSupplyChain"],
         "methods": ["fetchVin"],
         "owns": ["lookup request", "response handling", "loading and error state", "sale information rendering"]
       },
@@ -51,7 +51,7 @@
       "wireContract": "adp.vehicle-accessories.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "languagePacks", "coreOnly", "disableVinValidation", "queryString"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
         "methods": ["fetchVin"],
         "owns": ["lookup request", "response handling", "loading and error state", "accessory rendering"]
       },
@@ -64,7 +64,7 @@
       "wireContract": "adp.vehicle-service-history.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "languagePacks", "coreOnly", "disableVinValidation", "queryString"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
         "methods": ["fetchVin"],
         "owns": ["lookup request", "response handling", "loading and error state", "service-history rendering"]
       },
@@ -77,7 +77,7 @@
       "wireContract": "adp.vehicle-paint-thickness.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "languagePacks", "coreOnly", "disableVinValidation", "queryString", "showCertificateButton"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString", "showCertificateButton"],
         "methods": ["fetchVin"],
         "owns": ["lookup request", "response handling", "loading and error state", "paint-thickness rendering"]
       },
@@ -90,7 +90,7 @@
       "wireContract": "adp.vehicle-ssc.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "languagePacks", "coreOnly", "disableVinValidation", "queryString", "lookupQueryString", "showTrace"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString", "lookupQueryString", "showTrace"],
         "methods": ["fetchVin"],
         "owns": ["lookup request", "response handling", "loading and error state", "campaign rendering", "repair-status trace fetch"]
       },
@@ -109,7 +109,7 @@
       "wireContract": "adp.vehicle-warranty-timeline.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "languagePacks", "coreOnly", "disableVinValidation", "queryString"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
         "methods": ["fetchVin"],
         "owns": ["lookup request", "response handling", "loading and error state", "warranty coverage rendering"]
       },
@@ -122,7 +122,7 @@
       "wireContract": "adp.vehicle-claimable-items.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "coreOnly", "disableVinValidation", "language", "languagePacks", "queryString", "showTrace"],
+        "properties": ["baseUrl", "coreOnly", "disableVinValidation", "language", "queryString", "showTrace"],
         "methods": ["fetchVin"],
         "owns": ["lookup request", "response handling", "loading and error state", "claimable-item rendering"]
       },
@@ -149,7 +149,6 @@
           "dayMeta",
           "today",
           "language",
-          "languagePacks",
           "weekStartsOn",
           "numerals",
           "label",
@@ -191,8 +190,7 @@
           "isDateDisabled": "JS property only. (date) => boolean for any other rule; asked only about days no other rule blocked. A throw counts as disabled.",
           "dayMeta": "Per-day extras keyed by YYYY-MM-DD: { badge?: short text, tone?: neutral | info | success | warning | danger, tooltip?: text shown over the day on mouse hover or keyboard focus (never on touch), description?: read with the date by screen readers }. Badge digits are written in the calendar’s numerals. Object or JSON string.",
           "today": "YYYY-MM-DD that stands in for today, through ~lib/clock. Empty: the reader’s local calendar date.",
-          "language": "en, ar, ku or ru, or a language a registered language pack declares. Sets names, direction, default week start and digits.",
-          "languagePacks": "A language pack (object, array or JSON text) registered document-wide when the component loads. Overrides built-in strings or adds a language; see configureAdpHost in host-loader.",
+          "language": "en, ar, ku or ru. Sets names, direction, default week start and digits.",
           "weekStartsOn": "First column, 0 Sunday … 6 Saturday. Default by language: en and ru Monday, ar and ku Saturday.",
           "numerals": "latn or arab. Default by language: Arabic-Indic digits for ar and ku, Latin for en and ru.",
           "label": "Accessible name for the calendar group (the field label when used in a form). Default: the localized word for calendar.",
@@ -634,7 +632,7 @@
       "wireContract": null,
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["anchor", "open", "label", "offset", "trigger", "disabled", "placement", "mobileSheet", "alwaysSheet", "language", "languagePacks", "appearance", "colorScheme", "size"],
+        "properties": ["anchor", "open", "label", "offset", "trigger", "disabled", "placement", "mobileSheet", "alwaysSheet", "language", "appearance", "colorScheme", "size"],
         "methods": ["show", "hide", "toggle"],
         "owns": ["portaled panel holding the slotted content", "anchored positioning and bottom sheet", "dismissal and focus return", "appearance and colour scheme of the panel"]
       },
@@ -669,8 +667,7 @@
           "appearance": "vanilla, material, soft, sharp or minimal. Unset renders vanilla.",
           "colorScheme": "light (default), dark, or auto (follows prefers-color-scheme; for hosts that are themselves dark-aware).",
           "size": "xs, sm, md (default), lg or xl. md equals no size.",
-          "language": "en, ar, ku or ru, or a language a registered language pack declares. Language of the default dialog name.",
-          "languagePacks": "A language pack (object, array or JSON text) registered document-wide when the component loads. Overrides built-in strings or adds a language; see configureAdpHost in host-loader."
+          "language": "en, ar, ku or ru. Language of the default dialog name."
         },
         "events": {
           "openChange": "Detail { open }. Fires whenever the panel opens or closes: by method, by attribute or by dismissal."

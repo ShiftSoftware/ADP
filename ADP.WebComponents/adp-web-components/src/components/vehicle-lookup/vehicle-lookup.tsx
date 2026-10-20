@@ -17,7 +17,7 @@ import { VehicleSaleInformation } from './vehicle-sale-information';
 import { DotNetObjectReference } from '~features/blazor-ref';
 import { RequestHeadersProvider, VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
 import { LookupTabs, VehicleInfoLayout, VerdictState, createTabRegion, tabPark } from '~features/vehicle-info-layout';
-import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageCode, LanguagePacksInput, MultiLingual, registerLanguagePacks, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
+import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
 const componentTags = {
   vehicleAccessories: 'vehicle-accessories',
@@ -56,18 +56,16 @@ const DEFAULT_SETTLE_MS = 480;
 export class VehicleLookup implements MultiLingual {
   // #region Localization
 
-  @Prop() language: LanguageCode = 'en';
-  @Prop() languagePacks?: LanguagePacksInput;
+  @Prop() language: LanguageKeys = 'en';
 
   @State() locale: SharedLocales = sharedLocalesSchema.getDefault();
 
   async componentWillLoad() {
-    registerLanguagePacks(this.languagePacks, 2);
     await this.changeLanguage(this.language);
   }
 
   @Watch('language')
-  async changeLanguage(newLanguage: LanguageCode) {
+  async changeLanguage(newLanguage: LanguageKeys) {
     const localeResponses = await Promise.all([getLocaleLanguage(newLanguage, 'vehicleLookup', vehicleLookupWrapperSchema), getSharedLocal(newLanguage)]);
     this.locale = localeResponses[1];
   }

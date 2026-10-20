@@ -1,5 +1,5 @@
 import { FormHook } from './form-hook';
-import { getSharedFormLocal, LanguageCode, LanguageKeys, LanguagePacksInput, MultiLingual, registerFormLanguagePacks } from '~features/multi-lingual';
+import { getSharedFormLocal, LanguageKeys, MultiLingual } from '~features/multi-lingual';
 import { FormElementStructure, FormHookInterface } from './interface';
 import { gistLoader } from './gist-loader';
 import { fetchJson } from '~lib/fetch-json';
@@ -109,15 +109,13 @@ export type FormDidLoadHandler<B> = {
   form: FormHook<B>;
   structureUrl?: string;
   isMobileForm: boolean;
-  language: LanguageCode;
-  localeLanguage: LanguageCode;
-  languagePacks?: LanguagePacksInput;
+  language: LanguageKeys;
+  localeLanguage: LanguageKeys;
   structure: Record<string, any>;
-  changeLanguage: (newLanguage: LanguageCode) => Promise<void>;
+  changeLanguage: (newLanguage: LanguageKeys) => Promise<void>;
 };
 
 export const formDidLoadHandler = async <T, B>(formContext: FormDidLoadHandler<B> & FormHookInterface<B>, validator: AnyObjectSchema) => {
-  registerFormLanguagePacks(formContext);
   if (!formContext.structure) {
     if (formContext.gistId) {
       const [newGistStructure] = await Promise.all([gistLoader(formContext.gistId), formContext.changeLanguage(formContext.language)]);
@@ -127,7 +125,6 @@ export const formDidLoadHandler = async <T, B>(formContext: FormDidLoadHandler<B
       formContext.structure = newGistStructure;
     }
   }
-  registerFormLanguagePacks(formContext);
   formContext.localeLanguage = formContext.language;
 
   await formContext.changeLanguage(formContext.language);

@@ -22,7 +22,7 @@ import { bookingStrings } from '../../components/form-elements/shift-time-slots/
 import { dayStripStrings } from '../../components/form-elements/shift-day-strip/day-strip-locale';
 
 import { getLocaleLanguage, getSharedFormLocal } from './get-local-language';
-import { knownLanguages, langTag, languageMeta, LanguagePacks, packsRegistered, registerFormLanguagePacks, registerLanguagePacks } from './language-packs';
+import { knownLanguages, languageMeta, LanguagePacks, LanguagePacksInput, packsRegistered } from './language-packs';
 
 const localesRoot = join(__dirname, '../../');
 
@@ -37,6 +37,7 @@ function loadHostLoader(): { configureAdpHost: (options: Record<string, unknown>
 }
 
 const { configureAdpHost } = loadHostLoader();
+const register = (languagePacks: LanguagePacksInput) => configureAdpHost({ languagePacks });
 let requested: string[] = [];
 
 const fakeFetch = jest.fn(async (input: unknown) => {
@@ -94,8 +95,6 @@ describe('language packs: no pack registered', () => {
     expect(calendarLocale('en').strings).toBe(calendarEn);
     expect(popoverStrings('xx')).toBe(popoverEn);
     expect(knownLanguages()).toEqual(['en', 'ar', 'ku', 'ru']);
-    expect(langTag('ku')).toBe('ckb');
-    expect(langTag('uz')).toBe('uz');
   });
 
   it('an unknown language still reads the en files, ltr', async () => {
@@ -108,7 +107,7 @@ describe('language packs: no pack registered', () => {
 
 describe('language packs: fallback order', () => {
   it('an en override replaces the built-in en string and reaches a language that lacks the key', async () => {
-    registerLanguagePacks({ languages: { uz: {} }, strings: { forms: { en: { noSelectOptions: 'Nothing to pick.' } } } });
+    register({ languages: { uz: {} }, strings: { forms: { en: { noSelectOptions: 'Nothing to pick.' } } } });
 
     expect((await getLocaleLanguage('en', 'forms*', formsSchema)).noSelectOptions).toBe('Nothing to pick.');
     expect((await getLocaleLanguage('uz', 'forms*', formsSchema)).noSelectOptions).toBe('Nothing to pick.');
@@ -116,7 +115,7 @@ describe('language packs: fallback order', () => {
   });
 
   it('a built-in language can be overridden key by key, nested objects merged', async () => {
-    registerLanguagePacks({ strings: { forms: { ru: { submit: 'Отправить заявку', errors: { extra: 'x' } } }, errors: { ru: { invalidVin: 'Неверный VIN' } } } });
+    register({ strings: { forms: { ru: { submit: 'Отправить заявку', errors: { extra: 'x' } } }, errors: { ru: { invalidVin: 'Неверный VIN' } } } });
 
     const forms = await getLocaleLanguage('ru', 'forms*', formsSchema);
     const errors = await getLocaleLanguage('ru', 'errors', errorsSchema);
@@ -129,8 +128,8 @@ describe('language packs: fallback order', () => {
   });
 
   it('adds a whole new language with its strings, meta and direction', async () => {
-    registerLanguagePacks({
-      languages: { uz: { direction: 'ltr', intl: ['uz-Latn-UZ', 'uz'] } },
+    register({
+      languages: { uz: { direction: 'ltr' } },
       strings: {
         global: { uz: { language: 'o‘zbekcha', noData: 'Ma’lumot yo‘q.' } },
         forms: { uz: { submit: 'Yuborish', errors: { wildCard: 'Xatolik' } } },
@@ -147,13 +146,12 @@ describe('language packs: fallback order', () => {
     expect(shared.direction).toBe('ltr');
     expect(shared.invalidVin).toBe('VIN noto‘g‘ri');
     expect(shared.noPartsFound).toBe(errorsEn.noPartsFound);
-    expect(langTag('uz')).toBe('uz-Latn-UZ');
     expect(knownLanguages()).toContain('uz');
   });
 
   it('an empty language joins the list and resolves every key to en', async () => {
-    registerLanguagePacks({ languages: { tk: {} } });
-    registerLanguagePacks({ strings: { forms: { kk: {} } } });
+    register({ languages: { tk: {} } });
+    register({ strings: { forms: { kk: {} } } });
 
     expect(knownLanguages()).toEqual(expect.arrayContaining(['en', 'ar', 'ku', 'ru', 'tk', 'kk']));
 
@@ -162,12 +160,12 @@ describe('language packs: fallback order', () => {
       expect(await getLocaleLanguage(code, 'errors', errorsSchema)).toEqual(errorsEn);
       expect(calendarLocale(code).strings).toEqual(calendarEn);
       expect(calendarLocale(code).language).toBe(code);
-      expect(languageMeta(code)).toEqual({ direction: 'ltr', intl: [code, 'en-GB'], weekStartsOn: 1, numerals: 'latn' });
+      expect(languageMeta(code)).toEqual({ direction: 'ltr', weekStartsOn: 1, numerals: 'latn' });
     }
   });
 
   it('a missing key falls back to pack en, then to built-in en', async () => {
-    registerLanguagePacks({ strings: { forms: { en: { submit: 'Send' }, uz: { close: 'Yopish' } } } });
+    register({ strings: { forms: { en: { submit: 'Send' }, uz: { close: 'Yopish' } } } });
 
     const forms = await getLocaleLanguage('uz', 'forms*', formsSchema);
 
@@ -177,7 +175,7 @@ describe('language packs: fallback order', () => {
   });
 
   it('pack en reaches a built-in language only for keys its own file lacks', async () => {
-    registerLanguagePacks({ strings: { forms: { en: { submit: 'Send', onlyInEnglish: 'E' } } } });
+    register({ strings: { forms: { en: { submit: 'Send', onlyInEnglish: 'E' } } } });
 
     const forms = (await getLocaleLanguage('ru', 'forms*', formsSchema)) as Record<string, unknown>;
 
@@ -185,46 +183,33 @@ describe('language packs: fallback order', () => {
     expect(forms.onlyInEnglish).toBe('E');
   });
 
-  it('layer 3 beats layer 2 beats layer 1, whatever the registration order', async () => {
-    registerLanguagePacks({ strings: { general: { en: { close: 'structure' } } } }, 3);
-    registerLanguagePacks({ strings: { general: { en: { close: 'global', submit: 'global' } } } }, 1);
-    registerLanguagePacks({ strings: { general: { en: { close: 'element', submit: 'element' } } } }, 2);
-
-    const general = await getLocaleLanguage('en', 'general', generalSchema);
-
-    expect(general.close).toBe('structure');
-    expect(general.submit).toBe('element');
-  });
-
-  it('within a layer the later registration wins, and registering a pack again moves it last', async () => {
+  it('the later registration wins per key, and registering a pack again moves it last', async () => {
     const first: LanguagePacks = { strings: { general: { en: { close: 'first' } } } };
     const second: LanguagePacks = { strings: { general: { en: { close: 'second' } } } };
 
-    registerLanguagePacks(first, 2);
-    registerLanguagePacks(second, 2);
+    register(first);
+    register(second);
     expect((await getLocaleLanguage('en', 'general', generalSchema)).close).toBe('second');
 
-    registerLanguagePacks(first, 2);
+    register(first);
     expect((await getLocaleLanguage('en', 'general', generalSchema)).close).toBe('first');
   });
 
-  it('accepts an array, JSON text and the form element and structure entry points', async () => {
-    registerLanguagePacks(JSON.stringify([{ strings: { general: { en: { close: 'json' } } } }, { strings: { general: { en: { submit: 'array' } } } }]), 1);
-    registerFormLanguagePacks({
-      languagePacks: { strings: { general: { en: { formSubmittedSuccessfully: 'element' } } } },
-      structure: { data: { languagePacks: { strings: { general: { en: { close: 'structure' } } } } } },
-    });
+  it('accepts one pack, an array and JSON text', async () => {
+    register(JSON.stringify([{ strings: { general: { en: { close: 'json' } } } }, { strings: { general: { en: { submit: 'array' } } } }]));
+    register([{ strings: { general: { en: { formSubmittedSuccessfully: 'list' } } } }]);
+    register({ strings: { general: { en: { close: 'object' } } } });
 
     const general = (await getLocaleLanguage('en', 'general', generalSchema)) as Record<string, unknown>;
 
-    expect(general).toMatchObject({ close: 'structure', submit: 'array', formSubmittedSuccessfully: 'element' });
+    expect(general).toMatchObject({ close: 'object', submit: 'array', formSubmittedSuccessfully: 'list' });
   });
 
   it('never mutates the cached locale file', async () => {
     const pristine = await getLocaleLanguage('en', 'errors', errorsSchema);
     const copy = JSON.parse(JSON.stringify(pristine));
 
-    registerLanguagePacks({ strings: { errors: { en: { invalidVin: 'changed' } } } });
+    register({ strings: { errors: { en: { invalidVin: 'changed' } } } });
     await getLocaleLanguage('en', 'errors', errorsSchema);
     clearStore();
 
@@ -235,9 +220,9 @@ describe('language packs: fallback order', () => {
   });
 
   it('ignores bad input with one warning each', async () => {
-    registerLanguagePacks('{not json', 1);
-    registerLanguagePacks({ strings: { nope: { en: { a: 'b' } } } as never });
-    registerLanguagePacks({ strings: { calendar: { uz: { months: ['one'] } } }, languages: { uz: {} } });
+    register('{not json');
+    register({ strings: { nope: { en: { a: 'b' } } } as never });
+    register({ strings: { calendar: { uz: { months: ['one'] } } }, languages: { uz: {} } });
 
     knownLanguages();
     knownLanguages();
@@ -251,35 +236,43 @@ describe('language packs: fallback order', () => {
 });
 
 describe('language packs: global entry point', () => {
-  it('configureAdpHost writes layer 1 of the same store and ignores unknown keys', async () => {
+  it('configureAdpHost is the one entry point and ignores unknown keys', async () => {
     configureAdpHost({ languagePacks: { strings: { general: { en: { close: 'host' } } } }, fetch: undefined, somethingElse: 1 });
-    registerLanguagePacks({ strings: { general: { en: { submit: 'element' } } } }, 2);
 
     const general = await getLocaleLanguage('en', 'general', generalSchema);
 
     expect(general.close).toBe('host');
-    expect(general.submit).toBe('element');
     expect(Object.keys(peekHostConfig())).toEqual(['languagePacks']);
   });
 
-  it('a pack written straight onto the symbol key counts as layer 1', async () => {
-    (globalThis as Record<symbol, unknown>)[HOST_CONFIG_KEY] = { languagePacks: { strings: { general: { en: { close: 'direct' } } } } };
-    registerLanguagePacks({ strings: { general: { en: { close: 'element' } } } }, 2);
+  it('a pack written straight onto the symbol key is read, and a later configureAdpHost wins over it', async () => {
+    (globalThis as Record<symbol, unknown>)[HOST_CONFIG_KEY] = { languagePacks: { strings: { general: { en: { close: 'direct', submit: 'direct' } } } } };
+    expect((await getLocaleLanguage('en', 'general', generalSchema)).close).toBe('direct');
+
     configureAdpHost({ languagePacks: { strings: { general: { en: { submit: 'host' } } } } });
 
     const general = await getLocaleLanguage('en', 'general', generalSchema);
 
-    expect(general.close).toBe('element');
+    expect(general.close).toBe('direct');
     expect(general.submit).toBe('host');
+  });
+
+  it('null, undefined and empty text register nothing', () => {
+    configureAdpHost({ languagePacks: null });
+    configureAdpHost({ languagePacks: undefined });
+    configureAdpHost({ languagePacks: '' });
+
+    expect(packsRegistered()).toBe(false);
+    expect(knownLanguages()).toEqual(['en', 'ar', 'ku', 'ru']);
   });
 });
 
 describe('language packs: meta and direction', () => {
   it('uz is ltr by default, a pack can declare an rtl language, built-ins keep theirs', async () => {
-    registerLanguagePacks({ languages: { uz: {}, ug: { direction: 'rtl', weekStartsOn: 6, numerals: 'arab' } }, strings: { global: { fa: { direction: 'rtl' } } } });
+    register({ languages: { uz: {}, ug: { direction: 'rtl', weekStartsOn: 6, numerals: 'arab' } }, strings: { global: { fa: { direction: 'rtl' } } } });
 
     expect(languageMeta('uz').direction).toBe('ltr');
-    expect(languageMeta('ug')).toEqual({ direction: 'rtl', intl: ['ug', 'en-GB'], weekStartsOn: 6, numerals: 'arab' });
+    expect(languageMeta('ug')).toEqual({ direction: 'rtl', weekStartsOn: 6, numerals: 'arab' });
     expect(languageMeta('fa').direction).toBe('rtl');
     expect(languageMeta('ar').direction).toBe('rtl');
     expect(languageMeta('ru').direction).toBe('ltr');
@@ -292,7 +285,7 @@ describe('language packs: meta and direction', () => {
   });
 
   it('languages[L].direction beats strings.global[L].direction', () => {
-    registerLanguagePacks({ languages: { ar: { direction: 'ltr' } }, strings: { global: { ar: { direction: 'rtl' } } } });
+    register({ languages: { ar: { direction: 'ltr' } }, strings: { global: { ar: { direction: 'rtl' } } } });
 
     expect(languageMeta('ar').direction).toBe('ltr');
   });
@@ -302,8 +295,8 @@ describe('language packs: bundled strings', () => {
   const months = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
 
   it('overlays calendar, booking, input, popover and day-strip strings for uz', () => {
-    registerLanguagePacks({
-      languages: { uz: { intl: 'uz-Latn' } },
+    register({
+      languages: { uz: {} },
       strings: {
         calendar: { uz: { months, today: 'Bugun' } },
         booking: { uz: { times: 'Vaqtlar', earlierDays: 'Oldingi kunlar' }, en: { idle: 'Pick a dealer first' } },
@@ -325,12 +318,11 @@ describe('language packs: bundled strings', () => {
     expect(inputStrings('uz').clear).toBe('Tozalash');
     expect(popoverStrings('uz').dialog).toBe('Oyna');
     expect(dayStripStrings('uz').earlierDays).toBe('Oldingi kunlar');
-    expect(langTag(locale.language)).toBe('uz-Latn');
   });
 
   it('a uz pack leaves the built-in ar calendar locale as it was', () => {
     const builtIn = JSON.parse(JSON.stringify(calendarLocale('ar')));
-    registerLanguagePacks({ languages: { uz: { intl: 'uz-Latn' } }, strings: { calendar: { uz: { months, today: 'Bugun' } } } });
+    register({ languages: { uz: {} }, strings: { calendar: { uz: { months, today: 'Bugun' } } } });
 
     expect(packsRegistered()).toBe(true);
     expect(calendarLocale('ar')).toEqual(builtIn);
@@ -338,10 +330,10 @@ describe('language packs: bundled strings', () => {
   });
 
   it('a registration after the first read applies from the next read', () => {
-    registerLanguagePacks({ languages: { uz: {} } });
+    register({ languages: { uz: {} } });
     expect(popoverStrings('uz')).toEqual(popoverEn);
 
-    registerLanguagePacks({ strings: { popover: { uz: { dialog: 'Oyna' } } } });
+    register({ strings: { popover: { uz: { dialog: 'Oyna' } } } });
     expect(popoverStrings('uz').dialog).toBe('Oyna');
   });
 });
@@ -357,7 +349,7 @@ describe('language packs: getLanguageFromUrl', () => {
   });
 
   it('matches a pack language exactly, only where it would have returned en', () => {
-    registerLanguagePacks({ languages: { uz: {} } });
+    register({ languages: { uz: {} } });
 
     const cases: [string, string][] = [
       ['http://host.invalid/uz/', 'uz'],

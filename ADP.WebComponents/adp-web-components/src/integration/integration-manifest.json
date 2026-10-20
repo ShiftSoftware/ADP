@@ -10,7 +10,7 @@
       "wireContract": "adp.vehicle-lookup.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["activeElement", "baseUrl", "childrenProps", "disableVinValidation", "hiddenTabs", "language", "languagePacks", "queryString", "sscQueryString"],
+        "properties": ["activeElement", "baseUrl", "childrenProps", "disableVinValidation", "hiddenTabs", "language", "queryString", "sscQueryString"],
         "methods": ["fetchVin"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["vehicle lookup request", "response distribution to child components", "active child rendering"]
@@ -36,8 +36,7 @@
           { "name": "errorStateListener", "type": "(newError: string) => void", "default": null, "mutable": false, "required": false },
           { "name": "hiddenTabs", "attribute": "hidden-tabs", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
-          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string & {}", "default": null, "mutable": false, "required": false },
-          { "name": "languagePacks", "attribute": "language-packs", "type": "LanguagePacks | LanguagePacks[] | string", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           { "name": "loadingStateChanged", "type": "(isLoading: boolean) => void", "default": null, "mutable": false, "required": false },
           { "name": "mockRecaptcha", "attribute": "mock-recaptcha", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "mockUrl", "attribute": "mock-url", "type": "string", "default": null, "mutable": false, "required": false },
@@ -79,7 +78,7 @@
       "wireContract": "adp.vehicle-specification.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "languagePacks", "coreOnly", "disableVinValidation", "queryString"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
         "methods": ["fetchVin"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["lookup request", "response handling", "loading and error state", "vehicle specification rendering"]
@@ -99,8 +98,7 @@
           },
           { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
-          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string & {}", "default": null, "mutable": false, "required": false },
-          { "name": "languagePacks", "attribute": "language-packs", "type": "LanguagePacks | LanguagePacks[] | string", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
             "name": "loadedResponse",
             "attribute": "loaded-response",
@@ -138,7 +136,7 @@
       "wireContract": "adp.vehicle-sale-information.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "languagePacks", "coreOnly", "disableVinValidation", "hiddenFields", "queryString", "showSupplyChain"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "hiddenFields", "queryString", "showSupplyChain"],
         "methods": ["fetchVin"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["lookup request", "response handling", "loading and error state", "sale information rendering"]
@@ -159,8 +157,7 @@
           { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
           { "name": "hiddenFields", "attribute": "hidden-fields", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
-          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string & {}", "default": null, "mutable": false, "required": false },
-          { "name": "languagePacks", "attribute": "language-packs", "type": "LanguagePacks | LanguagePacks[] | string", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
             "name": "loadedResponse",
             "attribute": "loaded-response",
@@ -205,7 +202,7 @@
       "wireContract": "adp.vehicle-accessories.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "languagePacks", "coreOnly", "disableVinValidation", "queryString"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
         "methods": ["fetchVin"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["lookup request", "response handling", "loading and error state", "accessory rendering"]
@@ -225,8 +222,7 @@
           },
           { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
-          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string & {}", "default": null, "mutable": false, "required": false },
-          { "name": "languagePacks", "attribute": "language-packs", "type": "LanguagePacks | LanguagePacks[] | string", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
             "name": "loadedResponse",
             "attribute": "loaded-response",
@@ -263,7 +259,7 @@
       "wireContract": "adp.vehicle-service-history.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "languagePacks", "coreOnly", "disableVinValidation", "queryString"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
         "methods": ["fetchVin"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["lookup request", "response handling", "loading and error state", "service-history rendering"]
@@ -283,8 +279,7 @@
           },
           { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
-          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string & {}", "default": null, "mutable": false, "required": false },
-          { "name": "languagePacks", "attribute": "language-packs", "type": "LanguagePacks | LanguagePacks[] | string", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
             "name": "loadedResponse",
             "attribute": "loaded-response",
@@ -321,7 +316,7 @@
       "wireContract": "adp.vehicle-paint-thickness.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "languagePacks", "coreOnly", "disableVinValidation", "queryString", "showCertificateButton"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString", "showCertificateButton"],
         "methods": ["fetchVin"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["lookup request", "response handling", "loading and error state", "paint-thickness rendering"]
@@ -341,8 +336,7 @@
           },
           { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
-          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string & {}", "default": null, "mutable": false, "required": false },
-          { "name": "languagePacks", "attribute": "language-packs", "type": "LanguagePacks | LanguagePacks[] | string", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
             "name": "loadedResponse",
             "attribute": "loaded-response",
@@ -380,7 +374,7 @@
       "wireContract": "adp.vehicle-ssc.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "languagePacks", "coreOnly", "disableVinValidation", "queryString", "lookupQueryString", "showTrace"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString", "lookupQueryString", "showTrace"],
         "methods": ["fetchVin"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["lookup request", "response handling", "loading and error state", "campaign rendering", "repair-status trace fetch"]
@@ -411,8 +405,7 @@
           },
           { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
-          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string & {}", "default": null, "mutable": false, "required": false },
-          { "name": "languagePacks", "attribute": "language-packs", "type": "LanguagePacks | LanguagePacks[] | string", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
             "name": "loadedResponse",
             "attribute": "loaded-response",
@@ -483,7 +476,7 @@
       "wireContract": "adp.vehicle-warranty-timeline.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "language", "languagePacks", "coreOnly", "disableVinValidation", "queryString"],
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
         "methods": ["fetchVin"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["lookup request", "response handling", "loading and error state", "warranty coverage rendering"]
@@ -503,8 +496,7 @@
           },
           { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
-          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string & {}", "default": null, "mutable": false, "required": false },
-          { "name": "languagePacks", "attribute": "language-packs", "type": "LanguagePacks | LanguagePacks[] | string", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
             "name": "loadedResponse",
             "attribute": "loaded-response",
@@ -542,7 +534,7 @@
       "wireContract": "adp.vehicle-claimable-items.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["baseUrl", "coreOnly", "disableVinValidation", "language", "languagePacks", "queryString", "showTrace"],
+        "properties": ["baseUrl", "coreOnly", "disableVinValidation", "language", "queryString", "showTrace"],
         "methods": ["fetchVin"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["lookup request", "response handling", "loading and error state", "claimable-item rendering"]
@@ -565,8 +557,7 @@
           },
           { "name": "headers", "type": "object", "default": null, "mutable": false, "required": false },
           { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
-          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string & {}", "default": null, "mutable": false, "required": false },
-          { "name": "languagePacks", "attribute": "language-packs", "type": "LanguagePacks | LanguagePacks[] | string", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
           {
             "name": "loadedResponse",
             "attribute": "loaded-response",
@@ -635,7 +626,6 @@
           "dayMeta",
           "today",
           "language",
-          "languagePacks",
           "weekStartsOn",
           "numerals",
           "label",
@@ -776,22 +766,12 @@
           {
             "name": "language",
             "attribute": "language",
-            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string & {}",
+            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"",
             "default": "'en'",
             "mutable": false,
             "required": false,
             "reflect": false,
-            "description": "en, ar, ku or ru, or a language a registered language pack declares. Sets names, direction, default week start and digits."
-          },
-          {
-            "name": "languagePacks",
-            "attribute": "language-packs",
-            "type": "LanguagePacks | LanguagePacks[] | string",
-            "default": null,
-            "mutable": false,
-            "required": false,
-            "reflect": false,
-            "description": "A language pack (object, array or JSON text) registered document-wide when the component loads. Overrides built-in strings or adds a language; see configureAdpHost in host-loader."
+            "description": "en, ar, ku or ru. Sets names, direction, default week start and digits."
           },
           {
             "name": "max",
@@ -1220,7 +1200,7 @@
           {
             "name": "language",
             "attribute": "language",
-            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string & {}",
+            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"",
             "default": "'en'",
             "mutable": false,
             "required": false,
@@ -1633,7 +1613,7 @@
           {
             "name": "language",
             "attribute": "language",
-            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string & {}",
+            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"",
             "default": "'en'",
             "mutable": false,
             "required": false,
@@ -1960,22 +1940,7 @@
       "wireContract": null,
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": [
-          "anchor",
-          "open",
-          "label",
-          "offset",
-          "trigger",
-          "disabled",
-          "placement",
-          "mobileSheet",
-          "alwaysSheet",
-          "language",
-          "languagePacks",
-          "appearance",
-          "colorScheme",
-          "size"
-        ],
+        "properties": ["anchor", "open", "label", "offset", "trigger", "disabled", "placement", "mobileSheet", "alwaysSheet", "language", "appearance", "colorScheme", "size"],
         "methods": ["show", "hide", "toggle"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["portaled panel holding the slotted content", "anchored positioning and bottom sheet", "dismissal and focus return", "appearance and colour scheme of the panel"]
@@ -2045,22 +2010,12 @@
           {
             "name": "language",
             "attribute": "language",
-            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string & {}",
+            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"",
             "default": "'en'",
             "mutable": false,
             "required": false,
             "reflect": false,
-            "description": "en, ar, ku or ru, or a language a registered language pack declares. Language of the default dialog name."
-          },
-          {
-            "name": "languagePacks",
-            "attribute": "language-packs",
-            "type": "LanguagePacks | LanguagePacks[] | string",
-            "default": null,
-            "mutable": false,
-            "required": false,
-            "reflect": false,
-            "description": "A language pack (object, array or JSON text) registered document-wide when the component loads. Overrides built-in strings or adds a language; see configureAdpHost in host-loader."
+            "description": "en, ar, ku or ru. Language of the default dialog name."
           },
           {
             "name": "mobileSheet",
@@ -2470,7 +2425,7 @@
           {
             "name": "language",
             "attribute": "language",
-            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string & {}",
+            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"",
             "default": "'en'",
             "mutable": false,
             "required": false,
@@ -2923,7 +2878,7 @@
           {
             "name": "language",
             "attribute": "language",
-            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\" | string & {}",
+            "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"",
             "default": "'en'",
             "mutable": false,
             "required": false,

@@ -8,9 +8,7 @@ import ru from '../../../locales/calendar/ru.json';
 
 import { dateParts, monthParts, Weekday, weekdayOf } from '~lib/calendar-date';
 import type { LanguageCode } from '~features/multi-lingual/types';
-import { bundledStrings, isKnownLanguage, langTag, languageMeta, memoizeWithPacks, packsRegistered } from '~features/multi-lingual/language-packs';
-
-export { langTag };
+import { bundledStrings, isKnownLanguage, languageMeta, memoizeWithPacks, packsRegistered } from '~features/multi-lingual/language-packs';
 
 export type CalendarLanguage = 'en' | 'ar' | 'ku' | 'ru';
 export type CalendarNumerals = 'latn' | 'arab';

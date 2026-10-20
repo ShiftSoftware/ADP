@@ -1,6 +1,6 @@
 import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
-import type { LanguageCode } from '~features/multi-lingual';
+import type { LanguageKeys } from '~features/multi-lingual';
 
 import { ChevronLeftIcon } from '~assets/chevron-left-icon';
 import { ChevronRightIcon } from '~assets/chevron-right-icon';
@@ -10,7 +10,7 @@ import { today as clockToday } from '~lib/clock';
 import { Availability, blockKind, blockReason, buildAvailability } from '~lib/calendar-availability';
 import { dateParts, localDate, parseDate, weekdayOf } from '~lib/calendar-date';
 
-import { CalendarNumerals, calendarLocale, dateLabel, formatDigits, langTag } from '../shift-calendar/calendar-locale';
+import { CalendarNumerals, calendarLocale, dateLabel, formatDigits } from '../shift-calendar/calendar-locale';
 import type { CalendarAppearance, CalendarColorScheme, CalendarDayMetaMap, CalendarDayTone, CalendarSize } from '../shift-calendar/shift-calendar';
 import { dayStripStrings, shortMonth } from './day-strip-locale';
 import { moveInStrip, stripRange } from './day-strip-range';
@@ -56,7 +56,7 @@ export class ShiftDayStrip {
 
   @Prop() today?: string;
   @Prop() highlightToday: boolean = false;
-  @Prop() language: LanguageCode = 'en';
+  @Prop() language: LanguageKeys = 'en';
   @Prop() numerals?: CalendarNumerals;
   @Prop() label?: string;
   @Prop() caption?: string;
@@ -427,7 +427,7 @@ export class ShiftDayStrip {
           class="ds-root"
           part="root"
           dir={locale.direction}
-          lang={langTag(locale.language)}
+          lang={locale.language === 'ku' ? 'ckb' : locale.language}
           data-busy={this.busy ? '' : undefined}
           data-settled={this.settled ? '' : undefined}
         >

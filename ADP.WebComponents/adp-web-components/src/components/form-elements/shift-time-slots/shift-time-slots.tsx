@@ -1,10 +1,10 @@
 import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
-import type { LanguageCode } from '~features/multi-lingual';
+import type { LanguageKeys } from '~features/multi-lingual';
 
 import '~lib/middleware';
 
-import { calendarLocale, CalendarNumerals, langTag } from '../shift-calendar/calendar-locale';
+import { calendarLocale, CalendarNumerals } from '../shift-calendar/calendar-locale';
 import type { CalendarAppearance, CalendarColorScheme, CalendarSize } from '../shift-calendar/shift-calendar';
 
 import { bookingStrings, fill, formatTime, HourCycle, moveInTimes, parseTimes } from './time-slots';
@@ -35,7 +35,7 @@ export class ShiftTimeSlots {
   @Prop({ mutable: true, reflect: true }) value: string = '';
   @Prop() disabledTimes?: string[] | string;
   @Prop() hourCycle: HourCycle = 'h23';
-  @Prop() language: LanguageCode = 'en';
+  @Prop() language: LanguageKeys = 'en';
   @Prop() numerals?: CalendarNumerals;
   @Prop() label?: string;
   @Prop() emptyText?: string;
@@ -284,7 +284,7 @@ export class ShiftTimeSlots {
           class="ts-root"
           part="root"
           dir={locale.direction}
-          lang={langTag(locale.language)}
+          lang={locale.language === 'ku' ? 'ckb' : locale.language}
           role="radiogroup"
           aria-label={this.label || strings.times}
           aria-busy={this.loading ? 'true' : undefined}

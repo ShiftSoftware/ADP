@@ -1,4 +1,4 @@
-import { hostConfig, peekHostConfig } from '../host-bridge/host-config';
+import { peekHostConfig } from '../host-bridge/host-config';
 import type { LanguageCode, LanguageKeys, LocaleKeyEntries } from './types';
 
 export type LanguagePackNamespace =
@@ -21,7 +21,6 @@ export type LanguagePackNamespace =
 
 export interface LanguageMeta {
   direction?: 'ltr' | 'rtl';
-  intl?: string | string[];
   weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   numerals?: 'latn' | 'arab';
 }
@@ -34,11 +33,8 @@ export interface LanguagePacks {
 
 export type LanguagePacksInput = LanguagePacks | LanguagePacks[] | string;
 
-export type LanguagePackLayer = 1 | 2 | 3;
-
 export interface ResolvedLanguageMeta {
   direction: 'ltr' | 'rtl';
-  intl: string[];
   weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   numerals: 'latn' | 'arab';
 }
@@ -68,25 +64,15 @@ const NAMESPACE_BY_MAPPER_KEY = new Map<string, LanguagePackNamespace>(NAMESPACE
 
 export const BUILT_IN_LANGUAGES: readonly LanguageKeys[] = ['en', 'ar', 'ku', 'ru'];
 
-const BUILT_IN_META: Record<LanguageKeys, Omit<ResolvedLanguageMeta, 'intl'>> = {
+const BUILT_IN_META: Record<LanguageKeys, ResolvedLanguageMeta> = {
   en: { direction: 'ltr', weekStartsOn: 1, numerals: 'latn' },
   ar: { direction: 'rtl', weekStartsOn: 6, numerals: 'arab' },
   ku: { direction: 'rtl', weekStartsOn: 6, numerals: 'arab' },
   ru: { direction: 'ltr', weekStartsOn: 1, numerals: 'latn' },
 };
 
-interface PackEntry {
-  input: unknown;
-}
-
-interface LanguagePacksStore {
-  revision: number;
-  layers: Record<LanguagePackLayer, PackEntry[]>;
-}
-
 interface Snapshot {
-  store: LanguagePacksStore;
-  revision: number;
+  source: unknown;
   packs: LanguagePacks[];
   known: Set<string>;
   values: Map<string, unknown>;
@@ -95,8 +81,6 @@ interface Snapshot {
 type Strings = Record<string, unknown>;
 
 const isPlainObject = (value: unknown): value is Strings => typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const isStore = (value: unknown): value is LanguagePacksStore => isPlainObject(value) && typeof value.revision === 'number' && isPlainObject(value.layers);
 
 export const isBuiltInLanguage = (language: unknown): language is LanguageKeys => BUILT_IN_LANGUAGES.includes(language as LanguageKeys);
 
@@ -108,57 +92,21 @@ function warnOnce(message: string) {
   console.warn(`[adp-web-components] ${message}`);
 }
 
-function readStore(create: boolean): LanguagePacksStore | undefined {
-  const config = create ? hostConfig() : peekHostConfig();
-  if (!config) return undefined;
-
-  const part = config.languagePacks;
-  if (isStore(part)) return part;
-  if (!create && (part === undefined || part === null)) return undefined;
-
-  const store: LanguagePacksStore = { revision: 0, layers: { 1: [], 2: [], 3: [] } };
-  if (part !== undefined && part !== null) store.layers[1].push({ input: part });
-  config.languagePacks = store;
-
-  return store;
-}
-
-export function registerLanguagePacks(input: LanguagePacksInput | null | undefined, layer: LanguagePackLayer = 1) {
-  if (input === undefined || input === null || input === '') return;
-
-  const store = readStore(true);
-  const entries = (store.layers[layer] ??= []);
-  const existing = entries.findIndex(entry => entry.input === input);
-
-  if (existing > -1) entries.splice(existing, 1);
-  entries.push({ input });
-  store.revision += 1;
-}
-
-export function registerFormLanguagePacks(context: { languagePacks?: LanguagePacksInput; structure?: { data?: object } }) {
-  registerLanguagePacks(context?.languagePacks, 2);
-  registerLanguagePacks((context?.structure?.data as { languagePacks?: LanguagePacksInput } | undefined)?.languagePacks, 3);
-}
-
 function parsePacks(input: unknown): LanguagePacks[] {
-  let value = input;
-
-  if (typeof value === 'string') {
+  if (typeof input === 'string') {
     try {
-      value = JSON.parse(value);
+      input = JSON.parse(input);
     } catch {
       warnOnce('languagePacks is not valid JSON and was ignored.');
       return [];
     }
   }
 
-  const list = Array.isArray(value) ? value : [value];
+  if (Array.isArray(input)) return input.flatMap(parsePacks);
+  if (isPlainObject(input)) return [input as LanguagePacks];
 
-  return list.filter(pack => {
-    if (isPlainObject(pack)) return true;
-    warnOnce('A language pack that is not an object was ignored.');
-    return false;
-  }) as LanguagePacks[];
+  warnOnce('A language pack that is not an object was ignored.');
+  return [];
 }
 
 function languagesOf(packs: LanguagePacks[]): Set<string> {
@@ -181,13 +129,12 @@ function languagesOf(packs: LanguagePacks[]): Set<string> {
 let snapshot: Snapshot | undefined;
 
 function current(): Snapshot | undefined {
-  const store = readStore(false);
-  if (!store) return undefined;
-  if (snapshot && snapshot.store === store && snapshot.revision === store.revision) return snapshot;
+  const source = peekHostConfig()?.languagePacks;
+  if (source === undefined || source === null || source === '') return undefined;
+  if (snapshot?.source === source) return snapshot;
 
-  const packs = ([1, 2, 3] as const).flatMap(layer => (store.layers[layer] ?? []).flatMap(entry => parsePacks(entry.input)));
-
-  snapshot = { store, revision: store.revision, packs, known: languagesOf(packs), values: new Map() };
+  const packs = parsePacks(source);
+  snapshot = { source, packs, known: languagesOf(packs), values: new Map() };
 
   return snapshot;
 }
@@ -212,8 +159,6 @@ export const packNamespaceOf = (mapperKey: string): LanguagePackNamespace | unde
 const isDirection = (value: unknown): value is ResolvedLanguageMeta['direction'] => value === 'ltr' || value === 'rtl';
 const isNumerals = (value: unknown): value is ResolvedLanguageMeta['numerals'] => value === 'latn' || value === 'arab';
 const isWeekday = (value: unknown): value is ResolvedLanguageMeta['weekStartsOn'] => Number.isInteger(value) && (value as number) >= 0 && (value as number) <= 6;
-const isTag = (value: unknown): value is string => typeof value === 'string' && !!value;
-const isIntl = (value: unknown): value is string | string[] => isTag(value) || (Array.isArray(value) && value.length > 0 && value.every(isTag));
 
 function lastValid<T>(values: unknown[], valid: (value: unknown) => value is T): T | undefined {
   for (const value of [...values].reverse()) if (valid(value)) return value;
@@ -229,7 +174,6 @@ export function languageMeta(language: LanguageCode): ResolvedLanguageMeta {
       valid,
     );
   const builtIn = isBuiltInLanguage(language) ? BUILT_IN_META[language] : undefined;
-  const intl = declaredValue('intl', isIntl);
 
   return {
     direction:
@@ -240,17 +184,9 @@ export function languageMeta(language: LanguageCode): ResolvedLanguageMeta {
       ) ??
       builtIn?.direction ??
       'ltr',
-    intl: Array.isArray(intl) ? [...intl] : intl ? [intl] : [language, 'en-GB'],
     weekStartsOn: declaredValue('weekStartsOn', isWeekday) ?? builtIn?.weekStartsOn ?? 1,
     numerals: declaredValue('numerals', isNumerals) ?? builtIn?.numerals ?? 'latn',
   };
-}
-
-export function langTag(language: LanguageCode): string {
-  if (language === 'ku') return 'ckb';
-  if (isBuiltInLanguage(language) || !packsRegistered() || !isKnownLanguage(language)) return language;
-
-  return languageMeta(language).intl[0];
 }
 
 function mergeStrings(base: Strings, over: Strings, path: string): Strings {

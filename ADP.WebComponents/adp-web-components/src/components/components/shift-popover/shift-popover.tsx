@@ -1,7 +1,6 @@
 import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
-import type { LanguageCode } from '~features/multi-lingual';
-import { registerLanguagePacks, type LanguagePacksInput } from '~features/multi-lingual/language-packs';
+import type { LanguageKeys } from '~features/multi-lingual';
 import type { PickerChangeDetail } from '~lib/picker';
 
 import '~lib/middleware';
@@ -150,8 +149,7 @@ export class ShiftPopover {
   @Prop() label?: string;
   @Prop() offset: number = 8;
   @Prop({ reflect: true }) placement: PopoverPlacement = 'bottom';
-  @Prop() language: LanguageCode = 'en';
-  @Prop() languagePacks?: LanguagePacksInput;
+  @Prop() language: LanguageKeys = 'en';
   @Prop({ reflect: true }) appearance?: PopoverAppearance;
   @Prop({ reflect: true }) colorScheme: PopoverColorScheme = 'light';
   @Prop({ reflect: true }) size: PopoverSize = 'md';
@@ -184,10 +182,6 @@ export class ShiftPopover {
   private scrollLocked = false;
   private focusNext = true;
   private readonly panelInTemplate = false;
-
-  componentWillLoad() {
-    registerLanguagePacks(this.languagePacks, 2);
-  }
 
   connectedCallback() {
     if (typeof window === 'undefined') return;

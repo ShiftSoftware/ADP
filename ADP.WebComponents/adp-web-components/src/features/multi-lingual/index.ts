@@ -1,4 +1,3 @@
 export * from './types';
 export * from './interface';
 export * from './get-local-language';
-export * from './language-packs';

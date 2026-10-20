@@ -21,6 +21,7 @@ import { h } from '@stencil/core';
 import { newSpecPage, SpecPage } from '@stencil/core/testing';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import ts from 'typescript';
 
 import { GeneralForm } from '../../components/forms/general-form';
 import { TestDriveForm } from '../../components/forms/test-drive';
@@ -30,9 +31,25 @@ import { FormInput as FormDialog } from '../../components/form-elements/form-dia
 import { FormSubmit } from '../../components/form-elements/form-submit';
 import { ShiftPortal } from '../../components/components/shift-portal';
 import { FlexibleContainer } from '../../components/components/flexible-container';
+import { ShiftCalendar } from '../../components/form-elements/shift-calendar/shift-calendar';
 import { HOST_CONFIG_KEY } from '~features/host-bridge/host-config';
+import formsEn from '../../locales/forms/en.json';
+import type { LanguagePacksInput } from './language-packs';
 
-const COMPONENTS = [GeneralForm, TestDriveForm, FormStructure, FormStructureError, FormDialog, FormSubmit, ShiftPortal, FlexibleContainer];
+const COMPONENTS = [GeneralForm, TestDriveForm, FormStructure, FormStructureError, FormDialog, FormSubmit, ShiftPortal, FlexibleContainer, ShiftCalendar];
+
+// host-loader.js is shipped as plain ESM, which Jest does not transform.
+function loadHostLoader(): { configureAdpHost: (options: Record<string, unknown>) => void } {
+  const source = readFileSync(join(__dirname, '../../integration/host-loader.js'), 'utf8');
+  const { outputText } = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021 } });
+  const module = { exports: {} };
+  new Function('exports', 'module', outputText)(module.exports, module);
+
+  return module.exports as { configureAdpHost: (options: Record<string, unknown>) => void };
+}
+
+const { configureAdpHost } = loadHostLoader();
+const register = (languagePacks: LanguagePacksInput) => configureAdpHost({ languagePacks });
 
 const structure = (data: Record<string, unknown> = {}) => ({
   data: { requestUrl: 'https://example.invalid/api/tickets', ...data },
@@ -98,6 +115,11 @@ async function mount(tag: string, props: Record<string, unknown>) {
 }
 
 const submitText = (page: SpecPage) => page.root.shadowRoot.querySelector('form-submit .form-submit-text-position')?.textContent?.trim();
+const formLocale = (page: SpecPage) => (page.rootInstance as GeneralForm).locale.sharedFormLocales as Record<string, unknown>;
+const calendarRoot = (page: SpecPage) => page.root.shadowRoot.querySelector('.cal-root');
+const calendarHeading = (page: SpecPage) => page.root.shadowRoot.querySelector('.cal-header .cal-sr[aria-live]').textContent;
+
+const months = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
 
 describe('language packs on v1 forms', () => {
   it('without a pack the built-in string renders', async () => {
@@ -107,29 +129,61 @@ describe('language packs on v1 forms', () => {
     expect((globalThis as Record<symbol, unknown>)[HOST_CONFIG_KEY]).toBeUndefined();
   });
 
-  it('the languagePacks prop overrides a built-in string', async () => {
-    const page = await mount('general-form', { structure: structure(), languagePacks: { strings: { forms: { en: { submit: 'Send request' } } } } });
+  it('language uz without a pack behaves as before: en strings, ltr', async () => {
+    const page = await mount('general-form', { language: 'uz', structure: structure() });
+
+    expect(submitText(page)).toBe('Submit');
+    expect(formLocale(page).noSelectOptions).toBe(formsEn.noSelectOptions);
+    expect(page.root.shadowRoot.querySelector('form').getAttribute('dir')).toBe('ltr');
+    expect(page.root.getAttribute('language')).toBe('uz');
+  });
+
+  it('a registered pack overrides a built-in en string', async () => {
+    register({ strings: { forms: { en: { submit: 'Send request', noSelectOptions: 'Nothing to pick.' } } } });
+    const page = await mount('test-drive-form', { structure: structure() });
 
     expect(submitText(page)).toBe('Send request');
+    expect(formLocale(page).noSelectOptions).toBe('Nothing to pick.');
   });
 
-  it('structure.data.languagePacks overrides a built-in string, above the element pack', async () => {
-    const page = await mount('test-drive-form', {
-      structure: structure({ languagePacks: { strings: { forms: { en: { submit: 'From the structure' } } } } }),
-      languagePacks: JSON.stringify({ strings: { forms: { en: { submit: 'From the element' } } } }),
-    });
-
-    expect(submitText(page)).toBe('From the structure');
-  });
-
-  it('a pack language renders its own strings, falling back to en', async () => {
-    const page = await mount('general-form', {
-      language: 'uz',
-      structure: structure(),
-      languagePacks: { languages: { uz: {} }, strings: { forms: { uz: { submit: 'Yuborish' } } } },
-    });
+  it('a pack language renders its own strings through the language prop, missing keys fall back to en', async () => {
+    register(JSON.stringify({ languages: { uz: {} }, strings: { forms: { uz: { submit: 'Yuborish' } } } }));
+    const page = await mount('general-form', { language: 'uz', structure: structure() });
 
     expect(submitText(page)).toBe('Yuborish');
+    expect(formLocale(page).close).toBe(formsEn.close);
     expect(page.root.shadowRoot.querySelector('form').getAttribute('dir')).toBe('ltr');
+  });
+
+  it('an empty pack language joins the list and renders en', async () => {
+    register({ languages: { tk: {} } });
+    const page = await mount('general-form', { language: 'tk', structure: structure() });
+
+    expect(submitText(page)).toBe('Submit');
+    expect(formLocale(page).lang).toBe('tk');
+  });
+});
+
+describe('language packs on a new-design component', () => {
+  // The calendar's header fit needs real layout; the spec DOM has none, as in the calendar's own spec.
+  beforeEach(() => ((globalThis as Record<string, unknown>).ResizeObserver = undefined));
+  afterEach(() => ((globalThis as Record<string, unknown>).ResizeObserver = NoopObserver));
+
+  it('shift-calendar with language uz and no pack is the en calendar', async () => {
+    const page = await mount('shift-calendar', { language: 'uz', today: '2026-09-27' });
+
+    expect(calendarHeading(page)).toBe('September 2026');
+    expect(calendarRoot(page).getAttribute('lang')).toBe('en');
+    expect(calendarRoot(page).getAttribute('dir')).toBe('ltr');
+  });
+
+  it('shift-calendar renders a pack language, missing keys fall back to en', async () => {
+    register({ languages: { uz: {} }, strings: { calendar: { uz: { months, calendar: 'Taqvim' } } } });
+    const page = await mount('shift-calendar', { language: 'uz', today: '2026-09-27' });
+
+    expect(calendarHeading(page)).toBe('Sentabr 2026');
+    expect(calendarRoot(page).getAttribute('aria-label')).toBe('Taqvim');
+    expect(calendarRoot(page).getAttribute('lang')).toBe('uz');
+    expect(page.root.shadowRoot.querySelector('.cal-weekday .cal-sr').textContent).toBe('Monday');
   });
 });
