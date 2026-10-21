@@ -127,6 +127,9 @@ export interface SurveyRendererProps {
   /** Called when the user completes the survey. Receives the final screen id
    *  (if any) so hosts can render branch-specific confirmations. */
   onCompleted?: (screenId: string | null) => void;
+  /** Called with the raw error when a submission fails. The respondent only ever sees a
+   *  friendly, localized message; this is where a host logs or reports the detail. */
+  onSubmitError?: (error: unknown) => void;
   /** Meta to stamp on the submission (startedAt, agentId, etc.). `completedAt`
    *  is filled in automatically if missing. */
   submissionMeta?: SubmissionMeta;
@@ -171,6 +174,32 @@ function screenAutoSubmitsOnArrival(schema: Survey, screenId: string, answers: A
   return computeNext(schema, screenId, answers).kind === 'end';
 }
 
+/** How a failed submission reads to the respondent. Decided from the SDK client's error
+ *  code when the host submits through it, so the server's wording never reaches the
+ *  screen:
+ *  - `answered` (409) — the survey already has a response. The answers are in, so this
+ *    is a calm end state, not an error.
+ *  - `closed` (410) — it stopped accepting answers. Also an end state.
+ *  - `failed` (400 / 404) — refused outright; sending the same answers again can't help.
+ *  - `retry` — anything else (no connection, server error, a host's own exception):
+ *    worth another try with the same answers. */
+type SubmitFailureKind = 'answered' | 'closed' | 'failed' | 'retry';
+
+function classifySubmitError(error: unknown): SubmitFailureKind {
+  const code = (error as { code?: unknown } | null)?.code;
+  switch (code) {
+    case 'conflict':
+      return 'answered';
+    case 'gone':
+      return 'closed';
+    case 'badRequest':
+    case 'notFound':
+      return 'failed';
+    default:
+      return 'retry';
+  }
+}
+
 export function SurveyRenderer({
   schema,
   onSubmit,
@@ -180,6 +209,7 @@ export function SurveyRenderer({
   showLocalePicker,
   onScreenChange,
   onCompleted,
+  onSubmitError,
   registry,
   submissionMeta,
   uiLocales,
@@ -290,7 +320,14 @@ export function SurveyRenderer({
     }
   }, [schema, currentScreenId]);
   const [submitting, setSubmitting] = useState(false);
-  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [submitFailure, setSubmitFailure] = useState<{ kind: SubmitFailureKind; message: string } | null>(null);
+  // An answered or closed survey is over for this respondent, as surely as a successful
+  // submit: the screen becomes an end state and the saved progress goes.
+  const endedByFailure = submitFailure?.kind === 'answered' || submitFailure?.kind === 'closed';
+  // The zero-question closing screen this renderer already submitted from, so a re-render
+  // or a second arrival doesn't double-submit. Cleared by Back, so walking away and
+  // returning to that screen submits again.
+  const autoSubmittedFor = useRef<string | null>(null);
   // Required questions the user tried to Next past on the current screen.
   // Flagged ids render an inline error; the flag set resets on navigation and
   // each entry hides itself as soon as its question gains an answer.
@@ -427,25 +464,26 @@ export function SurveyRenderer({
 
   // Persist resume state on every answer / screen change. Cleared on done.
   useEffect(() => {
-    if (!resumeKey || !effectiveStorage || done) return;
+    if (!resumeKey || !effectiveStorage || done || endedByFailure) return;
     saveResumeState(effectiveStorage, resumeKey, {
       answers,
       currentScreenId,
       history: [...history],
       schemaVersion: schema.version,
     });
-  }, [answers, currentScreenId, history, resumeKey, effectiveStorage, done, schema.version]);
+  }, [answers, currentScreenId, history, resumeKey, effectiveStorage, done, endedByFailure, schema.version]);
 
   useEffect(() => {
-    if (done && resumeKey && effectiveStorage) {
+    if ((done || endedByFailure) && resumeKey && effectiveStorage) {
       clearResumeState(effectiveStorage, resumeKey);
     }
-  }, [done, resumeKey, effectiveStorage]);
+  }, [done, endedByFailure, resumeKey, effectiveStorage]);
 
-  // Surface submission errors to the host bridge.
+  // Surface submission errors to the host bridge — the raw detail, which the respondent
+  // never sees.
   useEffect(() => {
-    if (submissionError) hostBridgeRef.current?.error(submissionError);
-  }, [submissionError]);
+    if (submitFailure) hostBridgeRef.current?.error(submitFailure.message);
+  }, [submitFailure]);
 
   const setAnswer = useCallback((questionId: string, value: unknown) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -477,7 +515,8 @@ export function SurveyRenderer({
     const previous = history[at]!;
     setRequiredFlags(new Set());
     setConstraintFlags(new Set());
-    setSubmissionError(null);
+    setSubmitFailure(null);
+    autoSubmittedFor.current = null;
     setHistory(history.slice(0, at));
     setCurrentScreenId(previous);
   }, [history, schema]);
@@ -499,7 +538,7 @@ export function SurveyRenderer({
 
   const finishSurvey = useCallback(async () => {
     setSubmitting(true);
-    setSubmissionError(null);
+    setSubmitFailure(null);
     try {
       await onSubmit({
         schemaVersion: schema.version ?? 0,
@@ -514,11 +553,12 @@ export function SurveyRenderer({
       onCompleted?.(currentScreenId);
       hostBridgeRef.current?.completed({ screenId: currentScreenId, answers: effectiveAnswers });
     } catch (e) {
-      setSubmissionError((e as Error).message ?? String(e));
+      setSubmitFailure({ kind: classifySubmitError(e), message: (e as Error)?.message ?? String(e) });
+      onSubmitError?.(e);
     } finally {
       setSubmitting(false);
     }
-  }, [schema.version, effectiveAnswers, submissionMeta, onSubmit, onCompleted, currentScreenId]);
+  }, [schema.version, effectiveAnswers, submissionMeta, onSubmit, onCompleted, onSubmitError, currentScreenId]);
 
   const advance = useCallback(() => {
     if (!currentScreenId) return;
@@ -549,12 +589,11 @@ export function SurveyRenderer({
 
   // Auto-submit on arrival at a zero-question terminal screen — authors design
   // multiple thank-you pages per branch, and forcing the user to press Next once
-  // more on a thanks screen is awkward UX. The screen's content still renders
-  // via the `done` state once submission completes. Guard with `done` + a ref so
-  // a re-render or a second arrival doesn't double-submit.
-  const autoSubmittedFor = useRef<string | null>(null);
+  // more on a thanks screen is awkward UX. Until the answers are accepted the screen
+  // reads "sending"; its own content renders via the `done` state once they are, so
+  // a thank-you never shows for answers that did not arrive.
   useEffect(() => {
-    if (done || submitting || !currentScreenId || !currentScreen) return;
+    if (done || endedByFailure || submitting || !currentScreenId || !currentScreen) return;
     if (autoSubmittedFor.current === currentScreenId) return;
     const isZeroQ =
       !currentScreen.questions ||
@@ -565,7 +604,7 @@ export function SurveyRenderer({
       autoSubmittedFor.current = currentScreenId;
       void finishSurvey();
     }
-  }, [currentScreenId, currentScreen, done, submitting, schema, effectiveAnswers, finishSurvey]);
+  }, [currentScreenId, currentScreen, done, endedByFailure, submitting, schema, effectiveAnswers, finishSurvey]);
 
   // NavigationList bridge — listen for selections bubbling up from a navigationList
   // option and route using the SDK's resolver. Scoped to this renderer instance via
@@ -686,7 +725,10 @@ export function SurveyRenderer({
   // accessibility tree and the tab order, not just invisible.
   const currentQuestions = (currentScreen?.questions as unknown[] | undefined) ?? [];
   const isAutoSubmitScreen = currentScreen !== null && currentQuestions.length === 0 && !currentScreen.nextScreen;
-  const showBackButton = !done && canGoBack && !submitting && !isAutoSubmitScreen;
+  // A failed submit from a closing screen offers Back again, so the respondent is never
+  // stranded on a screen that has nothing left to press.
+  const showBackButton =
+    !done && !endedByFailure && canGoBack && !submitting && (!isAutoSubmitScreen || submitFailure !== null);
   const backButton = schema.screens.length > 1 ? (
     <button
       type="button"
@@ -738,7 +780,7 @@ export function SurveyRenderer({
         style={brandStyle}
       >
         {chrome}
-        <div className="survey-screen">
+        <div className="survey-screen survey-screen--enter">
           <h2 className="survey-screen__title">
             {shownScreen?.title
               ? localize(shownScreen.title as LocalizedString, effectiveLocale, schema.defaultLocale)
@@ -754,11 +796,74 @@ export function SurveyRenderer({
     );
   }
 
+  if (endedByFailure) {
+    const answered = submitFailure!.kind === 'answered';
+    return (
+      <div
+        ref={rootRef}
+        className="survey-root survey-root--done"
+        dir={localeConfig.direction}
+        lang={effectiveLocale}
+        style={brandStyle}
+      >
+        {chrome}
+        <div className="survey-screen survey-screen--enter" role="status">
+          <h2 className="survey-screen__title">
+            {answered ? localeConfig.strings.alreadyAnsweredTitle : localeConfig.strings.surveyClosedTitle}
+          </h2>
+          <p className="survey-screen__description">
+            {answered ? localeConfig.strings.alreadyAnsweredBody : localeConfig.strings.surveyClosedBody}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // The message for a submission that failed but left the survey open: worth another try
+  // (with a Retry that sends the same answers), or refused for good.
+  const submitFailureAlert =
+    submitFailure && !endedByFailure ? (
+      <div className="survey-screen__error survey-screen__error--enter" role="alert">
+        <p className="survey-screen__error-text">
+          {submitFailure.kind === 'retry'
+            ? localeConfig.strings.submitRetryError
+            : localeConfig.strings.submitFailedError}
+        </p>
+        {submitFailure.kind === 'retry' && (
+          <button
+            type="button"
+            className="survey-button survey-button--retry"
+            disabled={submitting}
+            onClick={() => void finishSurvey()}
+          >
+            {submitting ? localeConfig.strings.submitting : localeConfig.strings.retry}
+          </button>
+        )}
+      </div>
+    ) : null;
+
   if (!currentScreen || !shownScreen) {
     return (
       <div ref={rootRef} className="survey-root" dir={localeConfig.direction} lang={effectiveLocale} style={brandStyle}>
         {chrome}
         <div className="survey-screen"><em>{localeConfig.strings.noScreens}</em></div>
+      </div>
+    );
+  }
+
+  // A closing screen whose submit has not been accepted yet: "sending", or the failure.
+  // Its own copy (the thank-you) waits for the `done` state.
+  if (currentScreenId !== null && screenAutoSubmitsOnArrival(schema, currentScreenId, effectiveAnswers)) {
+    return (
+      <div ref={rootRef} className="survey-root" dir={localeConfig.direction} lang={effectiveLocale} style={brandStyle}>
+        {chrome}
+        <div className="survey-screen survey-screen--enter">
+          {submitFailureAlert ?? (
+            <p className="survey-screen__sending" role="status">
+              {localeConfig.strings.sendingAnswers}
+            </p>
+          )}
+        </div>
       </div>
     );
   }
@@ -847,11 +952,7 @@ export function SurveyRenderer({
               </button>
             </div>
           )}
-          {submissionError && (
-            <p className="survey-screen__error" role="alert">
-              {localeConfig.strings.couldNotSubmit} {submissionError}
-            </p>
-          )}
+          {submitFailureAlert}
         </div>
       </div>
     </SurveyContextProvider>

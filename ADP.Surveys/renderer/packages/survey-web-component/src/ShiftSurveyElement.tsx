@@ -1,6 +1,6 @@
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { SurveyRenderer } from '@shift-software/survey-renderer';
+import { SurveyRenderer, resolveLocaleConfig } from '@shift-software/survey-renderer';
 // Relative path on purpose — the renderer's `exports` map is strict and doesn't
 // whitelist `?inline`; reaching through the workspace path is the most robust
 // way to inline the stylesheet at build time.
@@ -197,6 +197,34 @@ export class ShiftSurveyElement extends HTMLElement {
     const schema = this.#schema ?? this.#apiSchema;
 
     if (this.#apiError && !schema) {
+      // An answered or closed link is an end state for whoever opened it, not a fault:
+      // say so in their language instead of showing the API's wording.
+      const code = (this.#apiError as { code?: unknown }).code;
+      if (code === 'conflict' || code === 'gone') {
+        const ui = resolveLocaleConfig(locale ?? 'en', undefined);
+        const answered = code === 'conflict';
+        this.#root.render(
+          createElement(
+            'div',
+            { className: 'survey-root survey-root--done', dir: ui.direction, lang: locale },
+            createElement(
+              'div',
+              { className: 'survey-screen survey-screen--enter', role: 'status' },
+              createElement(
+                'h2',
+                { className: 'survey-screen__title' },
+                answered ? ui.strings.alreadyAnsweredTitle : ui.strings.surveyClosedTitle,
+              ),
+              createElement(
+                'p',
+                { className: 'survey-screen__description' },
+                answered ? ui.strings.alreadyAnsweredBody : ui.strings.surveyClosedBody,
+              ),
+            ),
+          ),
+        );
+        return;
+      }
       this.#root.render(
         createElement(
           'div',

@@ -35,8 +35,24 @@ export interface UiStrings {
   noScreens: string;
   /** Developer placeholder when the schema's `type` has no matching registry entry. */
   unsupportedQuestion: string;
-  /** Prefix for submission-error alerts (followed by the server message). */
+  /** @deprecated No longer shown: a failed submission reads one of the friendly messages
+   *  below, never a server message. Kept so existing `uiLocales` overrides still type-check. */
   couldNotSubmit: string;
+  /** Shown on a closing (thank-you) screen while the answers are on their way. The
+   *  screen's own copy only appears once they have been accepted. */
+  sendingAnswers: string;
+  /** A submission that failed for a reason worth retrying (connection, server). Shown
+   *  with a Retry button that sends the same answers again. */
+  submitRetryError: string;
+  /** A submission the server refused outright, which retrying cannot fix. */
+  submitFailedError: string;
+  /** End state when the survey was already answered (from this link, another tab or
+   *  another device): the answers are in, so it reads as a calm close, not an error. */
+  alreadyAnsweredTitle: string;
+  alreadyAnsweredBody: string;
+  /** End state when the survey stopped accepting answers before these were sent. */
+  surveyClosedTitle: string;
+  surveyClosedBody: string;
   /** Inline error under a required question the user tried to Next past. */
   requiredError: string;
   /** Inline constraint errors (client-side AnswerValidator mirror). `{n}` /
@@ -92,6 +108,13 @@ const en: LocaleConfig = {
     noScreens: 'No screens in this survey.',
     unsupportedQuestion: 'Unsupported question type:',
     couldNotSubmit: 'Could not submit:',
+    sendingAnswers: 'Sending your answers…',
+    submitRetryError: 'We could not send your answers. Check your connection and try again.',
+    submitFailedError: 'Something went wrong and your answers could not be sent. Please try again later.',
+    alreadyAnsweredTitle: 'Already answered',
+    alreadyAnsweredBody: 'We have already received your answers to this survey. Thank you.',
+    surveyClosedTitle: 'This survey has closed',
+    surveyClosedBody: 'It is no longer accepting answers. Thank you for your time.',
     requiredError: 'This question is required.',
     minLengthError: 'Must be at least {n} characters.',
     maxLengthError: 'Must be at most {n} characters.',
@@ -126,6 +149,13 @@ const ar: LocaleConfig = {
     noScreens: 'لا توجد شاشات في هذا الاستبيان.',
     unsupportedQuestion: 'نوع سؤال غير مدعوم:',
     couldNotSubmit: 'تعذر الإرسال:',
+    sendingAnswers: 'جارٍ إرسال إجاباتك…',
+    submitRetryError: 'تعذّر إرسال إجاباتك. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.',
+    submitFailedError: 'حدث خطأ ما وتعذّر إرسال إجاباتك. يرجى المحاولة لاحقاً.',
+    alreadyAnsweredTitle: 'تمت الإجابة مسبقاً',
+    alreadyAnsweredBody: 'لقد استلمنا إجاباتك على هذا الاستبيان. شكراً لك.',
+    surveyClosedTitle: 'تم إغلاق هذا الاستبيان',
+    surveyClosedBody: 'لم يعد يستقبل إجابات. شكراً لوقتك.',
     requiredError: 'هذا السؤال مطلوب.',
     minLengthError: 'يجب ألا يقل عن {n} حرفاً.',
     maxLengthError: 'يجب ألا يزيد عن {n} حرفاً.',
@@ -165,6 +195,13 @@ const ku: LocaleConfig = {
     noScreens: 'هیچ پەڕەیەک لەم ڕاپرسییەدا نییە.',
     unsupportedQuestion: 'جۆری پرسیاری پشتگیری نەکراو:',
     couldNotSubmit: 'ناردن سەرکەوتوو نەبوو:',
+    sendingAnswers: 'وەڵامەکانت دەنێردرێن…',
+    submitRetryError: 'نەتوانرا وەڵامەکانت بنێردرێن. پەیوەندی ئینتەرنێتەکەت بپشکنە و دووبارە هەوڵ بدەرەوە.',
+    submitFailedError: 'هەڵەیەک ڕوویدا و وەڵامەکانت نەنێردران. تکایە دواتر هەوڵ بدەرەوە.',
+    alreadyAnsweredTitle: 'پێشتر وەڵام دراوەتەوە',
+    alreadyAnsweredBody: 'وەڵامەکانی تۆمان بۆ ئەم ڕاپرسییە وەرگرتووە. سوپاس.',
+    surveyClosedTitle: 'ئەم ڕاپرسییە داخراوە',
+    surveyClosedBody: 'چیتر وەڵام وەرناگرێت. سوپاس بۆ کاتەکەت.',
     requiredError: 'ئەم پرسیارە پێویستە.',
     minLengthError: 'دەبێت لانیکەم {n} پیت بێت.',
     maxLengthError: 'دەبێت زۆرترین {n} پیت بێت.',
@@ -200,6 +237,13 @@ const ru: LocaleConfig = {
     noScreens: 'В этом опросе нет экранов.',
     unsupportedQuestion: 'Неподдерживаемый тип вопроса:',
     couldNotSubmit: 'Не удалось отправить:',
+    sendingAnswers: 'Отправляем ваши ответы…',
+    submitRetryError: 'Не удалось отправить ваши ответы. Проверьте подключение и попробуйте ещё раз.',
+    submitFailedError: 'Что-то пошло не так, и ваши ответы не удалось отправить. Попробуйте позже.',
+    alreadyAnsweredTitle: 'Ответы уже получены',
+    alreadyAnsweredBody: 'Мы уже получили ваши ответы на этот опрос. Спасибо.',
+    surveyClosedTitle: 'Опрос закрыт',
+    surveyClosedBody: 'Он больше не принимает ответы. Спасибо за уделённое время.',
     requiredError: 'Этот вопрос обязателен.',
     minLengthError: 'Не менее {n} символов.',
     maxLengthError: 'Не более {n} символов.',

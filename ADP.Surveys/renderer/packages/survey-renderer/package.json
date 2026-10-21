@@ -1,6 +1,6 @@
 {
   "name": "@shift-software/survey-renderer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "React renderer for ADP Dynamic Surveys. Reads a resolved SurveyDto from @shift-software/survey-sdk and renders each question type from a component registry.",
   "type": "module",
   "main": "./dist/index.js",

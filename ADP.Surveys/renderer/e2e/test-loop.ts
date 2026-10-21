@@ -240,6 +240,11 @@ async function verifyAnswerLoop() {
     assert(!!row!.CompletedAt, 'CompletedAt set');
   })();
 
+  await step('reopening the answered link is refused (409), not served again', async () => {
+    const r = await api('GET', `/api/Surveys/SurveyInstances/${testPublicId}/schema`);
+    assertEq(r.status, 409, 'schema refused once answered');
+  })();
+
   await step('detail returns answers + pinned ResolvedJson', async () => {
     const detail = await apiJson<DetailResult>(
       'GET',

@@ -4,7 +4,8 @@ import { execFileSync } from 'node:child_process';
 export const API = process.env['SURVEYS_API'] ?? 'http://localhost:5134';
 export const API_SURVEYS = `${API}/api/Surveys`;
 export const DB_SERVER = String.raw`localhost\sqlexpress`;
-export const DB_NAME = 'SurveysSample';
+/** Override with SURVEYS_DB when that Sample.API instance runs against another database. */
+export const DB_NAME = process.env['SURVEYS_DB'] ?? 'SurveysSample';
 export const USERNAME = 'SuperUser';
 export const PASSWORD = 'OneTwo';
 
