@@ -6,11 +6,13 @@ import en from '../../../locales/input/en.json';
 import ku from '../../../locales/input/ku.json';
 import ru from '../../../locales/input/ru.json';
 
+import { bundledStrings } from '~features/multi-lingual/language-packs';
+
 export type InputStrings = InferType<typeof inputSchema>;
 
 // Bundled like the calendar's names: button labels and typed-entry errors must be there on first paint.
 const STRINGS: Record<string, InputStrings> = { en, ar, ku, ru };
 
-export const inputStrings = (language: string): InputStrings => STRINGS[language] ?? STRINGS.en;
+export const inputStrings = (language: string): InputStrings => bundledStrings('input', language, STRINGS);
 
 export const fill = (template: string, values: Record<string, string>): string => template.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? '');

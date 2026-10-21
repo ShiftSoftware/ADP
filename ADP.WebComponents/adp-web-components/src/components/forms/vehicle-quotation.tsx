@@ -21,6 +21,7 @@ import {
   resolveIsMobileForm,
 } from '~features/form-hook';
 import { GeneralFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
+import { adpFetch, requestInfo } from '~features/host-bridge';
 import getLanguageFromUrl from '~lib/get-language-from-url';
 import cn from '~lib/cn';
 import { LoaderIcon } from '~assets/loader-icon';
@@ -144,7 +145,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
       if (this.structure?.data?.extraPayload) payload = { ...payload, ...this.structure?.data?.extraPayload };
 
-      const response = await fetch(requestEndpoint, {
+      const response = await adpFetch(requestInfo('submit', this.el), requestEndpoint, {
         headers,
         method: 'POST',
         body: JSON.stringify(payload),

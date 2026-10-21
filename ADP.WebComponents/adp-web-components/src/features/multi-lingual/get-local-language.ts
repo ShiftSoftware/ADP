@@ -5,18 +5,19 @@ import { fetchPackageFile } from '~lib/package-files';
 
 import globalSchema from '~locales/type';
 import errorsSchema from '~locales/errors/type';
-import { LanguageKeys, languageMapper, LocaleKeyEntries, SharedFormLocales, SharedLocales } from './types';
+import { ENGLISH_JSON_FILE, LanguageCode, languageMapper, LocaleKeyEntries, SharedFormLocales, SharedLocales } from './types';
+import { hasPackStrings, overlay, packNamespaceOf, packsRegistered } from './language-packs';
 import formsSchema from '~locales/forms/type';
 
 const cachedLocales = {};
 
-export async function getSharedLocal(languageKey: LanguageKeys): Promise<SharedLocales> {
+export async function getSharedLocal(languageKey: LanguageCode): Promise<SharedLocales> {
   const [errors, globalKeys] = await Promise.all([getLocaleLanguage(languageKey, 'errors', errorsSchema), getLocaleLanguage(languageKey, '-', globalSchema)]);
 
   return { errors, ...globalKeys };
 }
 
-export async function getSharedFormLocal(languageKey: LanguageKeys): Promise<SharedFormLocales> {
+export async function getSharedFormLocal(languageKey: LanguageCode): Promise<SharedFormLocales> {
   const [errors, globalKeys, sharedFormKeys] = await Promise.all([
     getLocaleLanguage(languageKey, 'errors', errorsSchema),
     getLocaleLanguage(languageKey, '-', globalSchema),
@@ -26,7 +27,7 @@ export async function getSharedFormLocal(languageKey: LanguageKeys): Promise<Sha
   return { ...globalKeys, ...sharedFormKeys, ...errors };
 }
 
-export async function getLocaleLanguage<T extends ObjectSchema<any>>(languageKey: LanguageKeys, component: LocaleKeyEntries, schema: T): Promise<InferType<T>> {
+export async function getLocaleLanguage<T extends ObjectSchema<any>>(languageKey: LanguageCode, component: LocaleKeyEntries, schema: T): Promise<InferType<T>> {
   const languageFile = languageMapper[languageKey] || languageMapper.en;
 
   const localeFiles = localeNetworkMapper[component];
@@ -44,7 +45,12 @@ export async function getLocaleLanguage<T extends ObjectSchema<any>>(languageKey
       console.error(error);
     }
 
-    return response;
+    const namespace = packNamespaceOf(component);
+    if (!namespace || !packsRegistered()) return response;
+
+    const english = languageFile !== ENGLISH_JSON_FILE && hasPackStrings(namespace, 'en') ? await requestLocaleFile(localeFiles[0] + ENGLISH_JSON_FILE) : undefined;
+
+    return overlay(namespace, languageKey, response, english);
   } else {
     const localeFilePromises = localeFiles.map(localeFile => requestLocaleFile(localeFile + languageFile));
     const localeFilesResponses = await Promise.all(localeFilePromises);

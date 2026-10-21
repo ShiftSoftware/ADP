@@ -1,0 +1,727 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`select drawer: unset pins the unset render, closed and with the dropdown open (the 0.4.17 equality is proven by the external harness): closed 1`] = `
+"<general-form language="en" translate="no">
+  <template shadowrootmode="open">
+    <div part="shift-form">
+      <div class="min-h-[150px] relative" part="form-container">
+        <div class="absolute duration-500 flex form-loader-container h-full items-center justify-center left-0 opacity-0 pointer-events-none top-0 transition-opacity w-full" part="form-loader-container">
+          <svg class="img" fill="none" part="form-loader-icon" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2v4"></path>
+            <path d="m16.2 7.8 2.9-2.9"></path>
+            <path d="M18 12h4"></path>
+            <path d="m16.2 16.2 2.9 2.9"></path>
+            <path d="M12 18v4"></path>
+            <path d="m4.9 19.1 2.9-2.9"></path>
+            <path d="M2 12h4"></path>
+            <path d="m4.9 4.9 2.9 2.9"></path>
+          </svg>
+        </div>
+        <flexible-container>
+          <!---->
+          <div class="!duration-0 !h-auto !transition-none duration-500 flexible-container min-w-full w-full" style="height: undefinedpx; opacity: 1;">
+            <div class="flexible-container-content">
+              <form-structure language="en" translate="no">
+                <slot></slot>
+                <form class="relative" dir="ltr">
+                  <shift-portal></shift-portal>
+                  <div part="form-structure-form-container">
+                    <div id="container" part="container element-div div" requiredcontext="[object Object]">
+                      <form-select max="2024" min="2001" translate="no">
+                        <label class="form-input-label-container" part="year">
+                          <div class="form-input-label" part="form-input-label year-label">
+                            year-label
+                            <span class="form-input-label-required-star" part="form-input-label-required-star year-label-required-star">
+                              *
+                            </span>
+                          </div>
+                          <shift-select translate="no">
+                            <!---->
+                            <div class="form-input-container" part="year-container form-input-container">
+                              <form-shadow-input>
+                                <input class="shadow-input" hidden="" name="year" type="string" value="">
+                              </form-shadow-input>
+                              <input class="form-input-select form-input-style" part="year-input-select form-input-select" placeholder="year-placeholder" readonly="" type="text" value="">
+                              <div class="cursor-pointer form-input-select-icon-container pointer-events-none!" part="year-select-icon-container form-input-select-icon-container">
+                                <svg class="arrow cursor-pointer form-input-select-icon pointer-events-none!" fill="currentColor" part="year-arrow-icon select-arrow" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                                  <path clip-rule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" fill-rule="evenodd"></path>
+                                </svg>
+                              </div>
+                              <shift-portal></shift-portal>
+                            </div>
+                          </shift-select>
+                          <div class="error-message-container" part="form-error-message-container year-error-message-container">
+                            <div class="error-message" part="form-error-message year-error-message"></div>
+                          </div>
+                        </label>
+                      </form-select>
+                      <form-select branchapi="https://example.invalid/api/branches" translate="no">
+                        <label class="form-input-label-container" part="companyBranchId">
+                          <div class="form-input-label" part="form-input-label companyBranchId-label">
+                            companyBranchId-label
+                          </div>
+                          <shift-select translate="no">
+                            <!---->
+                            <div class="form-input-container" part="companyBranchId-container form-input-container">
+                              <form-shadow-input>
+                                <input class="shadow-input" hidden="" name="companyBranchId" type="string" value="">
+                              </form-shadow-input>
+                              <input class="form-input-select form-input-style" part="companyBranchId-input-select form-input-select" placeholder="companyBranchId-placeholder" type="text" value="">
+                              <div class="cursor-pointer form-input-select-icon-container pointer-events-none!" part="companyBranchId-select-icon-container form-input-select-icon-container">
+                                <svg class="arrow cursor-pointer form-input-select-icon pointer-events-none!" fill="currentColor" part="companyBranchId-arrow-icon select-arrow" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                                  <path clip-rule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" fill-rule="evenodd"></path>
+                                </svg>
+                              </div>
+                              <shift-portal></shift-portal>
+                            </div>
+                          </shift-select>
+                          <div class="error-message-container" part="form-error-message-container companyBranchId-error-message-container">
+                            <div class="error-message" part="form-error-message companyBranchId-error-message"></div>
+                          </div>
+                        </label>
+                      </form-select>
+                      <form-submit name="submit">
+                        <button class="form-submit" formnovalidate="" part="submit-button" type="submit">
+                          <div class="form-submit-text-style opacity-0" part="form-submit-text">
+                            Submit
+                          </div>
+                          <div class="form-submit-text-position form-submit-text-style" part="form-submit-text">
+                            Submit
+                          </div>
+                          <div class="form-submit-loading-container" part="form-submit-loading-container">
+                            <img class="form-submit-loading-icon" part="form-submit-loading-icon" src="test-asset-stub">
+                          </div>
+                        </button>
+                      </form-submit>
+                    </div>
+                  </div>
+                  <button class="hidden" formnovalidate="" type="submit"></button>
+                </form>
+              </form-structure>
+            </div>
+          </div>
+        </flexible-container>
+      </div>
+    </div>
+  </template>
+</general-form>
+<form-dialog class="" translate="no">
+  <template shadowrootmode="open">
+    <div class="dialog-drop-container form-dialog-modal" dir="ltr" part="form-dialog-modal dialog-drop-container">
+      <div class="dialog-wrapper" part="dialog-wrapper">
+        <button aria-label="Close the dialog" class="dialog-close-icon-button" part="dialog-close-icon-button" type="button">
+          <svg class="dialog-close-icon-button-icon" fill="none" part="dialog-close-icon-button-icon" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 12h14"></path>
+            <path d="M12 5v14"></path>
+          </svg>
+        </button>
+        <div class="dialog-content" part="dialog-content">
+          <div style="display: block;">
+            <div class="form-success-container" part="form-success-container">
+              <svg class="form-success-container-icon" fill="none" part="form-success-container-icon" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
+                <path d="m9 12 2 2 4-4"></path>
+              </svg>
+              Form submitted successfully.
+            </div>
+          </div>
+        </div>
+        <button class="dialog-close-button" part="dialog-close-button" type="button">
+          Close
+        </button>
+      </div>
+    </div>
+  </template>
+</form-dialog>
+<shift-select-dropdown class="year-select">
+  <template shadowrootmode="open">
+    <div class="shift-select-container year-select-container" dir="ltr" part="year-select-container shift-select-container">
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2001
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2002
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2003
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2004
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2005
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2006
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2007
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2008
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2009
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2010
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2011
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2012
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2013
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2014
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2015
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2016
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2017
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2018
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2019
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2020
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2021
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2022
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2023
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2024
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+    </div>
+  </template>
+</shift-select-dropdown>
+<shift-select-dropdown class="companyBranchId-select">
+  <template shadowrootmode="open">
+    <div class="companyBranchId-select-container shift-select-container" dir="ltr" part="companyBranchId-select-container shift-select-container">
+      <button class="companyBranchId-select-option shift-select-option" part="companyBranchId-select-option shift-select-option" type="button">
+        <div class="companyBranchId-select-option-label shift-select-option-label" part="companyBranchId-select-option-label shift-select-option-label">
+          North
+        </div>
+        <svg class="companyBranchId-tick-icon shift-select-option-tick" fill="none" part="companyBranchId-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="companyBranchId-select-option shift-select-option" part="companyBranchId-select-option shift-select-option" type="button">
+        <div class="companyBranchId-select-option-label shift-select-option-label" part="companyBranchId-select-option-label shift-select-option-label">
+          South
+        </div>
+        <svg class="companyBranchId-tick-icon shift-select-option-tick" fill="none" part="companyBranchId-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="companyBranchId-select-option shift-select-option" part="companyBranchId-select-option shift-select-option" type="button">
+        <div class="companyBranchId-select-option-label shift-select-option-label" part="companyBranchId-select-option-label shift-select-option-label">
+          Northeast
+        </div>
+        <svg class="companyBranchId-tick-icon shift-select-option-tick" fill="none" part="companyBranchId-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+    </div>
+  </template>
+</shift-select-dropdown>"
+`;
+
+exports[`select drawer: unset pins the unset render, closed and with the dropdown open (the 0.4.17 equality is proven by the external harness): dropdown open 1`] = `
+"<general-form language="en" translate="no">
+  <template shadowrootmode="open">
+    <div part="shift-form">
+      <div class="min-h-[150px] relative" part="form-container">
+        <div class="absolute duration-500 flex form-loader-container h-full items-center justify-center left-0 opacity-0 pointer-events-none top-0 transition-opacity w-full" part="form-loader-container">
+          <svg class="img" fill="none" part="form-loader-icon" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2v4"></path>
+            <path d="m16.2 7.8 2.9-2.9"></path>
+            <path d="M18 12h4"></path>
+            <path d="m16.2 16.2 2.9 2.9"></path>
+            <path d="M12 18v4"></path>
+            <path d="m4.9 19.1 2.9-2.9"></path>
+            <path d="M2 12h4"></path>
+            <path d="m4.9 4.9 2.9 2.9"></path>
+          </svg>
+        </div>
+        <flexible-container>
+          <!---->
+          <div class="!duration-0 !h-auto !transition-none duration-500 flexible-container min-w-full w-full" style="height: undefinedpx; opacity: 1;">
+            <div class="flexible-container-content">
+              <form-structure language="en" translate="no">
+                <slot></slot>
+                <form class="relative" dir="ltr">
+                  <shift-portal></shift-portal>
+                  <div part="form-structure-form-container">
+                    <div id="container" part="container element-div div" requiredcontext="[object Object]">
+                      <form-select max="2024" min="2001" translate="no">
+                        <label class="form-input-label-container" part="year">
+                          <div class="form-input-label" part="form-input-label year-label">
+                            year-label
+                            <span class="form-input-label-required-star" part="form-input-label-required-star year-label-required-star">
+                              *
+                            </span>
+                          </div>
+                          <shift-select translate="no">
+                            <!---->
+                            <div class="form-input-container open" part="year-container form-input-container">
+                              <form-shadow-input>
+                                <input class="shadow-input" hidden="" name="year" type="string" value="">
+                              </form-shadow-input>
+                              <input class="form-input-select form-input-style" part="year-input-select form-input-select" placeholder="year-placeholder" readonly="" type="text" value="">
+                              <div class="cursor-pointer form-input-select-icon-container pointer-events-none!" part="year-select-icon-container form-input-select-icon-container">
+                                <svg class="arrow cursor-pointer form-input-select-icon pointer-events-none!" fill="currentColor" part="year-arrow-icon select-arrow" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                                  <path clip-rule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" fill-rule="evenodd"></path>
+                                </svg>
+                              </div>
+                              <shift-portal></shift-portal>
+                            </div>
+                          </shift-select>
+                          <div class="error-message-container" part="form-error-message-container year-error-message-container">
+                            <div class="error-message" part="form-error-message year-error-message"></div>
+                          </div>
+                        </label>
+                      </form-select>
+                      <form-select branchapi="https://example.invalid/api/branches" translate="no">
+                        <label class="form-input-label-container" part="companyBranchId">
+                          <div class="form-input-label" part="form-input-label companyBranchId-label">
+                            companyBranchId-label
+                          </div>
+                          <shift-select translate="no">
+                            <!---->
+                            <div class="form-input-container" part="companyBranchId-container form-input-container">
+                              <form-shadow-input>
+                                <input class="shadow-input" hidden="" name="companyBranchId" type="string" value="">
+                              </form-shadow-input>
+                              <input class="form-input-select form-input-style" part="companyBranchId-input-select form-input-select" placeholder="companyBranchId-placeholder" type="text" value="">
+                              <div class="cursor-pointer form-input-select-icon-container pointer-events-none!" part="companyBranchId-select-icon-container form-input-select-icon-container">
+                                <svg class="arrow cursor-pointer form-input-select-icon pointer-events-none!" fill="currentColor" part="companyBranchId-arrow-icon select-arrow" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                                  <path clip-rule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" fill-rule="evenodd"></path>
+                                </svg>
+                              </div>
+                              <shift-portal></shift-portal>
+                            </div>
+                          </shift-select>
+                          <div class="error-message-container" part="form-error-message-container companyBranchId-error-message-container">
+                            <div class="error-message" part="form-error-message companyBranchId-error-message"></div>
+                          </div>
+                        </label>
+                      </form-select>
+                      <form-submit name="submit">
+                        <button class="form-submit" formnovalidate="" part="submit-button" type="submit">
+                          <div class="form-submit-text-style opacity-0" part="form-submit-text">
+                            Submit
+                          </div>
+                          <div class="form-submit-text-position form-submit-text-style" part="form-submit-text">
+                            Submit
+                          </div>
+                          <div class="form-submit-loading-container" part="form-submit-loading-container">
+                            <img class="form-submit-loading-icon" part="form-submit-loading-icon" src="test-asset-stub">
+                          </div>
+                        </button>
+                      </form-submit>
+                    </div>
+                  </div>
+                  <button class="hidden" formnovalidate="" type="submit"></button>
+                </form>
+              </form-structure>
+            </div>
+          </div>
+        </flexible-container>
+      </div>
+    </div>
+  </template>
+</general-form>
+<form-dialog class="" translate="no">
+  <template shadowrootmode="open">
+    <div class="dialog-drop-container form-dialog-modal" dir="ltr" part="form-dialog-modal dialog-drop-container">
+      <div class="dialog-wrapper" part="dialog-wrapper">
+        <button aria-label="Close the dialog" class="dialog-close-icon-button" part="dialog-close-icon-button" type="button">
+          <svg class="dialog-close-icon-button-icon" fill="none" part="dialog-close-icon-button-icon" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 12h14"></path>
+            <path d="M12 5v14"></path>
+          </svg>
+        </button>
+        <div class="dialog-content" part="dialog-content">
+          <div style="display: block;">
+            <div class="form-success-container" part="form-success-container">
+              <svg class="form-success-container-icon" fill="none" part="form-success-container-icon" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
+                <path d="m9 12 2 2 4-4"></path>
+              </svg>
+              Form submitted successfully.
+            </div>
+          </div>
+        </div>
+        <button class="dialog-close-button" part="dialog-close-button" type="button">
+          Close
+        </button>
+      </div>
+    </div>
+  </template>
+</form-dialog>
+<shift-select-dropdown class="year-select">
+  <template shadowrootmode="open">
+    <div class="shift-select-container shift-select-container-open year-select-container" dir="ltr" part="year-select-container shift-select-container shift-select-container-open">
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2001
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2002
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2003
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2004
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2005
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2006
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2007
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2008
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2009
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2010
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2011
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2012
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2013
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2014
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2015
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2016
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2017
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2018
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2019
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2020
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2021
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2022
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2023
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="shift-select-option year-select-option" part="year-select-option shift-select-option" type="button">
+        <div class="shift-select-option-label year-select-option-label" part="year-select-option-label shift-select-option-label">
+          2024
+        </div>
+        <svg class="shift-select-option-tick year-tick-icon" fill="none" part="year-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+    </div>
+  </template>
+</shift-select-dropdown>
+<shift-select-dropdown class="companyBranchId-select">
+  <template shadowrootmode="open">
+    <div class="companyBranchId-select-container shift-select-container" dir="ltr" part="companyBranchId-select-container shift-select-container">
+      <button class="companyBranchId-select-option shift-select-option" part="companyBranchId-select-option shift-select-option" type="button">
+        <div class="companyBranchId-select-option-label shift-select-option-label" part="companyBranchId-select-option-label shift-select-option-label">
+          North
+        </div>
+        <svg class="companyBranchId-tick-icon shift-select-option-tick" fill="none" part="companyBranchId-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="companyBranchId-select-option shift-select-option" part="companyBranchId-select-option shift-select-option" type="button">
+        <div class="companyBranchId-select-option-label shift-select-option-label" part="companyBranchId-select-option-label shift-select-option-label">
+          South
+        </div>
+        <svg class="companyBranchId-tick-icon shift-select-option-tick" fill="none" part="companyBranchId-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+      <button class="companyBranchId-select-option shift-select-option" part="companyBranchId-select-option shift-select-option" type="button">
+        <div class="companyBranchId-select-option-label shift-select-option-label" part="companyBranchId-select-option-label shift-select-option-label">
+          Northeast
+        </div>
+        <svg class="companyBranchId-tick-icon shift-select-option-tick" fill="none" part="companyBranchId-tick-icon shift-select-option-tick" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </button>
+    </div>
+  </template>
+</shift-select-dropdown>"
+`;

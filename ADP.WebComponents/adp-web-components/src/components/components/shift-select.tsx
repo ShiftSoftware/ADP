@@ -1,10 +1,20 @@
-import { Component, Element, Host, Prop, State, h } from '@stencil/core';
+import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 import { FormSelectItem } from '../../components';
 import cn from '~lib/cn';
+import type { LanguageKeys } from '~features/multi-lingual';
 
 import { ArrowUpIcon } from '~assets/arrow-up-icon';
 import { AddIcon } from '~assets/add-icon';
 import getCustomClassesForPortal from '~lib/get-custom-classes-for-portal';
+
+import { SHEET_QUERY } from './shift-popover/sheet-query';
+import { SelectDrawerMode, selectDrawerMode } from './select-drawer';
+
+// Referenced by variables, so Stencil adds neither the popover nor the sheet to every form: hosts without a drawer keep their bundles, stylesheets and registry.
+const Popover = 'shift-popover';
+const Sheet = 'shift-select-sheet';
+
+const drawerTagsDefined = () => typeof customElements !== 'undefined' && !!customElements.get(Popover) && !!customElements.get(Sheet);
 
 @Component({
   shadow: false,
@@ -36,16 +46,92 @@ export class ShiftSelect {
   @Prop() renderOption?: (option: FormSelectItem, isSelected: boolean) => any;
   @Prop() updateContext!: (newValues: Partial<{ isOpen: boolean; searchValue: string; selectedValue: string }>) => void;
   @Prop() fullRenderOption?: (option: FormSelectItem, isSelected: boolean, handleSelection: (option: FormSelectItem) => void) => any;
+  @Prop() selectDrawer?: SelectDrawerMode | 'off';
+  @Prop() drawerLabel?: string;
+  @Prop() drawerSearchLabel?: string;
+  @Prop() drawerLanguage?: LanguageKeys;
 
   @State() dropdownAncestorClasses = '';
+  @State() narrow = false;
 
   @Element() el!: HTMLElement;
 
   private dropdownEl: HTMLElement | null = null;
   private boundKeyDown = (e: KeyboardEvent) => this.handleKeyDown(e);
+  private sheetQuery?: MediaQueryList;
+  private drawerDefined = false;
+  private drawerChecked = false;
 
   setDropdownRef = (el: HTMLElement | null) => {
     this.dropdownEl = el;
+  };
+
+  @Watch('selectDrawer')
+  onSelectDrawerChange() {
+    this.syncSheetQuery();
+    this.syncDrawerDefined();
+  }
+
+  connectedCallback() {
+    if (this.selectDrawer === undefined) return;
+
+    this.syncSheetQuery();
+    this.syncDrawerDefined();
+  }
+
+  // Without both shift-popover and shift-select-sheet defined (a per-component host that did not load them) the dropdown stays.
+  private drawerMode(): SelectDrawerMode | undefined {
+    const mode = selectDrawerMode(this.selectDrawer);
+    return mode && this.drawerDefined ? mode : undefined;
+  }
+
+  // Tags defined after the first render take effect only as the list opens, so an open or closing dropdown is never swapped out.
+  private syncDrawerDefined() {
+    if (!selectDrawerMode(this.selectDrawer) || this.drawerDefined || (this.isOpen && this.drawerChecked)) return;
+
+    this.drawerChecked = true;
+    this.drawerDefined = drawerTagsDefined();
+  }
+
+  private drawerNow(): boolean {
+    const mode = this.drawerMode();
+    return mode === 'always' || (mode === 'mobile' && this.narrow);
+  }
+
+  private syncSheetQuery() {
+    const wanted = selectDrawerMode(this.selectDrawer) === 'mobile' && typeof window !== 'undefined' && !!window.matchMedia;
+
+    if (wanted && !this.sheetQuery) {
+      this.sheetQuery = window.matchMedia(SHEET_QUERY);
+      this.sheetQuery.addEventListener?.('change', this.onSheetQueryChange);
+    } else if (!wanted && this.sheetQuery) {
+      this.sheetQuery.removeEventListener?.('change', this.onSheetQueryChange);
+      this.sheetQuery = undefined;
+    }
+
+    this.narrow = !!this.sheetQuery?.matches;
+  }
+
+  // Crossing the breakpoint swaps the dropdown for the drawer, so whichever layer is open closes first.
+  private onSheetQueryChange = () => {
+    const before = this.drawerNow();
+    this.narrow = !!this.sheetQuery?.matches;
+    if (this.isOpen && before !== this.drawerNow()) this.updateContext({ isOpen: false });
+  };
+
+  private onTriggerKeyDown = (event: KeyboardEvent) => {
+    if (this.isOpen || this.disableInput || !['Enter', ' ', 'ArrowDown'].includes(event.key)) return;
+
+    this.syncDrawerDefined();
+    if (!this.drawerNow()) return;
+
+    event.preventDefault();
+    this.openDropdown();
+  };
+
+  private onDrawerOpenChange = (event: CustomEvent<{ open: boolean }>) => {
+    event.stopPropagation();
+    if (!event.detail.open && this.isOpen) this.updateContext({ isOpen: false });
   };
 
   toggleDropdown = () => {
@@ -54,9 +140,13 @@ export class ShiftSelect {
   };
 
   openDropdown = () => {
-    this.adjustDropdownPosition();
+    this.syncDrawerDefined();
+    const drawer = this.drawerNow();
+    if (!drawer) this.adjustDropdownPosition();
 
-    this.updateContext({ isOpen: true });
+    // The drawer has its own search, so a leftover dropdown filter would only hide options behind a read-only trigger.
+    if (drawer && this.searchValue && !this.options.some(item => item.value === this.selectedValue)) this.updateContext({ isOpen: true, searchValue: '' });
+    else this.updateContext({ isOpen: true });
   };
 
   async componentDidLoad() {
@@ -103,11 +193,12 @@ export class ShiftSelect {
   };
 
   handleKeyDown(event: KeyboardEvent) {
-    if (!this.isOpen) return;
+    if (!this.isOpen || this.drawerNow()) return;
     if (event.key === 'Escape') this.updateContext({ isOpen: false });
   }
 
   closeDropdown = (event: MouseEvent) => {
+    if (this.drawerNow()) return;
     const path = event.composedPath();
     if (path.includes(this.el)) return;
     if (this.dropdownEl && path.includes(this.dropdownEl)) return;
@@ -119,14 +210,16 @@ export class ShiftSelect {
     document.removeEventListener('keydown', this.boundKeyDown);
     window.removeEventListener('resize', this.handleResize);
     window.removeEventListener('scroll', this.handleScroll, true);
+    this.sheetQuery?.removeEventListener?.('change', this.onSheetQueryChange);
+    this.sheetQuery = undefined;
   }
 
   handleResize = () => {
-    if (this.isOpen) this.adjustDropdownPosition();
+    if (this.isOpen && !this.drawerNow()) this.adjustDropdownPosition();
   };
 
   handleScroll = (event: Event) => {
-    if (!this.isOpen) return;
+    if (!this.isOpen || this.drawerNow()) return;
     const target = event.target as Node;
     if (this.dropdownEl && (this.dropdownEl === target || this.dropdownEl.contains(target))) return;
     this.adjustDropdownPosition();
@@ -139,20 +232,56 @@ export class ShiftSelect {
   };
 
   clearInput = () => {
+    this.syncDrawerDefined();
     this.updateContext({ searchValue: '', selectedValue: '' });
 
     const selectButton = this.el.getElementsByClassName('form-input-select')[0] as HTMLDivElement;
 
     selectButton.focus();
-    if (!this.isOpen) this.openDropdown();
+    if (!this.isOpen && !this.drawerNow()) this.openDropdown();
   };
+
+  private renderDrawer(mode: SelectDrawerMode, drawerNow: boolean) {
+    return (
+      <Popover
+        open={this.isOpen && drawerNow}
+        anchor={drawerNow ? this.getInputEl() || undefined : undefined}
+        label={this.drawerLabel || undefined}
+        mobileSheet={mode === 'mobile'}
+        alwaysSheet={mode === 'always'}
+        onOpenChange={this.onDrawerOpenChange}
+      >
+        <Sheet
+          class={this.dropdownAncestorClasses}
+          name={this.name}
+          open={this.isOpen && drawerNow}
+          label={this.drawerLabel}
+          searchLabel={this.drawerSearchLabel}
+          language={this.drawerLanguage}
+          hasTick={this.hasTick}
+          searchable={this.searchable}
+          isLoading={this.isLoading}
+          direction={this.direction}
+          options={this.options}
+          selectedValue={this.selectedValue}
+          reverseOptions={this.reverseOptions}
+          noSelectionText={this.noSelectionText}
+          fetchingErrorText={this.fetchingErrorText}
+          handleSelection={this.handleSelection}
+        />
+      </Popover>
+    );
+  }
 
   render() {
     const selectedItem = this.options.find(item => this.selectedValue === item.value);
+    const drawerMode = this.drawerMode();
+    const drawerNow = this.drawerNow();
+    const triggerAria = drawerMode ? { 'role': 'combobox', 'aria-expanded': String(this.isOpen) } : {};
 
     const dropdownProps = {
       name: this.name,
-      isOpen: this.isOpen,
+      isOpen: drawerNow ? false : this.isOpen,
       options: this.options,
       hasTick: this.hasTick,
       hasArrow: this.hasArrow,
@@ -179,10 +308,12 @@ export class ShiftSelect {
             type="text"
             disabled={this.disableInput}
             part={`${this.name}-input-select form-input-select`}
-            value={this.searchable ? this.searchValue : selectedItem?.label || ''}
-            readOnly={!this.searchable}
+            value={this.searchable && !drawerNow ? this.searchValue : selectedItem?.label || ''}
+            readOnly={!this.searchable || drawerNow}
             onInput={this.onSearchInput}
             onClick={this.toggleDropdown}
+            onKeyDown={selectDrawerMode(this.selectDrawer) ? this.onTriggerKeyDown : undefined}
+            {...triggerAria}
             placeholder={this.placeholder}
             class={cn('form-input-style form-input-select', {
               'form-input-error-style': this.isError,
@@ -204,7 +335,8 @@ export class ShiftSelect {
             // @ts-ignore
             false && <shift-select-dropdown />
           }
-          <shift-portal tag="shift-select-dropdown" inheritedClasses={this.dropdownAncestorClasses} componentProps={dropdownProps} />
+          {drawerMode !== 'always' && <shift-portal tag="shift-select-dropdown" inheritedClasses={this.dropdownAncestorClasses} componentProps={dropdownProps} />}
+          {drawerMode && this.renderDrawer(drawerMode, drawerNow)}
         </div>
       </Host>
     );

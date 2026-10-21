@@ -1,6 +1,6 @@
 {
   "name": "adp-web-components",
-  "version": "0.4.17",
+  "version": "0.4.18",
   "packageManager": "yarn@1.22.22",
   "description": "ADP Platform Web Components",
   "main": "dist/index.cjs.js",
@@ -25,6 +25,7 @@
       "types": "./dist/components/*.d.ts"
     },
     "./host-loader": {
+      "types": "./dist/host-loader.d.ts",
       "import": "./dist/host-loader.js"
     },
     "./integration-manifest": "./dist/integration-manifest.json",

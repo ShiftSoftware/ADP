@@ -11,6 +11,7 @@ import { TickIcon } from '~assets/tick-icon';
 import { AnyObjectSchema, mixed } from 'yup';
 import { meta, format, size, require, max, upload } from '../forms/defaults/validation';
 import { Grecaptcha } from '~lib/recaptcha';
+import { adpFetch, formRequestInfo } from '~features/host-bridge';
 
 type UploadState = 'idle' | 'uploading' | 'success' | 'error';
 
@@ -228,7 +229,7 @@ export class FormFile implements FormElement {
       height: null,
     }));
 
-    const response = await fetch(this.signUrl, {
+    const response = await adpFetch(formRequestInfo('upload', this.form, this.name), this.signUrl, {
       headers: formHeaders,
       body: JSON.stringify(payload),
       method: this.signMethod || 'POST',
@@ -262,7 +263,7 @@ export class FormFile implements FormElement {
   private async uploadToSignedUrl(files: File[], signedFiles: { uploadUrl: string; headers: Record<string, string> }[]) {
     await Promise.all(
       (files || []).map(async (file, idx) => {
-        const response = await fetch(signedFiles?.[idx]?.uploadUrl, {
+        const response = await adpFetch(formRequestInfo('upload', this.form, this.name), signedFiles?.[idx]?.uploadUrl, {
           method: 'PUT',
           headers: {
             'Content-Type': file.type || 'application/octet-stream',
