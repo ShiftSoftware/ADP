@@ -11,13 +11,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
-		<PackageReference Include="xunit.v3.mtp-off" Version="4.0.1" />
-		<PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+		<PackageReference Include="xunit.v3.mtp-off" Version="4.0.2" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="4.0.1">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="coverlet.collector" Version="10.0.1">
+		<PackageReference Include="coverlet.collector" Version="10.1.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
@@ -30,7 +30,7 @@
 	<ItemGroup>
 		<!-- The framework's own PII protector, so the masking tests run the code the API runs rather
 		     than a stand-in. Same floor as the Model package Shared references. -->
-		<PackageReference Include="ShiftSoftware.ShiftEntity" Version="2026.10.7.2" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity" Version="2026.10.20.1" />
 	</ItemGroup>
 
 </Project>
