@@ -929,8 +929,8 @@ describe('select drawer: fixed search, scrolling list', () => {
       if (rule.nodes.some(node => node.type === 'decl' && node.prop === 'flex-direction' && node.value === 'column')) columns.push(rule.selector);
     });
 
-    expect(columns).toEqual(['.pop-panel[data-inner-scroll]']);
-    expect(rulesOf('shift-popover/shift-popover.css', '.pop-panel[data-inner-scroll]')['display']).toBe('flex');
+    expect(columns).toEqual(['.pop-panel[data-sheet][data-inner-scroll]']);
+    expect(rulesOf('shift-popover/shift-popover.css', '.pop-panel[data-sheet][data-inner-scroll]')['display']).toBe('flex');
 
     const { page } = await mount(form({ selectDrawer: 'always' }), 390);
     await open(page, 'companyBranchId');

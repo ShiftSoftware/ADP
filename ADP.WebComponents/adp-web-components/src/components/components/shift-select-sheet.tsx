@@ -54,17 +54,26 @@ export class ShiftSelectSheet {
   private listEl: HTMLElement | null = null;
   private measurePending = false;
   private listWaited = false;
+  private panelObserver: ResizeObserver | null = null;
+  private openHeight = 0;
 
   // The search is reset as the sheet opens rather than as it closes, so the closing sheet keeps its content while it slides away.
   @Watch('open')
   onOpenChange(open: boolean) {
-    if (!open) return;
+    if (!open) {
+      this.unwatchPanel();
+      return;
+    }
 
     this.query = '';
     this.activeIndex = -1;
     this.lockedHeight = null;
     this.measurePending = this.searchable;
     this.listWaited = false;
+  }
+
+  disconnectedCallback() {
+    this.unwatchPanel();
   }
 
   componentDidRender() {
@@ -121,7 +130,39 @@ export class ShiftSelectSheet {
     const room = view.top + scroller.clientTop + scroller.clientHeight - host.top;
     const height = Math.min(host.height, room);
 
-    if (height > 0) this.lockedHeight = height;
+    if (height <= 0) return;
+
+    this.openHeight = height;
+    this.lockedHeight = height;
+    this.watchPanel(scroller);
+  }
+
+  // The lock is measured once; when the panel's cap changes afterwards, such as on rotation, it follows what fits so the list scrolls and the panel does not.
+  private watchPanel(panel: HTMLElement) {
+    this.unwatchPanel();
+    if (typeof ResizeObserver === 'undefined') return;
+
+    this.panelObserver = new ResizeObserver(() => this.refitLock());
+    this.panelObserver.observe(panel);
+  }
+
+  private refitLock() {
+    if (!this.lockedHeight) return;
+
+    const { style } = this.el;
+    const kept = style.minBlockSize;
+    style.minBlockSize = '0';
+    style.blockSize = `${this.openHeight}px`;
+    const fit = this.el.getBoundingClientRect().height;
+    style.blockSize = '';
+    style.minBlockSize = kept;
+
+    if (fit > 0 && Math.abs(fit - this.lockedHeight) >= 0.5) this.lockedHeight = fit;
+  }
+
+  private unwatchPanel() {
+    this.panelObserver?.disconnect();
+    this.panelObserver = null;
   }
 
   private reveal(row: HTMLElement) {
