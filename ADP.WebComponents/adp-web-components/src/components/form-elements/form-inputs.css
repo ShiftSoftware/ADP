@@ -3,6 +3,10 @@
   display: block;
 }
 
+:host * {
+  -webkit-tap-highlight-color: var(--shift-tap-highlight);
+}
+
 @keyframes spin-animation {
   to {
     transform: rotate(360deg);

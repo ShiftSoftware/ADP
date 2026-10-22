@@ -143,3 +143,27 @@ describe('vehicle panel tokens (lookup-tokens.css)', () => {
     expect(Object.keys(tokens).sort()).toEqual([...aliased, '--settle', '--sheen', '--spin'].sort());
   });
 });
+
+describe('tap highlight (--shift-tap-highlight)', () => {
+  const files = [
+    '../forms/defaults/style.css',
+    '../forms/vehicle-quotation/themes.css',
+    '../form-elements/form-inputs.css',
+    '../form-elements/form-dialog.css',
+    '../form-elements/branch-date-dropdown.css',
+    '../form-elements/branch-slot-dropdown.css',
+    '../components/shift-select-dropdown.css',
+  ];
+
+  it.each(files)('%s reads the variable with no fallback, on the elements under :host and never on :host itself', file => {
+    const root = postcss.parse(read(file));
+    const tapped: string[] = [];
+    root.walkRules(rule => {
+      if (rule.nodes.some(node => node.type === 'decl' && node.prop === '-webkit-tap-highlight-color')) tapped.push(rule.selector);
+    });
+
+    expect(tapped).toEqual([':host *']);
+    expect(declarationsOf(root, ':host *').find(decl => decl.prop === '-webkit-tap-highlight-color').value).toBe('var(--shift-tap-highlight)');
+    expect(declarationsOf(root, ':host').find(decl => decl.prop === 'all').value).toBe('initial');
+  });
+});

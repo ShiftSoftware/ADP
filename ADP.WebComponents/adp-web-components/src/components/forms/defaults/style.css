@@ -4,6 +4,10 @@
   font-family: inherit !important;
 }
 
+:host * {
+  -webkit-tap-highlight-color: var(--shift-tap-highlight);
+}
+
 @keyframes form-loading-spin {
   to {
     transform: rotate(360deg);

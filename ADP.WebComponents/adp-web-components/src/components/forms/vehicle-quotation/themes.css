@@ -4,6 +4,10 @@
   font-family: inherit !important;
 }
 
+:host * {
+  -webkit-tap-highlight-color: var(--shift-tap-highlight);
+}
+
 /* :host,
 :host * {
   font-family: inherit !important;
