@@ -155,15 +155,31 @@ describe('tap highlight (--shift-tap-highlight)', () => {
     '../components/shift-select-dropdown.css',
   ];
 
-  it.each(files)('%s reads the variable with no fallback, on the elements under :host and never on :host itself', file => {
+  it.each(files)('%s reads the variable with no fallback, on the elements under :host that are not hydrated hosts, and never on :host itself', file => {
     const root = postcss.parse(read(file));
     const tapped: string[] = [];
     root.walkRules(rule => {
       if (rule.nodes.some(node => node.type === 'decl' && node.prop === '-webkit-tap-highlight-color')) tapped.push(rule.selector);
     });
 
-    expect(tapped).toEqual([':host *']);
-    expect(declarationsOf(root, ':host *').find(decl => decl.prop === '-webkit-tap-highlight-color').value).toBe('var(--shift-tap-highlight)');
+    expect(tapped).toEqual([':host *:not(.hydrated)']);
+    expect(declarationsOf(root, ':host *:not(.hydrated)').find(decl => decl.prop === '-webkit-tap-highlight-color').value).toBe('var(--shift-tap-highlight)');
     expect(declarationsOf(root, ':host').find(decl => decl.prop === 'all').value).toBe('initial');
+  });
+
+  it('nested hosts are told apart by the default hydrated class, which the build does not rename', () => {
+    expect(fs.readFileSync(path.resolve(__dirname, '../../../stencil.config.ts'), 'utf8')).not.toContain('hydratedFlag');
+  });
+
+  it('vin-extractor, which resets inheritance on its own host, reads the variable before its explicitly transparent capture button', () => {
+    const root = postcss.parse(read('../vin-extractor/vin-extractor.css'));
+    const tapped: string[] = [];
+    root.walkRules(rule => {
+      if (rule.nodes.some(node => node.type === 'decl' && node.prop === '-webkit-tap-highlight-color')) tapped.push(rule.selector);
+    });
+
+    expect(tapped).toEqual([':host *', '.vin-extractor-capture-button']);
+    expect(declarationsOf(root, ':host *').find(decl => decl.prop === '-webkit-tap-highlight-color').value).toBe('var(--shift-tap-highlight)');
+    expect(declarationsOf(root, '.vin-extractor-capture-button').find(decl => decl.prop === '-webkit-tap-highlight-color').value).toBe('transparent');
   });
 });

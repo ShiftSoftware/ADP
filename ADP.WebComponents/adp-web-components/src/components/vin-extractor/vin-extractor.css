@@ -51,6 +51,10 @@
   font-family: inherit !important;
 }
 
+:host * {
+  -webkit-tap-highlight-color: var(--shift-tap-highlight);
+}
+
 :host([color-scheme='dark']) {
   --_sc-backdrop: rgb(2 6 23 / 0.6);
   --_sc-surface: #0f172a;

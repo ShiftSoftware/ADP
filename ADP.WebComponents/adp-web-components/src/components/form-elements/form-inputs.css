@@ -3,7 +3,7 @@
   display: block;
 }
 
-:host * {
+:host *:not(.hydrated) {
   -webkit-tap-highlight-color: var(--shift-tap-highlight);
 }
 
