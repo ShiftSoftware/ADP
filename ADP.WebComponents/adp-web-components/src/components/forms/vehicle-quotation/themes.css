@@ -4,10 +4,6 @@
   font-family: inherit !important;
 }
 
-:host *:not(.hydrated) {
-  -webkit-tap-highlight-color: var(--shift-tap-highlight);
-}
-
 /* :host,
 :host * {
   font-family: inherit !important;

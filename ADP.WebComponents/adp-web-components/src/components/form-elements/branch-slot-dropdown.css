@@ -13,10 +13,6 @@
   font-family: 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif !important;
 }
 
-:host *:not(.hydrated) {
-  -webkit-tap-highlight-color: var(--shift-tap-highlight);
-}
-
 *,
 :host * {
   font-family: inherit !important;

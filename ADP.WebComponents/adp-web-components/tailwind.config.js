@@ -16,6 +16,11 @@ module.exports = {
     },
   },
   plugins: [
+    function ({ addBase }) {
+      addBase({
+        ':where(:host :not(.hydrated))': { '-webkit-tap-highlight-color': 'var(--shift-tap-highlight)' },
+      });
+    },
     function ({ addUtilities }) {
       addUtilities({
         '.success-card': {
