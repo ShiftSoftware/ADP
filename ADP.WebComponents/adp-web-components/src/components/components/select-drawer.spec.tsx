@@ -21,6 +21,7 @@ import { newSpecPage, SpecPage } from '@stencil/core/testing';
 import { serializeNodeToHtml } from '@stencil/core/mock-doc';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import postcss from 'postcss';
 
 import { GeneralForm } from '../forms/general-form';
 import { FormStructure } from '../form-elements/form-structure';
@@ -880,5 +881,93 @@ describe('select drawer: search', () => {
     await open(page, 'year');
 
     expect(searchOf(page, 'year')).toBeNull();
+  });
+});
+
+describe('select drawer: fixed search, scrolling list', () => {
+  const rulesOf = (file: string, selector: string) => {
+    const found: postcss.Declaration[] = [];
+    postcss.parse(readFileSync(join(__dirname, file), 'utf8')).walkRules(rule => {
+      if (rule.selector.replace(/\s+/g, ' ').trim() === selector) rule.walkDecls(decl => void found.push(decl));
+    });
+    return Object.fromEntries(found.map(decl => [decl.prop, decl.value]));
+  };
+
+  it('the search sits beside the list, not inside it, and the list holds every row', async () => {
+    const { page } = await mount(form({ selectDrawer: 'always' }), 390);
+    await open(page, 'companyBranchId');
+
+    const root = sheetOf(page, 'companyBranchId').shadowRoot;
+    const sheet = root.querySelector('.sheet');
+    const list = listOf(page, 'companyBranchId');
+
+    expect(Array.from(sheet.children).map(child => child.className)).toEqual(['search-box', 'list']);
+    expect(list.contains(searchOf(page, 'companyBranchId'))).toBe(false);
+    expect(list.querySelectorAll('[role="option"]')).toHaveLength(3);
+  });
+
+  it('the list is the scroll container: it scrolls and shrinks, the search is not sticky, and rows keep their height', () => {
+    const list = rulesOf('shift-select-sheet.css', '.list');
+    expect(list['overflow-y']).toBe('auto');
+    expect(list['min-block-size']).toBe('0');
+    expect(list['flex']).toBe('0 1 auto');
+    expect(list['overscroll-behavior']).toBe('contain');
+
+    expect(rulesOf('shift-select-sheet.css', '.search-box')['position']).toBeUndefined();
+    expect(rulesOf('shift-select-sheet.css', '.search-box')['flex']).toBe('none');
+    expect(rulesOf('shift-select-sheet.css', '.option')['flex']).toBe('none');
+    for (const selector of [':host', '.sheet']) {
+      const own = rulesOf('shift-select-sheet.css', selector);
+      expect([own['display'], own['flex-direction'], own['min-block-size']]).toEqual(['flex', 'column', '0']);
+    }
+    expect(rulesOf('shift-select-sheet.css', ':host')['flex-shrink']).toBe('1000');
+  });
+
+  it('the popover panel is a column only while it holds a select sheet, so other popovers lay out as before', async () => {
+    const columns: string[] = [];
+    postcss.parse(readFileSync(join(__dirname, 'shift-popover/shift-popover.css'), 'utf8')).walkRules(rule => {
+      if (rule.nodes.some(node => node.type === 'decl' && node.prop === 'flex-direction' && node.value === 'column')) columns.push(rule.selector);
+    });
+
+    expect(columns).toEqual(['.pop-panel[data-inner-scroll]']);
+    expect(rulesOf('shift-popover/shift-popover.css', '.pop-panel[data-inner-scroll]')['display']).toBe('flex');
+
+    const { page } = await mount(form({ selectDrawer: 'always' }), 390);
+    await open(page, 'companyBranchId');
+    expect(drawerBox(page, 'companyBranchId').hasAttribute('data-inner-scroll')).toBe(true);
+
+    expect(rulesOf('shift-popover/shift-popover.css', '.pop-panel')['overflow']).toBe('auto');
+    expect(rulesOf('shift-popover/shift-popover.css', '.pop-panel[data-sheet]')['max-block-size']).toBe('var(--_sheet-max-height)');
+  });
+
+  it('keyboard navigation brings the active row into view by scrolling the list', async () => {
+    const { page } = await mount(form({ selectDrawer: 'always' }), 390);
+    await open(page, 'companyBranchId');
+
+    const list = listOf(page, 'companyBranchId');
+    const panel = drawerBox(page, 'companyBranchId');
+    const box = (top: number, height: number) => () => ({ top, bottom: top + height, height, left: 0, right: 0, width: 0 });
+    let listTop = 0;
+    let panelTop = 0;
+    Object.defineProperty(list, 'scrollTop', { get: () => listTop, set: (value: number) => (listTop = value), configurable: true });
+    Object.defineProperty(panel, 'scrollTop', { get: () => panelTop, set: (value: number) => (panelTop = value), configurable: true });
+    Object.defineProperty(list, 'clientTop', { value: 0, configurable: true });
+    Object.defineProperty(list, 'clientHeight', { value: 100, configurable: true });
+    (list as unknown as { getBoundingClientRect: unknown }).getBoundingClientRect = box(200, 100);
+
+    const [first, second, third] = rows(page, 'companyBranchId');
+    (first as unknown as { getBoundingClientRect: unknown }).getBoundingClientRect = box(200, 48);
+    (second as unknown as { getBoundingClientRect: unknown }).getBoundingClientRect = box(248, 48);
+    (third as unknown as { getBoundingClientRect: unknown }).getBoundingClientRect = box(296, 48);
+
+    key(page, first, 'ArrowDown');
+    key(page, second, 'ArrowDown');
+    expect(listTop).toBe(44);
+    expect(panelTop).toBe(0);
+
+    (first as unknown as { getBoundingClientRect: unknown }).getBoundingClientRect = box(180, 48);
+    key(page, second, 'Home');
+    expect(listTop).toBe(24);
+    expect(panelTop).toBe(0);
   });
 });

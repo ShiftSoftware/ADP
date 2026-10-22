@@ -12,22 +12,26 @@
   --_quick: calc(var(--shift-settle, 320ms) / 2);
   --_curve: var(--shift-ease, cubic-bezier(0.2, 0, 0, 1));
 
-  display: block;
+  display: flex;
+  flex-direction: column;
+  /* The panel's other flex items, such as a grabber, must not give up height before this does. */
+  flex-shrink: 1000;
+  min-block-size: 0;
   font-family: inherit;
   color: var(--_ink);
 }
 
 .sheet {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-block-size: 0;
   padding: 8px;
 }
 
-/* The panel scrolls, so the search stays in reach while the list moves under it. */
 .search-box {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  flex: none;
   padding-block-end: 8px;
-  background: var(--_surface, var(--shift-popover-surface, var(--shift-surface, #ffffff)));
 }
 
 .search {
@@ -55,6 +59,10 @@
 .list {
   display: flex;
   flex-direction: column;
+  flex: 0 1 auto;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Only rows that arrive after the drawer opened empty fade in; a list there at open rides in with the sheet. */
@@ -64,6 +72,7 @@
 
 .option {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
