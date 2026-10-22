@@ -138,6 +138,12 @@
     visibility 0s;
 }
 
+/* A select drawer scrolls its own list under a fixed search, so the panel only caps its height. */
+.pop-panel[data-sheet][data-inner-scroll] {
+  display: flex;
+  flex-direction: column;
+}
+
 .pop-panel[data-sheet] {
   top: auto;
   right: 0;

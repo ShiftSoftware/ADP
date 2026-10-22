@@ -51,21 +51,29 @@ export class ShiftSelectSheet {
   @State() lockedHeight: number | null = null;
 
   private searchEl: HTMLInputElement | null = null;
-  private searchBoxEl: HTMLElement | null = null;
   private listEl: HTMLElement | null = null;
   private measurePending = false;
   private listWaited = false;
+  private panelObserver: ResizeObserver | null = null;
+  private openHeight = 0;
 
   // The search is reset as the sheet opens rather than as it closes, so the closing sheet keeps its content while it slides away.
   @Watch('open')
   onOpenChange(open: boolean) {
-    if (!open) return;
+    if (!open) {
+      this.unwatchPanel();
+      return;
+    }
 
     this.query = '';
     this.activeIndex = -1;
     this.lockedHeight = null;
     this.measurePending = this.searchable;
     this.listWaited = false;
+  }
+
+  disconnectedCallback() {
+    this.unwatchPanel();
   }
 
   componentDidRender() {
@@ -79,6 +87,7 @@ export class ShiftSelectSheet {
   async setFocus() {
     const scroller = this.scroller();
     if (scroller) scroller.scrollTop = 0;
+    if (this.listEl) this.listEl.scrollTop = 0;
 
     if (this.searchEl && !coarsePointer()) {
       this.searchEl.focus({ preventScroll: true });
@@ -101,7 +110,7 @@ export class ShiftSelectSheet {
     return Array.from(this.listEl?.querySelectorAll<HTMLElement>('[role="option"]') ?? []);
   }
 
-  // The panel the popover carries this element into is what scrolls.
+  // The panel the popover carries this element into bounds the sheet's height.
   private scroller(): HTMLElement | null {
     for (let node: HTMLElement | null = this.el.assignedSlot?.parentElement ?? this.el.parentElement; node; node = node.parentElement) {
       const { overflowY } = getComputedStyle(node);
@@ -121,20 +130,51 @@ export class ShiftSelectSheet {
     const room = view.top + scroller.clientTop + scroller.clientHeight - host.top;
     const height = Math.min(host.height, room);
 
-    if (height > 0) this.lockedHeight = height;
+    if (height <= 0) return;
+
+    this.openHeight = height;
+    this.lockedHeight = height;
+    this.watchPanel(scroller);
+  }
+
+  // The lock is measured once; when the panel's cap changes afterwards, such as on rotation, it follows what fits so the list scrolls and the panel does not.
+  private watchPanel(panel: HTMLElement) {
+    this.unwatchPanel();
+    if (typeof ResizeObserver === 'undefined') return;
+
+    this.panelObserver = new ResizeObserver(() => this.refitLock());
+    this.panelObserver.observe(panel);
+  }
+
+  private refitLock() {
+    if (!this.lockedHeight) return;
+
+    const { style } = this.el;
+    const kept = style.minBlockSize;
+    style.minBlockSize = '0';
+    style.blockSize = `${this.openHeight}px`;
+    const fit = this.el.getBoundingClientRect().height;
+    style.blockSize = '';
+    style.minBlockSize = kept;
+
+    if (fit > 0 && Math.abs(fit - this.lockedHeight) >= 0.5) this.lockedHeight = fit;
+  }
+
+  private unwatchPanel() {
+    this.panelObserver?.disconnect();
+    this.panelObserver = null;
   }
 
   private reveal(row: HTMLElement) {
-    const scroller = this.scroller();
-    if (!scroller) return;
+    const list = this.listEl;
+    if (!list) return;
 
-    const view = scroller.getBoundingClientRect();
     const box = row.getBoundingClientRect();
-    const top = view.top + scroller.clientTop + (this.searchBoxEl?.offsetHeight ?? 0);
-    const bottom = view.top + scroller.clientTop + scroller.clientHeight;
+    const top = list.getBoundingClientRect().top + list.clientTop;
+    const bottom = top + list.clientHeight;
 
-    if (box.top < top) scroller.scrollTop -= top - box.top;
-    else if (box.bottom > bottom) scroller.scrollTop += box.bottom - bottom;
+    if (box.top < top) list.scrollTop -= top - box.top;
+    else if (box.bottom > bottom) list.scrollTop += box.bottom - bottom;
   }
 
   private focusRow(index: number) {
@@ -216,7 +256,7 @@ export class ShiftSelectSheet {
       <Host style={this.lockedHeight ? { minBlockSize: `${this.lockedHeight}px` } : undefined}>
         <div class="sheet" dir={this.direction}>
           {this.searchable && (
-            <div class="search-box" ref={el => (this.searchBoxEl = el as HTMLElement)}>
+            <div class="search-box">
               <input
                 ref={el => (this.searchEl = el as HTMLInputElement)}
                 class="search"

@@ -143,3 +143,43 @@ describe('vehicle panel tokens (lookup-tokens.css)', () => {
     expect(Object.keys(tokens).sort()).toEqual([...aliased, '--settle', '--sheen', '--spin'].sort());
   });
 });
+
+describe('tap highlight (--shift-tap-highlight)', () => {
+  const rule = ':where(:host :not(.hydrated))';
+  const stylesheets = (dir: string): string[] =>
+    fs
+      .readdirSync(dir, { withFileTypes: true })
+      .flatMap(entry => (entry.isDirectory() ? stylesheets(path.join(dir, entry.name)) : /\.s?css$/.test(entry.name) ? [path.join(dir, entry.name)] : []));
+  const base = async (preflight: boolean) => {
+    const config = { ...tailwindConfig, content: [{ raw: '', extension: 'html' }], corePlugins: { preflight } };
+    return (await postcss([tailwindcss(config)]).process('@tailwind base;', { from: undefined })).root;
+  };
+
+  it.each([true, false])(
+    'the Tailwind base layer carries one zero-specificity rule that reads the variable with no fallback on elements under :host that are not hydrated hosts, with preflight %s',
+    async preflight => {
+      const root = await base(preflight);
+      const tapped: string[] = [];
+      root.walkRules(r => {
+        if (r.nodes.some(node => node.type === 'decl' && node.prop === '-webkit-tap-highlight-color' && node.value.includes('--shift-tap-highlight'))) tapped.push(r.selector);
+      });
+
+      expect(tapped).toEqual([rule]);
+      expect(declarationsOf(root, rule).map(decl => [decl.prop, decl.value])).toEqual([['-webkit-tap-highlight-color', 'var(--shift-tap-highlight)']]);
+    },
+  );
+
+  it('no component stylesheet declares the variable itself', () => {
+    const offenders = stylesheets(path.resolve(__dirname, '..')).filter(file => fs.readFileSync(file, 'utf8').includes('--shift-tap-highlight'));
+    expect(offenders).toEqual([]);
+  });
+
+  it('nested hosts are told apart by the default hydrated class, which the build does not rename', () => {
+    expect(fs.readFileSync(path.resolve(__dirname, '../../../stencil.config.ts'), 'utf8')).not.toContain('hydratedFlag');
+  });
+
+  it('vin-extractor keeps its explicitly transparent capture button', () => {
+    const root = postcss.parse(read('../vin-extractor/vin-extractor.css'));
+    expect(declarationsOf(root, '.vin-extractor-capture-button').find(decl => decl.prop === '-webkit-tap-highlight-color').value).toBe('transparent');
+  });
+});
