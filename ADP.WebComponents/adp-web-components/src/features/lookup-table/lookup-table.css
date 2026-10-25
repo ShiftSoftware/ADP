@@ -342,15 +342,6 @@
   white-space: nowrap;
 }
 
-/* ref: job and invoice numbers -- identifiers that are read, not quantities. --date-ink because,
-   like dates, they are read and not glanced at (§ 9). No grouping separators and no end-alignment:
-   they are not figures. */
-.lt-row > .lt-ref {
-  color: var(--date-ink);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
 /* A shown field with no value: the grey empty marker (§ 10). */
 .lt-none {
   color: var(--muted);
@@ -608,9 +599,8 @@
     align-self: center;
   }
 
-  /* Wrap anywhere: a long part number or reference must not widen a card at 400px (case 8). */
-  .lt-row > .lt-code,
-  .lt-row > .lt-ref {
+  /* Wrap anywhere: a long part number must not widen a card at 400px (case 8). */
+  .lt-row > .lt-code {
     overflow-wrap: anywhere;
     white-space: normal;
   }

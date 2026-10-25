@@ -22,7 +22,7 @@ import { BADGE_GLYPHS, MEDIA_GLYPHS } from '../../components/vehicle-lookup/comp
 // ---------------------------------------------------------------------------------------------
 
 /** Built kinds. 'number' | 'date' | 'chip' | 'action' are specified and deferred to a named consumer. */
-export type CellKind = 'text' | 'code' | 'ref' | 'media';
+export type CellKind = 'text' | 'code' | 'media';
 
 export type NoticeTone = 'positive' | 'negative' | 'neutral' | 'attention' | 'idle';
 
@@ -35,7 +35,7 @@ export type NoticeTone = 'positive' | 'negative' | 'neutral' | 'attention' | 'id
 export type LeadKind = 'columns' | 'notice';
 
 export type LookupColumn<Row> = {
-  /** The hiddenFields name and the column's stable key: 'partNumber', 'jobNumber', ... */
+  /** The hiddenFields name and the column's stable key: 'partNumber', 'description', ... */
   field: string;
   /** Heading in the strip and caption on the narrow card (data-label). Already localised. */
   label: string;
@@ -155,9 +155,7 @@ export const visibleColumns = <Row,>(columns: LookupColumn<Row>[], hidden: Reado
 const CODE = 'minmax(180px, 1.1fr)';
 /** The one column allowed to grow: the largest share of the slack, with a floor so it cannot become a sliver. */
 const GROW = 'minmax(200px, 2.4fr)';
-/** Job and invoice numbers: the value and its two-word heading (INVOICE NUMBER) on one line. */
-const REF = 'minmax(140px, 0.9fr)';
-/** Other text (a company name): wraps at its spaces inside its share. */
+/** Other text: wraps at its spaces inside its share. */
 const TEXT = 'minmax(150px, 1.2fr)';
 /** The thumbnail: exactly its 4:3 box and the cell's padding, whatever the width. */
 const MEDIA = 'calc(var(--lt-media-width) + 24px)';
@@ -168,8 +166,7 @@ const SINGLE = 'minmax(0, 1fr)';
 
 const growing = <Row,>(column: LookupColumn<Row>): boolean => !!column.grow && column.kind === 'text';
 
-const track = <Row,>(column: LookupColumn<Row>): string =>
-  growing(column) ? GROW : column.kind === 'code' ? CODE : column.kind === 'ref' ? REF : column.kind === 'media' ? MEDIA : TEXT;
+const track = <Row,>(column: LookupColumn<Row>): string => (growing(column) ? GROW : column.kind === 'code' ? CODE : column.kind === 'media' ? MEDIA : TEXT);
 
 /**
  * The `grid-template-columns` strings. `stacked` is the 720–960 layout, where the description sits
