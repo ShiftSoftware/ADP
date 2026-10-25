@@ -1,4 +1,6 @@
 using ShiftSoftware.ADP.Models;
+using ShiftSoftware.ADP.Models.Enums;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.ServiceMenu;
@@ -45,17 +47,21 @@ public class ServiceMenuLookupRequest
     public decimal? TransferRate { get; set; }
 
     /// <summary>
-    /// Which variants to return, by their free-of-charge flag: all of them (the default), only the free
-    /// ones, or only the ones that are not free. See <see cref="ServiceMenuFreeFilter"/>.
+    /// Which variants to return, by their <see cref="MenuType"/>: only the variants whose type is in the
+    /// list. Null or empty (the default) returns every variant, so a caller that never heard of this option
+    /// keeps the behaviour it had before the option existed.
     ///
-    /// <para>Applied BEFORE generation, so an excluded variant is never generated. A filter that excludes
-    /// every variant returns an empty <see cref="ServiceMenuLookupDTO.Variants"/> with
-    /// <see cref="ServiceMenuLookupDTO.NotFound"/> still <c>false</c> — the model HAS a menu, this request
-    /// asked for a part of it that is empty. Those are different answers and a UI usually renders them
-    /// differently.</para>
+    /// <para><b>It filters, it does not price.</b> The money on a free or contract variant's lines is
+    /// generated exactly as it would be for a paid one; nothing zeroes a total. Read
+    /// <see cref="ServiceMenuVariantDTO.MenuType"/> on the result and render accordingly.</para>
+    ///
+    /// <para>Applied BEFORE generation, so an excluded variant is never generated — and so it cannot fail
+    /// on missing reference data either. A filter that excludes every variant returns an empty
+    /// <see cref="ServiceMenuLookupDTO.Variants"/> with <see cref="ServiceMenuLookupDTO.NotFound"/> still
+    /// <c>false</c> — the model HAS a menu, this request asked for a part of it that is empty. Those are
+    /// different answers and a UI usually renders them differently.</para>
     /// </summary>
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public ServiceMenuFreeFilter FreeFilter { get; set; }
+    public List<MenuType> MenuTypes { get; set; }
 
     // No variant filter, deliberately. A menu variant's id is a primary key in the menus database and
     // nothing outside it has one — a caller holds a VIN or a model code, never a variant id. Every live

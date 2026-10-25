@@ -176,7 +176,7 @@ public static class CosmosToGenerationAggregator
             StandaloneMenuPostfix = variant.StandaloneMenuPostfix,
             LabourRate = variant.LabourRate,
             DiscountPercentage = variant.DiscountPercentage,
-            IsFree = variant.IsFree,
+            MenuType = variant.MenuType,
             HasStandaloneItems = variant.HasStandaloneItems,
 
             CountryLabourRates = (variant.CountryLabourRates ?? [])
@@ -349,7 +349,9 @@ public static class CosmosToGenerationAggregator
             Code = interval.Code,
 
             // Verbatim, NOT language-resolved — matching the source (open item O10).
-            Description = interval.Description,
+            PaidDescription = interval.PaidDescription,
+            FreeDescription = interval.FreeDescription,
+            ContractDescription = interval.ContractDescription,
 
             ValueInMeter = interval.ValueInMeter,
 

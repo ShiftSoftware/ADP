@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ADP.Menus.Sync.Replication;
 using ShiftSoftware.ADP.Menus.Generation;
+using ShiftSoftware.ADP.Menus.Shared.Enums;
 using ShiftSoftware.ADP.Models.Service.Cosmos;
 
 namespace ShiftSoftware.ADP.Menus.Tests;
@@ -80,50 +81,57 @@ internal static class MenuCosmosDocumentFixture
         return documents;
     }
 
-    /// <summary>The re-keyed copy's variant id in <see cref="WithFreeAndPaidVariants"/>.</summary>
-    internal const long FreeVariantID = 4472;
-
-    /// <summary>The fixture's own variant id — left exactly as authored, and NOT free.</summary>
+    /// <summary>The fixture's own variant id — left exactly as authored, so <see cref="MenuType.Paid"/>.</summary>
     internal const long PaidVariantID = 4471;
 
+    /// <summary>The <see cref="MenuType.Free"/> re-keyed copy's variant id in <see cref="WithEveryMenuType"/>.</summary>
+    internal const long FreeVariantID = 4472;
+
+    /// <summary>The <see cref="MenuType.Contract"/> re-keyed copy's variant id in <see cref="WithEveryMenuType"/>.</summary>
+    internal const long ContractVariantID = 4473;
+
     /// <summary>
-    /// One partition holding TWO variants: the fixture's own (<see cref="PaidVariantID"/>, not free) and a
-    /// re-keyed copy of it (<see cref="FreeVariantID"/>) flagged free.
+    /// One partition holding THREE variants, one per <see cref="MenuType"/>: the fixture's own
+    /// (<see cref="PaidVariantID"/>, paid) and two re-keyed copies of it, <see cref="FreeVariantID"/> typed
+    /// free and <see cref="ContractVariantID"/> typed contract.
     ///
-    /// <para>A copy rather than a second hand-authored variant on purpose: the two differ in their id and
-    /// in the flag and in NOTHING else, so a test can assert both that the filter selects the right one and
-    /// that the flag moved no money — the free variant's lines must price identically to the paid one's.
-    /// Adding a second variant to <see cref="MenuGraphFixture"/> itself would re-baseline every golden.</para>
+    /// <para>Copies rather than hand-authored variants on purpose: they differ in their id and in the type
+    /// and in NOTHING else, so a test can assert both that the filter selects the right ones and that the
+    /// type moved no money — every variant's lines must price identically. Adding variants to
+    /// <see cref="MenuGraphFixture"/> itself would re-baseline every golden.</para>
     /// </summary>
-    internal static ServiceMenuDocuments WithFreeAndPaidVariants()
+    internal static ServiceMenuDocuments WithEveryMenuType()
     {
-        var paid = MenuGraphFixture.Build();
-        var free = MenuGraphFixture.Build();
+        var documents = From(MenuGraphFixture.Build());
 
-        MakeFree(free.Variants.Single());
+        foreach (var (variantID, menuType, idOffset) in new[]
+        {
+            (FreeVariantID, MenuType.Free, 1000L),
+            (ContractVariantID, MenuType.Contract, 2000L),
+        })
+        {
+            var copy = MenuGraphFixture.Build();
+            Retype(copy.Variants.Single(), variantID, menuType, idOffset);
 
-        var documents = From(paid);
-        var freeDocuments = From(free);
-
-        documents.Variants.AddRange(freeDocuments.Variants);
-        documents.Periods.AddRange(freeDocuments.Periods);
-        documents.Labours.AddRange(freeDocuments.Labours);
-        documents.Items.AddRange(freeDocuments.Items);
+            var copyDocuments = From(copy);
+            documents.Variants.AddRange(copyDocuments.Variants);
+            documents.Periods.AddRange(copyDocuments.Periods);
+            documents.Labours.AddRange(copyDocuments.Labours);
+            documents.Items.AddRange(copyDocuments.Items);
+        }
 
         return documents;
     }
 
     /// <summary>
-    /// Flags a freshly built copy of the fixture variant free and moves it, with its children, onto its own
+    /// Types a freshly built copy of the fixture variant and moves it, with its children, onto its own
     /// ids — the child rows carry the variant id AND supply their own document ids, and two documents
     /// cannot share an id in one partition.
     /// </summary>
-    private static void MakeFree(MenuVariant variant)
+    private static void Retype(MenuVariant variant, long variantID, MenuType menuType, long idOffset)
     {
-        const long idOffset = 1000;
-
-        variant.ID = FreeVariantID;
-        variant.IsFree = true;
+        variant.ID = variantID;
+        variant.MenuType = menuType;
 
         // The children's MenuVariant navigation already points at this same object, so only the foreign
         // key and their own ids need moving.

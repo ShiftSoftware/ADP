@@ -17,7 +17,26 @@ public class MenuLineDTO
     public long? BrandID { get; set; }
     public string BasicModelCode { get; set; }
     public string Model { get; set; }
+
+    /// <summary>
+    /// The line's description as the generator chose it: for a scheduled line, the service interval's
+    /// description for the variant's menu type; for a standalone one, the item's or group's name.
+    /// </summary>
     public string Description { get; set; }
+
+    /// <summary>
+    /// The scheduled line's service interval descriptions, all three of them, whatever the variant's menu
+    /// type — for a report that needs one other than <see cref="Description"/>. Null on standalone lines,
+    /// which have no interval.
+    /// </summary>
+    public string? PaidDescription { get; set; }
+
+    /// <inheritdoc cref="PaidDescription"/>
+    public string? FreeDescription { get; set; }
+
+    /// <inheritdoc cref="PaidDescription"/>
+    public string? ContractDescription { get; set; }
+
     public string LabourCode { get; set; }
     public decimal LabourRate { get; set; }
     public decimal AllowedTime { get; set; }

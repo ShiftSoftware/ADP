@@ -46,7 +46,8 @@ public class PublicSurveyController : ControllerBase
     /// Returns the fully-resolved <see cref="SurveyDto"/> for the pinned version of
     /// this instance, along with minimal instance metadata the renderer needs
     /// (customer reference pre-fill, meta blob). Safe to cache by the renderer
-    /// since versions are immutable.
+    /// since versions are immutable. 404 for an unknown link, 410 once the instance has
+    /// expired, 409 once it has been answered.
     /// </summary>
     [HttpGet("{publicId:guid}/schema")]
     public async Task<IActionResult> GetSchema([FromRoute] Guid publicId)
@@ -60,6 +61,12 @@ public class PublicSurveyController : ControllerBase
 
         if (instance.Status == SurveyInstanceStatus.Expired)
             return StatusCode(StatusCodes.Status410Gone, new { Message = "This survey link has expired." });
+
+        // Refused here, not only at submit: a respondent reopening an answered link would
+        // otherwise fill the whole survey in again before learning it can't be accepted.
+        // Same status and message as SubmitResponse's, so a renderer handles both alike.
+        if (instance.Status == SurveyInstanceStatus.Completed)
+            return Conflict(new { Message = "This survey has already been completed." });
 
         var rawJson = instance.SurveyVersion.ResolvedJson;
         var applyTokens = PersonalizationTokens.MightContainTokens(rawJson);

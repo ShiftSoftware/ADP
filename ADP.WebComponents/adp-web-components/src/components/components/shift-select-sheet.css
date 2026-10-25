@@ -1,0 +1,151 @@
+/* tailwind: off */
+@import '../style/base.css';
+
+:host {
+  --_ink: var(--shift-ink, #1e293b);
+  --_muted: var(--shift-ink-muted, #64748b);
+  --_line: var(--shift-line, #e2e8f0);
+  --_accent: var(--shift-accent, #1e293b);
+  --_accent-tint: var(--shift-accent-tint, #f1f5f9);
+  --_focus: var(--shift-focus, #1e293b);
+  --_row-radius: var(--shift-radius-md, 8px);
+  --_quick: calc(var(--shift-settle, 320ms) / 2);
+  --_curve: var(--shift-ease, cubic-bezier(0.2, 0, 0, 1));
+
+  display: flex;
+  flex-direction: column;
+  /* The panel's other flex items, such as a grabber, must not give up height before this does. */
+  flex-shrink: 1000;
+  min-block-size: 0;
+  font-family: inherit;
+  color: var(--_ink);
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-block-size: 0;
+  padding: 8px;
+}
+
+.search-box {
+  flex: none;
+  padding-block-end: 8px;
+}
+
+.search {
+  display: block;
+  inline-size: 100%;
+  min-block-size: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--_line);
+  border-radius: var(--_row-radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
+.search::placeholder {
+  color: var(--_muted);
+}
+
+.search:focus-visible {
+  border-color: var(--_focus);
+  box-shadow: 0 0 0 1px var(--_focus);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Only rows that arrive after the drawer opened empty fade in; a list there at open rides in with the sheet. */
+.list[data-waited]:not(:empty) {
+  animation: select-sheet-enter var(--_quick) var(--_curve) both;
+}
+
+.option {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-block-size: 48px;
+  padding: 12px 14px;
+  border-radius: var(--_row-radius);
+  cursor: pointer;
+  outline: none;
+  text-align: start;
+  transition: background-color var(--_quick) var(--_curve);
+}
+
+@media (hover: hover) {
+  .option:hover {
+    background: var(--_accent-tint);
+  }
+}
+
+.option:focus-visible {
+  background: var(--_accent-tint);
+  box-shadow: inset 0 0 0 2px var(--_focus);
+}
+
+.label {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.option[aria-selected='true'] .label {
+  font-weight: 600;
+}
+
+.tick {
+  flex: none;
+  inline-size: 20px;
+  block-size: 20px;
+  color: var(--_accent);
+  opacity: 0;
+}
+
+.option[aria-selected='true'] .tick {
+  opacity: 1;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 100px;
+  padding: 16px;
+  color: var(--_muted);
+  text-align: center;
+  animation: select-sheet-enter var(--_quick) var(--_curve) both;
+}
+
+.empty[data-error] {
+  color: #ef4444;
+}
+
+.spinner {
+  inline-size: 22px;
+  block-size: 22px;
+  animation: select-sheet-spin 2s linear infinite;
+}
+
+@keyframes select-sheet-enter {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes select-sheet-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

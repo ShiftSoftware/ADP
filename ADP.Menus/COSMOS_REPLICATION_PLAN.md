@@ -276,7 +276,7 @@ public class MenuGenerationVariant
     public string StandaloneMenuPrefix { get; set; } public string StandaloneMenuPostfix { get; set; }
     public decimal LabourRate { get; set; }                    // primary
     public decimal? DiscountPercentage { get; set; }
-    public bool IsFree { get; set; }                           // carried, never priced on
+    public MenuType MenuType { get; set; }                     // Paid | Free | Contract; carried, never priced on
     public bool HasStandaloneItems { get; set; }
     public List<MenuGenerationCountryLabourRate> CountryLabourRates { get; set; } = [];
     public List<MenuGenerationPeriod> Periods { get; set; } = [];
@@ -368,7 +368,7 @@ namespace ShiftSoftware.ADP.Models.Service.Cosmos;
     public string MenuPrefix { get; set; } public string MenuPostfix { get; set; }
     public string StandaloneMenuPrefix { get; set; } public string StandaloneMenuPostfix { get; set; }
     public decimal LabourRate { get; set; } public decimal? DiscountPercentage { get; set; }
-    public bool IsFree { get; set; } public bool HasStandaloneItems { get; set; }
+    public MenuType MenuType { get; set; } public bool HasStandaloneItems { get; set; }
     public List<MenuCosmosCountryLabourRate> CountryLabourRates { get; set; } = [];
 }
 // MenuPeriodCosmosModel { VariantID, ServiceIntervalID }
@@ -437,7 +437,7 @@ public static class MenuCosmosMappers
         MenuPrefix = v.MenuPrefix, MenuPostfix = v.MenuPostfix,
         StandaloneMenuPrefix = v.StandaloneMenuPrefix, StandaloneMenuPostfix = v.StandaloneMenuPostfix,
         LabourRate = v.LabourRate, DiscountPercentage = v.DiscountPercentage,
-        IsFree = v.IsFree, HasStandaloneItems = v.HasStandaloneItems,
+        MenuType = v.MenuType, HasStandaloneItems = v.HasStandaloneItems,
         CountryLabourRates = v.LabourRates.Where(r => !r.IsDeleted)
             .Select(r => new MenuCosmosCountryLabourRate { CountryID = r.CountryID, LabourRate = r.LabourRate }).ToList(),
     };

@@ -4,6 +4,7 @@ import cn from '~lib/cn';
 import { Grecaptcha } from '~lib/recaptcha';
 import { revealBelow } from '~lib/reveal-below';
 import { createHeightChangeAnnouncer } from '~lib/flexible-parents';
+import { adpFetch, requestInfo } from '~features/host-bridge';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 import { SscRepairTraceDTO } from '~types/generated/vehicle-lookup/ssc-repair-trace-dto';
@@ -569,13 +570,17 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
     // the visitor completes the captcha.
     const headers = await resolveRequestHeaders(this);
 
-    const response = await fetch(`${this.unauthorizedSscLookupBaseUrl}${newVehicleLookup?.vin}/${newVehicleLookup?.sscLogId}?${this.unauthorizedSscLookupQueryString}`, {
-      signal: this.abortController.signal,
-      headers: {
-        ...headers,
-        'Ssc-Recaptcha-Token': recaptchaToken,
+    const response = await adpFetch(
+      requestInfo('lookup', this.el),
+      `${this.unauthorizedSscLookupBaseUrl}${newVehicleLookup?.vin}/${newVehicleLookup?.sscLogId}?${this.unauthorizedSscLookupQueryString}`,
+      {
+        signal: this.abortController.signal,
+        headers: {
+          ...headers,
+          'Ssc-Recaptcha-Token': recaptchaToken,
+        },
       },
-    });
+    );
 
     const vinResponse = await response.json();
 
@@ -741,7 +746,7 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
         // must never join a trace request — this is a re-read, not a lookup. vehicle-ssc.spec.tsx pins it.
         const query = [this.queryString, 'trace=ssc'].filter(Boolean).join('&');
         const headers = await resolveRequestHeaders(this);
-        const httpResponse = await fetch(`${this.baseUrl}${vin}?${query}`, { headers, signal });
+        const httpResponse = await adpFetch(requestInfo('lookup', this.el), `${this.baseUrl}${vin}?${query}`, { headers, signal });
 
         if (!httpResponse.ok) throw new Error(`HTTP ${httpResponse.status}`);
 

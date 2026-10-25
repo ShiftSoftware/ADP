@@ -25,7 +25,6 @@ public class ServiceIntervalService
         return response?.Value?
             .Select(x => new ServiceIntervalListSelectableUI
             {
-                Description = x.Description,
                 ID = x.ID,
                 FullName = x.FullName,
                 IsDeleted = x.IsDeleted,

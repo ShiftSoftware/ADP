@@ -724,7 +724,9 @@ public static class SampleSeedData
                 Code = $"{i}K",
                 FullName = fullName,
                 ValueInMeter = i * 1000,
-                Description = $"CARRY OUT {fullName} SERVICE",
+                PaidDescription = $"CARRY OUT {fullName} SERVICE",
+                FreeDescription = $"CARRY OUT {fullName} SERVICE",
+                ContractDescription = $"{fullName} Paid Service Contract",
             };
 
             if (i == 120)

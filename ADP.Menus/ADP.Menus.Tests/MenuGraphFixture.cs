@@ -21,7 +21,7 @@ namespace ShiftSoftware.ADP.Menus.Tests;
 ///  • periodic lines (two intervals that resolve labour details, one that does not → skipped)
 ///  • standalone ungrouped line, and a standalone grouped line folded from two items
 ///  • multi-language (JSON blob) menu prefix / standalone prefix / operation code / group menu code
-///  • a JSON-blob service-interval Description (which today is NOT language-resolved — see the golden)
+///  • a JSON-blob service-interval description (which today is NOT language-resolved — see the golden)
 ///  • soft-deleted item, soft-deleted replacement-item link, soft-deleted part, soft-deleted country
 ///    price and soft-deleted country labour rate — all of which must be excluded
 ///  • a part with zero periodic quantity (excluded from periodic, present in standalone)
@@ -60,20 +60,24 @@ internal static class MenuGraphFixture
             Code = "S01",
             FullName = "Interval 501",
             ValueInMeter = 10000,
-            Description = "Plain description",
+            PaidDescription = "Plain description",
+            FreeDescription = "Plain description (free)",
+            ContractDescription = "Plain description (contract)",
             ServiceIntervalGroupID = group10.ID,
             ServiceIntervalGroup = group10,
         };
 
-        // NOTE: a JSON multi-language blob in Description. The periodic pass assigns
-        // ServiceInterval.Description straight onto the line WITHOUT language resolution, so the raw
+        // NOTE: a JSON multi-language blob in the descriptions. The periodic pass assigns the variant's
+        // ServiceInterval description straight onto the line WITHOUT language resolution, so the raw
         // blob is expected to surface verbatim in the golden. Pinned deliberately.
         var interval502 = new ServiceInterval(502)
         {
             Code = "S02",
             FullName = "Interval 502",
             ValueInMeter = 20000,
-            Description = """{"en":"Description EN","ar":"Description AR"}""",
+            PaidDescription = """{"en":"Description EN","ar":"Description AR"}""",
+            FreeDescription = """{"en":"Free EN","ar":"Free AR"}""",
+            ContractDescription = """{"en":"Contract EN","ar":"Contract AR"}""",
             ServiceIntervalGroupID = group10.ID,
             ServiceIntervalGroup = group10,
         };
@@ -84,7 +88,9 @@ internal static class MenuGraphFixture
             Code = "S03",
             FullName = "Interval 503",
             ValueInMeter = 30000,
-            Description = "Third description",
+            PaidDescription = "Third description",
+            FreeDescription = "Third description (free)",
+            ContractDescription = "Third description (contract)",
             ServiceIntervalGroupID = group20.ID,
             ServiceIntervalGroup = group20,
         };

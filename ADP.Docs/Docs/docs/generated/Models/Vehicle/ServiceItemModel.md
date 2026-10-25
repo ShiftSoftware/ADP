@@ -20,7 +20,7 @@ Represents a claimable service item offered through a Service Campaign.
 | PrintoutDescription <div><strong>``Dictionary<string, string>``</strong></div> | The multilingual printout description (keyed by language code). |
 | BrandIDs <div><strong>``IEnumerable<long?>``</strong></div> | The brand IDs this service item is available for. |
 | CountryIDs <div><strong>``IEnumerable<long?>``</strong></div> | The country IDs this service item is available in. |
-| CompanyIDs <div><strong>``IEnumerable<long?>``</strong></div> | The company IDs this service item is available for. |
+| CompanyIDs <div><strong>``IEnumerable<long?>``</strong></div> | The company IDs this service item is available for: the vehicle's owner, or for an inspection-activated campaign the inspecting company, whose inspection must then be the one that activates it. |
 | ActiveFor <div><strong>``int?``</strong></div> | The duration for which this service item remains active after activation. |
 | ActiveForDurationType <div><strong>``DurationType?``</strong></div> | The unit of time for the `ActiveFor` duration (e.g., Days, Months, Years). |
 | MaximumMileage <div><strong>``long?``</strong></div> | The maximum mileage up to which this service item is valid. Used in sequential validity calculations. |

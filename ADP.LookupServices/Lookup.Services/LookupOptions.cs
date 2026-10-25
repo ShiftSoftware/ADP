@@ -3,6 +3,7 @@ using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Lookup.Services.Milestones;
 using ShiftSoftware.ADP.Models;
+using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Vehicle;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
 using System;
@@ -156,6 +157,19 @@ public class LookupOptions
     /// deployment-specific data, not platform behaviour. Empty by default, which changes nothing.</para>
     /// </summary>
     public List<List<string>> SSCInterchangeableLaborCodeGroups { get; set; } = new();
+    /// <summary>
+    /// The warranty claim statuses that count as evidence an SSC (safety recall) repair was carried out. A claim
+    /// that references the campaign — by campaign code in the distributor comment or by labor code — marks the
+    /// recall repaired only when its <see cref="ClaimStatus"/> is in this list.
+    /// <para>Defaults to <c>Accepted</c>, <c>Certified</c> and <c>Invoiced</c>. A deployment whose distributor
+    /// treats a submitted claim as proof of the repair adds <c>PendingProcess</c> so the recall closes as soon as
+    /// the dealer claims it, rather than once the claim is accepted. An empty list means no warranty claim is
+    /// repair evidence.</para>
+    /// </summary>
+    public List<ClaimStatus> SSCQualifyingWarrantyClaimStatuses { get; set; } = [.. DefaultSSCQualifyingWarrantyClaimStatuses];
+    /// <summary>The default for <see cref="SSCQualifyingWarrantyClaimStatuses"/>.</summary>
+    public static IReadOnlyList<ClaimStatus> DefaultSSCQualifyingWarrantyClaimStatuses { get; } =
+        [ClaimStatus.Accepted, ClaimStatus.Certified, ClaimStatus.Invoiced];
     /// <summary>Whether to include free service items that have not yet been activated (e.g., awaiting warranty activation).</summary>
     public bool IncludeInactivatedFreeServiceItems { get; set; }
     /// <summary>

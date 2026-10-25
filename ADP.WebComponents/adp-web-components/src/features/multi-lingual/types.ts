@@ -37,6 +37,8 @@ export const RUSSIAN_JSON_FILE = 'ru.json';
 
 export type LanguageKeys = 'en' | 'ar' | 'ku' | 'ru';
 
+export type LanguageCode = LanguageKeys | (string & {});
+
 export const languageMapper = {
   ar: ARABIC_JSON_FILE,
   en: ENGLISH_JSON_FILE,

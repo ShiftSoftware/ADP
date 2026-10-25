@@ -1,4 +1,5 @@
 using ShiftSoftware.ADP.Models;
+using ShiftSoftware.ADP.Models.Enums;
 using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.ServiceMenu;
@@ -31,15 +32,15 @@ public class ServiceMenuVariantDTO
     public decimal? DiscountPercentage { get; set; }
 
     /// <summary>
-    /// The variant's menu is offered free of charge.
+    /// How the variant's menu is offered — paid, free or under contract.
     ///
-    /// <para><b>The prices below are unaffected.</b> Nothing in the pipeline zeroes a total for a free
-    /// variant, so a UI that shows the line totals verbatim quotes a customer for a menu the catalog calls
-    /// free. Read this first and render "free" instead.</para>
+    /// <para><b>The prices below are unaffected.</b> Nothing in the pipeline zeroes a total for a free or
+    /// contract variant, so a UI that shows the line totals verbatim quotes a customer for a menu the
+    /// catalog calls free. Read this first and render accordingly.</para>
     ///
-    /// <para>Filter by it with <see cref="ServiceMenuLookupRequest.FreeFilter"/>.</para>
+    /// <para>Filter by it with <see cref="ServiceMenuLookupRequest.MenuTypes"/>.</para>
     /// </summary>
-    public bool IsFree { get; set; }
+    public MenuType MenuType { get; set; }
 
     /// <summary>
     /// The scheduled services, one per service interval the variant is available for, ordered by

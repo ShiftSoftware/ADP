@@ -1,4 +1,4 @@
-import { Component, Element, Host, Prop, h } from '@stencil/core';
+import { Component, Element, Host, Prop, State, h } from '@stencil/core';
 
 export type PopoverAppearance = 'vanilla' | 'material' | 'soft' | 'sharp' | 'minimal';
 export type PopoverColorScheme = 'light' | 'dark' | 'auto';
@@ -35,6 +35,8 @@ export class ShiftPopoverPanel {
   @Prop({ reflect: true }) colorScheme: PopoverColorScheme = 'light';
   @Prop({ reflect: true }) size: PopoverSize = 'md';
 
+  @State() slotVersion: number = 0;
+
   private focusedToken = 0;
   private closingWithFocus = false;
 
@@ -56,6 +58,8 @@ export class ShiftPopoverPanel {
   }
 
   render() {
+    const scrollsInside = Array.from(this.el.children).some(child => child.localName === 'shift-select-sheet');
+
     return (
       <Host
         id={this.panelId || undefined}
@@ -73,9 +77,10 @@ export class ShiftPopoverPanel {
           data-open={this.open ? '' : undefined}
           data-sheet={this.sheet ? '' : undefined}
           data-side={this.side}
+          data-inner-scroll={scrollsInside ? '' : undefined}
           onKeyDown={(event: KeyboardEvent) => this.handlers?.keydown(event)}
         >
-          <slot />
+          <slot onSlotchange={() => this.slotVersion++} />
         </div>
       </Host>
     );

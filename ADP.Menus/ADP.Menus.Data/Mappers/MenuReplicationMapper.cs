@@ -86,6 +86,10 @@ public class MenuReplicationMapper : ShiftMapperBase
             // MenuVariantCosmosModel.
             .ForMember(d => d.MenuIsDeleted, opt => opt.MapFrom(e => e.Menu != null && e.Menu.IsDeleted))
 
+            // The entity carries the menus module's own MenuType and the document ADP.Models' one; same names and
+            // values, but different types, which the name match silently skips — so the cast is spelled out.
+            .ForMember(d => d.MenuType, opt => opt.MapFrom(e => (ShiftSoftware.ADP.Models.Enums.MenuType)e.MenuType))
+
             // Owned by the variant and never queried alone. Carried with their delete flags so the generator, not
             // this projection, decides which country rate applies.
             .ForMember(d => d.CountryLabourRates, opt => opt.MapFrom(e => e.LabourRates

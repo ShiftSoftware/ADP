@@ -27,8 +27,8 @@ public class ServiceMenuLineDTO
     public string LabourCode { get; set; }
 
     /// <summary>
-    /// The service interval's description for a scheduled line; the item's or group's name for a
-    /// standalone one.
+    /// The service interval's description for a scheduled line — the one authored for the variant's
+    /// <c>MenuType</c>; the item's or group's name for a standalone one.
     /// </summary>
     public string Description { get; set; }
 

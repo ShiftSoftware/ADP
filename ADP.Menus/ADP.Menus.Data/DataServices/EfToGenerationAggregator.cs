@@ -123,7 +123,7 @@ public static class EfToGenerationAggregator
         StandaloneMenuPostfix = source.StandaloneMenuPostfix,
         LabourRate = source.LabourRate,
         DiscountPercentage = source.DiscountPercentage,
-        IsFree = source.IsFree,
+        MenuType = (ShiftSoftware.ADP.Models.Enums.MenuType)source.MenuType,
         HasStandaloneItems = source.HasStandaloneItems,
         CountryLabourRates = source.LabourRates
             .Where(x => !x.IsDeleted)
@@ -244,7 +244,9 @@ public static class EfToGenerationAggregator
         intervals[source.ID] = new MenuGenerationServiceInterval
         {
             Code = source.Code,
-            Description = source.Description,
+            PaidDescription = source.PaidDescription,
+            FreeDescription = source.FreeDescription,
+            ContractDescription = source.ContractDescription,
             ValueInMeter = source.ValueInMeter,
 
             // Carried for consumers; the generator never uses it to decide group membership.

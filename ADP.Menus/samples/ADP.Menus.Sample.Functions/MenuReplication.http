@@ -86,17 +86,18 @@ GET {{host}}/api/menu/{{basicModelCode}}?language=ar
 ### `hasUnpricedParts: true`, so the total is understated rather than silently wrong.
 GET {{host}}/api/menu/{{basicModelCode}}?countryId=2
 
-### Only the variants authored FREE OF CHARGE (All | FreeOnly | PaidOnly; All is the default).
-### It selects VARIANTS — an excluded variant contributes neither its scheduled nor its standalone
-### services — and it changes NO price: a free variant's lines carry the same totals any other variant's
-### would, with `isFree: true` beside them. Render "free" from the flag; do not print the total.
+### Only the variants authored FREE OF CHARGE. `menuTypes` takes any subset of Paid | Free | Contract,
+### comma-separated or repeated; absent returns every variant. It selects VARIANTS — an excluded variant
+### contributes neither its scheduled nor its standalone services — and it changes NO price: a free
+### variant's lines carry the same totals any other variant's would, with `menuType: "Free"` beside them.
+### Render "free" from the type; do not print the total.
 ###
 ### A filter that excludes every variant answers with no variants and `notFound: false`. The model HAS a
 ### menu; this request asked for a part of it that is empty.
-GET {{host}}/api/menu/{{basicModelCode}}?freeFilter=FreeOnly
+GET {{host}}/api/menu/{{basicModelCode}}?menuTypes=Free
 
-### ...and its complement: everything NOT flagged free.
-GET {{host}}/api/menu/{{basicModelCode}}?freeFilter=PaidOnly
+### ...and everything that is NOT free.
+GET {{host}}/api/menu/{{basicModelCode}}?menuTypes=Paid,Contract
 
 ### ─────────────────── or reach the same menu from a VIN ───────────────────
 
@@ -138,10 +139,10 @@ GET {{host}}/api/vehicle/{{vin}}?countryId=2
 ### endpoint must fix it server-side, or leave it unset and let the resolver decide.
 GET {{host}}/api/vehicle/{{vin}}?transferRate=1.15
 
-### The free-of-charge filter, same three values as the menu endpoint. Every returned line carries
-### `isFree` (the variant's flag, travelling on the line because the flat shape has no variant object),
+### The menu-type filter, same values as the menu endpoint. Every returned line carries `menuType`
+### (the variant's type, travelling on the line because the flat shape has no variant object),
 ### so a caller can equally ask for everything and group client-side.
 ###
 ### Excluding every variant leaves `status: "Found"` with no services — NOT `NotFound`, which is reserved
 ### for a model that has no menu at all and is counted as a join miss.
-GET {{host}}/api/vehicle/{{vin}}?freeFilter=FreeOnly
+GET {{host}}/api/vehicle/{{vin}}?menuTypes=Free

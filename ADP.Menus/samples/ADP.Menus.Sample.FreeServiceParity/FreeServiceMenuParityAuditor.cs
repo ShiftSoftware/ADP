@@ -4,13 +4,14 @@ using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.ServiceMenu;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Lookup.Services.Services;
+using ShiftSoftware.ADP.Models.Enums;
 using System.Globalization;
 
 namespace ShiftSoftware.ADP.Menus.Sample.FreeServiceParity;
 
 /// <summary>
 /// The audit itself. Each batch is one REAL bulk vehicle lookup — the service menu attached with
-/// <c>Include = true</c> and <c>FreeFilter = FreeOnly</c>, so only the variants flagged free are
+/// <c>Include = true</c> and <c>MenuTypes = [Free]</c>, so only the variants typed free are
 /// generated — and the free service items and the menu being compared come out of the same
 /// <c>VehicleLookupDTO</c>, produced by the same pipeline the deployment serves.
 ///
@@ -124,7 +125,7 @@ public class FreeServiceMenuParityAuditor(
             ServiceMenuOptions = new VehicleServiceMenuRequestOptions
             {
                 Include = true,
-                FreeFilter = ServiceMenuFreeFilter.FreeOnly,
+                MenuTypes = [MenuType.Free],
                 CountryID = source?.ServiceMenuOptions?.CountryID,
                 TransferRate = source?.ServiceMenuOptions?.TransferRate,
             },

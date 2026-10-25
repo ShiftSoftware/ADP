@@ -170,9 +170,9 @@ internal static class MenuGenerationRequestFixture
             {
                 Intervals = new Dictionary<long, MenuGenerationServiceInterval>
                 {
-                    [501] = new MenuGenerationServiceInterval { Code = "S01", Description = "Plain description", ValueInMeter = 10000, GroupID = 10 },
-                    [502] = new MenuGenerationServiceInterval { Code = "S02", Description = """{"en":"Description EN","ar":"Description AR"}""", ValueInMeter = 20000, GroupID = 10 },
-                    [503] = new MenuGenerationServiceInterval { Code = "S03", Description = "Third description", ValueInMeter = 30000, GroupID = 20 },
+                    [501] = new MenuGenerationServiceInterval { Code = "S01", PaidDescription = "Plain description", ValueInMeter = 10000, GroupID = 10 },
+                    [502] = new MenuGenerationServiceInterval { Code = "S02", PaidDescription = """{"en":"Description EN","ar":"Description AR"}""", ValueInMeter = 20000, GroupID = 10 },
+                    [503] = new MenuGenerationServiceInterval { Code = "S03", PaidDescription = "Third description", ValueInMeter = 30000, GroupID = 20 },
                 },
                 Groups = new Dictionary<long, MenuGenerationServiceIntervalGroup>
                 {

@@ -1,4 +1,5 @@
 import { LanguageKeys } from '~features/multi-lingual';
+import { packLanguageFromUrl } from '~features/multi-lingual/language-packs';
 
 const LANGUAGE_MAP: Record<string, LanguageKeys> = {
   en: 'en',
@@ -39,5 +40,6 @@ export default function getLanguageFromUrl(): LanguageKeys {
     }
   }
 
-  return 'en';
+  // A pack code is outside LanguageKeys, but every language prop accepts any code at runtime.
+  return (packLanguageFromUrl(queryLang, path) as LanguageKeys) ?? 'en';
 }

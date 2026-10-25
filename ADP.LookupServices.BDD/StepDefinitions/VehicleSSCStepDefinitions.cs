@@ -3,6 +3,7 @@ using Reqnroll;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Lookup.Services.Evaluators;
+using ShiftSoftware.ADP.Models.Enums;
 using Xunit;
 
 namespace LookupServices.BDD.StepDefinitions;
@@ -41,6 +42,17 @@ public class VehicleSSCStepDefinitions
 
             _context.Options.SSCInterchangeableLaborCodeGroups.Add(codes);
         }
+    }
+
+    [Given("qualifying SSC warranty claim statuses are {string}")]
+    public void GivenQualifyingSscWarrantyClaimStatusesAre(string statuses)
+    {
+        // Comma-separated ClaimStatus names, the way a host would declare
+        // LookupOptions.SSCQualifyingWarrantyClaimStatuses.
+        _context.Options.SSCQualifyingWarrantyClaimStatuses = statuses
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(Enum.Parse<ClaimStatus>)
+            .ToList();
     }
 
     [Given("SSC evaluation tracing is requested")]

@@ -213,6 +213,48 @@
   padding: 12px 14px;
   border-radius: 8px;
   margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.survey-screen__error-text {
+  margin: 0;
+  flex: 1 1 16rem;
+}
+
+/* A closing screen waiting for its submit to be accepted. Quiet: it is usually on
+ * screen for a moment, and a spinner would make that moment feel longer. */
+.survey-screen__sending {
+  margin: 0;
+  color: #555;
+}
+
+/* States that replace the screen's content (sending, the thank-you, the end states) and
+ * the submit-failure message fade in rather than pop. */
+.survey-screen--enter,
+.survey-screen__error--enter {
+  animation: survey-enter 0.2s ease-out;
+}
+
+@keyframes survey-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .survey-screen--enter,
+  .survey-screen__error--enter {
+    animation: none;
+  }
 }
 
 .survey-question-slot--invalid {

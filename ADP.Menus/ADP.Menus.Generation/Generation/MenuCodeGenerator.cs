@@ -97,8 +97,9 @@ public static class MenuCodeGenerator
                 LineType = MenuLineType.Periodic,
                 Code = code,
                 LabourCode = labourCode,
-                // Verbatim, NOT language-resolved — matches the source.
-                Description = interval.Description,
+                // The variant's menu type picks the description; verbatim, NOT language-resolved — matches
+                // the source.
+                Description = interval.DescriptionFor(variant.MenuType),
 
                 MenuCodePrefix = menuPrefix,
                 MenuCodeSegment = interval.Code,
@@ -120,7 +121,7 @@ public static class MenuCodeGenerator
                 Model = variant.Model,
                 VariantID = variant.VariantID,
                 VariantName = variant.VariantName,
-                IsFree = variant.IsFree,
+                MenuType = variant.MenuType,
 
                 LabourRate = ResolveLabourRate(variant, config),
                 PrimaryLabourRate = variant.LabourRate,
@@ -199,7 +200,7 @@ public static class MenuCodeGenerator
                 Model = variant.Model,
                 VariantID = variant.VariantID,
                 VariantName = variant.VariantName,
-                IsFree = variant.IsFree,
+                MenuType = variant.MenuType,
 
                 LabourRate = ResolveLabourRate(variant, config),
                 PrimaryLabourRate = variant.LabourRate,
@@ -261,7 +262,7 @@ public static class MenuCodeGenerator
                 Model = variant.Model,
                 VariantID = variant.VariantID,
                 VariantName = variant.VariantName,
-                IsFree = variant.IsFree,
+                MenuType = variant.MenuType,
 
                 LabourRate = ResolveLabourRate(variant, config),
                 PrimaryLabourRate = variant.LabourRate,

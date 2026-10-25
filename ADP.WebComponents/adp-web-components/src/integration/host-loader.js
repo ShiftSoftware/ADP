@@ -1,4 +1,6 @@
 const documentStateKey = Symbol.for('shiftsoftware.adp-web-components.integration-state');
+const hostConfigKey = Symbol.for('shiftsoftware.adp-web-components.host-config');
+const formValidityKey = Symbol.for('shiftsoftware.adp-web-components.form-validity');
 
 function getDocumentState() {
   const global = globalThis;
@@ -79,4 +81,54 @@ export async function loadIntegrationManifest(manifestUrl) {
   }
 
   return response.json();
+}
+
+function getHostConfig() {
+  const global = globalThis;
+  const config = global[hostConfigKey];
+  if (config && typeof config === 'object' && !Array.isArray(config)) return config;
+
+  global[hostConfigKey] = {};
+  return global[hostConfigKey];
+}
+
+// Same list the components read in src/features/multi-lingual/language-packs.ts; this file cannot import it.
+function registerGlobalLanguagePacks(config, input) {
+  if (input === undefined || input === null || input === '') return;
+
+  const previous = config.languagePacks;
+  const list = previous === undefined || previous === null || previous === '' ? [] : Array.isArray(previous) ? previous : [previous];
+  config.languagePacks = [...list.filter(entry => entry !== input), input];
+}
+
+/** Document-wide settings read by every ADP tag; unknown keys are ignored so older builds accept newer options. */
+export function configureAdpHost(options = {}) {
+  const config = getHostConfig();
+
+  if (options && Object.prototype.hasOwnProperty.call(options, 'languagePacks')) registerGlobalLanguagePacks(config, options.languagePacks);
+
+  if (options && Object.prototype.hasOwnProperty.call(options, 'fetch')) {
+    if (typeof options.fetch === 'function') config.fetch = options.fetch;
+    else delete config.fetch;
+  }
+
+  for (const flag of ['formEvents', 'formValidity', 'formSize']) {
+    if (!options || !Object.prototype.hasOwnProperty.call(options, flag)) continue;
+    if (options[flag] === true) config[flag] = true;
+    else delete config[flag];
+  }
+
+  if (options && Object.prototype.hasOwnProperty.call(options, 'assetsBaseUrl')) {
+    const base = options.assetsBaseUrl instanceof URL ? options.assetsBaseUrl.href : options.assetsBaseUrl;
+    if (typeof base === 'string' && base) config.assetsBaseUrl = base;
+    else delete config.assetsBaseUrl;
+  }
+}
+
+/** The current step's validity of a form created after configureAdpHost; computed on demand, it never shows errors. */
+export async function getFormValidity(form) {
+  const read = globalThis[formValidityKey]?.get?.(form);
+  if (typeof read === 'function') return read();
+
+  return { valid: false, step: 1, invalidFields: [] };
 }

@@ -1,5 +1,6 @@
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.ServiceMenu;
 using ShiftSoftware.ADP.Models;
+using ShiftSoftware.ADP.Models.Enums;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
@@ -38,16 +39,16 @@ public class VehicleServiceMenuLineDTO
     public string VariantName { get; set; }
 
     /// <summary>
-    /// The variant's menu is offered free of charge. A variant-level flag travelling on the line, like
-    /// <see cref="VariantName"/> — every line of a free variant carries it.
+    /// How the variant's menu is offered — paid, free or under contract. A variant-level value travelling
+    /// on the line, like <see cref="VariantName"/> — every line of a variant carries it.
     ///
-    /// <para><b>The money fields below are unaffected.</b> Nothing zeroes a total for a free variant, so a
-    /// UI that renders <see cref="TotalPrice"/> verbatim quotes a customer for a menu the catalog calls
-    /// free. Read this first and render "free" instead.</para>
+    /// <para><b>The money fields below are unaffected.</b> Nothing zeroes a total for a free or contract
+    /// variant, so a UI that renders <see cref="TotalPrice"/> verbatim quotes a customer for a menu the
+    /// catalog calls free. Read this first and render accordingly.</para>
     ///
-    /// <para>Filter by it with <c>VehicleServiceMenuRequestOptions.FreeFilter</c>.</para>
+    /// <para>Filter by it with <c>VehicleServiceMenuRequestOptions.MenuTypes</c>.</para>
     /// </summary>
-    public bool IsFree { get; set; }
+    public MenuType MenuType { get; set; }
 
     /// <summary>
     /// Stable identity of this line, independent of language — use it to correlate the same service across
@@ -62,8 +63,8 @@ public class VehicleServiceMenuLineDTO
     public string LabourCode { get; set; }
 
     /// <summary>
-    /// The service interval's description for a scheduled service; the item's or group's name for a standalone
-    /// one.
+    /// The service interval's description for a scheduled service — the one authored for <see cref="MenuType"/>;
+    /// the item's or group's name for a standalone one.
     /// </summary>
     public string Description { get; set; }
 

@@ -105,7 +105,7 @@ export async function getPartLookup(context: PartLookupComponent, generalProps: 
   } else {
     if (!context?.endpoint) throw new Error('noBaseUrl');
 
-    const fetchConfig: FetchFromProps = { signal: context?.abortController.signal, additionalPath: '/' + context.searchString };
+    const fetchConfig: FetchFromProps = { signal: context?.abortController.signal, additionalPath: '/' + context.searchString, host: context?.el };
 
     const response = await fetchFrom(context.endpoint, fetchConfig);
 

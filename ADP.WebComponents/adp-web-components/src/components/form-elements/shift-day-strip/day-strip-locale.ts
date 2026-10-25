@@ -1,4 +1,5 @@
 import { CalendarLanguage, CalendarNumerals, formatDigits } from '../shift-calendar/calendar-locale';
+import { bundledStrings } from '~features/multi-lingual/language-packs';
 
 export interface DayStripStrings {
   days: string;
@@ -35,6 +36,7 @@ const STRINGS: Record<CalendarLanguage, DayStripStrings> = {
   },
 };
 
-export const dayStripStrings = (language: CalendarLanguage): DayStripStrings => STRINGS[language] ?? STRINGS.en;
+// Not a locale file: a pack's booking strings reach these keys (days, earlierDays, laterDays, monthsShort).
+export const dayStripStrings = (language: string): DayStripStrings => bundledStrings('booking', language, STRINGS, 'day-strip');
 
 export const shortMonth = (month: number, strings: DayStripStrings, numerals: CalendarNumerals): string => formatDigits(strings.monthsShort[month - 1], numerals);

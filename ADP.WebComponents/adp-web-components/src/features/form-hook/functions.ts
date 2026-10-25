@@ -7,6 +7,7 @@ import { AnyObjectSchema } from 'yup';
 import { Grecaptcha } from '~lib/recaptcha';
 import { formatISO, parse } from 'date-fns';
 import { now } from '~lib/clock';
+import { adpFetch, afterFormCreated, afterFormReady, emitFormLoading, formErrorEmitter, formSubmittedEmitter, requestInfo } from '~features/host-bridge';
 
 /**
  * `data` is optional on the structure type, and `Object.hasOwn(undefined, ...)`
@@ -50,12 +51,14 @@ export type FormErrorHandler = {
 };
 
 export const formErrorHandler = async (formContext: FormErrorHandler, error: any) => {
+  const emitError = formErrorEmitter(formContext, error);
   const message = error?.message || error?.Message?.Body || error?.message?.body || formContext.locale?.sharedFormLocales?.errors?.wildCard || '';
 
   let openDefaultDialog = true;
   if (formContext?.errorCallback) openDefaultDialog = !!(await formContext.errorCallback(error, message));
 
   if (openDefaultDialog) formContext.errorMessage = message;
+  emitError(message);
 };
 
 export type FormLoadingHandler = {
@@ -66,6 +69,7 @@ export type FormLoadingHandler = {
 export const formLoadingHandler = async (formContext: FormLoadingHandler, isLoading: boolean) => {
   formContext.isLoading = isLoading;
   if (formContext.loadingChanges) formContext.loadingChanges(isLoading);
+  emitFormLoading(formContext, isLoading);
 };
 
 export type FormSuccessHandler = {
@@ -79,6 +83,7 @@ export type FormSuccessHandler = {
 };
 
 export const formSuccessHandler = async (formContext: FormSuccessHandler, data: any) => {
+  const emitSubmitted = formSubmittedEmitter(formContext);
   let openDefaultDialog = true;
   if (formContext.successCallback) openDefaultDialog = !!(await formContext.successCallback(data, formContext.locale['Form submitted successfully.'] || ''));
 
@@ -96,6 +101,7 @@ export const formSuccessHandler = async (formContext: FormSuccessHandler, data: 
       window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' });
     }
   }
+  emitSubmitted(data);
 };
 
 export type FormDidLoadHandler<B> = {
@@ -142,6 +148,7 @@ export const formDidLoadHandler = async <T, B>(formContext: FormDidLoadHandler<B
   }
 
   formContext.form = new FormHook<B>(formContext, validator);
+  afterFormCreated(formContext);
 };
 
 export type FormGetFormHandler = {
@@ -166,6 +173,7 @@ export type FormStructureRenderedHandler = {
 
 export const formStructureRenderedHandler = async (formContext: FormStructureRenderedHandler, isRendered: boolean) => {
   if (isRendered) formContext.formReadyCallback?.();
+  if (isRendered) afterFormReady(formContext);
 };
 
 declare const grecaptcha: Grecaptcha;
@@ -304,7 +312,7 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
     // Deferred uploads must land before the record is created — a failure here aborts the submit.
     await Promise.all(Object.values(context.form.pendingRequests).map(req => req()));
 
-    const response = await fetch(requestEndpoint, {
+    const response = await adpFetch(requestInfo('submit', context.el), requestEndpoint, {
       headers: header,
       method: context.structure?.data?.requestMethod || 'POST',
 

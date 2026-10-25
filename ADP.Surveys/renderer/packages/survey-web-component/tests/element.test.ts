@@ -81,6 +81,32 @@ describe('<shift-survey>', () => {
     document.body.removeChild(el);
   });
 
+  it('api-mode: an answered link (409) reads "Already answered" in the link language, not the API wording', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ Message: 'This survey has already been completed.' }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const el = document.createElement('shift-survey') as ShiftSurveyElement;
+      el.setAttribute('api-base', 'https://surveys.example/api/Surveys');
+      el.setAttribute('instance-id', '00000000-0000-0000-0000-000000000001');
+      el.setAttribute('locale', 'ar');
+      document.body.appendChild(el);
+
+      await waitFor(() => {
+        expect(el.shadowRoot!.querySelector('.survey-screen__title')?.textContent).toBe('تمت الإجابة مسبقاً');
+      });
+      expect(el.shadowRoot!.textContent).not.toContain('already been completed');
+      expect(el.shadowRoot!.querySelector('.survey-root')!.getAttribute('dir')).toBe('rtl');
+      document.body.removeChild(el);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('shadow DOM has a style tag injected (content is inlined at build time)', () => {
     // NOTE: we verify the `<style>` tag exists with the data-shift-survey
     // marker; content is empty in vitest (Vite's `?inline` transform doesn't

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "adp-web-components",
-  "packageVersion": "0.4.17",
+  "packageVersion": "0.4.19",
   "outputFamily": "per-component",
   "components": [
     {
@@ -1942,13 +1942,23 @@
       "wireContract": null,
       "supportedLocales": ["en", "ar", "ku", "ru"],
       "host": {
-        "properties": ["anchor", "open", "label", "offset", "trigger", "disabled", "placement", "mobileSheet", "language", "appearance", "colorScheme", "size"],
+        "properties": ["anchor", "open", "label", "offset", "trigger", "disabled", "placement", "mobileSheet", "alwaysSheet", "language", "appearance", "colorScheme", "size"],
         "methods": ["show", "hide", "toggle"],
         "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["portaled panel holding the slotted content", "anchored positioning and bottom sheet", "dismissal and focus return", "appearance and colour scheme of the panel"]
       },
       "api": {
         "props": [
+          {
+            "name": "alwaysSheet",
+            "attribute": "always-sheet",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Off (default). On: the panel is a bottom sheet with a backdrop at every width, whatever mobileSheet says. A select with selectDrawer always opens its options this way."
+          },
           {
             "name": "anchor",
             "attribute": "anchor",

@@ -49,6 +49,6 @@
 		     and 2026.10.7.2 is untested; lower it only with a build to prove it. Hosts above the
 		     floor still resolve their own higher version, because a floor only ever widens. Raise it
 		     again only when Darlastic needs a newer API, knowing that drops every host below it. -->
-		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.10.7.2" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.10.20.1" />
 	</ItemGroup>
 </Project>

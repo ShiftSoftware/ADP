@@ -35,7 +35,7 @@ Refers to a Labor Line on an Order (Typically a Job Card on Workshop Module).
 | ItemStatus <div><strong>``string``</strong></div> | The status of this line item (e.g., Open, Closed). |
 | OrderStatus <div><strong>``string``</strong></div> | The status of the parent order (e.g., Open, Completed). |
 | NextServiceDate <div><strong>``DateTime?``</strong></div> | The date for the next scheduled service of the vehicle associated with this labor line. |
-| NumberOfPartLines <div><strong>``int``</strong></div> | The number of corresponding part lines associated with the parent order of this line. |
+| NumberOfPartLines <div><strong>``int``</strong></div> | The number of corresponding part lines associated with the parent order of this line. A negative value means the source does not know it, and Strong consistency then does not check it. |
 | CompanyIntegrationID <div><strong>``string``</strong></div> | An External Identifier that can be used for system to system Integration |
 | BranchIntegrationID <div><strong>``string``</strong></div> | An External Identifier that can be used for system to system Integration |
 | Odometer <div><strong>``int?``</strong></div> | The odometer reading of the vehicle at the time this job was opened. |

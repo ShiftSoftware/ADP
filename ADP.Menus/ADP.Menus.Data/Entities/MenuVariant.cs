@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ShiftSoftware.ADP.Menus.Shared.Enums;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.Model.Replication;
 using ShiftSoftware.ShiftEntity.Model.Flags;
@@ -28,10 +29,11 @@ public class MenuVariant : ShiftEntity<MenuVariant>, IShiftEntityReplication
     public decimal? DiscountPercentage { get; set; }
 
     /// <summary>
-    /// The variant's menu is offered free of charge. Authored here and carried as a flag only — it does
-    /// not change any generated price, so a consumer that shows "free" decides that for itself.
+    /// How the variant's menu is offered — paid, free or under contract. Authored here and carried as a
+    /// label only — it does not change any generated price, so a consumer that shows "free" decides that
+    /// for itself.
     /// </summary>
-    public bool IsFree { get; set; }
+    public MenuType MenuType { get; set; }
 
     public bool HasStandaloneItems { get; set; }
 

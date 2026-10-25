@@ -76,12 +76,10 @@ public class VehicleMenuLookupFunctions
                     ? countryId
                     : null,
 
-                // All | FreeOnly | PaidOnly. Unlike the transfer rate below, this one is safe to bind from
-                // an untrusted caller: it narrows which variants come back and moves no money. Anything
-                // unparseable falls back to All rather than 400-ing.
-                FreeFilter = Enum.TryParse<ServiceMenuFreeFilter>(request.Query["freeFilter"].FirstOrDefault(), ignoreCase: true, out var freeFilter)
-                    ? freeFilter
-                    : ServiceMenuFreeFilter.All,
+                // ?menuTypes=Paid,Free,Contract — any subset; absent includes every variant. Unlike the
+                // transfer rate below, this one is safe to bind from an untrusted caller: it narrows which
+                // variants come back and moves no money. Anything unparseable is dropped rather than 400-ing.
+                MenuTypes = MenuTypeQuery.Parse(request),
 
                 // Bound from the query string HERE ONLY BECAUSE THIS IS A FUNCTION-KEY-PROTECTED SAMPLE.
                 // The transfer rate scales the consumable and therefore the price quoted to a customer, and

@@ -82,7 +82,7 @@ public class FreeServiceParityRowModel
     public DateTime? ItemExpiresAt { get; set; }
     public DateTimeOffset? ItemClaimDate { get; set; }
 
-    // ---- the free menu line the item's code found (vehicle lookup ServiceMenu, FreeOnly) ----
+    // ---- the free menu line the item's code found (vehicle lookup ServiceMenu, MenuTypes = [Free]) ----
     public long? MenuVariantId { get; set; }
     public string MenuVariantName { get; set; } = string.Empty;
     public string MenuLineKey { get; set; } = string.Empty;

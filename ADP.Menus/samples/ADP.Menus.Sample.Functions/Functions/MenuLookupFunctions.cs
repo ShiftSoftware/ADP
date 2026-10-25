@@ -66,11 +66,10 @@ public class MenuLookupFunctions
             Language = request.Query["language"].FirstOrDefault(),
             CountryID = long.TryParse(request.Query["countryId"].FirstOrDefault(), out var countryId) ? countryId : null,
 
-            // All | FreeOnly | PaidOnly. Anything unparseable falls back to All rather than 400-ing:
-            // this narrows a result set, so the safe failure is returning too much, not too little.
-            FreeFilter = Enum.TryParse<ServiceMenuFreeFilter>(request.Query["freeFilter"].FirstOrDefault(), ignoreCase: true, out var freeFilter)
-                ? freeFilter
-                : ServiceMenuFreeFilter.All,
+            // ?menuTypes=Paid,Free,Contract — any subset; absent returns every variant. Anything
+            // unparseable is dropped rather than 400-ing: this narrows a result set, so the safe failure is
+            // returning too much, not too little.
+            MenuTypes = MenuTypeQuery.Parse(request),
         };
 
         try

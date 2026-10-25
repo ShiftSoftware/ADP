@@ -407,7 +407,7 @@ public class VehicleLookupService
         {
             VariantID = line.VariantID,
             VariantName = line.VariantName,
-            IsFree = line.IsFree,
+            MenuType = line.MenuType,
 
             LineKey = line.LineKey,
             Code = line.Code,

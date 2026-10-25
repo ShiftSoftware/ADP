@@ -162,7 +162,7 @@ public static class FreeServiceMenuParityRunner
         Add("Run", "ElapsedSeconds", Math.Round(elapsed.TotalSeconds));
         Add("Run", "Database", connectionString);
         Add("Run", "InvoiceDateFrom", options.InvoiceDateFrom?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "(none - all VINs)");
-        Add("Run", "MenuVariants", "FreeOnly");
+        Add("Run", "MenuVariants", "Free");
         Add("Run", "ConditionalFreeItems", "excluded");
         Add("Run", "ComparedProperties", "MenuCode + Mileage");
         Add("Run", "Language", options.Language);

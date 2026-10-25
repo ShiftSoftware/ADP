@@ -1,3 +1,4 @@
+using ShiftSoftware.ADP.Models.Enums;
 using System;
 using System.Collections.Generic;
 
@@ -72,11 +73,12 @@ public class MenuGenerationVariant
     public decimal? DiscountPercentage { get; set; }
 
     /// <summary>
-    /// The variant's menu is offered free of charge. The generator stamps it onto every line it produces
-    /// and does nothing else with it — no price, code or inclusion rule reads it. A consumer that wants
-    /// "free menus only" filters the variants BEFORE generating rather than asking for it here.
+    /// How the variant's menu is offered — paid, free or under contract. The generator stamps it onto
+    /// every line it produces and does nothing else with it — no price, code or inclusion rule reads it. A
+    /// consumer that wants "free menus only" filters the variants BEFORE generating rather than asking for
+    /// it here.
     /// </summary>
-    public bool IsFree { get; set; }
+    public MenuType MenuType { get; set; }
 
     /// <summary>When false the variant contributes no standalone lines at all.</summary>
     public bool HasStandaloneItems { get; set; }
@@ -215,10 +217,28 @@ public class MenuGenerationServiceInterval
     public string Code { get; set; }
 
     /// <summary>
-    /// Used verbatim as a periodic line's description — NOT language-resolved, matching the source
-    /// behaviour. A multi-language value stored here surfaces raw.
+    /// The periodic-line description for a <see cref="MenuType.Paid"/> variant. Which of the three a line
+    /// gets is <see cref="DescriptionFor"/>'s call. Used verbatim — NOT language-resolved, matching the
+    /// source behaviour. A multi-language value stored here surfaces raw.
     /// </summary>
-    public string Description { get; set; }
+    public string PaidDescription { get; set; }
+
+    /// <summary>The periodic-line description for a <see cref="MenuType.Free"/> variant.</summary>
+    public string FreeDescription { get; set; }
+
+    /// <summary>The periodic-line description for a <see cref="MenuType.Contract"/> variant.</summary>
+    public string ContractDescription { get; set; }
+
+    /// <summary>
+    /// The description a periodic line of a variant typed <paramref name="menuType"/> carries. A value
+    /// outside the enum reads as <see cref="MenuType.Paid"/>, the same default the type itself has.
+    /// </summary>
+    public string DescriptionFor(MenuType menuType) => menuType switch
+    {
+        MenuType.Free => FreeDescription,
+        MenuType.Contract => ContractDescription,
+        _ => PaidDescription,
+    };
 
     public int ValueInMeter { get; set; }
     public long GroupID { get; set; }

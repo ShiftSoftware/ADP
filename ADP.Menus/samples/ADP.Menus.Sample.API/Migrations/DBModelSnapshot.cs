@@ -467,9 +467,6 @@ namespace ShiftSoftware.ADP.Menus.Sample.API.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsFree")
-                        .HasColumnType("bit");
-
                     b.Property<decimal>("LabourRate")
                         .HasPrecision(12, 2)
                         .HasColumnType("decimal(12,2)");
@@ -495,6 +492,9 @@ namespace ShiftSoftware.ADP.Menus.Sample.API.Migrations
                     b.Property<string>("MenuPrefix")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("MenuType")
+                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -841,13 +841,17 @@ namespace ShiftSoftware.ADP.Menus.Sample.API.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("ContractDescription")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTimeOffset>("CreateDate")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<long?>("CreatedByUserID")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("Description")
+                    b.Property<string>("FreeDescription")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -869,6 +873,10 @@ namespace ShiftSoftware.ADP.Menus.Sample.API.Migrations
 
                     b.Property<long?>("LastSavedByUserID")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("PaidDescription")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<long>("ServiceIntervalGroupID")
                         .HasColumnType("bigint");

@@ -14,6 +14,7 @@ using ShiftSoftware.ADP.Lookup.Services.Extensions;
 using ShiftSoftware.ADP.Lookup.Services.Services;
 using ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ADP.Menus.Generation;
+using ShiftSoftware.ADP.Menus.Shared.Enums;
 using ShiftSoftware.ADP.Menus.Sync;
 using ShiftSoftware.ADP.Menus.Sync.Extensions;
 using ShiftSoftware.ADP.Models.Service.DuckDB;
@@ -290,7 +291,7 @@ public class ServiceMenuDuckDBTests
     /// One entity graph, two storage pipelines, one menu: the Cosmos path embeds at write time
     /// (production mappers), the DuckDB path normalizes at write time and joins at read time — and
     /// the generated menus must be identical, codes, descriptions and money. Two variants (one free)
-    /// so the comparison covers variant selection too.
+    /// so the comparison covers variant selection and the menu type too.
     /// </summary>
     [Fact]
     public async Task OneGraph_TwoBackends_OneIdenticalMenu()
@@ -298,7 +299,7 @@ public class ServiceMenuDuckDBTests
         var paid = MenuGraphFixture.Build();
         var free = MenuGraphFixture.Build();
         OffsetGraph(free, 100_000);
-        free.Variants.Single().IsFree = true;
+        free.Variants.Single().MenuType = MenuType.Free;
 
         var viaCosmos = await Lookup(new StubCosmosService(_ => MergedCosmosDocuments(paid, free)))
             .GetMenuAsync(Request(MenuGraphFixture.BasicModelCode));
@@ -307,6 +308,9 @@ public class ServiceMenuDuckDBTests
         // variants with lines and priced parts — before the Zip-based comparison means anything.
         Assert.False(viaCosmos.NotFound);
         Assert.Equal(2, viaCosmos.Variants.Count);
+        Assert.Equal(
+            [ShiftSoftware.ADP.Models.Enums.MenuType.Paid, ShiftSoftware.ADP.Models.Enums.MenuType.Free],
+            viaCosmos.Variants.Select(variant => variant.MenuType).Order());
         Assert.All(viaCosmos.Variants, variant => Assert.NotEmpty(variant.PeriodicServices));
         Assert.Contains(
             viaCosmos.Variants.SelectMany(variant => variant.PeriodicServices.Concat(variant.StandaloneServices)),
@@ -331,7 +335,7 @@ public class ServiceMenuDuckDBTests
             Assert.Equal(expectedVariant.VariantID, actualVariant.VariantID);
             Assert.Equal(expectedVariant.VariantName, actualVariant.VariantName);
             Assert.Equal(expectedVariant.BrandCode, actualVariant.BrandCode);
-            Assert.Equal(expectedVariant.IsFree, actualVariant.IsFree);
+            Assert.Equal(expectedVariant.MenuType, actualVariant.MenuType);
             Assert.Equal(expectedVariant.DiscountPercentage, actualVariant.DiscountPercentage);
 
             AssertLinesEqual(expectedVariant.PeriodicServices, actualVariant.PeriodicServices);

@@ -14,7 +14,7 @@ In addition to identifying whether a vehicle is affected by a recall, the system
 This is done through a multi-source repair status check:
 
 - **Inline Data**: If the recall record itself directly indicates that the repair has been completed, this information is used.
-- **Warranty Claims**: The system also checks warranty claims (if available) to confirm completion. This is determined by validating the Labor Operation Code and the presence of the Campaign Code in the warranty notes.
+- **Warranty Claims**: The system also checks warranty claims (if available) to confirm completion. This is determined by validating the Labor Operation Code and the presence of the Campaign Code in the warranty notes. Only claims in a qualifying status count — Accepted, Certified and Invoiced by default; a deployment can set its own list with `LookupOptions.SSCQualifyingWarrantyClaimStatuses` (for example, to also count pending claims).
 - **Labor Lines**: As a final step, the system reviews labor lines retrieved from the DMS (if available) for evidence that the recall-related work has been performed.
 
 The sources are consulted in that order, and the first one that holds decides both the status and the repair date; the result names which source decided (`RepairSource`).
