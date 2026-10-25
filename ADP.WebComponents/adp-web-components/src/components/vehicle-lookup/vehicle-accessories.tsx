@@ -1,29 +1,36 @@
 import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, forceUpdate, h } from '@stencil/core';
 
 import { revealBelow } from '~lib/reveal-below';
-import { createResizeSettle } from '~lib/resize-settle';
 import { createHeightChangeAnnouncer } from '~lib/flexible-parents';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import accessoriesSchema from '~locales/vehicleLookup/accessories/type';
 
+import { AccessoryDTO } from '~types/generated/vehicle-lookup/accessory-dto';
+
 import {
-  COLLAPSED_ROWS,
   DEFAULT_HIDDEN_FIELDS,
+  DEFAULT_PAGE_SIZE,
+  PAGE_SIZE_STORAGE_KEY,
+  PageSize,
   PanelNotice,
   PanelState,
   VehicleAccessoriesPanel,
-  collapseNeedsReveal,
+  bodyOpen,
+  clampPage,
   hasRecords,
   leadNotice,
   listed,
+  pageForSize,
+  pageRows,
+  pagingNeedsReveal,
   panelBody,
+  parsePageSize,
   sameColumns,
 } from './components/VehicleAccessoriesPanel';
 
-import { parseHiddenFields } from '~features/lookup-table';
-import { closeImageViewer, ImageViewer, ImageViewerInterface, openImageViewer } from '~features/image-viewer';
+import { RowVeil, parseHiddenFields, tableSlots } from '~features/lookup-table';
 import { VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
@@ -36,7 +43,7 @@ const DEFAULT_SETTLE_MS = 480;
   tag: 'vehicle-accessories',
   styleUrl: 'vehicle-accessories.css',
 })
-export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterface, ImageViewerInterface, VehicleLookupComponent, BlazorInvokable {
+export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterface, VehicleLookupComponent, BlazorInvokable {
   // #region Localization
 
   @Prop() language: LanguageKeys = 'en';
@@ -45,6 +52,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
   async componentWillLoad() {
     this.applied = parseHiddenFields(this.hiddenFields);
+    this.pageSize = this.readPageSize();
     await this.changeLanguage(this.language);
   }
 
@@ -62,11 +70,24 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
   // #endregion
 
-  // #region Image Viewer Logic
+  // #region Image viewer (<shift-image>, portaled onto <body>)
 
+  /** The picture open in the viewer, or empty. */
   @State() expandedImage?: string = '';
 
-  originalImage: HTMLImageElement;
+  private imageViewer?: HTMLShiftImageElement;
+
+  /** Opens the viewer on `src`, growing out of the thumbnail `origin`. The same picture again while open is ignored. */
+  private openImage(origin: HTMLImageElement, src: string, label?: string, caption?: string) {
+    if (this.expandedImage === src) return;
+    this.expandedImage = src;
+    void this.imageViewer?.show(src, { origin, label, caption });
+  }
+
+  /** The viewer closed (overlay, key or hide()): the panel no longer has a picture open. */
+  private onViewerChange = (event: CustomEvent<{ open: boolean }>) => {
+    if (!event.detail.open) this.expandedImage = '';
+  };
 
   // #endregion
 
@@ -211,8 +232,9 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
       return;
     }
 
-    // Nothing is open to shut (idle, loading, a notice, an empty list): swap at once.
-    if (this.isLoading || this.leaving || panelBody(this.panelState()) !== 'rows') {
+    // Nothing is open to shut (idle, leaving, a notice, an empty list): swap at once. Rows in flight stay
+    // on screen under the skeleton, so they reshape like settled ones.
+    if (this.leaving || panelBody(this.panelState()) !== 'rows') {
       this.applied = next;
       this.reconfiguring = false;
       return;
@@ -275,102 +297,164 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
   // #endregion
 
-  // #region The disclosure: "Show all 23 accessories"
+  // #region Pages
 
-  /** The reader asked for every row. Reset to collapsed whenever a new lookup lands. */
-  @State() expanded: boolean = false;
+  /** The reader's page size, kept in this browser (localStorage) so the panel opens on it next time. */
+  @State() pageSize: PageSize = DEFAULT_PAGE_SIZE;
 
-  /** Collapsing: the extra rows stay rendered until the fold has shut, so they leave by the fold closing, not by vanishing. */
-  @State() collapsing: boolean = false;
+  @State() page: number = 0;
 
-  private collapseTimer?: ReturnType<typeof setTimeout>;
+  /** A page is changing: the values on screen are fading out; the next page is swapped in once they are out. */
+  @State() paging: boolean = false;
+
+  private pagingGeneration = 0;
+  private pagingTimer?: ReturnType<typeof setTimeout>;
   private stopFollowing?: () => void;
-  private toggled = false;
   private revealPending = false;
-  private releaseFoldAfterRender = false;
 
-  private fold(): HTMLElement | null {
-    return this.el.shadowRoot?.querySelector<HTMLElement>('.accessories-fold') ?? null;
+  /** Reads the stored size. Storage can be missing or throw (private windows, blocked site data); the default stands then. */
+  private readPageSize(): PageSize {
+    try {
+      return parsePageSize(globalThis.localStorage?.getItem(PAGE_SIZE_STORAGE_KEY));
+    } catch {
+      return DEFAULT_PAGE_SIZE;
+    }
   }
 
-  /** Back to `auto`; called only once nothing is left to disagree with the pin. */
-  private releaseFold() {
-    const fold = this.fold();
-    if (!fold) return;
-    fold.style.transition = '';
-    fold.style.removeProperty('--resize-settle-height');
+  private storePageSize(size: PageSize) {
+    try {
+      globalThis.localStorage?.setItem(PAGE_SIZE_STORAGE_KEY, String(size));
+    } catch {
+      // Not kept: the choice still applies for as long as the panel is on the page.
+    }
   }
 
-  /** Pins the fold at `from` without a transition and sends it to `to` on the stylesheet's, as lib/resize-settle does for a render. */
-  private pinFold(from: number, to: number) {
-    const fold = this.fold();
-    if (!fold) return;
-
-    fold.style.transition = 'none';
-    fold.style.setProperty('--resize-settle-height', `${from}px`);
-    // A call, never a bare read: the production minifier drops `void el.offsetHeight` as dead code.
-    fold.getBoundingClientRect();
-    fold.style.transition = '';
-    fold.style.setProperty('--resize-settle-height', `${to}px`);
-  }
-
-  private resetDisclosure() {
-    clearTimeout(this.collapseTimer);
-    this.collapseTimer = undefined;
-    this.stopFollowing?.();
-    this.stopFollowing = undefined;
-    this.revealPending = false;
-    this.toggled = false;
-    this.expanded = false;
-    this.collapsing = false;
-    this.releaseFoldAfterRender = true;
-  }
-
-  // A new vehicle lands only after the body has shut (the shared helper's one-second wait), so the
-  // reset is never seen: the rows that go are not on screen.
+  // A new vehicle lands at the end of a lookup, under the skeleton: its first page is what the cover lifts on.
   @Watch('vehicleLookup')
   onVehicleChange() {
-    this.resetDisclosure();
+    this.pagingGeneration++;
+    clearTimeout(this.pagingTimer);
+    this.paging = false;
+    this.page = 0;
   }
 
-  private expand() {
-    clearTimeout(this.collapseTimer);
-    this.collapseTimer = undefined;
-    this.collapsing = false;
-    this.toggled = true;
-    this.expanded = true;
-  }
+  /**
+   * Moves to `page` at `size`. Nothing is fetched, so there is no skeleton: when a row's content
+   * changes, the values fade out, the page swaps while they are out, and they fade back in; rows
+   * the new page adds slide open and rows it drops slide shut. When every row on screen stays (a
+   * bigger page from the first one), nothing fades and the new rows simply open below.
+   */
+  private goTo(page: number, size: PageSize) {
+    const rows = listed(this.panelState());
+    const target = clampPage(page, rows.length, size);
+    const now = pageRows(rows, this.page, this.pageSize);
+    const next = pageRows(rows, target, size);
 
-  private collapse() {
-    const fold = this.fold();
-    const button = this.el.shadowRoot?.querySelector<HTMLElement>('.accessories-more-button');
+    if (size !== this.pageSize) this.storePageSize(size);
 
-    let removed = 0;
-    if (fold) {
-      const from = fold.getBoundingClientRect().height;
-      removed = Array.from(fold.querySelectorAll<HTMLElement>('.lt-row'))
-        .slice(COLLAPSED_ROWS)
-        .reduce((sum, row) => sum + row.getBoundingClientRect().height, 0);
-      this.pinFold(from, Math.max(0, from - removed));
+    const overlap = Math.min(now.length, next.length);
+    const changes = now.slice(0, overlap).some((row, index) => row !== next[index]);
+    const generation = ++this.pagingGeneration;
+
+    const swap = () => {
+      if (generation !== this.pagingGeneration) return;
+      this.prepareReveal(next.length);
+      this.swapCause = 'page';
+      this.page = target;
+      this.pageSize = size;
+      this.paging = false;
+    };
+
+    clearTimeout(this.pagingTimer);
+    if (!changes) {
+      swap();
+      return;
     }
 
-    this.revealPending = !!button && collapseNeedsReveal(button.getBoundingClientRect().top, removed);
-
-    this.collapsing = true;
-    this.expanded = false;
-
-    clearTimeout(this.collapseTimer);
-    this.collapseTimer = setTimeout(() => {
-      this.collapseTimer = undefined;
-      this.releaseFoldAfterRender = true;
-      this.collapsing = false;
-    }, this.settleMs());
+    this.paging = true;
+    this.pagingTimer = setTimeout(swap, this.settleMs());
   }
 
-  private toggle = () => {
-    if (this.expanded) this.collapse();
-    else this.expand();
-  };
+  private onPage = (page: number) => this.goTo(page, this.pageSize);
+
+  private onPageSize = (size: PageSize) => this.goTo(pageForSize(this.page, this.pageSize, size, listed(this.panelState()).length), size);
+
+  /** Before a page that is shorter than the one on screen: whether the controls will rise off the top of the screen. */
+  private prepareReveal(nextCount: number) {
+    const root = this.el.shadowRoot;
+    const pager = root?.querySelector<HTMLElement>('.accessories-pager');
+    if (!root || !pager) return;
+
+    const removed = Array.from(root.querySelectorAll<HTMLElement>('.lt-slot[data-open="true"]'))
+      .slice(nextCount)
+      .reduce((sum, slot) => sum + slot.getBoundingClientRect().height, 0);
+
+    this.revealPending = removed > 0 && pagingNeedsReveal(pager.getBoundingClientRect().top, removed);
+  }
+
+  // #endregion
+
+  // #region Row slots: rows stay where they are while their values change
+
+  /** The page's rows as they were last rendered, and whether the body was open on them. */
+  private shownBefore: AccessoryDTO[] = [];
+  private bodyWasOpen = false;
+
+  /** Rows the body no longer holds, kept in their slots while those shut; dropped a settle later. */
+  private outgoing: AccessoryDTO[] = [];
+  private outgoingVeil: RowVeil = 'cover';
+  private outgoingTimer?: ReturnType<typeof setTimeout>;
+
+  /** How many of the current rows' slots are open; new slots start shut and are opened a frame later. */
+  private opened = 0;
+  private openPending = false;
+
+  /** What changed the rows: a lookup (rows leave under the skeleton) or a page (rows leave faded). */
+  private swapCause: 'lookup' | 'page' = 'lookup';
+  private lastVeil: RowVeil = 'none';
+
+  /**
+   * Works out, once per change of the rows on screen, which slots stay, which arrive and which
+   * leave. A slot that stays keeps its element: its values change under the cover (a lookup) or
+   * while faded (a page). Rows past the new count leave in place, still covered or faded, as their
+   * slots shut; rows past the old count arrive shut and are opened on the next frame, so they slide.
+   * When the body itself opens or shuts, it carries every row and no slot moves on its own.
+   */
+  private updateSlots(current: AccessoryDTO[], open: boolean) {
+    const before = this.shownBefore;
+    const changed = current.length !== before.length || current.some((row, index) => row !== before[index]);
+
+    if (changed) {
+      const cause = this.swapCause;
+      this.swapCause = 'lookup';
+
+      if (this.bodyWasOpen && before.length > current.length) {
+        this.outgoing = before.slice(current.length);
+        this.outgoingVeil = cause === 'page' ? this.lastVeil : 'cover';
+        clearTimeout(this.outgoingTimer);
+        this.outgoingTimer = setTimeout(() => {
+          this.outgoingTimer = undefined;
+          this.outgoing = [];
+          forceUpdate(this);
+        }, this.settleMs());
+      } else if (current.length > 0) {
+        this.outgoing = [];
+      }
+
+      if (this.bodyWasOpen && open) {
+        this.opened = Math.min(before.length, current.length);
+        this.openPending = this.opened < current.length;
+      } else {
+        this.opened = current.length;
+        this.openPending = false;
+      }
+    } else if (!open) {
+      this.opened = current.length;
+    }
+
+    this.shownBefore = current;
+    this.bodyWasOpen = open;
+  }
 
   // #endregion
 
@@ -378,8 +462,6 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
   private heightAnnouncer?: ReturnType<typeof createHeightChangeAnnouncer>;
   private layoutSignature?: string;
-
-  private resizeSettle = createResizeSettle(() => this.el.shadowRoot?.querySelectorAll<HTMLElement>('.accessories-fold') ?? []);
 
   /** Everything that moves the panel's height, joined; a render that changes none of it announces nothing. */
   private signature(): string {
@@ -393,32 +475,30 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
       listed(state).length,
       [...this.applied].sort().join(','),
       this.reconfiguring,
-      this.expanded,
-      this.collapsing,
+      this.page,
+      this.pageSize,
+      this.opened,
+      this.outgoing.length,
       this.isError,
     ].join('|');
-  }
-
-  componentWillRender() {
-    if (this.toggled) this.resizeSettle.beforeSwap();
   }
 
   componentDidRender() {
     this.announceVerdict();
 
-    if (this.toggled) {
-      this.toggled = false;
-      this.resizeSettle.afterSwap();
-    }
-
-    if (this.releaseFoldAfterRender && !this.collapsing) {
-      this.releaseFoldAfterRender = false;
-      this.releaseFold();
+    if (this.openPending) {
+      this.openPending = false;
+      // The new slots are in the document, shut; laid out once in that state so opening them is a transition, not their first style.
+      this.el.shadowRoot?.querySelector('.lt-rows')?.getBoundingClientRect();
+      requestAnimationFrame(() => {
+        this.opened = Number.MAX_SAFE_INTEGER;
+        forceUpdate(this);
+      });
     }
 
     if (this.revealPending) {
       this.revealPending = false;
-      const anchor = this.el.shadowRoot?.querySelector('.accessories-more');
+      const anchor = this.el.shadowRoot?.querySelector('.accessories-pager');
       this.stopFollowing?.();
       if (anchor) this.stopFollowing = revealBelow(anchor, this.settleMs() + 80);
     }
@@ -435,9 +515,9 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
   disconnectedCallback() {
     clearTimeout(this.retainTimer);
-    clearTimeout(this.collapseTimer);
+    clearTimeout(this.pagingTimer);
+    clearTimeout(this.outgoingTimer);
     this.stopFollowing?.();
-    this.resizeSettle.dispose();
     this.heightAnnouncer?.dispose();
   }
 
@@ -472,12 +552,19 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
     const busy = this.isLoading || this.leaving;
     this.retainBody(panelBody(state));
 
+    const open = bodyOpen(state, this.leaving, this.reconfiguring);
+    const current = panelBody(state) === 'rows' ? pageRows(listed(state), this.page, this.pageSize) : [];
+    this.updateSlots(current, open);
+    const veil: RowVeil = busy ? 'cover' : this.paging ? 'fade' : 'none';
+    this.lastVeil = veil;
+    const slots = tableSlots({ current: current.length, outgoing: this.outgoing.length, opened: this.opened, bodyOpen: open, currentVeil: veil, outgoingVeil: this.outgoingVeil });
+
     // Keeps the last sentence the strip said, so a notice that is fading out still has its words.
     this.retainedNotice = leadNotice(state, this.locale) ?? this.retainedNotice;
 
     return (
       <Host translate="no">
-        <ImageViewer closeImageViewer={() => closeImageViewer.bind(this)()} expandedImage={this.expandedImage} />
+        <shift-image ref={el => (this.imageViewer = el)} language={this.language} onViewerChange={this.onViewerChange} />
 
         <VehicleInfoLayout
           isError={this.isError}
@@ -493,13 +580,24 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
             state={state}
             verdict={verdict}
             busy={busy}
+            leaving={this.leaving}
             reconfiguring={this.reconfiguring}
             retainedBody={this.retainedBody}
             retainedNotice={this.retainedNotice}
-            expanded={this.expanded}
-            showingAll={this.expanded || this.collapsing}
-            onToggle={this.toggle}
-            onOpenMedia={(image, src) => openImageViewer.bind(this)(image, src)}
+            slotRows={[...current, ...this.outgoing]}
+            slots={slots}
+            page={this.page}
+            pageSize={this.pageSize}
+            onPage={this.onPage}
+            onPageSize={this.onPageSize}
+            onOpenMedia={(image, src) => {
+              const row = image.closest('.lt-row');
+              const identity = row?.querySelector('[data-identity="true"]')?.textContent?.trim();
+              const description = row?.querySelector('[data-grow="true"]')?.textContent?.trim();
+              // Under the picture: what it is, "C35753 · Rubber mats", from the row it was opened from.
+              const caption = [identity, description].filter(text => text && text !== '—').join(' · ');
+              this.openImage(image, src, identity ? `${this.locale.openImage} ${identity}` : this.locale.openImage, caption);
+            }}
           />
         </VehicleInfoLayout>
       </Host>

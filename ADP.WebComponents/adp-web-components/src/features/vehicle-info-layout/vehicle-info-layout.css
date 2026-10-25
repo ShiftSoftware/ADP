@@ -260,6 +260,14 @@
   transition: visibility 0s linear var(--settle);
 }
 
+/* A tab that is neither showing nor leaving is not laid out at all. Hidden tabs still receive every
+   lookup; laid out under the visible one they restyled, re-laid out and ran their loading loops on
+   every frame of it, which was most of the composite's cost (lookup-tabs.tsx, `awake`). Woken by
+   the switch before it is measured. */
+.lookup-tab[data-dormant='true'] {
+  display: none;
+}
+
 /* The panel host hides itself while parked, on the same clock as the tab that holds it: the legacy
    panels reset every property on their host with `all: initial !important`, which would make them
    visible under a hidden tab — and show the re-park of a leaving head, meant to happen unseen, as

@@ -32,10 +32,12 @@
   --violet: #755aa5;
   --violet-dark: #5f4887;
   --violet-tint: #f1ecf8;
-  /* The hovered table row: 5% of --ink over whatever the row sits on. Derived from the ink, not a
-     fixed grey, so it follows --ink if a theme ever redefines it (these panels have no dark path
-     today; the token is a light tint on a light surface), and it stays quieter than --blue-tint (an open row) and the verdict tints. */
-  --row-hover: color-mix(in srgb, var(--ink) 5%, transparent);
+  /* The hovered table row: a soft wash of the interaction blue, 6% of --blue over whatever the row
+     sits on (owner, 2026-10-25: grey read as dull; 5% then 9% of --ink before). Blue is the colour of
+     interaction (design language § 10), and at 6% it stays well under --blue-tint (about 11%, an open
+     row), so a hovered row never reads as an opened one. Derived from the token, so it follows
+     --blue if a theme redefines it. */
+  --row-hover: color-mix(in srgb, var(--blue) 6%, transparent);
   --shadow: 0 18px 45px rgba(27, 45, 61, 0.1), 0 2px 7px rgba(27, 45, 61, 0.06);
   /* The only clock: everything that appears, disappears or resizes reads this and nothing else, so
      a card settles as one movement and there is one number to turn. Was 320ms, then 820ms while

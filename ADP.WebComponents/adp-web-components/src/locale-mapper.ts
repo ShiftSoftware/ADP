@@ -57,6 +57,9 @@ const localeMapper = {
   "partLookup.manufacturer": [
     "locales/partLookup/manufacturer/"
   ],
+  "imageViewer": [
+    "locales/imageViewer/"
+  ],
   "popover": [
     "locales/popover/"
   ],

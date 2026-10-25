@@ -78,11 +78,56 @@ export type LookupTableProps<Row> = {
   strings: LookupTableStrings;
   /** The owner's `openImageViewer`; the table only reports which image was asked for. */
   onOpenMedia?: (image: HTMLImageElement, src: string) => void;
+  /**
+   * One entry per row in `rows`: whether the row's slot is open and how its values are veiled.
+   * Omitted, every row is open and unveiled. A panel that keeps its rows on screen through a lookup
+   * (owner, 2026-10-25) passes `tableSlots(...)` and keys its rows by slot, so a row is a place that
+   * stays while its values change under a cover, and only the rows that come or go slide.
+   */
+  slots?: RowSlot[];
 };
+
+/**
+ * How a row's values are veiled. `cover`: the skeleton is over them (a lookup is in flight, or the
+ * row is leaving after one); `fade`: they are faded out (a page is changing, nothing is fetched);
+ * `none`: they are read.
+ */
+export type RowVeil = 'none' | 'cover' | 'fade';
+
+export type RowSlot = { open: boolean; veil: RowVeil };
 
 // ---------------------------------------------------------------------------------------------
 // Derivations: pure, exported, unit-tested, no timers
 // ---------------------------------------------------------------------------------------------
+
+/**
+ * The slots for `current` rows followed by `outgoing` ones (rows the body held before and no longer
+ * does, rendered after the current ones so they can leave where they stood).
+ *
+ * - The current rows' first `opened` slots are open; the rest are new and start shut, and the owner
+ *   raises `opened` a frame later so they slide open rather than appear.
+ * - Outgoing rows shut on their own while the body stays open. When the body itself shuts (the
+ *   outcome has no rows), they stay open inside it, so the region leaves as one movement and not
+ *   one inside another.
+ */
+export const tableSlots = ({
+  current,
+  outgoing,
+  opened,
+  bodyOpen,
+  currentVeil,
+  outgoingVeil,
+}: {
+  current: number;
+  outgoing: number;
+  opened: number;
+  bodyOpen: boolean;
+  currentVeil: RowVeil;
+  outgoingVeil: RowVeil;
+}): RowSlot[] => [
+  ...Array.from({ length: current }, (_, index) => ({ open: index < opened, veil: currentVeil })),
+  ...Array.from({ length: outgoing }, () => ({ open: !bodyOpen, veil: outgoingVeil })),
+];
 
 /** Comma-separated field names, trimmed, empty names dropped. Moved here from the sale panel. */
 export const parseHiddenFields = (raw?: string): Set<string> =>
@@ -96,20 +141,35 @@ export const parseHiddenFields = (raw?: string): Set<string> =>
 /** Definition order kept; a hidden field removes its column entirely; unknown names are ignored. */
 export const visibleColumns = <Row,>(columns: LookupColumn<Row>[], hidden: ReadonlySet<string>): LookupColumn<Row>[] => columns.filter(column => !hidden.has(column.field));
 
-// The three track recipes of § 18, restated here because the set of columns varies with hiddenFields
-// and so the strings cannot live in the stylesheet.
-/** Fit the content; the browser does the fitting, no pixel widths. */
-const FIT = 'minmax(auto, max-content)';
-/** The one column allowed to grow: a floor so it cannot become a sliver, and it takes the slack. */
-const GROW = 'minmax(200px, 1fr)';
-/** The last column when nothing grows: without it the tracks stop short of the card and the strip's band ends mid-width. */
-const LAST = 'minmax(auto, 1fr)';
+// The track recipes, restated here because the set of columns varies with hiddenFields and so the
+// strings cannot live in the stylesheet.
+//
+// Every track is a floor and a share of the width, never the content's own size (owner, 2026-10-25,
+// replacing § 18's `minmax(auto, max-content)`). Content-sized tracks fit whatever values were on
+// screen, so a lookup or a page that brought a longer part number or company re-laid every column
+// out sideways on the frame the values changed. A share of the width depends only on the panel's
+// width: the columns stand still while the values under them change. Each floor holds its kind's
+// longest ordinary value and its heading, so a column is not crushed on a narrow panel; past the
+// floors, the grid scrolls sideways inside the card (`overflow-x: auto`), as before.
+/** Part numbers and codes: about eighteen characters at 760 with its padding. */
+const CODE = 'minmax(180px, 1.1fr)';
+/** The one column allowed to grow: the largest share of the slack, with a floor so it cannot become a sliver. */
+const GROW = 'minmax(200px, 2.4fr)';
+/** Job and invoice numbers: the value and its two-word heading (INVOICE NUMBER) on one line. */
+const REF = 'minmax(140px, 0.9fr)';
+/** Other text (a company name): wraps at its spaces inside its share. */
+const TEXT = 'minmax(150px, 1.2fr)';
+/** The thumbnail: exactly its 4:3 box and the cell's padding, whatever the width. */
+const MEDIA = 'calc(var(--lt-media-width) + 24px)';
 /** The stacked layout's first column (identity above its description): the slack, with a floor. */
 const STACK_FIRST = 'minmax(160px, 1fr)';
 /** No visible column at all: one track, so the strip's notice still spans the card. */
 const SINGLE = 'minmax(0, 1fr)';
 
 const growing = <Row,>(column: LookupColumn<Row>): boolean => !!column.grow && column.kind === 'text';
+
+const track = <Row,>(column: LookupColumn<Row>): string =>
+  growing(column) ? GROW : column.kind === 'code' ? CODE : column.kind === 'ref' ? REF : column.kind === 'media' ? MEDIA : TEXT;
 
 /**
  * The `grid-template-columns` strings. `stacked` is the 720–960 layout, where the description sits
@@ -119,12 +179,12 @@ const growing = <Row,>(column: LookupColumn<Row>): boolean => !!column.grow && c
 export const tableTracks = <Row,>(columns: LookupColumn<Row>[]): { wide: string; stacked: string | null } => {
   if (columns.length === 0) return { wide: SINGLE, stacked: null };
 
-  const anyGrow = columns.some(growing);
-  const wide = columns.map((column, index) => (growing(column) ? GROW : !anyGrow && index === columns.length - 1 ? LAST : FIT)).join(' ');
+  // A media column is a fixed width; if it is the only column, it still has to reach the card's edge.
+  const wide = columns.length === 1 && columns[0].kind === 'media' ? SINGLE : columns.map(track).join(' ');
 
   const first = columns[0];
   const stackable = !!first.identity && columns.some(column => column !== first && growing(column));
-  const stacked = stackable ? [STACK_FIRST, ...columns.filter(column => column !== first && !growing(column)).map(() => FIT)].join(' ') : null;
+  const stacked = stackable ? [STACK_FIRST, ...columns.filter(column => column !== first && !growing(column)).map(track)].join(' ') : null;
 
   return { wide, stacked };
 };
@@ -306,7 +366,15 @@ const Cell = <Row,>({
       data-media={media ? (text === null ? 'none' : 'loading') : null}
       ref={column.kind === 'code' ? keepUntranslated : undefined}
     >
-      {media ? <MediaBox src={text} identity={identity} strings={strings} onOpenMedia={onOpenMedia} /> : text === null ? <span class="lt-none">—</span> : text}
+      {/*
+        The value, and only the value, in its own block: the skeleton covers this (shift-skeleton, the
+        family's in-place cover) while the row's next value is fetched, and fades it while a page
+        changes. The cell, its caption and its padding are the row's place and stay. The growing
+        column may be clamped by the panel, so it carries its whole text as a title.
+      */}
+      <span class="lt-value shift-skeleton" title={growing(column) && text !== null ? text : null}>
+        {media ? <MediaBox src={text} identity={identity} strings={strings} onOpenMedia={onOpenMedia} /> : text === null ? <span class="lt-none">—</span> : text}
+      </span>
     </div>
   );
 };
@@ -320,10 +388,13 @@ const uniqueKey = (seen: Set<string>, key: string): string => {
 };
 
 export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[]): VNode {
-  const { columns, rows, rowKey, lead, notice, busy, body, open, reshaping = false, strings, onOpenMedia } = props;
+  const { columns, rows, rowKey, lead, notice, busy, body, open, reshaping = false, strings, onOpenMedia, slots } = props;
 
-  // `rows: []` is not a table: no row, so no role for a reader to land on (§ 10).
-  const roles = tableRoles(body, open, reshaping) && rows.length > 0;
+  const slotOf = (index: number): RowSlot => slots?.[index] ?? { open: true, veil: 'none' };
+
+  // `rows: []` is not a table: no row, so no role for a reader to land on (§ 10). A row whose slot is
+  // shut (arriving, or leaving) is not one either.
+  const roles = tableRoles(body, open, reshaping) && rows.some((_, index) => slotOf(index).open);
   const tracks = tableTracks(columns);
   const identityColumn = columns.find(column => column.identity);
   const seen = new Set<string>();
@@ -334,7 +405,14 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
   const glyph = notice && TONE_GLYPH[notice.tone];
 
   return (
-    <div class="lt-grid" role={roles ? 'table' : null} data-phase={busy ? 'busy' : 'settled'} data-stack={tracks.stacked ? 'true' : 'false'} style={style}>
+    <div
+      class="lt-grid"
+      role={roles ? 'table' : null}
+      aria-busy={roles && busy ? 'true' : null}
+      data-phase={busy ? 'busy' : 'settled'}
+      data-stack={tracks.stacked ? 'true' : 'false'}
+      style={style}
+    >
       <div class="lt-lead layer-stack" data-lead={lead}>
         <div
           class={{ 'layer': true, 'lt-notice': true, [`is-${notice?.tone ?? 'idle'}`]: true }}
@@ -385,12 +463,27 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
             <div class="lt-rows">
               {rows.map((row, index) => {
                 const identity = identityColumn ? cellText(identityColumn, row) : null;
+                const slot = slotOf(index);
+                const rowRoles = roles && slot.open;
 
+                // Each row is its own slot: a .collapsible, so a row that comes or goes slides on its own
+                // while the rest of the list stays where it is. `cover` puts the row under the family's
+                // skeleton (`.loading` is the shift-skeleton switch), `fade` fades its values.
                 return (
-                  <div key={uniqueKey(seen, rowKey(row, index))} class="lt-row" role={roles ? 'row' : null}>
-                    {columns.map(column => (
-                      <Cell column={column} row={row} roles={roles} identity={identity} strings={strings} onOpenMedia={onOpenMedia} />
-                    ))}
+                  <div
+                    key={uniqueKey(seen, rowKey(row, index))}
+                    class="lt-slot collapsible"
+                    data-open={slot.open ? 'true' : 'false'}
+                    data-veil={slot.veil}
+                    aria-hidden={slot.open ? null : 'true'}
+                  >
+                    <div class="collapsible-body lt-slot-body">
+                      <div class={{ 'lt-row': true, 'loading': slot.veil === 'cover' }} role={rowRoles ? 'row' : null}>
+                        {columns.map(column => (
+                          <Cell column={column} row={row} roles={rowRoles} identity={identity} strings={strings} onOpenMedia={onOpenMedia} />
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 );
               })}

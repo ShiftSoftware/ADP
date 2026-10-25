@@ -4,8 +4,13 @@ import { InferType } from 'yup';
 import accessoriesSchema from '~locales/vehicleLookup/accessories/type';
 import { AccessoryDTO } from '~types/generated/vehicle-lookup/accessory-dto';
 
+import { SearchIcon } from '~assets/search-icon';
+import { PackageIcon } from '~assets/package-icon';
+import { ChevronLeftIcon } from '~assets/chevron-left-icon';
+import { ChevronRightIcon } from '~assets/chevron-right-icon';
+
 import { LookupHead, PanelVerdict } from '~features/vehicle-info-layout';
-import { LeadKind, LookupColumn, LookupTable, NoticeTone, shownBody, tableLead, visibleColumns } from '~features/lookup-table';
+import { LeadKind, LookupColumn, LookupTable, NoticeTone, RowSlot, shownBody, visibleColumns } from '~features/lookup-table';
 
 export type AccessoriesLocale = InferType<typeof accessoriesSchema>;
 
@@ -34,11 +39,21 @@ export const FIELDS = ['partNumber', 'description', 'image', 'jobNumber', 'invoi
 export const DEFAULT_HIDDEN_FIELDS = 'jobNumber,invoiceNumber,companyName';
 
 /**
- * A list longer than this shows its first rows and offers the rest behind a button. A vehicle
- * carries a handful of accessories to about twenty; pages would hide rows from find-in-page and
- * print, so the rest is a disclosure, not a page (owner, 2026-10-18).
+ * The page sizes the reader can pick, in steps of five up to twenty-five, then every row. Five by
+ * default (owner, 2026-10-25, replacing the "Show all" disclosure of 2026-10-18): a short card that
+ * keeps its height from vehicle to vehicle, and never a list so long that a lookup has a screenful
+ * of rows to move.
  */
-export const COLLAPSED_ROWS = 10;
+export const PAGE_SIZES = [5, 10, 15, 20, 25] as const;
+
+export type PageSize = (typeof PAGE_SIZES)[number] | 'all';
+
+export const PAGE_SIZE_OPTIONS: PageSize[] = [...PAGE_SIZES, 'all'];
+
+export const DEFAULT_PAGE_SIZE: PageSize = 5;
+
+/** Where the reader's choice is kept, per browser: the panel opens on it next time. */
+export const PAGE_SIZE_STORAGE_KEY = 'shift-components:vehicle-accessories:page-size';
 
 // ---------------------------------------------------------------------------------------------
 // Columns
@@ -79,12 +94,12 @@ export const hasRecords = (state: PanelState): boolean => listed(state).length >
 export const panelBody = (state: PanelState): 'rows' | 'none' => (hasRecords(state) && columnCount(state.hidden) > 0 ? 'rows' : 'none');
 
 /**
- * The strip's layer: the column headings while idle, in flight and above rows (they depend on
- * hiddenFields alone, never on the data), a notice for an outcome without rows -- and when every
- * column is hidden, where there are no headings to show.
+ * The strip's layer: always the column headings (they depend on hiddenFields alone, never on the
+ * data). An outcome without rows is said by the pill, never by covering the headings, and there is no
+ * band repeating it (owner, 2026-10-25). The one exception is a host that hid every column: there are
+ * no headings to show, and the strip carries the sentence.
  */
-export const panelLead = (state: PanelState, busy: boolean): LeadKind =>
-  tableLead({ busy, idle: !state.vehicleLoaded && !state.error, body: panelBody(state), columns: columnCount(state.hidden) });
+export const panelLead = (state: PanelState, _busy: boolean): LeadKind => (columnCount(state.hidden) === 0 ? 'notice' : 'columns');
 
 /**
  * The strip's sentence when there is nothing to list. Never a verdict: an unauthorized vehicle is
@@ -99,6 +114,23 @@ export const leadNotice = (state: PanelState, locale: AccessoriesLocale): PanelN
   if (state.authorized === false) return { tone: 'neutral', text: locale.unauthorizedNotice };
   if (!hasRecords(state)) return { tone: 'idle', text: locale.noAccessories };
   if (columnCount(state.hidden) === 0) return { tone: 'idle', text: locale.noFieldsShown };
+  return null;
+};
+
+/**
+ * What fills the space under the strip when there is no list: `idle` before any lookup, after a failed
+ * one and for a vehicle not in the distributor's records ("look up a vehicle" -- the pill says what
+ * happened), `empty` for an authorized vehicle with nothing on file (what would be listed here), and
+ * nothing when a host hid every column, where there is no list to describe. It holds through a lookup (the
+ * state is still the last one), so the space does not collapse and reopen while the answer is on its way.
+ * Owner, 2026-10-25: a strip over a blank band read as "nothing is shown".
+ */
+export const panelPlaceholder = (state: PanelState): 'idle' | 'empty' | null => {
+  if (columnCount(state.hidden) === 0) return null;
+  // Before a lookup, after a failed one, and for a vehicle not in the distributor's records: the pill
+  // says what happened, and the table is in its idle look (owner, 2026-10-25).
+  if (!state.vehicleLoaded || state.authorized === false) return 'idle';
+  if (!hasRecords(state)) return 'empty';
   return null;
 };
 
@@ -144,31 +176,56 @@ export const countText = (count: number, locale: AccessoriesLocale, language: st
 };
 
 // ---------------------------------------------------------------------------------------------
-// The disclosure ("Show all 23 accessories")
+// Pages
 // ---------------------------------------------------------------------------------------------
 
-/** Whether the list is long enough to be collapsed. */
-export const isDisclosable = (total: number): boolean => total > COLLAPSED_ROWS;
+/** A stored or chosen value read back as a page size; anything else is the default. */
+export const parsePageSize = (raw: string | number | null | undefined): PageSize => {
+  if (raw === 'all') return 'all';
+  const size = Number(raw);
+  return (PAGE_SIZES as readonly number[]).includes(size) ? (size as PageSize) : DEFAULT_PAGE_SIZE;
+};
 
-/** The rows the table is given: all of them, or the first `COLLAPSED_ROWS` while a long list is collapsed. */
-export const visibleRows = (rows: AccessoryDTO[], showAll: boolean): AccessoryDTO[] => (showAll || !isDisclosable(rows.length) ? rows : rows.slice(0, COLLAPSED_ROWS));
+/** How many pages a list makes; at least one, so an empty list is page 1 of 1, never page 1 of 0. */
+export const pageCount = (total: number, size: PageSize): number => (size === 'all' ? 1 : Math.max(1, Math.ceil(total / size)));
 
-/** The button's label while collapsed: it carries the number, in the count's own plural form. */
-export const showAllText = (total: number, locale: AccessoriesLocale, language: string): string => locale.showAll.replace('{count}', countText(total, locale, language));
+/** A page index brought back inside the list: a smaller list or a bigger page can leave it past the end. */
+export const clampPage = (page: number, total: number, size: PageSize): number => Math.min(Math.max(0, Math.floor(page) || 0), pageCount(total, size) - 1);
+
+/** The rows of one page. */
+export const pageRows = <Row,>(rows: Row[], page: number, size: PageSize): Row[] => {
+  if (size === 'all') return rows;
+  const start = clampPage(page, rows.length, size) * size;
+  return rows.slice(start, start + size);
+};
+
+/** Whether the list needs the page controls: longer than the smallest page. */
+export const isPaginated = (total: number): boolean => total > PAGE_SIZES[0];
+
+/** The page that keeps the first row on screen in view when the page size changes. */
+export const pageForSize = (page: number, from: PageSize, to: PageSize, total: number): number => {
+  if (to === 'all' || from === 'all') return 0;
+  return clampPage(Math.floor((clampPage(page, total, from) * from) / to), total, to);
+};
+
+/** "6–10 of 23": the rows on screen and the whole list, in the locale's words. */
+export const pageRangeText = (page: number, size: PageSize, total: number, locale: AccessoriesLocale): string => {
+  const from = total === 0 ? 0 : (size === 'all' ? 0 : clampPage(page, total, size) * size) + 1;
+  const to = size === 'all' ? total : Math.min(total, from - 1 + size);
+  return locale.pageRange.replace('{from}', String(from)).replace('{to}', String(to)).replace('{total}', String(total));
+};
 
 /**
- * Whether collapsing needs the page to follow. The rows that go were above the button, so it rises
- * by what they took; if that lifts it off the top of the screen, the reader is left looking at
- * nothing and the button's row is brought back (motion.md rule 10).
+ * Whether a page change that takes `removedHeight` off the list needs the page to follow. The
+ * controls are under the rows, so they rise by what the rows took; if that lifts them off the top
+ * of the screen, the reader is left looking at nothing and the controls are brought back
+ * (motion.md rule 10).
  */
-export const collapseNeedsReveal = (buttonTop: number, removedHeight: number): boolean => buttonTop - removedHeight < 0;
+export const pagingNeedsReveal = (controlsTop: number, removedHeight: number): boolean => controlsTop - removedHeight < 0;
 
 // ---------------------------------------------------------------------------------------------
 // Render
 // ---------------------------------------------------------------------------------------------
-
-// A chevron as stroked path data in the family's 512 box: it takes the button's colour and turns over on expand.
-const CHEVRON_PATH = 'M112 192l144 144 144-144';
 
 type Props = {
   locale: AccessoriesLocale;
@@ -176,37 +233,49 @@ type Props = {
   language: string;
   state: PanelState;
   verdict: Pick<PanelVerdict, 'state' | 'text'>;
-  /** A lookup is in flight or the panel is leaving: the head leaves and the body is shut (the strip keeps its headings). */
+  /** A lookup is in flight or the panel is leaving: the head leaves; rows on screen go under the skeleton where they stand. */
   busy: boolean;
+  /** The panel is leaving (cleared, or failing from a settled card): the body shuts over its rows. */
+  leaving: boolean;
   /** A live hiddenFields change is in progress: the body is shut while the columns swap. */
   reconfiguring: boolean;
   /** The body's last kind, kept a settle after it shut so its content slides away instead of blinking out. */
   retainedBody: string;
   /** The strip's last sentence, kept so a notice that is leaving fades out with its words, not blank. */
   retainedNotice: PanelNotice | null;
-  /** The disclosure: the reader asked for every row. */
-  expanded: boolean;
-  /** Every row is rendered: expanded, or collapsing (the extra rows stay until the fold has shut). */
-  showingAll: boolean;
-  onToggle: () => void;
+  /** The rows in the table's slots: the page on screen, then any rows that are leaving (the owner's). */
+  slotRows: AccessoryDTO[];
+  /** One per slot row: open or shut, and how its values are veiled (the owner's `tableSlots`). */
+  slots: RowSlot[];
+  page: number;
+  pageSize: PageSize;
+  onPage: (page: number) => void;
+  onPageSize: (size: PageSize) => void;
   onOpenMedia?: (image: HTMLImageElement, src: string) => void;
 };
 
+/** Whether the body is open on rows: a list to show, not shutting for a clear, not swapping columns. In flight it stays open. */
+export const bodyOpen = (state: PanelState, leaving: boolean, reconfiguring: boolean): boolean => !leaving && !reconfiguring && panelBody(state) === 'rows';
+
 export const VehicleAccessoriesPanel: FunctionalComponent<Props> = props => {
-  const { locale, language, state, verdict, busy, reconfiguring, retainedBody, retainedNotice, expanded, showingAll, onToggle, onOpenMedia } = props;
+  const { locale, language, state, verdict, busy, leaving, reconfiguring, retainedBody, retainedNotice, slotRows, slots, page, pageSize, onPage, onPageSize, onOpenMedia } = props;
 
   const columns = visibleColumns(accessoryColumns(locale), state.hidden);
-  const rows = listed(state);
-  const total = rows.length;
+  const total = listed(state).length;
   const count = totalCount(state);
 
   const body = panelBody(state);
   const lead = panelLead(state, busy);
-  // The body shuts while a lookup is in flight, while columns swap, and whenever there is nothing to list.
-  const open = !busy && !reconfiguring && body === 'rows';
-  const moreOpen = open && isDisclosable(total);
+  const open = bodyOpen(state, leaving, reconfiguring);
+  const pagerOpen = open && isPaginated(total);
+  const pages = pageCount(total, pageSize);
+  const current = clampPage(page, total, pageSize);
 
   const notice = leadNotice(state, locale) ?? retainedNotice;
+  // Leaving (a clear, or an error raised on a settled card) always ends idle, so the placeholder is
+  // the idle one for the whole leave: from idle or an empty list it stays open (its words cross-fade
+  // at most) instead of shutting and reopening, and from rows it opens while the rows shut, as one movement.
+  const placeholder = leaving && columnCount(state.hidden) > 0 ? 'idle' : panelPlaceholder(state);
 
   return (
     <section class="accessories-card" data-verdict={verdict.state} data-phase={busy ? 'busy' : 'settled'} data-lead={lead} data-body={body}>
@@ -221,12 +290,13 @@ export const VehicleAccessoriesPanel: FunctionalComponent<Props> = props => {
 
       <div class="lookup-slide-clip">
         <div class="lookup-slide">
-          {/* The fold: where a long list's height is eased when the rest of it is shown or put away (resize-settle). */}
-          <div class="accessories-fold resize-settle" id="accessories-list">
+          <div id="accessories-list">
             <LookupTable
               columns={columns}
-              rows={visibleRows(rows, showingAll)}
-              rowKey={(accessory, index) => `${accessory.partNumber ?? ''}#${index}`}
+              rows={slotRows}
+              slots={slots}
+              // Keyed by slot, not by part: a slot is a place on the card that stays while its values change.
+              rowKey={(_, index) => `slot-${index}`}
               lead={lead}
               notice={notice}
               busy={busy}
@@ -238,24 +308,77 @@ export const VehicleAccessoriesPanel: FunctionalComponent<Props> = props => {
             />
           </div>
 
-          {/* Always mounted, shut when there is nothing to disclose: it slides with the body, never pops. */}
-          <div class="accessories-more collapsible" data-open={moreOpen ? 'true' : 'false'} aria-hidden={moreOpen ? null : 'true'}>
+          {/* The placeholder under the strip when there is no list (panelPlaceholder). Always mounted; it
+              slides open and shut, and its two sentences cross-fade, so it never pops. Its words go
+              under the skeleton while a lookup is in flight: "look a vehicle up" is not true then. */}
+          <div class="accessories-placeholder collapsible" data-open={placeholder ? 'true' : 'false'} aria-hidden={placeholder ? null : 'true'}>
             <div class="collapsible-body">
-              <div class="accessories-more-row">
-                <button type="button" class="accessories-more-button" aria-expanded={expanded ? 'true' : 'false'} aria-controls="accessories-list" onClick={() => onToggle()}>
-                  <svg class="accessories-more-chevron" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
-                    <path d={CHEVRON_PATH} fill="none" stroke="currentColor" stroke-width="64" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  {/* Both labels share one cell and cross-fade, so the words never pop and the button never changes width. */}
-                  <span class="accessories-more-labels">
-                    <span class="accessories-more-label" data-active={expanded ? 'false' : 'true'} aria-hidden={expanded ? 'true' : null}>
-                      {showAllText(total, locale, language)}
-                    </span>
-                    <span class="accessories-more-label" data-active={expanded ? 'true' : 'false'} aria-hidden={expanded ? null : 'true'}>
-                      {locale.showFewer}
-                    </span>
+              <div class="accessories-placeholder-stack layer-stack">
+                <div class="layer accessories-placeholder-layer" data-active={placeholder === 'empty' ? 'false' : 'true'} aria-hidden={placeholder === 'idle' ? null : 'true'}>
+                  <span class="accessories-placeholder-mark">
+                    <SearchIcon class="accessories-placeholder-glyph" />
                   </span>
-                </button>
+                  <p class="accessories-placeholder-text shift-skeleton">{locale.idleHint}</p>
+                </div>
+                <div class="layer accessories-placeholder-layer" data-active={placeholder === 'empty' ? 'true' : 'false'} aria-hidden={placeholder === 'empty' ? null : 'true'}>
+                  <span class="accessories-placeholder-mark">
+                    <PackageIcon class="accessories-placeholder-glyph" />
+                  </span>
+                  <p class="accessories-placeholder-text shift-skeleton">{locale.emptyHint}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* The page controls. Always mounted, shut when the list fits on the smallest page: they slide with the body, never pop. */}
+          <div class="accessories-pager collapsible" data-open={pagerOpen ? 'true' : 'false'} aria-hidden={pagerOpen ? null : 'true'}>
+            <div class="collapsible-body">
+              <div class="accessories-pager-row">
+                <label class="accessories-page-size">
+                  <span class="accessories-page-size-label">{locale.rowsPerPage}</span>
+                  <select
+                    class="accessories-page-size-select"
+                    aria-controls="accessories-list"
+                    disabled={busy}
+                    onChange={event => onPageSize(parsePageSize((event.target as HTMLSelectElement).value))}
+                  >
+                    {PAGE_SIZE_OPTIONS.map(size => (
+                      <option value={String(size)} selected={size === pageSize}>
+                        {size === 'all' ? locale.pageAll : String(size)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {/* A value like any other: it goes under the skeleton with the rows while a lookup is in flight. */}
+                <span class="accessories-page-range shift-skeleton" aria-live="polite">
+                  {pageRangeText(current, pageSize, total, locale)}
+                </span>
+
+                <span class="accessories-page-nav">
+                  <button
+                    type="button"
+                    class="accessories-page-button is-previous"
+                    aria-label={locale.previousPage}
+                    title={locale.previousPage}
+                    aria-controls="accessories-list"
+                    disabled={busy || current === 0}
+                    onClick={() => onPage(current - 1)}
+                  >
+                    <ChevronLeftIcon class="accessories-page-chevron" />
+                  </button>
+                  <button
+                    type="button"
+                    class="accessories-page-button is-next"
+                    aria-label={locale.nextPage}
+                    title={locale.nextPage}
+                    aria-controls="accessories-list"
+                    disabled={busy || current >= pages - 1}
+                    onClick={() => onPage(current + 1)}
+                  >
+                    <ChevronRightIcon class="accessories-page-chevron" />
+                  </button>
+                </span>
               </div>
             </div>
           </div>

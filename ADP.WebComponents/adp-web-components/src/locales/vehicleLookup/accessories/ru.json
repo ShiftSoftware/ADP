@@ -19,6 +19,11 @@
   "accessoryCountFew": "{count} аксессуара",
   "accessoryCountMany": "{count} аксессуаров",
   "accessoryCountOther": "{count} аксессуара",
-  "showAll": "Показать все {count}",
-  "showFewer": "Показать меньше"
+  "rowsPerPage": "Строк на странице",
+  "pageAll": "Все",
+  "pageRange": "{from}–{to} из {total}",
+  "previousPage": "Предыдущая страница",
+  "nextPage": "Следующая страница",
+  "idleHint": "Найдите автомобиль, чтобы увидеть установленные на него аксессуары.",
+  "emptyHint": "Здесь перечисляются аксессуары, установленные на автомобиль после выпуска с завода."
 }

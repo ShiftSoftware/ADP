@@ -361,6 +361,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
             record={record}
             error={error}
             loading={busy}
+            leaving={this.leaving}
             verdict={verdict}
             lang={this.locale.sharedLocales.lang}
             groups={groups}

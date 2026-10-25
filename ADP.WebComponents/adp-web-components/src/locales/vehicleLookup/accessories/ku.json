@@ -19,6 +19,11 @@
   "accessoryCountFew": "{count} ئیکسسوار",
   "accessoryCountMany": "{count} ئیکسسوار",
   "accessoryCountOther": "{count} ئیکسسوار",
-  "showAll": "پیشاندانی هەموو {count}",
-  "showFewer": "پیشاندانی کەمتر"
+  "rowsPerPage": "ڕیز لە هەر پەڕەیەکدا",
+  "pageAll": "هەموو",
+  "pageRange": "{from}–{to} لە {total}",
+  "previousPage": "پەڕەی پێشوو",
+  "nextPage": "پەڕەی دواتر",
+  "idleHint": "بۆ بینینی ئیکسسوارە دانراوەکان، بەدوای ئۆتۆمبێلێکدا بگەڕێ.",
+  "emptyHint": "ئیکسسوارەکانی دوای دەرچوونی ئەم ئۆتۆمبێلە لە کارگە لێرە پیشان دەدرێن."
 }

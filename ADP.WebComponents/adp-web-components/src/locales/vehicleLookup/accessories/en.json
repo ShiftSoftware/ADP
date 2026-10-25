@@ -19,6 +19,11 @@
   "accessoryCountFew": "{count} accessories",
   "accessoryCountMany": "{count} accessories",
   "accessoryCountOther": "{count} accessories",
-  "showAll": "Show all {count}",
-  "showFewer": "Show fewer"
+  "rowsPerPage": "Rows per page",
+  "pageAll": "All",
+  "pageRange": "{from}–{to} of {total}",
+  "previousPage": "Previous page",
+  "nextPage": "Next page",
+  "idleHint": "Look up a vehicle to see the accessories fitted to it.",
+  "emptyHint": "Accessories fitted to this vehicle after it left the factory are listed here."
 }

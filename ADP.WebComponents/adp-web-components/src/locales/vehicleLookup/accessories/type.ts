@@ -21,8 +21,13 @@ const accessoriesSchema = yupTypeMapper([
   'accessoryCountFew',
   'accessoryCountMany',
   'accessoryCountOther',
-  'showAll',
-  'showFewer',
+  'rowsPerPage',
+  'pageAll',
+  'pageRange',
+  'previousPage',
+  'nextPage',
+  'idleHint',
+  'emptyHint',
 ]);
 
 export default accessoriesSchema;

@@ -19,6 +19,11 @@
   "accessoryCountFew": "{count} إكسسوارات",
   "accessoryCountMany": "{count} إكسسوارًا",
   "accessoryCountOther": "{count} إكسسوار",
-  "showAll": "عرض الكل ({count})",
-  "showFewer": "عرض أقل"
+  "rowsPerPage": "عدد الصفوف في الصفحة",
+  "pageAll": "الكل",
+  "pageRange": "{from}–{to} من {total}",
+  "previousPage": "الصفحة السابقة",
+  "nextPage": "الصفحة التالية",
+  "idleHint": "ابحث عن مركبة لعرض الإكسسوارات المركّبة عليها.",
+  "emptyHint": "تظهر هنا الإكسسوارات التي رُكّبت على هذه المركبة بعد خروجها من المصنع."
 }

@@ -116,29 +116,6 @@
   opacity: 0;
   transform: translateY(calc(var(--head-leave-travel) * 120%));
 }
-
-/* ---------------------------------------------------------------------------------------------
-   Notice and strip
-   ------------------------------------------------------------------------------------------- */
-
-.sale-notice-body {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin: 0;
-  padding: 8px 20px;
-  font-size: 13px;
-  font-weight: 650;
-  line-height: 1.3;
-}
-
-/* Top rule only: the strip below brings its own. */
-.sale-notice[data-tone='neutral'] .sale-notice-body {
-  color: var(--amber-dark);
-  background: var(--amber-tint);
-  box-shadow: inset 0 1px 0 rgba(183, 121, 31, 0.22);
-}
-
 .notice-icon {
   display: block;
   flex: 0 0 auto;
@@ -462,6 +439,13 @@
   list-style: none;
 }
 
+/* Each leg is its own slot (a .collapsible), so a leg that one vehicle has and the next does not
+   slides in or out instead of jumping the card (owner, 2026-10-25). Open, the slot lets the chain's
+   rail run past its edge to the next leg's disc; shutting, it clips as every collapsible does. */
+.sale-leg-slot[data-open='true'] > .collapsible-body {
+  overflow: visible;
+}
+
 /* Fixed proportions, so the columns line up across legs whatever each one carries. */
 .sale-leg {
   position: relative;
@@ -471,7 +455,7 @@
   padding-block: var(--leg-pad);
 }
 
-.sale-card[data-layout='standard'] .sale-leg + .sale-leg {
+.sale-card[data-layout='standard'] .sale-leg-slot + .sale-leg-slot .sale-leg {
   border-top: 1px solid var(--line-soft);
 }
 
@@ -539,7 +523,7 @@
   content: '';
 }
 
-.sale-card[data-layout='chain'] .sale-leg:last-child::before {
+.sale-card[data-layout='chain'] .sale-leg-slot:last-child .sale-leg::before {
   content: none;
 }
 
@@ -584,11 +568,6 @@
   .sale-branch {
     min-height: 1.2em;
   }
-
-  .sale-notice-body {
-    padding: 8px 14px;
-  }
-
   .sale-lead {
     padding: 6px 14px;
   }

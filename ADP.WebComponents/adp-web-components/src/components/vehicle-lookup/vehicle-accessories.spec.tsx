@@ -6,28 +6,38 @@ import { newSpecPage } from '@stencil/core/testing';
 import * as revealBelowModule from '~lib/reveal-below';
 
 import { VehicleAccessories } from './vehicle-accessories';
+import { ShiftImage } from '../components/shift-image/shift-image';
+import { ShiftImageLayer } from '../components/shift-image/shift-image-layer';
+import { ShiftPortal } from '../components/shift-portal';
 import { VehicleLookup } from './vehicle-lookup';
 import {
   AccessoriesLocale,
-  COLLAPSED_ROWS,
   DEFAULT_HIDDEN_FIELDS,
+  DEFAULT_PAGE_SIZE,
   FIELDS,
+  PAGE_SIZE_OPTIONS,
+  PAGE_SIZE_STORAGE_KEY,
   PanelState,
   accessoryColumns,
-  collapseNeedsReveal,
+  clampPage,
   columnCount,
   countText,
   hasRecords,
-  isDisclosable,
+  isPaginated,
   leadNotice,
   listed,
   panelBody,
   panelLead,
   pluralCategory,
+  pageCount,
+  pageForSize,
+  pageRangeText,
+  pageRows,
+  pagingNeedsReveal,
+  panelPlaceholder,
+  parsePageSize,
   sameColumns,
-  showAllText,
   totalCount,
-  visibleRows,
 } from './components/VehicleAccessoriesPanel';
 import { parseHiddenFields } from '~features/lookup-table';
 import { AccessoryDTO } from '~types/generated/vehicle-lookup/accessory-dto';
@@ -125,17 +135,12 @@ describe('vehicle-accessories — derivations', () => {
       expect(panelLead(state(), false)).toBe('columns');
     });
 
-    it('is a notice for an authorized empty list (grey)', () => {
-      expect(panelLead(state({ accessories: [] }), false)).toBe('notice');
-    });
+    it('stays on the headings for an outcome without rows: the pill says it, nothing covers or repeats it (owner, 2026-10-25)', () => {
+      expect(panelLead(state({ accessories: [] }), false)).toBe('columns');
+      expect(panelLead(state({ authorized: false }), false)).toBe('columns');
+      expect(panelLead(state(failed), false)).toBe('columns');
 
-    it('is a notice for an unauthorized vehicle (amber), whatever the DTO carries', () => {
-      expect(panelLead(state({ authorized: false }), false)).toBe('notice');
-      expect(panelLead(state({ authorized: false, accessories: [accessory(1)] as unknown as PanelState['accessories'] }), false)).toBe('notice');
-    });
-
-    it('is a notice for a failed lookup (red): settled, not idle, and the headings would read as still waiting', () => {
-      expect(panelLead(state(failed), false)).toBe('notice');
+      // No band: the pill says it (owner, 2026-10-25). The panel has no band at all.
     });
 
     it('is a notice when every column is hidden, in every state, because there are no headings to show', () => {
@@ -209,24 +214,62 @@ describe('vehicle-accessories — derivations', () => {
     expect(columns.map(column => column.value(row))).toEqual(['P', 'D', 'I', undefined, null, undefined]);
   });
 
-  it('disclosure: collapses a list longer than ten to its first ten, and leaves ten or fewer alone', () => {
-    const rows = (n: number) => Array.from({ length: n }, (_, index) => accessory(index + 1)) as unknown as AccessoryDTO[];
-
-    expect(COLLAPSED_ROWS).toBe(10);
-    expect(isDisclosable(10)).toBe(false);
-    expect(isDisclosable(11)).toBe(true);
-    expect(visibleRows(rows(10), false)).toHaveLength(10);
-    expect(visibleRows(rows(11), false)).toHaveLength(10);
-    expect(visibleRows(rows(11), true)).toHaveLength(11);
-    expect(visibleRows(rows(24), false).map(row => row.partNumber)).toEqual(rows(10).map(row => row.partNumber));
-    expect(visibleRows([], false)).toEqual([]);
+  it('pages: five by default, in steps of five to twenty-five, then all; anything else read back is the default', () => {
+    expect(DEFAULT_PAGE_SIZE).toBe(5);
+    expect(PAGE_SIZE_OPTIONS).toEqual([5, 10, 15, 20, 25, 'all']);
+    expect(parsePageSize('10')).toBe(10);
+    expect(parsePageSize(25)).toBe(25);
+    expect(parsePageSize('all')).toBe('all');
+    for (const junk of ['7', '30', '', null, undefined, 'ALL', '5.5']) expect(parsePageSize(junk)).toBe(5);
   });
 
-  it('asks the page to follow a collapse only when the rows that go would lift the button off the top of the screen', () => {
-    expect(collapseNeedsReveal(900, 400)).toBe(false);
-    expect(collapseNeedsReveal(300, 400)).toBe(true);
-    expect(collapseNeedsReveal(400, 400)).toBe(false);
-    expect(collapseNeedsReveal(0, 0)).toBe(false);
+  it('pages: cuts the list into pages and keeps a page index inside it', () => {
+    const rows = (n: number) => Array.from({ length: n }, (_, index) => accessory(index + 1)) as unknown as AccessoryDTO[];
+    const parts = (list: AccessoryDTO[]) => list.map(row => row.partNumber);
+
+    expect(pageCount(23, 5)).toBe(5);
+    expect(pageCount(25, 5)).toBe(5);
+    expect(pageCount(0, 5)).toBe(1);
+    expect(pageCount(23, 'all')).toBe(1);
+    expect(clampPage(9, 23, 5)).toBe(4);
+    expect(clampPage(-2, 23, 5)).toBe(0);
+    expect(parts(pageRows(rows(23), 4, 5))).toEqual(parts(rows(23).slice(20)));
+    expect(pageRows(rows(23), 9, 5)).toHaveLength(3);
+    expect(pageRows(rows(23), 3, 'all')).toHaveLength(23);
+    expect(isPaginated(5)).toBe(false);
+    expect(isPaginated(6)).toBe(true);
+  });
+
+  it('pages: a new page size keeps the first row on screen in view', () => {
+    expect(pageForSize(3, 5, 10, 23)).toBe(1); // row 16 is on page 2 of ten
+    expect(pageForSize(1, 10, 5, 23)).toBe(2); // row 11 is on page 3 of five
+    expect(pageForSize(4, 5, 25, 23)).toBe(0);
+    expect(pageForSize(2, 5, 'all', 23)).toBe(0);
+    expect(pageForSize(0, 'all', 5, 23)).toBe(0);
+  });
+
+  it('pages: the range says which rows are on screen', () => {
+    expect(pageRangeText(0, 5, 23, locale)).toBe('1–5 of 23');
+    expect(pageRangeText(4, 5, 23, locale)).toBe('21–23 of 23');
+    expect(pageRangeText(0, 'all', 23, locale)).toBe('1–23 of 23');
+  });
+
+  it('placeholder: idle before a lookup, after an error and when not in records; empty for nothing on file; none above rows', () => {
+    expect(panelPlaceholder(state({ vehicleLoaded: false, accessories: undefined }))).toBe('idle');
+    expect(panelPlaceholder(state({ accessories: [] }))).toBe('empty');
+    expect(panelPlaceholder(state())).toBeNull();
+    // Not in the distributor's records: the pill says so and the table is in its idle look.
+    expect(panelPlaceholder(state({ authorized: false }))).toBe('idle');
+    // A failed lookup leaves the table idle.
+    expect(panelPlaceholder(state({ vehicleLoaded: false, accessories: undefined, error: 'Failed' }))).toBe('idle');
+    expect(panelPlaceholder(state({ vehicleLoaded: false, accessories: undefined, hidden: parseHiddenFields(FIELDS.join(',')) }))).toBeNull();
+  });
+
+  it('asks the page to follow a shorter page only when the rows that go would lift the controls off the top of the screen', () => {
+    expect(pagingNeedsReveal(900, 400)).toBe(false);
+    expect(pagingNeedsReveal(300, 400)).toBe(true);
+    expect(pagingNeedsReveal(400, 400)).toBe(false);
+    expect(pagingNeedsReveal(0, 0)).toBe(false);
   });
 });
 
@@ -240,7 +283,6 @@ describe('vehicle-accessories — plural forms', () => {
     accessoryCountFew: 'few:{count}',
     accessoryCountMany: 'many:{count}',
     accessoryCountOther: 'other:{count}',
-    showAll: 'all[{count}]',
   };
 
   it('English has two forms', () => {
@@ -273,19 +315,13 @@ describe('vehicle-accessories — plural forms', () => {
     expect(pluralCategory(7, 'not a language!')).toBe('other');
   });
 
-  it('puts the count in the disclosure button through the same strings', () => {
-    expect(showAllText(24, locale, 'en')).toBe('Show all 24 accessories');
-    expect(showAllText(11, forms, 'ar')).toBe('all[many:11]');
-    expect(showAllText(23, forms, 'ru')).toBe('all[few:23]');
-  });
-
   it('every language carries every key of English, and every count form keeps its {count}', () => {
     const keys = Object.keys(englishLocale).sort();
     for (const other of [arabicLocale, kurdishLocale, russianLocale]) expect(Object.keys(other).sort()).toEqual(keys);
 
     for (const file of [englishLocale, arabicLocale, kurdishLocale, russianLocale] as Record<string, string>[]) {
       for (const key of keys.filter(k => k.startsWith('accessoryCount'))) expect([key, file[key].includes('{count}')]).toEqual([key, true]);
-      expect(file.showAll.includes('{count}')).toBe(true);
+      for (const placeholder of ['{from}', '{to}', '{total}']) expect(file.pageRange.includes(placeholder)).toBe(true);
       expect(Object.values(file).every(value => typeof value === 'string' && value.trim() !== '')).toBe(true);
     }
   });
@@ -300,7 +336,7 @@ beforeAll(() => {
 
 const newPage = async (mocks: unknown = brokerMarketMocks, attributes = '') => {
   const page = await newSpecPage({
-    components: [VehicleAccessories],
+    components: [VehicleAccessories, ShiftImage, ShiftImageLayer, ShiftPortal],
     html: `<vehicle-accessories is-dev="true" ${attributes}></vehicle-accessories>`,
   });
   await (page.rootInstance as VehicleAccessories).setMockData(mocks as never);
@@ -310,7 +346,7 @@ const newPage = async (mocks: unknown = brokerMarketMocks, attributes = '') => {
 type Page = Awaited<ReturnType<typeof newPage>>;
 
 const owner = (page: Page) => page.rootInstance as VehicleAccessories;
-const internals = (page: Page) => page.rootInstance as unknown as { leaving: boolean; reconfiguring: boolean; expanded: boolean; collapsing: boolean };
+const internals = (page: Page) => page.rootInstance as unknown as { leaving: boolean; reconfiguring: boolean; page: number; pageSize: number | 'all'; paging: boolean };
 const shadow = (page: Page) => page.root.shadowRoot;
 const squash = (value?: string | null) => value?.replace(/\s+/g, ' ').trim();
 const text = (page: Page, selector: string) => squash(shadow(page).querySelector(selector)?.textContent);
@@ -334,8 +370,25 @@ const lead = (page: Page) => attr(page, '.lt-lead', 'data-lead');
 const rows = (page: Page) => all(page, '.lt-row');
 const headings = (page: Page) => all(page, '.lt-columns > .lt-cell').map(cell => squash(cell.textContent));
 const bodyOpen = (page: Page) => attr(page, '.lt-body', 'data-open');
-const moreOpen = (page: Page) => attr(page, '.accessories-more', 'data-open');
-const button = (page: Page) => shadow(page).querySelector<HTMLButtonElement>('.accessories-more-button');
+/** There is no notice band repeating the pill (owner, 2026-10-25). */
+const noBand = (page: Page) => expect(shadow(page).querySelector('.accessories-notice')).toBeNull();
+const pagerOpen = (page: Page) => attr(page, '.accessories-pager', 'data-open');
+const nextButton = (page: Page) => shadow(page).querySelector<HTMLButtonElement>('.accessories-page-button.is-next');
+const previousButton = (page: Page) => shadow(page).querySelector<HTMLButtonElement>('.accessories-page-button.is-previous');
+const sizeSelect = (page: Page) => shadow(page).querySelector<HTMLSelectElement>('.accessories-page-size-select');
+/** The option the render marked selected (mock-doc does not derive a select's value from it). */
+const sizeShown = (page: Page) =>
+  all(page, '.accessories-page-size-select option')
+    .find(option => option.hasAttribute('selected'))
+    ?.getAttribute('value');
+const chooseSize = async (page: Page, size: string) => {
+  const select = sizeSelect(page);
+  select.value = size;
+  select.dispatchEvent(new Event('change'));
+  await page.waitForChanges();
+};
+/** The rows in open slots: what the reader sees (leaving and arriving slots are shut). */
+const openRows = (page: Page) => all(page, '.lt-slot[data-open="true"] .lt-row');
 /** mock-doc has no layout: a test gives an element the box it wants the owner to measure. */
 const withRect = (element: Element, rect: { top: number; height: number }) => {
   (element as unknown as { getBoundingClientRect: () => unknown }).getBoundingClientRect = () => rect;
@@ -361,7 +414,7 @@ describe('vehicle-accessories — the states', () => {
     expect(rows(page)).toHaveLength(0);
     expect(pill(page)).toBeNull();
     expect(count(page)).toBeNull();
-    expect(moreOpen(page)).toBe('false');
+    expect(pagerOpen(page)).toBe('false');
     expect(text(page, '.lookup-title')).toBe('Vehicle Accessories');
     // Not a table that is not there.
     expect(attr(page, '.lt-grid', 'role')).toBeNull();
@@ -378,7 +431,7 @@ describe('vehicle-accessories — the states', () => {
     expect(pill(page)).toBeNull();
     expect(lead(page)).toBe('columns');
     expect(bodyOpen(page)).toBe('true');
-    expect(rows(page)).toHaveLength(9);
+    expect(rows(page)).toHaveLength(5);
     expect(attr(page, '.lt-grid', 'role')).toBe('table');
     expect(heard).toEqual(['positive']);
     expect(text(page, '.accessories-count')).toBe('9 accessories');
@@ -443,17 +496,16 @@ describe('vehicle-accessories — the states', () => {
 
     await load(page, EMPTY_VIN);
 
-    expect(lead(page)).toBe('notice');
-    expect(text(page, '.lt-notice')).toBe(englishLocale.noAccessories);
-    expect(attr(page, '.lt-notice', 'class')).toContain('is-idle');
-    expect(attr(page, '.lt-notice', 'data-active')).toBe('true');
+    // The headings stay; the sentence is in its own band above them.
+    expect(lead(page)).toBe('columns');
+    noBand(page);
     expect(bodyOpen(page)).toBe('false');
     expect(rows(page)).toHaveLength(0);
     expect(verdict(page)).toBe('idle');
     expect(pill(page)?.classList.contains('is-idle')).toBe(true);
     expect(squash(pill(page)?.textContent)).toBe(englishShared.noRecords);
     expect(count(page)).toBeNull();
-    expect(moreOpen(page)).toBe('false');
+    expect(pagerOpen(page)).toBe('false');
     expect(heard).toEqual([]);
   });
 
@@ -461,9 +513,8 @@ describe('vehicle-accessories — the states', () => {
     const page = await newPage();
     await load(page, UNAUTHORIZED_VIN);
 
-    expect(lead(page)).toBe('notice');
-    expect(text(page, '.lt-notice')).toBe(englishLocale.unauthorizedNotice);
-    expect(attr(page, '.lt-notice', 'class')).toContain('is-neutral');
+    expect(lead(page)).toBe('columns');
+    noBand(page);
     expect(verdict(page)).toBe('neutral');
     expect(pill(page)?.classList.contains('is-neutral')).toBe(true);
     expect(rows(page)).toHaveLength(0);
@@ -474,12 +525,12 @@ describe('vehicle-accessories — the states', () => {
     await load(page, dto(5, { isAuthorized: false }));
     expect(rows(page)).toHaveLength(0);
     expect(count(page)).toBeNull();
-    expect(lead(page)).toBe('notice');
+    noBand(page);
     expect(verdict(page)).toBe('neutral');
-    expect(moreOpen(page)).toBe('false');
+    expect(pagerOpen(page)).toBe('false');
   });
 
-  it('an error: the negative pill carries it, the strip settles to a negative notice, and there is no count', async () => {
+  it('an error: the negative pill carries it alone, the table goes back to idle, and there is no count', async () => {
     const page = await newPage();
     await load(page, NINE_VIN);
     expect(count(page)).not.toBeNull();
@@ -490,8 +541,10 @@ describe('vehicle-accessories — the states', () => {
     expect(verdict(page)).toBe('negative');
     expect(pill(page)?.classList.contains('is-negative')).toBe(true);
     expect(squash(pill(page)?.textContent)).toBe('Wrong response format');
-    expect(lead(page)).toBe('notice');
-    expect(squash(page.root.shadowRoot.querySelector('.lt-notice')?.textContent)).toContain('Wrong response format');
+    expect(lead(page)).toBe('columns');
+    noBand(page);
+    expect(attr(page, '.accessories-placeholder', 'data-open')).toBe('true');
+    expect(squash(shadow(page).querySelector('.accessories-placeholder-layer[data-active="true"] .accessories-placeholder-text')?.textContent)).toBe(englishLocale.idleHint);
     expect(count(page)).toBeNull();
     expect(bodyOpen(page)).toBe('false');
   });
@@ -512,15 +565,13 @@ describe('vehicle-accessories — the states', () => {
     expect(pill(page)).toBeNull();
   });
 
-  it('marks the notice layer role=status, aria-hidden when it is not the active layer', async () => {
+  it('has no notice band in any state: the pill speaks for the vehicle', async () => {
     const page = await newPage();
-    await load(page, NINE_VIN);
-    expect(attr(page, '.lt-notice', 'aria-hidden')).toBe('true');
-    expect(attr(page, '.lt-notice', 'data-active')).toBe('false');
-
-    await load(page, UNAUTHORIZED_VIN);
-    expect(attr(page, '.lt-notice', 'role')).toBe('status');
-    expect(attr(page, '.lt-notice', 'aria-hidden')).toBeNull();
+    noBand(page);
+    for (const vin of [NINE_VIN, UNAUTHORIZED_VIN, EMPTY_VIN]) {
+      await load(page, vin);
+      noBand(page);
+    }
   });
 });
 
@@ -572,7 +623,7 @@ describe('vehicle-accessories — pictures', () => {
     expect(shadow(page).querySelector('.lt-media-open')).toBeNull();
   });
 
-  it('opens the existing image viewer from a loaded picture', async () => {
+  it('opens the image viewer on the document body, outside the panel (a fixed overlay inside the shadow root is trapped by the panel container)', async () => {
     const page = await newPage();
     await load(page, dto(1));
 
@@ -582,177 +633,336 @@ describe('vehicle-accessories — pictures', () => {
 
     const open = shadow(page).querySelector<HTMLButtonElement>('.lt-media-open');
     expect(open.getAttribute('aria-label')).toBe(`${englishLocale.openImage} TST-0001`);
-    expect(shadow(page).querySelector('.image-viewer-expanded-image')).not.toBeNull();
+    expect(shadow(page).querySelector('.image-viewer-expanded-image')).toBeNull();
+
+    open.click();
+    await page.waitForChanges();
+
+    const layer = page.doc.body.querySelector('shift-image-layer') as HTMLElement & { open: boolean };
+    expect(layer).not.toBeNull();
+    expect(layer.open).toBe(true);
+    expect(layer.getAttribute('role')).toBe('dialog');
+    expect(layer.getAttribute('aria-label')).toBe(`${englishLocale.openImage} TST-0001`);
   });
 });
 
-describe('vehicle-accessories — the disclosure', () => {
-  it('ten rows or fewer: no button to press', async () => {
+describe('vehicle-accessories — the placeholder', () => {
+  const placeholder = (page: Page) => attr(page, '.accessories-placeholder', 'data-open');
+  const activeHint = (page: Page) => squash(shadow(page).querySelector('.accessories-placeholder-layer[data-active="true"] .accessories-placeholder-text')?.textContent);
+
+  it('says "look a vehicle up" before any lookup, and holds it through the lookup under the skeleton', async () => {
     const page = await newPage();
+    expect(placeholder(page)).toBe('true');
+    expect(activeHint(page)).toBe(englishLocale.idleHint);
+    expect(attr(page, '.accessories-placeholder-text', 'class')).toContain('shift-skeleton');
 
-    await load(page, dto(10));
-    expect(rows(page)).toHaveLength(10);
-    expect(moreOpen(page)).toBe('false');
-    expect(attr(page, '.accessories-more', 'aria-hidden')).toBe('true');
-
-    await load(page, dto(11));
-    expect(rows(page)).toHaveLength(10);
-    expect(moreOpen(page)).toBe('true');
-    expect(attr(page, '.accessories-more', 'aria-hidden')).toBeNull();
+    owner(page).isLoading = true;
+    await page.waitForChanges();
+    expect(placeholder(page)).toBe('true');
   });
 
-  it('more than ten: the table gets the first ten, the button reads "Show all N accessories" and is a real, wired button', async () => {
+  it('describes what would be listed for a vehicle with nothing on file, shuts for rows, and goes idle when not in records', async () => {
+    const page = await newPage();
+    await load(page, EMPTY_VIN);
+    expect(placeholder(page)).toBe('true');
+    expect(activeHint(page)).toBe(englishLocale.emptyHint);
+
+    await load(page, NINE_VIN);
+    expect(placeholder(page)).toBe('false');
+
+    await load(page, UNAUTHORIZED_VIN);
+    // Not in records: the pill says so, the table is in its idle look.
+    expect(placeholder(page)).toBe('true');
+    expect(activeHint(page)).toBe(englishLocale.idleHint);
+  });
+});
+
+describe('vehicle-accessories — the placeholder never shuts to reopen', () => {
+  const placeholder = (page: Page) => attr(page, '.accessories-placeholder', 'data-open');
+
+  it('stays open from idle through an error raised on a settled card', async () => {
+    const page = await newPage();
+    expect(placeholder(page)).toBe('true');
+
+    const erroring = owner(page).setErrorMessage('wrongResponseFormat');
+    await page.waitForChanges();
+    expect(placeholder(page)).toBe('true');
+    await erroring;
+    await page.waitForChanges();
+    expect(placeholder(page)).toBe('true');
+  });
+
+  it('stays open from an empty list through a clear, and opens while rows shut on an error', async () => {
+    const page = await newPage();
+    await load(page, EMPTY_VIN);
+    const clearing = owner(page).clearData();
+    await page.waitForChanges();
+    expect(placeholder(page)).toBe('true');
+    await clearing;
+
+    await load(page, NINE_VIN);
+    expect(placeholder(page)).toBe('false');
+    const erroring = owner(page).setErrorMessage('wrongResponseFormat');
+    await page.waitForChanges();
+    // The rows shut and the placeholder opens in the same movement.
+    expect(bodyOpen(page)).toBe('false');
+    expect(placeholder(page)).toBe('true');
+    await erroring;
+  });
+});
+
+describe('vehicle-accessories — pages', () => {
+  it('five rows or fewer: no page controls', async () => {
+    const page = await newPage();
+
+    await load(page, dto(5));
+    expect(openRows(page)).toHaveLength(5);
+    expect(pagerOpen(page)).toBe('false');
+    expect(attr(page, '.accessories-pager', 'aria-hidden')).toBe('true');
+
+    await load(page, dto(6));
+    await settle(page);
+    expect(openRows(page)).toHaveLength(5);
+    expect(pagerOpen(page)).toBe('true');
+    expect(attr(page, '.accessories-pager', 'aria-hidden')).toBeNull();
+  });
+
+  it('opens on five rows, the range, and wired previous and next buttons', async () => {
     const page = await newPage();
     await load(page, MANY_VIN);
 
-    expect(rows(page)).toHaveLength(COLLAPSED_ROWS);
+    expect(openRows(page)).toHaveLength(5);
     expect(text(page, '.accessories-count')).toBe('24 accessories');
-
-    const toggle = button(page);
-    expect(toggle.tagName).toBe('BUTTON');
-    expect(toggle.getAttribute('type')).toBe('button');
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(toggle.getAttribute('aria-controls')).toBe('accessories-list');
-    expect(attr(page, '#accessories-list', 'class')).toContain('accessories-fold');
-    expect(shadow(page).querySelector('#accessories-list .lt-grid')).not.toBeNull();
-
-    const labels = all(page, '.accessories-more-label');
-    expect(labels.map(label => label.getAttribute('data-active'))).toEqual(['true', 'false']);
-    expect(squash(labels[0].textContent)).toBe('Show all 24 accessories');
-    expect(squash(labels[1].textContent)).toBe('Show fewer');
-    // Only the label that shows is exposed, so the button's name is one phrase.
-    expect(labels.map(label => label.getAttribute('aria-hidden'))).toEqual([null, 'true']);
+    expect(text(page, '.accessories-page-range')).toBe('1–5 of 24');
+    expect(previousButton(page).hasAttribute('disabled')).toBe(true);
+    expect(nextButton(page).hasAttribute('disabled')).toBe(false);
+    expect(nextButton(page).getAttribute('aria-label')).toBe(englishLocale.nextPage);
+    expect(nextButton(page).getAttribute('aria-controls')).toBe('accessories-list');
+    expect(sizeShown(page)).toBe('5');
   });
 
-  it('pressing it shows the rest in place and reads "Show fewer"; pressing again puts them away after the fold has shut', async () => {
+  it('next fades the values out, swaps the page while they are out, and fades them back in', async () => {
     const page = await newPage();
-    await load(page, MANY_VIN);
+    await load(page, dto(12));
 
-    button(page).click();
+    nextButton(page).click();
+    await page.waitForChanges();
+    expect(internals(page).paging).toBe(true);
+    expect(all(page, '.lt-slot').map(slot => slot.getAttribute('data-veil'))).toEqual(Array(5).fill('fade'));
+    expect(text(page, '.lt-row .lt-code')).toBe('TST-0001');
+
+    await settle(page);
+    expect(internals(page).paging).toBe(false);
+    expect(text(page, '.lt-row .lt-code')).toBe('TST-0006');
+    expect(all(page, '.lt-slot').map(slot => slot.getAttribute('data-veil'))).toEqual(Array(5).fill('none'));
+    expect(text(page, '.accessories-page-range')).toBe('6–10 of 12');
+  });
+
+  it('a shorter last page: the rows it drops shut in their slots, faded, and are gone a settle later', async () => {
+    const page = await newPage();
+    await load(page, dto(12));
+
+    nextButton(page).click();
+    await settle(page);
+    nextButton(page).click();
+    await page.waitForChanges();
+    await new Promise(resolve => setTimeout(resolve, 600));
     await page.waitForChanges();
 
-    expect(rows(page)).toHaveLength(24);
-    expect(button(page).getAttribute('aria-expanded')).toBe('true');
-    expect(all(page, '.accessories-more-label').map(label => label.getAttribute('data-active'))).toEqual(['false', 'true']);
-    expect(all(page, '.accessories-more-label').map(label => label.getAttribute('aria-hidden'))).toEqual(['true', null]);
-    // The count is the vehicle's total and does not move with the rows on screen.
-    expect(text(page, '.accessories-count')).toBe('24 accessories');
-    // The body stays open: the rest arrived inside it.
+    const slots = all(page, '.lt-slot');
+    expect(slots.map(slot => slot.getAttribute('data-open'))).toEqual(['true', 'true', 'false', 'false', 'false']);
+    expect(slots.slice(2).map(slot => slot.getAttribute('data-veil'))).toEqual(['fade', 'fade', 'fade']);
+    expect(slots.slice(2).map(slot => slot.getAttribute('aria-hidden'))).toEqual(['true', 'true', 'true']);
+
+    await settle(page);
+    expect(all(page, '.lt-slot')).toHaveLength(2);
+    expect(nextButton(page).hasAttribute('disabled')).toBe(true);
+  });
+
+  it('a bigger page from the first: nothing fades, the new rows arrive shut and then open', async () => {
+    const page = await newPage();
+    await load(page, dto(12));
+
+    await chooseSize(page, '10');
+    expect(internals(page).paging).toBe(false);
+    const slots = all(page, '.lt-slot');
+    expect(slots).toHaveLength(10);
+    expect(slots.map(slot => slot.getAttribute('data-open'))).toEqual([...Array(5).fill('true'), ...Array(5).fill('false')]);
+
+    await settle(page);
+    expect(all(page, '.lt-slot').map(slot => slot.getAttribute('data-open'))).toEqual(Array(10).fill('true'));
+  });
+
+  it('keeps the chosen size in localStorage and opens on it next time', async () => {
+    const store = new Map<string, string>();
+    const storage = { getItem: (key: string) => store.get(key) ?? null, setItem: (key: string, value: string) => void store.set(key, value) };
+    const previous = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    Object.defineProperty(globalThis, 'localStorage', { value: storage, configurable: true });
+
+    try {
+      const page = await newPage();
+      await load(page, MANY_VIN);
+      await chooseSize(page, '15');
+      expect(store.get(PAGE_SIZE_STORAGE_KEY)).toBe('15');
+
+      const next = await newPage();
+      await load(next, MANY_VIN);
+      expect(internals(next).pageSize).toBe(15);
+      expect(sizeShown(next)).toBe('15');
+      expect(openRows(next)).toHaveLength(15);
+    } finally {
+      if (previous) Object.defineProperty(globalThis, 'localStorage', previous);
+      else delete (globalThis as { localStorage?: unknown }).localStorage;
+    }
+  });
+
+  it('a storage that throws leaves the default', async () => {
+    const previous = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get: () => {
+        throw new Error('blocked');
+      },
+    });
+
+    try {
+      const page = await newPage();
+      await load(page, MANY_VIN);
+      expect(internals(page).pageSize).toBe(5);
+      await chooseSize(page, '10');
+      expect(internals(page).pageSize).toBe(10);
+    } finally {
+      if (previous) Object.defineProperty(globalThis, 'localStorage', previous);
+      else delete (globalThis as { localStorage?: unknown }).localStorage;
+    }
+  });
+
+  it('All shows every row; a new vehicle starts again on its first page', async () => {
+    const page = await newPage();
+    await load(page, MANY_VIN);
+    nextButton(page).click();
+    await settle(page);
+    expect(internals(page).page).toBe(1);
+
+    await load(page, dto(12));
+    expect(internals(page).page).toBe(0);
+    expect(text(page, '.lt-row .lt-code')).toBe('TST-0001');
+
+    await chooseSize(page, 'all');
+    await settle(page);
+    expect(openRows(page)).toHaveLength(12);
+    expect(text(page, '.accessories-page-range')).toBe('1–12 of 12');
+  });
+
+  it('the controls are disabled while a lookup is in flight: the rows on screen are the last vehicle', async () => {
+    const page = await newPage();
+    await load(page, MANY_VIN);
+
+    owner(page).isLoading = true;
+    await page.waitForChanges();
+    expect(nextButton(page).hasAttribute('disabled')).toBe(true);
+    expect(sizeSelect(page).hasAttribute('disabled')).toBe(true);
+    expect(pagerOpen(page)).toBe('true');
+  });
+
+  it('brings the controls back into view when a shorter page would lift them off the top of the screen, and follows the page', async () => {
+    const spy = jest.spyOn(revealBelowModule, 'revealBelow').mockImplementation(() => () => undefined);
+    try {
+      const page = await newPage();
+      await load(page, dto(12));
+      await chooseSize(page, '10');
+      await settle(page);
+
+      all(page, '.lt-slot').forEach(slot => withRect(slot, { top: 0, height: 80 }));
+      withRect(shadow(page).querySelector('.accessories-pager'), { top: 300, height: 48 });
+
+      nextButton(page).click();
+      await settle(page);
+      await page.waitForChanges();
+
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy.mock.calls[0][0]).toBe(shadow(page).querySelector('.accessories-pager'));
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('leaves the page alone when the controls stay on screen', async () => {
+    const spy = jest.spyOn(revealBelowModule, 'revealBelow').mockImplementation(() => () => undefined);
+    try {
+      const page = await newPage();
+      await load(page, dto(12));
+      await chooseSize(page, '10');
+      await settle(page);
+
+      all(page, '.lt-slot').forEach(slot => withRect(slot, { top: 0, height: 80 }));
+      withRect(shadow(page).querySelector('.accessories-pager'), { top: 2000, height: 48 });
+
+      nextButton(page).click();
+      await settle(page);
+
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
+
+describe('vehicle-accessories — rows stay through a lookup (owner, 2026-10-25)', () => {
+  it('in flight the body stays open and every row goes under the skeleton where it stands', async () => {
+    const page = await newPage();
+    await load(page, dto(5));
+
+    owner(page).isLoading = true;
+    await page.waitForChanges();
+
     expect(bodyOpen(page)).toBe('true');
+    expect(all(page, '.lt-slot').map(slot => slot.getAttribute('data-open'))).toEqual(Array(5).fill('true'));
+    expect(all(page, '.lt-row').every(row => row.classList.contains('loading'))).toBe(true);
+    expect(all(page, '.lt-value').every(value => value.classList.contains('shift-skeleton'))).toBe(true);
+    expect(attr(page, '.lt-grid', 'aria-busy')).toBe('true');
+  });
 
-    button(page).click();
-    await page.waitForChanges();
+  it('a shorter answer: the rows that stay keep their slots, the rest leave under the cover as their slots shut', async () => {
+    const page = await newPage();
+    await load(page, dto(5));
+    const firstSlot = all(page, '.lt-slot')[0];
 
-    // The extra rows stay until the fold has shut, so they leave by the fold closing, not by vanishing.
-    expect(internals(page).collapsing).toBe(true);
-    expect(button(page).getAttribute('aria-expanded')).toBe('false');
-    expect(rows(page)).toHaveLength(24);
+    await load(page, dto(3, { vin: 'ZS8TESTVINSHORTER' }));
+
+    const slots = all(page, '.lt-slot');
+    expect(slots[0]).toBe(firstSlot);
+    expect(slots.map(slot => slot.getAttribute('data-open'))).toEqual(['true', 'true', 'true', 'false', 'false']);
+    expect(slots.map(slot => slot.getAttribute('data-veil'))).toEqual(['none', 'none', 'none', 'cover', 'cover']);
+    expect(slots.slice(3).every(slot => slot.querySelector('.lt-row').classList.contains('loading'))).toBe(true);
 
     await settle(page);
-
-    expect(internals(page).collapsing).toBe(false);
-    expect(rows(page)).toHaveLength(COLLAPSED_ROWS);
-    expect(text(page, '.accessories-count')).toBe('24 accessories');
+    expect(all(page, '.lt-slot')).toHaveLength(3);
   });
 
-  it('pressing again while it is still collapsing opens it again, with every row still there', async () => {
+  it('a longer answer: the new rows arrive shut and open on the next frame', async () => {
     const page = await newPage();
-    await load(page, MANY_VIN);
+    await load(page, dto(2));
 
-    button(page).click();
-    await page.waitForChanges();
-    button(page).click();
-    await page.waitForChanges();
-    button(page).click();
-    await page.waitForChanges();
+    await load(page, dto(4, { vin: 'ZS8TESTVINLONGER00' }));
+    expect(all(page, '.lt-slot').map(slot => slot.getAttribute('data-open'))).toEqual(['true', 'true', 'false', 'false']);
+
     await settle(page);
-
-    expect(internals(page).collapsing).toBe(false);
-    expect(internals(page).expanded).toBe(true);
-    expect(rows(page)).toHaveLength(24);
+    expect(all(page, '.lt-slot').map(slot => slot.getAttribute('data-open'))).toEqual(['true', 'true', 'true', 'true']);
   });
 
-  it('resets to collapsed on a new vehicle, and is not carried over to a short list', async () => {
+  it('an answer with no rows: the body shuts over the covered rows, which stay open inside it until it has shut', async () => {
     const page = await newPage();
-    await load(page, MANY_VIN);
-    button(page).click();
-    await page.waitForChanges();
-    expect(rows(page)).toHaveLength(24);
+    await load(page, dto(3));
 
-    await load(page, dto(15));
-    expect(internals(page).expanded).toBe(false);
-    expect(rows(page)).toHaveLength(10);
-    expect(button(page).getAttribute('aria-expanded')).toBe('false');
-    expect(text(page, '.accessories-more-label')).toBe('Show all 15 accessories');
-  });
-
-  it('shuts the disclosure with the body in flight, and keeps the rows it holds until the body has shut', async () => {
-    const page = await newPage();
-    await load(page, MANY_VIN);
-    expect(moreOpen(page)).toBe('true');
-
-    const pending = owner(page).fetchVin(NINE_VIN);
-    await page.waitForChanges();
+    await load(page, EMPTY_VIN);
 
     expect(bodyOpen(page)).toBe('false');
-    expect(moreOpen(page)).toBe('false');
-    expect(rows(page)).toHaveLength(COLLAPSED_ROWS);
-    await pending;
-    await page.waitForChanges();
-    expect(moreOpen(page)).toBe('false');
-    expect(rows(page)).toHaveLength(9);
-  });
-
-  it('brings the button back into view when collapsing would lift it off the top of the screen, and follows the page', async () => {
-    const letGo = jest.fn();
-    const reveal = jest.spyOn(revealBelowModule, 'revealBelow').mockImplementation(() => letGo);
-
-    try {
-      const page = await newPage();
-      await load(page, MANY_VIN);
-      button(page).click();
-      await page.waitForChanges();
-      expect(reveal).not.toHaveBeenCalled();
-
-      // 14 rows go, 80px each: the button, 600px down, would rise to -520.
-      rows(page).forEach(row => withRect(row, { top: 0, height: 80 }));
-      withRect(button(page), { top: 600, height: 44 });
-
-      button(page).click();
-      await page.waitForChanges();
-
-      expect(reveal).toHaveBeenCalledTimes(1);
-      const [anchor, followMs] = reveal.mock.calls[0];
-      expect(anchor).toBe(shadow(page).querySelector('.accessories-more'));
-      expect(followMs).toBeGreaterThan(0);
-
-      await settle(page);
-    } finally {
-      reveal.mockRestore();
-    }
-  });
-
-  it('leaves the page alone when the button stays on screen after the collapse', async () => {
-    const reveal = jest.spyOn(revealBelowModule, 'revealBelow').mockImplementation(() => () => {});
-
-    try {
-      const page = await newPage();
-      await load(page, MANY_VIN);
-      button(page).click();
-      await page.waitForChanges();
-
-      rows(page).forEach(row => withRect(row, { top: 0, height: 80 }));
-      // 14 rows x 80px = 1120px go; a button 2000px down is still at 880 afterwards.
-      withRect(button(page), { top: 2000, height: 44 });
-
-      button(page).click();
-      await page.waitForChanges();
-
-      expect(reveal).not.toHaveBeenCalled();
-      await settle(page);
-    } finally {
-      reveal.mockRestore();
-    }
+    noBand(page);
+    const slots = all(page, '.lt-slot');
+    expect(slots).toHaveLength(3);
+    expect(slots.map(slot => slot.getAttribute('data-open'))).toEqual(['true', 'true', 'true']);
+    expect(slots.map(slot => slot.getAttribute('data-veil'))).toEqual(['cover', 'cover', 'cover']);
   });
 });
 
@@ -786,7 +996,7 @@ describe('vehicle-accessories — hiddenFields', () => {
     expect(internals(page).reconfiguring).toBe(true);
     expect(bodyOpen(page)).toBe('false');
     expect(attr(page, '.lt-body', 'aria-hidden')).toBe('true');
-    expect(moreOpen(page)).toBe('false');
+    expect(pagerOpen(page)).toBe('false');
     // Still the old layout while it shuts.
     expect(headings(page)).toEqual(['Part Number', 'Description', 'Image']);
     expect(tracks()).toBe(before);
@@ -807,17 +1017,18 @@ describe('vehicle-accessories — hiddenFields', () => {
     expect(bodyOpen(page)).toBe('true');
     expect(attr(page, '.lt-columns', 'data-reshaping')).toBe('false');
     expect(attr(page, '.lt-grid', 'role')).toBe('table');
-    expect(rows(page)).toHaveLength(9);
+    expect(rows(page)).toHaveLength(5);
     expect(heard).toEqual([]);
     // The total is the vehicle's, not the layout's.
     expect(text(page, '.accessories-count')).toBe('9 accessories');
   });
 
-  it('keeps the count and the expanded rows through a column change', async () => {
+  it('keeps the count, the page and the page size through a column change', async () => {
     const page = await newPage();
     await load(page, MANY_VIN);
-    button(page).click();
-    await page.waitForChanges();
+    await chooseSize(page, '10');
+    nextButton(page).click();
+    await settle(page);
 
     page.root.setAttribute('hidden-fields', 'image');
     await page.waitForChanges();
@@ -825,8 +1036,8 @@ describe('vehicle-accessories — hiddenFields', () => {
     await settle(page);
 
     expect(text(page, '.accessories-count')).toBe('24 accessories');
-    expect(rows(page)).toHaveLength(24);
-    expect(button(page).getAttribute('aria-expanded')).toBe('true');
+    expect(openRows(page)).toHaveLength(10);
+    expect(text(page, '.accessories-page-range')).toBe('11–20 of 24');
   });
 
   it('does nothing for a name it does not know, or for the same columns written differently', async () => {
@@ -915,29 +1126,29 @@ describe('vehicle-accessories — hiddenFields', () => {
     expect(shadow(page).querySelector('.lt-columns')?.hasAttribute('aria-hidden')).toBe(false);
   });
 
-  it('crosses from a notice to the headings while loading and back, through the one strip', async () => {
+  it('keeps the headings through a lookup from one notice to another; the band shuts in flight and reopens on the answer', async () => {
     const page = await newPage();
     await load(page, UNAUTHORIZED_VIN);
-    expect(lead(page)).toBe('notice');
+    expect(lead(page)).toBe('columns');
+    noBand(page);
 
     const pending = owner(page).fetchVin(EMPTY_VIN);
     await page.waitForChanges();
     expect(lead(page)).toBe('columns');
-    expect(attr(page, '.lt-columns', 'data-active')).toBe('true');
-    expect(attr(page, '.lt-notice', 'data-active')).toBe('false');
+    noBand(page);
 
     await pending;
     await page.waitForChanges();
-    expect(lead(page)).toBe('notice');
-    expect(text(page, '.lt-notice')).toBe(englishLocale.noAccessories);
+    expect(lead(page)).toBe('columns');
+    noBand(page);
   });
 });
 
 describe('vehicle-accessories — leaving and entering', () => {
-  it('goes from loaded to loading to loaded: the body shuts over the outgoing rows, the headings stay, the head content leaves', async () => {
+  it('goes from loaded to loading to loaded: the rows stay on screen under the skeleton, the headings stay, the head content leaves', async () => {
     const page = await newPage();
     await load(page, NINE_VIN);
-    expect(rows(page)).toHaveLength(9);
+    expect(rows(page)).toHaveLength(5);
 
     const pending = owner(page).fetchVin(SINGLE_VIN);
     await page.waitForChanges();
@@ -946,11 +1157,11 @@ describe('vehicle-accessories — leaving and entering', () => {
     expect(attr(page, '.lt-grid', 'data-phase')).toBe('busy');
     expect(shadow(page).querySelector('.lookup-panel')?.classList.contains('loading')).toBe(true);
     expect(lead(page)).toBe('columns');
-    expect(attr(page, '.lt-columns', 'aria-hidden')).toBe('true');
-    expect(bodyOpen(page)).toBe('false');
-    expect(attr(page, '.lt-body', 'aria-hidden')).toBe('true');
-    expect(rows(page)).toHaveLength(9);
-    expect(attr(page, '.lt-grid', 'role')).toBeNull();
+    // Owner, 2026-10-25: in flight the rows are not shut; each value is covered where it stands.
+    expect(bodyOpen(page)).toBe('true');
+    expect(rows(page)).toHaveLength(5);
+    expect(rows(page).every(row => row.classList.contains('loading'))).toBe(true);
+    expect(attr(page, '.lt-grid', 'aria-busy')).toBe('true');
 
     await pending;
     await page.waitForChanges();
@@ -958,25 +1169,23 @@ describe('vehicle-accessories — leaving and entering', () => {
     expect(attr(page, '.accessories-card', 'data-phase')).toBe('settled');
     expect(lead(page)).toBe('columns');
     expect(bodyOpen(page)).toBe('true');
-    expect(rows(page)).toHaveLength(1);
+    expect(openRows(page)).toHaveLength(1);
     expect(text(page, '.accessories-count')).toBe('1 accessory');
+
+    await settle(page);
+    expect(rows(page)).toHaveLength(1);
   });
 
   it('goes from rows to a statement and back: the rows are retained while the body shuts, the notice keeps its words as it fades', async () => {
     const page = await newPage();
     await load(page, UNAUTHORIZED_VIN);
-    expect(text(page, '.lt-notice')).toBe(englishLocale.unauthorizedNotice);
 
     await load(page, NINE_VIN);
-    // The strip is on the headings now; the notice layer is out, but still carries its words while it fades.
     expect(lead(page)).toBe('columns');
-    expect(attr(page, '.lt-notice', 'data-active')).toBe('false');
-    expect(text(page, '.lt-notice')).toBe(englishLocale.unauthorizedNotice);
-    expect(attr(page, '.lt-notice', 'class')).toContain('is-neutral');
+    noBand(page);
 
     await load(page, EMPTY_VIN);
-    expect(lead(page)).toBe('notice');
-    expect(text(page, '.lt-notice')).toBe(englishLocale.noAccessories);
+    noBand(page);
     // The rows were retained as a kind only for a settle after the body shut.
     await settle(page);
     expect(rows(page)).toHaveLength(0);
@@ -992,7 +1201,7 @@ describe('vehicle-accessories — leaving and entering', () => {
     expect(internals(page).leaving).toBe(true);
     expect(attr(page, '.accessories-card', 'data-phase')).toBe('busy');
     expect(bodyOpen(page)).toBe('false');
-    expect(rows(page)).toHaveLength(9);
+    expect(rows(page)).toHaveLength(5);
     expect(count(page)?.textContent).toContain('9');
 
     await pending;
@@ -1035,7 +1244,7 @@ describe('vehicle-accessories — leaving and entering', () => {
     expect(internals(page).leaving).toBe(false);
     expect(attr(page, '.accessories-card', 'data-phase')).toBe('settled');
     expect(verdict(page)).toBe('positive');
-    expect(rows(page)).toHaveLength(9);
+    expect(rows(page)).toHaveLength(5);
     expect(text(page, '.accessories-count')).toBe('9 accessories');
   });
 
@@ -1046,6 +1255,8 @@ describe('vehicle-accessories — leaving and entering', () => {
     const erroring = owner(page).setErrorMessage('wrongResponseFormat');
     const fetching = owner(page).fetchVin(SINGLE_VIN);
     await Promise.all([erroring, fetching]);
+    // The arrival renders here; the rows it drops leave over the settle after it.
+    await page.waitForChanges();
     await settle(page);
 
     expect(owner(page).isError).toBe(false);
@@ -1141,7 +1352,7 @@ describe('vehicle-accessories — the owner', () => {
     expect(shadow(core).querySelector('.accessories-card')).not.toBeNull();
 
     await load(core, NINE_VIN);
-    expect(rows(core)).toHaveLength(9);
+    expect(rows(core)).toHaveLength(5);
   });
 
   it('puts no heading element in the host page and no information-table in its tree', async () => {
@@ -1177,7 +1388,7 @@ describe('vehicle-accessories — the stylesheet contract', () => {
   const tableCss = readFileSync(join(__dirname, '../../features/lookup-table/lookup-table.css'), 'utf8');
 
   it('imports the table fragment after the tokens, the wrapper and the head, and never lookup-motion.css', () => {
-    const order = ['base.css', 'lookup-tokens.css', 'image-viewer.css', 'vehicle-info-layout.css', 'lookup-head.css', 'lookup-table.css'].map(file => css.indexOf(`/${file}';`));
+    const order = ['base.css', 'lookup-tokens.css', 'shift-skeleton.css', 'vehicle-info-layout.css', 'lookup-head.css', 'lookup-table.css'].map(file => css.indexOf(`/${file}';`));
     expect(order.every(index => index >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(css).not.toMatch(/@import[^;]*lookup-motion\.css/);
@@ -1187,11 +1398,13 @@ describe('vehicle-accessories — the stylesheet contract', () => {
     expect(css.startsWith('/* tailwind: off */')).toBe(true);
     expect(css).not.toContain('@apply');
     expect(css).not.toMatch(/all:\s*initial/);
-    expect(css).not.toContain('shift-skeleton');
   });
 
-  it('keeps a 44px touch target on the button, a 56px thumbnail in the table, and a cards layout at 720px and under', () => {
-    expect(css).toMatch(/\.accessories-more-button\s*{[^}]*min-height:\s*44px/);
+  it('compact rows: 65px, a 48px thumbnail and 8px padding; the table keeps its comfortable default; a cards layout at 720px and under', () => {
+    expect(css).toMatch(/--lt-row-min:\s*65px/);
+    expect(css).toMatch(/--lt-media-size:\s*48px/);
+    expect(css).toMatch(/--lt-cell-pad-block:\s*8px/);
+    expect(css).toMatch(/\.accessories-page-button\s*{[^}]*width:\s*40px/);
     expect(tableCss).toMatch(/--lt-media-size:\s*56px/);
     expect(tableCss).toContain('@container (max-width: 720px)');
   });

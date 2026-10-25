@@ -119,28 +119,36 @@ describe('derivations', () => {
   });
 
   describe('tableTracks', () => {
-    it('gives one track per visible column, by kind, with the growing text column floored', () => {
-      expect(tableTracks([PART, DESCRIPTION, IMAGE, JOB]).wide).toBe('minmax(auto, max-content) minmax(200px, 1fr) minmax(auto, max-content) minmax(auto, max-content)');
+    const CODE = 'minmax(180px, 1.1fr)';
+    const GROW = 'minmax(200px, 2.4fr)';
+    const REF = 'minmax(140px, 0.9fr)';
+    const TEXT = 'minmax(150px, 1.2fr)';
+    const MEDIA = 'calc(var(--lt-media-width) + 24px)';
+
+    it('gives one track per visible column, by kind: a floor and a share of the width, never the content size', () => {
+      expect(tableTracks([PART, DESCRIPTION, IMAGE, JOB, COMPANY]).wide).toBe([CODE, GROW, MEDIA, REF, TEXT].join(' '));
+      expect(tableTracks(ALL).wide).not.toContain('max-content');
+      expect(tableTracks(ALL).wide).not.toContain('auto');
     });
 
-    it('with no growing column, the last column takes the slack so the strip reaches the card edge', () => {
-      expect(tableTracks([PART, IMAGE, JOB]).wide).toBe('minmax(auto, max-content) minmax(auto, max-content) minmax(auto, 1fr)');
-      expect(tableTracks([PART]).wide).toBe('minmax(auto, 1fr)');
+    it('does not depend on the rows: the same columns give the same tracks whatever values they hold', () => {
+      expect(tableTracks([PART, IMAGE, JOB]).wide).toBe([CODE, MEDIA, REF].join(' '));
+      expect(tableTracks([PART]).wide).toBe(CODE);
     });
 
-    it('with a growing column, the last column does not also take the slack', () => {
-      expect(tableTracks([PART, DESCRIPTION]).wide).toBe('minmax(auto, max-content) minmax(200px, 1fr)');
+    it('a picture alone still reaches the card edge', () => {
+      expect(tableTracks([IMAGE]).wide).toBe('minmax(0, 1fr)');
     });
 
     it('lets only a text column grow: grow on another kind is ignored', () => {
       const growingCode = column({ field: 'x', kind: 'code', grow: true });
-      expect(tableTracks([PART, growingCode]).wide).toBe('minmax(auto, max-content) minmax(auto, 1fr)');
+      expect(tableTracks([PART, growingCode]).wide).toBe([CODE, CODE].join(' '));
       expect(tableTracks([PART, growingCode]).stacked).toBeNull();
     });
 
     it('stacks when the identity is first and a growing column is visible: the identity and growing tracks collapse into one', () => {
       const { stacked } = tableTracks(ALL);
-      expect(stacked).toBe('minmax(160px, 1fr) minmax(auto, max-content) minmax(auto, max-content) minmax(auto, max-content)');
+      expect(stacked).toBe(['minmax(160px, 1fr)', MEDIA, REF, TEXT].join(' '));
       expect(stacked.startsWith('minmax(160px, 1fr)')).toBe(true);
     });
 
@@ -357,7 +365,7 @@ describe('cell kinds', () => {
 
   it('text marks only the growing column as growing', async () => {
     const page = await render();
-    expect(qa(page, '.lt-row:first-child > [data-grow="true"]').map(el => el.getAttribute('data-label'))).toEqual(['Description']);
+    expect(qa(page, '.lt-slot:first-child .lt-row > [data-grow="true"]').map(el => el.getAttribute('data-label'))).toEqual(['Description']);
     expect(qa(page, '.lt-columns > [data-grow="true"]').map(el => el.textContent)).toEqual(['Description']);
   });
 
@@ -388,7 +396,7 @@ describe('cell kinds', () => {
     const cells = qa(page, '.lt-row > .lt-cell');
     expect(cells.length).toBe(ALL.length * 2);
     expect(cells.every(el => !!el.getAttribute('data-label'))).toBe(true);
-    expect(qa(page, '.lt-row:first-child > .lt-cell').map(el => el.getAttribute('data-label'))).toEqual(['Part no.', 'Description', 'Image', 'Job', 'Company']);
+    expect(qa(page, '.lt-slot:first-child .lt-row > .lt-cell').map(el => el.getAttribute('data-label'))).toEqual(['Part no.', 'Description', 'Image', 'Job', 'Company']);
   });
 
   it('takes its notice tone from the panel, with a glyph for every tone but idle', async () => {
@@ -428,7 +436,7 @@ describe('layouts', () => {
 
   it('marks the cells the stacked layout places by hand: the identity and the growing column, on rows and on headings', async () => {
     const page = await render();
-    expect(qa(page, '.lt-row:first-child > [data-identity="true"]').length).toBe(1);
+    expect(qa(page, '.lt-slot:first-child .lt-row > [data-identity="true"]').length).toBe(1);
     expect(qa(page, '.lt-columns > [data-identity="true"]').map(el => el.textContent)).toEqual(['Part no.']);
     expect(qa(page, '.lt-columns > [data-grow="true"]').map(el => el.textContent)).toEqual(['Description']);
   });
