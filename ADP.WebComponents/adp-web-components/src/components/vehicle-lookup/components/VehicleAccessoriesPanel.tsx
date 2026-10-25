@@ -33,10 +33,10 @@ export type PanelState = {
 export type PanelNotice = { tone: NoticeTone; text: string };
 
 /** The hiddenFields names, in column order: the host's whole vocabulary for this panel. */
-export const FIELDS = ['partNumber', 'description', 'image', 'jobNumber', 'invoiceNumber', 'companyName'] as const;
+export const FIELDS = ['partNumber', 'description', 'image'] as const;
 
-/** What a host sees without configuring anything: the three columns this panel always had. */
-export const DEFAULT_HIDDEN_FIELDS = 'jobNumber,invoiceNumber,companyName';
+/** What a host sees without configuring anything: every column. */
+export const DEFAULT_HIDDEN_FIELDS = '';
 
 /**
  * The page sizes the reader can pick, in steps of five up to twenty-five, then every row. Five by
@@ -64,10 +64,6 @@ export const accessoryColumns = (locale: AccessoriesLocale): LookupColumn<Access
   { field: 'partNumber', label: locale.partNumber, kind: 'code', identity: true, value: accessory => accessory.partNumber },
   { field: 'description', label: locale.description, kind: 'text', grow: true, value: accessory => accessory.description },
   { field: 'image', label: locale.image, kind: 'media', value: accessory => accessory.image },
-  // Missing or null in the JSON when the accessory has none; the table renders either as a dash.
-  { field: 'jobNumber', label: locale.jobNumber, kind: 'ref', value: accessory => accessory.jobNumber },
-  { field: 'invoiceNumber', label: locale.invoiceNumber, kind: 'ref', value: accessory => accessory.invoiceNumber },
-  { field: 'companyName', label: locale.companyName, kind: 'text', value: accessory => accessory.companyName },
 ];
 
 /** How many columns a hidden set leaves. Names the panel does not know are ignored. */

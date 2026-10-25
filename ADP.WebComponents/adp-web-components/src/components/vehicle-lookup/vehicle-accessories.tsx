@@ -110,10 +110,9 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
   @Prop() queryString: string = '';
 
   /**
-   * Comma-separated column names to leave out: `partNumber`, `description`, `image`, `jobNumber`,
-   * `invoiceNumber`, `companyName`. A shown column with no value reads as a dash; a hidden one has
-   * no heading, no cell and no caption. The default hides the three columns this panel did not
-   * always have, so a host that configures nothing sees what it saw before.
+   * Comma-separated column names to leave out: `partNumber`, `description`, `image`. A shown column
+   * with no value reads as a dash; a hidden one has no heading, no cell and no caption. By default
+   * every column is shown.
    */
   @Prop() hiddenFields: string = DEFAULT_HIDDEN_FIELDS;
 
