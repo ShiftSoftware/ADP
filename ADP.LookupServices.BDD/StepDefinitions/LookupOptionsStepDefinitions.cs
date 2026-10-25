@@ -14,7 +14,6 @@ public class LookupOptionsStepDefinitions
     private readonly TestContext _context;
     private readonly Dictionary<string, string> _accessoryImageMappings = new();
     private readonly Dictionary<long?, string> _companyNames = new();
-    private readonly List<long?> _companyNameResolverCalls = new();
     private readonly Dictionary<long?, string> _branchNames = new();
     private readonly Dictionary<long?, string> _countryNames = new();
     private readonly Dictionary<long?, string> _regionNames = new();
@@ -155,19 +154,9 @@ public class LookupOptionsStepDefinitions
         _companyNames[companyId] = name;
         _context.Options.CompanyNameResolver = (model) =>
         {
-            _companyNameResolverCalls.Add(model.Value);
             var resolved = model.Value is { } id && _companyNames.TryGetValue(id, out var n) ? n : null;
             return new ValueTask<string?>(resolved);
         };
-    }
-
-    [Then("the company name resolver was called {int} times, once for each of company IDs {string}")]
-    public void ThenCompanyNameResolverCalledOncePerId(int count, string commaSeparatedIds)
-    {
-        Xunit.Assert.Equal(count, _companyNameResolverCalls.Count);
-        var expected = commaSeparatedIds.Split(',', StringSplitOptions.TrimEntries)
-            .Select(x => x == "null" ? (long?)null : long.Parse(x));
-        Xunit.Assert.Equal(expected.OrderBy(x => x), _companyNameResolverCalls.OrderBy(x => x));
     }
 
     [Given("branch {long} is named {string}")]

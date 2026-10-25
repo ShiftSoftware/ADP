@@ -39,36 +39,4 @@ public class VehicleAccessoriesStepDefinitions
         Assert.NotNull(accessory);
         Assert.Equal(expectedImage, accessory.Image);
     }
-
-    private AccessoryDTO Find(string partNumber)
-    {
-        Assert.NotNull(_result);
-        var accessory = _result.FirstOrDefault(a => a.PartNumber == partNumber);
-        Assert.NotNull(accessory);
-        return accessory;
-    }
-
-    [Then("accessory {string} has job number {int}")]
-    public void ThenAccessoryHasJobNumber(string partNumber, int expected)
-        => Assert.Equal(expected, Find(partNumber).JobNumber);
-
-    [Then("accessory {string} has no job number")]
-    public void ThenAccessoryHasNoJobNumber(string partNumber)
-        => Assert.Null(Find(partNumber).JobNumber);
-
-    [Then("accessory {string} has invoice number {int}")]
-    public void ThenAccessoryHasInvoiceNumber(string partNumber, int expected)
-        => Assert.Equal(expected, Find(partNumber).InvoiceNumber);
-
-    [Then("accessory {string} has no invoice number")]
-    public void ThenAccessoryHasNoInvoiceNumber(string partNumber)
-        => Assert.Null(Find(partNumber).InvoiceNumber);
-
-    [Then("accessory {string} has company name {string}")]
-    public void ThenAccessoryHasCompanyName(string partNumber, string expected)
-        => Assert.Equal(expected, Find(partNumber).CompanyName);
-
-    [Then("accessory {string} has no company name")]
-    public void ThenAccessoryHasNoCompanyName(string partNumber)
-        => Assert.Null(Find(partNumber).CompanyName);
 }

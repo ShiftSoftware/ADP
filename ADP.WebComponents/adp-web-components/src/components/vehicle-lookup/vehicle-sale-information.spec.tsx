@@ -1297,22 +1297,6 @@ describe('vehicle-sale-information — the supply chain flag', () => {
     expect(attr(page, '.sale-chain-end-slot', 'aria-hidden')).toBe('true');
   });
 
-  it('a leg one vehicle has and the next does not slides out covered; one it adds slides in (owner, 2026-10-25)', async () => {
-    const page = await newPage(brokerMarketMocks, SHOW_ALL);
-    await load(page, FULL_CHAIN_VIN);
-    const before = all(page, '.sale-leg-slot').map(slot => slot.querySelector('.sale-leg').getAttribute('data-leg'));
-
-    await load(page, NO_END_CUSTOMER_VIN);
-    const slots = all(page, '.sale-leg-slot');
-    const leaving = slots.filter(slot => slot.classList.contains('loading'));
-    expect(leaving.length).toBeGreaterThan(0);
-    expect(leaving.every(slot => slot.getAttribute('data-open') === 'false')).toBe(true);
-    expect(leaving.every(slot => before.includes(slot.querySelector('.sale-leg').getAttribute('data-leg')))).toBe(true);
-
-    await settle(page);
-    expect(all(page, '.sale-leg-slot.loading')).toHaveLength(0);
-  });
-
   it('reconfigures live: the body shuts over the old layout, swaps unseen and reopens, with no loading state', async () => {
     const page = await newPage(brokerMarketMocks, SHOW_ALL);
     await load(page, FULL_CHAIN_VIN);

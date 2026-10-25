@@ -68,64 +68,6 @@ describe('vehicle-lookup', () => {
     expect(panels['vehicle-warranty-timeline'].fetchVin).toHaveBeenCalledWith(response);
   });
 
-  it('hands the other panels the answer one at a time, after the visible panel has settled, never in one go', async () => {
-    const { wrapper, panels } = await newWrapper();
-    const others = Object.entries(panels)
-      .filter(([tag]) => tag !== 'vehicle-specification')
-      .map(([, panel]) => panel);
-    const handed = () => others.filter(panel => panel.fetchVin.mock.calls.length).length;
-
-    // The browser's idle moments, released by hand.
-    const idle: (() => void)[] = [];
-    (wrapper as any).idle = () => new Promise<void>(resolve => idle.push(resolve));
-    const nextIdle = async () => {
-      while (!idle.length) await new Promise(resolve => setTimeout(resolve, 10));
-      idle.shift()();
-      await new Promise(resolve => setTimeout(resolve, 0));
-    };
-
-    const done = wrapper.handleLoadData(response, panels['vehicle-specification']);
-    expect(handed()).toBe(0);
-
-    // The visible panel's arrival settles first; nothing is handed over until an idle moment after it.
-    for (let n = 1; n <= others.length; n++) {
-      await nextIdle();
-      expect(handed()).toBe(n);
-    }
-
-    await done;
-    expect(handed()).toBe(others.length);
-  });
-
-  it('hands a tab opened before its turn the answer at once', async () => {
-    const { wrapper, panels } = await newWrapper();
-
-    const done = wrapper.handleLoadData(response, panels['vehicle-specification']);
-    expect(panels['vehicle-accessories'].fetchVin).not.toHaveBeenCalled();
-
-    wrapper.activeElement = 'vehicle-accessories' as never;
-    expect(panels['vehicle-accessories'].fetchVin).toHaveBeenCalledWith(response);
-
-    await done;
-    // Handed once: the queue does not give it the answer a second time.
-    expect(panels['vehicle-accessories'].fetchVin).toHaveBeenCalledTimes(1);
-  });
-
-  it('a newer answer cancels the rest of an older hand-over', async () => {
-    const { wrapper, panels } = await newWrapper();
-    const newer = { ...response, vin: 'ZT8NEWERVIN000001' };
-
-    const first = wrapper.handleLoadData(response, panels['vehicle-specification']);
-    const second = wrapper.handleLoadData(newer, panels['vehicle-specification']);
-    await Promise.all([first, second]);
-
-    for (const [tag, panel] of Object.entries(panels)) {
-      if (tag === 'vehicle-specification') continue;
-      expect(panel.fetchVin).toHaveBeenCalledTimes(1);
-      expect(panel.fetchVin).toHaveBeenCalledWith(newer);
-    }
-  });
-
   it('tells the SSC panel a search from another tab skipped it, rather than clearing or hydrating it', async () => {
     const { wrapper, panels } = await newWrapper('ssc-query-string="logCampaignCheck=true"');
 

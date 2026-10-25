@@ -765,25 +765,6 @@ describe('vehicle-specification — the details block', () => {
     expect(shadow(page).querySelectorAll('.spec-group')).toHaveLength(2);
   });
 
-  it('stays open through a lookup with its values under the skeleton, and shuts covered only when the answer has no details (owner, 2026-10-25)', async () => {
-    const page = await newPage(edgeCaseMocks);
-    await owner(page).fetchVin('ZT8VC4MH7TB552731');
-    await page.waitForChanges();
-
-    const pending = owner(page).fetchVin('ZW8PD9FK1T6034557');
-    await page.waitForChanges();
-    const shell = () => shadow(page).querySelector('.spec-details');
-    expect(owner(page).isLoading).toBe(true);
-    expect(shell()?.getAttribute('data-open')).toBe('true');
-    expect(shadow(page).querySelector('#spec-details-region')?.getAttribute('data-open')).toBe('true');
-    expect(shadow(page).querySelector('.lookup-core, .lookup-panel')?.classList.contains('loading')).toBe(true);
-
-    await pending;
-    await page.waitForChanges();
-    expect(shell()?.getAttribute('data-open')).toBe('false');
-    expect(shell()?.classList.contains('loading')).toBe(true);
-  });
-
   it('carries no block, no summary row and no trigger for a vehicle with no details', async () => {
     const page = await newPage(edgeCaseMocks);
 

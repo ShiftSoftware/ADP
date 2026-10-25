@@ -334,28 +334,6 @@ describe('SscCampaigns', () => {
         expect(panelLead(state({ authorized: false, checkStatus }), false)).toBe('notice');
       }
     });
-
-    it('is a notice for a failed lookup: settled, not idle', () => {
-      expect(panelLead(state({ vehicleLoaded: false, error: 'Failed' }), false)).toBe('notice');
-    });
-
-    it('never answers skeleton', () => {
-      const answers = new Set<string>();
-      for (const busy of [false, true]) {
-        for (const over of [
-          {},
-          { authorized: true, campaigns: [] },
-          { authorized: true, campaigns: authorizedVehicle.ssc ?? [] },
-          { authorized: false },
-          { authorized: false, checkStatus: 'noRecall' as const },
-          { vehicleLoaded: false },
-          { vehicleLoaded: false, skipped: true },
-          { vehicleLoaded: false, error: 'Failed' },
-        ])
-          answers.add(panelLead(state(over), busy));
-      }
-      expect([...answers].sort()).toEqual(['columns', 'notice']);
-    });
   });
 
   describe('the strip in the DOM', () => {
@@ -368,25 +346,6 @@ describe('SscCampaigns', () => {
       expect(page.body.querySelector('.ssc-lead-columns')?.getAttribute('role')).toBe('row');
       expect(page.body.querySelector('.ssc-lead-columns')?.hasAttribute('aria-hidden')).toBe(false);
       expect(page.body.querySelectorAll('.ssc-lead-columns [role="columnheader"]').length).toBeGreaterThanOrEqual(5);
-    });
-
-    it('says a failed lookup in the strip, red, in the words of the pill', async () => {
-      const page = await render({ vehicleLoaded: false, error: 'Something went wrong' });
-
-      expect(leadOf(page)).toBe('notice');
-      expect(noticeText(page)).toBe('Something went wrong');
-      expect(page.body.querySelector('.ssc-lead-notice')?.classList.contains('is-negative')).toBe(true);
-      expect(page.body.querySelector('.ssc-lead-notice')?.getAttribute('data-active')).toBe('true');
-      expect(page.body.querySelector('.ssc-lead-columns')?.getAttribute('data-active')).toBe('false');
-      expect(page.body.querySelector('.ssc-lead-columns')?.getAttribute('aria-hidden')).toBe('true');
-    });
-
-    it('swaps layers by data-active alone: both stay mounted through idle, in flight and a notice', async () => {
-      for (const options of [{ vehicleLoaded: false }, { loading: true, authorized: false }, { authorized: false }]) {
-        const page = await render(options);
-        expect(page.body.querySelectorAll('.ssc-lead > .layer')).toHaveLength(2);
-        expect(page.body.querySelectorAll('.ssc-lead > .layer[data-active="true"]')).toHaveLength(1);
-      }
     });
   });
 

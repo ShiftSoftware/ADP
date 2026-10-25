@@ -82,24 +82,6 @@ export const FIXTURE_TAGS = {
     /* standard-dealer */
     UNKNOWN_VIN_12345: 'not in distributor records',
   },
-
-  'vehicle-accessories': {
-    /* broker-market — the main cases, one vehicle each. */
-    ZS8AX5KB8T6710001: 'full kit · ten parts, every drawing, two installing companies',
-    ZS8AX5KBXT6710002: 'a single accessory',
-    ZS8AX5KB1T6710003: 'the same part installed twice · two invoices, two jobs',
-    ZS8AX5KB3T6710004: 'four parts on one job and one invoice',
-    ZS8AX5KB5T6710005: 'a part with no picture',
-    ZS8AX5KB4T6710013: 'many rows · twenty-four parts',
-    ZU8ZL7VAXG2426255: 'authorized, no accessories on record',
-    ZV8GHHHP37P214642: 'not in distributor records',
-
-    /* edge-cases — one variation each. */
-    ZS8AX5KB2T6720006: 'a picture the drawings do not cover · the generic carton',
-    ZS8AX5KB6T6720008: 'long text · a 161-character description and a 55-character part number',
-    ZS8AX5KB8T6720009: 'no job and no invoice number · shown as dashes',
-    ZS8AX5KB4T6720010: 'an installing company the environment cannot name',
-  },
 };
 
 /** The set for one component, never undefined so a caller can index it without a guard. */
