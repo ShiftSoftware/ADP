@@ -139,9 +139,9 @@ describe('vehicle-ssc', () => {
     (shadow(page).querySelector('.dev-recaptcha') as HTMLElement).click();
     await page.waitForChanges();
 
-    // In flight: the pill and the strip go to the sheen, the widget stays with its spinner under it.
+    // In flight: the strip crosses through its headings, the widget stays with its spinner under it.
     expect(phaseOf(page)).toBe('busy');
-    expect(leadOf(page)).toBe('skeleton');
+    expect(leadOf(page)).toBe('columns');
     expect(bodyOpen(page)).toBe(true);
     expect(shadow(page).querySelector('.ssc-checking-slot')?.getAttribute('data-open')).toBe('true');
     expect(shadow(page).querySelector('.dev-recaptcha-checkbox.checked')).not.toBeNull();
@@ -300,7 +300,7 @@ describe('vehicle-ssc', () => {
     await clearing;
     await page.waitForChanges();
     expect(verdictOf(page)).toBe('idle');
-    expect(leadOf(page)).toBe('skeleton');
+    expect(leadOf(page)).toBe('columns');
     expect(phaseOf(page)).toBe('settled');
   });
 

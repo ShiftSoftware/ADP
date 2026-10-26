@@ -14,7 +14,6 @@ import paintThicknessSchema from '~locales/vehicleLookup/paintThickness/type';
 import { PaintThicknessInspectionPanelDTO } from '~types/generated/vehicle-lookup/paint-thickness-inspection-panel-dto';
 
 import { LookupHead, VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
-import { closeImageViewer, ImageViewer, ImageViewerInterface, openImageViewer } from '~features/image-viewer';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { VehicleLookupComponent, VehicleLookupMock, setVehicleLookupData, setVehicleLookupErrorState } from '~features/vehicle-lookup-component';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
@@ -24,7 +23,7 @@ import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, Language
   tag: 'vehicle-paint-thickness',
   styleUrl: 'vehicle-paint-thickness.css',
 })
-export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInterface, ImageViewerInterface, VehicleLookupComponent, BlazorInvokable {
+export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInterface, VehicleLookupComponent, BlazorInvokable {
   // #region Localization
 
   @Prop() language: LanguageKeys = 'en';
@@ -49,11 +48,24 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
   // #endregion
 
-  // #region Image Viewer Logic
+  // #region Image viewer (<shift-image>, portaled onto <body>)
 
+  /** The picture open in the viewer, or empty. */
   @State() expandedImage?: string = '';
 
-  originalImage: HTMLImageElement;
+  private imageViewer?: HTMLShiftImageElement;
+
+  /** Opens the viewer on `src`, growing out of the thumbnail `origin`. The same picture again while open is ignored. */
+  private openImage(origin: HTMLImageElement, src: string, label?: string) {
+    if (this.expandedImage === src) return;
+    this.expandedImage = src;
+    void this.imageViewer?.show(src, { origin, label });
+  }
+
+  /** The viewer closed (overlay, key or hide()): the panel no longer has a picture open. */
+  private onViewerChange = (event: CustomEvent<{ open: boolean }>) => {
+    if (!event.detail.open) this.expandedImage = '';
+  };
 
   // #endregion
 
@@ -231,7 +243,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
     return (
       <Host translate="no">
-        <ImageViewer closeImageViewer={() => closeImageViewer.bind(this)()} expandedImage={this.expandedImage} />
+        <shift-image ref={el => (this.imageViewer = el)} language={this.language} onViewerChange={this.onViewerChange} />
 
         <VehicleInfoLayout
           isError={this.isError}
@@ -375,7 +387,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
                         {imageGroup?.images.map((image, idx) => (
                           <div class={cn('flex shift-skeleton gap-[8px]', { loading: !image })} key={image + idx}>
                             <button
-                              onClick={({ target }) => openImageViewer.bind(this)(target as HTMLImageElement, image)}
+                              onClick={({ target }) => this.openImage(target as HTMLImageElement, image)}
                               class="shrink-0 relative ring-0 outline-none w-fit mx-auto [&_img]:hover:shadow-lg [&_div]:hover:!opacity-100 cursor-pointer"
                             >
                               <div class="absolute flex-col justify-center gap-[4px] size-full flex items-center pointer-events-none hover:opacity-100 rounded-lg opacity-0 bg-black/40 transition-all duration-300">

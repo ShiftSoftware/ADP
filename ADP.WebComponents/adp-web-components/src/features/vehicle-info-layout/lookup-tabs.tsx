@@ -26,6 +26,15 @@ type LookupTabsProps = {
   /** The tabs, in render order; each value is the panel element. */
   panels: [string, unknown][];
   regionRef: (el: HTMLDivElement | undefined) => void;
+  /**
+   * Inactive tabs that must stay laid out: the one still leaving. Every other inactive tab is
+   * dormant -- `display: none` -- so a lookup that reaches all eight panels lays out and animates
+   * only the one on screen. Measured on the composite page with the CPU slowed 4x: one lookup cost
+   * 2.6s of main-thread work and froze frames for up to 840ms with seven hidden tabs laid out and
+   * animating under the visible one, 0.7s and 93ms with them dormant (owner, 2026-10-25).
+   * `createTabRegion.beforeSwitch` wakes the incoming tab before it measures it.
+   */
+  awake?: string[];
 };
 
 /**
@@ -38,13 +47,22 @@ type LookupTabsProps = {
  * driven by `data-tab-park` / `data-tab-leaving` on the panel's host) — and the region's height
  * follows the incoming panel (`createTabRegion`).
  */
-export const LookupTabs: FunctionalComponent<LookupTabsProps> = ({ active, panels, regionRef }) => (
+export const LookupTabs: FunctionalComponent<LookupTabsProps> = ({ active, panels, regionRef, awake = [] }) => (
   <div class="lookup-tabs" ref={regionRef}>
     {panels.map(([tag, panel]) => {
       const inactive = tag !== active;
+      const dormant = inactive && !awake.includes(tag);
 
       return (
-        <div key={tag} class="lookup-tab" data-tab={tag} data-state={inactive ? 'inactive' : 'active'} aria-hidden={inactive ? 'true' : null} inert={inactive}>
+        <div
+          key={tag}
+          class="lookup-tab"
+          data-tab={tag}
+          data-state={inactive ? 'inactive' : 'active'}
+          data-dormant={dormant ? 'true' : null}
+          aria-hidden={inactive ? 'true' : null}
+          inert={inactive}
+        >
           {panel}
         </div>
       );
@@ -68,6 +86,28 @@ export const LookupTabs: FunctionalComponent<LookupTabsProps> = ({ active, panel
  *
  * Nothing here gates input: the settle timer only releases the pinned height.
  */
+/**
+ * Undoes what a dormant tab's `<flexible-container>`s measured while it was `display: none`. Those
+ * containers pin their height to their content's measured height whenever the content changes, and
+ * a panel that received its answer while dormant measured 0 — so the open ones came back shut, and
+ * service history showed its title and nothing else. An open container pinned at 0 is released to
+ * `auto` here, on waking, before the switch measures the tab; the container pins a real height again
+ * on its next change. Closed containers are left alone. Searched through nested shadow roots.
+ */
+export const reviveDormantMeasurements = (root: ParentNode | null | undefined) => {
+  if (!root) return;
+  root.querySelectorAll('*').forEach(element => {
+    if (element.tagName === 'FLEXIBLE-CONTAINER') {
+      const container = Array.from(element.children).find(child => child.classList.contains('flexible-container')) as HTMLElement | undefined;
+      if (container && (element as unknown as { isOpened?: boolean }).isOpened !== false && container.style.height === '0px') {
+        container.style.height = 'auto';
+        container.style.opacity = '1';
+      }
+    }
+    if (element.shadowRoot) reviveDormantMeasurements(element.shadowRoot);
+  });
+};
+
 /** A panel's head band, inside its shadow root — the composite may look into its own children. */
 const bandOf = (host: Element | undefined) => (host?.shadowRoot?.querySelector('.lookup-head-band') as HTMLElement | null) ?? undefined;
 
@@ -140,6 +180,14 @@ export const createTabRegion = (region: () => HTMLElement | undefined) => {
     beforeSwitch(incoming: Element | undefined, hosts?: { incoming?: HTMLElement; outgoing?: HTMLElement }) {
       const el = region();
       if (!el) return;
+
+      // A dormant tab is display: none and has no size. Woken here, still inactive and hidden, so
+      // the measurements below are of its laid-out, parked state -- which is also the style its
+      // arrival transitions from. The patch that makes it active leaves the attribute off.
+      if (incoming?.hasAttribute('data-dormant')) {
+        incoming.removeAttribute('data-dormant');
+        reviveDormantMeasurements(incoming);
+      }
 
       // The head bands: the incoming one is held at the outgoing's height through the patch (a
       // held band is what the incoming tab is measured with, so the region's target is the settled

@@ -10,6 +10,7 @@ import saleInformationSchema from '~locales/vehicleLookup/saleInformation/type';
 import {
   EndCustomerStatement,
   RetainedLegs,
+  legSlots,
   SaleConfig,
   SaleLeg,
   SaleRecord,
@@ -312,6 +313,47 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
     }
   }
 
+  // #region Leg slots: legs stay where they are while their values change
+
+  /** The legs as last rendered, and whether the band was open on them. */
+  private legsBefore: SaleLeg[] = [];
+  private bandWasOpen = false;
+  /** Legs the band no longer holds, kept in their slots while those shut; dropped a settle later. */
+  private leavingLegs: { leg: SaleLeg; index: number }[] = [];
+  private leavingTimer?: ReturnType<typeof setTimeout>;
+  /** Legs just added while the band was open: rendered shut, opened on the next frame so they slide in. */
+  private arrivingLegs = new Set<string>();
+  private openLegsPending = false;
+  /** The last chain end shown, so the line slides away with its words. */
+  private lastChainEnd?: EndCustomerStatement;
+
+  private updateLegSlots(current: SaleLeg[], open: boolean) {
+    const keys = (legs: SaleLeg[]) => legs.map(leg => leg.key).join('|');
+    if (keys(current) !== keys(this.legsBefore)) {
+      if (this.bandWasOpen && open) {
+        const now = new Set(current.map(leg => leg.key));
+        const before = new Set(this.legsBefore.map(leg => leg.key));
+        this.leavingLegs = this.legsBefore.map((leg, index) => ({ leg, index })).filter(({ leg }) => !now.has(leg.key));
+        this.arrivingLegs = new Set(current.filter(leg => !before.has(leg.key)).map(leg => leg.key));
+        this.openLegsPending = this.arrivingLegs.size > 0;
+
+        clearTimeout(this.leavingTimer);
+        if (this.leavingLegs.length) {
+          this.leavingTimer = setTimeout(() => {
+            this.leavingTimer = undefined;
+            this.leavingLegs = [];
+            forceUpdate(this);
+          }, this.settleMs());
+        }
+      } else {
+        this.leavingLegs = [];
+        this.arrivingLegs = new Set();
+      }
+    }
+    this.legsBefore = current;
+    this.bandWasOpen = open;
+  }
+
   // #endregion
 
   // #region Height
@@ -353,6 +395,16 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
   componentDidRender() {
     this.announceVerdict();
 
+    if (this.openLegsPending) {
+      this.openLegsPending = false;
+      // The new legs are in the document, shut; laid out once in that state so opening them is a transition.
+      this.el.shadowRoot?.querySelector('.sale-leg-list')?.getBoundingClientRect();
+      requestAnimationFrame(() => {
+        this.arrivingLegs = new Set();
+        forceUpdate(this);
+      });
+    }
+
     this.layoutSignature = this.signature();
 
     if (!this.valuesChanged) return;
@@ -366,6 +418,7 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
 
   disconnectedCallback() {
     clearTimeout(this.retainTimer);
+    clearTimeout(this.leavingTimer);
     this.resizeSettle.dispose();
     this.heightAnnouncer?.dispose();
   }
@@ -403,6 +456,9 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
     const busy = this.isLoading || this.leaving;
     const current = this.legs();
     this.retainLegs(current);
+    // The band is open on legs whenever there are any and the panel is not clearing (it stays open through a lookup).
+    this.updateLegSlots(current.legs, (current.legs.length > 0 || !!current.chainEnd) && !this.leaving);
+    if (current.chainEnd) this.lastChainEnd = current.chainEnd;
 
     return (
       <Host translate="no">
@@ -419,6 +475,7 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
             record={record}
             error={error}
             loading={busy}
+            leaving={this.leaving}
             reconfiguring={this.reconfiguring}
             headLeaving={this.headLeaving}
             verdict={verdict}
@@ -427,6 +484,8 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
             chainEnd={current.chainEnd}
             retained={this.retained}
             customerHeld={this.customerHeld}
+            slots={legSlots(current.legs, this.leavingLegs, this.arrivingLegs)}
+            lastChainEnd={this.lastChainEnd}
           />
         </VehicleInfoLayout>
       </Host>

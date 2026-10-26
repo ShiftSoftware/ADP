@@ -1,1 +1,26 @@
-{ "vehicleAccessories": "إكسسوارات المركبات", "noData": "لا توجد بيانات متاحة.", "partNumber": "رقم القطعة", "description": "وصف", "image": "صورة", "expand": "تکبیر" }
+{
+  "vehicleAccessories": "إكسسوارات المركبات",
+  "partNumber": "رقم القطعة",
+  "description": "وصف",
+  "image": "صورة",
+  "columnsLabel": "قائمة الإكسسوارات",
+  "noImage": "لا توجد صورة مسجّلة",
+  "imageFailed": "تعذّر تحميل الصورة",
+  "openImage": "فتح صورة",
+  "unauthorizedNotice": "هذه المركبة غير مسجّلة في سجلات الموزّع، لذا لا يمكن عرض إكسسواراتها.",
+  "noAccessories": "لا توجد إكسسوارات مسجّلة لهذه المركبة.",
+  "noFieldsShown": "لم يتم اختيار أي حقل للعرض.",
+  "accessoryCountZero": "{count} إكسسوار",
+  "accessoryCountOne": "{count} إكسسوار",
+  "accessoryCountTwo": "{count} إكسسوار",
+  "accessoryCountFew": "{count} إكسسوارات",
+  "accessoryCountMany": "{count} إكسسوارًا",
+  "accessoryCountOther": "{count} إكسسوار",
+  "rowsPerPage": "عدد الصفوف في الصفحة",
+  "pageAll": "الكل",
+  "pageRange": "{from}–{to} من {total}",
+  "previousPage": "الصفحة السابقة",
+  "nextPage": "الصفحة التالية",
+  "idleHint": "ابحث عن مركبة لعرض الإكسسوارات المركّبة عليها.",
+  "emptyHint": "تظهر هنا الإكسسوارات التي رُكّبت على هذه المركبة بعد خروجها من المصنع."
+}

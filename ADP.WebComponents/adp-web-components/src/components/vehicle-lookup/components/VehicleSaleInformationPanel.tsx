@@ -5,8 +5,7 @@ import saleInformationSchema from '~locales/vehicleLookup/saleInformation/type';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import { LookupHeadWait, PanelVerdict, StatusBadge } from '~features/vehicle-info-layout';
-
-import { BADGE_GLYPHS } from './glyphs';
+import { parseHiddenFields } from '~features/lookup-table';
 
 import { UserIcon } from '~assets/user-icon';
 import { PhoneIcon } from '~assets/phone-icon';
@@ -34,17 +33,32 @@ export type SaleHead = { grammar: 'value' | 'name'; value: string; branch: strin
 
 export type RetainedLegs = { legs: SaleLeg[]; chainEnd?: EndCustomerStatement };
 
+/** A leg on screen: its own sliding slot. `leaving` legs are the last vehicle's, shutting under the skeleton. */
+export type LegSlot = { leg: SaleLeg; open: boolean; leaving: boolean };
+
+/**
+ * The legs in their slots (owner, 2026-10-25). A leg both vehicles have keeps its slot and its values
+ * change under the skeleton; a leg the new vehicle does not have stays where it stood, covered, while
+ * its slot shuts; a leg it adds arrives shut and is opened a frame later, so it slides in. Before, a
+ * leg that came or went (an intermediary on one vehicle and not the next) mounted or unmounted in one
+ * frame and the whole card jumped. `leaving` carries each departing leg with its old position, so it
+ * leaves from where it was.
+ */
+export const legSlots = (current: SaleLeg[], leaving: { leg: SaleLeg; index: number }[], arriving: ReadonlySet<string>): LegSlot[] => {
+  const slots: LegSlot[] = current.map(leg => ({ leg, open: !arriving.has(leg.key), leaving: false }));
+  for (const { leg, index } of [...leaving].sort((a, b) => a.index - b.index)) {
+    if (slots.some(slot => slot.leg.key === leg.key)) continue;
+    slots.splice(Math.min(index, slots.length), 0, { leg, open: false, leaving: true });
+  }
+  return slots;
+};
+
 const BLANK = ' ';
 
 const END_CUSTOMER_FIELDS = ['endCustomerName', 'endCustomerPhone', 'endCustomerIdNumber'];
 
-export const parseHiddenFields = (raw?: string): Set<string> =>
-  new Set(
-    (raw ?? '')
-      .split(',')
-      .map(field => field.trim())
-      .filter(Boolean),
-  );
+// Moved to the lookup table (it owns the hiddenFields grammar now); re-exported so existing importers keep working.
+export { parseHiddenFields };
 
 export const sameConfig = (a: SaleConfig, b: SaleConfig): boolean => a.chain === b.chain && a.hidden.size === b.hidden.size && [...a.hidden].every(name => b.hidden.has(name));
 
@@ -88,12 +102,6 @@ export const hasRecords = (record?: SaleRecord): boolean => {
 };
 
 export const readable = (record: SaleRecord | undefined, error?: string): boolean => !!record?.vin && !error && record.isAuthorized !== false;
-
-export const saleNotice = (state: { authorized?: boolean }, busy: boolean, locale: SaleLocale): { open: boolean; tone: 'neutral'; message: string } => ({
-  open: !busy && state.authorized === false,
-  tone: 'neutral',
-  message: locale.unauthorizedNotice,
-});
 
 export const brokerInStock = (record?: SaleRecord): boolean => {
   const broker = record?.saleInformation?.broker;
@@ -409,7 +417,11 @@ const CustomerCellView: FunctionalComponent<{ cell: SaleCell; blank: boolean; st
 // One skeleton block for the whole card, not one per value. `held` keeps it covered after the panel
 // lifts, while the card changes state under it: it resizes and recolours first, then the cover lifts.
 const CustomerCard: FunctionalComponent<{ cells: SaleCell[]; blank: boolean; statement: EndCustomerStatement; held: boolean }> = ({ cells, blank, statement, held }) => (
-  <div class={{ 'sale-customer': true, 'shift-skeleton': true, 'resize-settle': true, 'loading': held }} data-state={blank ? 'blank' : statement.kind} data-held={held ? 'true' : 'false'}>
+  <div
+    class={{ 'sale-customer': true, 'shift-skeleton': true, 'resize-settle': true, 'loading': held }}
+    data-state={blank ? 'blank' : statement.kind}
+    data-held={held ? 'true' : 'false'}
+  >
     {cells.map(cell => (
       <CustomerCellView key={cell.key} cell={cell} blank={blank} statement={statement} />
     ))}
@@ -417,12 +429,12 @@ const CustomerCard: FunctionalComponent<{ cells: SaleCell[]; blank: boolean; sta
 );
 
 const SaleLegView: FunctionalComponent<{ leg: SaleLeg; chain: boolean; key?: string }> = ({ leg, chain }) => (
-  <li class="sale-leg" data-leg={leg.kind} data-index={leg.index === undefined ? null : String(leg.index)}>
+  <div class="sale-leg" data-leg={leg.kind} data-index={leg.index === undefined ? null : String(leg.index)}>
     {chain && <span class="sale-leg-marker" aria-hidden="true" />}
     <div class="sale-leg-party">
       <span class="sale-leg-role">{leg.role}</span>
       {!!leg.party && (
-        <span class="sale-value" data-role={valueRole(leg.party)} data-field={leg.party.key}>
+        <span class="sale-value shift-skeleton" data-role={valueRole(leg.party)} data-field={leg.party.key}>
           <span class="sale-value-content">
             <SaleValue cell={leg.party} />
           </span>
@@ -433,14 +445,14 @@ const SaleLegView: FunctionalComponent<{ leg: SaleLeg; chain: boolean; key?: str
     {leg.cells.map(cell => (
       <div class="sale-cell sale-leg-cell" key={cell.key} data-field={cell.key} data-label={cell.label} data-column={String(cell.column ?? 1)}>
         <span class="sale-cell-label">{cell.label}</span>
-        <span class="sale-value" data-role={valueRole(cell)}>
+        <span class="sale-value shift-skeleton" data-role={valueRole(cell)}>
           <span class="sale-value-content">
             <SaleValue cell={cell} />
           </span>
         </span>
       </div>
     ))}
-  </li>
+  </div>
 );
 
 type Props = {
@@ -448,6 +460,8 @@ type Props = {
   record?: SaleRecord;
   error?: string;
   loading: boolean;
+  /** The panel is being cleared (or failing from a settled card): the supply chain shuts. A lookup alone does not shut it. */
+  leaving?: boolean;
   reconfiguring: boolean;
   headLeaving: boolean;
   verdict: Pick<PanelVerdict, 'state' | 'text'>;
@@ -456,24 +470,32 @@ type Props = {
   chainEnd?: EndCustomerStatement;
   retained: RetainedLegs;
   customerHeld: boolean;
+  /** The legs in their slots (`legSlots`); without it every leg shown is open. */
+  slots?: LegSlot[];
+  /** The last chain end the band showed, so the line can slide away with its words when the next vehicle has none. */
+  lastChainEnd?: EndCustomerStatement;
 };
 
 export const VehicleSaleInformationPanel: FunctionalComponent<Props> = props => {
-  const { locale, record, error, loading, reconfiguring, headLeaving, verdict, config, legs, retained, customerHeld } = props;
+  const { locale, record, error, loading, leaving = false, reconfiguring, headLeaving, verdict, config, legs, retained, customerHeld } = props;
 
-  const vehicleLoaded = !!record?.vin && !error;
   const canRead = readable(record, error);
-  const notice = saleNotice({ authorized: record?.isAuthorized }, loading, locale);
   const head = headStatement(record, config, canRead);
   const cells = saleCells(record, config, locale, canRead);
   const statement = endCustomerStatement(record, config, locale, canRead);
   const customerCells = endCustomerCells(record, config, locale, canRead);
-  const blank = !vehicleLoaded;
+  // Idle look before a lookup, after a failed one, and for a vehicle not in the distributor's records:
+  // the pill says which (owner, 2026-10-25), the values stay blank rather than dashed.
+  const blank = !canRead;
 
   const hasLegs = legs.length > 0 || !!props.chainEnd;
   const shownEnd = hasLegs ? props.chainEnd : retained.chainEnd;
   const shownLegs = hasLegs ? legs : retained.legs;
-  const legsOpen = hasLegs && !loading;
+  // A lookup does not shut the supply chain (owner, 2026-10-25): its values go under the skeleton
+  // where they stand and the next vehicle's land under it; it shuts only when the answer has no
+  // chain -- still covered (`legsHeld`), since what it shows is the last vehicle's -- or on a clear.
+  const legsOpen = hasLegs && !leaving;
+  const legsHeld = !hasLegs && retained.legs.length > 0;
 
   return (
     <section
@@ -510,17 +532,6 @@ export const VehicleSaleInformationPanel: FunctionalComponent<Props> = props => 
 
       <div class="lookup-slide-clip">
         <div class="sale-under-head lookup-slide">
-          <div class="sale-notice collapsible" data-open={notice.open ? 'true' : 'false'} data-tone={notice.tone} aria-hidden={notice.open ? null : 'true'}>
-            <div class="collapsible-body">
-              <p class="sale-notice-body" role="status">
-                <svg class="notice-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
-                  <path fill="currentColor" d={BADGE_GLYPHS.question} />
-                </svg>
-                <span>{notice.message}</span>
-              </p>
-            </div>
-          </div>
-
           <div class="sale-lead">
             <span class="sale-lead-caption-label" id="sale-caption" aria-hidden="true">
               {locale.sale}
@@ -544,22 +555,42 @@ export const VehicleSaleInformationPanel: FunctionalComponent<Props> = props => 
                 ))}
               </div>
 
-
-              <div class="sale-legs collapsible" data-open={legsOpen ? 'true' : 'false'} data-empty={hasLegs ? 'false' : 'true'} aria-hidden={legsOpen ? null : 'true'}>
+              <div
+                class={{ 'sale-legs': true, 'collapsible': true, 'loading': legsHeld }}
+                data-open={legsOpen ? 'true' : 'false'}
+                data-empty={hasLegs ? 'false' : 'true'}
+                aria-hidden={legsOpen ? null : 'true'}
+              >
                 <div class="collapsible-body">
                   <div class="sale-legs-band">
                     <span class="sale-group-label" id="sale-supply-chain-label" aria-hidden="true">
                       {locale.supplyChain}
                     </span>
                     <ol class="sale-leg-list" aria-labelledby="sale-supply-chain-label">
-                      {shownLegs.map(leg => (
-                        <SaleLegView key={leg.key} leg={leg} chain={config.chain} />
+                      {(hasLegs && props.slots ? props.slots : shownLegs.map(leg => ({ leg, open: true, leaving: false }))).map(slot => (
+                        <li
+                          key={slot.leg.key}
+                          class={{ 'sale-leg-slot': true, 'collapsible': true, 'loading': slot.leaving }}
+                          data-open={slot.open ? 'true' : 'false'}
+                          aria-hidden={slot.open ? null : 'true'}
+                        >
+                          <div class="collapsible-body">
+                            <SaleLegView leg={slot.leg} chain={config.chain} />
+                          </div>
+                        </li>
                       ))}
                     </ol>
-                    {config.chain && !!shownEnd && (
-                      <p class="sale-chain-end" data-kind={shownEnd.kind}>
-                        <StatementText statement={shownEnd} text={shownEnd.text} />
-                      </p>
+                    {/* Its own slot, so a vehicle without a chain end lets the line slide away instead of vanishing. */}
+                    {config.chain && (
+                      <div class="sale-chain-end-slot collapsible" data-open={shownEnd ? 'true' : 'false'} aria-hidden={shownEnd ? null : 'true'}>
+                        <div class="collapsible-body">
+                          {(shownEnd ?? props.lastChainEnd) && (
+                            <p class="sale-chain-end" data-kind={(shownEnd ?? props.lastChainEnd).kind}>
+                              <StatementText statement={shownEnd ?? props.lastChainEnd} text={(shownEnd ?? props.lastChainEnd).text} />
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>

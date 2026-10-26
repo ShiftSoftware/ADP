@@ -1,8 +1,26 @@
 {
   "vehicleAccessories": "Автомобильные Аксессуары",
-  "noData": "Данных нет.",
   "partNumber": "Номер запчасти",
   "description": "Описание",
   "image": "Изображение",
-  "expand": "Раскрыть"
+  "columnsLabel": "Список аксессуаров",
+  "noImage": "Изображение отсутствует",
+  "imageFailed": "Не удалось загрузить изображение",
+  "openImage": "Открыть изображение",
+  "unauthorizedNotice": "Этот автомобиль отсутствует в записях дистрибьютора, поэтому его аксессуары показать нельзя.",
+  "noAccessories": "В записях нет аксессуаров для этого автомобиля.",
+  "noFieldsShown": "Не выбрано ни одного поля для отображения.",
+  "accessoryCountZero": "{count} аксессуаров",
+  "accessoryCountOne": "{count} аксессуар",
+  "accessoryCountTwo": "{count} аксессуара",
+  "accessoryCountFew": "{count} аксессуара",
+  "accessoryCountMany": "{count} аксессуаров",
+  "accessoryCountOther": "{count} аксессуара",
+  "rowsPerPage": "Строк на странице",
+  "pageAll": "Все",
+  "pageRange": "{from}–{to} из {total}",
+  "previousPage": "Предыдущая страница",
+  "nextPage": "Следующая страница",
+  "idleHint": "Найдите автомобиль, чтобы увидеть установленные на него аксессуары.",
+  "emptyHint": "Здесь перечисляются аксессуары, установленные на автомобиль после выпуска с завода."
 }

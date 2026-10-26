@@ -49,6 +49,7 @@ const lookupTokens: Record<string, string> = {
   'violet': '#755aa5',
   'violet-dark': '#5f4887',
   'violet-tint': '#f1ecf8',
+  'row-hover': 'color-mix(in srgb, var(--blue) 6%, transparent)',
   'shadow': '0 18px 45px rgba(27, 45, 61, 0.1), 0 2px 7px rgba(27, 45, 61, 0.06)',
   'font-sans': "'Manrope', 'Noto Kufi Arabic', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
   'font-arabic': "'Noto Kufi Arabic', 'Manrope', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",

@@ -23,7 +23,6 @@ import {
   sameHead,
   saleCells,
   saleLegs,
-  saleNotice,
 } from './components/VehicleSaleInformationPanel';
 
 import englishLocale from '../../locales/vehicleLookup/saleInformation/en.json';
@@ -139,7 +138,8 @@ const pill = (page: Page) => text(page, '.lookup-summary .status-badge > span');
 const gridKeys = (page: Page) => all(page, '.sale-grid .sale-cell').map(cell => cell.getAttribute('data-field'));
 const gridValue = (page: Page, field: string) => text(page, `.sale-grid .sale-cell[data-field="${field}"] .sale-value`);
 const customerValue = (page: Page, field: string) => text(page, `.sale-group[data-group="endCustomer"] .sale-cell[data-field="${field}"] .sale-value`);
-const legKinds = (page: Page) => all(page, '.sale-leg').map(leg => leg.getAttribute('data-leg'));
+/** The legs the vehicle has: a leg that is leaving (the last vehicle's, shutting under the skeleton) is not one of them. */
+const legKinds = (page: Page) => all(page, '.sale-leg-slot:not(.loading) .sale-leg').map(leg => leg.getAttribute('data-leg'));
 const leg = (page: Page, kind: string, index = 0) => all(page, `.sale-leg[data-leg="${kind}"]`)[index];
 const legParty = (page: Page, kind: string, index = 0) => squash(leg(page, kind, index)?.querySelector('.sale-leg-party .sale-value-text')?.textContent);
 const legNote = (page: Page, kind: string, index = 0) => squash(leg(page, kind, index)?.querySelector('.sale-leg-party .sale-value-note')?.textContent);
@@ -255,17 +255,6 @@ describe('vehicle-sale-information — the derivations', () => {
     expect(readable({ vin: 'X', isAuthorized: true } as any)).toBe(true);
     expect(readable({ vin: 'X', isAuthorized: false } as any)).toBe(false);
     expect(readable({ vin: 'X', isAuthorized: true } as any, 'Wrong response format')).toBe(false);
-  });
-
-  it('opens the notice only for an unauthorized vehicle, and never while busy', () => {
-    const open = (authorized: boolean | undefined, busy = false) => saleNotice({ authorized }, busy, locale).open;
-
-    expect(open(undefined)).toBe(false);
-    expect(open(true)).toBe(false);
-    expect(open(false)).toBe(true);
-    expect(open(false, true)).toBe(false);
-    expect(open(undefined, true)).toBe(false);
-    expect(saleNotice({ authorized: false }, false, locale)).toEqual({ open: true, tone: 'neutral', message: englishLocale.unauthorizedNotice });
   });
 
   it('says a broker holds the vehicle only when the broker has neither an invoice number nor a date', () => {
@@ -541,10 +530,11 @@ describe('vehicle-sale-information — the case matrix, vehicle by vehicle', () 
 
       expect(verdict(page)).toBe('neutral');
       expect(pill(page)).toBe(englishShared.notInRecords);
-      expect(attr(page, '.sale-notice', 'data-open')).toBe('true');
+      // The pill says it alone, and the card is in its idle look: blank values, not dashes (owner, 2026-10-25).
+      expect(shadow(page).querySelector('.sale-notice')).toBeNull();
       expect(text(page, '.sale-title-value')).toBe('—');
-      expect(all(page, '.sale-grid .sale-value').every(value => squash(value.textContent) === '—')).toBe(true);
-      expect(customerValue(page, 'endCustomerName')).toBe('—');
+      expect(all(page, '.sale-grid .sale-value').every(value => squash(value.textContent) === '')).toBe(true);
+      expect(squash(customerValue(page, 'endCustomerName') ?? '')).toBe('');
       expect(attr(page, '.sale-legs', 'data-open')).toBe('false');
       expect(all(page, '.sale-leg')).toHaveLength(0);
     }
@@ -561,7 +551,7 @@ describe('vehicle-sale-information — the case matrix, vehicle by vehicle', () 
       expect(verdict(page)).toBe('idle');
       expect(shadow(page).querySelector('.lookup-summary .status-badge')?.classList.contains('is-idle')).toBe(true);
       expect(pill(page)).toBe(englishShared.noRecords);
-      expect(attr(page, '.sale-notice', 'data-open')).toBe('false');
+      expect(shadow(page).querySelector('.sale-notice')).toBeNull();
       expect(text(page, '.sale-title-value')).toBe('—');
       expect(customerValue(page, 'endCustomerName')).toBe(englishLocale.noEndCustomer);
       expect(attr(page, '.sale-legs', 'data-open')).toBe('false');
@@ -894,11 +884,8 @@ describe('vehicle-sale-information — the invariants', () => {
 
       expect(verdict(page)).toBe('neutral');
       expect(pill(page)).toBe(englishShared.notInRecords);
-      const notice = shadow(page).querySelector('.sale-notice');
-      expect(notice?.getAttribute('data-open')).toBe('true');
-      expect(notice?.getAttribute('data-tone')).toBe('neutral');
-      expect(notice?.querySelector('.sale-notice-body')?.getAttribute('role')).toBe('status');
-      expect(squash(notice?.textContent)).toBe(englishLocale.unauthorizedNotice);
+      // No band repeating the pill (owner, 2026-10-25).
+      expect(shadow(page).querySelector('.sale-notice')).toBeNull();
       expect(all(page, '.sale-grid .sale-value').every(value => value.getAttribute('data-role') === 'empty')).toBe(true);
       expect(all(page, '.sale-leg')).toHaveLength(0);
       expect(shadow(page).querySelector('.sale-chain-end')).toBeNull();
@@ -987,7 +974,7 @@ describe('vehicle-sale-information — the invariants', () => {
     expect(text(page, '.sale-body')).not.toContain('—');
   });
 
-  it('keeps its anchors in every state and slides the notice above the strip', async () => {
+  it('keeps its anchors in every state, with no band repeating the pill', async () => {
     const page = await newPage(brokerMarketMocks, SHOW_ALL);
     const anchors = () => {
       expect(text(page, '.sale-lead-caption-label')).toBe('Sale');
@@ -999,16 +986,16 @@ describe('vehicle-sale-information — the invariants', () => {
     };
 
     anchors();
-    expect(attr(page, '.sale-notice', 'aria-hidden')).toBe('true');
+    expect(shadow(page).querySelector('.sale-notice')).toBeNull();
 
     await load(page, FULL_CHAIN_VIN);
     anchors();
 
     await load(page, UNAUTHORIZED_VIN);
     anchors();
-    expect(attr(page, '.sale-notice', 'aria-hidden')).toBeNull();
-    const order = all(page, '.sale-notice, .sale-lead, .sale-body').map(element => element.className.split(' ')[0]);
-    expect(order).toEqual(['sale-notice', 'sale-lead', 'sale-body']);
+    expect(shadow(page).querySelector('.sale-notice')).toBeNull();
+    const order = all(page, '.sale-lead, .sale-body').map(element => element.className.split(' ')[0]);
+    expect(order).toEqual(['sale-lead', 'sale-body']);
 
     await owner(page).setErrorMessage('wrongResponseFormat');
     await page.waitForChanges();
@@ -1304,8 +1291,10 @@ describe('vehicle-sale-information — the supply chain flag', () => {
     expect(attr(page, '.sale-chain-end', 'data-kind')).toBe('none');
     expect(text(page, '.sale-chain-end')).toBe(englishLocale.noEndCustomer);
 
+    // A vehicle with an end customer has no chain-end line: it slides shut, keeping its last words while it goes.
     await load(page, FULL_CHAIN_VIN);
-    expect(shadow(page).querySelector('.sale-chain-end')).toBeNull();
+    expect(attr(page, '.sale-chain-end-slot', 'data-open')).toBe('false');
+    expect(attr(page, '.sale-chain-end-slot', 'aria-hidden')).toBe('true');
   });
 
   it('reconfigures live: the body shuts over the old layout, swaps unseen and reopens, with no loading state', async () => {
@@ -1514,7 +1503,7 @@ describe('vehicle-sale-information — the owner', () => {
     expect(verdict(page)).toBe('positive');
   });
 
-  it('shuts the legs band in flight over the outgoing legs, and drops them a settle after', async () => {
+  it('keeps the legs band open in flight under the skeleton, shuts it covered when the answer has no chain, and drops the legs a settle after (owner, 2026-10-25)', async () => {
     const page = await newPage(brokerMarketMocks, SHOW_ALL);
     await load(page, FULL_CHAIN_VIN);
     expect(all(page, '.sale-leg')).toHaveLength(4);
@@ -1524,15 +1513,16 @@ describe('vehicle-sale-information — the owner', () => {
     expect(owner(page).isLoading).toBe(true);
     expect(attr(page, '.sale-card', 'data-phase')).toBe('busy');
     expect(shadow(page).querySelector('.lookup-panel')?.classList.contains('loading')).toBe(true);
-    expect(attr(page, '.sale-legs', 'data-open')).toBe('false');
-    expect(attr(page, '.sale-legs', 'aria-hidden')).toBe('true');
+    expect(attr(page, '.sale-legs', 'data-open')).toBe('true');
     expect(all(page, '.sale-leg')).toHaveLength(4);
-    expect(attr(page, '.sale-notice', 'data-open')).toBe('false');
+    expect(all(page, '.sale-leg .sale-value').every(value => value.classList.contains('shift-skeleton'))).toBe(true);
+    expect(shadow(page).querySelector('.sale-notice')).toBeNull();
 
     await pending;
     await page.waitForChanges();
     expect(attr(page, '.sale-legs', 'data-open')).toBe('false');
     expect(attr(page, '.sale-legs', 'data-empty')).toBe('true');
+    expect(shadow(page).querySelector('.sale-legs').classList.contains('loading')).toBe(true);
     expect(all(page, '.sale-leg')).toHaveLength(4);
 
     await settle(page);

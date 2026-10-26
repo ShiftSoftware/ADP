@@ -1,8 +1,26 @@
 {
   "vehicleAccessories": "ئیکسسواراتەکانی ئۆتۆمبێل",
-  "noData": "هیچ داتایەک لەبەردەستدا نییە.",
   "partNumber": "ژمارەی پارچە",
   "description": "وەسف",
   "image": "وێنە",
-  "expand": "فراوانکردن"
+  "columnsLabel": "لیستی ئیکسسوارات",
+  "noImage": "هیچ وێنەیەک تۆمار نەکراوە",
+  "imageFailed": "وێنەکە بار نەبوو",
+  "openImage": "کردنەوەی وێنەی",
+  "unauthorizedNotice": "ئەم ئۆتۆمبێلە لە تۆمارەکانی دابەشکەردا نییە، بۆیە ناتوانرێت ئیکسسوارەکانی پیشان بدرێن.",
+  "noAccessories": "هیچ ئیکسسوارێک بۆ ئەم ئۆتۆمبێلە تۆمار نەکراوە.",
+  "noFieldsShown": "هیچ خانەیەک بۆ پیشاندان هەڵنەبژێردراوە.",
+  "accessoryCountZero": "{count} ئیکسسوار",
+  "accessoryCountOne": "{count} ئیکسسوار",
+  "accessoryCountTwo": "{count} ئیکسسوار",
+  "accessoryCountFew": "{count} ئیکسسوار",
+  "accessoryCountMany": "{count} ئیکسسوار",
+  "accessoryCountOther": "{count} ئیکسسوار",
+  "rowsPerPage": "ڕیز لە هەر پەڕەیەکدا",
+  "pageAll": "هەموو",
+  "pageRange": "{from}–{to} لە {total}",
+  "previousPage": "پەڕەی پێشوو",
+  "nextPage": "پەڕەی دواتر",
+  "idleHint": "بۆ بینینی ئیکسسوارە دانراوەکان، بەدوای ئۆتۆمبێلێکدا بگەڕێ.",
+  "emptyHint": "ئیکسسوارەکانی دوای دەرچوونی ئەم ئۆتۆمبێلە لە کارگە لێرە پیشان دەدرێن."
 }

@@ -6,9 +6,7 @@ import { ClaimFormType } from '~locales/vehicleLookup/claimableItems/type';
 
 import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
 
-import { SharedLocales } from '~features/multi-lingual';
-
-import { closeImageViewer, ImageViewer, ImageViewerInterface, openImageViewer } from '~features/image-viewer';
+import { LanguageKeys, SharedLocales } from '~features/multi-lingual';
 
 import { AddIcon } from '~assets/add-icon';
 import { CheckIcon } from '~assets/check-icon';
@@ -24,12 +22,25 @@ import { ItemClaimDTO } from '../../global/types/generated/vehicle-lookup/item-c
   tag: 'vehicle-item-claim-form',
   styleUrl: 'vehicle-item-claim-form.css',
 })
-export class VehicleItemClaimForm implements ImageViewerInterface {
-  // #region Image Viewer Logic
+export class VehicleItemClaimForm {
+  // #region Image viewer (<shift-image>, portaled onto <body>)
 
+  /** The picture open in the viewer, or empty. */
   @State() expandedImage?: string = '';
 
-  originalImage: HTMLImageElement;
+  private imageViewer?: HTMLShiftImageElement;
+
+  /** Opens the viewer on `src`, growing out of the thumbnail `origin`. The same picture again while open is ignored. */
+  private openImage(origin: HTMLImageElement, src: string, label?: string) {
+    if (this.expandedImage === src) return;
+    this.expandedImage = src;
+    void this.imageViewer?.show(src, { origin, label });
+  }
+
+  /** The viewer closed (overlay, key or hide()): the panel no longer has a picture open. */
+  private onViewerChange = (event: CustomEvent<{ open: boolean }>) => {
+    if (!event.detail.open) this.expandedImage = '';
+  };
 
   // #endregion
 
@@ -466,7 +477,7 @@ export class VehicleItemClaimForm implements ImageViewerInterface {
   private openWarningImage = (event: MouseEvent, imageUrl: string) => {
     const thumbnail = (event.currentTarget as HTMLElement).querySelector('.doc-thumb') as HTMLImageElement;
 
-    if (thumbnail) openImageViewer.bind(this)(thumbnail, imageUrl);
+    if (thumbnail) this.openImage(thumbnail, imageUrl);
   };
 
   // #endregion
@@ -490,14 +501,9 @@ export class VehicleItemClaimForm implements ImageViewerInterface {
     return (
       <Host translate="no">
         <dialog ref={el => (this.dialogEl = el as HTMLDialogElement)} class="claim-dialog" onCancel={this.onDialogCancel}>
-          {/* Inside the dialog on purpose: the top layer paints above the whole document, so an
-              image viewer left outside it would open behind the card whatever its z-index. */}
-          <ImageViewer
-            style={{ 'z-index': '99999999' }}
-            expandedImage={this.expandedImage}
-            imageStyle={{ 'z-index': '999999999' }}
-            closeImageViewer={() => closeImageViewer.bind(this)()}
-          />
+          {/* The viewer's layer is portaled onto <body> and raises itself into the top layer while
+              open, so it opens above this modal dialog. Kept inside the dialog where it always was. */}
+          <shift-image ref={el => (this.imageViewer = el)} language={this.locale.sharedLocales.lang as LanguageKeys} onViewerChange={this.onViewerChange} />
           <div
             dir={this.locale.sharedLocales.direction}
             class={cn(

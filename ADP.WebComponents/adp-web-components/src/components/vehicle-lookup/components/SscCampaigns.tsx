@@ -1,8 +1,6 @@
 import { FunctionalComponent, h } from '@stencil/core';
 import { InferType } from 'yup';
 
-import cn from '~lib/cn';
-
 import sscSchema from '~locales/vehicleLookup/ssc/type';
 import { SscDTO } from '~types/generated/vehicle-lookup/ssc-dto';
 import { SscRepairTraceDTO } from '~types/generated/vehicle-lookup/ssc-repair-trace-dto';
@@ -27,7 +25,7 @@ export const sscTraceKey = (item: SscDTO | undefined, index: number) => `${item?
 export type BodyKind = 'rows' | 'check' | 'run' | 'none';
 
 /** What the lead strip — the band between the card's header and its body — shows. */
-export type LeadKind = 'skeleton' | 'columns' | 'notice';
+export type LeadKind = 'columns' | 'notice';
 
 /**
  * `neutral` is a statement without a verdict; `attention` is a required action not taken yet — the
@@ -71,9 +69,9 @@ export type PanelState = {
 };
 
 type Props = PanelState & {
-  /** A lookup is in flight, or the panel is being cleared: chip and lead go to the sheen and the body shuts. */
+  /** A lookup is in flight, or the panel is being cleared: the head leaves and the body shuts; the strip keeps its headings. */
   loading: boolean;
-  /** The manufacturer check is in flight: chip and lead go to the sheen; the body stays open on the widget and its spinner. */
+  /** The manufacturer check is in flight: the strip shows its headings between the old notice and the answer; the body stays open on the widget and its spinner. */
   checking: boolean;
   /**
    * What the body keeps rendering while it is shut — the content on its way out, so it slides away
@@ -177,15 +175,24 @@ export const panelBody = ({ vehicleLoaded, authorized, campaigns, checkAvailable
   return campaignsOf(campaigns).length > 0 ? 'rows' : 'none';
 };
 
-/** The strip reads as the column headings only above a list; every other statement is a notice, and in flight it is a skeleton. */
+/**
+ * The strip is the column headings whenever the answer cannot change them: before a lookup, while
+ * one is in flight (or the manufacturer check is) and above a list. The columns are the same for
+ * every vehicle, so there is nothing to skeletonise (owner, F1). Only an outcome without a list
+ * replaces them with a notice: a clear vehicle, an unauthorized one, the manufacturer's answer, a
+ * skipped check, a failed lookup. In flight wins over everything, so the swap from one notice to
+ * the next is a cross-fade through the headings, never a pop.
+ */
 export const panelLead = (state: PanelState, busy: boolean): LeadKind => {
-  if (busy) return 'skeleton';
-  if (!state.vehicleLoaded && !state.skipped) return 'skeleton';
+  if (busy) return 'columns';
+  if (state.error) return 'notice';
+  if (!state.vehicleLoaded && !state.skipped) return 'columns';
   return panelBody(state) === 'rows' ? 'columns' : 'notice';
 };
 
-/** The notice the lead strip carries — null above a list, where the headings speak instead. */
-const leadNotice = ({ locale, vehicleLoaded, authorized, campaigns, skipped, checkAvailable, checkStatus }: PanelState): { tone: Tone; text: string } | null => {
+/** The notice the lead strip carries — null above a list, where the headings speak instead. A failed lookup is the one negative sentence, in the pill's words. */
+const leadNotice = ({ locale, vehicleLoaded, authorized, campaigns, skipped, checkAvailable, checkStatus, error }: PanelState): { tone: Tone; text: string } | null => {
+  if (error) return { tone: 'negative', text: error };
   if (!vehicleLoaded) return skipped ? { tone: 'attention', text: locale.skippedNotice } : null;
 
   if (authorized === false) {
@@ -280,13 +287,13 @@ const PartChip = ({ partNumber, isAvailable, locale }: { partNumber: string; isA
 
 /** A region the card gains and loses. The grid track animates so it slides rather than pops (lookup-motion.css). */
 const Collapsible: FunctionalComponent<{ open: boolean; className?: string }> = ({ open, className }, children) => (
-  <div class={cn('collapsible', className)} data-open={open ? 'true' : 'false'} aria-hidden={open ? null : 'true'}>
+  <div class={{ collapsible: true, [className ?? '']: !!className }} data-open={open ? 'true' : 'false'} aria-hidden={open ? null : 'true'}>
     <div class="collapsible-body">{children}</div>
   </div>
 );
 
 const EvidencePill = ({ positive, text }: { positive: boolean; text: string }) => (
-  <span class={cn('evidence-pill', positive ? 'is-positive' : 'is-negative')}>
+  <span class={{ 'evidence-pill': true, 'is-positive': positive, 'is-negative': !positive }}>
     <Glyph kind={positive ? 'positive' : 'negative'} className="evidence-pill-icon" />
     <span>{text}</span>
   </span>
@@ -305,7 +312,7 @@ const MatchedCode = ({ laborCode, campaignLaborCode, locale }: { laborCode: stri
 );
 
 const ClaimEvidence = ({ claim, locale }: { claim: SscRepairTraceWarrantyClaimDTO; locale: SscLocale }) => (
-  <li class={cn('trace-item', { 'is-selected': claim.selected, 'is-dim': !claim.matches && !claim.selected })}>
+  <li class={{ 'trace-item': true, 'is-selected': claim.selected, 'is-dim': !claim.matches && !claim.selected }}>
     <div class="trace-item-head">
       <strong class="trace-item-title">
         {locale.traceClaim} {claim.claimNumber || claim.dealerClaimNumber || '—'}
@@ -331,7 +338,7 @@ const ClaimEvidence = ({ claim, locale }: { claim: SscRepairTraceWarrantyClaimDT
 );
 
 const LineEvidence = ({ line, locale }: { line: SscRepairTraceLaborLineDTO; locale: SscLocale }) => (
-  <li class={cn('trace-item', { 'is-selected': line.selected })}>
+  <li class={{ 'trace-item': true, 'is-selected': line.selected }}>
     <div class="trace-item-head">
       <strong class="trace-item-title">
         {locale.traceInvoice} {line.invoiceNumber || '—'}
@@ -386,7 +393,7 @@ const SscTrace: FunctionalComponent<{ locale: SscLocale; item: SscDTO; trace?: S
           <span class="trace-label">{locale.traceTitle}</span>
           <span class="trace-head-code">{item.sscCode}</span>
         </div>
-        <div class={cn('ssc-trace-status', { 'is-error': !!error })}>{error || locale.traceUnavailable}</div>
+        <div class={{ 'ssc-trace-status': true, 'is-error': !!error }}>{error || locale.traceUnavailable}</div>
       </div>
     );
 
@@ -402,7 +409,7 @@ const SscTrace: FunctionalComponent<{ locale: SscLocale; item: SscDTO; trace?: S
         <span class="trace-head-code">{item.sscCode}</span>
       </div>
 
-      <div class={cn('trace-verdict', repaired ? 'is-positive' : 'is-negative')}>
+      <div class={{ 'trace-verdict': true, 'is-positive': repaired, 'is-negative': !repaired }}>
         <Glyph kind={repaired ? 'positive' : 'negative'} className="trace-verdict-icon" />
         <strong>{verdictText(source, locale)}</strong>
         {repaired && item.repairDate && <span class="trace-verdict-date">{item.repairDate}</span>}
@@ -502,10 +509,11 @@ const SscTrace: FunctionalComponent<{ locale: SscLocale; item: SscDTO; trace?: S
  *
  *  - the header: the title and the verdict pill. Idle the pill is a blank shape; in flight it
  *    carries the sheen; settled it names the verdict.
- *  - the lead strip: one band that is a skeleton (idle, in flight), the column headings (above a
- *    list), or a notice (everything the panel has to say in a sentence — not in the records, the
- *    manufacturer's answer, no campaign affects this vehicle, the check was skipped). The three are
- *    layers of one cell and cross-fade; the strip never changes height.
+ *  - the lead strip: one band that is the column headings (idle, in flight, above a list — they
+ *    are the same for every vehicle, so the answer cannot change them) or a notice (everything the
+ *    panel has to say in a sentence when there is no list — not in the records, the manufacturer's
+ *    answer, no campaign affects this vehicle, the check was skipped, the lookup failed). The two
+ *    are layers of one cell and cross-fade; the strip never changes height.
  *  - the body: a region that slides open and shut. Open it holds the campaign rows, the
  *    manufacturer-check widget, or the "run the check" action; it shuts while a lookup is in
  *    flight — with the outgoing content still inside it, so that content leaves with it — and opens
@@ -529,6 +537,8 @@ export const SscCampaigns: FunctionalComponent<Props> = (props, children) => {
   // it keeps rendering what it last held, so that content slides away rather than blinking out.
   const bodyOpen = !loading && body !== 'none';
   const shown: BodyKind = body === 'none' ? retainedBody : body;
+  // The table exists only while its rows are open: the grid, the heading row and its cells carry roles then and not before.
+  const roles = shown === 'rows' && bodyOpen;
 
   const items = props.vehicleLoaded && props.authorized !== false ? campaignsOf(props.campaigns) : [];
   const openDrawer = openDrawerKey(props);
@@ -545,12 +555,10 @@ export const SscCampaigns: FunctionalComponent<Props> = (props, children) => {
 
       {/* lookup-slide: the region under the head that travels on a composite's tab switch, clipped so it passes under the head, never over it. */}
       <div class="lookup-slide-clip">
-        <div class={cn('ssc-grid lookup-slide', { 'has-trace': showTrace })} role={shown === 'rows' && bodyOpen ? 'table' : null}>
+        <div class={{ 'ssc-grid': true, 'lookup-slide': true, 'has-trace': showTrace }} role={roles ? 'table' : null}>
           <div class="ssc-lead layer-stack" data-lead={lead}>
-            <div class="layer ssc-lead-skeleton" data-active={lead === 'skeleton' ? 'true' : 'false'} aria-hidden="true" />
-
             <div
-              class={cn('layer ssc-lead-notice', notice && `is-${notice.tone}`)}
+              class={{ 'layer': true, 'ssc-lead-notice': true, [`is-${notice?.tone ?? 'none'}`]: !!notice }}
               data-active={lead === 'notice' ? 'true' : 'false'}
               role="status"
               aria-hidden={lead === 'notice' ? null : 'true'}
@@ -559,24 +567,36 @@ export const SscCampaigns: FunctionalComponent<Props> = (props, children) => {
               <span>{notice?.text ?? ''}</span>
             </div>
 
-            <div class="layer ssc-lead-columns" data-active={lead === 'columns' ? 'true' : 'false'} role="row" aria-hidden={lead === 'columns' ? null : 'true'}>
-              <span class="ssc-cell ssc-code" role="columnheader">
+            {/*
+              Accessibility of the headings (F1). They are on screen idle and in flight too, but then there
+              is no table, so the table roles are on only with open rows (the rule the grid and the body
+              already follow) and the layer is aria-hidden without them: bare "Code Description Status"
+              names a structure that is not there, and an outcome is announced by the notice's
+              role="status". The headings are for the eye until the rows open.
+            */}
+            <div
+              class="layer ssc-lead-columns"
+              data-active={lead === 'columns' ? 'true' : 'false'}
+              role={roles ? 'row' : null}
+              aria-hidden={lead === 'columns' && roles ? null : 'true'}
+            >
+              <span class="ssc-cell ssc-code" role={roles ? 'columnheader' : null}>
                 {locale.code}
               </span>
-              <span class="ssc-cell ssc-description" role="columnheader">
+              <span class="ssc-cell ssc-description" role={roles ? 'columnheader' : null}>
                 {locale.description}
               </span>
-              <span class="ssc-cell ssc-status" role="columnheader">
+              <span class="ssc-cell ssc-status" role={roles ? 'columnheader' : null}>
                 {locale.status}
               </span>
-              <span class="ssc-cell ssc-labors" role="columnheader">
+              <span class="ssc-cell ssc-labors" role={roles ? 'columnheader' : null}>
                 {locale.laborCodes}
               </span>
-              <span class="ssc-cell ssc-parts" role="columnheader">
+              <span class="ssc-cell ssc-parts" role={roles ? 'columnheader' : null}>
                 {locale.parts}
               </span>
               {showTrace && (
-                <span class="ssc-cell ssc-trace-cell" role="columnheader">
+                <span class="ssc-cell ssc-trace-cell" role={roles ? 'columnheader' : null}>
                   <span class="sr-only">{locale.viewTrace}</span>
                 </span>
               )}
@@ -587,13 +607,7 @@ export const SscCampaigns: FunctionalComponent<Props> = (props, children) => {
             </div>
           </div>
 
-          <div
-            class="ssc-body collapsible"
-            data-open={bodyOpen ? 'true' : 'false'}
-            data-body={shown}
-            role={shown === 'rows' && bodyOpen ? 'rowgroup' : null}
-            aria-hidden={bodyOpen ? null : 'true'}
-          >
+          <div class="ssc-body collapsible" data-open={bodyOpen ? 'true' : 'false'} data-body={shown} role={roles ? 'rowgroup' : null} aria-hidden={bodyOpen ? null : 'true'}>
             <div class="collapsible-body ssc-body-inner">
               {shown === 'rows' && (
                 <div class="ssc-rows">

@@ -1,0 +1,635 @@
+/*
+ * The lookup table: the stylesheet fragment of <LookupTable> (lookup-table.tsx), the design
+ * language's strip, body and rows as one reusable grid. Spec: .shift/repos/adp/web-components/lookup-table.md.
+ *
+ * A FRAGMENT, not a stylesheet: a panel @imports it after base.css, lookup-tokens.css,
+ * vehicle-info-layout.css (which brings the motion primitives and .sr-only) and lookup-head.css,
+ * then writes its own rules. It has no `tailwind: off` marker and no base.css import (the guide:
+ * fragments get neither) and it imports NOTHING itself -- lookup-tokens.css or lookup-motion.css
+ * imported a second time into one shadow stylesheet loses its @keyframes in Stencil's dedupe while
+ * its rules survive, which silently stops the sheen (the SSC, 2026-09-21).
+ *
+ * It relies on the family's shared vocabulary from those files: .collapsible, .collapsible-body,
+ * .layer-stack, .layer (the strip's cross-fade between headings and notice), and the colour and
+ * --settle tokens.
+ *
+ * Breakpoints are UNNAMED container queries. A fragment cannot know the panel's container name, and
+ * an unnamed query resolves to the nearest ancestor container, which is the panel's :host (the
+ * wrapper makes every panel host an inline-size container; lookup-head.css relies on the same).
+ * THE RULE THAT FOLLOWS: nothing between a panel host and its table may declare a container.
+ *
+ * Reads top to bottom as the table does: :host tokens, grid, strip, notice tones, body, rows, cells
+ * by kind, media, loading rules, container queries widest-first, reduced motion.
+ *
+ * Mobile: it must work at 400px with no horizontal scroll of the host page. At 720px and under every
+ * row is a labelled card in one track (minmax(0, 1fr)) and nothing in it can be wider than the card;
+ * between 721 and 960 a grid that cannot fit scrolls sideways INSIDE .lt-grid only.
+ */
+
+/* ---------------------------------------------------------------------------------------------
+   :host tokens
+   ------------------------------------------------------------------------------------------- */
+
+:host {
+  /* The strip is this tall in every state, so it is the same band whether it carries the headings
+     or a notice and the body never moves when they swap. A panel that needs another
+     height redeclares it after the import. */
+  --lead-height: 38px;
+  /* The body never shuts below this: the head's resting height (16 + 30 + 12), so the strip sits
+     between two equal bands whether or not there is anything below it. */
+  --body-rest: 58px;
+  /* The thumbnail box. 56px: a row is then 80px (56 + 2 x 12), about two strips, where a 100px
+     picture made every row 124px for an image the viewer shows full size anyway. 56 also clears
+     the 44px minimum a finger needs, so the box is its own touch target and needs no padding
+     trick. */
+  --lt-media-size: 56px;
+  /* The box is 4:3, the shape product pictures come in (the drawings are 400 x 300): a square box
+     letterboxed every landscape picture with a band of white above and below it. --lt-media-size is
+     the box's height; its width follows. */
+  --lt-media-width: calc(var(--lt-media-size) * 4 / 3);
+  /* A row's vertical rhythm: the cells' block padding and the row's floor. 12px and no floor is the
+     language's comfortable row (§ 18); a panel that lists many short rows (accessories) redeclares
+     both after the import to make its rows compact and every row the same height. */
+  --lt-cell-pad-block: 12px;
+  --lt-row-min: 0px;
+  /* The grey rim of idle furniture (design language § 10, grey .22) and the blue rim of
+     interaction (blue .32). Named here because the rim is drawn on a pseudo-element and read from
+     three rules. */
+  --lt-rim-idle: rgba(95, 108, 120, 0.22);
+  --lt-rim-blue: rgba(48, 113, 169, 0.32);
+}
+
+/* ---------------------------------------------------------------------------------------------
+   The grid: lead strip and body share one set of column tracks
+   ------------------------------------------------------------------------------------------- */
+
+/* The padding-bearing cells and the stand-ins below are sized with their padding inside, as in the
+   panels this is mounted in; restated so the fragment does not depend on a panel's reset. */
+.lt-grid,
+.lt-grid *,
+.lt-grid *::before,
+.lt-grid *::after {
+  box-sizing: border-box;
+}
+
+/* The tracks are computed in TS (tableTracks), because the column set varies with hiddenFields,
+   and arrive as a custom property: a value, not a utility class. The headings in the strip and the
+   cells in the body are subgrids of this, so they size the tracks together and the browser does
+   the fitting -- no per-column pixel widths. */
+.lt-grid {
+  display: grid;
+  grid-template-columns: var(--lt-tracks);
+  /* min-width: 0 and max-width: 100%: a grid is a block-level box and so already as wide as its
+     parent, but inside a flex or grid parent its automatic minimum would be its content's width and
+     one long row would widen the host page. These two make the chain end here. */
+  min-width: 0;
+  max-width: 100%;
+  /* A width the columns cannot fit (a long locale at 721-960 with every field shown) scrolls
+     sideways inside the card, strip and rows together, rather than being cut off by it. */
+  overflow-x: auto;
+}
+
+/* Every level between the grid and a cell is a subgrid of it (the SSC's chain), so a cell in the
+   strip and a cell in any row sit on the same tracks. */
+.lt-lead,
+.lt-columns,
+.lt-body,
+.lt-body-inner,
+.lt-rows,
+.lt-slot,
+.lt-slot-body,
+.lt-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Strip: one band, two layers (the column headings, a notice)
+   ------------------------------------------------------------------------------------------- */
+
+.lt-lead {
+  min-height: var(--lead-height);
+  /* Ruled top and bottom as an inset shadow, not a border: a border would change the box, and a
+     full-width band with a ring would leave two stray vertical ticks against the card's sides. */
+  box-shadow:
+    inset 0 1px 0 var(--line),
+    inset 0 -1px 0 var(--line);
+}
+
+.lt-lead > .layer {
+  min-height: var(--lead-height);
+}
+
+/* The column headings on the recessed paper. A band, so it takes the whole strip. They are shown
+   idle, in flight and above rows -- the columns depend on the configuration, never on the data --
+   and cross-fade with the notice (the .layer primitive) when an outcome has no rows to head. */
+.lt-columns {
+  background: var(--paper-soft);
+}
+
+.lt-columns > .lt-cell {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  /* Reshaping fades these (see "Loading"); declared here so the fade has a clock at rest too. */
+  transition: opacity var(--settle) ease;
+  /* Small label: 11px, 700, +0.06em, uppercase -- tracking is size-specific (design language § 11). */
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* The one-word stand-in for the headings on narrow panels; hidden wide. */
+.lt-columns-label {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Notice: the panel's sentence, five tones
+   ------------------------------------------------------------------------------------------- */
+
+.lt-notice {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 20px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.lt-notice .notice-icon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+}
+
+.lt-notice.is-positive {
+  color: var(--green-dark);
+  background: var(--green-tint);
+  box-shadow:
+    /* Raw rgba: the tone's mid hue as a 1px rim; lookup-tokens.css has solid tone colours only, no alpha rim token. */
+    inset 0 1px 0 rgba(44, 138, 88, 0.18),
+    inset 0 -1px 0 rgba(44, 138, 88, 0.18);
+}
+
+.lt-notice.is-negative {
+  color: var(--red-dark);
+  background: var(--red-tint);
+  box-shadow:
+    /* Raw rgba: the tone's mid hue as a 1px rim; lookup-tokens.css has solid tone colours only, no alpha rim token. */
+    inset 0 1px 0 rgba(180, 35, 24, 0.18),
+    inset 0 -1px 0 rgba(180, 35, 24, 0.18);
+}
+
+.lt-notice.is-neutral {
+  color: var(--amber-dark);
+  background: var(--amber-tint);
+  box-shadow:
+    /* Raw rgba: the tone's mid hue as a 1px rim; lookup-tokens.css has solid tone colours only, no alpha rim token. */
+    inset 0 1px 0 rgba(183, 121, 31, 0.22),
+    inset 0 -1px 0 rgba(183, 121, 31, 0.22);
+}
+
+/* Attention shouts by pattern, not by borrowing a verdict colour: a hatched hazard band on the
+   reading edge, the text a weight up. 38px clears the 16px hatch plus a glyph. */
+.lt-notice.is-attention {
+  position: relative;
+  padding-inline-start: 38px;
+  color: var(--violet-dark);
+  background: var(--violet-tint);
+  box-shadow:
+    /* Raw rgba: the tone's mid hue as a 1px rim; lookup-tokens.css has solid tone colours only, no alpha rim token. */
+    inset 0 1px 0 rgba(117, 90, 165, 0.42),
+    inset 0 -1px 0 rgba(117, 90, 165, 0.42);
+  font-weight: 700;
+}
+
+.lt-notice.is-attention::before {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 16px;
+  background: repeating-linear-gradient(135deg, var(--violet) 0 5px, transparent 5px 11px);
+  opacity: 0.85;
+  content: '';
+}
+
+/* Idle: an authorized vehicle with nothing on file, said in grey -- never green (a verdict read off
+   an empty list) and never amber (which would say the vehicle is unknown). An extension of the
+   language (spec § 11.3). --muted at 650 on the recessed paper, ruled in grey .22, and no glyph:
+   the grey pill is glyphless too (§ 16). */
+.lt-notice.is-idle {
+  color: var(--muted);
+  background: var(--paper-soft);
+  box-shadow:
+    inset 0 1px 0 var(--lt-rim-idle),
+    inset 0 -1px 0 var(--lt-rim-idle);
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Body: the one collapsible
+   ------------------------------------------------------------------------------------------- */
+
+.lt-body {
+  min-height: var(--body-rest);
+}
+
+.lt-body-inner {
+  align-content: start;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Rows
+   ------------------------------------------------------------------------------------------- */
+
+/* Each row sits in its own slot, a .collapsible, so a row that arrives or leaves slides on its own
+   while the rest stay where they are. The slot and its body are subgrids like every level above
+   them, so a row's cells still sit on the table's tracks. */
+.lt-slot {
+  /* The .collapsible primitive gives display: grid and the 0fr <-> 1fr row; restated here only
+     what a subgrid level needs. */
+  align-content: start;
+}
+
+/* A rule between rows is allowed as a border: a row's height is content-driven anyway (§ 12). On
+   the row inside the slot, so a shut slot clips its rule away with it. */
+.lt-slot:not(:first-child) > .lt-slot-body > .lt-row {
+  border-top: 1px solid var(--line-soft);
+}
+
+.lt-row {
+  min-height: var(--lt-row-min);
+  transition: background var(--settle) ease;
+}
+
+/* Hover highlight (pointer devices only, background only so nothing shifts). Only data rows are
+   .lt-row: notices, headings and a shut body (hidden, aria-hidden) never carry it. */
+@media (hover: hover) {
+  .lt-row:hover {
+    background: var(--row-hover);
+  }
+}
+
+.lt-row > .lt-cell {
+  /* Centred, so a 56px thumbnail and a one-line value share a middle line instead of the text
+     hanging from the top. */
+  align-self: center;
+  /* min-width: 0, so a long value can wrap inside its track instead of forcing the track wide. */
+  min-width: 0;
+  padding: var(--lt-cell-pad-block) 12px;
+  /* Body: 13px, 500; 1.3 because a cell may wrap. */
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* The value inside a cell: the block the skeleton covers (the panel imports shift-skeleton.css,
+   whose cover is this block's ::after) and the block a page change fades. Its own width, not the
+   cell's, so the cover is the size of the words it stands for. */
+.lt-value {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: top;
+  transition: opacity var(--settle) ease;
+}
+
+/* The growing column wraps, so its value is as wide as its cell anyway; a block, so a panel can
+   clamp it. */
+.lt-row > .lt-text[data-grow='true'] > .lt-value {
+  display: block;
+}
+
+/* The picture's cover takes the thumbnail's corners, not the text's 4px. */
+.lt-row > .lt-media > .lt-value {
+  display: block;
+  border-radius: 8px;
+}
+
+/* A page is changing: nothing is fetched, so no skeleton -- the values fade out, the next page's
+   values are swapped in while they are out, and they fade back in. The row and its rule stay. */
+.lt-slot[data-veil='fade'] .lt-value {
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Cells by kind
+   ------------------------------------------------------------------------------------------- */
+
+/* text: break-word keeps a fit column's min-content at its longest word, so a company name wraps at
+   its spaces instead of collapsing to one letter before the grid reaches its overflow. */
+.lt-row > .lt-text {
+  overflow-wrap: break-word;
+}
+
+/* The one column allowed to grow takes host-supplied strings, so it wraps anywhere (§ 11): a long
+   description can never force the grid wide. */
+.lt-row > .lt-text[data-grow='true'] {
+  overflow-wrap: anywhere;
+}
+
+/* code: the row's name. 760, +0.01em, tabular. Not wrapped in a row, where it is the shortest thing
+   on it; wrapped anywhere on a card (below), where a long part number must not widen the card. */
+.lt-row > .lt-code {
+  font-variant-numeric: tabular-nums;
+  font-weight: 760;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+/* A shown field with no value: the grey empty marker (§ 10). */
+.lt-none {
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Media: a thumbnail that opens the image viewer, in a fixed box so a row never changes height as
+   its picture arrives. States on the cell as data-media: none, loading, ready, failed.
+   ------------------------------------------------------------------------------------------- */
+
+.lt-row > .lt-media {
+  display: flex;
+  align-items: center;
+}
+
+/* The box. Radius 8: an item inside the card (§ 12). Recessed paper until a picture is ready. */
+.lt-media-box {
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  width: var(--lt-media-width);
+  height: var(--lt-media-size);
+  border-radius: 8px;
+  background: var(--paper-soft);
+  transition: background var(--settle) ease;
+}
+
+/* The rim is drawn over the picture, on a pseudo-element: an inset shadow on the box itself would
+   paint under the <img> and vanish. Grey .22 at rest (the box is idle furniture); blue .32 is
+   interaction and so applies only to a box that can be pressed. .2s, the language's one duration
+   shorter than --settle: a press must feel instant. */
+.lt-media-box::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--lt-rim-idle);
+  content: '';
+  pointer-events: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.lt-media[data-media='ready'] .lt-media-box {
+  /* Product drawings sit on white. */
+  background: var(--paper);
+}
+
+.lt-media[data-media='ready'] .lt-media-box:hover::after,
+.lt-media[data-media='ready'] .lt-media-box:focus-within::after {
+  box-shadow: inset 0 0 0 1px var(--lt-rim-blue);
+}
+
+/* The open button fills the whole box, so the 56px square is the hit area. */
+.lt-media-open {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: inherit;
+  cursor: default;
+  font: inherit;
+}
+
+.lt-media[data-media='ready'] .lt-media-open {
+  cursor: pointer;
+}
+
+.lt-media-open:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 2px;
+}
+
+/* contain, not cover: a product drawing must not be cropped. Hidden until the file has arrived. */
+.lt-media-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity var(--settle) ease;
+}
+
+.lt-media[data-media='ready'] .lt-media-image {
+  opacity: 1;
+}
+
+/* The stand-in for a picture that is not there: no URL on record, or the URL did not load. Never
+   blank and never the browser's broken-image icon (cases 5-7). It shares the box with the picture
+   as a layer, so failing is a cross-fade in place. */
+.lt-media-stand {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--settle) ease;
+}
+
+.lt-media[data-media='none'] .lt-media-stand,
+.lt-media[data-media='failed'] .lt-media-stand {
+  opacity: 1;
+}
+
+.lt-media-glyph {
+  width: 20px;
+  height: 20px;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Loading, and the reshape
+   ------------------------------------------------------------------------------------------- */
+
+/* In flight the strip does not change: the headings stay where they are, because the columns are
+   known before the answer. Rows on screen stay where they are too (owner, 2026-10-25, overriding
+   motion.md rules 2 and 4 for this table): each value goes under the skeleton where it stands, the
+   next vehicle's values land under it, and only the rows that the answer adds or drops slide. A
+   long list shutting and reopening on every lookup read as lag. The cover is shift-skeleton's,
+   switched by the wrapper's `.loading` while in flight and by the row's own `.loading` (veil
+   `cover`) for a row that leaves after the answer. */
+
+/* A live column change: the strip is an anchor and is not swapped. Its band, rules and recessed
+   paper stay and only the headings fade, over --settle, while the body is shut; the tracks change
+   on the frame the panel swaps its columns, with the headings at 0. */
+.lt-columns[data-reshaping='true'] > .lt-cell,
+.lt-columns[data-reshaping='true'] > .lt-columns-label {
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Mid-width panels (721-960): the description moves under its code, so the columns fit where one
+   more would spill past the card. Only when the grid is stackable (first column the identity, a
+   growing column visible); otherwise the wide layout simply continues.
+   ------------------------------------------------------------------------------------------- */
+
+@container (width > 720px) and (width <= 960px) {
+  .lt-grid[data-stack='true'] {
+    grid-template-columns: var(--lt-tracks-stacked);
+  }
+
+  /* The description's heading goes: its cell sits under the code. */
+  .lt-grid[data-stack='true'] .lt-columns > .lt-cell[data-grow='true'] {
+    display: none;
+  }
+
+  .lt-grid[data-stack='true'] .lt-row {
+    grid-template-rows: auto auto;
+  }
+
+  /* Everyone else spans both rows and is auto-placed: column 1 is taken in both rows, so they land
+     in columns 2... in definition order. */
+  .lt-grid[data-stack='true'] .lt-row > .lt-cell {
+    grid-row: 1 / span 2;
+  }
+
+  .lt-grid[data-stack='true'] .lt-row > .lt-cell[data-identity='true'] {
+    grid-column: 1;
+    grid-row: 1;
+    /* Hugs the description under it; 2px so the two read as one block. */
+    align-self: end;
+    padding-bottom: 2px;
+  }
+
+  .lt-grid[data-stack='true'] .lt-row > .lt-cell[data-grow='true'] {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    padding-top: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Narrow panels (720 and under): each row becomes a labelled card
+   ------------------------------------------------------------------------------------------- */
+
+@container (max-width: 720px) {
+  /* One track: the strip and the body still share it, and each row lays itself out inside. Nothing
+     scrolls sideways here: every cell below can wrap, so a card never exceeds its track. */
+  .lt-grid {
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+  }
+
+  /* The headings hide behind one word; each card captions its own fields. */
+  .lt-columns > .lt-cell {
+    display: none;
+  }
+
+  .lt-columns-label {
+    display: flex;
+    align-items: center;
+    padding: 6px 14px;
+    transition: opacity var(--settle) ease;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* The attention tone keeps its 38px reading-edge inset: its rule is more specific than this. */
+  .lt-notice {
+    padding: 6px 14px;
+  }
+
+  .lt-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 12px;
+    padding: 12px 14px;
+  }
+
+  .lt-row > .lt-cell {
+    grid-column: 1 / -1;
+    align-self: start;
+    padding: 0;
+  }
+
+  /* Small-label caption from the column's own label. The identity and the picture explain
+     themselves, so they are not captioned. */
+  .lt-row > .lt-cell::before {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    content: attr(data-label);
+  }
+
+  .lt-row > .lt-cell[data-identity='true']::before,
+  .lt-row > .lt-media::before {
+    display: none;
+  }
+
+  /* The identity is row 1, column 1, at 15px (§ 11, Code: "15px when a row becomes a card"). */
+  .lt-row > .lt-cell[data-identity='true'] {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+    font-size: 15px;
+  }
+
+  /* The picture is row 1, column 2, at the end -- where the SSC puts its trace button. */
+  .lt-row > .lt-media {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+  }
+
+  /* Wrap anywhere: a long part number must not widen a card at 400px (case 8). */
+  .lt-row > .lt-code {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Narrowest panels (430 and under): the table changes nothing -- the head stacks, and that is
+   lookup-head.css's. Listed so the ladder (> 960, 721-960, <= 720, <= 430) reads complete.
+   ------------------------------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------------------------------------
+   Reduced motion: every transition above is on a state attribute, so it is kept and made
+   immediate; a loop would be stopped, not shortened. lookup-motion.css carries the same
+   blanket for the panels that import it; restated for this fragment's own transitions and
+   animation so it does not depend on that import order.
+   ------------------------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .lt-value,
+  .lt-row,
+  .lt-columns > .lt-cell,
+  .lt-columns-label,
+  .lt-media-box,
+  .lt-media-box::after,
+  .lt-media-image,
+  .lt-media-stand {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

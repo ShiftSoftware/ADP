@@ -125,6 +125,29 @@ export class VehicleLookup implements MultiLingual {
 
   private searchGeneration = 0;
 
+  /**
+   * The panels still waiting for the last answer, each with what it is to be given (the answer, or
+   * the SSC's skip). Handed over one at a time by `handleLoadData`; a tab opened before its turn is
+   * handed its answer at once (`onActiveElementChange`).
+   */
+  private pendingHandoffs = new Map<unknown, () => void>();
+  private handoffGeneration = 0;
+
+  private runHandoff(element: unknown) {
+    const handoff = this.pendingHandoffs.get(element);
+    if (!handoff) return;
+    this.pendingHandoffs.delete(element);
+    handoff();
+  }
+
+  /** The browser's next idle moment, or a short pause where there is no idle callback (Safari). */
+  private idle(): Promise<void> {
+    return new Promise(resolve => {
+      if (typeof requestIdleCallback === 'function') requestIdleCallback(() => resolve(), { timeout: 250 });
+      else setTimeout(resolve, 32);
+    });
+  }
+
   /** The headers the host passed with the most recent search; the fallback when it supplies no provider. */
   private lastRequestHeaders?: object;
 
@@ -162,6 +185,8 @@ export class VehicleLookup implements MultiLingual {
   onActiveElementChange(next: ActiveElement, previous: ActiveElement) {
     this.switchingTo = next;
     this.leaving = previous || undefined;
+    // Opened before its turn: it gets the last answer now rather than at the end of the queue.
+    this.runHandoff(this.componentsList?.[next]);
     clearTimeout(this.leavingTimer);
     // Re-parked once out of the band, unseen: the head's movement plus the frame it starts on.
     this.leavingTimer = setTimeout(() => (this.leaving = undefined), this.headSettleMs() + 80);
@@ -283,6 +308,8 @@ export class VehicleLookup implements MultiLingual {
   private syncErrorAcrossComponents = (newErrorMessage: ErrorKeys) => {
     this.isError = true;
     this.errorMessage = this.locale?.errors?.[newErrorMessage] || this.locale.errors.wildCard;
+    // Every panel now shows the error; a tab opened afterwards must not be handed an older answer over it.
+    this.pendingHandoffs = new Map();
 
     Object.values(this.componentsList).forEach(element => {
       if (element) element.setErrorMessage(newErrorMessage);
@@ -315,6 +342,7 @@ export class VehicleLookup implements MultiLingual {
     // When activeElement is null (programmatic data injection), distribute to all components.
     const shouldSkipSsc = sscElement && activeElement !== null && activeElement !== sscElement;
 
+    const handoffs = new Map<unknown, () => void>();
     Object.values(this.componentsList).forEach(element => {
       if (element === null || element === activeElement || !newResponse) return;
 
@@ -322,12 +350,31 @@ export class VehicleLookup implements MultiLingual {
       // other tab must not show campaigns that were never logged as looked up — but a blank SSC tab
       // would read as "no campaigns", so the tab is told the check was skipped and offers to run it.
       if (shouldSkipSsc && element === sscElement) {
-        void (element as VehicleSsc).skipLookup(newResponse.vin || '');
+        handoffs.set(element, () => void (element as VehicleSsc).skipLookup(newResponse.vin || ''));
         return;
       }
 
-      element.fetchVin(newResponse);
+      handoffs.set(element, () => element.fetchVin(newResponse));
     });
+
+    // The other panels are handed the answer one at a time, never in one go (owner, 2026-10-25).
+    // Handing it to all seven in the frame the visible panel's answer landed, and their answers
+    // then landing together a second later, were the composite's two longest frames (measured with
+    // the CPU slowed 4x: about 65ms and 100ms). The visible panel's arrival now settles on its own,
+    // then each hidden panel gets the answer in an idle moment of its own. A tab opened before its
+    // turn is handed the answer at once.
+    const handoffGeneration = ++this.handoffGeneration;
+    this.pendingHandoffs = handoffs;
+    this.runHandoff(this.componentsList[this.activeElement]);
+
+    if (activeElement) await new Promise(resolve => setTimeout(resolve, this.headSettleMs() + 80));
+
+    for (const element of [...handoffs.keys()]) {
+      if (handoffGeneration !== this.handoffGeneration || generation !== this.searchGeneration) return;
+      await this.idle();
+      if (handoffGeneration !== this.handoffGeneration || generation !== this.searchGeneration) return;
+      this.runHandoff(element);
+    }
   }
 
   /**
@@ -369,6 +416,9 @@ export class VehicleLookup implements MultiLingual {
     if (!activeElement) return;
 
     this.searchGeneration++;
+    // The last answer is no longer the one to hand over: a tab opened before the new one lands
+    // must not be given the previous vehicle.
+    this.pendingHandoffs = new Map();
 
     activeElement.fetchVin(vin, resolvedHeaders || {});
   }
@@ -553,7 +603,7 @@ export class VehicleLookup implements MultiLingual {
           direction={direction}
           verdict={(active && this.verdicts[active]) || 'idle'}
         >
-          <LookupTabs active={active} panels={panels} regionRef={el => (this.regionEl = el)} />
+          <LookupTabs active={active} panels={panels} awake={this.leaving ? [this.leaving] : []} regionRef={el => (this.regionEl = el)} />
         </VehicleInfoLayout>
       </Host>
     );

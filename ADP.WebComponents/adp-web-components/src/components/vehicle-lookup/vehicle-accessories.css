@@ -1,16 +1,290 @@
+/* tailwind: off */
+/*
+ * Vehicle accessories — the stylesheet for <vehicle-accessories>, in the component design language.
+ * The card is the wrapper's; this file styles what is particular to this panel: the total in the
+ * head, the compact rows and the page controls under the table. The strip, the rows, the cards at
+ * 720px and under and the thumbnails are the lookup table's (features/lookup-table/lookup-table.css),
+ * imported below.
+ *
+ * Rows stay on screen through a lookup: their values go under the skeleton where they stand
+ * (shift-skeleton, imported below) and only the rows the answer adds or drops slide (owner,
+ * 2026-10-25).
+ *
+ * Panel states, as data attributes on .accessories-card: data-verdict, data-phase (busy while a
+ * lookup is in flight), data-lead (columns | notice) and data-body (rows | none).
+ */
+
+/* Order is the table fragment's contract: the reset, the tokens, the wrapper (which brings the
+   motion primitives and .sr-only — never import lookup-motion.css directly, a second import loses
+   its @keyframes), the head, then the table. */
+@import '../style/base.css';
+@import '../style/lookup-tokens.css';
 @import '../style/shift-skeleton.css';
-@import '../../features/image-viewer/image-viewer.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 @import '../../features/vehicle-info-layout/lookup-head.css';
+@import '../../features/lookup-table/lookup-table.css';
 
 :host {
   display: block;
-  all: initial !important;
-  /* The family's face (lookup-tokens.css); the wrapper's root switches it for an rtl locale. */
-  font-family: var(--font-sans) !important;
+  /* Compact rows, every one 65px tall (owner, 2026-10-25: 55px first, then "a little bigger"): a
+     64 x 48 thumbnail (4:3, lookup-table.css) with 8px above and below is 64px, plus the 1px rule between rows. The floor holds
+     a row without a picture (the image column hidden) at the same height, so a page never changes
+     height with its pictures. The viewer shows the picture full size. */
+  --lt-media-size: 48px;
+  --lt-cell-pad-block: 8px;
+  --lt-row-min: 65px;
+  /* No blank floor under the strip: the placeholder fills that space when there is no list
+     (idle, or nothing on file), and after a notice that has said everything the card simply ends. */
+  --body-rest: 0px;
 }
 
-*,
-:host * {
-  font-family: inherit !important;
+.accessories-card,
+.accessories-card *,
+.accessories-card *::before,
+.accessories-card *::after {
+  box-sizing: border-box;
+}
+
+.accessories-card {
+  position: relative;
+  width: 100%;
+  color: var(--ink);
+  /* No font-family: the wrapper's root sets the face for the language and this inherits it. */
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Head: the total
+   ------------------------------------------------------------------------------------------- */
+
+/* A fact, not a verdict, so it is not a pill. Small note: 12px, 600, tabular (design language § 11,
+   "counts"), in --muted -- secondary text, read after the title. It sits in the head's trailing
+   group, where the verdict would be: a record panel with records has no pill, so the group is
+   otherwise empty. */
+.accessories-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Rows: clamped text, so every row is the same height
+   ------------------------------------------------------------------------------------------- */
+
+/* Two lines at most (2 x 17px fits inside the 49px a row has between its padding). A row that
+   grows with its text would change height as the cover lifts on the next vehicle's words; a fixed
+   row only changes what it says. The description carries its whole text as a title. */
+.lt-row > .lt-text > .lt-value {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Placeholder: idle ("look a vehicle up") and nothing on file
+   ------------------------------------------------------------------------------------------- */
+
+/* Quiet and centred: a muted glyph in a recessed disc, one line of small text. It is the space a list
+   would take, said in words, so it uses the list's colours and never a verdict's. */
+.accessories-placeholder-layer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  padding: 26px 20px 28px;
+  text-align: center;
+}
+
+.accessories-placeholder-mark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  color: var(--muted);
+  background: var(--paper-soft);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--lt-rim-idle);
+}
+
+.accessories-placeholder-glyph {
+  width: 22px;
+  height: 22px;
+}
+
+.accessories-placeholder-text {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Page controls: rows per page, the range, previous and next
+   ------------------------------------------------------------------------------------------- */
+
+/* Ruled like a row of the table (--line-soft, § 12), so it reads as the foot of the list. The page
+   size sits on the reading edge, the range and the arrows on the far one. 4px of padding around
+   the 40px buttons leaves room for the 2px focus outline and its 2px offset, which the
+   collapsible's overflow:hidden would otherwise clip. */
+.accessories-pager-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  align-items: center;
+  padding: 4px 12px 4px 20px;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* When a shorter page takes the page up under the reader, the controls are brought back with this
+   much of the list above them (motion.md rule 10; lib/reveal-below reads scroll-margin-top). */
+.accessories-pager {
+  scroll-margin-top: min(40vh, 280px);
+}
+
+.accessories-page-size {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin-inline-end: auto;
+}
+
+/* Small note: 12px, 600 (design language § 11). */
+.accessories-page-size-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* The platform's own select, so its list is the platform's too (keyboard, touch, screen reader);
+   dressed in the family's type and line. 32px: a control inside a row, not a call to action. */
+.accessories-page-size-select {
+  min-height: 32px;
+  padding: 0 6px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  transition:
+    border-color 0.2s ease,
+    opacity var(--settle) ease;
+}
+
+.accessories-page-size-select:hover {
+  border-color: var(--blue);
+}
+
+.accessories-page-size-select:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 2px;
+}
+
+/* In flight: the list on screen is the last vehicle's, so it cannot be paged; the control dims
+   rather than vanishing. */
+.accessories-page-size-select:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+/* A value, read: dates and counts are --date-ink and tabular (§ 9, § 11). It carries
+   shift-skeleton, so a lookup covers it with the rows. */
+.accessories-page-range {
+  display: inline-block;
+  color: var(--date-ink);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.accessories-page-nav {
+  display: inline-flex;
+  gap: 2px;
+}
+
+/* Interaction is blue (§ 10), a quiet icon button: the list is the content, these only move through
+   it. 40px square with the 4px row padding gives the 44px a finger needs. .2s, the language's one
+   duration shorter than --settle: a press must feel instant (§ 18). */
+.accessories-page-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: var(--blue-dark);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.accessories-page-button:hover:not(:disabled) {
+  background: var(--blue-tint);
+}
+
+.accessories-page-button:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 2px;
+}
+
+/* The end of the list in that direction: grey, the colour of idle furniture (§ 10). */
+.accessories-page-button:disabled {
+  color: var(--line);
+  cursor: default;
+}
+
+.accessories-page-chevron {
+  width: 16px;
+  height: 16px;
+}
+
+/* Previous points to the reading start and next to the reading end, so RTL mirrors both. */
+[dir='rtl'] .accessories-page-chevron {
+  transform: scaleX(-1);
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Narrow panels (720 and under): the table turns its rows into cards (lookup-table.css); the
+   page controls keep their 44px targets and only tighten their row to the card's inset.
+   ------------------------------------------------------------------------------------------- */
+
+@container (max-width: 720px) {
+  /* Compact cards: a card is several captioned lines, so it is not held to the row's 55px; it is
+     only tightened, from the table's 12px 14px and 10px gaps. */
+  .lt-row {
+    gap: 6px 12px;
+    padding: 10px 14px;
+  }
+
+  .accessories-pager-row {
+    padding-inline: 14px 8px;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Reduced motion: every transition above is on a state attribute, so it is kept and made
+   immediate. The table's own block is in its fragment.
+   ------------------------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .accessories-page-size-select,
+  .accessories-page-button {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
 }

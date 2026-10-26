@@ -1,8 +1,26 @@
 {
   "vehicleAccessories": "Vehicle Accessories",
-  "noData": "No data is available.",
   "partNumber": "Part Number",
   "description": "Description",
   "image": "Image",
-  "expand": "Expand"
+  "columnsLabel": "Accessory list",
+  "noImage": "No picture on record",
+  "imageFailed": "The picture did not load",
+  "openImage": "Open picture of",
+  "unauthorizedNotice": "This vehicle is not in the distributor's records, so its accessories cannot be listed.",
+  "noAccessories": "No accessories on record for this vehicle.",
+  "noFieldsShown": "No fields are selected to show.",
+  "accessoryCountZero": "{count} accessories",
+  "accessoryCountOne": "{count} accessory",
+  "accessoryCountTwo": "{count} accessories",
+  "accessoryCountFew": "{count} accessories",
+  "accessoryCountMany": "{count} accessories",
+  "accessoryCountOther": "{count} accessories",
+  "rowsPerPage": "Rows per page",
+  "pageAll": "All",
+  "pageRange": "{from}–{to} of {total}",
+  "previousPage": "Previous page",
+  "nextPage": "Next page",
+  "idleHint": "Look up a vehicle to see the accessories fitted to it.",
+  "emptyHint": "Accessories fitted to this vehicle after it left the factory are listed here."
 }

@@ -1,0 +1,214 @@
+/* tailwind: off */
+@import '../../style/base.css';
+
+/*
+  The layer shift-image portals onto <body> (or into the modal dialog it was opened from): the full-
+  window viewer. Redesigned 2026-10-25 for smoothness (owner): everything that moves is `transform`
+  or `opacity`, so the compositor animates it without laying out or repainting the page; no backdrop
+  blur. Values a page can tune are custom properties on the element:
+
+    --shift-image-duration         the opening flight (460ms)
+    --shift-image-ease             its curve: a long, soft deceleration, so the picture lands rather than stops
+    --shift-image-close-duration   the closing flight (400ms), and --shift-image-close-ease its curve
+    --shift-image-land-fade        the dissolve into the thumbnail once the card has landed (120ms)
+    --shift-image-scrim            the colour over the page
+*/
+
+/* The layer covers the window and is invisible until it opens; closing, it lets clicks through at
+   once. Above anything a host page is likely to stack, a site header included. */
+:host {
+  /* The flight, out and back (shift-image-layer.tsx animates it, size by ratio, centre in a line).
+     Opening leaves the thumbnail gently and settles softly; closing is a touch quicker and lands. */
+  --shift-image-duration: 460ms;
+  --shift-image-ease: cubic-bezier(0.2, 0, 0, 1);
+  --shift-image-close-duration: 400ms;
+  --shift-image-close-ease: cubic-bezier(0.3, 0, 0.1, 1);
+  --shift-image-land-fade: 120ms;
+  --shift-image-scrim: rgba(12, 18, 24, 0.82);
+
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: block;
+  pointer-events: none;
+  overscroll-behavior: contain;
+  color: #ffffff;
+  font-family: 'Manrope', 'Noto Kufi Arabic', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Hidden until it opens, on the stage rather than the host: a hydrated component's host gets
+   `visibility: inherit` from the page's own stylesheet, which out-ranks the host's rules here. Closing,
+   it lets clicks through at once. */
+.stage {
+  visibility: hidden;
+}
+
+:host([data-state]) .stage {
+  visibility: visible;
+}
+
+:host([data-state='opening']) .stage,
+:host([data-state='open']) .stage {
+  pointer-events: auto;
+}
+
+/* While open the layer is a manual popover in the top layer, so it also covers a modal <dialog>. The
+   browser's own popover box (centred, bordered, padded, with a background) is undone: the layer is
+   the whole window and draws nothing itself. */
+:host([popover]) {
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+}
+
+/* The page, set back. Dark and opaque enough to read the picture against, never a blur. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--shift-image-scrim);
+  opacity: 0;
+  transition: opacity var(--shift-image-duration) var(--shift-image-ease);
+}
+
+:host([data-state='open']) .scrim {
+  opacity: 1;
+}
+
+/* The picture's card, laid out once at its final place; the flight is its transform alone. White,
+   because product pictures are drawn on white. The corners are the card's, so the picture inside is
+   never cropped by them more than it would be by the card's own edge. */
+.frame {
+  position: fixed;
+  border-radius: 12px;
+  transform-origin: 0 0;
+  will-change: transform, opacity;
+}
+
+/* The lift: one soft shadow on its own layer, so it can fade (opacity is cheap; an animated
+   box-shadow repaints). Gone by the time the card lands, so the landing is the thumbnail's own look. */
+.frame::before {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  content: '';
+  transition: opacity var(--shift-image-duration) var(--shift-image-ease);
+}
+
+.clip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: inherit;
+}
+
+/* Closing: the shadow fades while the card flies back, so it lands with the thumbnail's own look. */
+:host([data-state='closing']) .frame::before {
+  opacity: 0;
+  transition: opacity calc(var(--shift-image-close-duration) * 0.6) ease;
+}
+
+:host([data-state='closing']) .scrim {
+  transition-duration: var(--shift-image-close-duration);
+}
+
+.picture {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* The full-size picture arrives over the thumbnail's pixels, which flew at once. */
+.full {
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.full[data-ready] {
+  opacity: 1;
+}
+
+/* What the picture shows, under it. Comes in after the picture has mostly landed. */
+.caption {
+  position: fixed;
+  inset-inline: 16px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  overflow-wrap: anywhere;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity calc(var(--shift-image-duration) * 0.6) ease,
+    transform calc(var(--shift-image-duration) * 0.6) ease;
+}
+
+:host([data-state='open']) .caption:not([data-empty]) {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(var(--shift-image-duration) * 0.4);
+}
+
+/* A 44px round button, the smallest target a finger can hit, on the reading end of the top row. */
+.close {
+  position: absolute;
+  inset-block-start: 16px;
+  inset-inline-end: 16px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity var(--shift-image-duration) var(--shift-image-ease),
+    background 0.2s ease;
+}
+
+:host([data-state='open']) .close {
+  opacity: 1;
+}
+
+.close:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.close:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.close-icon {
+  width: 22px;
+  height: 22px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrim,
+  .frame,
+  .frame::before,
+  .full,
+  .caption,
+  .close {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+}

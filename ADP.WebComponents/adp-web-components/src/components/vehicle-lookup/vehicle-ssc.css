@@ -6,8 +6,9 @@
  *
  * The panel is three fixed parts — head, lead strip, body — and every state is a different
  * content of the same three (see the note on SscCampaigns). Nothing here is display:none'd
- * between states: the strip's layers cross-fade, the body slides, the pill and the strip carry
- * the sheen while a lookup is in flight.
+ * between states: the strip's layers (the column headings, a notice) cross-fade and the body
+ * slides. The headings are the same for every vehicle, so the strip never goes to a skeleton: it
+ * shows them idle, in flight and above rows, and a notice only for an outcome without a list.
  */
 
 /* The motion primitives (lookup-motion.css) come through the wrapper's own import, never directly:
@@ -27,7 +28,7 @@
      sliver. */
   --chips-max: 300px;
   /* The lead strip's height in every state, so the strip is the same band whether it carries the
-     headings, a notice or the skeleton. */
+     headings or a notice. */
   --lead-height: 38px;
   /* The body never shuts below this: the header's height at rest (16 + 30 + 12), so the strip sits
      between two equal bands whether or not there is anything below it. */
@@ -57,7 +58,7 @@
 
 /* ---------------------------------------------------------------------------------------------
    Card: the wrapper draws it. This root only carries the state its descendants style off —
-   data-verdict for the pill's hue and data-phase for the sheen.
+   data-verdict for the pill's hue and data-phase (busy while a lookup or the manufacturer check is in flight).
    ------------------------------------------------------------------------------------------- */
 
 .ssc-card {
@@ -207,7 +208,7 @@
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Lead strip: one band, three layers
+   Lead strip: one band, two layers
    ------------------------------------------------------------------------------------------- */
 
 .ssc-lead {
@@ -219,25 +220,6 @@
 
 .ssc-lead > .layer {
   min-height: var(--lead-height);
-}
-
-/* Idle it is the flat grey of a shape with nothing to say; in flight it darkens a shade and the
-   sheen sweeps it, in step with the pill. */
-.ssc-lead-skeleton {
-  background-color: var(--line-soft);
-  background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
-  background-repeat: no-repeat;
-  background-size: 45% 100%;
-  background-position: -100% 0;
-  transition:
-    opacity var(--settle) ease,
-    visibility 0s linear var(--settle),
-    background-color var(--settle) ease;
-}
-
-.ssc-card[data-phase='busy'] .ssc-lead-skeleton {
-  background-color: #dcdfe4;
-  animation: lookup-sheen var(--sheen) linear infinite;
 }
 
 .ssc-lead-notice {
@@ -346,6 +328,14 @@
 
 .ssc-row[data-open='true'] {
   background: var(--blue-tint);
+}
+
+/* Hover highlight, the same --row-hover as the shared table (pointer devices only, background
+   only). An open row keeps its blue tint; notices and headings are not .ssc-row. */
+@media (hover: hover) {
+  .ssc-row:not([data-open='true']):hover {
+    background: var(--row-hover);
+  }
 }
 
 .ssc-row > .ssc-cell {

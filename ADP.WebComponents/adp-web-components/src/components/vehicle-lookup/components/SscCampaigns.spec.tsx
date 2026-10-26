@@ -17,6 +17,7 @@ type RenderOptions = {
   retainedBody?: BodyKind;
   checkAvailable?: boolean;
   checkStatus?: ManufacturerCheckStatus | null;
+  error?: string;
   showTrace?: boolean;
   onRunLookup?: () => void;
 };
@@ -31,6 +32,7 @@ const render = ({
   retainedBody = 'none',
   checkAvailable = true,
   checkStatus,
+  error,
   showTrace = false,
   onRunLookup = () => undefined,
 }: RenderOptions) =>
@@ -48,6 +50,7 @@ const render = ({
         retainedBody={retainedBody}
         checkAvailable={checkAvailable}
         checkStatus={checkStatus}
+        error={error}
         onRunLookup={onRunLookup}
         showTrace={showTrace}
         traces={{}}
@@ -105,8 +108,21 @@ describe('SscCampaigns', () => {
     // Nothing to say, so no pill: the head is the title alone.
     expect(badge(page)).toBeNull();
     expect(verdictOf(page)).toBe('idle');
-    // The strip is a skeleton and the body is shut: no headings, no rows, nothing said.
-    expect(leadOf(page)).toBe('skeleton');
+    // The strip heads the columns (they are the same for every vehicle, so nothing is skeletonised) and the body is shut: no rows, nothing said.
+    expect(leadOf(page)).toBe('columns');
+    expect(page.body.querySelector('.ssc-lead-skeleton')).toBeNull();
+    expect(Array.from(page.body.querySelectorAll('.ssc-lead-columns > .ssc-cell')).map(cell => cell.textContent?.trim())).toEqual([
+      sscLocale.code,
+      sscLocale.description,
+      sscLocale.status,
+      sscLocale.laborCodes,
+      sscLocale.parts,
+    ]);
+    // Visible, but there is no table yet: no roles, and hidden from assistive tech.
+    expect(page.body.querySelector('.ssc-grid')?.getAttribute('role')).toBeNull();
+    expect(page.body.querySelector('.ssc-lead-columns')?.getAttribute('role')).toBeNull();
+    expect(page.body.querySelector('.ssc-lead-columns')?.getAttribute('aria-hidden')).toBe('true');
+    expect(page.body.querySelectorAll('.ssc-lead-columns [role]')).toHaveLength(0);
     expect(bodyOpen(page)).toBe(false);
     expect(rows(page)).toHaveLength(0);
     expect(noticeText(page)).toBe('');
@@ -241,7 +257,10 @@ describe('SscCampaigns', () => {
     const page = await render({ authorized: true, campaigns: authorizedVehicle.ssc ?? [], loading: true, retainedBody: 'rows' });
 
     expect(phaseOf(page)).toBe('busy');
-    expect(leadOf(page)).toBe('skeleton');
+    // The headings stay while the body shuts under them; no table roles without open rows.
+    expect(leadOf(page)).toBe('columns');
+    expect(page.body.querySelector('.ssc-lead-columns')?.getAttribute('role')).toBeNull();
+    expect(page.body.querySelector('.ssc-lead-columns')?.getAttribute('aria-hidden')).toBe('true');
     expect(bodyOpen(page)).toBe(false);
     // Still rendered: they slide away with the body instead of vanishing.
     expect(rows(page)).toHaveLength(2);
@@ -251,7 +270,8 @@ describe('SscCampaigns', () => {
     const page = await render({ authorized: false, checking: true });
 
     expect(phaseOf(page)).toBe('busy');
-    expect(leadOf(page)).toBe('skeleton');
+    // The strip crosses through the headings between the old notice and the manufacturer's answer.
+    expect(leadOf(page)).toBe('columns');
     expect(bodyOpen(page)).toBe(true);
     expect(page.body.querySelector('.ssc-checking-slot')?.getAttribute('data-open')).toBe('true');
     expect(page.body.textContent).toContain(sscLocale.checkingTMC);
@@ -294,10 +314,38 @@ describe('SscCampaigns', () => {
       expect(panelLead(state({ authorized: true, campaigns: [] }), false)).toBe('notice');
     });
 
-    it('show the skeleton whenever something is in flight, whatever the state', () => {
-      expect(panelLead(state({ authorized: true, campaigns: authorizedVehicle.ssc ?? [] }), true)).toBe('skeleton');
-      expect(panelLead(state({ authorized: false }), true)).toBe('skeleton');
-      expect(panelLead(state({ vehicleLoaded: false }), false)).toBe('skeleton');
+    // The headings are the same for every vehicle, so only an outcome without a list replaces them (owner, F1).
+    it('is the headings when idle, before any lookup', () => {
+      expect(panelLead(state({ vehicleLoaded: false }), false)).toBe('columns');
+    });
+
+    it('is the headings while a lookup or the manufacturer check is in flight, whatever the state', () => {
+      expect(panelLead(state({ authorized: true, campaigns: authorizedVehicle.ssc ?? [] }), true)).toBe('columns');
+      expect(panelLead(state({ authorized: true, campaigns: [] }), true)).toBe('columns');
+      expect(panelLead(state({ authorized: false }), true)).toBe('columns');
+      expect(panelLead(state({ authorized: false, checkStatus: 'noRecall' }), true)).toBe('columns');
+      expect(panelLead(state({ vehicleLoaded: false }), true)).toBe('columns');
+      expect(panelLead(state({ vehicleLoaded: false, skipped: true }), true)).toBe('columns');
+      expect(panelLead(state({ vehicleLoaded: false, error: 'Failed' }), true)).toBe('columns');
+    });
+
+    it("is a notice for the manufacturer's answer, once it is in", () => {
+      for (const checkStatus of ['noRecall', 'recallExists', 'noApplicableVehicleFound'] as const) {
+        expect(panelLead(state({ authorized: false, checkStatus }), false)).toBe('notice');
+      }
+    });
+  });
+
+  describe('the strip in the DOM', () => {
+    it("gives a table's roles to the headings only once the rows are open, and keeps one heading structure", async () => {
+      const campaigns = authorizedVehicle.ssc ?? [];
+      const page = await render({ authorized: true, campaigns, retainedBody: 'rows' });
+
+      expect(leadOf(page)).toBe('columns');
+      expect(page.body.querySelector('.ssc-grid')?.getAttribute('role')).toBe('table');
+      expect(page.body.querySelector('.ssc-lead-columns')?.getAttribute('role')).toBe('row');
+      expect(page.body.querySelector('.ssc-lead-columns')?.hasAttribute('aria-hidden')).toBe(false);
+      expect(page.body.querySelectorAll('.ssc-lead-columns [role="columnheader"]').length).toBeGreaterThanOrEqual(5);
     });
   });
 

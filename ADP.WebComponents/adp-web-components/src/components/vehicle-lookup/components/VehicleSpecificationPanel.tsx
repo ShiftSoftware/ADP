@@ -8,8 +8,6 @@ import { ArrowIcon } from '~assets/arrow-icon';
 
 import { LookupHeadWait, PanelVerdict, StatusBadge } from '~features/vehicle-info-layout';
 
-import { BADGE_GLYPHS } from './glyphs';
-
 export type SpecificationLocale = InferType<typeof specificationSchema>;
 
 /**
@@ -31,8 +29,10 @@ export type SpecPanelState = {
 };
 
 type Props = SpecPanelState & {
-  /** A lookup is in flight, or the panel is being cleared: the head leaves the band and the strip goes to the skeleton. */
+  /** A lookup is in flight, or the panel is being cleared: the head leaves the band and the values go under the skeleton where they stand. */
   loading: boolean;
+  /** The panel is being cleared (or failing from a settled card): the details block shuts. A lookup alone does not shut it. */
+  leaving?: boolean;
   /** The pill's state and words. The accent is the owner's; the wrapper draws it. */
   verdict: Pick<PanelVerdict, 'state' | 'text'>;
   /** The locale's BCP-47 tag (`sharedLocales.lang`), for the production date's month name. */
@@ -132,17 +132,6 @@ const recordValues = (record?: SpecificationRecord): string[] => {
  * green over a blank card, which is a verdict read off an absence.
  */
 export const hasRecords = (record?: SpecificationRecord): boolean => recordValues(record).some(Boolean);
-
-/**
- * The notice band: a statement that stands above the record, not inside it. One case today; the
- * shape is general so a second reads the same way. Shut while a lookup is in flight and before the
- * first — a notice is about one vehicle and must not hang over the next.
- */
-export const panelNotice = (state: { authorized?: boolean }, busy: boolean, locale: SpecificationLocale): { open: boolean; tone: 'neutral'; message: string } => ({
-  open: !busy && state.authorized === false,
-  tone: 'neutral',
-  message: locale.unauthorizedNotice,
-});
 
 /**
  * One labelled value: `text`, an optional smaller `note`, or `colour` for the two code+name cells.
@@ -391,7 +380,7 @@ export const headStatement = (record: SpecificationRecord | undefined, readable:
  * raises its spinner, so nothing here has a loading state of its own.
  */
 export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
-  const { locale, record, error, loading, verdict, lang, groups, retainedGroups, detailsOpen, onToggleDetails } = props;
+  const { locale, record, error, loading, leaving = false, verdict, lang, groups, retainedGroups, detailsOpen, onToggleDetails } = props;
 
   const vehicleLoaded = !!record?.vin && !error;
   /**
@@ -400,21 +389,25 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
    * the distributor's to assert.
    */
   const readable = vehicleLoaded && record?.isAuthorized !== false;
-  const notice = panelNotice({ authorized: record?.isAuthorized }, loading, locale);
   const statement = headStatement(record, readable);
   const cells = identityCells(record, locale, lang, readable);
 
   // Two empties, two meanings: before any lookup the values keep their box with a blank, because a
   // dash would say "the record has nothing here" about a vehicle that does not exist yet.
-  const blank = !vehicleLoaded;
+  // Idle look before a lookup, after a failed one, and for a vehicle not in the distributor's records:
+  // the pill says which (owner, 2026-10-25), the values stay blank rather than dashed.
+  const blank = !readable;
 
   // The shell carries the summary row and the region; it shuts when the vehicle has no tier-2 value
   // at all, so "nothing renders" is true and it got there by sliding. The region inside it carries
-  // the groups and answers to the reader. Both shut for a lookup, whatever the reader had chosen,
-  // and both keep rendering the outgoing groups while they do.
+  // the groups and answers to the reader. A lookup does NOT shut them (owner, 2026-10-25): the
+  // groups stay where they are with their values under the skeleton, the next vehicle's values
+  // land under it, and the block shuts only if the answer has no details -- still covered
+  // (`held`), since the values in it are the last vehicle's. A clear shuts it at once.
   const shown = groups.length ? groups : retainedGroups;
-  const shellOpen = groups.length > 0 && !loading;
+  const shellOpen = groups.length > 0 && !leaving;
   const regionOpen = shellOpen && detailsOpen;
+  const held = !groups.length && retainedGroups.length > 0;
   const summary = detailsSummary(shown, locale);
 
   return (
@@ -450,19 +443,6 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
           transition list would replace the other depending on source order. */}
       <div class="lookup-slide-clip">
         <div class="spec-under-head lookup-slide">
-          {/* Its own band above the strip, not a layer inside it: as a layer it replaced the
-              "Identity" caption, so the section lost its title while the warning was up. */}
-          <div class="spec-notice collapsible" data-open={notice.open ? 'true' : 'false'} data-tone={notice.tone} aria-hidden={notice.open ? null : 'true'}>
-            <div class="collapsible-body">
-              <p class="spec-notice-body" role="status">
-                <svg class="notice-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
-                  <path fill="currentColor" d={BADGE_GLYPHS.question} />
-                </svg>
-                <span>{notice.message}</span>
-              </p>
-            </div>
-          </div>
-
           {/* The grid's title, and a fixed one: the eight labelled cells below are the same in every
               state, so it is never covered and never swapped for something else. */}
           <div class="spec-lead">
@@ -481,7 +461,12 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
           {/* Tier 2 — the variable structure, in two nested collapsibles. The shell carries the
               recessed band, its top rule, the summary row and the region, so a vehicle with no
               details has no block at all and got there by sliding rather than by vanishing. */}
-          <div class="spec-details collapsible" data-open={shellOpen ? 'true' : 'false'} data-empty={groups.length ? 'false' : 'true'} aria-hidden={shellOpen ? null : 'true'}>
+          <div
+            class={{ 'spec-details': true, 'collapsible': true, 'loading': held }}
+            data-open={shellOpen ? 'true' : 'false'}
+            data-empty={groups.length ? 'false' : 'true'}
+            aria-hidden={shellOpen ? null : 'true'}
+          >
             <div class="collapsible-body">
               {/* The whole row is the control: the names and count are the promise it acts on, and
                   a 30px mark is a smaller target than the row it belongs to. */}
