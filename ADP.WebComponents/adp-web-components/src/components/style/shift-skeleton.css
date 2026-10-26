@@ -1,36 +1,151 @@
+/*
+ * shift-skeleton — the loading cover, the one implementation of the in-flight sheen.
+ *
+ * A FRAGMENT: a component @imports it once, near the top of its stylesheet. Not the wrapper's to
+ * import, and never imported twice into one stylesheet: Stencil's dedupe drops a doubled file's
+ * @keyframes while its rules survive, and the sweep would silently stop.
+ *
+ * Two hooks, one switch. The switch is `.loading` on an ancestor (the wrapper's root, a row's own
+ * slot) or on the block itself.
+ *
+ *   .shift-skeleton   a value with a slot in every state (design language § 21, "the changeable
+ *                     content"). In flight a flat grey cover comes up over it and the sheen sweeps
+ *                     across the cover. The value is never unmounted or blanked: it changes, and
+ *                     the block resizes, under the cover, and the cover lifts on what is there.
+ *   .shift-sheen      a shape that turns itself neutral in flight (a verdict pill, a notice band).
+ *                     Its own stylesheet greys it after its verdict rules; this adds only the sweep.
+ *                     No cover, because a second rounded box over a rounded shape fringes its rim.
+ *
+ * Cheap on purpose. A lookup now covers every value of every row, so dozens of these sweep at
+ * once. Only opacity and transform move: the cover fades, the band slides. Both run on the
+ * compositor, so the main thread paints nothing while a lookup is in flight. The sheen this
+ * replaces moved background-position, which repaints every skeleton on every frame.
+ *
+ * The clocks are the family's: --settle for the fade, --sheen for the sweep (lookup-tokens.css).
+ * A component that does not import the tokens (part lookup) gets the same numbers from the
+ * fallbacks. Fallbacks rather than :host tokens because information-table renders without a shadow
+ * root, where :host matches nothing.
+ */
+
 .shift-skeleton {
-  @apply !relative rounded-[4px];
+  position: relative;
+  border-radius: 4px;
 }
 
+.shift-sheen {
+  position: relative;
+}
+
+/* overflow: hidden clips the band to the block's corners. hidden and not clip: a .resize-settle
+   value is overflow: hidden at rest, and switching it to clip in flight would take away its
+   formatting context and could move a margin under the cover. pointer-events: none so a covered
+   value cannot be clicked while it is being replaced. The border goes because the cover sits
+   inside it (the padding box); a block whose border carries layout does not take the class
+   (CoverageTimeline.spec). */
 .loading.shift-skeleton,
 .loading .shift-skeleton {
-  @apply !relative !overflow-hidden !pointer-events-none !border-none;
+  overflow: hidden;
+  pointer-events: none;
+  border-style: none;
 }
 
+.loading.shift-sheen,
+.loading .shift-sheen {
+  overflow: hidden;
+}
+
+/* The cover. Always in the tree at opacity 0 so it can fade in and out on every browser, and
+   painted only while it is visible. Flat: the light is the band's job, so the cover never has to
+   repaint. #dcdfe4 is the language's sheen grey (§ 9), the same as a neutralised pill's, so a
+   panel in flight is one grey. */
 .shift-skeleton::after {
   content: '';
-  @apply absolute left-0 top-0 z-10 opacity-0 origin-left transition-all duration-500 pointer-events-none;
-  width: 100%;
-  height: 100%;
-  border-radius: inherit !important;
-  background: linear-gradient(-45deg, #d4d8de, #e2e5e9, #d4d8de);
-  background-size: 300% 300%;
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  border-radius: inherit;
+  background: #dcdfe4;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--settle, 480ms) ease;
 }
 
 .loading.shift-skeleton::after,
 .loading .shift-skeleton::after {
-  @apply opacity-100 scale-x-100;
-  animation: shimmer 2s ease-in-out infinite;
+  opacity: 1;
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: 100% 0%;
+/*
+ * The band: a light 45% of the block wide, half-strength white at its centre, leaning 10° off the
+ * vertical, carried across by translateX on a loop (owner, 2026-09-20: at .85 it read as a wave
+ * washing over the shape; dead vertical read as a wipe). It starts and ends clear of the block,
+ * centre -32.5% to 132.5% of the width, the travel the background-position sheen had, so it
+ * enters and leaves rather than appearing mid-sweep.
+ *
+ * Out of the tree at rest (display: none), so an idle panel runs no loop at all. In flight it
+ * fades in on the cover's clock (@starting-style) and every band starts together, so a panel's
+ * skeletons sweep in step. When the switch drops, `display` is held for --settle (allow-discrete),
+ * so the band keeps travelling while it fades with the cover instead of stopping dead; then it
+ * leaves the tree and the loop ends. A browser without allow-discrete shows and hides it at once.
+ *
+ * Above the cover (z-index 11), because ::before paints first.
+ */
+.shift-skeleton::before,
+.shift-sheen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 11;
+  display: none;
+  background: linear-gradient(100deg, transparent 27.5%, rgba(255, 255, 255, 0.5) 50%, transparent 72.5%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-82.5%);
+  animation: shift-skeleton-sweep var(--sheen, 1.3s) linear infinite;
+  transition-property: opacity, display;
+  transition-duration: var(--settle, 480ms);
+  transition-timing-function: ease;
+  transition-behavior: allow-discrete;
+}
+
+.loading.shift-skeleton::before,
+.loading .shift-skeleton::before,
+.loading.shift-sheen::before,
+.loading .shift-sheen::before {
+  display: block;
+  opacity: 1;
+}
+
+@starting-style {
+  .loading.shift-skeleton::before,
+  .loading .shift-skeleton::before,
+  .loading.shift-sheen::before,
+  .loading .shift-sheen::before {
+    opacity: 0;
   }
-  50% {
-    background-position: 0% 100%;
+}
+
+@keyframes shift-skeleton-sweep {
+  from {
+    transform: translateX(-82.5%);
   }
-  100% {
-    background-position: 100% 0%;
+
+  to {
+    transform: translateX(82.5%);
+  }
+}
+
+/* Reduced motion: the cover still comes and goes, at once; the sweep is a loop, so it is stopped,
+   not shortened. Here as well as in lookup-motion.css because part-lookup does not import that. */
+@media (prefers-reduced-motion: reduce) {
+  .shift-skeleton::after,
+  .shift-skeleton::before,
+  .shift-sheen::before {
+    transition-duration: 0.01ms;
+  }
+
+  .shift-skeleton::before,
+  .shift-sheen::before {
+    animation: none;
   }
 }

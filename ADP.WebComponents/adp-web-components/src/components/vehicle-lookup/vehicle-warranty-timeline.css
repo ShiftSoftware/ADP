@@ -245,23 +245,21 @@
 }
 
 /* While the next vehicle is fetched these carry no verdict, so every colour that says one goes
-   neutral for the load: the ring, the fill, and the icon's cap.
-   
-   All three matter, not just the ring. The skeleton overlay is a separate rounded box stacked on
-   the chip, and two nested antialiased curves never land on the same subpixels, so whatever sits
-   underneath fringes the rim by a fraction of a pixel. On a 999px pill that fringe gathers at the
-   caps — the chip was loading with a green or red halo picked out around its rounded ends while
-   the flat blocks beside it looked clean.
-   
+   neutral for the load: the ring, the fill, and the icon's cap. The sweep across them is the shared
+   one (.shift-sheen, shift-skeleton.css): this rule only greys the shape.
+
+   All three matter, not just the ring. A grey cover stacked on the chip would be a second rounded
+   box, and two nested antialiased curves never land on the same subpixels, so whatever sat
+   underneath would fringe the rim by a fraction of a pixel. On a 999px pill that fringe gathers at
+   the caps — the chip was loading with a green or red halo picked out around its rounded ends while
+   the flat blocks beside it looked clean. So the chip greys itself, and the band is clipped by the
+   chip's own corners rather than drawing a curve of its own.
+
    Must stay below every verdict colour above, the icon caps included: these tie with those on
    specificity and win only on source order. */
 .loading .status-badge {
-  background-color: #dcdfe4;
-  background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
-  background-repeat: no-repeat;
-  background-size: 45% 100%;
+  background: #dcdfe4;
   box-shadow: inset 0 0 0 1px rgba(95, 108, 120, 0.42);
-  animation: lookup-sheen var(--sheen) linear infinite;
 }
 
 .loading .status-badge .badge-icon {
@@ -271,14 +269,10 @@
 /* Ruled top and bottom only, as at rest: the band runs the full width of the card, so a ring would
    put two stray vertical ticks against its edges for the length of the load. */
 .loading .warranty-notice {
-  background-color: #dcdfe4;
-  background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
-  background-repeat: no-repeat;
-  background-size: 45% 100%;
+  background: #dcdfe4;
   box-shadow:
     inset 0 1px 0 rgba(95, 108, 120, 0.42),
     inset 0 -1px 0 rgba(95, 108, 120, 0.42);
-  animation: lookup-sheen var(--sheen) linear infinite;
 }
 
 /* A class, not an <h1>: the component is embedded in a host page and must not
