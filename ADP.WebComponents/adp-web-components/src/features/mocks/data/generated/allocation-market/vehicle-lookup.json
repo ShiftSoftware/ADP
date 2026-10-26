@@ -185,6 +185,7 @@
             {
               "invoiceDate": "2026-09-07",
               "invoiceStatus": "0x00",
+              "orderStatus": "\u0417\u0430\u043A\u0440\u044B\u0442",
               "laborCode": "1JP10U",
               "campaignLaborCode": "1JP10U",
               "statusQualifies": false,
@@ -2460,6 +2461,7 @@
         "repaired": true,
         "repairDate": "2026-06-10",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "10",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -2779,6 +2781,7 @@
             {
               "invoiceDate": "2026-08-18",
               "invoiceStatus": "0x00",
+              "orderStatus": "\u0417\u0430\u043A\u0440\u044B\u0442",
               "laborCode": "UZZ78G",
               "campaignLaborCode": "UZZ78G",
               "statusQualifies": false,
@@ -2799,6 +2802,7 @@
         "repaired": true,
         "repairDate": "2026-08-18",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "7",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -2862,6 +2866,7 @@
             {
               "invoiceDate": "2026-08-18",
               "invoiceStatus": "0x00",
+              "orderStatus": "\u0417\u0430\u043A\u0440\u044B\u0442",
               "laborCode": "SPQ58E",
               "campaignLaborCode": "SPQ58E",
               "statusQualifies": false,
@@ -2972,6 +2977,7 @@
         "repaired": true,
         "repairDate": "2026-08-18",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "7",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -3040,6 +3046,7 @@
             {
               "invoiceDate": "2026-08-18",
               "invoiceStatus": "0x00",
+              "orderStatus": "\u0417\u0430\u043A\u0440\u044B\u0442",
               "laborCode": "9LP25B",
               "campaignLaborCode": "9LP25B",
               "statusQualifies": false,
@@ -3410,6 +3417,7 @@
         "repaired": true,
         "repairDate": "2026-08-15",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "9",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -5237,6 +5245,7 @@
         "repaired": true,
         "repairDate": "2026-08-19",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "7",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -5269,6 +5278,7 @@
               "invoiceNumber": "21044568399",
               "invoiceDate": "2026-08-13",
               "invoiceStatus": "0x00",
+              "orderStatus": "\u0417\u0430\u043A\u0440\u044B\u0442",
               "laborCode": "JVR97U",
               "campaignLaborCode": "JVR97U",
               "statusQualifies": false,

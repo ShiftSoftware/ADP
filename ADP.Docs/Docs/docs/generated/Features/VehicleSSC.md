@@ -10,13 +10,21 @@ Each SSC is checked for repair status by looking at three sources, in order; the
 decides both the verdict and the repair date, and is reported as the repair source:
 
 1. Direct RepairDate on the SSC record
-2. Matching warranty claim (by campaign code in distributor comment, or by labor code)
-3. Matching labor line (by labor code with invoice status X or C)
+2. Matching warranty claim (by campaign code in distributor comment, or by labor code) in a
 
+   qualifying status — Accepted, Certified or Invoiced unless the deployment configures its own list
+
+3. Matching labor line (by labor code) that is finished work — invoice status X or C unless the
+
+   deployment configures its own rule  
+A deployment can put the evidence first: then the SSC record's own date decides only when there is  
+no qualifying claim or line.  
 A labor code matches directly or through a configured group of interchangeable codes: dealer  
 systems sometimes book a campaign under a sibling operation code, and the deployment declares  
 which codes are used interchangeably so those repairs are still recognised. Labor codes are  
 compared trimmed and case-insensitively.  
+The claim or line that decides the verdict names the dealer and branch that carried out the repair.  
+The SSC record's own date names neither.  
 When tracing is requested, every SSC carries a trace of the evidence behind its verdict.
 
 ??? note "Rule: Repair detected via direct RepairDate"
@@ -62,6 +70,39 @@ When tracing is requested, every SSC carries a trace of the evidence behind its 
     	And warranty claims:
     		| ClaimStatus          | RepairCompletionDate | DistributorComment |
     		| RejectedPermanently  | 2024-04-01           | Repair for SSC-001 |
+    	When Checking "1G1ZC5E17BF283048"
+    	Then SSC "SSC-001" is marked as not repaired
+    
+    Scenario: Pending warranty claim is ignored by default
+    	Given SSC affected vehicles:
+    		| VIN               | CampaignCode | Description   | LaborCode1 |
+    		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+    	And warranty claims:
+    		| ClaimStatus    | RepairCompletionDate | LaborCode |
+    		| PendingProcess | 2024-04-01           | LAB001    |
+    	When Checking "1G1ZC5E17BF283048"
+    	Then SSC "SSC-001" is marked as not repaired
+    
+    Scenario: Pending warranty claim counts when the deployment qualifies pending claims
+    	Given qualifying SSC warranty claim statuses are "PendingProcess, Accepted, Certified, Invoiced"
+    	And SSC affected vehicles:
+    		| VIN               | CampaignCode | Description   | LaborCode1 |
+    		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+    	And warranty claims:
+    		| ClaimStatus    | RepairCompletionDate | LaborCode |
+    		| PendingProcess | 2024-04-01           | LAB001    |
+    	When Checking "1G1ZC5E17BF283048"
+    	Then SSC "SSC-001" is marked as repaired
+    	And SSC "SSC-001" has repair date "2024-04-01"
+    
+    Scenario: A configured status list replaces the default
+    	Given qualifying SSC warranty claim statuses are "PendingProcess"
+    	And SSC affected vehicles:
+    		| VIN               | CampaignCode | Description   | LaborCode1 |
+    		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+    	And warranty claims:
+    		| ClaimStatus | RepairCompletionDate | LaborCode |
+    		| Accepted    | 2024-04-01           | LAB001    |
     	When Checking "1G1ZC5E17BF283048"
     	Then SSC "SSC-001" is marked as not repaired
     ```
@@ -314,6 +355,151 @@ When tracing is requested, every SSC carries a trace of the evidence behind its 
     	When Checking "1G1ZC5E17BF283048"
     	Then SSC "SSC-001" is marked as not repaired
     	And SSC "SSC-001" repair source is "None"
+    ```
+
+??? note "Rule: Evidence before the SSC record's own repair date"
+
+    ```gherkin
+    Scenario: A matching warranty claim outranks the SSC record's own repair date when evidence comes first
+    	Given SSC repair evidence comes before the SSC record's own repair date
+    	And SSC affected vehicles:
+    		| VIN               | CampaignCode | Description   | LaborCode1 | RepairDate |
+    		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     | 2024-03-15 |
+    	And warranty claims:
+    		| ClaimStatus | RepairCompletionDate | LaborCode | CompanyID | BranchID |
+    		| Accepted    | 2024-04-01           | LAB001    | 4         | 12       |
+    	When Checking "1G1ZC5E17BF283048"
+    	Then SSC "SSC-001" is marked as repaired
+    	And SSC "SSC-001" has repair date "2024-04-01"
+    	And SSC "SSC-001" repair source is "WarrantyClaim"
+    	And SSC "SSC-001" was repaired by company 4 branch 12
+    
+    Scenario: A finished labor line outranks the SSC record's own repair date when evidence comes first
+    	Given SSC repair evidence comes before the SSC record's own repair date
+    	And SSC affected vehicles:
+    		| VIN               | CampaignCode | Description   | LaborCode1 | RepairDate |
+    		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     | 2024-03-15 |
+    	And labor lines:
+    		| LaborCode | InvoiceDate | InvoiceStatus | CompanyID | BranchID |
+    		| LAB001    | 2024-06-01  | X             | 5         | 21       |
+    	When Checking "1G1ZC5E17BF283048"
+    	Then SSC "SSC-001" has repair date "2024-06-01"
+    	And SSC "SSC-001" repair source is "ServiceHistory"
+    	And SSC "SSC-001" was repaired by company 5 branch 21
+    
+    Scenario: The SSC record's own repair date still decides when there is no evidence
+    	Given SSC repair evidence comes before the SSC record's own repair date
+    	And SSC affected vehicles:
+    		| VIN               | CampaignCode | Description   | LaborCode1 | RepairDate |
+    		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     | 2024-03-15 |
+    	And warranty claims:
+    		| ClaimStatus         | RepairCompletionDate | LaborCode | CompanyID |
+    		| RejectedPermanently | 2024-04-01           | LAB001    | 4         |
+    	When Checking "1G1ZC5E17BF283048"
+    	Then SSC "SSC-001" is marked as repaired
+    	And SSC "SSC-001" has repair date "2024-03-15"
+    	And SSC "SSC-001" repair source is "SSCRecord"
+    	And SSC "SSC-001" names no repairing dealer
+    ```
+
+??? note "Rule: The deployment decides which labor lines are finished work"
+
+    ```gherkin
+    Scenario: A labor line counts when the deployment's rule accepts its order status
+    	Given SSC labor lines are finished when their order status is "Closed"
+    	And SSC affected vehicles:
+    		| VIN               | CampaignCode | Description   | LaborCode1 |
+    		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+    	And labor lines:
+    		| LaborCode | InvoiceDate | OrderStatus |
+    		| LAB001    | 2024-06-01  | Closed      |
+    	When Checking "1G1ZC5E17BF283048"
+    	Then SSC "SSC-001" is marked as repaired
+    	And SSC "SSC-001" has repair date "2024-06-01"
+    	And SSC "SSC-001" repair source is "ServiceHistory"
+    
+    Scenario: The deployment's rule replaces the invoice status default
+    	Given SSC labor lines are finished when their order status is "Closed"
+    	And SSC affected vehicles:
+    		| VIN               | CampaignCode | Description   | LaborCode1 |
+    		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+    	And labor lines:
+    		| LaborCode | InvoiceDate | InvoiceStatus | OrderStatus |
+    		| LAB001    | 2024-06-01  | X             | In progress |
+    	When Checking "1G1ZC5E17BF283048"
+    	Then SSC "SSC-001" is marked as not repaired
+    
+    Scenario: Without a deployment rule a closed order with no invoice status is not repair evidence
+    	Given SSC affected vehicles:
+    		| VIN               | CampaignCode | Description   | LaborCode1 |
+    		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+    	And labor lines:
+    		| LaborCode | InvoiceDate | OrderStatus |
+    		| LAB001    | 2024-06-01  | Closed      |
+    	When Checking "1G1ZC5E17BF283048"
+    	Then SSC "SSC-001" is marked as not repaired
+    ```
+
+??? note "Rule: Repairing dealer and branch"
+
+    ```gherkin
+    Scenario: A warranty claim names the dealer and branch that repaired the SSC
+    	Given company 4 is named "North Motors"
+    	And branch 12 is named "North Motors Central"
+    	And SSC affected vehicles:
+    		| VIN               | CampaignCode | Description   | LaborCode1 |
+    		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+    	And warranty claims:
+    		| ClaimStatus | RepairCompletionDate | LaborCode | CompanyID | BranchID |
+    		| Accepted    | 2024-05-10           | LAB001    | 4         | 12       |
+    	When Checking "1G1ZC5E17BF283048"
+    	Then SSC "SSC-001" was repaired by company 4 branch 12
+    	And SSC "SSC-001" was repaired by "North Motors" at "North Motors Central"
+    
+    Scenario: A labor line names the dealer and branch that repaired the SSC
+    	Given company 5 is named "South Motors"
+    	And branch 21 is named "South Motors East"
+    	And SSC affected vehicles:
+    		| VIN               | CampaignCode | Description   | LaborCode1 |
+    		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+    	And labor lines:
+    		| LaborCode | InvoiceDate | InvoiceStatus | CompanyID | BranchID |
+    		| LAB001    | 2024-06-01  | C             | 5         | 21       |
+    	When Checking "1G1ZC5E17BF283048"
+    	Then SSC "SSC-001" was repaired by company 5 branch 21
+    	And SSC "SSC-001" was repaired by "South Motors" at "South Motors East"
+    
+    Scenario: A warranty claim without a branch names only the dealer
+    	Given SSC affected vehicles:
+    		| VIN               | CampaignCode | Description   | LaborCode1 |
+    		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+    	And warranty claims:
+    		| ClaimStatus | RepairCompletionDate | LaborCode | CompanyID |
+    		| Accepted    | 2024-05-10           | LAB001    | 4         |
+    	When Checking "1G1ZC5E17BF283048"
+    	Then SSC "SSC-001" was repaired by company 4 with no branch
+    
+    Scenario: The SSC record's own repair date names no repairing dealer
+    	Given SSC affected vehicles:
+    		| VIN               | CampaignCode | Description   | LaborCode1 | RepairDate |
+    		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     | 2024-03-15 |
+    	And warranty claims:
+    		| ClaimStatus | RepairCompletionDate | LaborCode | CompanyID | BranchID |
+    		| Accepted    | 2024-04-01           | LAB001    | 4         | 12       |
+    	When Checking "1G1ZC5E17BF283048"
+    	Then SSC "SSC-001" repair source is "SSCRecord"
+    	And SSC "SSC-001" names no repairing dealer
+    
+    Scenario: An open SSC names no repairing dealer
+    	Given SSC affected vehicles:
+    		| VIN               | CampaignCode | Description   | LaborCode1 |
+    		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+    	And labor lines:
+    		| LaborCode | InvoiceDate | InvoiceStatus | CompanyID | BranchID |
+    		| LAB001    | 2024-06-01  | O             | 5         | 21       |
+    	When Checking "1G1ZC5E17BF283048"
+    	Then SSC "SSC-001" is marked as not repaired
+    	And SSC "SSC-001" names no repairing dealer
     ```
 
 ??? note "Rule: Evaluation trace"

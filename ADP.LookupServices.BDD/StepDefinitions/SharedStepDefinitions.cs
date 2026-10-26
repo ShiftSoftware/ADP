@@ -164,6 +164,7 @@ public class SharedStepDefinitions
                 LaborLines = BuildWarrantyClaimLaborLines(row),
                 VIN = GetOptionalString(row, "VIN"),
                 CompanyID = GetOptionalLong(row, "CompanyID"),
+                BranchID = GetOptionalLong(row, "BranchID"),
             }));
     }
 
@@ -218,6 +219,7 @@ public class SharedStepDefinitions
                 LaborCode = GetOptionalString(row, "LaborCode"),
                 InvoiceDate = GetOptionalDate(row, "InvoiceDate"),
                 InvoiceStatus = GetOptionalString(row, "InvoiceStatus"),
+                OrderStatus = GetOptionalString(row, "OrderStatus"),
                 CompanyID = GetOptionalLong(row, "CompanyID"),
                 BranchID = GetOptionalLong(row, "BranchID"),
                 InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),

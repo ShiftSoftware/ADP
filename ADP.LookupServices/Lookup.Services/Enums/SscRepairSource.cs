@@ -4,7 +4,8 @@ namespace ShiftSoftware.ADP.Lookup.Services.Enums;
 
 /// <summary>
 /// Which source of evidence decided that a Special Service Campaign (SSC) / safety recall is repaired.
-/// The sources are consulted in the order they are declared here, and the first one that holds wins.
+/// The sources are consulted in the order they are declared here, and the first one that holds wins. A deployment
+/// that sets <c>LookupOptions.PreferSSCRepairEvidenceOverRecordDate</c> consults the SSC record last instead.
 /// </summary>
 [Docable]
 public enum SscRepairSource
@@ -20,8 +21,9 @@ public enum SscRepairSource
     /// </summary>
     WarrantyClaim = 2,
     /// <summary>
-    /// An invoiced service-history labor line (invoice status X or C) carries one of the campaign's labor
-    /// operation codes (or a code configured as interchangeable with one).
+    /// A finished service-history labor line carries one of the campaign's labor operation codes (or a code
+    /// configured as interchangeable with one). By default a line is finished when its invoice status is X or C;
+    /// a deployment can set its own rule (<c>LookupOptions.SSCQualifyingLaborLine</c>).
     /// </summary>
     ServiceHistory = 3,
 }

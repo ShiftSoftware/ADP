@@ -18,7 +18,9 @@ namespace ShiftSoftware.ADP.Lookup.Services.DuckDB.Streaming;
 ///
 /// <para>By default a VIN with rows but no <c>VehicleEntry</c> is skipped and counted — the reports
 /// have always taken their universe from the entries — and every skip is in
-/// <see cref="Statistics"/>, because "rows nobody serves" is a number worth watching.</para>
+/// <see cref="Statistics"/>, because "rows nobody serves" is a number worth watching. A caller that
+/// serves some of those VINs (a report whose universe is not the entries) passes a rule that picks
+/// them; they are counted apart.</para>
 /// </summary>
 public sealed class VinOrderedAggregateStream : IEnumerable<CompanyDataAggregateModel>, IDisposable
 {
@@ -26,6 +28,7 @@ public sealed class VinOrderedAggregateStream : IEnumerable<CompanyDataAggregate
     private readonly IReadOnlyList<AggregateFamily> families;
     private readonly bool requireVehicleEntry;
     private readonly IHashIdService hashIdService;
+    private readonly Func<CompanyDataAggregateModel, bool> servesVehicleWithoutEntry;
     private readonly List<VinOrderedFamilyReader> openReaders = new List<VinOrderedFamilyReader>();
 
     /// <param name="hashIdService">
@@ -33,7 +36,13 @@ public sealed class VinOrderedAggregateStream : IEnumerable<CompanyDataAggregate
     /// hash ids, exactly as <c>DuckDBVehicleLookupStorageService</c> does when it loads entries —
     /// the hash is the value the writer stamped, the id beside it may be stale or absent.
     /// </param>
-    public VinOrderedAggregateStream(string connectionString, IReadOnlyList<AggregateFamily> families, bool requireVehicleEntry = true, IHashIdService hashIdService = null)
+    /// <param name="servesVehicleWithoutEntry">
+    /// When <paramref name="requireVehicleEntry"/> is true, a VIN with rows but no entry is still
+    /// yielded when this returns true for its aggregate. It is counted in
+    /// <see cref="StreamStatistics.ServedWithoutEntry"/>, not in <see cref="StreamStatistics.SkippedWithoutEntry"/>.
+    /// </param>
+    public VinOrderedAggregateStream(string connectionString, IReadOnlyList<AggregateFamily> families, bool requireVehicleEntry = true, IHashIdService hashIdService = null,
+        Func<CompanyDataAggregateModel, bool> servesVehicleWithoutEntry = null)
     {
         this.connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
         this.families = families ?? throw new ArgumentNullException(nameof(families));
@@ -41,6 +50,7 @@ public sealed class VinOrderedAggregateStream : IEnumerable<CompanyDataAggregate
             throw new ArgumentException("Declare at least one family to stream.", nameof(families));
         this.requireVehicleEntry = requireVehicleEntry;
         this.hashIdService = hashIdService;
+        this.servesVehicleWithoutEntry = servesVehicleWithoutEntry;
         Statistics = new StreamStatistics(families);
     }
 
@@ -88,10 +98,17 @@ public sealed class VinOrderedAggregateStream : IEnumerable<CompanyDataAggregate
 
                 if (requireVehicleEntry && !hasEntry)
                 {
-                    // Rows of a vehicle nobody serves are read and counted, but not "attached":
-                    // RowsAttached is what reached a served aggregate.
-                    Statistics.SkippedWithoutEntry++;
-                    continue;
+                    if (servesVehicleWithoutEntry?.Invoke(aggregate) == true)
+                    {
+                        Statistics.ServedWithoutEntry++;
+                    }
+                    else
+                    {
+                        // Rows of a vehicle nobody serves are read and counted, but not "attached":
+                        // RowsAttached is what reached a served aggregate.
+                        Statistics.SkippedWithoutEntry++;
+                        continue;
+                    }
                 }
                 for (var i = 0; i < readers.Length; i++)
                     Statistics.RowsAttached[readers[i].Family] += attachedThisVin[i];
@@ -152,6 +169,8 @@ public sealed class VinOrderedAggregateStream : IEnumerable<CompanyDataAggregate
 
         public long Aggregates { get; internal set; }
         public long SkippedWithoutEntry { get; internal set; }
+        /// <summary>VINs with rows but no entry that were yielded because the caller's rule serves them. Included in <see cref="Aggregates"/>.</summary>
+        public long ServedWithoutEntry { get; internal set; }
         public long BlankVinRows { get; internal set; }
         /// <summary>
         /// Rows whose stored VIN is not in canonical form, across every family: rows no lookup path

@@ -32,10 +32,29 @@ public class SscDTO
     public DateTime? RepairDate { get; set; }
     /// <summary>
     /// Which evidence decided <see cref="Repaired"/>: the SSC record's own repair date, a qualifying warranty
-    /// claim, or an invoiced service-history labor line — or <c>None</c> when the campaign is still open.
+    /// claim, or a finished service-history labor line — or <c>None</c> when the campaign is still open.
     /// </summary>
     [System.Text.Json.Serialization.JsonConverter(typeof(JsonStringEnumConverter))]
     public SscRepairSource RepairSource { get; set; }
+    /// <summary>
+    /// The Company Hash ID of the dealer that carried out the repair: the company on the warranty claim or the
+    /// labor line that decided <see cref="Repaired"/>. Null when the SSC record's own repair date decided it, and
+    /// while the campaign is still open.
+    /// </summary>
+    [ShiftSoftware.ShiftEntity.Model.HashIds.CompanyHashIdConverter]
+    public string? RepairCompanyID { get; set; }
+    /// <summary>The localized name of the dealer that carried out the repair.</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(ShiftSoftware.ShiftEntity.Model.LocalizedTextJsonConverter))]
+    public string? RepairCompanyName { get; set; }
+    /// <summary>
+    /// The Branch Hash ID of the dealer branch that carried out the repair, from the same evidence as
+    /// <see cref="RepairCompanyID"/>. Null when that evidence names no branch.
+    /// </summary>
+    [ShiftSoftware.ShiftEntity.Model.HashIds.CompanyBranchHashIdConverter]
+    public string? RepairBranchID { get; set; }
+    /// <summary>The localized name of the dealer branch that carried out the repair.</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(ShiftSoftware.ShiftEntity.Model.LocalizedTextJsonConverter))]
+    public string? RepairBranchName { get; set; }
     /// <summary>The <see cref="SSCPartDTO">parts</see> required for the recall repair.</summary>
     public IEnumerable<SSCPartDTO> Parts { get; set; }
     /// <summary>

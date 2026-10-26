@@ -170,7 +170,7 @@ public class VehicleLookupService
             Identifiers = new VehicleIdentifierEvaluator(companyDataAggregate).Evaluate(vehicle),
             VehicleSpecification = await new VehicleSpecificationEvaluator(vehicleLookupStorageService).Evaluate(vehicle, requestOptions),
             ServiceHistory = serviceHistory,
-            SSC = new VehicleSSCEvaluator(companyDataAggregate, lookupOptions).Evaluate(requestOptions.TraceSSCEvaluation),
+            SSC = await new VehicleSSCEvaluator(companyDataAggregate, lookupOptions, serviceProvider).EvaluateAsync(requestOptions.TraceSSCEvaluation, requestOptions.LanguageCode),
             NextServiceDate = companyDataAggregate.LaborLines?.Max(x => x.NextServiceDate),
             Accessories = await new VehicleAccessoriesEvaluator(companyDataAggregate, lookupOptions, serviceProvider).Evaluate(requestOptions.LanguageCode),
             SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, lookupOptions, serviceProvider, vehicleLookupStorageService).Evaluate(vehicle, ownership, requestOptions),

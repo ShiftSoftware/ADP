@@ -27,4 +27,5 @@ Represents a warranty claim submitted for a vehicle repair.
 | ProcessDate <div><strong>``DateTime?``</strong></div> | The date this claim was processed by the manufacturer. |
 | DistributorProcessDate <div><strong>``DateTime?``</strong></div> | The date this claim was processed by the distributor. |
 | CompanyHashID <div><strong>``string``</strong></div> | The Company Hash ID from the Identity System. |
+| BranchHashID <div><strong>``string``</strong></div> | The Branch Hash ID from the Identity System. |
 | LaborLines <div><strong>``IEnumerable<WarrantyClaimLaborLineModel>``</strong></div> | The [labor lines](/generated/Models/Vehicle/WarrantyClaimLaborLineModel.html) associated with this warranty claim. |

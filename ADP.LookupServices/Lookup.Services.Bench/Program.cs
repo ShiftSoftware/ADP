@@ -418,9 +418,19 @@ if (reportMode)
         foreach (var report in reports)
         {
             var ours = Path.Combine(reportDir, report.RelativePath.Replace('/', Path.DirectorySeparatorChar));
+            var theirs = ReportParity.Find(compareDir, report == VehicleReports.TopLevel ? "vehicle-top-level-report*.parquet" : Path.GetFileName(report.RelativePath));
+            if (theirs is null)
+            {
+                // A report that production does not publish yet has no copy to compare with.
+                Console.WriteLine($"PARITY {report.Name}: no production copy under {compareDir}, not compared");
+                compare[report.Name] = new { compared = false, reason = "no production copy" };
+                continue;
+            }
             compare[report.Name] = report == VehicleReports.TopLevel
-                ? ReportParity.Compare<VehicleLookupTopLevelReportModel>(report.Name, ours, ReportParity.Find(compareDir, "vehicle-top-level-report*.parquet"), ["VIN"])
-                : ReportParity.Compare<VehicleServiceItemReportModel>(report.Name, ours, ReportParity.Find(compareDir, Path.GetFileName(report.RelativePath)), ["VIN", "ServiceItemId"]);
+                ? ReportParity.Compare<VehicleLookupTopLevelReportModel>(report.Name, ours, theirs, ["VIN"])
+                : report == VehicleReports.Ssc
+                    ? ReportParity.Compare<VehicleSscReportModel>(report.Name, ours, theirs, ["VIN", "SSCCode"])
+                    : ReportParity.Compare<VehicleServiceItemReportModel>(report.Name, ours, theirs, ["VIN", "ServiceItemId"]);
         }
         results["compare"] = compare;
     }
@@ -541,12 +551,11 @@ sealed class FixedTimeProvider(DateTimeOffset instant) : TimeProvider
 /// </summary>
 static class ReportParity
 {
+    /// <summary>The newest file under <paramref name="directory"/> that matches <paramref name="pattern"/>, or null when there is none.</summary>
     public static string Find(string directory, string pattern)
     {
         var matches = Directory.GetFiles(directory, pattern, SearchOption.AllDirectories);
-        if (matches.Length == 0)
-            throw new FileNotFoundException($"No {pattern} under {directory}.");
-        return matches.OrderByDescending(File.GetLastWriteTimeUtc).First();
+        return matches.Length == 0 ? null : matches.OrderByDescending(File.GetLastWriteTimeUtc).First();
     }
 
     public static object Compare<TModel>(string label, string oursPath, string theirsPath, string[] key)

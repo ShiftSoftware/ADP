@@ -61,11 +61,28 @@ public class VehicleSSCStepDefinitions
         _traceRequested = true;
     }
 
+    [Given("SSC repair evidence comes before the SSC record's own repair date")]
+    public void GivenSscRepairEvidenceComesBeforeTheRecordDate()
+    {
+        _context.Options.PreferSSCRepairEvidenceOverRecordDate = true;
+    }
+
+    [Given("SSC labor lines are finished when their order status is {string}")]
+    public void GivenSscLaborLinesAreFinishedWhenTheirOrderStatusIs(string orderStatus)
+    {
+        // A deployment whose dealer system closes the work order instead of setting an invoice status.
+        _context.Options.SSCQualifyingLaborLine =
+            line => string.Equals(line.OrderStatus?.Trim(), orderStatus, StringComparison.OrdinalIgnoreCase);
+    }
+
     private void EnsureEvaluated()
     {
         if (!_evaluated)
         {
-            _result = new VehicleSSCEvaluator(_context.Aggregate, _context.Options).Evaluate(_traceRequested);
+            // The async evaluation also resolves the repairing dealer and branch names. The name resolvers the
+            // scenarios register return completed tasks, so waiting here does not block.
+            _result = new VehicleSSCEvaluator(_context.Aggregate, _context.Options, NullServiceProvider.Instance)
+                .EvaluateAsync(_traceRequested, "en").GetAwaiter().GetResult();
             _evaluated = true;
         }
     }
@@ -111,6 +128,41 @@ public class VehicleSSCStepDefinitions
     {
         var ssc = GetSsc(sscCode);
         Assert.Equal(Enum.Parse<SscRepairSource>(expectedSource), ssc.RepairSource);
+    }
+
+    [Then("SSC {string} was repaired by company {long} branch {long}")]
+    public void ThenSSCWasRepairedByCompanyBranch(string sscCode, long companyId, long branchId)
+    {
+        var ssc = GetSsc(sscCode);
+        Assert.Equal(companyId.ToString(), ssc.RepairCompanyID);
+        Assert.Equal(branchId.ToString(), ssc.RepairBranchID);
+    }
+
+    [Then("SSC {string} was repaired by company {long} with no branch")]
+    public void ThenSSCWasRepairedByCompanyWithNoBranch(string sscCode, long companyId)
+    {
+        var ssc = GetSsc(sscCode);
+        Assert.Equal(companyId.ToString(), ssc.RepairCompanyID);
+        Assert.Null(ssc.RepairBranchID);
+        Assert.Null(ssc.RepairBranchName);
+    }
+
+    [Then("SSC {string} was repaired by {string} at {string}")]
+    public void ThenSSCWasRepairedByNamedDealerAtNamedBranch(string sscCode, string companyName, string branchName)
+    {
+        var ssc = GetSsc(sscCode);
+        Assert.Equal(companyName, ssc.RepairCompanyName);
+        Assert.Equal(branchName, ssc.RepairBranchName);
+    }
+
+    [Then("SSC {string} names no repairing dealer")]
+    public void ThenSSCNamesNoRepairingDealer(string sscCode)
+    {
+        var ssc = GetSsc(sscCode);
+        Assert.Null(ssc.RepairCompanyID);
+        Assert.Null(ssc.RepairCompanyName);
+        Assert.Null(ssc.RepairBranchID);
+        Assert.Null(ssc.RepairBranchName);
     }
 
     [Then("SSC {string} has {int} labor codes")]

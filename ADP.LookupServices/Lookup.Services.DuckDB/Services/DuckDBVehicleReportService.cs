@@ -176,10 +176,7 @@ public class DuckDBVehicleReportService(
                 if (string.IsNullOrWhiteSpace(vin))
                     continue;
 
-                foreach (var ssc in lookup.SSC ?? Enumerable.Empty<SscDTO>())
-                {
-                    rows.Add(CreateSscRow(vin, ssc));
-                }
+                rows.AddRange(VehicleReportRows.Ssc(vin, lookup));
             }
         }
 
@@ -649,8 +646,7 @@ public class DuckDBVehicleReportService(
         {
             var vin = NormalizeVin(lookup?.VIN);
             if (string.IsNullOrWhiteSpace(vin)) continue;
-            foreach (var ssc in lookup.SSC ?? Enumerable.Empty<SscDTO>())
-                rows.Add(CreateSscRow(vin, ssc));
+            rows.AddRange(VehicleReportRows.Ssc(vin, lookup));
         }
         return rows;
     }
@@ -720,8 +716,6 @@ public class DuckDBVehicleReportService(
         VehicleReportRows.ServiceItem(vin, item, freeServiceItemStartDate);
 
     private static string NormalizeVin(string vin) => VehicleReportRows.NormalizeVin(vin);
-
-    private static VehicleSscReportModel CreateSscRow(string vin, SscDTO ssc) => VehicleReportRows.Ssc(vin, ssc);
 
     private static VehicleServiceHistoryLaborReportModel CreateServiceHistoryLaborRow(string vin, VehicleServiceHistoryDTO serviceHistoryEntry, VehicleLaborDTO labor) =>
         VehicleReportRows.ServiceHistoryLabor(vin, serviceHistoryEntry, labor);

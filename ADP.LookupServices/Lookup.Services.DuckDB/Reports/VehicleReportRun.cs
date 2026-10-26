@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.DuckDB.Streaming;
 using ShiftSoftware.ADP.Lookup.Services.Services;
@@ -18,11 +19,13 @@ namespace ShiftSoftware.ADP.Lookup.Services.DuckDB.Reports;
 /// </summary>
 public abstract class VehicleReport
 {
-    private protected VehicleReport(string name, string relativePath, VehicleLookupRequestOptions request)
+    private protected VehicleReport(string name, string relativePath, VehicleLookupRequestOptions request,
+        Func<CompanyDataAggregateModel, bool> servesVehicleWithoutEntry)
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
         RelativePath = relativePath ?? throw new ArgumentNullException(nameof(relativePath));
         Request = request ?? throw new ArgumentNullException(nameof(request));
+        ServesVehicleWithoutEntry = servesVehicleWithoutEntry;
     }
 
     public string Name { get; }
@@ -30,6 +33,12 @@ public abstract class VehicleReport
     public string RelativePath { get; }
     /// <summary>The request the vehicle is evaluated with for this report. Reports with the same request share one evaluation.</summary>
     public VehicleLookupRequestOptions Request { get; }
+    /// <summary>
+    /// Which vehicles without a vehicle entry this report also serves, decided from the vehicle's rows. Null (the
+    /// default) serves none: the report's universe is the entries. A vehicle without an entry is evaluated only when
+    /// some report of the run serves it, and only those reports get its rows.
+    /// </summary>
+    public Func<CompanyDataAggregateModel, bool> ServesVehicleWithoutEntry { get; }
 
     internal abstract Writer OpenWriter(string partialPath, string finalPath);
 
@@ -52,8 +61,9 @@ public abstract class VehicleReport
 
 public sealed class VehicleReport<TModel> : VehicleReport
 {
-    public VehicleReport(string name, string relativePath, VehicleLookupRequestOptions request, Func<string, VehicleLookupDTO, LookupOptions, IEnumerable<TModel>> rows)
-        : base(name, relativePath, request)
+    public VehicleReport(string name, string relativePath, VehicleLookupRequestOptions request, Func<string, VehicleLookupDTO, LookupOptions, IEnumerable<TModel>> rows,
+        Func<CompanyDataAggregateModel, bool> servesVehicleWithoutEntry = null)
+        : base(name, relativePath, request, servesVehicleWithoutEntry)
     {
         Rows = rows ?? throw new ArgumentNullException(nameof(rows));
     }
@@ -117,6 +127,17 @@ public static class VehicleReports
     public static readonly VehicleReport TopLevel = new VehicleReport<VehicleLookupTopLevelReportModel>(
         "vehicle-top-level-report", "Vehicle/vehicle-top-level-report.parquet",
         new VehicleLookupRequestOptions(), (vin, lookup, options) => new[] { VehicleReportRows.TopLevel(vin, lookup, options?.DistributorCompanyID) });
+
+    /// <summary>
+    /// The SSC (safety recall) report: one row per campaign on every vehicle that has one, with the evaluated repair
+    /// (its date, its source, and the dealer and branch that carried it out) and the vehicle's owner from its sale
+    /// information. Its universe is the campaign list, not the entries: a vehicle with a campaign but no vehicle
+    /// entry is still served, with empty owner columns.
+    /// </summary>
+    public static readonly VehicleReport Ssc = new VehicleReport<VehicleSscReportModel>(
+        "vehicle-ssc-report", "Ssc/vehicle-ssc-report.parquet",
+        new VehicleLookupRequestOptions(), (vin, lookup, _) => VehicleReportRows.Ssc(vin, lookup),
+        servesVehicleWithoutEntry: aggregate => aggregate.SSCAffectedVINs is { Count: > 0 });
 
     /// <summary>The three files of a host that publishes the provisioning view beside the dealer's view.</summary>
     public static IReadOnlyList<VehicleReport> All { get; } = new[] { ServiceItems, ServiceItemsProvisioning, TopLevel };
@@ -200,6 +221,8 @@ public static class VehicleReportRun
         public TimeSpan Elapsed { get; internal set; }
         public TimeSpan ReferenceLoad { get; internal set; }
         public long SkippedWithoutEntry { get; internal set; }
+        /// <summary>Vehicles without a vehicle entry that a report of the run served (<see cref="VehicleReport.ServesVehicleWithoutEntry"/>). Included in <see cref="Vehicles"/>.</summary>
+        public long ServedWithoutEntry { get; internal set; }
         public long BlankVinRows { get; internal set; }
         /// <summary>Rows whose stored VIN is not canonical, served by no path: see <see cref="VinOrderedAggregateStream.StreamStatistics.NonCanonicalVinRows"/>.</summary>
         public long NonCanonicalVinRows { get; internal set; }
@@ -283,13 +306,35 @@ public static class VehicleReportRun
         // options the vehicles were evaluated with. Every worker builds its service from the same factory
         // before evaluating anything, so the sink never runs before this is set.
         LookupOptions lookupOptions = null;
+
+        // A vehicle without an entry is served only when a report says so. Such a vehicle is recorded here, by
+        // VIN, with the reports that serve it, and its rows go to those reports only.
+        var servesWithoutEntry = reports.Select(report => report.ServesVehicleWithoutEntry).ToArray();
+        var anyServesWithoutEntry = servesWithoutEntry.Any(serves => serves is not null);
+        var reportsServingVehicleWithoutEntry = new System.Collections.Concurrent.ConcurrentDictionary<string, bool[]>(StringComparer.Ordinal);
+
         var promoted = false;
         try
         {
-            using var stream = options.Source.OpenStream();
+            using var stream = anyServesWithoutEntry
+                ? options.Source.OpenStream(aggregate => servesWithoutEntry.Any(serves => serves?.Invoke(aggregate) == true))
+                : options.Source.OpenStream();
+
+            IEnumerable<CompanyDataAggregateModel> vehicles = stream;
+            if (anyServesWithoutEntry)
+            {
+                vehicles = vehicles.Select(aggregate =>
+                {
+                    if (aggregate.VehicleEntries is not { Count: > 0 })
+                        reportsServingVehicleWithoutEntry[VehicleReportRows.NormalizeVin(aggregate.VIN)] =
+                            servesWithoutEntry.Select(serves => serves?.Invoke(aggregate) == true).ToArray();
+                    return aggregate;
+                });
+            }
+
             var buffered = 0;
             var statistics = await BulkLookupPipeline.RunAsync(
-                options.Limit > 0 ? stream.Take(options.Limit) : stream,
+                options.Limit > 0 ? vehicles.Take(options.Limit) : vehicles,
                 () =>
                 {
                     var lookup = options.Lookup(reference.ForWorker());
@@ -309,10 +354,14 @@ public static class VehicleReportRun
                 variants,
                 async (vin, lookups) =>
                 {
+                    reportsServingVehicleWithoutEntry.TryRemove(vin, out var servedBy);
                     if (failures.Contains(vin))
                         return;
                     for (var i = 0; i < writers.Length; i++)
-                        writers[i].Add(vin, lookups[variantOfReport[i]], lookupOptions);
+                    {
+                        if (servedBy is null || servedBy[i])
+                            writers[i].Add(vin, lookups[variantOfReport[i]], lookupOptions);
+                    }
                     if (++buffered >= options.FlushEvery)
                     {
                         foreach (var writer in writers)
@@ -343,6 +392,7 @@ public static class VehicleReportRun
                 Elapsed = clock.Elapsed,
                 ReferenceLoad = referenceLoad,
                 SkippedWithoutEntry = stream.Statistics.SkippedWithoutEntry,
+                ServedWithoutEntry = stream.Statistics.ServedWithoutEntry,
                 BlankVinRows = stream.Statistics.BlankVinRows,
                 NonCanonicalVinRows = stream.Statistics.NonCanonicalVinRows,
                 UnreadableCells = DuckDBModelMapperDiagnostics.UnreadableCells - unreadableBefore,

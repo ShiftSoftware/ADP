@@ -4,6 +4,7 @@ using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Lookup.Services.Milestones;
 using ShiftSoftware.ADP.Models;
 using ShiftSoftware.ADP.Models.Enums;
+using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.Vehicle;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
 using System;
@@ -170,6 +171,29 @@ public class LookupOptions
     /// <summary>The default for <see cref="SSCQualifyingWarrantyClaimStatuses"/>.</summary>
     public static IReadOnlyList<ClaimStatus> DefaultSSCQualifyingWarrantyClaimStatuses { get; } =
         [ClaimStatus.Accepted, ClaimStatus.Certified, ClaimStatus.Invoiced];
+    /// <summary>
+    /// Decides whether a service-history labor line is finished work, so that it can prove an SSC (safety recall)
+    /// repair. A line that carries one of the campaign's labor codes marks the recall repaired only when this
+    /// returns true.
+    /// <para>Dealer systems mark finished work in different ways. Some set an invoice status on the line. Others
+    /// close the work order and leave the invoice status empty. The default, <see cref="DefaultSSCQualifyingLaborLine"/>,
+    /// accepts invoice status <c>X</c> or <c>C</c>. A deployment whose dealer system marks finished work in another
+    /// way sets its own rule here, for example on the order status. The rule must depend on the line only: it is
+    /// called for every line that carries a campaign's labor code.</para>
+    /// </summary>
+    public Func<OrderLaborLineModel, bool> SSCQualifyingLaborLine { get; set; } = DefaultSSCQualifyingLaborLine;
+    /// <summary>The default for <see cref="SSCQualifyingLaborLine"/>: the line's invoice status is <c>X</c> or <c>C</c>.</summary>
+    public static Func<OrderLaborLineModel, bool> DefaultSSCQualifyingLaborLine { get; } =
+        line => line?.InvoiceStatus?.Trim() is "X" or "C";
+    /// <summary>
+    /// When true, repair evidence decides an SSC (safety recall) before the SSC record's own repair date. The order
+    /// is then: a qualifying warranty claim, a qualifying service-history labor line, and the record's date only
+    /// when neither exists. When false (the default), the record's own repair date comes first.
+    /// <para>Use it where SSC records were marked repaired by hand before the repair evidence was available. The
+    /// evidence then gives the repair its date, its dealer and its branch wherever it exists, and a record without
+    /// evidence still counts as repaired.</para>
+    /// </summary>
+    public bool PreferSSCRepairEvidenceOverRecordDate { get; set; }
     /// <summary>Whether to include free service items that have not yet been activated (e.g., awaiting warranty activation).</summary>
     public bool IncludeInactivatedFreeServiceItems { get; set; }
     /// <summary>

@@ -2782,6 +2782,7 @@
         "repaired": true,
         "repairDate": "2023-10-25",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [
           {
             "partNumber": "73999-64420"
@@ -2880,6 +2881,7 @@
         "repaired": true,
         "repairDate": "2024-06-11",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -2978,6 +2980,7 @@
         "repaired": true,
         "repairDate": "2024-10-19",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -3173,6 +3176,7 @@
         "repaired": true,
         "repairDate": "2024-10-19",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -10922,6 +10926,7 @@
         "repaired": true,
         "repairDate": "2024-03-07",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "3",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -10998,6 +11003,7 @@
               "invoiceNumber": "75614517",
               "invoiceDate": "2024-03-07",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "OFI93G",
               "campaignLaborCode": "OFI93G",
               "statusQualifies": true,
@@ -11018,6 +11024,7 @@
         "repaired": true,
         "repairDate": "2024-10-31",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "3",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -11090,6 +11097,7 @@
               "invoiceNumber": "51523499",
               "invoiceDate": "2024-10-31",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "EEG40Q",
               "campaignLaborCode": "EEG40Q",
               "statusQualifies": true,
@@ -11110,6 +11118,7 @@
         "repaired": true,
         "repairDate": "2025-06-16",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "3",
         "parts": [
           {
             "partNumber": "80361-08775"
@@ -11192,6 +11201,7 @@
               "invoiceNumber": "59110581",
               "invoiceDate": "2025-06-16",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "JVR97U",
               "campaignLaborCode": "JVR97U",
               "statusQualifies": true,
@@ -11212,6 +11222,7 @@
         "repaired": true,
         "repairDate": "2024-10-31",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "3",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -11284,6 +11295,7 @@
               "invoiceNumber": "51523499",
               "invoiceDate": "2024-10-31",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "GRS23H",
               "campaignLaborCode": "GRS23H",
               "statusQualifies": true,
@@ -14629,6 +14641,7 @@
         "repaired": true,
         "repairDate": "2025-07-31",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [
           {
             "partNumber": "31290-34087"
@@ -14705,6 +14718,7 @@
               "invoiceNumber": "15949276",
               "invoiceDate": "2025-07-31",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "KXB60J",
               "campaignLaborCode": "KXB60J",
               "statusQualifies": true,
@@ -14725,6 +14739,7 @@
         "repaired": true,
         "repairDate": "2025-07-31",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -14797,6 +14812,7 @@
               "invoiceNumber": "15949276",
               "invoiceDate": "2025-07-31",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "GRS23H",
               "campaignLaborCode": "GRS23H",
               "statusQualifies": true,
@@ -14817,6 +14833,8 @@
         "repaired": true,
         "repairDate": "2026-08-29",
         "repairSource": "ServiceHistory",
+        "repairCompanyID": "2",
+        "repairBranchID": "11",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -14897,6 +14915,7 @@
               "invoiceNumber": "47012092",
               "invoiceDate": "2026-08-29",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "5MP83K",
               "campaignLaborCode": "5MP83K",
               "statusQualifies": true,
@@ -16867,6 +16886,7 @@
         "repaired": true,
         "repairDate": "2026-06-16",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -16935,6 +16955,7 @@
               "invoiceNumber": "65329790",
               "invoiceDate": "2026-06-16",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "5MP83K",
               "campaignLaborCode": "5MP83K",
               "statusQualifies": true,
@@ -16955,6 +16976,7 @@
         "repaired": true,
         "repairDate": "2026-07-27",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -17010,6 +17032,7 @@
               "invoiceNumber": "10853515",
               "invoiceDate": "2026-07-27",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "4AJ81S",
               "campaignLaborCode": "4AJ81S",
               "statusQualifies": true,
@@ -18261,6 +18284,7 @@
         "repaired": true,
         "repairDate": "2024-05-07",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [
           {
             "partNumber": "31290-34087"
@@ -18359,6 +18383,7 @@
         "repaired": true,
         "repairDate": "2024-08-28",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -18453,6 +18478,7 @@
         "repaired": true,
         "repairDate": "2025-02-25",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -18571,6 +18597,7 @@
         "repaired": true,
         "repairDate": "2024-10-12",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -20883,6 +20910,7 @@
         "repaired": true,
         "repairDate": "2024-04-17",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [
           {
             "partNumber": "31290-34087"
@@ -20957,6 +20985,7 @@
         "repaired": true,
         "repairDate": "2024-09-08",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -21027,6 +21056,7 @@
         "repaired": true,
         "repairDate": "2024-12-04",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -23814,6 +23844,7 @@
         "repaired": true,
         "repairDate": "2025-05-12",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "6",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -23890,6 +23921,7 @@
               "invoiceNumber": "60154",
               "invoiceDate": "2025-05-12",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "OFI93G",
               "campaignLaborCode": "OFI93G",
               "statusQualifies": true,
@@ -23910,6 +23942,7 @@
         "repaired": true,
         "repairDate": "2025-05-12",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "6",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -23982,6 +24015,7 @@
               "invoiceNumber": "13841",
               "invoiceDate": "2025-05-12",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "EEG40Q",
               "campaignLaborCode": "EEG40Q",
               "statusQualifies": true,
@@ -24002,6 +24036,7 @@
         "repaired": true,
         "repairDate": "2025-09-01",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "6",
         "parts": [
           {
             "partNumber": "80361-08775"
@@ -24089,6 +24124,7 @@
         "repaired": true,
         "repairDate": "2025-05-12",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "6",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -24161,6 +24197,7 @@
               "invoiceNumber": "13368",
               "invoiceDate": "2025-05-12",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "GRS23H",
               "campaignLaborCode": "GRS23H",
               "statusQualifies": true,
@@ -25266,6 +25303,7 @@
         "repaired": true,
         "repairDate": "2023-12-20",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [
           {
             "partNumber": "31290-34087"
@@ -25352,6 +25390,7 @@
         "repaired": true,
         "repairDate": "2024-05-26",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -25438,6 +25477,7 @@
         "repaired": true,
         "repairDate": "2024-08-26",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -25520,6 +25560,7 @@
         "repaired": true,
         "repairDate": "2025-07-14",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -25616,6 +25657,7 @@
               "invoiceNumber": "63599329",
               "invoiceDate": "2025-07-14",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "TCC20C9",
               "campaignLaborCode": "RNQ32K",
               "statusQualifies": true,
@@ -25636,6 +25678,8 @@
         "repaired": true,
         "repairDate": "2025-07-14",
         "repairSource": "ServiceHistory",
+        "repairCompanyID": "2",
+        "repairBranchID": "22",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -25703,6 +25747,7 @@
               "invoiceNumber": "63599329",
               "invoiceDate": "2025-07-14",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "GRS23H",
               "campaignLaborCode": "GRS23H",
               "statusQualifies": true,
@@ -27054,6 +27099,7 @@
         "repaired": true,
         "repairDate": "2021-09-30",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "3",
         "parts": [
           {
             "partNumber": "49056-64847"
@@ -27142,6 +27188,7 @@
               "invoiceNumber": "67734333",
               "invoiceDate": "2021-09-30",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "PWP62X1",
               "campaignLaborCode": "PWP62X1",
               "statusQualifies": true,
@@ -27162,6 +27209,7 @@
         "repaired": true,
         "repairDate": "2019-04-01",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [
           {
             "partNumber": "80325-31893"
@@ -27270,6 +27318,7 @@
         "repaired": true,
         "repairDate": "2020-09-20",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "2",
         "parts": [
           {
             "partNumber": "89558-71656-N0"
@@ -31477,6 +31526,7 @@
         "repaired": true,
         "repairDate": "2024-04-25",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "3",
         "parts": [
           {
             "partNumber": "84290-83569"
@@ -31517,6 +31567,7 @@
               "invoiceNumber": "33532649",
               "invoiceDate": "2024-04-25",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "KXB60J",
               "campaignLaborCode": "KXB60J",
               "statusQualifies": true,
@@ -44132,6 +44183,7 @@
         "repaired": true,
         "repairDate": "2024-08-18",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "3",
         "parts": [
           {
             "partNumber": "73999-64420"
@@ -44184,6 +44236,7 @@
               "invoiceNumber": "90729011",
               "invoiceDate": "2024-08-18",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "OEZ13K",
               "campaignLaborCode": "KXB60J",
               "statusQualifies": true,
@@ -44204,6 +44257,7 @@
         "repaired": true,
         "repairDate": "2024-10-12",
         "repairSource": "WarrantyClaim",
+        "repairCompanyID": "3",
         "parts": [],
         "trace": {
           "campaignLaborCodes": [
@@ -44252,6 +44306,7 @@
               "invoiceNumber": "90556774",
               "invoiceDate": "2024-10-12",
               "invoiceStatus": "X",
+              "orderStatus": "X",
               "laborCode": "GRS23H",
               "campaignLaborCode": "GRS23H",
               "statusQualifies": true,

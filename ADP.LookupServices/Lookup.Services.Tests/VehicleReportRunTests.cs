@@ -286,6 +286,55 @@ public sealed class VehicleReportRunTests : IDisposable
     }
 
     [Fact]
+    public async Task TheSscReport_ServesAVehicleWithACampaignAndNoEntry_InItsOwnFileOnly()
+    {
+        using (var connection = new DuckDBConnection($"Data Source={storePath}"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = """
+                CREATE TABLE data.ServingSscAffectedVin (id VARCHAR, VIN VARCHAR, CampaignCode VARCHAR, Description VARCHAR, LaborCode1 VARCHAR, RepairDate TIMESTAMP, "_Deleted" BOOLEAN);
+                INSERT INTO data.ServingSscAffectedVin VALUES
+                    ('s1', 'VIN00000000000001', 'SSC-1', 'Airbag', 'OP1', NULL, false),
+                    ('s9', 'VIN00000000000009', 'SSC-1', 'Airbag', 'OP1', TIMESTAMP '2024-03-15 00:00:00', false);
+                INSERT INTO data.ServingOrderLaborLine VALUES ('l8', 'VIN00000000000008', 'OP8', 1, false);
+                """;
+            command.ExecuteNonQuery();
+        }
+
+        var result = await VehicleReportRun.RunAsync(new VehicleReportRun.Options
+        {
+            Source = BulkLookupSource.HawtaStore(storePath, [AggregateFamilies.VehicleEntry, AggregateFamilies.OrderLaborLine, AggregateFamilies.SSCAffectedVIN]),
+            Lookup = Lookup,
+            OutputDirectory = outputDirectory,
+            Reports = [VehicleReports.TopLevel, VehicleReports.Ssc],
+            Degree = 2,
+            FlushEvery = 1,
+        });
+
+        Assert.Equal(3, result.Vehicles);                           // the two entries, and the campaign vehicle without one
+        Assert.Equal(1, result.ServedWithoutEntry);
+        Assert.Equal(1, result.SkippedWithoutEntry);                // a labor line alone is not a vehicle the SSC report serves
+        Assert.Equal(2, RowsIn(Path.Combine(outputDirectory, "Vehicle", "vehicle-top-level-report.parquet")));   // the entries only
+
+        using var reader = new DuckDBConnection("Data Source=:memory:");
+        reader.Open();
+        using var query = reader.CreateCommand();
+        var ssc = Path.Combine(outputDirectory, "Ssc", "vehicle-ssc-report.parquet").Replace('\\', '/');
+        query.CommandText = $"SELECT VIN, SSCCode, Repaired, RepairSource, SaleCompanyId FROM read_parquet('{ssc}') ORDER BY VIN";
+        using var rows = query.ExecuteReader();
+        var read = new List<(string Vin, string Code, bool Repaired, string Source, string Owner)>();
+        while (rows.Read())
+            read.Add((rows.GetString(0), rows.GetString(1), rows.GetBoolean(2), rows.GetString(3), rows.GetString(4)));
+
+        Assert.Equal(
+        [
+            ("VIN00000000000001", "SSC-1", false, "None", "3"),
+            ("VIN00000000000009", "SSC-1", true, "SSCRecord", ""),     // no entry: no sale information, so no owner
+        ], read);
+    }
+
+    [Fact]
     public async Task ARefusedVehicle_WithinTheBound_IsLeftOutOfEveryFile_AndListed()
     {
         var result = await VehicleReportRun.RunAsync(new VehicleReportRun.Options

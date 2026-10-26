@@ -44,6 +44,55 @@ public sealed class VehicleReportRowsTests
         Assert.Empty(VehicleReportRows.ServiceItems("JTDBR32E0X0000001", null));
     }
 
+    [Fact]
+    public void Ssc_OneRowPerCampaign_WithTheRepairAndTheVehiclesSaleInformation()
+    {
+        var lookup = new VehicleLookupDTO
+        {
+            VIN = "JTDBR32E0X0000001",
+            SaleInformation = new VehicleSaleInformation
+            {
+                CountryID = "3", CountryName = "Country A",
+                CompanyID = "4", CompanyName = "Selling Dealer",
+                BranchID = "12", BranchName = "Selling Branch",
+                WarrantyActivationDate = new DateTime(2023, 2, 1),
+            },
+            SSC =
+            [
+                new SscDTO
+                {
+                    SSCCode = "SSC-1", Description = "Airbag", Repaired = true, RepairDate = new DateTime(2024, 4, 1),
+                    RepairSource = SscRepairSource.WarrantyClaim,
+                    RepairCompanyID = "5", RepairCompanyName = "Repairing Dealer", RepairBranchID = "21", RepairBranchName = "Repairing Branch",
+                    Labors = [new SSCLaborDTO { LaborCode = "OP1" }],
+                },
+                new SscDTO { SSCCode = "SSC-2", Description = "Seatbelt", Labors = [] },
+            ],
+        };
+
+        var rows = VehicleReportRows.Ssc("JTDBR32E0X0000001", lookup);
+
+        Assert.Equal(["SSC-1", "SSC-2"], rows.Select(r => r.SSCCode));
+        var repaired = rows[0];
+        Assert.Equal("WarrantyClaim", repaired.RepairSource);
+        Assert.Equal(("5", "Repairing Dealer", "21", "Repairing Branch"),
+            (repaired.RepairCompanyId, repaired.RepairCompanyName, repaired.RepairBranchId, repaired.RepairBranchName));
+        Assert.Equal("OP1", repaired.LaborCode1);
+        // Every campaign row carries the vehicle's owner, the same values as the top-level report's Sale columns.
+        Assert.All(rows, row =>
+        {
+            Assert.Equal(("3", "Country A", "4", "Selling Dealer", "12", "Selling Branch"),
+                (row.SaleCountryId, row.SaleCountryName, row.SaleCompanyId, row.SaleCompanyName, row.SaleBranchId, row.SaleBranchName));
+            Assert.Equal(new DateTime(2023, 2, 1), row.SaleWarrantyActivationDate);
+        });
+        var open = rows[1];
+        Assert.False(open.Repaired);
+        Assert.Equal("None", open.RepairSource);
+        Assert.Equal("", open.RepairCompanyId);
+        Assert.Equal("", open.RepairBranchName);
+        Assert.Empty(VehicleReportRows.Ssc("JTDBR32E0X0000001", null));
+    }
+
     [Theory]
     [InlineData(VehcileServiceItemStatuses.Pending, VehicleServiceItemLockState.Locked, "locked", 5)]
     [InlineData(VehcileServiceItemStatuses.Expired, VehicleServiceItemLockState.Locked, "locked", 5)]

@@ -9,7 +9,7 @@ namespace ShiftSoftware.ADP.Models.Vehicle;
 /// Tracks the claim lifecycle from submission through distributor and manufacturer processing, including repair details and labor operations.
 /// </summary>
 [Docable]
-public class WarrantyClaimModel : IPartitionedItem, IBrandProps, ICompanyProps
+public class WarrantyClaimModel : IPartitionedItem, IBrandProps, IBranchProps
 {
     [DocIgnore]
     public string id { get; set; }
@@ -122,6 +122,14 @@ public class WarrantyClaimModel : IPartitionedItem, IBrandProps, ICompanyProps
     /// The Company Hash ID from the Identity System.
     /// </summary>
     public string CompanyHashID { get; set; }
+
+    [DocIgnore]
+    public long? BranchID { get; set; }
+
+    /// <summary>
+    /// The Branch Hash ID from the Identity System.
+    /// </summary>
+    public string BranchHashID { get; set; }
 
     /// <summary>
     /// The <see cref="WarrantyClaimLaborLineModel">labor lines</see> associated with this warranty claim.

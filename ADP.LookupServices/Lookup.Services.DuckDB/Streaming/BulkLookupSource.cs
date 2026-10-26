@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using ShiftSoftware.ADP.Hawta;
+using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ShiftEntity.Core;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DuckDB.Streaming;
@@ -49,6 +50,13 @@ public sealed class BulkLookupSource
 
     public VinOrderedAggregateStream OpenStream(bool requireVehicleEntry = true) =>
         new VinOrderedAggregateStream(ConnectionString, Families, requireVehicleEntry, HashIds);
+
+    /// <summary>
+    /// The stream over the entries' VINs, plus every VIN without an entry that <paramref name="servesVehicleWithoutEntry"/>
+    /// accepts. Null serves none, as <see cref="OpenStream(bool)"/> does.
+    /// </summary>
+    public VinOrderedAggregateStream OpenStream(Func<CompanyDataAggregateModel, bool> servesVehicleWithoutEntry) =>
+        new VinOrderedAggregateStream(ConnectionString, Families, true, HashIds, servesVehicleWithoutEntry);
 
     public PreloadedReferenceStorage LoadReference() => PreloadedReferenceStorage.Load(ConnectionString, Reference);
 

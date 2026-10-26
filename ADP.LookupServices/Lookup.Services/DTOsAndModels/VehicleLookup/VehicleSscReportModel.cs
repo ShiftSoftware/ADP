@@ -10,6 +10,26 @@ public class VehicleSscReportModel
 
     public bool Repaired { get; set; }
     public DateTime? RepairDate { get; set; }
+    /// <summary>Which evidence decided the repair: <c>SSCRecord</c>, <c>WarrantyClaim</c>, <c>ServiceHistory</c>, or <c>None</c> while the campaign is open.</summary>
+    public string RepairSource { get; set; }
+
+    /// <summary>The dealer and branch that carried out the repair, from the warranty claim or labor line that decided it. Empty otherwise.</summary>
+    public string RepairCompanyId { get; set; }
+    public string RepairCompanyName { get; set; }
+    public string RepairBranchId { get; set; }
+    public string RepairBranchName { get; set; }
+
+    /// <summary>
+    /// The vehicle's owner and warranty activation, from its sale information: the same values as the Sale columns of
+    /// the top-level report. Empty for a vehicle without a vehicle entry.
+    /// </summary>
+    public string SaleCountryId { get; set; }
+    public string SaleCountryName { get; set; }
+    public string SaleCompanyId { get; set; }
+    public string SaleCompanyName { get; set; }
+    public string SaleBranchId { get; set; }
+    public string SaleBranchName { get; set; }
+    public DateTime? SaleWarrantyActivationDate { get; set; }
 
     public string LaborCode1 { get; set; }
     public string LaborDescription1 { get; set; }

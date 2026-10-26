@@ -88,16 +88,17 @@ public static class VehicleReportRows
         };
     }
 
-    /// <summary>The SSC report's rows for one vehicle, one per campaign.</summary>
+    /// <summary>The SSC report's rows for one vehicle, one per campaign, each with the vehicle's sale information.</summary>
     public static List<VehicleSscReportModel> Ssc(string vin, VehicleLookupDTO lookup)
     {
         var rows = new List<VehicleSscReportModel>();
         foreach (var ssc in lookup?.SSC ?? Enumerable.Empty<SscDTO>())
-            rows.Add(Ssc(vin, ssc));
+            rows.Add(Ssc(vin, ssc, lookup?.SaleInformation));
         return rows;
     }
 
-    public static VehicleSscReportModel Ssc(string vin, SscDTO ssc)
+    /// <param name="sale">The vehicle's sale information, for the owner columns. Without it they are empty.</param>
+    public static VehicleSscReportModel Ssc(string vin, SscDTO ssc, VehicleSaleInformation sale = null)
     {
         // The flat CSV/Parquet SSC report still caps at 3 labors/parts (columns LaborCode1..3 / PartNumber1..3).
         // SscDTO.Labors/Parts are now unbounded, so campaigns with >3 are truncated here. Widening the report
@@ -120,6 +121,20 @@ public static class VehicleReportRows
             Description = ssc?.Description ?? string.Empty,
             Repaired = ssc?.Repaired ?? false,
             RepairDate = ssc?.RepairDate,
+            RepairSource = ssc?.RepairSource.ToString() ?? string.Empty,
+
+            RepairCompanyId = ssc?.RepairCompanyID ?? string.Empty,
+            RepairCompanyName = ssc?.RepairCompanyName ?? string.Empty,
+            RepairBranchId = ssc?.RepairBranchID ?? string.Empty,
+            RepairBranchName = ssc?.RepairBranchName ?? string.Empty,
+
+            SaleCountryId = sale?.CountryID ?? string.Empty,
+            SaleCountryName = sale?.CountryName ?? string.Empty,
+            SaleCompanyId = sale?.CompanyID ?? string.Empty,
+            SaleCompanyName = sale?.CompanyName ?? string.Empty,
+            SaleBranchId = sale?.BranchID ?? string.Empty,
+            SaleBranchName = sale?.BranchName ?? string.Empty,
+            SaleWarrantyActivationDate = sale?.WarrantyActivationDate,
 
             LaborCode1 = labor1?.LaborCode ?? string.Empty,
             LaborDescription1 = labor1?.LaborDescription ?? string.Empty,

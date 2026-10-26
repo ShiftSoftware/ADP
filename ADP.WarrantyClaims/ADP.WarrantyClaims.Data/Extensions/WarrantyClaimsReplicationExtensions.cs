@@ -66,6 +66,9 @@ public static class WarrantyClaimsReplicationExtensions
         IsDeleted = claim.IsDeleted,
         ClaimNumber = claim.ClaimNumber,
         CompanyID = claim.CompanyID,
+        // The dealer branch that made the claim. The lookup reports it as the repairing branch when the claim
+        // proves a safety recall repair.
+        BranchID = claim.CompanyBranchID,
         WarrantyType = claim.WarrantyType,
         DateOfReceipt = claim.DateOfReceipt,
         DeliveryDate = claim.DeliveryDate,

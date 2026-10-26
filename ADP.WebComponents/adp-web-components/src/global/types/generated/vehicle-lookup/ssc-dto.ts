@@ -8,6 +8,10 @@ export type SscDTO = {
     repaired: boolean;
     repairDate?: string;
     repairSource: 'None' | 'SSCRecord' | 'WarrantyClaim' | 'ServiceHistory';
+    repairCompanyID?: string;
+    repairCompanyName?: string;
+    repairBranchID?: string;
+    repairBranchName?: string;
     parts: SSCPartDTO[];
     trace?: SscRepairTraceDTO;
 };
