@@ -82,11 +82,20 @@
  * centre -32.5% to 132.5% of the width, the travel the background-position sheen had, so it
  * enters and leaves rather than appearing mid-sweep.
  *
- * Out of the tree at rest (display: none), so an idle panel runs no loop at all. In flight it
- * fades in on the cover's clock (@starting-style) and every band starts together, so a panel's
- * skeletons sweep in step. When the switch drops, `display` is held for --settle (allow-discrete),
- * so the band keeps travelling while it fades with the cover instead of stopping dead; then it
- * leaves the tree and the loop ends. A browser without allow-discrete shows and hides it at once.
+ * In the tree at every moment, like the cover: at rest it is at opacity 0, so it is not painted,
+ * and it carries no animation, so an idle panel runs no loop at all. The loop is declared only
+ * under the switch. In flight the band fades in on the cover's clock and every band starts
+ * together, so a panel's skeletons sweep in step. When the switch drops the loop is cancelled, the
+ * band returns to its start (clear of the block, so out of sight) and the cover fades alone.
+ *
+ * Why always in the tree (2026-10-26): the band used to be display: none at rest and display:
+ * block in flight. Every engine then had to cancel a loop on a pseudo-element whose box was being
+ * dropped, and two did not. WebKit left the loop running on a band gone back to display: none
+ * when the loop sat on the band permanently; Firefox did the same, on the part-lookup composite,
+ * when the loop sat under the switch. An invisible animation that never ends keeps the browser's
+ * animation timeline waking every frame on an idle panel. A box that never comes or goes, with
+ * the loop under the switch, is the pattern every engine cancels cleanly. It needs neither
+ * @starting-style nor allow-discrete, so older browsers get the fade too.
  *
  * Above the cover (z-index 11), because ::before paints first.
  */
@@ -96,33 +105,19 @@
   position: absolute;
   inset: 0;
   z-index: 11;
-  display: none;
   background: linear-gradient(100deg, transparent 27.5%, rgba(255, 255, 255, 0.5) 50%, transparent 72.5%);
   opacity: 0;
   pointer-events: none;
   transform: translateX(-82.5%);
-  animation: shift-skeleton-sweep var(--sheen, 1.3s) linear infinite;
-  transition-property: opacity, display;
-  transition-duration: var(--settle, 480ms);
-  transition-timing-function: ease;
-  transition-behavior: allow-discrete;
+  transition: opacity var(--settle, 480ms) ease;
 }
 
 .loading.shift-skeleton::before,
 .loading .shift-skeleton::before,
 .loading.shift-sheen::before,
 .loading .shift-sheen::before {
-  display: block;
   opacity: 1;
-}
-
-@starting-style {
-  .loading.shift-skeleton::before,
-  .loading .shift-skeleton::before,
-  .loading.shift-sheen::before,
-  .loading .shift-sheen::before {
-    opacity: 0;
-  }
+  animation: shift-skeleton-sweep var(--sheen, 1.3s) linear infinite;
 }
 
 @keyframes shift-skeleton-sweep {
@@ -144,8 +139,11 @@
     transition-duration: 0.01ms;
   }
 
-  .shift-skeleton::before,
-  .shift-sheen::before {
+  /* The loop lives on the switched selectors, so it is stopped on them. */
+  .loading.shift-skeleton::before,
+  .loading .shift-skeleton::before,
+  .loading.shift-sheen::before,
+  .loading .shift-sheen::before {
     animation: none;
   }
 }
