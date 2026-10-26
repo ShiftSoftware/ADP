@@ -334,7 +334,7 @@ const Collapsible: FunctionalComponent<{ open: boolean }> = ({ open }, children)
 );
 
 const NoticeStrip = ({ text }: { text: string }) => (
-  <div class="warranty-notice lookup-slide" role="status">
+  <div class="warranty-notice lookup-slide shift-sheen" role="status">
     <svg class="notice-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
       <path fill="currentColor" d={BADGE_GLYPHS.negative} />
     </svg>
@@ -355,7 +355,7 @@ const StatusBadge = ({ state, text }: { state: BadgeState; text: string }) => {
   const idle = state === 'idle';
 
   return (
-    <span class={`status-badge is-${state}`} aria-label={idle ? null : text} aria-hidden={idle ? 'true' : null}>
+    <span class={`status-badge shift-sheen is-${state}`} aria-label={idle ? null : text} aria-hidden={idle ? 'true' : null}>
       <svg class="badge-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
         {!idle && <path fill="currentColor" d={state === 'positive' ? BADGE_GLYPHS.positive : BADGE_GLYPHS.negative} />}
       </svg>

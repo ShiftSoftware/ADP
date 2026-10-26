@@ -65,7 +65,7 @@ describe('CoverageTimeline', () => {
 
     // The harness authorizes the lookup, so the first chip passes; the vehicle carries no dates,
     // so the second fails. A loaded vehicle with nothing to show still gets a verdict.
-    expect(badges.map(badge => badge.className)).toEqual(['status-badge is-positive', 'status-badge is-negative']);
+    expect(badges.map(badge => badge.className)).toEqual(['status-badge shift-sheen is-positive', 'status-badge shift-sheen is-negative']);
     expect(page.body.textContent).toContain(timelineLocale.notActiveWarranty);
   });
 

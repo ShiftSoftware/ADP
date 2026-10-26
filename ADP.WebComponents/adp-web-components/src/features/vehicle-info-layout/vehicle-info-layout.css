@@ -481,26 +481,3 @@
     translate: none;
   }
 }
-
-/* ---------------------------------------------------------------------------------------------
-   The family's loading cover
-   ---------------------------------------------------------------------------------------------
-
-   shift-skeleton.css is shared with part-lookup and ships its own treatment: a -45deg gradient
-   over two seconds and a 500ms fade, neither the family's. Two panels had pasted the same
-   correction locally and five kept the shared look, so changing tab changed how loading looked.
-
-   Here instead: every family panel imports this file, and imports it AFTER the shared one, so
-   these rules win without !important and without touching part-lookup. */
-.shift-skeleton::after {
-  background-color: #dde1e6;
-  background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
-  background-repeat: no-repeat;
-  background-size: 45% 100%;
-  transition-duration: var(--settle);
-}
-
-.loading.shift-skeleton::after,
-.loading .shift-skeleton::after {
-  animation: lookup-sheen var(--sheen) linear infinite;
-}
