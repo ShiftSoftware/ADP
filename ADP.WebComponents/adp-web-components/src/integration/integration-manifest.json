@@ -251,7 +251,7 @@
           { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
         ],
         "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
-        "dependencies": []
+        "dependencies": ["shift-image"]
       },
       "runtimeAssets": { "locales": "dist/locales", "notes": [] }
     },
@@ -366,7 +366,7 @@
           { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
         ],
         "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
-        "dependencies": ["shift-tabs", "flexible-container"]
+        "dependencies": ["shift-image", "shift-tabs", "flexible-container"]
       },
       "runtimeAssets": { "locales": "dist/locales", "notes": [] }
     },

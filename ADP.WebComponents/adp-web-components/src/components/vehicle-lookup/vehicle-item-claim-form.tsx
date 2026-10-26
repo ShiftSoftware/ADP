@@ -6,7 +6,7 @@ import { ClaimFormType } from '~locales/vehicleLookup/claimableItems/type';
 
 import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
 
-import { SharedLocales } from '~features/multi-lingual';
+import { LanguageKeys, SharedLocales } from '~features/multi-lingual';
 
 import { AddIcon } from '~assets/add-icon';
 import { CheckIcon } from '~assets/check-icon';
@@ -503,7 +503,7 @@ export class VehicleItemClaimForm {
         <dialog ref={el => (this.dialogEl = el as HTMLDialogElement)} class="claim-dialog" onCancel={this.onDialogCancel}>
           {/* The viewer's layer is portaled onto <body> and raises itself into the top layer while
               open, so it opens above this modal dialog. Kept inside the dialog where it always was. */}
-          <shift-image ref={el => (this.imageViewer = el)} onViewerChange={this.onViewerChange} />
+          <shift-image ref={el => (this.imageViewer = el)} language={this.locale.sharedLocales.lang as LanguageKeys} onViewerChange={this.onViewerChange} />
           <div
             dir={this.locale.sharedLocales.direction}
             class={cn(

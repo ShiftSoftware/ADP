@@ -176,12 +176,6 @@
   line-height: 1.2;
   text-transform: uppercase;
 }
-.notice-icon {
-  display: block;
-  flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
-}
 
 /* ---------------------------------------------------------------------------------------------
    Tier 1 — the identity grid. A fixed structure: the same eight titled slots for every vehicle,

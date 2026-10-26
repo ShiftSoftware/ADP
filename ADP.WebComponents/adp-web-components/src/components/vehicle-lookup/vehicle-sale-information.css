@@ -116,12 +116,6 @@
   opacity: 0;
   transform: translateY(calc(var(--head-leave-travel) * 120%));
 }
-.notice-icon {
-  display: block;
-  flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
-}
 
 .sale-lead {
   display: flex;

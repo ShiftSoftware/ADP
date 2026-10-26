@@ -308,6 +308,8 @@ export class VehicleLookup implements MultiLingual {
   private syncErrorAcrossComponents = (newErrorMessage: ErrorKeys) => {
     this.isError = true;
     this.errorMessage = this.locale?.errors?.[newErrorMessage] || this.locale.errors.wildCard;
+    // Every panel now shows the error; a tab opened afterwards must not be handed an older answer over it.
+    this.pendingHandoffs = new Map();
 
     Object.values(this.componentsList).forEach(element => {
       if (element) element.setErrorMessage(newErrorMessage);
@@ -414,6 +416,9 @@ export class VehicleLookup implements MultiLingual {
     if (!activeElement) return;
 
     this.searchGeneration++;
+    // The last answer is no longer the one to hand over: a tab opened before the new one lands
+    // must not be given the previous vehicle.
+    this.pendingHandoffs = new Map();
 
     activeElement.fetchVin(vin, resolvedHeaders || {});
   }

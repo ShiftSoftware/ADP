@@ -143,9 +143,20 @@
   background: var(--line);
 }
 
-/* A ceiling, as a guard against a message that would not fit the head. */
+/* A ceiling, as a guard against a message that would not fit the head: the head's own width, not a
+   fixed figure. The head wraps, so a long pill takes a line of its own before it is cut. Was 360px,
+   which cut the default error ("…try again later.", 380px in English, wider in Russian) on every
+   card, and the pill is the only place a record panel says it failed (no notice band repeats it). */
 .lookup-summary .status-badge {
-  max-width: 360px;
+  max-width: 100%;
+}
+
+/* A message wider than the whole head (a long locale on a narrow card above 430px) ends in an
+   ellipsis, so the cut shows, rather than stopping mid-word at the pill's edge. */
+.lookup-summary .status-badge > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ---------------------------------------------------------------------------------------------

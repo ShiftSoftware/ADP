@@ -7,9 +7,11 @@
   or `opacity`, so the compositor animates it without laying out or repainting the page; no backdrop
   blur. Values a page can tune are custom properties on the element:
 
-    --shift-image-duration   the flight, in and out (420ms)
-    --shift-image-ease       its curve: a long, soft deceleration, so the picture lands rather than stops
-    --shift-image-scrim      the colour over the page
+    --shift-image-duration         the opening flight (460ms)
+    --shift-image-ease             its curve: a long, soft deceleration, so the picture lands rather than stops
+    --shift-image-close-duration   the closing flight (400ms), and --shift-image-close-ease its curve
+    --shift-image-land-fade        the dissolve into the thumbnail once the card has landed (120ms)
+    --shift-image-scrim            the colour over the page
 */
 
 /* The layer covers the window and is invisible until it opens; closing, it lets clicks through at
