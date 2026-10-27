@@ -23,6 +23,7 @@
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 @import '../../features/vehicle-info-layout/lookup-head.css';
 @import '../../features/lookup-table/lookup-table.css';
+@import '../../features/lookup-table/lookup-pager.css';
 
 :host {
   display: block;
@@ -126,141 +127,8 @@
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Page controls: rows per page, the range, previous and next
-   ------------------------------------------------------------------------------------------- */
-
-/* Ruled like a row of the table (--line-soft, § 12), so it reads as the foot of the list. The page
-   size sits on the reading edge, the range and the arrows on the far one. 4px of padding around
-   the 40px buttons leaves room for the 2px focus outline and its 2px offset, which the
-   collapsible's overflow:hidden would otherwise clip. */
-.accessories-pager-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 14px;
-  align-items: center;
-  padding: 4px 12px 4px 20px;
-  border-top: 1px solid var(--line-soft);
-}
-
-/* When a shorter page takes the page up under the reader, the controls are brought back with this
-   much of the list above them (motion.md rule 10; lib/reveal-below reads scroll-margin-top). */
-.accessories-pager {
-  scroll-margin-top: min(40vh, 280px);
-}
-
-.accessories-page-size {
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  margin-inline-end: auto;
-}
-
-/* Small note: 12px, 600 (design language § 11). */
-.accessories-page-size-label {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-/* The platform's own select, so its list is the platform's too (keyboard, touch, screen reader);
-   dressed in the family's type and line. 32px: a control inside a row, not a call to action. */
-.accessories-page-size-select {
-  min-height: 32px;
-  padding: 0 6px;
-  color: var(--ink);
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-  transition:
-    border-color 0.2s ease,
-    opacity var(--settle) ease;
-}
-
-.accessories-page-size-select:hover {
-  border-color: var(--blue);
-}
-
-.accessories-page-size-select:focus-visible {
-  outline: 2px solid var(--blue-dark);
-  outline-offset: 2px;
-}
-
-/* In flight: the list on screen is the last vehicle's, so it cannot be paged; the control dims
-   rather than vanishing. */
-.accessories-page-size-select:disabled {
-  cursor: default;
-  opacity: 0.55;
-}
-
-/* A value, read: dates and counts are --date-ink and tabular (§ 9, § 11). It carries
-   shift-skeleton, so a lookup covers it with the rows. */
-.accessories-page-range {
-  display: inline-block;
-  color: var(--date-ink);
-  font-size: 12px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.accessories-page-nav {
-  display: inline-flex;
-  gap: 2px;
-}
-
-/* Interaction is blue (§ 10), a quiet icon button: the list is the content, these only move through
-   it. 40px square with the 4px row padding gives the 44px a finger needs. .2s, the language's one
-   duration shorter than --settle: a press must feel instant (§ 18). */
-.accessories-page-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  color: var(--blue-dark);
-  background: transparent;
-  border: 0;
-  border-radius: 6px;
-  cursor: pointer;
-  transition:
-    background 0.2s ease,
-    color 0.2s ease;
-}
-
-.accessories-page-button:hover:not(:disabled) {
-  background: var(--blue-tint);
-}
-
-.accessories-page-button:focus-visible {
-  outline: 2px solid var(--blue-dark);
-  outline-offset: 2px;
-}
-
-/* The end of the list in that direction: grey, the colour of idle furniture (§ 10). */
-.accessories-page-button:disabled {
-  color: var(--line);
-  cursor: default;
-}
-
-.accessories-page-chevron {
-  width: 16px;
-  height: 16px;
-}
-
-/* Previous points to the reading start and next to the reading end, so RTL mirrors both. */
-[dir='rtl'] .accessories-page-chevron {
-  transform: scaleX(-1);
-}
-
-/* ---------------------------------------------------------------------------------------------
    Narrow panels (720 and under): the table turns its rows into cards (lookup-table.css); the
-   page controls keep their 44px targets and only tighten their row to the card's inset.
+   page controls (lookup-pager.css) tighten their own row.
    ------------------------------------------------------------------------------------------- */
 
 @container (max-width: 720px) {
@@ -269,22 +137,5 @@
   .lt-row {
     gap: 6px 12px;
     padding: 10px 14px;
-  }
-
-  .accessories-pager-row {
-    padding-inline: 14px 8px;
-  }
-}
-
-/* ---------------------------------------------------------------------------------------------
-   Reduced motion: every transition above is on a state attribute, so it is kept and made
-   immediate. The table's own block is in its fragment.
-   ------------------------------------------------------------------------------------------- */
-
-@media (prefers-reduced-motion: reduce) {
-  .accessories-page-size-select,
-  .accessories-page-button {
-    transition-duration: 0.01ms !important;
-    transition-delay: 0s !important;
   }
 }

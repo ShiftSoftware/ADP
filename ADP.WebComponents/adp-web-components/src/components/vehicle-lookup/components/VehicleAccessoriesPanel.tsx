@@ -6,11 +6,9 @@ import { AccessoryDTO } from '~types/generated/vehicle-lookup/accessory-dto';
 
 import { SearchIcon } from '~assets/search-icon';
 import { PackageIcon } from '~assets/package-icon';
-import { ChevronLeftIcon } from '~assets/chevron-left-icon';
-import { ChevronRightIcon } from '~assets/chevron-right-icon';
 
 import { LookupHead, PanelVerdict } from '~features/vehicle-info-layout';
-import { LeadKind, LookupColumn, LookupTable, NoticeTone, RowSlot, shownBody, visibleColumns } from '~features/lookup-table';
+import { LeadKind, LookupColumn, LookupPager, LookupTable, NoticeTone, PageSize, RowSlot, isPaginated, shownBody, visibleColumns } from '~features/lookup-table';
 
 export type AccessoriesLocale = InferType<typeof accessoriesSchema>;
 
@@ -37,20 +35,6 @@ export const FIELDS = ['partNumber', 'description', 'image'] as const;
 
 /** What a host sees without configuring anything: every column. */
 export const DEFAULT_HIDDEN_FIELDS = '';
-
-/**
- * The page sizes the reader can pick, in steps of five up to twenty-five, then every row. Five by
- * default (owner, 2026-10-25, replacing the "Show all" disclosure of 2026-10-18): a short card that
- * keeps its height from vehicle to vehicle, and never a list so long that a lookup has a screenful
- * of rows to move.
- */
-export const PAGE_SIZES = [5, 10, 15, 20, 25] as const;
-
-export type PageSize = (typeof PAGE_SIZES)[number] | 'all';
-
-export const PAGE_SIZE_OPTIONS: PageSize[] = [...PAGE_SIZES, 'all'];
-
-export const DEFAULT_PAGE_SIZE: PageSize = 5;
 
 /** Where the reader's choice is kept, per browser: the panel opens on it next time. */
 export const PAGE_SIZE_STORAGE_KEY = 'shift-components:vehicle-accessories:page-size';
@@ -175,50 +159,6 @@ export const countText = (count: number, locale: AccessoriesLocale, language: st
 // Pages
 // ---------------------------------------------------------------------------------------------
 
-/** A stored or chosen value read back as a page size; anything else is the default. */
-export const parsePageSize = (raw: string | number | null | undefined): PageSize => {
-  if (raw === 'all') return 'all';
-  const size = Number(raw);
-  return (PAGE_SIZES as readonly number[]).includes(size) ? (size as PageSize) : DEFAULT_PAGE_SIZE;
-};
-
-/** How many pages a list makes; at least one, so an empty list is page 1 of 1, never page 1 of 0. */
-export const pageCount = (total: number, size: PageSize): number => (size === 'all' ? 1 : Math.max(1, Math.ceil(total / size)));
-
-/** A page index brought back inside the list: a smaller list or a bigger page can leave it past the end. */
-export const clampPage = (page: number, total: number, size: PageSize): number => Math.min(Math.max(0, Math.floor(page) || 0), pageCount(total, size) - 1);
-
-/** The rows of one page. */
-export const pageRows = <Row,>(rows: Row[], page: number, size: PageSize): Row[] => {
-  if (size === 'all') return rows;
-  const start = clampPage(page, rows.length, size) * size;
-  return rows.slice(start, start + size);
-};
-
-/** Whether the list needs the page controls: longer than the smallest page. */
-export const isPaginated = (total: number): boolean => total > PAGE_SIZES[0];
-
-/** The page that keeps the first row on screen in view when the page size changes. */
-export const pageForSize = (page: number, from: PageSize, to: PageSize, total: number): number => {
-  if (to === 'all' || from === 'all') return 0;
-  return clampPage(Math.floor((clampPage(page, total, from) * from) / to), total, to);
-};
-
-/** "6–10 of 23": the rows on screen and the whole list, in the locale's words. */
-export const pageRangeText = (page: number, size: PageSize, total: number, locale: AccessoriesLocale): string => {
-  const from = total === 0 ? 0 : (size === 'all' ? 0 : clampPage(page, total, size) * size) + 1;
-  const to = size === 'all' ? total : Math.min(total, from - 1 + size);
-  return locale.pageRange.replace('{from}', String(from)).replace('{to}', String(to)).replace('{total}', String(total));
-};
-
-/**
- * Whether a page change that takes `removedHeight` off the list needs the page to follow. The
- * controls are under the rows, so they rise by what the rows took; if that lifts them off the top
- * of the screen, the reader is left looking at nothing and the controls are brought back
- * (motion.md rule 10).
- */
-export const pagingNeedsReveal = (controlsTop: number, removedHeight: number): boolean => controlsTop - removedHeight < 0;
-
 // ---------------------------------------------------------------------------------------------
 // Render
 // ---------------------------------------------------------------------------------------------
@@ -264,8 +204,6 @@ export const VehicleAccessoriesPanel: FunctionalComponent<Props> = props => {
   const lead = panelLead(state, busy);
   const open = bodyOpen(state, leaving, reconfiguring);
   const pagerOpen = open && isPaginated(total);
-  const pages = pageCount(total, pageSize);
-  const current = clampPage(page, total, pageSize);
 
   const notice = leadNotice(state, locale) ?? retainedNotice;
   // Leaving (a clear, or an error raised on a settled card) always ends idle, so the placeholder is
@@ -327,57 +265,17 @@ export const VehicleAccessoriesPanel: FunctionalComponent<Props> = props => {
           </div>
 
           {/* The page controls. Always mounted, shut when the list fits on the smallest page: they slide with the body, never pop. */}
-          <div class="accessories-pager collapsible" data-open={pagerOpen ? 'true' : 'false'} aria-hidden={pagerOpen ? null : 'true'}>
-            <div class="collapsible-body">
-              <div class="accessories-pager-row">
-                <label class="accessories-page-size">
-                  <span class="accessories-page-size-label">{locale.rowsPerPage}</span>
-                  <select
-                    class="accessories-page-size-select"
-                    aria-controls="accessories-list"
-                    disabled={busy}
-                    onChange={event => onPageSize(parsePageSize((event.target as HTMLSelectElement).value))}
-                  >
-                    {PAGE_SIZE_OPTIONS.map(size => (
-                      <option value={String(size)} selected={size === pageSize}>
-                        {size === 'all' ? locale.pageAll : String(size)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                {/* A value like any other: it goes under the skeleton with the rows while a lookup is in flight. */}
-                <span class="accessories-page-range shift-skeleton" aria-live="polite">
-                  {pageRangeText(current, pageSize, total, locale)}
-                </span>
-
-                <span class="accessories-page-nav">
-                  <button
-                    type="button"
-                    class="accessories-page-button is-previous"
-                    aria-label={locale.previousPage}
-                    title={locale.previousPage}
-                    aria-controls="accessories-list"
-                    disabled={busy || current === 0}
-                    onClick={() => onPage(current - 1)}
-                  >
-                    <ChevronLeftIcon class="accessories-page-chevron" />
-                  </button>
-                  <button
-                    type="button"
-                    class="accessories-page-button is-next"
-                    aria-label={locale.nextPage}
-                    title={locale.nextPage}
-                    aria-controls="accessories-list"
-                    disabled={busy || current >= pages - 1}
-                    onClick={() => onPage(current + 1)}
-                  >
-                    <ChevronRightIcon class="accessories-page-chevron" />
-                  </button>
-                </span>
-              </div>
-            </div>
-          </div>
+          <LookupPager
+            strings={{ rowsPerPage: locale.rowsPerPage, pageAll: locale.pageAll, previousPage: locale.previousPage, nextPage: locale.nextPage, pageRange: locale.pageRange }}
+            controls="accessories-list"
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            open={pagerOpen}
+            busy={busy}
+            onPage={onPage}
+            onPageSize={onPageSize}
+          />
         </div>
       </div>
     </section>

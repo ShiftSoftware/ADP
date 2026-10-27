@@ -1,0 +1,127 @@
+/* tailwind: off */
+/*
+ * The lookup table's dev showcase host (lookup-table-showcase.tsx): the family's card with the
+ * lookup table in it, so the table can be seen outside a panel. Dev-only; no panel imports this.
+ * It imports the same fragments a panel does, in the order the table's contract asks for
+ * (lookup-table.css, "A FRAGMENT"): the reset, the tokens, the skeleton, the wrapper (which brings
+ * the motion primitives and .sr-only, so lookup-motion.css is never imported directly), the head,
+ * the table, the pager. What is its own is only the stand-in frame that holds an embedded table where
+ * a drawer would.
+ */
+
+@import '../style/base.css';
+@import '../style/lookup-tokens.css';
+@import '../style/shift-skeleton.css';
+@import '../../features/vehicle-info-layout/vehicle-info-layout.css';
+@import '../../features/vehicle-info-layout/lookup-head.css';
+@import '../../features/lookup-table/lookup-table.css';
+@import '../../features/lookup-table/lookup-pager.css';
+
+:host {
+  display: block;
+  /* No blank floor under the strip, as in accessories: a notice that has said everything ends the card. */
+  --body-rest: 0px;
+}
+
+/* The stand-in for a drawer: an inset panel on the card's paper (design language § 18: radius 10, a
+   rim, the soft panel recess), holding one embedded table under a small caption. Part of the showcase
+   only; the real drawer, when it lands, is the panel's and replaces this. */
+.showcase-stands {
+  display: grid;
+  gap: 14px;
+  padding: 16px 12px;
+}
+
+.showcase-stand {
+  padding: 12px 14px 14px;
+  background: var(--paper);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px rgba(48, 113, 169, 0.32);
+}
+
+/* A showcase alone: the frame has no padding of its own around a lone stand, so it gets the room the pair gets. */
+.lookup-content > .showcase-stand {
+  margin: 16px 12px;
+}
+
+/* Small label: 11px, 700, +0.06em, uppercase, in --muted (design language § 11). */
+.showcase-stand-caption {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The drawer scenarios' content: a meta line above two embedded tables. It is the showcase's own (the
+   table supplies the panel around it), and a stand-in for what a panel puts in its drawer. */
+.showcase-drawer {
+  display: grid;
+  gap: 14px;
+}
+
+.showcase-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 12px;
+}
+
+.showcase-meta-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.showcase-meta-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
+.showcase-lines {
+  min-width: 0;
+}
+
+.showcase-none {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* The dev control that stands in for a panel's next lookup. */
+.showcase-controls {
+  display: flex;
+  padding: 12px 14px;
+  box-shadow: inset 0 1px 0 var(--line-soft);
+}
+
+.showcase-lookup {
+  min-height: 32px;
+  padding: 0 14px;
+  color: var(--blue-dark);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--paper);
+  border: 0;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px var(--lt-rim-blue);
+  cursor: pointer;
+}
+
+.showcase-lookup:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.showcase-lookup:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 2px;
+}

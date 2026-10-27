@@ -11,26 +11,31 @@ import { AccessoryDTO } from '~types/generated/vehicle-lookup/accessory-dto';
 
 import {
   DEFAULT_HIDDEN_FIELDS,
-  DEFAULT_PAGE_SIZE,
   PAGE_SIZE_STORAGE_KEY,
-  PageSize,
   PanelNotice,
   PanelState,
   VehicleAccessoriesPanel,
   bodyOpen,
-  clampPage,
   hasRecords,
   leadNotice,
   listed,
-  pageForSize,
-  pageRows,
-  pagingNeedsReveal,
   panelBody,
-  parsePageSize,
   sameColumns,
 } from './components/VehicleAccessoriesPanel';
 
-import { RowVeil, parseHiddenFields, tableSlots } from '~features/lookup-table';
+import {
+  DEFAULT_PAGE_SIZE,
+  PageSize,
+  RowVeil,
+  clampPage,
+  pageForSize,
+  pageRows,
+  pagingNeedsReveal,
+  parseHiddenFields,
+  readStoredPageSize,
+  storePageSize,
+  tableSlots,
+} from '~features/lookup-table';
 import { VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
@@ -52,7 +57,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
   async componentWillLoad() {
     this.applied = parseHiddenFields(this.hiddenFields);
-    this.pageSize = this.readPageSize();
+    this.pageSize = readStoredPageSize(PAGE_SIZE_STORAGE_KEY);
     await this.changeLanguage(this.language);
   }
 
@@ -311,23 +316,6 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
   private stopFollowing?: () => void;
   private revealPending = false;
 
-  /** Reads the stored size. Storage can be missing or throw (private windows, blocked site data); the default stands then. */
-  private readPageSize(): PageSize {
-    try {
-      return parsePageSize(globalThis.localStorage?.getItem(PAGE_SIZE_STORAGE_KEY));
-    } catch {
-      return DEFAULT_PAGE_SIZE;
-    }
-  }
-
-  private storePageSize(size: PageSize) {
-    try {
-      globalThis.localStorage?.setItem(PAGE_SIZE_STORAGE_KEY, String(size));
-    } catch {
-      // Not kept: the choice still applies for as long as the panel is on the page.
-    }
-  }
-
   // A new vehicle lands at the end of a lookup, under the skeleton: its first page is what the cover lifts on.
   @Watch('vehicleLookup')
   onVehicleChange() {
@@ -349,7 +337,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
     const now = pageRows(rows, this.page, this.pageSize);
     const next = pageRows(rows, target, size);
 
-    if (size !== this.pageSize) this.storePageSize(size);
+    if (size !== this.pageSize) storePageSize(PAGE_SIZE_STORAGE_KEY, size);
 
     const overlap = Math.min(now.length, next.length);
     const changes = now.slice(0, overlap).some((row, index) => row !== next[index]);
@@ -381,7 +369,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
   /** Before a page that is shorter than the one on screen: whether the controls will rise off the top of the screen. */
   private prepareReveal(nextCount: number) {
     const root = this.el.shadowRoot;
-    const pager = root?.querySelector<HTMLElement>('.accessories-pager');
+    const pager = root?.querySelector<HTMLElement>('.lt-pager');
     if (!root || !pager) return;
 
     const removed = Array.from(root.querySelectorAll<HTMLElement>('.lt-slot[data-open="true"]'))
@@ -497,7 +485,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
     if (this.revealPending) {
       this.revealPending = false;
-      const anchor = this.el.shadowRoot?.querySelector('.accessories-pager');
+      const anchor = this.el.shadowRoot?.querySelector('.lt-pager');
       this.stopFollowing?.();
       if (anchor) this.stopFollowing = revealBelow(anchor, this.settleMs() + 80);
     }
