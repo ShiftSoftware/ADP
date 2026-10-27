@@ -44,6 +44,8 @@ const paintThicknessSchema = yupTypeMapper([
   'summaryCount',
   'summaryLowest',
   'summaryHighest',
+  'sheetPhotosTitle',
+  'closeSheet',
 ]);
 
 export default paintThicknessSchema;

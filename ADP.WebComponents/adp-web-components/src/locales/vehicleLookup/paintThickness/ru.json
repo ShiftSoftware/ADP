@@ -41,5 +41,7 @@
   "emptyHint": "Для этого автомобиля нет записанных замеров толщины краски.",
   "summaryCount": "Замеров: {value}",
   "summaryLowest": "Минимум {value}",
-  "summaryHighest": "Максимум {value}"
+  "summaryHighest": "Максимум {value}",
+  "sheetPhotosTitle": "{name} — {photos}",
+  "closeSheet": "Закрыть"
 }

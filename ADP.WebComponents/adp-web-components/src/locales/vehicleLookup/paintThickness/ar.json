@@ -41,5 +41,7 @@
   "emptyHint": "لا توجد قراءات لسمك الطلاء مسجّلة لهذه المركبة.",
   "summaryCount": "القراءات {value}",
   "summaryLowest": "الأدنى {value}",
-  "summaryHighest": "الأعلى {value}"
+  "summaryHighest": "الأعلى {value}",
+  "sheetPhotosTitle": "{name} — {photos}",
+  "closeSheet": "إغلاق"
 }

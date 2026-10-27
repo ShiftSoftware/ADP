@@ -8,6 +8,7 @@ import type { PaintThicknessInspectionDTO } from '~types/generated/vehicle-looku
 import { tableSlots } from '~features/lookup-table';
 
 import { PanelState, VehiclePaintThicknessPanel, allPhotoGroups, bodyOpen, certificateKind, panelBody, shownRows, tabsOf } from './VehiclePaintThicknessPanel';
+import type { PaintSheet } from './VehiclePaintThicknessPanel';
 
 /**
  * The panel's states through the DOM: what each named state renders, what stays in place while a
@@ -176,5 +177,82 @@ describe('the tab strip', () => {
     press(rtl.body, 1, 'ArrowRight');
     press(rtl.body, 1, 'ArrowLeft');
     expect(calls.slice(3)).toEqual([0, 2]);
+  });
+});
+
+describe('the phone: a bottom sheet instead of the floating menu and the inline drawer', () => {
+  const renderPhone = ({ phone = true, busy = false, sheet = null as PaintSheet | null, drawerOpen = null as number | null, certificateOpen = false } = {}) => {
+    const state = loaded();
+    const rows = shownRows(state);
+    const open = bodyOpen(state, false, false);
+
+    return newSpecPage({
+      components: [],
+      template: () => (
+        <VehiclePaintThicknessPanel
+          locale={locale}
+          language="en"
+          direction="ltr"
+          state={state}
+          verdict={{ state: 'idle', text: '' }}
+          busy={busy}
+          leaving={false}
+          reconfiguring={false}
+          reshaping={false}
+          swapping={false}
+          retainedBody={panelBody(state)}
+          selectedTab={0}
+          retainedTabs={[]}
+          retainedCertificate={null}
+          retainedSummary={null}
+          slotRows={rows}
+          slots={tableSlots({ current: rows.length, outgoing: 0, opened: rows.length, bodyOpen: open, currentVeil: busy ? 'cover' : 'none', outgoingVeil: 'none' })}
+          drawerOpen={drawerOpen}
+          drawerShown={drawerOpen === null ? [] : [drawerOpen]}
+          drawerRowFor={row => row}
+          onToggleDrawer={() => undefined}
+          photosOpen={false}
+          photosRendered={false}
+          retainedGroups={allPhotoGroups(rows, locale)}
+          onTogglePhotos={() => undefined}
+          onSelectTab={() => undefined}
+          certificateOpen={certificateOpen}
+          onToggleCertificate={() => undefined}
+          onCloseCertificate={() => undefined}
+          phone={phone}
+          sheet={sheet}
+          onCloseSheet={() => undefined}
+        />
+      ),
+    });
+  };
+
+  it("a photos sheet holds the row's photos and a title naming the row and its count; the table drawer stays shut", async () => {
+    const { body } = await renderPhone({ sheet: { kind: 'photos', index: 0, open: true }, drawerOpen: 0 });
+
+    expect(body.querySelector('shift-sheet [slot="heading"]')?.textContent).toBe('Door · Front — 3 photos');
+    expect(body.querySelectorAll('shift-sheet .paint-sheet-content .paint-photo')).toHaveLength(3);
+    expect(attr(body, '.lt-drawer', 'data-open')).toBe('false');
+    expect(body.querySelectorAll('.lt-drawer .paint-photo')).toHaveLength(0);
+  });
+
+  it('a certificate sheet lists the print languages; the button names a dialog and the floating menu stays shut', async () => {
+    const { body } = await renderPhone({ sheet: { kind: 'certificate', open: true }, certificateOpen: true });
+
+    expect(Array.from(body.querySelectorAll('shift-sheet .paint-certificate-item')).map(item => item.textContent)).toEqual(['English']);
+    expect(attr(body, '.paint-certificate-button', 'aria-haspopup')).toBe('dialog');
+    expect(attr(body, '.paint-certificate-button', 'aria-expanded')).toBe('true');
+    expect(attr(body, '.paint-certificate-menu', 'data-open')).toBe('false');
+  });
+
+  it("in a lookup the sheet's title and content are under the skeleton and inert; off a phone there is no sheet and the drawer opens", async () => {
+    const phone = await renderPhone({ busy: true, sheet: { kind: 'photos', index: 0, open: true } });
+    expect(phone.body.querySelector('shift-sheet [slot="heading"]')?.classList.contains('shift-skeleton')).toBe(true);
+    expect(phone.body.querySelector('shift-sheet .paint-sheet-content')?.hasAttribute('inert')).toBe(true);
+
+    const desktop = await renderPhone({ phone: false, drawerOpen: 0 });
+    expect(desktop.body.querySelector('shift-sheet')).toBeNull();
+    expect(attr(desktop.body, '.lt-drawer', 'data-open')).toBe('true');
+    expect(attr(desktop.body, '.paint-certificate-button', 'aria-haspopup')).toBe('menu');
   });
 });

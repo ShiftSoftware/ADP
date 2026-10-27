@@ -41,5 +41,7 @@
   "emptyHint": "No paint thickness readings are on record for this vehicle.",
   "summaryCount": "Readings {value}",
   "summaryLowest": "Lowest {value}",
-  "summaryHighest": "Highest {value}"
+  "summaryHighest": "Highest {value}",
+  "sheetPhotosTitle": "{name} — {photos}",
+  "closeSheet": "Close"
 }

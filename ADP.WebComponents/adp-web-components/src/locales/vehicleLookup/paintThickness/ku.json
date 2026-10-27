@@ -41,5 +41,7 @@
   "emptyHint": "هیچ پێوانەیەکی ئەستووری بۆیاخ بۆ ئەم ئۆتۆمبێلە تۆمار نەکراوە.",
   "summaryCount": "پێوانەکان {value}",
   "summaryLowest": "کەمترین {value}",
-  "summaryHighest": "زۆرترین {value}"
+  "summaryHighest": "زۆرترین {value}",
+  "sheetPhotosTitle": "{name} — {photos}",
+  "closeSheet": "داخستن"
 }

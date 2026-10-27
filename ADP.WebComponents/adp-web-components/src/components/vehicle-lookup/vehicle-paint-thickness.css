@@ -859,11 +859,57 @@
     width: 100%;
   }
 
-  /* A sheet on a phone is the later task; until then the menu spans the head's width. */
+  /* A narrow column on a wide screen keeps the floating menu, spanning the head's width. On a phone (a viewport of 720px or less) the menu is the bottom sheet instead. */
   .paint-certificate-menu {
     inset-inline: 14px;
     min-width: 0;
   }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   The phone's bottom sheet (<shift-sheet>, a viewport of 720px or less): the certificate menu and a
+   row's photos. The sheet is the surface (paper, the card's radius, a rim, the one shadow) and does
+   its own sliding; what it holds is this panel's own content, styled here because it stays in this
+   shadow tree. The title and each block go under the skeleton in a lookup (the rules of
+   shift-skeleton.css apply, the sheet is inside the wrapper's .loading) and are inert while it lasts.
+   ------------------------------------------------------------------------------------------- */
+
+.paint-sheet-title {
+  display: block;
+}
+
+/* The photos: each side is an inset panel on the recessed paper (§ 12), stacked, so a side's four
+   thumbnails sit side by side at a phone's width and a second side goes under it. */
+.paint-sheet-content {
+  display: block;
+}
+
+.paint-sheet-content .paint-sides {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+
+.paint-sheet-content .paint-side {
+  padding: 12px 14px 14px;
+  background: var(--paper-soft);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--line-soft);
+}
+
+/* The language list: the menu's items at touch size (44px, 15px). */
+.paint-sheet-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.paint-sheet-menu .paint-certificate-item {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding-block: 10px;
+  font-size: 15px;
 }
 
 /* ---------------------------------------------------------------------------------------------

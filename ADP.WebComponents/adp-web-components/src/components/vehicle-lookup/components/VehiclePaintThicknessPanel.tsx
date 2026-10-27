@@ -12,7 +12,8 @@ import { SearchIcon } from '~assets/search-icon';
 import { EmptyTableIcon } from '~assets/empty-table-icon';
 
 import { LookupHead, PanelVerdict } from '~features/vehicle-info-layout';
-import { LookupColumn, LookupTable, RowDrawer, RowSlot, shownBody, visibleColumns } from '~features/lookup-table';
+import { LookupColumn, LookupTable, RowDrawer, RowSlot, drawerId, shownBody, visibleColumns } from '~features/lookup-table';
+import type { LanguageKeys } from '~features/multi-lingual';
 
 import { MEDIA_GLYPHS } from './glyphs';
 
@@ -604,6 +605,17 @@ export const PaintTabs: FunctionalComponent<TabsProps> = ({ tabs, selected, disa
   );
 };
 
+/**
+ * What the phone's bottom sheet holds, decided by the owner: the kind, the slot of a photos sheet, and
+ * whether it is open. It is mounted while open and for a settle after, so its content is still there
+ * while it slides away; `open` false on a mounted sheet is that closing.
+ */
+export type PaintSheet = { kind: 'photos'; index: number; open: boolean } | { kind: 'certificate'; open: boolean };
+
+/** A photos sheet's title: the row's name and its photo count, e.g. "Door · Front — 4 photos". */
+export const sheetPhotosTitle = (row: PaintRow, locale: PaintThicknessLocale, language: string): string =>
+  fill(locale.sheetPhotosTitle, { name: rowName(locale, row), photos: photoCountText(rowPhotoCount(row), locale, language) });
+
 type Props = {
   locale: PaintThicknessLocale;
   /** The language key, for plural rules and casing. */
@@ -650,11 +662,77 @@ type Props = {
   onToggleCertificate: () => void;
   onCloseCertificate: (restoreFocus: boolean) => void;
   onOpenPhoto?: OpenPhoto;
+  /** The viewport is a phone (<= 720px): the certificate menu and a row's photos open as a bottom sheet, not a floating menu and an inline drawer. */
+  phone?: boolean;
+  /** The sheet to mount, or null: none mounted. */
+  sheet?: PaintSheet | null;
+  /** The reader asked the sheet to close (Escape, the scrim, the button). */
+  onCloseSheet?: () => void;
+  /** The sheet has finished closing: the owner may unmount it. */
+  onSheetClosed?: () => void;
 };
 
 const CERTIFICATE_MENU_ID = 'paint-certificate-menu';
 const PHOTOS_REGION_ID = 'paint-photos-region';
 const DRAWER_PREFIX = 'paint';
+
+type SheetViewProps = {
+  sheet: PaintSheet;
+  locale: PaintThicknessLocale;
+  language: string;
+  direction: string;
+  busy: boolean;
+  slotRows: PaintRow[];
+  drawerRowFor: (row: PaintRow, index: number) => PaintRow;
+  certificateUrls: PaintThicknessCertificateUrlDTO[];
+  onOpenPhoto?: OpenPhoto;
+  onCloseSheet: () => void;
+  onSheetClosed?: () => void;
+};
+
+/**
+ * The sheet and what it holds. A lookup in flight puts the content and the title under the skeleton
+ * where they stand and makes them inert, exactly as a drawer's content is (the answer decides whether
+ * the sheet stays: the owner shuts it only when its content is gone).
+ */
+const PaintSheetView = ({ sheet, locale, language, direction, busy, slotRows, drawerRowFor, certificateUrls, onOpenPhoto, onCloseSheet, onSheetClosed }: SheetViewProps) => {
+  // Drawn from the retained row too: a row that vanishes while the sheet is closing slides out on its old content.
+  const shownRow = sheet.kind === 'photos' ? drawerRowFor(slotRows[sheet.index], sheet.index) : undefined;
+  if (sheet.kind === 'photos' && !shownRow) return null;
+
+  const title = shownRow ? sheetPhotosTitle(shownRow, locale, language) : locale.printCertificate;
+
+  // The trigger is the focus's way home when what had focus at open is gone (a tap on Safari does not focus a button; a menu item behind the sheet is hidden).
+  const restoreFocus = (host: HTMLElement): HTMLElement | null => {
+    const root = host.getRootNode() as ShadowRoot | Document;
+    return root.querySelector<HTMLElement>(sheet.kind === 'photos' ? `[aria-controls="${drawerId(DRAWER_PREFIX, sheet.index)}"]` : '.paint-certificate-button');
+  };
+
+  return (
+    <shift-sheet
+      open={sheet.open}
+      direction={direction}
+      language={language as LanguageKeys}
+      closeLabel={locale.closeSheet}
+      restoreFocus={restoreFocus}
+      onSheetClose={onCloseSheet}
+      onSheetClosed={onSheetClosed}
+    >
+      <span slot="heading" class="paint-sheet-title shift-skeleton">
+        {title}
+      </span>
+      {shownRow ? (
+        <div class="paint-sheet-content shift-skeleton" inert={busy}>
+          {rowPhotosContent(shownRow, locale, onOpenPhoto)}
+        </div>
+      ) : (
+        <div class="paint-sheet-menu shift-skeleton" role="menu" aria-label={locale.printCertificate} inert={busy}>
+          {certificateMenuContent(certificateUrls, sheet.open && !busy, onCloseSheet)}
+        </div>
+      )}
+    </shift-sheet>
+  );
+};
 
 export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
   const {
@@ -688,6 +766,10 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
     onToggleCertificate,
     onCloseCertificate,
     onOpenPhoto,
+    phone = false,
+    sheet = null,
+    onCloseSheet = () => {},
+    onSheetClosed,
   } = props;
 
   const photosShown = !state.hidden.has('photos');
@@ -711,7 +793,9 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
   const certificate: CertificateSnapshot | null = kind === 'hidden' || leaving ? retainedCertificate : { kind, urls: state.certificateUrls ?? [] };
   const summaryIsOpen = !!summaryNow && !leaving;
   const certificateAreOpen = kind !== 'hidden' && !leaving;
-  const menuOpen = certificateOpen && certificateAreOpen && certificate?.kind === 'menu';
+  // The menu is open wherever it is drawn; on a phone the floating box stays shut and the sheet is the menu.
+  const certificateExpanded = certificateOpen && certificateAreOpen && certificate?.kind === 'menu';
+  const menuOpen = certificateExpanded && !phone;
 
   const groups = allPhotoGroups(rows, locale);
   const shownGroups = groups.length ? groups : retainedGroups;
@@ -725,8 +809,9 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
         label: (row, _index, expanded) =>
           fill(expanded ? locale.hidePhotosLabel : locale.showPhotosLabel, { photos: photoCountText(rowPhotoCount(row), locale, language), panel: rowName(locale, row) }),
         regionLabel: row => fill(locale.photosRegionLabel, { panel: rowName(locale, row) }),
-        open: drawerOpen,
-        shown: drawerShown,
+        // On a phone the row's photos open in the sheet, so no drawer opens under the row.
+        open: phone ? null : drawerOpen,
+        shown: phone ? [] : drawerShown,
         onToggle: onToggleDrawer,
         idPrefix: DRAWER_PREFIX,
       }
@@ -761,9 +846,9 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
                 <button
                   type="button"
                   class="paint-certificate-button"
-                  aria-haspopup="menu"
-                  aria-expanded={menuOpen ? 'true' : 'false'}
-                  aria-controls={CERTIFICATE_MENU_ID}
+                  aria-haspopup={phone ? 'dialog' : 'menu'}
+                  aria-expanded={certificateExpanded ? 'true' : 'false'}
+                  aria-controls={phone ? null : CERTIFICATE_MENU_ID}
                   aria-label={locale.printCertificate}
                   disabled={!certificateAreOpen || busy}
                   onClick={onToggleCertificate}
@@ -896,6 +981,23 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
           </section>
         </div>
       </div>
+
+      {/* The phone's bottom sheet. Mounted by the owner while something is open and for a settle after, so it can slide away; the sheet is the transition, and what it holds is the panel's own content (the same render functions, the same skeleton covers). */}
+      {sheet && (
+        <PaintSheetView
+          sheet={sheet}
+          locale={locale}
+          language={language}
+          direction={direction}
+          busy={busy}
+          slotRows={slotRows}
+          drawerRowFor={drawerRowFor}
+          certificateUrls={certificate?.urls ?? []}
+          onOpenPhoto={onOpenPhoto}
+          onCloseSheet={onCloseSheet}
+          onSheetClosed={onSheetClosed}
+        />
+      )}
     </section>
   );
 };

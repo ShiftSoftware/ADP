@@ -12,6 +12,7 @@ import {
   DEFAULT_HIDDEN_FIELDS,
   PaintRow,
   PaintTab,
+  PaintSheet,
   PanelState,
   PhotoGroup,
   ReadingSummary,
@@ -37,6 +38,9 @@ import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponen
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
 const DEFAULT_SETTLE_MS = 480;
+
+/** A phone's width, as a viewport query (see the owner's phone region). */
+const PHONE_QUERY = '(max-width: 720px)';
 
 /**
  * Content that must outlive its own state by one settle: when the state that drew it ends, it is kept
@@ -68,6 +72,15 @@ class Retained<T> {
         this.redraw();
       }, this.settleMs());
     }
+  }
+
+  /** Drops what is held now, when whoever drew it says it has finished (only while it is being held past its state). */
+  release() {
+    if (!this.timer) return;
+    clearTimeout(this.timer);
+    this.timer = undefined;
+    this.value = undefined;
+    this.redraw();
   }
 
   dispose() {
@@ -116,6 +129,13 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
   /** Opens the viewer on `src`, growing out of the thumbnail `origin`. The same picture again while open is ignored. */
   private openImage(origin: HTMLImageElement, src: string, label?: string) {
+    // A photo in the phone's sheet opens in the sheet's own viewer: the page's would sit outside the modal dialog, inert.
+    const sheet = origin.closest('shift-sheet');
+    if (sheet) {
+      void sheet.showImage(src, { origin, label });
+      return;
+    }
+
     if (this.expandedImage === src) return;
     this.expandedImage = src;
     void this.imageViewer?.show(src, { origin, label });
@@ -125,6 +145,65 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   private onViewerChange = (event: CustomEvent<{ open: boolean }>) => {
     if (!event.detail.open) this.expandedImage = '';
   };
+
+  // #endregion
+
+  // #region Phone: the certificate menu and a row's photos open as a bottom sheet
+
+  /**
+   * The viewport is a phone, `(max-width: 720px)`, live. A deliberate viewport query, not a container
+   * query: a sheet covers the screen, so what matters is the screen, not the column the panel sits in.
+   * One listener for the life of the panel; a closed sheet costs nothing else.
+   */
+  @State() phone: boolean = false;
+
+  private phoneQuery?: MediaQueryList;
+
+  private onPhoneChange = (event: MediaQueryListEvent) => {
+    this.phone = event.matches;
+    // A picture open in the page's viewer is not the sheet's to follow across the breakpoint: it closes, with its own movement.
+    void this.imageViewer?.hide();
+  };
+
+  connectedCallback() {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    this.phoneQuery = window.matchMedia(PHONE_QUERY);
+    this.phone = !!this.phoneQuery?.matches;
+    this.phoneQuery?.addEventListener?.('change', this.onPhoneChange);
+  }
+
+  /** What is open as a sheet, kept (with its slot) a settle after it shuts so its content slides away with it. */
+  private sheetHold = new Retained<{ kind: 'photos' | 'certificate'; index: number }>(
+    // Dropped on the sheet's own `sheetClosed`; the timer is only a generous fallback so a missed event never leaves it mounted.
+    () => this.settleMs() + 200,
+    () => forceUpdate(this),
+  );
+
+  /** The slot a photos sheet is for, or the certificate: what the reader opened, wherever the viewport is. */
+  private wantedSheet(): { kind: 'photos' | 'certificate'; index: number } | null {
+    const menuAvailable = this.certificateMenuOpen && !this.leaving && certificateKind(this.panelState()) === 'menu';
+    if (menuAvailable) return { kind: 'certificate', index: -1 };
+    if (this.openDrawer !== null && !this.applied.has('photos')) return { kind: 'photos', index: this.openDrawer };
+    return null;
+  }
+
+  private onCloseSheet = () => {
+    if (this.certificateMenuOpen) this.onCloseCertificate(false);
+    else if (this.openDrawer !== null) this.closeDrawer();
+  };
+
+  private onSheetClosed = () => this.sheetHold.release();
+
+  /** `aria-haspopup="dialog"` on the row toggles while photos open as a sheet; the shared table draws them and does not know. */
+  private popupMarked = false;
+
+  private markPhotoToggles() {
+    if (!this.phone && !this.popupMarked) return;
+    this.popupMarked = this.phone;
+    this.el.shadowRoot
+      ?.querySelectorAll('.lt-action-button')
+      .forEach(button => (this.phone ? button.setAttribute('aria-haspopup', 'dialog') : button.removeAttribute('aria-haspopup')));
+  }
 
   // #endregion
 
@@ -208,8 +287,9 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   onLoadingChange(newValue: boolean) {
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
 
-    // The certificate is under the skeleton for the lookup: an open menu is not the new vehicle's.
-    if (newValue) this.certificateMenuOpen = false;
+    // The certificate is under the skeleton for the lookup: an open floating menu is not the new vehicle's.
+    // A phone's sheet stays open into the lookup, under the skeleton (owner decision 13); the answer decides.
+    if (newValue && !this.phone) this.certificateMenuOpen = false;
   }
 
   // #endregion
@@ -360,7 +440,8 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     this.swapping = false;
     this.activeTabIndex = 0;
     this.shownTabIndex = 0;
-    this.certificateMenuOpen = false;
+    // The sheet stays only if the new answer still has a certificate to list; the floating menu never stays.
+    this.certificateMenuOpen = this.phone && this.certificateMenuOpen && certificateKind(this.panelState()) === 'menu';
     this.settleSelection(!this.vehicleLookup);
   }
 
@@ -425,7 +506,18 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     this.drawerSnapshot = this.shownBefore;
     this.openDrawer = next;
     this.scheduleDrawerDrop();
-    if (next !== null) this.revealTarget = 'drawer';
+    // On a phone the photos are in a sheet over the page, not under the row: there is nothing to scroll to.
+    if (next !== null && !this.phone) this.revealTarget = 'drawer';
+  };
+
+  /** An explicit close, not a toggle: a stale second request does nothing. */
+  private closeDrawer = () => {
+    if (this.openDrawer === null) return;
+    const next = null;
+    this.retainedDrawers = retainDrawers(this.retainedDrawers, this.openDrawer, next);
+    this.drawerSnapshot = this.shownBefore;
+    this.openDrawer = next;
+    this.scheduleDrawerDrop();
   };
 
   private onTogglePhotos = () => {
@@ -483,13 +575,15 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   // path includes the host happened inside the component; everything else closes the menu.
   @Listen('click', { target: 'document' })
   onDocumentClick(event: MouseEvent) {
+    // A phone's sheet has its own scrim, Escape and focus trap.
+    if (this.phone) return;
     if (this.certificateMenuOpen && !event.composedPath().includes(this.el)) this.certificateMenuOpen = false;
   }
 
   // Escape closes the menu wherever focus is; focus goes back to the button only when it was in this panel.
   @Listen('keydown', { target: 'document' })
   onDocumentKeyDown(event: KeyboardEvent) {
-    if (event.key !== 'Escape' || !this.certificateMenuOpen) return;
+    if (event.key !== 'Escape' || !this.certificateMenuOpen || this.phone) return;
     this.onCloseCertificate(event.composedPath().includes(this.el));
   }
 
@@ -497,11 +591,16 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   private focusMenuOnRender = false;
   private focusOutTimer?: ReturnType<typeof setTimeout>;
 
-  private menuItems = () => Array.from(this.el.shadowRoot?.querySelectorAll<HTMLElement>('.paint-certificate-item') ?? []);
+  // The items of whichever menu is on screen: the floating one, or the phone's sheet (the other one's are shut and cannot take focus).
+  private menuItems = () =>
+    Array.from(
+      this.el.shadowRoot?.querySelectorAll<HTMLElement>(this.phone ? '.paint-sheet-menu .paint-certificate-item' : '.paint-certificate-menu .paint-certificate-item') ?? [],
+    );
 
   private onToggleCertificate = () => {
     this.certificateMenuOpen = !this.certificateMenuOpen;
-    this.focusMenuOnRender = this.certificateMenuOpen;
+    // The sheet takes focus itself when it opens.
+    this.focusMenuOnRender = this.certificateMenuOpen && !this.phone;
   };
 
   // Menu keyboard: Down / Up / Home / End move between the language items (wrapping), Down on the button opens the menu.
@@ -530,7 +629,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   // Focus leaving the button and the menu (Tab away) closes the menu. Focus moving between the two stays inside.
   @Listen('focusout')
   onMenuFocusOut(event: FocusEvent) {
-    if (!this.certificateMenuOpen) return;
+    if (!this.certificateMenuOpen || this.phone) return;
     const to = event.relatedTarget as Node | null;
     if (!to) return; // a pointer press elsewhere is the document click handler's
     if (to !== this.el) {
@@ -705,6 +804,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
   componentDidRender() {
     this.announceVerdict();
+    this.markPhotoToggles();
 
     if (this.focusMenuOnRender) {
       this.focusMenuOnRender = false;
@@ -753,6 +853,9 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     clearTimeout(this.loadTimer);
     this.cancelOpenFrame();
     if (this.loadFrame !== undefined) cancelAnimationFrame(this.loadFrame);
+    this.phoneQuery?.removeEventListener?.('change', this.onPhoneChange);
+    this.phoneQuery = undefined;
+    this.sheetHold.dispose();
     this.photosGroups.dispose();
     this.photosRendering.dispose();
     this.certificate.dispose();
@@ -818,6 +921,12 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     const photosBodyOpen = this.photosOpen && photosSectionOpen(state, groups.length, this.leaving, this.reshaping);
     this.photosRendering.track(photosBodyOpen ? true : null);
 
+    // The phone's sheet: open for what the reader opened, mounted a settle longer so it can slide away (also when the viewport leaves the phone range).
+    const wanted = this.phone ? this.wantedSheet() : null;
+    this.sheetHold.track(wanted);
+    const held = wanted ?? this.sheetHold.value ?? null;
+    const sheet: PaintSheet | null = !held ? null : held.kind === 'photos' ? { kind: 'photos', index: held.index, open: !!wanted } : { kind: 'certificate', open: !!wanted };
+
     return (
       <Host translate="no">
         <shift-image ref={el => (this.imageViewer = el)} language={this.language} onViewerChange={this.onViewerChange} />
@@ -851,7 +960,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
             drawerOpen={this.openDrawer}
             drawerShown={shownDrawers(this.openDrawer, this.retainedDrawers)}
             // A slot that lost its photos to the new answer slides away on the photos it last showed.
-            drawerRowFor={(row, index) => (rowHasPhotos(row) || !this.retainedDrawers.includes(index) ? row : (this.drawerSnapshot[index] ?? row))}
+            drawerRowFor={(row, index) => ((row && rowHasPhotos(row)) || !this.retainedDrawers.includes(index) ? row : (this.drawerSnapshot[index] ?? row))}
             onToggleDrawer={this.onToggleDrawer}
             photosOpen={this.photosOpen}
             photosRendered={photosBodyOpen || this.photosRendering.value === true}
@@ -862,6 +971,10 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
             onToggleCertificate={this.onToggleCertificate}
             onCloseCertificate={this.onCloseCertificate}
             onOpenPhoto={(image, src, label) => this.openImage(image, src, label)}
+            phone={this.phone}
+            sheet={sheet}
+            onCloseSheet={this.onCloseSheet}
+            onSheetClosed={this.onSheetClosed}
           />
         </VehicleInfoLayout>
       </Host>

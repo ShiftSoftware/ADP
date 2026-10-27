@@ -369,7 +369,7 @@
           { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
         ],
         "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
-        "dependencies": ["shift-image"]
+        "dependencies": ["shift-image", "shift-sheet"]
       },
       "runtimeAssets": { "locales": "dist/locales", "notes": [] }
     },

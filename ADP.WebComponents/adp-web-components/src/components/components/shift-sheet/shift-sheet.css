@@ -1,0 +1,177 @@
+/* tailwind: off */
+/*
+ * shift-sheet -- a bottom sheet, in the component design language (tokens, radii, rims and the one
+ * shadow of lookup-tokens.css). It is a surface of its own, not an inset of a card: paper, the card's
+ * 13px on its two top corners, a rim, and the language's shadow turned to throw upward, because the
+ * sheet rises from the bottom edge. Everything that moves is `transform` (the sheet) or `opacity`
+ * (the scrim), over --settle, so the compositor does the work and nothing is laid out or repainted
+ * per frame. Nothing here loops, and a closed sheet is a `display: none` dialog.
+ */
+@import '../../style/base.css';
+@import '../../style/lookup-tokens.css';
+
+:host {
+  /* The scrim: the viewer's ink at .46, not its .82. The page behind a sheet is still the context
+     the reader is working in (a row, a head), so it is dimmed, not hidden. */
+  --sheet-scrim: rgba(12, 18, 24, 0.46);
+  /* --shadow with the offsets turned over: the same long soft throw and tight contact shadow, cast upward. */
+  --sheet-shadow: 0 -18px 45px rgba(27, 45, 61, 0.1), 0 -2px 7px rgba(27, 45, 61, 0.06);
+  /* How tall the sheet may grow before its body scrolls. */
+  --sheet-max: 85dvh;
+  /* The same curve for the way up and the way down (closing reverses): a long soft deceleration. */
+  --sheet-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* No box of its own: the dialog is in the top layer when it is open and gone when it is not. */
+  display: contents;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  max-inline-size: none;
+  max-block-size: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+}
+
+/* The scrim is drawn here, so it can fade on opacity; the browser's own backdrop stays clear. */
+.sheet::backdrop {
+  background: transparent;
+}
+
+.sheet[dir='rtl'] {
+  font-family: var(--font-arabic);
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--sheet-scrim);
+  opacity: 0;
+  /* A drag on the scrim must not scroll the page behind it. */
+  touch-action: none;
+  transition: opacity var(--settle) ease;
+}
+
+.sheet[data-open='true'] .scrim {
+  opacity: 1;
+}
+
+.panel {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: 0;
+  display: flex;
+  flex-direction: column;
+  max-block-size: 85vh;
+  max-block-size: var(--sheet-max);
+  background: var(--paper);
+  border-start-start-radius: 13px;
+  border-start-end-radius: 13px;
+  /* The rim is an inset shadow, not a border (§ 10): it changes no box. */
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    var(--sheet-shadow);
+  /* The sheet's own height plus the shadow's reach (18px + 45px blur) below the screen, so nothing of either is left showing at rest. */
+  transform: translateY(calc(100% + 64px));
+  transition: transform var(--settle) var(--sheet-ease);
+}
+
+.sheet[data-open='true'] .panel {
+  transform: none;
+}
+
+.head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-block-size: 56px;
+  padding-block: 6px;
+  padding-inline: max(20px, env(safe-area-inset-left), env(safe-area-inset-right)) 8px;
+  /* The head's rule is a line-soft inset shadow at the bottom edge, like a row separator (§ 12). */
+  box-shadow: inset 0 -1px 0 var(--line-soft);
+}
+
+/* The title: 16px / 760 / -0.025em, the narrow panel title of § 11. Arabic script joins its letters, so its tracking is 0. */
+.title {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  font-weight: 760;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.sheet[dir='rtl'] .title {
+  letter-spacing: 0;
+}
+
+/* A 44px target (the touch minimum) around an 18px mark. */
+.close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.close svg {
+  inline-size: 18px;
+  block-size: 18px;
+}
+
+@media (hover: hover) {
+  .close:hover {
+    background: var(--line-soft);
+    color: var(--ink);
+  }
+}
+
+.close:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: -2px;
+}
+
+/* The body scrolls when the content is taller than the sheet's cap, and the scroll never chains to the page. */
+.body {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-block: 14px max(16px, env(safe-area-inset-bottom));
+  padding-inline: max(20px, env(safe-area-inset-left), env(safe-area-inset-right));
+}
+
+/* The image viewer inside is only an engine: it draws its picture on its own layer, moved into the dialog. */
+.viewer {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrim,
+  .panel,
+  .close {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+}
