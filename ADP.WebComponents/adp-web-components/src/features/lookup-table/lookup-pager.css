@@ -1,16 +1,3 @@
-/*
- * The lookup pager: the stylesheet fragment of <LookupPager> (lookup-pager.tsx), the page-size
- * select, the range and the previous / next buttons under a <LookupTable>. A FRAGMENT like
- * lookup-table.css: a panel @imports it after lookup-table.css and it imports nothing itself.
- * It relies on the family's shared vocabulary (.collapsible, .collapsible-body, .shift-skeleton and
- * the colour and --settle tokens). The narrow-panel query is an UNNAMED container query, resolved to
- * the panel's :host like the table's.
- */
-
-/* Ruled like a row of the table (--line-soft, § 12), so it reads as the foot of the list. The page
-   size sits on the reading edge, the range and the arrows on the far one. 4px of padding around
-   the 40px buttons leaves room for the 2px focus outline and its 2px offset, which the
-   collapsible's overflow:hidden would otherwise clip. */
 .lt-pager-row {
   display: flex;
   flex-wrap: wrap;
@@ -20,8 +7,6 @@
   border-top: 1px solid var(--line-soft);
 }
 
-/* When a shorter page takes the page up under the reader, the controls are brought back with this
-   much of the list above them (motion.md rule 10; lib/reveal-below reads scroll-margin-top). */
 .lt-pager {
   scroll-margin-top: min(40vh, 280px);
 }
@@ -33,15 +18,12 @@
   margin-inline-end: auto;
 }
 
-/* Small note: 12px, 600 (design language § 11). */
 .lt-page-size-label {
   color: var(--muted);
   font-size: 12px;
   font-weight: 600;
 }
 
-/* The platform's own select, so its list is the platform's too (keyboard, touch, screen reader);
-   dressed in the family's type and line. 32px: a control inside a row, not a call to action. */
 .lt-page-size-select {
   min-height: 32px;
   padding: 0 6px;
@@ -68,15 +50,11 @@
   outline-offset: 2px;
 }
 
-/* In flight: the list on screen is the last vehicle's, so it cannot be paged; the control dims
-   rather than vanishing. */
 .lt-page-size-select:disabled {
   cursor: default;
   opacity: 0.55;
 }
 
-/* A value, read: dates and counts are --date-ink and tabular (§ 9, § 11). It carries
-   shift-skeleton, so a lookup covers it with the rows. */
 .lt-page-range {
   display: inline-block;
   color: var(--date-ink);
@@ -91,9 +69,6 @@
   gap: 2px;
 }
 
-/* Interaction is blue (§ 10), a quiet icon button: the list is the content, these only move through
-   it. 40px square with the 4px row padding gives the 44px a finger needs. .2s, the language's one
-   duration shorter than --settle: a press must feel instant (§ 18). */
 .lt-page-button {
   display: inline-flex;
   align-items: center;
@@ -120,7 +95,6 @@
   outline-offset: 2px;
 }
 
-/* The end of the list in that direction: grey, the colour of idle furniture (§ 10). */
 .lt-page-button:disabled {
   color: var(--line);
   cursor: default;
@@ -131,20 +105,16 @@
   height: 16px;
 }
 
-/* Previous points to the reading start and next to the reading end, so RTL mirrors both. */
 [dir='rtl'] .lt-page-chevron {
   transform: scaleX(-1);
 }
 
-/* Narrow panels (720 and under): the table's rows are cards; the row tightens to the card's inset
-   and keeps its 44px targets. */
 @container (max-width: 720px) {
   .lt-pager-row {
     padding-inline: 14px 8px;
   }
 }
 
-/* Every transition above is on a state attribute, so it is kept and made immediate. */
 @media (prefers-reduced-motion: reduce) {
   .lt-page-size-select,
   .lt-page-button {

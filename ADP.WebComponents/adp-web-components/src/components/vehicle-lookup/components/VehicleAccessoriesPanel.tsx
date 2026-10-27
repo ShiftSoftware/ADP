@@ -1,6 +1,10 @@
 import { FunctionalComponent, h } from '@stencil/core';
 import { InferType } from 'yup';
 
+import { PackageIcon } from '~assets/package-icon';
+import { QuestionMark } from '~assets/question-mark';
+import { SearchIcon } from '~assets/search-icon';
+import { TriangleAlertIcon } from '~assets/triangle-alert';
 import accessoriesSchema from '~locales/vehicleLookup/accessories/type';
 import { AccessoryDTO } from '~types/generated/vehicle-lookup/accessory-dto';
 
@@ -20,8 +24,6 @@ import {
   shownBody,
   visibleColumns,
 } from '~features/lookup-table';
-
-import { PLACEHOLDER_GLYPHS } from './glyphs';
 
 export type AccessoriesLocale = InferType<typeof accessoriesSchema>;
 
@@ -88,10 +90,9 @@ export const panelBody = (state: PanelState): 'rows' | 'none' => (hasRecords(sta
 
 /**
  * The strip's layer: always the column headings (they depend on hiddenFields alone, never on the
- * data). An outcome without rows is said by the pill and by the body's placeholder (`panelPlaceholder`,
- * owner, 2026-10-27), never by covering the headings, so the strip does not say it a third time. The one
- * exception is a host that hid every column: there are no headings to show, and the strip carries the
- * sentence.
+ * data). An outcome without rows is said by the pill and the body's placeholder, never by covering the
+ * headings. The one exception is a host that hid every column: there are no headings to show, and the
+ * strip carries the sentence.
  */
 export const panelLead = (state: PanelState, _busy: boolean): LeadKind => (columnCount(state.hidden) === 0 ? 'notice' : 'columns');
 
@@ -111,16 +112,7 @@ export const leadNotice = (state: PanelState, locale: AccessoriesLocale): PanelN
   return null;
 };
 
-/**
- * What the body says when there is no list: the table's `placeholderKind` fed this panel's state (owner,
- * 2026-10-27). `idle` before any lookup (a magnifier and "look up a vehicle": nothing is asserted about a
- * vehicle), `empty` for an authorized vehicle with nothing on file (grey; never a verdict), `unauthorized`
- * for a vehicle not in the distributor's records (amber; not "none", and never the list), `error` for a
- * failed lookup, and null above rows and when a host hid every column (the strip carries the sentence).
- * It holds through a lookup: the state is still the last answer's, so the placeholder in place stays in
- * place under the skeleton and cross-fades when the answer lands. `leaving` (a clear, or a failure on a
- * settled card) opens the idle one as the rows shut.
- */
+/** It holds through a lookup: the state is still the last answer's until the next one lands. */
 export const panelPlaceholder = (state: PanelState, leaving = false): PlaceholderKind | null =>
   placeholderKind({
     columns: columnCount(state.hidden),
@@ -131,12 +123,11 @@ export const panelPlaceholder = (state: PanelState, leaving = false): Placeholde
     leaving,
   });
 
-/** The glyph and the one line of each outcome, from the panel's locale. */
 export const placeholderContent = (locale: AccessoriesLocale): TablePlaceholder['content'] => ({
-  idle: { glyph: PLACEHOLDER_GLYPHS.search, text: locale.idleHint },
-  empty: { glyph: PLACEHOLDER_GLYPHS.box, text: locale.emptyHint },
-  error: { glyph: PLACEHOLDER_GLYPHS.warning, text: locale.errorHint },
-  unauthorized: { glyph: PLACEHOLDER_GLYPHS.unknown, text: locale.unauthorizedHint },
+  idle: { icon: SearchIcon, text: locale.idleHint },
+  empty: { icon: PackageIcon, text: locale.emptyHint },
+  error: { icon: TriangleAlertIcon, text: locale.errorHint },
+  unauthorized: { icon: QuestionMark, text: locale.unauthorizedHint },
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -204,7 +195,6 @@ type Props = {
   retainedBody: string;
   /** The strip's last sentence, kept so a notice that is leaving fades out with its words, not blank. */
   retainedNotice: PanelNotice | null;
-  /** The placeholder's last kind, kept a settle after it went (rows opened) so its words slide away with their region. */
   retainedPlaceholder: PlaceholderKind | null;
   /** The rows in the table's slots: the page on screen, then any rows that are leaving (the owner's). */
   slotRows: AccessoryDTO[];

@@ -1,6 +1,6 @@
-import { VNode, h } from '@stencil/core';
+import { FunctionalComponent, VNode, h } from '@stencil/core';
 
-import { revealBelow } from '~lib/reveal-below';
+import { ChevronRightIcon } from '~assets/chevron-right-icon';
 
 // The panels' shared glyph set (the features/ folder reaches into it already: lookup-head.tsx).
 import { BADGE_GLYPHS, MEDIA_GLYPHS } from '../../components/vehicle-lookup/components/glyphs';
@@ -23,13 +23,6 @@ import { BADGE_GLYPHS, MEDIA_GLYPHS } from '../../components/vehicle-lookup/comp
 // Types
 // ---------------------------------------------------------------------------------------------
 
-/**
- * Built kinds. 'chip' is specified and deferred to a named consumer (spec § 7).
- *
- * - `date`: an ISO calendar date as the DTO sends it, read, not computed (`dateText`).
- * - `number`: a quantity or a reading (odometer), grouped for the table's `lang`, end-aligned.
- * - `action`: the row's expand button (`RowActions`); it has no value, only the row it belongs to.
- */
 export type CellKind = 'text' | 'code' | 'media' | 'date' | 'number' | 'action';
 
 export type NoticeTone = 'positive' | 'negative' | 'neutral' | 'attention' | 'idle';
@@ -48,11 +41,6 @@ export type LookupColumn<Row> = {
   /** Heading in the strip and caption on the narrow card (data-label). Already localised. */
   label: string;
   kind: CellKind;
-  /**
-   * The cell's value; for 'media' the image URL. null, undefined, '' or whitespace is blank. An
-   * `action` column has no value and may leave this out; a `number` column's value must be a
-   * finite number or a string that is one, anything else is blank.
-   */
   value?: (row: Row) => string | number | null | undefined;
   /** The row's name: Code type, uncaptioned on a card, first in the stacked layout. At most one. */
   identity?: boolean;
@@ -69,79 +57,31 @@ export type LookupTableStrings = {
   imageFailed: string;
   /** The media button's label, followed by the row's identity value. */
   openImage: string;
-  /** The action button's label while its drawer is shut ("Show details"), followed by the row's identity value. Required by a table with an `action` column. */
+  /** The action button's label, open and shut, followed by the row's identity value. */
   expandRow?: string;
-  /** The same while the drawer is open ("Hide details"). */
   collapseRow?: string;
 };
 
-/**
- * What an `action` column needs from the panel: which row's drawer is open and which row is being
- * fetched, and where a press goes. Keys are the panel's row identity (`keyOf`, an invoice number,
- * not a position), so an open drawer can follow its row through a lookup (run decision 2). The table
- * draws the button; the drawer it controls is the panel's, a row-spanning region whose element id is
- * `drawerId(key)`.
- */
 export type RowActions<Row> = {
-  /** The key of the row whose drawer is open, or null. The button says `aria-expanded` and the row tints. */
   expandedKey: string | null;
-  /** The key of the row whose details are being fetched: its button spins, whatever else it shows. Optional: a drawer with nothing to fetch never sets it. */
   fetchingKey?: string | null;
-  /** A press on a row's button. The table keeps no open state of its own. */
   onToggle: (key: string) => void;
-  /**
-   * The row's identity. Omitted, the table's own `rowKey` (the one the vdom uses) is the identity.
-   * It must be unique per row: the open drawer, the spinning button and the row's tint are all
-   * found by this key, so two rows with the same one open and tint together. Compose it from
-   * whatever makes a row unique (company + branch + invoice), not just the field that looks like an
-   * id. The table does not repair a duplicate; it warns on the console, once per render, naming it.
-   */
+  /** The record's key, so a drawer survives a lookup that returns the same record. */
   keyOf?: (row: Row, index: number) => string;
-  /**
-   * Drawers that are sliding shut: their content stays mounted until the owner clears the list a
-   * settle after the close (motion.md rule 5: content leaves only once its region has shut). A row
-   * is a slot at a position, so the record names the slot (`index`) and carries the row the drawer
-   * was showing, which may no longer be the row at that slot (a lookup replaced it). Build it with
-   * `closingDrawers`. Only read when the table has a `drawer`.
-   */
+  /** Drawers still sliding shut: their content stays mounted until the owner clears them. */
   closing?: ClosingDrawer<Row>[];
 };
 
-/** A drawer that is shutting: the slot it hangs from and the row whose content it still shows. */
 export type ClosingDrawer<Row> = { index: number; row: Row };
 
-/**
- * What the body says in words when there is no list to show (owner, 2026-10-27, task T2s: it
- * overrides design language § 17 "a notice that only repeats the pill is not shown" for table
- * panels). Before a lookup the reader needs to know where a list will appear; after one, an empty
- * region next to a VIN reads as broken, so each outcome without rows is a large muted icon and one
- * line of text, in the colour of its role (design language § 10).
- *
- * - `idle`: before any lookup. Asserts nothing about a vehicle. Grey.
- * - `empty`: an authorized vehicle with nothing on file. "No records", never a verdict. Grey.
- * - `error`: the lookup failed. Red, the role of a failed lookup (the pill and the accent bar are
- *   negative for it too).
- * - `unauthorized`: the vehicle is not in the distributor's records, which is not "none". Amber.
- */
 export type PlaceholderKind = 'idle' | 'empty' | 'error' | 'unauthorized';
 
-/** One outcome's glyph (512 x 512 path data, see `PLACEHOLDER_GLYPHS`) and its single line of text, already localised. */
-export type PlaceholderContent = { glyph: string; text: string };
+export type PlaceholderContent = { icon: FunctionalComponent<{ class?: string }>; text: string };
 
 export type TablePlaceholder = {
-  /**
-   * The outcome to say, or null when the body holds rows (or there is nothing to say): from
-   * `placeholderKind`. Non-null opens the region; null slides it shut.
-   */
   kind: PlaceholderKind | null;
-  /**
-   * The kind the region last showed. The owner keeps it a settle after `kind` went null, so the
-   * words slide away with their region instead of blinking out (motion.md rule 5), and drops it
-   * once the region has shut so a stale sentence is never under a region that opens. Omitted, a
-   * shutting region fades its words out with it.
-   */
+  /** The kind shown last, kept while the region slides shut. */
   retained?: PlaceholderKind | null;
-  /** The glyph and the line of every outcome the panel can be in; the four layers cross-fade in place. */
   content: Record<PlaceholderKind, PlaceholderContent>;
 };
 
@@ -166,44 +106,14 @@ export type LookupTableProps<Row> = {
   strings: LookupTableStrings;
   /** The owner's `openImageViewer`; the table only reports which image was asked for. */
   onOpenMedia?: (image: HTMLImageElement, src: string) => void;
-  /**
-   * The family's short language code (en, ar, ku, ru; never `.language`, see NUMBER_LOCALES): the
-   * digits and grouping of a `number` cell. Omitted, English.
-   */
   lang?: string;
-  /** `compact`: the nested-table rhythm (spec § 14.3), set through tokens on the grid. Default comfortable. */
   density?: Density;
-  /**
-   * An embedded table (spec § 7): the headings are its first row and there is no strip, no notice,
-   * no collapsible body and no slots, because it lives inside a drawer that already is the region
-   * that slides. A column empty on every row is dropped (`nonEmptyColumns`, run decision 12). It
-   * ignores `lead`, `notice`, `body`, `open`, `reshaping` and `slots`; `rows: []` renders an empty grid.
-   */
+  /** A compact table inside a drawer: no strip and no body region, and empty columns are dropped. */
   embedded?: boolean;
-  /** An accessible name for the table's `role="table"`, for a table that has no heading of its own (an embedded one). */
   label?: string;
-  /** The action column's state and callback (see RowActions). */
   actions?: RowActions<Row>;
-  /**
-   * The drawer under each row (design language § 18): a row-spanning `.collapsible` inside the row's
-   * slot, opened by `actions.expandedKey` and by a press on the row itself. Returns the drawer's
-   * content, which the table sets inside the drawer's panel (margin, paper, rim and rail are the
-   * table's) and puts under the skeleton while the row is. It is called only for the open row and
-   * for a closing one (`actions.closing`), never for a shut row, so a long list builds one drawer.
-   * Return null while the content is not there yet: a panel opens the drawer (sets `expandedKey`) when
-   * it has something to show, and spins the button (`fetchingKey`) while it fetches. Needs `actions`.
-   * Not used by an embedded table. A table without it renders exactly as before.
-   */
+  /** Built only for the open and the closing rows. */
   drawer?: (row: Row, key: string) => VNode | null;
-  /**
-   * The body's words for an outcome without rows (see `TablePlaceholder`): a region under the body
-   * that slides open for `kind` and shut for null, with one layer per outcome, cross-fading. Always
-   * mounted for a panel that has one. Its icon and words are each a `shift-skeleton`, covered only
-   * under a `.loading` ancestor (`shift-skeleton.css`): the owner's wrapper must carry `.loading` while
-   * a lookup is in flight, or the last outcome's words stay uncovered. `busy` itself sets `data-phase`
-   * and `aria-busy` on the region (a reader waits for the settled layer), not the cover.
-   * Omit it and the table is exactly as before. Not used by an embedded table.
-   */
   placeholder?: TablePlaceholder;
   /**
    * One entry per row in `rows`: whether the row's slot is open and how its values are veiled.
@@ -286,11 +196,8 @@ const GROW = 'minmax(200px, 2.4fr)';
 const TEXT = 'minmax(150px, 1.2fr)';
 /** The thumbnail: exactly its 4:3 box and the cell's padding, whatever the width. */
 const MEDIA = 'calc(var(--lt-media-width) + 24px)';
-/** A date: ten tabular characters (about 80px at 13px) with its padding; a floor and a small share, like every track. */
 const DATE = 'minmax(120px, 0.8fr)';
-/** A figure: an odometer reading with its grouping separators and the widest heading ("ODOMETER", small caps with tracking) fit in it. */
 const NUMBER = 'minmax(110px, 0.8fr)';
-/** The expand button: exactly its round box and the cell's padding, whatever the width. */
 const ACTION = 'calc(var(--lt-action-size) + 24px)';
 /** The stacked layout's first column (identity above its description): the slack, with a floor. */
 const STACK_FIRST = 'minmax(160px, 1fr)';
@@ -321,26 +228,14 @@ export const tableTracks = <Row,>(columns: LookupColumn<Row>[]): { wide: string;
   return { wide, stacked };
 };
 
-/**
- * A date as the DTO sends it, read: ISO `yyyy-MM-dd`, tolerant of a full timestamp (`.slice(0, 10)`),
- * no time zone and no locale conversion (design language § 23; the same rule as the sale panel's
- * `asDate`). A day is not computed, so it cannot shift.
- */
+/** The day as the DTO sent it: no time zone conversion, so the date never shifts by a day. */
 export const dateText = (raw: string): string => raw.trim().slice(0, 10);
 
-/** The digits and grouping of one of the family's four languages. A list, not a tag, so Intl falls back on its own (Sorani, `ckb`, is patchy on older Android WebViews and Arabic is the better last resort there). Handed the short code (`sharedLocales.lang`), never `.language`: "english" is a valid subtag Intl has no data for, and it silently resolves to the runtime default. The same table as the specification panel's `intlLocalesFor`. */
+// Latin digits in every language; Kurdish falls back to Arabic grouping where the runtime lacks ckb.
 const NUMBER_LOCALES: Record<string, string[]> = { en: ['en'], ar: ['ar'], ku: ['ckb', 'ku', 'ar'], ru: ['ru'] };
 
 const numberFormats = new Map<string, Intl.NumberFormat>();
 
-/**
- * A figure in the language's grouping and separators, always in Latin digits ("101,328"; fractions up
- * to three places, so a quantity of 4.2 stays 4.2). No unit: the record carries none. Latin digits in
- * every language (owner, 2026-10-27): the dates beside it, the VINs, the invoice numbers and the part
- * numbers are Latin digits too, and a column of figures that switches script is a column that cannot
- * be compared across rows or panels. Only the digits are pinned: Arabic and Kurdish keep their own
- * separators and grouping.
- */
 export const formatNumber = (value: number, lang: string = 'en'): string => {
   let format = numberFormats.get(lang);
   if (!format) {
@@ -354,13 +249,6 @@ export const formatNumber = (value: number, lang: string = 'en'): string => {
   return format.format(value);
 };
 
-/**
- * The cell's value as text, or null when it is blank: null, undefined, '' or whitespace, and for a
- * `number` column anything that is not a finite number. **0 is a value**: a "no value" zero is
- * mapped to null upstream, never guessed here. A `date` is cut to its day (`dateText`); the figure
- * of a `number` is returned unformatted (`formatNumber` does the locale at render, so the blank
- * test does not depend on the language). An `action` column has no value, so its text is null.
- */
 export const cellText = <Row,>(column: LookupColumn<Row>, row: Row): string | null => {
   const value = column.value?.(row);
   if (value === null || value === undefined) return null;
@@ -371,56 +259,22 @@ export const cellText = <Row,>(column: LookupColumn<Row>, row: Row): string | nu
   return text;
 };
 
-/**
- * The columns that have something to say on at least one row (run decision 12: an embedded drawer
- * table never shows a column that is empty on every line, such as a part description the service
- * never fills). Empty is `cellText` being null. The identity column and an `action` column are never
- * dropped: the identity names the row, and the action is not a value. Definition order is kept.
- */
+/** Drops a column empty on every row; the identity and the action always stay. */
 export const nonEmptyColumns = <Row,>(columns: LookupColumn<Row>[], rows: Row[]): LookupColumn<Row>[] =>
   columns.filter(column => column.identity || column.kind === 'action' || rows.some(row => cellText(column, row) !== null));
 
-/**
- * The element id of a row's drawer, from the row's identity, for the action button's
- * `aria-controls` and for the panel to put on the drawer. Stable (the same key gives the same id)
- * and valid whatever the key holds: every character outside letters, digits and "-" becomes
- * `_<hex>_`, so two different keys never collide.
- */
+/** A valid, collision-free id for any key. */
 export const drawerId = (key: string): string => `lt-drawer-${key.replace(/[^A-Za-z0-9-]/g, character => `_${character.charCodeAt(0).toString(16)}_`)}`;
 
-/** The id of a row's action button: the drawer's `aria-labelledby` points at it, so the region is named by what opens it. */
 export const drawerButtonId = (key: string): string => `${drawerId(key)}-button`;
 
-/**
- * The open drawer after a lookup's rows arrive (run decision 2): it stays open only if a row with
- * the same identity is among them, wherever it now sits, and otherwise slides shut. A lookup that
- * is still in flight is not asked: the drawer stays open, veiled with its row, until the answer.
- *
- * `nextRows` are the rows SHOWN after the lookup, not the whole answer: a paged panel goes back to
- * its first page on a lookup (run decision 8), so pass the first page (`pageRows(answer, 0, size)`).
- * An invoice that is in the answer but now sits on page 3 is off screen and must not stay "open".
- */
+/** The drawer stays open only if the rows shown after a lookup still have its record. */
 export const drawerAfterLookup = <Row,>(openKey: string | null, nextRows: Row[], keyOf: (row: Row, index: number) => string): string | null =>
   openKey !== null && nextRows.some((row, index) => keyOf(row, index) === openKey) ? openKey : null;
 
-/**
- * The open drawer after the page window changes (run decision 9): it goes when its row is not on
- * the page that is shown, so paging away closes it and coming back shows it shut; a page size that
- * keeps the row on screen leaves it open. `pageKeys` are the keys (`keyOf`) of the rows of the page
- * that is about to show.
- */
 export const drawerAfterPage = (openKey: string | null, pageKeys: readonly string[]): string | null => (openKey !== null && pageKeys.includes(openKey) ? openKey : null);
 
-/**
- * The drawers to keep mounted while they slide shut after the open key moves from `previousKey` to
- * `nextKey`. `previousRows` are the rows the table showed while the previous drawer was open and
- * `nextRows` the rows it will show (the same list when only the key changed, a new one when a lookup
- * arrived). The previous drawer is kept when its key changed, or when it did (a lookup) keep its key but
- * moved to another slot, in which case the old slot's drawer shuts and the new slot's opens. A
- * drawer that is being opened again is dropped from the list, and a slot is listed once (the drawer
- * that closes last replaces an older entry at its slot). The owner clears the list a settle
- * after the change.
- */
+/** The drawers sliding shut after a change, so their content stays while they shut. */
 export const closingDrawers = <Row,>({
   closing,
   previousKey,
@@ -446,20 +300,12 @@ export const closingDrawers = <Row,>({
   const stays = previousKey === nextKey && nextIndex === index;
   if (stays) return kept;
 
-  // A slot lists one drawer: an entry still shutting there is the older row's, and the drawer that
-  // closes now is the one the slot was showing, so it takes the entry over.
   return [...kept.filter(entry => entry.index !== index), { index, row: previousRows[index] }];
 };
 
 const INTERACTIVE = 'a[href], button, input, select, textarea, label, summary, [role="button"], [role="link"], [contenteditable=""], [contenteditable="true"]';
 
-/**
- * Whether a click on a row's body should toggle its drawer: the row-wide convenience on top of the
- * action button (spec § 7), for a pointer. It does not when the click landed on something
- * interactive inside the row (a link, the media button, a field), or ends a text selection (a reader
- * copying an invoice number), or when `enabled` is false (the table is busy). Pure over what it is
- * given: the element that took the click, the row it is in, and the text currently selected.
- */
+/** A row click toggles unless it lands on something interactive, ends a text selection, or the table is busy. */
 export const shouldToggleOnRowClick = ({
   target,
   row,
@@ -480,33 +326,15 @@ export const shouldToggleOnRowClick = ({
 
 const selectedTextNow = (): string => (typeof window !== 'undefined' && typeof window.getSelection === 'function' ? (window.getSelection()?.toString() ?? '') : '');
 
-/**
- * Brings a row to the top of the page and holds it there while its drawer slides open beneath it
- * (motion.md rule 10, the SSC's precedent). The table is a function with no host, so the owner runs
- * this: in `componentDidRender`, when the open key changes to a non-null key, call it with the panel's
- * shadow root, the key and how long the layout beneath takes to settle (`--settle` plus a margin),
- * keep the function it returns and call it when the drawer shuts or the panel leaves. The drawer is
- * found by `drawerId`; the anchor is its row. A key with no drawer in the tree does nothing.
- */
-export const revealDrawer = (root: ParentNode, key: string, followMs: number): (() => void) => {
-  const drawer = root.querySelector(`#${drawerId(key)}`);
-  if (!drawer) return () => {};
-
-  const anchor = drawer.closest('.lt-slot-body')?.querySelector('.lt-row') ?? drawer;
-  return revealBelow(anchor, followMs);
-};
-
 /** The table roles exist only while there is a table to land in: the body is rows, open, and not reshaping (§ 8). */
 export const tableRoles = (body: string, open: boolean, reshaping: boolean): boolean => body === 'rows' && open && !reshaping;
 
 /**
  * The strip shows the headings whenever there is something to head: idle, in flight, and above rows
  * (they depend on the configuration alone, so the answer cannot change them). It shows a notice
- * only for an outcome that has no rows to head (authorized and empty, unauthorized, a failed lookup,
- * a panel's own body) and when every column is hidden, where there are no headings to show. A panel
- * whose body says that outcome in words (`placeholder: true`, see `placeholderKind`) keeps its
- * headings for it, so the strip and the body never say the same thing twice (owner, 2026-10-27).
- * § 20's `panelLead`, generalised, with the skeleton leg removed.
+ * only for an outcome that has no rows (authorized and empty, unauthorized, a failed lookup, a
+ * panel's own body) and when every column is hidden, where there are no headings to show. § 20's
+ * `panelLead`, generalised, with the skeleton leg removed. A panel with a placeholder keeps its headings.
  */
 export const tableLead = ({ busy, idle, body, columns, placeholder = false }: { busy: boolean; idle: boolean; body: string; columns: number; placeholder?: boolean }): LeadKind =>
   columns === 0 ? 'notice' : busy || idle || placeholder || body === 'rows' ? 'columns' : 'notice';
@@ -514,26 +342,7 @@ export const tableLead = ({ busy, idle, body, columns, placeholder = false }: { 
 /** What the body renders: it keeps its outgoing kind while it shuts, so the content slides away instead of blinking out. */
 export const shownBody = (body: string, retained: string): string => (body === 'none' ? retained : body);
 
-/**
- * What the body says when there is no list, from the panel's state. Pure: no timers, no memory.
- *
- * - No column to show (a host hid every one): null. There are no headings either, so the strip
- *   carries the sentence (`tableLead` answers `notice`) and the body says nothing a second time.
- * - A failed lookup: `error`, whatever else the state holds.
- * - No vehicle on screen: `idle`.
- * - `authorized === false`: `unauthorized`, whatever the DTO's list holds (the distributor may not
- *   show it). Not-in-records is never "empty".
- * - An authorized vehicle with no records on file: `empty`. A statement about the records, not a verdict.
- * - Rows to show: null, except while the panel is `leaving` (a clear, or a failure on a settled
- *   card): the rows are shutting, and the region opens on the idle words as they go. Under the cover
- *   (a leave is busy), so it reads as a placeholder that is there, not as a claim.
- *
- * **During a lookup the inputs are still the last answer's** (the owner's state changes when the
- * answer lands), so the placeholder in place stays in place, under the skeleton, and cross-fades
- * when the answer arrives: an idle one stays through the first lookup, an empty one through a
- * retry, an error one while the retry is in flight. A `leaving` panel holds the kind it already
- * has (empty, unauthorized, error) and only a panel leaving from rows opens the idle one.
- */
+/** What the body says without rows. Nothing reads `busy`, so it holds through a lookup. */
 export const placeholderKind = ({
   columns,
   loaded,
@@ -542,17 +351,11 @@ export const placeholderKind = ({
   records,
   leaving = false,
 }: {
-  /** How many columns are visible (`visibleColumns(...).length`). */
   columns: number;
-  /** A vehicle's answer is on screen: a lookup landed and did not fail. */
   loaded: boolean;
-  /** The last lookup failed. */
   failed: boolean;
-  /** The vehicle's `isAuthorized`; `false` is not in the records. */
   authorized?: boolean;
-  /** How many records the answer holds, judged on the whole list (never on the rows a page shows). */
   records: number;
-  /** The panel is on its way to idle or to an error: its rows are shutting. */
   leaving?: boolean;
 }): PlaceholderKind | null => {
   if (columns === 0) return null;
@@ -563,7 +366,6 @@ export const placeholderKind = ({
   return leaving ? 'idle' : null;
 };
 
-/** The kind the region renders: the current one, else the one it last showed while it slides shut. */
 export const shownPlaceholder = (kind: PlaceholderKind | null, retained?: PlaceholderKind | null): PlaceholderKind | null => kind ?? retained ?? null;
 
 // ---------------------------------------------------------------------------------------------
@@ -694,23 +496,8 @@ const MediaBox = ({ src, identity, strings, onOpenMedia }: MediaProps) => {
  */
 const keepUntranslated = (cell: HTMLElement | undefined) => cell?.setAttribute('translate', 'no');
 
-/** One row's action button, as the cell needs it: the row's identity key and its state. Null where the table has no actions (or is embedded). */
 type RowAction = { key: string; expanded: boolean; fetching: boolean; disabled: boolean; onToggle: (key: string) => void };
 
-/** The chevron of the expand button. Stroked on a 24 box like the pager's, so the two read as one family. */
-const ChevronDown = ({ className }: { className: string }) => (
-  <svg class={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-    <path d="m6 9 6 6 6-6" />
-  </svg>
-);
-
-/**
- * The expand button (spec § 7, the SSC's trace button recipe): a real button with `aria-expanded`
- * and `aria-controls` pointing at the row's drawer, named from the strings and the row's identity.
- * The chevron turns with the state; while the row's details are being fetched a spinner takes the
- * chevron's place (`data-loading`, `aria-busy`) even if a drawer has nothing to fetch and never sets
- * it. Both glyphs live in the button always, so a state change is a cross-fade and not a swap.
- */
 const ActionButton = ({ action, identity, strings, heading }: { action: RowAction; identity: string | null; strings: LookupTableStrings; heading: string }) => {
   const name = (action.expanded ? strings.collapseRow : strings.expandRow) ?? heading;
   const label = identity ? `${name} ${identity}` : name;
@@ -729,7 +516,7 @@ const ActionButton = ({ action, identity, strings, heading }: { action: RowActio
       disabled={action.disabled}
       onClick={() => action.onToggle(action.key)}
     >
-      <ChevronDown className="lt-action-icon" />
+      <ChevronRightIcon class="lt-action-icon" />
       <span class="lt-action-spinner" aria-hidden="true" />
     </button>
   );
@@ -772,8 +559,6 @@ const Cell = <Row,>({
         changes. The cell, its caption and its padding are the row's place and stay. The growing
         column may be clamped by the panel, so it carries its whole text as a title.
       */}
-      {/* An embedded table's values carry no skeleton of their own (`skeleton={false}`): it sits in a drawer, and the drawer's content is the one block the cover goes over. */}
-      {/* The action button is chrome, not a value: it is never under the skeleton (a cover over a round button is a grey box), but it fades with the row's values when a page changes. */}
       <span class={{ 'lt-value': true, 'shift-skeleton': skeleton && column.kind !== 'action' }} title={growing(column) && text !== null ? text : null}>
         {column.kind === 'action' ? (
           action && <ActionButton action={action} identity={identity} strings={strings} heading={column.label} />
@@ -799,7 +584,6 @@ const uniqueKey = (seen: Set<string>, key: string): string => {
   return candidate;
 };
 
-/** A heading cell. An action column's heading is for assistive tech only (a glyph-only column, § 24). */
 const Heading = <Row,>({ column, roles }: { column: LookupColumn<Row>; roles: boolean }) => (
   <span
     key={column.field}
@@ -813,13 +597,6 @@ const Heading = <Row,>({ column, roles }: { column: LookupColumn<Row>; roles: bo
   </span>
 );
 
-/**
- * The embedded table (spec § 7): headings as the first row, rows under them, nothing else. No strip
- * (a drawer has none to hang headings on), no notice, no collapsible body and no slots: the drawer
- * it sits in is the one region that slides, and its rows stay put while it does. A column empty on
- * every row is dropped (run decision 12), and `rows: []` is an empty grid, never a table with only
- * its headings.
- */
 const EmbeddedTable = <Row,>(props: LookupTableProps<Row>): VNode => {
   const { rows, rowKey, busy, strings, onOpenMedia, lang, density, label } = props;
 
@@ -869,24 +646,6 @@ const EmbeddedTable = <Row,>(props: LookupTableProps<Row>): VNode => {
 
 const PLACEHOLDER_KINDS: PlaceholderKind[] = ['idle', 'empty', 'error', 'unauthorized'];
 
-/**
- * The body's words for an outcome without rows: one region that slides open and shut (a
- * `.collapsible`, so it never pops, and it moves with the body it replaces: the same clock), holding
- * one layer per outcome that cross-fade in place (a `.layer-stack`, so the region is as tall as its
- * tallest line and nothing below it moves when the outcome changes).
- *
- * Announced once per outcome, on the pattern the strip's notice already uses: every layer is a
- * `role="status"` and only the active one is exposed (`aria-hidden` on the rest and on a shut
- * region), so a reader hears the sentence when its outcome arrives and never twice. A panel whose
- * strip also says the outcome would double-announce it, which is why `tableLead` keeps the headings
- * for a panel that has a placeholder.
- *
- * Icon and words are each their own `shift-skeleton`, so a `.loading` ancestor (the owner's wrapper)
- * covers them in flight: the last outcome stays where it stands without being read as the next one's.
- * The table does not set `.loading`. `busy` makes the region `aria-busy`, so a flight or a leave
- * (an error raised on rows, before the state says so) is not read out half way: only the layer
- * that is active once `busy` ends is announced.
- */
 const Placeholder = ({ placeholder, busy }: { placeholder: TablePlaceholder; busy: boolean }) => {
   const shown = shownPlaceholder(placeholder.kind, placeholder.retained);
   const open = placeholder.kind !== null;
@@ -897,6 +656,7 @@ const Placeholder = ({ placeholder, busy }: { placeholder: TablePlaceholder; bus
         <div class="lt-placeholder-stack layer-stack">
           {PLACEHOLDER_KINDS.map(kind => {
             const active = shown === kind;
+            const Icon = placeholder.content[kind].icon;
             return (
               <div
                 class={{ 'layer': true, 'lt-placeholder-layer': true, [`is-${kind}`]: true }}
@@ -906,7 +666,7 @@ const Placeholder = ({ placeholder, busy }: { placeholder: TablePlaceholder; bus
                 aria-hidden={active ? null : 'true'}
               >
                 <span class="lt-placeholder-mark shift-skeleton">
-                  <Glyph path={placeholder.content[kind].glyph} className="lt-placeholder-glyph" />
+                  <Icon class="lt-placeholder-glyph" />
                 </span>
                 <p class="lt-placeholder-text shift-skeleton">{placeholder.content[kind].text}</p>
               </div>
@@ -923,7 +683,6 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
 
   const { columns, rows, rowKey, lead, notice, busy, body, open, reshaping = false, strings, onOpenMedia, slots, lang, density, label, actions, drawer, placeholder } = props;
 
-  // A row's identity for the action column and the drawer: the panel's `keyOf`, else the key the vdom uses.
   const keyOfRow = (row: Row, index: number, fallback?: string): string => (actions?.keyOf ? actions.keyOf(row, index) : (fallback ?? rowKey(row, index)));
 
   const slotOf = (index: number): RowSlot => slots?.[index] ?? { open: true, veil: 'none' };
@@ -936,7 +695,6 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
   const hasActionColumn = columns.some(column => column.kind === 'action');
   const seen = new Set<string>();
 
-  // `keyOf` must be unique per row (see RowActions); a repeat is the owner's bug, so say so once per pass.
   if (actions?.keyOf && body === 'rows') {
     const keys = new Set<string>();
     const repeated = new Set<string>();
@@ -1017,7 +775,6 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
                 const action: RowAction | null =
                   actions && actionKey !== null ? { key: actionKey, expanded, fetching: actions.fetchingKey === actionKey, disabled: busy, onToggle: actions.onToggle } : null;
 
-                // The drawer, if the panel has one: the open row's, or the content of one that is sliding shut.
                 const drawerKey = drawer && actionKey !== null ? actionKey : null;
                 const closingHere = drawerKey !== null ? actions.closing?.find(entry => entry.index === index) : undefined;
                 const drawerContent =
@@ -1039,8 +796,7 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
 
                 // Each row is its own slot: a .collapsible, so a row that comes or goes slides on its own
                 // while the rest of the list stays where it is. `cover` puts the row under the family's
-                // skeleton (`.loading` is the shift-skeleton switch), `fade` fades its values. The drawer
-                // belongs to the slot, so it is veiled, faded, shut and removed with its row.
+                // skeleton (`.loading` is the shift-skeleton switch), `fade` fades its values.
                 return (
                   <div key={vdomKey} class="lt-slot collapsible" data-open={slot.open ? 'true' : 'false'} data-veil={slot.veil} aria-hidden={slot.open ? null : 'true'}>
                     <div class="collapsible-body lt-slot-body">
@@ -1074,7 +830,6 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
                             >
                               <div class="collapsible-body lt-drawer-body">
                                 <div class="lt-drawer-panel">
-                                  {/* The one block the cover goes over, and the fade of a page change: the panel's rim and rail are chrome and stay. */}
                                   <div class="lt-drawer-content shift-skeleton">{drawerContent}</div>
                                 </div>
                               </div>

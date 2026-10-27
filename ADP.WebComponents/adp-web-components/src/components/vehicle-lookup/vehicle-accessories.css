@@ -3,8 +3,7 @@
  * Vehicle accessories — the stylesheet for <vehicle-accessories>, in the component design language.
  * The card is the wrapper's; this file styles what is particular to this panel: the total in the
  * head, the compact rows and the page controls under the table. The strip, the rows, the cards at
- * 720px and under, the thumbnails and the body's placeholder (a large muted icon and one line for idle,
- * nothing on file, not in the records and a failed lookup) are the lookup table's
+ * 720px and under, the thumbnails and the body's placeholder are the lookup table's
  * (features/lookup-table/lookup-table.css), imported below.
  *
  * Rows stay on screen through a lookup: their values go under the skeleton where they stand

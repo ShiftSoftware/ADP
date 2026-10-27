@@ -37,7 +37,6 @@ import {
   pagingNeedsReveal,
   parseHiddenFields,
   readStoredPageSize,
-  revealDrawer,
   storePageSize,
   tableSlots,
 } from '~features/lookup-table';
@@ -48,15 +47,6 @@ import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, Language
 
 const DEFAULT_SETTLE_MS = 480;
 
-/**
- * The service history panel: every recorded service invoice for the vehicle, a page of them at a time,
- * each opening a drawer with its labor and part lines. The owner is thin about design: it holds the
- * data, the leave and retain choreography, the row slots, the pager's page, the open drawer, the
- * height announcer and the Blazor bridge, and renders one pure panel (components/VehicleServiceHistoryPanel).
- *
- * A wrapper cannot skip this panel's lookup (only the SSC has `skipLookup`) and has no call that clears
- * it, so those two states do not exist here; the leave is only ever used for an error raised on a settled card.
- */
 @Component({
   shadow: true,
   tag: 'vehicle-service-history',
@@ -107,12 +97,6 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
   @Prop() headers: object = {};
   @Prop() queryString: string = '';
 
-  /**
-   * Comma-separated column names to leave out: `branchName`, `companyName`, `jobNumber`, `serviceType`,
-   * `mileage`. The invoice number, the date and the expand button are always shown. A shown column with
-   * no value reads as a dash; a hidden one has no heading, no cell and no caption. By default every
-   * column is shown except the job number (still in the drawer's first line).
-   */
   @Prop() hiddenFields: string = DEFAULT_HIDDEN_FIELDS;
 
   @Prop() errorCallback?: BlazorInvokableFunction<(errorMessage: ErrorKeys) => void>;
@@ -136,8 +120,6 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
     this.mockData = newMockData;
   }
 
-  // A lookup takes over a leave still in progress: bumping the generation makes the older call give up
-  // instead of flipping `leaving` back, and `leaving` is cleared here because the older call will not.
   @Method()
   async fetchVin(newData: VehicleLookupDTO | string, headers: object = {}) {
     this.leaveGeneration++;
@@ -145,7 +127,6 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
     await setVehicleLookupData(this, newData, headers);
   }
 
-  // Called on a settled card, the error has to enter through the leave or the red pill mounts at full opacity.
   @Method()
   async setErrorMessage(message: ErrorKeys) {
     if (!this.isLoading && !(await this.leave())) return;
@@ -159,25 +140,17 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
 
   // #endregion
 
-  // #region Leaving a state
-
-  /** The panel is on its way to empty or to an error: the head leaves and the body is shutting over its rows. */
   @State() leaving: boolean = false;
 
   private leaveGeneration = 0;
 
-  /** How long a state change takes to settle: the --settle token plus a margin for the frame it starts on. */
   private settleMs(): number {
     const raw = typeof getComputedStyle === 'function' ? getComputedStyle(this.el).getPropertyValue('--settle') : '';
     const parsed = parseFloat(raw);
     return (Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_SETTLE_MS) + 40;
   }
 
-  /**
-   * Shuts the body over whatever it holds and resolves once it has settled, so the caller can swap
-   * the content while nothing is on screen. True when the caller may go on; false when a newer call
-   * took over meanwhile. Resolves at once when there is nothing to leave.
-   */
+  /** Shuts the rows under the skeleton before a clear or an error lands; false if a newer call took over. */
   private async leave(): Promise<boolean> {
     const generation = ++this.leaveGeneration;
 
@@ -194,19 +167,12 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
     return true;
   }
 
-  // #endregion
-
-  // #region Configuration (hiddenFields)
-
-  /** The hidden set the render uses. It trails `hiddenFields` by a settle: the body shuts, this swaps, the body reopens. */
   @State() applied: ReadonlySet<string> = new Set();
 
   @State() reconfiguring: boolean = false;
 
   private configGeneration = 0;
 
-  // Not a lookup: nothing is fetched, so there is no skeleton and no spinner. The body shuts over the old
-  // columns, the layout swaps while it is shut, and it reopens. The head's words never change here.
   @Watch('hiddenFields')
   async reconfigure() {
     const next = parseHiddenFields(this.hiddenFields);
@@ -217,8 +183,6 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
       return;
     }
 
-    // Nothing is open to shut (idle, leaving, a notice, an empty list): swap at once. Rows in flight stay
-    // on screen under the skeleton, so they reshape like settled ones.
     if (this.leaving || panelBody(this.panelState()) !== 'rows') {
       this.applied = next;
       this.reconfiguring = false;
@@ -233,8 +197,6 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
     this.applied = next;
     this.reconfiguring = false;
   }
-
-  // #endregion
 
   // #region Verdict
 
@@ -254,14 +216,10 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
     this.verdictChange.emit(this.currentVerdict);
   }
 
-  // #endregion
-
-  // #region What the body and the placeholder held
-
   private retainedBody = 'none';
   private retainTimer?: ReturnType<typeof setTimeout>;
 
-  /** Remembers the body's kind and forgets it a settle after the body shut, so rows slide away with it. */
+  // The body and the placeholder keep their last kind for a settle, so they slide shut with their content.
   private retainBody(body: string) {
     if (body !== 'none') {
       this.retainedBody = body;
@@ -282,12 +240,6 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
   private retainedPlaceholder: PlaceholderKind | null = null;
   private placeholderTimer?: ReturnType<typeof setTimeout>;
 
-  /**
-   * Remembers the placeholder's kind and forgets it a settle after the region shut (a list opened over it),
-   * so its words slide away with their region (motion.md rule 5) and no stale sentence is under a region that
-   * opens next. While a lookup is in flight the state is the last answer's, so the kind does not change and
-   * the placeholder stays where it stands under the skeleton.
-   */
   private retainPlaceholder(kind: PlaceholderKind | null) {
     if (kind !== null) {
       this.retainedPlaceholder = kind;
@@ -305,29 +257,17 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
     }
   }
 
-  // #endregion
-
-  // #region The drawer: one open row, followed through lookups and pages
-
-  /** The row whose drawer is open (`historyKey`: company + branch + invoice + job, not a position), or null. */
   @State() expandedKey: string | null = null;
 
-  /** Drawers sliding shut: their content stays mounted until it has shut (`RowActions.closing`). */
   @State() closing: ClosingDrawer<VehicleServiceHistoryDTO>[] = [];
 
   private closingTimer?: ReturnType<typeof setTimeout>;
-  private followedKey: string | null = null;
 
-  /**
-   * Moves the open key and keeps the drawer that gives way mounted while it slides shut. `nextRows` are
-   * the rows that will be SHOWN: the page about to show, not the whole answer. The rows on screen now
-   * are `shownBefore`, which the render keeps.
-   */
+  /** Single-open: the drawer that gives way is kept in `closing` until it has slid shut. */
   private openDrawer(next: string | null, nextRows: VehicleServiceHistoryDTO[]) {
     this.closing = closingDrawers({ closing: this.closing, previousKey: this.expandedKey, nextKey: next, previousRows: this.shownBefore, nextRows, keyOf: historyKey });
     this.expandedKey = next;
 
-    // The drawers that gave way are let go a settle after the change that shut them, when their region is shut.
     clearTimeout(this.closingTimer);
     this.closingTimer = undefined;
     if (!this.closing.length) return;
@@ -337,22 +277,15 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
     }, this.settleMs() + 80);
   }
 
-  /** Single open: a key opens, the same key shuts, another key moves it. Ignored while rows are in flight or a page is changing. */
   private onToggle = (key: string) => {
     if (this.isLoading || this.leaving || this.paging) return;
     this.openDrawer(this.expandedKey === key ? null : key, this.shownBefore);
   };
 
-  // #endregion
-
-  // #region Pages
-
-  /** The reader's page size, kept in this browser (localStorage) so the panel opens on it next time. */
   @State() pageSize: PageSize = DEFAULT_PAGE_SIZE;
 
   @State() page: number = 0;
 
-  /** A page is changing: the values on screen are fading out; the next page is swapped in once they are out. */
   @State() paging: boolean = false;
 
   private pagingGeneration = 0;
@@ -360,8 +293,6 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
   private stopFollowing?: () => void;
   private revealPending = false;
 
-  // A new vehicle lands at the end of a lookup, under the skeleton: its first page is what the cover lifts on, and the
-  // open drawer stays open only if its invoice is on that page (run decision 2), otherwise it slides shut.
   @Watch('vehicleLookup')
   onVehicleChange() {
     this.pagingGeneration++;
@@ -374,14 +305,6 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
     this.openDrawer(drawerAfterLookup(this.expandedKey, first, historyKey), first);
   }
 
-  /**
-   * Moves to `page` at `size`. Nothing is fetched, so there is no skeleton: when a row's content
-   * changes, the values fade out, the page swaps while they are out, and they fade back in; rows
-   * the new page adds slide open and rows it drops slide shut. When every row on screen stays (a
-   * bigger page from the first one), nothing fades and the new rows simply open below. An open
-   * drawer goes with its row (run decision 9): it shuts at once, over the rows that are still
-   * fading, when its row is not on the page that is about to show.
-   */
   private goTo(page: number, size: PageSize) {
     const rows = listed(this.panelState());
     const target = clampPage(page, rows.length, size);
@@ -425,7 +348,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
 
   private onPageSize = (size: PageSize) => this.goTo(pageForSize(this.page, this.pageSize, size, listed(this.panelState()).length), size);
 
-  /** Before a page that is shorter than the one on screen: whether the controls will rise off the top of the screen. */
+  /** A shorter page lifts the pager; if that takes it off screen, it is brought back once the rows settle. */
   private prepareReveal(nextCount: number) {
     const root = this.el.shadowRoot;
     const pager = root?.querySelector<HTMLElement>('.lt-pager');
@@ -438,34 +361,20 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
     this.revealPending = removed > 0 && pagingNeedsReveal(pager.getBoundingClientRect().top, removed);
   }
 
-  // #endregion
-
-  // #region Row slots: rows stay where they are while their values change
-
-  /** The page's rows as they were last rendered, and whether the body was open on them. */
   private shownBefore: VehicleServiceHistoryDTO[] = [];
   private bodyWasOpen = false;
 
-  /** Rows the body no longer holds, kept in their slots while those shut; dropped a settle later. */
   private outgoing: VehicleServiceHistoryDTO[] = [];
   private outgoingVeil: RowVeil = 'cover';
   private outgoingTimer?: ReturnType<typeof setTimeout>;
 
-  /** How many of the current rows' slots are open; new slots start shut and are opened a frame later. */
   private opened = 0;
   private openPending = false;
 
-  /** What changed the rows: a lookup (rows leave under the skeleton) or a page (rows leave faded). */
   private swapCause: 'lookup' | 'page' = 'lookup';
   private lastVeil: RowVeil = 'none';
 
-  /**
-   * Works out, once per change of the rows on screen, which slots stay, which arrive and which
-   * leave. A slot that stays keeps its element: its values change under the cover (a lookup) or
-   * while faded (a page). Rows past the new count leave in place, still covered or faded, as their
-   * slots shut; rows past the old count arrive shut and are opened on the next frame, so they slide.
-   * When the body itself opens or shuts, it carries every row and no slot moves on its own.
-   */
+  /** Rows a page or lookup drops leave where they stood; rows it adds mount shut and open a frame later. */
   private updateSlots(current: VehicleServiceHistoryDTO[], open: boolean) {
     const before = this.shownBefore;
     const changed = current.length !== before.length || current.some((row, index) => row !== before[index]);
@@ -502,14 +411,9 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
     this.bodyWasOpen = open;
   }
 
-  // #endregion
-
-  // #region Height
-
   private heightAnnouncer?: ReturnType<typeof createHeightChangeAnnouncer>;
   private layoutSignature?: string;
 
-  /** Everything that moves the panel's height, joined; a render that changes none of it announces nothing. */
   private signature(): string {
     const state = this.panelState();
 
@@ -537,21 +441,11 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
 
     if (this.openPending) {
       this.openPending = false;
-      // The new slots are in the document, shut; laid out once in that state so opening them is a transition, not their first style.
       this.el.shadowRoot?.querySelector('.lt-rows')?.getBoundingClientRect();
       requestAnimationFrame(() => {
         this.opened = Number.MAX_SAFE_INTEGER;
         forceUpdate(this);
       });
-    }
-
-    // The page follows the row whose drawer opens, from the frame it opens (motion.md rule 10): the row to the top of the
-    // page, held there while the drawer slides open beneath it. Closing it, or opening another, lets go. Starting open is not a change.
-    if (this.expandedKey !== this.followedKey) {
-      this.stopFollowing?.();
-      this.stopFollowing = undefined;
-      this.followedKey = this.expandedKey;
-      if (this.expandedKey && this.el.shadowRoot) this.stopFollowing = revealDrawer(this.el.shadowRoot, this.expandedKey, this.settleMs());
     }
 
     if (this.revealPending) {

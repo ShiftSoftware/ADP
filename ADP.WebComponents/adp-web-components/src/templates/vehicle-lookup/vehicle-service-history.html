@@ -36,16 +36,6 @@
           JTMW43FV10D123456: 'no service history on record',
           ZV9LMW6D75T151181: 'not in distributor records',
           UNKNOWN_VIN_12345: 'not in distributor records',
-
-          /* edge-cases — built for this panel (open the page with ?env=edge-cases). */
-          ZS8KD4RTXT5100001: 'every kind of invoice · labor only, part only, mixed, a credit note with a parent invoice and a zero and a negative quantity',
-          ZS8KD4RT1T5100002: 'nulls · no service type, no mileage, no branch, no invoice number, and one with all four',
-          ZS8KD4RT3T5100003: 'no company name · the dealer column has nothing to show',
-          ZS8KD4RT5T5100004: 'twelve records · three pages at the default size',
-          ZS8KD4RT7T5100005: 'exactly five records · one full page, no second page',
-          ZS8KD4RT9T5100006: 'exactly ten records · one full page at size 10',
-          ZS8KD4RT0T5100007: 'long service type · a drawer with 14 labor and 12 part lines',
-          ZS8KD4RT2T5100008: 'not in distributor records',
         },
         has: vehicle => vehicle?.serviceHistory?.length > 0,
       })"

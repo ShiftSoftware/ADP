@@ -51,8 +51,7 @@ describe('generated demo environments', () => {
     const templates = path.resolve(process.cwd(), 'src', 'templates');
     const pages = ['vehicle-lookup', 'part-lookup'].flatMap(area =>
       readdirSync(path.join(templates, area))
-        // The shared table's showcase drives a host element, not a lookup: it has no vehicle data to be on any family.
-        .filter(file => file.endsWith('.html') && file !== 'lookup-table.html')
+        .filter(file => file.endsWith('.html'))
         .map(file => readFileSync(path.join(templates, area, file), 'utf8')),
     );
 

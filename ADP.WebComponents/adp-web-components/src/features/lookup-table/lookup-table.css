@@ -52,26 +52,14 @@
      both after the import to make its rows compact and every row the same height. */
   --lt-cell-pad-block: 12px;
   --lt-row-min: 0px;
-  /* A row cell's type size: the body's 13px. A compact table (below) takes the small note's 12px. */
   --lt-cell-font: 13px;
-  /* The expand button, the SSC's trace button: the 30px outlined circle (design language § 18). The
-     action column's track is this plus the cell's padding, whatever the width. */
   --lt-action-size: 30px;
   /* The grey rim of idle furniture (design language § 10, grey .22) and the blue rim of
      interaction (blue .32). Named here because the rim is drawn on a pseudo-element and read from
      three rules. */
   --lt-rim-idle: rgba(95, 108, 120, 0.22);
   --lt-rim-blue: rgba(48, 113, 169, 0.32);
-  /* The body placeholder's icon: 38px, the strip's own height (--lead-height) and a step on the
-     spacing ladder (design language § 12, 38), so the mark is as tall as the band that heads the
-     table and reads as the table's own, where the 16-22px glyphs of a pill or a notice are
-     inline marks. Large enough to be seen before it is read; no bigger, because it carries a
-     sentence of 13px text and a mark that outweighs its sentence reads as an error screen. */
   --lt-placeholder-icon: 38px;
-  /* How much of its hue the placeholder's mark keeps. The fill at full strength is a cap's colour
-     and, at 38px, shouts; --line (the idle cap) is too faint to see on paper. Sixty per cent of the
-     role's own fill -- grey, amber or red -- is the quiet that is still legible, and it is one
-     figure for all four so the hues stay in step. The words carry the meaning in the hue's dark. */
   --lt-placeholder-strength: 60%;
 }
 
@@ -260,38 +248,24 @@
   align-content: start;
 }
 
-/* A panel with a placeholder has no blank floor under the strip: the placeholder fills that space
-   when there is no list, and after a strip that has said everything the card simply ends. */
 .lt-grid[data-placeholder='true'] > .lt-body {
   min-height: 0;
 }
 
-/* ---------------------------------------------------------------------------------------------
-   Placeholder: what the body says when there is no list (idle, empty, error, not in the records)
-   ------------------------------------------------------------------------------------------- */
-
-/* One region under the body: a .collapsible, so it slides open and shut on the clock the body does
-   (a lookup that ends in rows opens the body as this shuts, one movement) and never pops. It spans
-   the grid because it belongs to no column. */
 .lt-placeholder {
   grid-column: 1 / -1;
 }
 
-/* One layer per outcome, cross-fading in place: the stack is as tall as its tallest line whichever
-   is showing, so the outcome changing never moves what is below. */
 .lt-placeholder-layer {
   display: flex;
   flex-direction: column;
   gap: 12px;
   align-items: center;
   justify-content: center;
-  /* 22 block (the language's drawer padding), 20 inline (the card's horizontal inset). */
   padding: 22px 20px;
   text-align: center;
 }
 
-/* The icon is its own block, so the skeleton's cover is the size of the icon and takes its
-   corners (8: a thumbnail's), and decoration only: the words carry the meaning. */
 .lt-placeholder-layer > .lt-placeholder-mark {
   display: block;
   width: var(--lt-placeholder-icon);
@@ -306,9 +280,6 @@
   height: 100%;
 }
 
-/* One line of text: the body's 13px at the notice weight (650), centred. As wide as its words up to
-   52 characters (a line in any of the family's four languages at the card's widths), so the cover
-   is the size of the sentence and a longer one wraps rather than running the card's width. */
 .lt-placeholder-text {
   max-width: 52ch;
   margin: 0;
@@ -318,10 +289,6 @@
   line-height: 1.4;
 }
 
-/* Colour by role (design language § 10): grey for nothing to say yet and nothing on file, amber for a
-   vehicle the distributor has no record of (a statement without a verdict, never green), red for a
-   failed lookup, the family's role for it (its pill and its accent bar are negative). Text is the
-   hue's dark, never its fill. */
 .lt-placeholder-layer.is-idle,
 .lt-placeholder-layer.is-empty {
   --lt-placeholder-hue: var(--muted);
@@ -336,6 +303,19 @@
 .lt-placeholder-layer.is-error {
   --lt-placeholder-hue: var(--red);
   --lt-placeholder-ink: var(--red-dark);
+}
+
+/* Solid like the verdict pill's glyph; mixed with paper so the fill and its stroke do not overlap darker. */
+.lt-placeholder-layer:is(.is-unauthorized, .is-error) > .lt-placeholder-mark {
+  color: color-mix(in srgb, var(--lt-placeholder-hue) var(--lt-placeholder-strength), var(--paper));
+}
+
+.lt-placeholder-layer:is(.is-unauthorized, .is-error) .lt-placeholder-glyph > :first-child {
+  fill: currentColor;
+}
+
+.lt-placeholder-layer:is(.is-unauthorized, .is-error) .lt-placeholder-glyph > :not(:first-child) {
+  stroke: var(--paper);
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -362,19 +342,12 @@
   transition: background var(--settle) ease;
 }
 
-/* Hover highlight (pointer devices only, background only so nothing shifts). The table's own rows
-   only (slot > slot-body > row, in :where() so the rule keeps its low specificity and the open tint
-   below still beats it): the lines of an embedded table inside a drawer are not rows of this
-   one. Only data rows are .lt-row: notices, headings and a shut body (hidden, aria-hidden) never carry it. */
 @media (hover: hover) {
   :where(.lt-slot > .lt-slot-body) > .lt-row:hover {
     background: var(--row-hover);
   }
 }
 
-/* An open row (a row whose drawer is open) tints, and its drawer row with it, so the two read as one
-   highlighted block (§ 18). After the hover rule, so open beats hover; the tint fades with the drawer
-   rather than switching off while it is still shutting. */
 .lt-row[data-expanded='true'] {
   background: var(--blue-tint);
 }
@@ -445,10 +418,6 @@
   white-space: nowrap;
 }
 
-/* date: read, not glanced at, so the date ink (a shade darker than --muted, § 9) and tabular figures
-   so a column of dates lines up digit under digit. An ISO date has hyphens and European digits, which
-   a right-to-left line could reorder; the value is its own left-to-right island, and the cell's
-   start edge (the right, in RTL) still decides where it sits. */
 .lt-row > .lt-date {
   color: var(--date-ink);
   font-variant-numeric: tabular-nums;
@@ -460,9 +429,6 @@
   unicode-bidi: isolate;
 }
 
-/* number: a quantity or a reading, so it is end-aligned (logical: it flips in RTL) and tabular, so the
-   digits of a column of odometer readings stack. Same ink as a date, for the same reason (§ 9: "dates
-   and figures"). Never wrapped: a figure split across lines reads as two. */
 .lt-row > .lt-number {
   color: var(--date-ink);
   font-variant-numeric: tabular-nums;
@@ -470,8 +436,6 @@
   white-space: nowrap;
 }
 
-/* The heading of a number column sits over its figures, on the same edge. A flex container: its
-   main-end is the end edge in either direction. */
 .lt-columns > .lt-cell[data-kind='number'] {
   justify-content: flex-end;
 }
@@ -481,12 +445,6 @@
   color: var(--muted);
 }
 
-/* ---------------------------------------------------------------------------------------------
-   Action: the row's expand button (the SSC's trace button recipe, design language § 18)
-   ------------------------------------------------------------------------------------------- */
-
-/* The button is centred in its track, and the value wrapper is a flex box so an inline-block's
-   baseline gap does not add a few pixels under a 30px circle. */
 .lt-row > .lt-action {
   display: flex;
   justify-content: center;
@@ -500,9 +458,6 @@
   justify-content: center;
 }
 
-/* Outlined round: the hue's dark on --paper with a blue .32 rim (an inset shadow, § 10, not a border).
-   Hover, an open drawer and a fetch all fill it, white on the fill. The colours move over --settle
-   with everything else; a press is the one thing shorter (§ 18), and this fill is a state, not a press. */
 .lt-action-button {
   position: relative;
   display: inline-flex;
@@ -540,7 +495,6 @@
   }
 }
 
-/* A lookup is in flight: the row on screen is the last vehicle's and cannot be opened or shut. */
 .lt-action-button:disabled {
   cursor: default;
 }
@@ -550,22 +504,19 @@
   outline-offset: 2px;
 }
 
-/* The glyph turns half a turn as the drawer opens, over the settle the drawer takes. */
 .lt-action-icon {
   width: 18px;
   height: 18px;
+  transform: rotate(90deg);
   transition:
     opacity var(--settle) ease,
     transform var(--settle) ease;
 }
 
 .lt-action-button[aria-expanded='true'] .lt-action-icon {
-  transform: rotate(180deg);
+  transform: rotate(270deg);
 }
 
-/* The spinner shares the button with the glyph and cross-fades with it. Its loop is declared only
-   while the button is loading (the sheen's rule, motion.md 8): a stopped, invisible ring on every row
-   would still be a layer to tick. Inset 6px, 2px ring, white on the fill. */
 .lt-action-spinner {
   position: absolute;
   inset: 6px;
@@ -585,20 +536,10 @@
   animation: lookup-spin var(--spin) linear infinite;
 }
 
-/* A row that is leaving, or not yet open, does not spin. */
 .lt-slot[data-open='false'] .lt-action-spinner {
   animation-play-state: paused;
 }
 
-/* ---------------------------------------------------------------------------------------------
-   Drawer (design language § 18, spec § 7): a row-spanning .collapsible directly under its row, inside
-   the row's slot, so it is veiled, faded, shut and removed with the row. Only a table that was given a
-   `drawer` renders any of this; the rules are scoped to its classes, so nothing else changes.
-   ------------------------------------------------------------------------------------------- */
-
-/* The drawer's row takes every column, and carries the open row's tint down around the panel, so row
-   and drawer read as one highlighted block; the tint fades with the drawer rather than switching off
-   while it is still shutting. */
 .lt-drawer-row {
   grid-column: 1 / -1;
   transition: background var(--settle) ease;
@@ -608,14 +549,10 @@
   background: var(--blue-tint);
 }
 
-/* A press anywhere on the row opens it (a pointer convenience; the button is the keyboard path). */
 .lt-row[data-clickable='true'] {
   cursor: pointer;
 }
 
-/* The panel is inset inside that block: its own paper, a rim in the row's blue and a rail on the
-   reading edge, so it cannot be mistaken for the next row. The margin is inside the sliding region
-   and slides with it. */
 .lt-drawer-panel {
   margin: 0 12px 14px;
   padding: 12px 18px 16px;
@@ -634,8 +571,6 @@
     0 6px 18px rgba(27, 45, 61, 0.08);
 }
 
-/* The block the skeleton covers (the panel's rim and rail are chrome and stay) and the block a page
-   change fades. */
 .lt-drawer-content {
   transition: opacity var(--settle) ease;
 }
@@ -774,38 +709,20 @@
   opacity: 0;
 }
 
-/* ---------------------------------------------------------------------------------------------
-   Compact density (spec § 14.3): the rhythm of a table nested in a drawer, set as tokens on the grid
-   so the comfortable table, which never carries the attribute, is untouched.
-   ------------------------------------------------------------------------------------------- */
-
-/* 6px 12px cells, the strip's own heading padding, so a line is as tall as the heading band above it
-   (about 27px); no floor; the small note's 12px (design language § 11) because the lines are
-   secondary to the row that owns the drawer. */
 .lt-grid[data-density='compact'] {
   --lt-cell-pad-block: 6px;
   --lt-row-min: 0px;
   --lt-cell-font: 12px;
 }
 
-/* ---------------------------------------------------------------------------------------------
-   Embedded table (spec § 7): headings as the first row, inside a drawer. There is no strip, so the
-   heading row is the table's own band, and no collapsible body: the drawer is the region that slides.
-   ------------------------------------------------------------------------------------------- */
-
-/* The clip gives the band its corners (overflow-x: auto on the grid already clips); 8px is a segment
-   inside a drawer, one step under the drawer's 10 (§ 12). */
 .lt-grid[data-embedded='true'] {
   border-radius: 8px;
 }
 
-/* The band ruled below only: it has the drawer's paper above it, and a ring would leave the stray
-   side ticks a band always does (§ 10). */
 .lt-grid[data-embedded='true'] > .lt-columns {
   box-shadow: inset 0 -1px 0 var(--line);
 }
 
-/* Rows have no slot here, so the rule between rows sits on the row itself. */
 .lt-grid[data-embedded='true'] > .lt-rows > .lt-row:not(:first-child) {
   border-top: 1px solid var(--line-soft);
 }
@@ -890,7 +807,6 @@
     padding: 6px 14px;
   }
 
-  /* The placeholder takes the card's narrower inset, as the notice does. */
   .lt-placeholder-layer {
     padding-inline: 14px;
   }
@@ -926,8 +842,6 @@
     display: none;
   }
 
-  /* A figure under its caption reads from the start edge, like every other captioned value; the end
-     alignment is for a column of them. */
   .lt-row > .lt-number {
     text-align: start;
   }
@@ -948,8 +862,6 @@
     align-self: center;
   }
 
-  /* The expand button is row 1, column 2, at the end, uncaptioned: it takes the place the SSC gives
-     its trace button, and the picture's (a table has one or the other). */
   .lt-row > .lt-action {
     grid-column: 2;
     grid-row: 1;
@@ -957,7 +869,6 @@
     align-self: center;
   }
 
-  /* A drawer under a card sits full width, with less room around it. */
   .lt-drawer-panel {
     margin: 0 8px 12px;
     padding: 10px 12px 12px;
@@ -970,8 +881,6 @@
     white-space: normal;
   }
 
-  /* Compact cards: tighter than the comfortable card's 12px 14px and 10px gaps, and the identity at
-     the body size instead of 15px, as the lines are secondary. */
   .lt-grid[data-density='compact'] > .lt-body > .lt-body-inner > .lt-rows > .lt-slot > .lt-slot-body > .lt-row,
   .lt-grid[data-density='compact'][data-embedded='true'] > .lt-rows > .lt-row {
     gap: 4px 12px;
@@ -983,8 +892,6 @@
     font-size: 13px;
   }
 
-  /* An embedded table's headings are not a row on a card: every card captions its own fields, and the
-     drawer names the table above it. */
   .lt-grid[data-embedded='true'] > .lt-columns {
     display: none;
   }

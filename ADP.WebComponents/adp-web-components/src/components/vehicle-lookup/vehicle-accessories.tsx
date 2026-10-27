@@ -304,12 +304,6 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
   private retainedPlaceholder: PlaceholderKind | null = null;
   private placeholderTimer?: ReturnType<typeof setTimeout>;
 
-  /**
-   * Remembers the placeholder's kind and forgets it a settle after the region shut (a list opened over it),
-   * so its words slide away with their region (motion.md rule 5) and no stale sentence is under a region that
-   * opens next. While a lookup is in flight the state is the last answer's, so the kind does not change and
-   * the placeholder stays where it stands under the skeleton.
-   */
   private retainPlaceholder(kind: PlaceholderKind | null) {
     if (kind !== null) {
       this.retainedPlaceholder = kind;
