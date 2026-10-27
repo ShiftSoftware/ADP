@@ -1,0 +1,57 @@
+/* tailwind: off */
+@import '../style/base.css';
+
+/* shift-tabs renders without a shadow root, so this sheet lands in the shadow root of whichever component hosts it. */
+
+.shift-tabs-bar {
+  position: relative;
+  display: flex;
+  margin-bottom: 6px;
+  padding-inline-start: 12px;
+  gap: 4px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.shift-tabs-tab {
+  position: relative;
+  padding: 6px 16px;
+  border: 1px solid #e5e7eb;
+  border-bottom: 0;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  background-color: #f6f6f6;
+  color: #000;
+  font-size: 17px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-duration: 500ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shift-tabs-tab::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  width: 100%;
+  height: 1px;
+  background-color: #fff;
+  opacity: 0;
+  transform: translateY(100%);
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-duration: 500ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shift-tabs-tab-active {
+  background-color: #fff;
+  cursor: default;
+}
+
+.shift-tabs-tab-active::after {
+  opacity: 1;
+}
