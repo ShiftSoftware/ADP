@@ -348,6 +348,25 @@
   color: var(--muted);
 }
 
+/* A text value's note (LookupColumn.note): the neutral chip of § 18 -- a grey field, a grey rim at
+   .22, 11px/700, a pill (radius 999) -- naming what the value is. Opt-in: nothing here matches a
+   column that passes no `note`. */
+.lt-note {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  margin-inline-start: 8px;
+  color: var(--muted);
+  background: var(--line-soft);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--lt-rim-idle);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+
 /* ---------------------------------------------------------------------------------------------
    Media: a thumbnail that opens the image viewer, in a fixed box so a row never changes height as
    its picture arrives. States on the cell as data-media: none, loading, ready, failed.
@@ -642,6 +661,12 @@
 
 .lt-slot[data-veil='fade'] .lt-drawer-content {
   opacity: 0;
+}
+
+/* A shut drawer that is not shutting holds nothing (no skeleton class either): nothing to fade, so no
+   opacity transition is started on it when the slot's veil changes. */
+.lt-drawer-content:not(.shift-skeleton) {
+  transition: none;
 }
 
 /* ---------------------------------------------------------------------------------------------

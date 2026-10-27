@@ -542,3 +542,26 @@ describe('a closed drawer costs nothing', () => {
     expect(root.querySelectorAll('.photos')).toHaveLength(1);
   });
 });
+
+describe('a column note (a small chip beside a text value)', () => {
+  const noted: LookupColumn<Row>[] = [
+    { field: 'name', label: 'Panel', kind: 'text', identity: true, value: row => row.name },
+    { field: 'reading', label: 'Left', kind: 'text', value: row => (row.photos ? row.photos.length : null), note: row => (row.name === 'Roof' ? 'Centre' : null) },
+  ];
+
+  it('draws the chip after the value, inside the value block, for the row that has a note', async () => {
+    const { root } = await mount(model({ withDrawer: false, columns: noted }));
+    const cells = Array.from(root.querySelectorAll('.lt-row')).map(row => row.querySelectorAll('.lt-cell')[1]);
+
+    expect(cells[1].querySelector('.lt-value > .lt-note').textContent).toBe('Centre');
+    expect(cells[1].querySelector('.lt-value').textContent).toBe('1Centre');
+    expect(cells[0].querySelector('.lt-note')).toBeNull();
+  });
+
+  it('draws no chip on a blank value, which is the dash alone', async () => {
+    const { root } = await mount(model({ withDrawer: false, columns: noted, rows: [{ name: 'Roof', photos: null }] }));
+
+    expect(root.querySelector('.lt-note')).toBeNull();
+    expect(root.querySelectorAll('.lt-row .lt-cell')[1].querySelector('.lt-none').textContent).toBe('—');
+  });
+});

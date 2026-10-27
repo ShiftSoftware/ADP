@@ -30,4 +30,11 @@ export const MEDIA_GLYPHS = {
   /** The same picture struck through: there is a URL on record and it did not load. */
   pictureOff:
     'M88 80H424A40 40 0 0 1 464 120V392A40 40 0 0 1 424 432H88A40 40 0 0 1 48 392V120A40 40 0 0 1 88 80ZM88 120V392H424V120ZM172 176a32 32 0 1 1 0 64a32 32 0 1 1 0-64ZM120 360L216 252L280 316L336 252L392 360ZM56 84L84 56L456 428L428 456Z',
+  /**
+   * A camera: the body with its viewfinder bump (clockwise), a ring cut out for the lens
+   * (counter-clockwise) and the lens itself (clockwise again), so a single winding needs no
+   * fill-rule. The paint-thickness panel's photo toggle.
+   */
+  camera:
+    'M88 144H152L176 96H336L360 144H424A40 40 0 0 1 464 184V392A40 40 0 0 1 424 432H88A40 40 0 0 1 48 392V184A40 40 0 0 1 88 144ZM256 192a96 96 0 1 0 0 192a96 96 0 1 0 0-192ZM256 232a56 56 0 1 1 0 112a56 56 0 1 1 0-112Z',
 } as const;

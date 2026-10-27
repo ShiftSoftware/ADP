@@ -40,7 +40,8 @@ import { BADGE_GLYPHS, MEDIA_GLYPHS } from '../../components/vehicle-lookup/comp
  * if its slot still has drawer content and shuts it if not. A page change is the same with the
  * `fade` veil. A clear shuts it at once.
  *
- * A closed drawer costs nothing: `render` is not called for it and it mounts no content, so a
+ * A closed drawer costs nothing: `render` is not called for it, it mounts no content and its content block
+ * carries no skeleton (no cover, no pseudo-elements, no transition under `.loading`), so a
  * consumer's photos are not even requested until the reader opens one. A consumer that puts
  * images in a drawer should still use `loading="lazy"` and `decoding="async"` on them.
  */
@@ -79,6 +80,12 @@ export type LookupColumn<Row> = {
   grow?: boolean;
   /** 'action' only: the glyph on the toggle, as 512 x 512 path data (like `BADGE_GLYPHS`). Without one the toggle is a chevron. */
   glyph?: string;
+  /**
+   * 'text' only: a small grey chip after the value, naming what the value is (a lone reading that
+   * belongs to no side: "Centre"). Null or blank draws none, and a blank value draws no chip. Inside
+   * the value's own block, so the skeleton covers it with the value.
+   */
+  note?: (row: Row) => string | null | undefined;
 };
 
 export type LookupTableStrings = {
@@ -476,6 +483,7 @@ const Cell = <Row,>({
   const text = cellText(column, row);
   const media = column.kind === 'media';
   const actionKind = column.kind === 'action';
+  const note = text !== null ? column.note?.(row)?.trim() : null;
   // A media cell is keyed by its picture, so a new picture is a new element starting at `loading`.
   const key = media ? `${column.field}:${text ?? ''}` : column.field;
 
@@ -505,6 +513,8 @@ const Cell = <Row,>({
           <MediaBox src={text} identity={identity} strings={strings} onOpenMedia={onOpenMedia} />
         ) : text === null ? (
           <span class="lt-none">—</span>
+        ) : note ? (
+          [text, <span class="lt-note">{note}</span>]
         ) : (
           text
         )}
@@ -605,6 +615,9 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
                 const drawerHas = drawer ? drawer.has(row, index) : false;
                 const drawerOpen = drawerHas && drawer?.open === index;
                 const id = drawer ? drawerId(drawer.idPrefix, index) : '';
+                // A shut drawer that is not on its way out has no content, so it carries no skeleton and is not made inert:
+                // a cover, its two pseudo-elements and their transitions on every shut shell are work with nothing to cover.
+                const drawerShown = drawer ? drawer.shown.includes(index) : false;
                 const action: ActionState | null = drawer
                   ? {
                       has: drawerHas,
@@ -649,13 +662,13 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
                           data-open={drawerOpen ? 'true' : 'false'}
                           role={rowRoles ? 'row' : null}
                           aria-hidden={drawerOpen ? null : 'true'}
-                          inert={slot.veil === 'cover'}
+                          inert={slot.veil === 'cover' && drawerShown}
                         >
                           <div class="collapsible-body lt-drawer-body">
                             <div class="lt-drawer-cell" role={rowRoles ? 'cell' : null}>
                               <div class="lt-drawer-panel" id={id} role={drawerHas ? 'region' : null} aria-label={drawerHas ? drawer.regionLabel(row, index) : null}>
                                 {/* The skeleton covers the content only; the panel's rail, rim and shadow are chrome and stay. */}
-                                <div class="lt-drawer-content shift-skeleton">{drawer.shown.includes(index) ? drawer.render(row, index) : null}</div>
+                                <div class={{ 'lt-drawer-content': true, 'shift-skeleton': drawerShown }}>{drawerShown ? drawer.render(row, index) : null}</div>
                               </div>
                             </div>
                           </div>

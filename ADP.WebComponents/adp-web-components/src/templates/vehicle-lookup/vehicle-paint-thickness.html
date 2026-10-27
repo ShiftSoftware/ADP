@@ -31,9 +31,18 @@
       dir="ltr"
       x-data="harness({
         mocks: 'vehicle-lookup',
+        defaultEnvironment: 'broker-market',
         labels: {
+          ZU9LG6DGXS6464981: 'four inspections · readings and photos on every row',
+          ZS8AJAYC9P6174790: 'three inspections · PDI and two pre-owned',
+          ZS8SV9KXXST918958: 'one inspection · certificate available',
+          ZS8MFGFV7R6554235: 'one pre-owned inspection · no certificate',
+          JTEBU5JR8L5234567: 'one inspection · no photos at all (broker-dealer)',
+          ZT8P9NAL1LG988010: 'one inspection · some rows without photos (standard-dealer)',
+          ZS8AJAYCXR6471313: 'no readings on record',
           ZT8LY7CZ0S2959088: 'no readings on record',
           JTMW43FV10D123456: 'no readings on record',
+          ZV8GHHHP37P214642: 'not in distributor records',
           ZV9LMW6D75T151181: 'not in distributor records',
           UNKNOWN_VIN_12345: 'not in distributor records',
         },
@@ -53,8 +62,26 @@
         <aside class="showcase-about border-base-300 border-t border-dashed pt-5">
           <p class="eyebrow text-neutral">About this page</p>
           <p class="lede text-base-content/70 mt-2 text-sm">
-            Per-panel paint readings for the VIN. <code>show-certificate-button</code> is on, so the certificate print link renders — it is signed per language, so switch language
-            before opening it.
+            Paint readings for the VIN, one tab per inspection (source on top, date beneath). Each row is a body panel with its left and right reading; a panel with one reading
+            (roof, hood, tail gate) puts it in the Left column with a grey <strong class="text-accent">Centre</strong> chip. The photo button on a row opens that row's pictures
+            under it, one row at a time; <strong class="text-accent">All photos</strong> at the foot of the panel opens every picture of the inspection. Both start shut, and
+            neither requests a picture until it is opened.
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
+            Open a drawer, then look up another vehicle: it stays open, goes under the skeleton with its row and shows the new vehicle's pictures on the answer. It shuts only if
+            the new answer has none for that row. Switching a tab fades the values instead (nothing is fetched).
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
+            Each fixture chip says which state it reaches. <strong class="text-accent">Empty</strong> clears the panel back to idle and <strong class="text-accent">Error</strong>
+            raises one on a settled card. The certificate sits in the panel's head, before the verdict pill; it says when there is none rather than disappearing: reach it with the
+            pre-owned fixture. Switch the Environment control in the rail for the no-photo and some-photo vehicles. There is no skipped state: a wrapper never skips this panel's
+            lookup.
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
+            The controls above the panel are what a host sets on the element: <code>hidden-fields</code> (<code>inspectionDate</code>, <code>source</code>, <code>photos</code>,
+            <code>certificate</code>), <code>show-reading-summary</code> (off by default: one quiet line between the tabs and the table) and <code>show-certificate-button</code>.
+            The two toggles under &ldquo;This page only&rdquo; are for this page: the fixtures never have a missing date or a picture that fails to load, so they rewrite the data
+            to reach those states.
           </p>
         </aside>
       </div>
@@ -63,6 +90,46 @@
       <div class="showcase-stage flex flex-col gap-3" :dir="dir">
         <!-- Generated fixtures. This page has no field of its own — the chips are the search — so they get a dashed card above the component. -->
         <div data-harness-fixtures class="card border-base-300 bg-base-100 border border-dashed p-3" x-cloak></div>
+
+        <!-- Host configuration, not harness chrome: what a host sets on the element. -->
+        <div
+          class="card border-base-300 bg-base-100 flex flex-col gap-2 border p-3"
+          x-data="{ showCertificateButton: true, summary: false, hidden: { inspectionDate: false, source: false, photos: false, certificate: false }, noDate: false, failedPhotos: false }"
+          x-effect="window.paintThicknessControls.apply({ showCertificateButton, summary, hidden: { ...hidden }, noDate, failedPhotos })"
+        >
+          <div class="flex flex-row flex-wrap items-center gap-x-6 gap-y-2">
+            <label class="flex cursor-pointer items-center gap-2 text-sm">
+              <input type="checkbox" class="toggle toggle-sm toggle-primary" x-model="showCertificateButton" />
+              Certificate button
+            </label>
+            <label class="flex cursor-pointer items-center gap-2 text-sm">
+              <input type="checkbox" class="toggle toggle-sm toggle-primary" x-model="summary" />
+              Reading summary
+            </label>
+          </div>
+
+          <div class="flex flex-row flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+            <span class="eyebrow text-neutral" id="hidden-fields-label">Hide</span>
+            <template x-for="name in ['inspectionDate', 'source', 'photos', 'certificate']" :key="name">
+              <label class="flex cursor-pointer items-center gap-2">
+                <input type="checkbox" class="checkbox checkbox-sm" :checked="hidden[name]" @change="hidden[name] = $event.target.checked" />
+                <code x-text="name"></code>
+              </label>
+            </template>
+          </div>
+
+          <div class="flex flex-row flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+            <span class="eyebrow text-neutral">This page only</span>
+            <label class="flex cursor-pointer items-center gap-2">
+              <input type="checkbox" class="toggle toggle-sm" x-model="noDate" />
+              No inspection date
+            </label>
+            <label class="flex cursor-pointer items-center gap-2">
+              <input type="checkbox" class="toggle toggle-sm" x-model="failedPhotos" />
+              Pictures fail to load
+            </label>
+          </div>
+        </div>
 
         <!-- No card of the page's own around the component: the component draws the design language's card itself. -->
         <div class="frame">
@@ -73,5 +140,83 @@
       <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
       <div data-harness-rail x-cloak></div>
     </section>
+
+    <script>
+      /*
+       * Host configuration for the controls above the panel. `setMockData` is wrapped so the two
+       * page-only toggles can rewrite the fixtures the harness hands the panel (a null inspection date,
+       * pictures that 404): the generated data has neither, and a state the page cannot show is a state
+       * that will regress. The raw data is kept, so a toggle re-feeds the panel and looks the current
+       * vehicle up again.
+       */
+      const ready = customElements.whenDefined('vehicle-paint-thickness').then(async () => {
+        const subject = document.querySelector('#subject');
+
+        await subject.componentOnReady?.();
+
+        const tweaks = { noDate: false, failedPhotos: false };
+        let raw;
+
+        const rewrite = data => {
+          if (!data || (!tweaks.noDate && !tweaks.failedPhotos)) return data;
+
+          const copy = structuredClone(data);
+
+          for (const vehicle of Object.values(copy)) {
+            for (const inspection of vehicle?.paintThicknessInspections ?? []) {
+              if (tweaks.noDate) inspection.inspectionDate = null;
+
+              for (const panel of inspection.panels ?? []) {
+                if (tweaks.failedPhotos) panel.images = (panel.images ?? []).map((_, index) => `/templates/assets/missing-photo-${index}.jpg`);
+              }
+            }
+          }
+
+          return copy;
+        };
+
+        const original = subject.setMockData.bind(subject);
+
+        subject.setMockData = data => {
+          raw = data;
+
+          return original(rewrite(data));
+        };
+
+        return {
+          subject,
+          tweaks,
+          async refeed() {
+            if (!raw) return;
+
+            await original(rewrite(raw));
+
+            const vin = subject.vehicleLookup?.vin;
+            if (vin) subject.fetchVin(vin);
+          },
+        };
+      });
+
+      window.paintThicknessControls = {
+        async apply({ showCertificateButton, summary, hidden, noDate, failedPhotos }) {
+          const { subject, tweaks, refeed } = await ready;
+
+          subject.showCertificateButton = showCertificateButton;
+          subject.showReadingSummary = summary;
+
+          const hiddenFields = Object.keys(hidden)
+            .filter(name => hidden[name])
+            .join(',');
+
+          if (subject.hiddenFields !== hiddenFields) subject.hiddenFields = hiddenFields;
+
+          if (tweaks.noDate !== noDate || tweaks.failedPhotos !== failedPhotos) {
+            tweaks.noDate = noDate;
+            tweaks.failedPhotos = failedPhotos;
+            await refeed();
+          }
+        },
+      };
+    </script>
   </body>
 </html>

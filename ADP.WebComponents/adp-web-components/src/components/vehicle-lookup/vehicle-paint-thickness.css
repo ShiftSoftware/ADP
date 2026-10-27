@@ -1,292 +1,895 @@
 /* tailwind: off */
+/*
+ * Vehicle paint thickness — the stylesheet for <vehicle-paint-thickness>, in the component design
+ * language. The card is the wrapper's; this file styles what is particular to this panel: the certificate
+ * (an action in the head's trailing group), the inspection tabs and the reading summary above the table, the reading
+ * cells and the photos (thumbnails, the per-row drawer's content, the all-photos section). The strip,
+ * the rows, the cards at 720px and under, the photo toggle and the drawer chrome are the lookup
+ * table's (features/lookup-table/lookup-table.css), imported below.
+ *
+ * Rows, tabs and photos stay on screen through a lookup: their values go under the skeleton where they
+ * stand (shift-skeleton, imported below) and only the rows the answer adds or drops slide (design
+ * language § 21a). Nothing in this panel animates a height with a layout-driven component: every
+ * region that comes or goes is the shared .collapsible (grid-template-rows) and every transition
+ * names its properties. Never `transition: all`.
+ *
+ * Panel states, as data attributes on .paint-card: data-verdict, data-phase (busy while a lookup is in
+ * flight), data-body (rows | none), data-swapping (an inspection is being switched: nothing is
+ * fetched, the values fade out and back) and data-reconfiguring (a live hiddenFields change).
+ */
+
+/* Order is the table fragment's contract: the reset, the tokens, the wrapper (which brings the
+   motion primitives and .sr-only — never import lookup-motion.css directly, a second import loses
+   its @keyframes), the head, then the table. */
 @import '../style/base.css';
+@import '../style/lookup-tokens.css';
 @import '../style/shift-skeleton.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 @import '../../features/vehicle-info-layout/lookup-head.css';
+@import '../../features/lookup-table/lookup-table.css';
 
 :host {
   display: block;
-  all: initial !important;
-  /* The family's face (lookup-tokens.css); the wrapper's root switches it for an rtl locale. */
-  font-family: var(--font-sans) !important;
+  /* No blank floor under the strip: the placeholder fills that space when there is no list (idle,
+     or nothing on file), and after that the card simply ends. */
+  --body-rest: 0px;
+  /* The photo box. The inspection photos are portrait phone shots (336 x 600 in the fixtures), so the
+     box is portrait, 9:16 at 72 x 128, and the picture is contained, never covered: a gauge reading
+     at the edge of a shot must not be cropped (owner, 2026-10-27). */
+  --photo-w: 72px;
+  --photo-h: 128px;
+  /* Where a row or the toggle comes to rest when something opens under it (lib/reveal-below reads
+     scroll-margin-top): near the top of the page, with the head of the card still in view. */
+  --reveal-margin: 72px;
 }
 
-*,
-:host * {
-  font-family: inherit !important;
+.paint-card,
+.paint-card *,
+.paint-card *::before,
+.paint-card *::after {
+  box-sizing: border-box;
 }
 
-.paint-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-top: 15px;
-  padding-bottom: 15px;
-  transition-duration: 300ms;
-}
-
-.paint-toolbar-hidden {
-  display: none;
-}
-
-.paint-tabs {
-  min-width: 0;
-  flex: 1 1 0%;
-}
-
-.paint-certificate {
+.paint-card {
   position: relative;
-  flex-shrink: 0;
-  margin-inline-end: 16px;
-}
-
-.paint-certificate-button {
-  display: flex;
   width: 100%;
-  cursor: pointer;
-  align-items: center;
-  gap: 8px;
-  border-radius: 4px;
-  border: 1px solid #f59e0b;
-  background-color: #f59e0b;
-  padding: 6px 16px;
-  font-size: 17px;
-  font-weight: 500;
-  color: #fff;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 300ms;
+  color: var(--ink);
+  /* No font-family: the wrapper's root sets the face for the language and this inherits it. */
+  font-size: 13px;
+  line-height: 1.35;
 }
 
-.paint-certificate-button:hover {
-  border-color: #d97706;
-  background-color: #d97706;
+/* ---------------------------------------------------------------------------------------------
+   Head: the certificate, an action in the trailing group
+   ------------------------------------------------------------------------------------------- */
+
+/* The menu hangs from the head's bottom edge. The head clips its own content (overflow: hidden, for
+   the lookup's leave), so the menu is the head's sibling and this wrapper is what it is positioned
+   against. No z-index of its own: the menu's is what lifts it over the strip and the skeleton covers. */
+.paint-head {
+  position: relative;
+}
+
+/* The trailing group's gap would leave a 10px hole before the pill whenever the certificate is shut
+   (a slot of no width still has a gap on each side), and under 430px the pill must reach both edges.
+   So the gap lives on the slot, open only. */
+.paint-head .lookup-summary {
+  gap: 0;
+}
+
+/* The certificate (owner decision 16, 2026-10-27; extends § 14: the head's trailing group may carry an
+   action before the pill, which stays the head's last child). It is a slot that is open when there is
+   a certificate to say something about and shut otherwise, and it never mounts: opacity and visibility
+   on --settle, like a .layer, so a shut one cannot be tabbed to. The group is 30px tall (the pill
+   wrapper's min-height) and the button is exactly that, so the head is the same height with the
+   button, with the pill, with both and with neither.
+   Its width is the part that cannot ease (an auto width has nothing to ease to), so it changes only
+   while the slot is invisible: it opens at the start of the fade-in and shuts at the end of the
+   fade-out. In the head the slot is the only thing beside the title (a record panel with records
+   has no pill words), so nothing sits next to it to be seen moving. */
+.paint-certificate-slot {
+  display: grid;
+  grid-template-columns: 0fr;
+  margin-inline-end: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-columns 0s linear var(--settle),
+    margin-inline-end 0s linear var(--settle),
+    opacity var(--settle) ease,
+    visibility 0s linear var(--settle);
+}
+
+.paint-certificate-slot[data-open='true'] {
+  grid-template-columns: 1fr;
+  margin-inline-end: 10px;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-columns 0s,
+    margin-inline-end 0s,
+    opacity var(--settle) ease,
+    visibility 0s;
+}
+
+/* Alone in the group (no pill with words) it has nothing to be spaced from. */
+.paint-certificate-slot[data-open='true']:last-child {
+  margin-inline-end: 0;
+}
+
+/* The track is 0fr while shut: the content's automatic minimum would hold it open. */
+.paint-certificate {
+  min-width: 0;
+  border-radius: 6px;
+  transition: opacity var(--settle) ease;
+}
+
+/* White, a thin blue outline, the printer, "Certificate", a chevron: the outlined button of § 18 in the
+   interaction blue. The rim is an inset shadow (§ 10). 30px is the pill wrapper's height (§ 14). */
+.paint-certificate-button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  height: 30px;
+  padding: 0 8px 0 9px;
+  color: var(--blue-dark);
+  background: var(--paper);
+  border: 0;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px var(--lt-rim-blue);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+@media (hover: hover) {
+  .paint-certificate-button:not(:disabled):not([aria-expanded='true']):hover {
+    background: var(--blue-tint);
+  }
+}
+
+.paint-certificate-button[aria-expanded='true'] {
+  color: #ffffff;
+  background: var(--blue);
+  box-shadow: inset 0 0 0 1px var(--blue-dark);
+}
+
+.paint-certificate-button:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 2px;
+}
+
+.paint-certificate-button:disabled {
+  cursor: default;
 }
 
 .paint-certificate-print {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-.paint-certificate-label {
-  white-space: nowrap;
+  flex: none;
+  width: 16px;
+  height: 16px;
 }
 
 .paint-certificate-arrow {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  transition-property: transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 300ms;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  transition: transform var(--settle) ease;
 }
 
-.paint-certificate-arrow-open {
+.paint-certificate-button[aria-expanded='true'] .paint-certificate-arrow {
   transform: rotate(180deg);
 }
 
+/* No certificate: the same place, the same height, said in grey (§ 10: grey is "not applicable") and
+   with a glyph, so it is never colour alone (§ 24). The neutral chip's recipe (§ 18): a grey field, a
+   grey rim at .22, a pill. Not a button: there is nothing to open, and a dead control is a lie. */
+.paint-certificate-none {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px 0 10px;
+  color: var(--muted);
+  background: var(--line-soft);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--lt-rim-idle);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+/* The language menu. It opens and shuts as a layer (opacity, a short rise, visibility delayed on the
+   way out), over --settle like everything that appears. An inset object like the drawer (§ 18): paper,
+   a blue rim, radius 8 (an item inside the card, § 12) and the one shadow the language allows, because
+   it floats over the strip and rows it hangs above. It starts just under the button (the head's bottom
+   padding is 12px, so 6px below the button's edge) and ends where the head's padding does. z-index above
+   the skeleton covers (10 and 11). */
 .paint-certificate-menu {
   position: absolute;
-  inset-inline-end: 0;
-  top: 100%;
-  z-index: 10;
-  margin-top: 4px;
-  min-width: 100%;
-  overflow: hidden;
-  border-radius: 4px;
-  border: 1px solid #e2e8f0;
-  background-color: #fff;
+  inset-block-start: calc(100% - 6px);
+  inset-inline-end: 20px;
+  z-index: 20;
+  min-width: 168px;
+  padding: 4px;
+  background: var(--paper);
+  border-radius: 8px;
   box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    inset 0 0 0 1px var(--lt-rim-blue),
+    0 6px 18px rgba(27, 45, 61, 0.08);
+  opacity: 0;
+  transform: translateY(-4px);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--settle) ease,
+    transform var(--settle) ease,
+    visibility 0s linear var(--settle);
+}
+
+.paint-certificate-menu[data-open='true'] {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity var(--settle) ease,
+    transform var(--settle) ease,
+    visibility 0s;
 }
 
 .paint-certificate-item {
   display: block;
-  white-space: nowrap;
-  padding: 8px 16px;
-  font-size: 16px;
-  color: #334155;
-  text-decoration-line: none;
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
+  padding: 8px 12px;
+  color: var(--ink);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+  transition: background 0.2s ease;
 }
 
 .paint-certificate-item:hover {
-  background-color: #fffbeb;
+  background: var(--blue-tint);
 }
 
-.paint-date {
+.paint-certificate-item:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 0;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Inspection tabs: a self-contained strip (paint-tabs*), nothing here leans on the table's CSS, so
+   it can be lifted into a shared tabs component whole
+   ------------------------------------------------------------------------------------------- */
+
+/* The strip's slot, the .collapsible primitive: open when there is an inspection to choose between,
+   shut over the last labels when there is not. In flight it stays open: the labels are the last
+   answer's (§ 21a). */
+.paint-bar {
+  min-width: 0;
+}
+
+.paint-tabs {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border-bottom: 1px solid #e2e8f0;
-  padding: 10px 16px;
-  font-size: 16px;
-  color: #334155;
-}
-
-.paint-date-icon {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-.paint-date-label {
-  font-weight: 600;
-}
-
-.paint-table-scroll {
-  overflow-x: auto;
-}
-
-.paint-table {
-  margin-left: auto;
-  margin-right: auto;
-  width: fit-content;
-}
-
-.paint-table-head {
-  display: flex;
-}
-
-.paint-table-head-cell {
-  font-weight: 600;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 16px;
-  text-align: center;
-}
-
-.paint-table-row,
-.paint-table-row-empty {
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.paint-table-row:last-child {
-  border-bottom-width: 0;
-}
-
-.paint-table-row-line {
-  display: flex;
-}
-
-.paint-table-row-line-data {
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 300ms;
-}
-
-.paint-table-row-line-odd {
-  background-color: #f1f5f9;
-}
-
-.paint-table-row-line-data:hover {
-  background-color: rgba(224, 242, 254, 0.5);
-}
-
-.paint-table-cell {
-  margin-top: auto;
-  margin-bottom: auto;
-  padding: 16px;
-  text-align: center;
-}
-
-.paint-images {
-  display: flex;
-  width: 100%;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 16px;
-  padding: 16px 24px;
+  gap: 6px 4px;
+  align-items: flex-end;
+  min-width: 0;
 }
 
-.paint-image-group {
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  overflow: hidden;
-  border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
-
-.paint-image-group-title {
-  text-align: center;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: #f8fafc;
-  font-weight: 600;
-  padding: 6px;
-}
-
-.paint-image-list {
-  display: flex;
-  max-width: 100%;
-  flex-wrap: wrap;
-  padding: 12px;
-  gap: 8px;
-}
-
-.paint-image-cell {
-  display: flex;
-  gap: 8px;
-}
-
-.paint-image-button {
-  position: relative;
-  flex-shrink: 0;
-  width: fit-content;
-  margin-left: auto;
-  margin-right: auto;
-  box-shadow: 0 0 #0000;
-  outline: 2px solid transparent;
-  outline-offset: 2px;
+/* A slim tab: the source on top, the date small beneath, a blue underline on the selected one (owner,
+   2026-10-27). The underline is an inset shadow, not a border, so a selected tab is the same box as the
+   others (§ 10). 12px of inline padding puts the first label on the same line as the table's first
+   column under it. .2s, the language's one duration shorter than --settle: a press must feel instant
+   (§ 18). */
+.paint-tabs-tab {
+  display: block;
+  padding: 6px 12px 8px;
+  margin: 0;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 6px 6px 0 0;
+  box-shadow: inset 0 -2px 0 transparent;
   cursor: pointer;
+  font: inherit;
+  text-align: start;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.paint-image-overlay {
-  position: absolute;
+.paint-tabs-tab[data-selected='true'] {
+  color: var(--blue-dark);
+  box-shadow: inset 0 -2px 0 var(--blue);
+}
+
+/* Pointer devices only, so a tap does not leave a sticky wash. The selected tab keeps its own look. */
+@media (hover: hover) {
+  .paint-tabs-tab[data-selected='false']:not([aria-disabled='true']):hover {
+    color: var(--ink);
+    background: var(--row-hover);
+  }
+}
+
+/* Inside the tab, not outside it: the strip's slot is overflow: hidden and would cut an outline drawn
+   outwards. 2px solid in the hue's dark (§ 24), offset inwards for that reason. */
+.paint-tabs-tab:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: -2px;
+}
+
+.paint-tabs-tab[aria-disabled='true'] {
+  cursor: default;
+}
+
+/* One block per tab, so a lookup covers the labels with a single cover and one sweep. */
+.paint-tabs-text {
+  display: grid;
+  transition: opacity var(--settle) ease;
+}
+
+.paint-tabs-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+}
+
+/* The caption is its own slot (the same grid-template-rows recipe as .collapsible, kept here so the
+   strip stands alone), so hiding the date from hiddenFields closes the line instead of removing it in
+   one frame. */
+.paint-tabs-caption {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows var(--settle) ease,
+    opacity var(--settle) ease,
+    visibility 0s linear var(--settle);
+}
+
+.paint-tabs-caption[data-open='true'] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows var(--settle) ease,
+    opacity var(--settle) ease,
+    visibility 0s;
+}
+
+.paint-tabs-caption-body {
+  display: block;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The date is read, so it is --date-ink (§ 9), 12px/600 tabular (small note). */
+.paint-tabs-date {
+  display: block;
+  color: var(--date-ink);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* A selected tab's date takes the tab's blue; the unselected ones are --date-ink. */
+.paint-tabs-tab[data-selected='true'] .paint-tabs-date {
+  color: inherit;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   The reading summary: a quiet line between the tabs and the table (off by default)
+   ------------------------------------------------------------------------------------------- */
+
+/* A fact, not a verdict, so it is not a pill. Small note: 12px, 600, tabular (design language § 11,
+   "counts"), in --muted: secondary text, read after the tabs. It was in the head's trailing group; the
+   certificate took that place (owner decision 16) and the line is too long to share a 430px head. It
+   is a slot (the .collapsible primitive) that opens when the shown inspection has readings and the
+   host asked for it, and its figures are the answer's, so they go under the skeleton in flight and
+   fade while an inspection is switched. Margins and not padding, so the slot can shut to nothing. The
+   block is as wide as its words (the skeleton's cover is the box), at the table's 12px inset. */
+.paint-summary {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 0 6px;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  margin: 8px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition: opacity var(--settle) ease;
+}
+
+.paint-summary-dot {
+  color: var(--line);
+}
+
+/* ---------------------------------------------------------------------------------------------
+   The table: the reading cells
+   ------------------------------------------------------------------------------------------- */
+
+/* The row's name: the panel, at 650 (§ 11, between the body's 500 and the pill's 700). */
+.lt-row > .lt-cell[data-identity='true'] {
+  font-weight: 650;
+}
+
+/* The two readings are figures, read: --date-ink, 600, tabular (§ 9, § 11). Columns three and four
+   always: hiddenFields can only take the photos column away, which is last. */
+.lt-row > .lt-cell:nth-child(3),
+.lt-row > .lt-cell:nth-child(4) {
+  color: var(--date-ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Those two headings (and, on a card, their captions) carry the unit, which the panel has already
+   upper-cased: the table's own uppercase would turn the micro sign into a Greek capital mu. */
+.lt-columns > .lt-cell:nth-child(3),
+.lt-columns > .lt-cell:nth-child(4) {
+  text-transform: none;
+}
+
+/* A row's no-photo statement is the table's plain action text (.lt-action-plain); nothing to add.
+   Where a row's photos open, it stops under the head of the card, not against the window's edge. */
+.lt-row[data-open='true'] {
+  scroll-margin-top: var(--reveal-margin);
+}
+
+/* ---------------------------------------------------------------------------------------------
+   The photos: the drawer's content and the all-photos section's groups
+   ------------------------------------------------------------------------------------------- */
+
+.paint-drawer-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.paint-drawer-name {
+  font-size: 13px;
+  font-weight: 760;
+}
+
+/* Small note: 12px, 600, tabular (§ 11). */
+.paint-note {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.paint-sides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 32px;
+}
+
+/* A side's caption: the small-label type (§ 11) with the reading beside it in figures. */
+.paint-side-caption {
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.paint-figure {
+  color: var(--date-ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.paint-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* The thumbnail: the table's media treatment (lookup-table.css): a box on recessed paper, a grey rim
+   at rest, the interaction blue on hover or focus. The rim is a pseudo-element over the picture, an
+   inset shadow on the box itself would paint under the <img> and vanish. NOTHING covers the
+   picture: the see-through dark "expand" overlay of the old panel is gone (§ 12: no translucency). */
+.paint-photo {
+  position: relative;
+  display: block;
+  flex: none;
+  width: var(--photo-w);
+  height: var(--photo-h);
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  background: var(--paper-soft);
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--settle) ease;
+}
+
+.paint-photo::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--lt-rim-idle);
+  content: '';
+  pointer-events: none;
+  transition: box-shadow 0.2s ease;
+}
+
+/* Photos sit on white once they have arrived (the phone shots have their own background). */
+.paint-photo[data-state='ready'] {
+  background: var(--paper);
+}
+
+.paint-photo:not(:disabled):hover::after,
+.paint-photo:not(:disabled):focus-visible::after {
+  box-shadow: inset 0 0 0 1px var(--lt-rim-blue);
+}
+
+.paint-photo:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 2px;
+}
+
+.paint-photo:disabled {
+  cursor: default;
+}
+
+/* contain, not cover: a gauge reading at the edge of a shot must not be cropped. Hidden until the
+   file has arrived, so a lazy picture fades in rather than popping. */
+.paint-photo-image {
+  display: block;
   width: 100%;
   height: 100%;
-  pointer-events: none;
-  border-radius: 0.5rem;
+  object-fit: contain;
   opacity: 0;
-  background-color: rgba(0, 0, 0, 0.4);
-  transition-property: all;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 300ms;
+  transition: opacity var(--settle) ease;
 }
 
-.paint-image-overlay:hover,
-.paint-image-button:hover div {
+.paint-photo[data-state='ready'] .paint-photo-image {
   opacity: 1;
 }
 
-.paint-image-overlay-label {
-  color: #fff;
+/* A picture that did not load: the struck-picture glyph in the box, cross-faded in place. */
+.paint-photo-stand {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--settle) ease;
 }
 
-.paint-image {
-  height: 150px;
-  width: 84px;
-  cursor: pointer;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  transition-property: all;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 300ms;
+.paint-photo[data-state='failed'] .paint-photo-stand {
+  opacity: 1;
 }
 
-.paint-image-button:hover img {
+.paint-photo-glyph {
+  width: 20px;
+  height: 20px;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Placeholder: idle ("look a vehicle up") and nothing on file
+   ------------------------------------------------------------------------------------------- */
+
+/* Quiet and centred: a muted glyph in a recessed disc, one line of small text. It is the space a list
+   would take, said in words, so it uses the list's colours and never a verdict's. */
+.paint-placeholder-layer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  padding: 26px 20px 28px;
+  text-align: center;
+}
+
+.paint-placeholder-mark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  color: var(--muted);
+  background: var(--paper-soft);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--lt-rim-idle);
+}
+
+.paint-placeholder-glyph {
+  width: 22px;
+  height: 22px;
+}
+
+.paint-placeholder-text {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   All photos: the end of the panel, a band like the strip and a region of groups
+   ------------------------------------------------------------------------------------------- */
+
+/* The band is a button over the full width, so the whole band is the target. It is the strip's own
+   look (recessed paper, ruled top and bottom, --lead-height) because it heads a body the way the
+   strip does; the interaction blue marks it while it is open. */
+.paint-photos-toggle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-height: var(--lead-height);
+  padding: 6px 12px;
+  margin: 0;
+  color: var(--muted);
+  background: var(--paper-soft);
+  border: 0;
   box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    inset 0 1px 0 var(--line),
+    inset 0 -1px 0 var(--line);
+  cursor: pointer;
+  font: inherit;
+  text-align: start;
+  scroll-margin-top: var(--reveal-margin);
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+@media (hover: hover) {
+  .paint-photos-toggle:not(:disabled):hover {
+    background: var(--row-hover);
+  }
+}
+
+.paint-photos-toggle:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: -2px;
+}
+
+.paint-photos-toggle[aria-expanded='true'] {
+  color: var(--blue-dark);
+}
+
+/* Small label: 11px, 700, +0.06em, uppercase (§ 11). */
+.paint-photos-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The count is a value: small note, tabular, --date-ink (read), under the skeleton in flight. */
+.paint-photos-count {
+  color: var(--date-ink);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.paint-photos-glyph {
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
+/* One path says open and shut: it turns over when the section opens, on --settle like the region. */
+.paint-photos-chevron {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin-inline-start: auto;
+  transition: transform var(--settle) ease;
+}
+
+.paint-photos-toggle[aria-expanded='true'] .paint-photos-chevron {
+  transform: rotate(180deg);
+}
+
+/* The groups: one per reading that has photos, in a grid that fills the width. The block the skeleton
+   covers (with the all-photos region's own chrome staying) and the one an inspection switch fades. */
+.paint-photos-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 12px;
+  padding: 16px 12px 18px;
+  transition: opacity var(--settle) ease;
+}
+
+/* A group is an item inside the card (§ 12): recessed paper, a grey rim at .22, radius 10 (an inset
+   inside the card), with its photos inside on white. */
+.paint-group {
+  min-width: 0;
+  padding: 12px 14px 14px;
+  background: var(--paper-soft);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--lt-rim-idle);
+}
+
+.paint-group-name {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.paint-group-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 650;
+}
+
+/* The figure keeps its unit on one line; it is the name that wraps. */
+.paint-group-name > .paint-note {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Switching an inspection, and a live configuration change: nothing is fetched, so no skeleton --
+   what changes fades out, is swapped while out and fades back (the table fades its own values and its
+   drawer's content, lookup-table.css).
+   ------------------------------------------------------------------------------------------- */
+
+.paint-card[data-swapping='true'] .paint-photos-content,
+.paint-card[data-swapping='true'] .paint-summary,
+.paint-card[data-reconfiguring='true'] .paint-summary,
+.paint-card[data-reconfiguring='true'] .paint-tabs-text,
+.paint-card[data-reconfiguring='true'] .paint-certificate {
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Loading: no sweep for a skeleton that is not on screen
+   ------------------------------------------------------------------------------------------- */
+
+/* The wrapper's `.loading` starts every .shift-skeleton's sweep, and a lookup used to run one for each
+   of these shut places (a shut drawer carries no skeleton, so it is not listed): the two placeholder sentences while a list is on
+   screen, the closed all-photos region, a shut tab strip and a shut summary line. A shut .collapsible is hidden, so
+   its sweep was invisible work on every frame of the wait (design language § 21: the loops are the
+   cost). The cover stays and fades as before; only the loop is not started. Specificity above the
+   shared `.loading .shift-skeleton::before`, which is why these name their parent's state. */
+.paint-placeholder[data-open='false'] .shift-skeleton::before,
+.paint-placeholder .layer[data-active='false'] .shift-skeleton::before,
+.paint-photos[data-open='false'] .shift-skeleton::before,
+.paint-photos-region[data-open='false'] .shift-skeleton::before,
+.paint-bar[data-open='false'] .shift-skeleton::before,
+.paint-summary-slot[data-open='false'] .shift-skeleton::before {
+  animation: none;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Narrow panels (720 and under): the table turns its rows into cards (lookup-table.css); here Left and
+   Right sit side by side in the card, as two readings of one panel
+   ------------------------------------------------------------------------------------------- */
+
+@container (max-width: 720px) {
+  .paint-tabs-tab {
+    padding-inline: 14px;
+  }
+
+  /* Two equal columns: the name and the photo toggle share row one, Left and Right share the last row.
+     The table's card has a flexible column and an auto one, which would make the readings unequal. */
+  .lt-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .lt-row > .lt-cell:nth-child(3) {
+    grid-column: 1;
+  }
+
+  .lt-row > .lt-cell:nth-child(4) {
+    grid-column: 2;
+  }
+
+  /* The unit is already in the caption's text: keep the table's caption type but not its uppercase. */
+  .lt-row > .lt-cell:nth-child(3)::before,
+  .lt-row > .lt-cell:nth-child(4)::before {
+    text-transform: none;
+  }
+
+  /* The head's padding is 14px here (10px under the button), so the menu follows it. */
+  .paint-certificate-menu {
+    inset-block-start: calc(100% - 4px);
+    inset-inline-end: 14px;
+  }
+
+  .paint-summary {
+    margin-inline: 14px;
+    max-width: calc(100% - 28px);
+  }
+
+  .paint-photos-toggle {
+    padding-inline: 14px;
+  }
+
+  .paint-photos-content {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 14px 10px 16px;
+  }
+
+  .paint-sides {
+    gap: 12px 20px;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Phones (430 and under): the head stacks (lookup-head.css) and the certificate stacks with it
+   ------------------------------------------------------------------------------------------- */
+
+@container (max-width: 430px) {
+  /* The certificate takes the pill's place on the head's second row, edge to edge like the pill; if a
+     pill with words is there too the two share the row. Shut, it takes no room, so the pill keeps the
+     whole row. */
+  .paint-certificate-slot[data-open='true'] {
+    flex: 1 1 auto;
+    margin-inline-end: 8px;
+  }
+
+  .paint-certificate-button,
+  .paint-certificate-none {
+    justify-content: center;
+    width: 100%;
+  }
+
+  /* A sheet on a phone is the later task; until then the menu spans the head's width. */
+  .paint-certificate-menu {
+    inset-inline: 14px;
+    min-width: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Reduced motion: every transition above is on a state attribute, so it is kept and made
+   immediate. The table's own block is in its fragment.
+   ------------------------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .paint-summary,
+  .paint-tabs-tab,
+  .paint-tabs-text,
+  .paint-tabs-caption,
+  .paint-certificate,
+  .paint-certificate-slot,
+  .paint-certificate-button,
+  .paint-certificate-arrow,
+  .paint-certificate-menu,
+  .paint-certificate-item,
+  .paint-photo,
+  .paint-photo::after,
+  .paint-photo-image,
+  .paint-photo-stand,
+  .paint-photos-toggle,
+  .paint-photos-chevron,
+  .paint-photos-content {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
 }
