@@ -1,22 +1,36 @@
 {
   "serviceHistory": "Сервисная история",
-  "noData": "Данных нет.",
   "branch": "Филиал",
   "dealer": "Дилер",
-  "invoiceNumber": "Номер Счета",
+  "invoiceNumber": "Номер счёта",
   "date": "Дата",
   "serviceType": "Тип услуги",
   "odometer": "Одометр",
-
   "laborLines": "Строки работ",
   "partLines": "Строки запчастей",
-
   "laborCode": "Код работы",
   "packageCode": "Код пакета",
   "serviceCode": "Код услуги",
   "serviceDescription": "Описание услуги",
-
-  "partNumber": "Номер детали",
+  "partNumber": "Номер запчасти",
   "qty": "Кол-во",
-  "partDescription": "Описание детали"
+  "partDescription": "Описание запчасти",
+  "jobNumber": "Номер заказ-наряда",
+  "parentInvoice": "Исходный счёт",
+  "accountNumber": "Номер лицевого счёта",
+  "columnsLabel": "Визиты на сервис",
+  "details": "Подробности",
+  "expandRow": "Показать подробности",
+  "collapseRow": "Скрыть подробности",
+  "noLaborLines": "В записях нет работ по этому счёту.",
+  "noPartLines": "В записях нет запчастей по этому счёту.",
+  "rowsPerPage": "Строк на странице",
+  "pageAll": "Все",
+  "pageRange": "{from}–{to} из {total}",
+  "previousPage": "Предыдущая страница",
+  "nextPage": "Следующая страница",
+  "idleHint": "Найдите автомобиль, чтобы увидеть его сервисную историю.",
+  "emptyHint": "В записях нет сервисной истории для этого автомобиля.",
+  "errorHint": "Не удалось загрузить сервисную историю. Повторите попытку.",
+  "unauthorizedHint": "Этот автомобиль отсутствует в записях дистрибьютора."
 }

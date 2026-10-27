@@ -1,22 +1,36 @@
 {
   "serviceHistory": "Service History",
-  "noData": "No data is available.",
   "branch": "Branch",
   "dealer": "Dealer",
   "invoiceNumber": "Invoice No.",
   "date": "Date",
   "serviceType": "Service Type",
   "odometer": "Odometer",
-
   "laborLines": "Labor Lines",
   "partLines": "Part Lines",
-
   "laborCode": "Labor Code",
   "packageCode": "Package Code",
   "serviceCode": "Service Code",
   "serviceDescription": "Service Description",
-
   "partNumber": "Part Number",
   "qty": "Part Quantity",
-  "partDescription": "Part Description"
+  "partDescription": "Part Description",
+  "jobNumber": "Job No.",
+  "parentInvoice": "Original Invoice",
+  "accountNumber": "Account No.",
+  "columnsLabel": "Service visits",
+  "details": "Details",
+  "expandRow": "Show details",
+  "collapseRow": "Hide details",
+  "noLaborLines": "No labor lines on record for this invoice.",
+  "noPartLines": "No part lines on record for this invoice.",
+  "rowsPerPage": "Rows per page",
+  "pageAll": "All",
+  "pageRange": "{from}–{to} of {total}",
+  "previousPage": "Previous page",
+  "nextPage": "Next page",
+  "idleHint": "Look up a vehicle to see its service history.",
+  "emptyHint": "No service history on record for this vehicle.",
+  "errorHint": "The service history could not be loaded. Try again.",
+  "unauthorizedHint": "This vehicle is not in the distributor's records."
 }

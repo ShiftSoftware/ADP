@@ -2,7 +2,6 @@ import yupTypeMapper from '~lib/yup-type-mapper';
 
 const ServiceHistorySchema = yupTypeMapper([
   'serviceHistory',
-  'noData',
   'branch',
   'dealer',
   'invoiceNumber',
@@ -18,6 +17,24 @@ const ServiceHistorySchema = yupTypeMapper([
   'partNumber',
   'qty',
   'partDescription',
+  'jobNumber',
+  'parentInvoice',
+  'accountNumber',
+  'columnsLabel',
+  'details',
+  'expandRow',
+  'collapseRow',
+  'noLaborLines',
+  'noPartLines',
+  'rowsPerPage',
+  'pageAll',
+  'pageRange',
+  'previousPage',
+  'nextPage',
+  'idleHint',
+  'emptyHint',
+  'errorHint',
+  'unauthorizedHint',
 ]);
 
 export default ServiceHistorySchema;

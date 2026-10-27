@@ -43,6 +43,13 @@ export const PLACEHOLDER_GLYPHS = {
   search: 'M216 40A176 176 0 1 1 216 392A176 176 0 1 1 216 40ZM216 88A128 128 0 1 0 216 344A128 128 0 1 0 216 88ZM305 339L339 305L466 432A24 24 0 0 1 432 466Z',
   /** A cube in three faces: a list that would hold things and holds none -- no records on file. */
   box: 'M245.5 61.9Q256 56.1 266.5 61.9L409 142.1Q419.4 148 409 153.9L266.5 234.1Q256 239.9 245.5 234.1L103 153.9Q92.6 148 103 142.1ZM78 183.9Q78 171.9 88.5 177.8L231.5 258.3Q242 264.2 242 276.2L242 436.1Q242 448.1 231.5 442.2L88.5 361.7Q78 355.8 78 343.8ZM270 276.2Q270 264.2 280.5 258.3L423.5 177.8Q434 171.9 434 183.9L434 343.8Q434 355.8 423.5 361.7L280.5 442.2Q270 448.1 270 436.1Z',
+  /**
+   * A sheet with three ruled lines: a record that would be on file and is not (service history). The
+   * service panel's own "empty" mark; the cube above stays the generic one. Same winding as the rest:
+   * the sheet clockwise, its opening counter-clockwise, the lines clockwise again.
+   */
+  record:
+    'M120 48H392A40 40 0 0 1 432 88V424A40 40 0 0 1 392 464H120A40 40 0 0 1 80 424V88A40 40 0 0 1 120 48ZM120 88V424H392V88ZM168 144H344V176H168ZM168 224H344V256H168ZM168 304H280V336H168Z',
   /** A triangle with an exclamation mark: the lookup failed. */
   warning: 'M234.5 86.4Q256 48 277.5 86.4L458.5 409.6Q480 448 436 448L76 448Q32 448 53.5 409.6ZM232 176L232 320L280 320L280 176ZM256 348A28 28 0 1 0 256 404A28 28 0 1 0 256 348Z',
   /** A filled circle with a question mark (the verdict pill's neutral glyph): the vehicle is not in the distributor's records. */

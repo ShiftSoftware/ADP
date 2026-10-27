@@ -1,108 +1,186 @@
 /* tailwind: off */
-/* Migrated off Tailwind with no visual change (plain-css-migration/guide.md). */
+/*
+ * Vehicle service history — the stylesheet for <vehicle-service-history>, in the component design
+ * language. The card is the wrapper's; this file styles what is particular to this panel: the rows'
+ * height and the drawer's content (a meta line above the labor lines and the part lines). The strip,
+ * the rows, the cards at 720px and under, the expand button, the drawer's panel (margin, rim, rail,
+ * slide), the embedded compact tables inside it, the body's placeholder (a large muted icon and one
+ * line for idle, nothing on file, not in the records and a failed lookup) and the page controls are
+ * the lookup table's (features/lookup-table/*.css), imported below.
+ *
+ * Rows stay on screen through a lookup: their values, and an open drawer's content, go under the
+ * skeleton where they stand (shift-skeleton, imported below) and only the rows the answer adds or
+ * drops slide (owner, 2026-10-25). Nothing here measures a height or pins one: every height change
+ * is a `.collapsible` sliding (the body, a row's slot, a drawer, the pager) and the owner announces
+ * it to an enclosing flexible-container.
+ *
+ * Panel states, as data attributes on .service-history-card: data-verdict, data-phase (busy while a
+ * lookup is in flight), data-lead (columns | notice) and data-body (rows | none).
+ */
+
+/* Order is the table fragment's contract: the reset, the tokens, the wrapper (which brings the
+   motion primitives and .sr-only — never import lookup-motion.css directly, a second import loses
+   its @keyframes), the head, then the table and the pager. */
 @import '../style/base.css';
+@import '../style/lookup-tokens.css';
 @import '../style/shift-skeleton.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 @import '../../features/vehicle-info-layout/lookup-head.css';
+@import '../../features/lookup-table/lookup-table.css';
+@import '../../features/lookup-table/lookup-pager.css';
 
 :host {
   display: block;
-  all: initial !important;
-  /* The family's face (lookup-tokens.css); the wrapper's root switches it for an rtl locale. */
-  font-family: var(--font-sans) !important;
+  /* Every row is one height, whatever its service type says (a row that grew with its text would
+     change height as the cover lifts on the next vehicle's words; a fixed row only changes what it
+     says). Two lines of the cell's 13px / 1.3 text (2 x 16.9px) plus the cell's 12px above and
+     below is 57.8px; the floor rounds it up, so a row with one line and a row with two are the
+     same height. The expand button (30px + the same padding) is shorter than that. */
+  --lt-row-min: 58px;
 }
 
-*,
-:host * {
-  font-family: inherit !important;
+.service-history-card,
+.service-history-card *,
+.service-history-card *::before,
+.service-history-card *::after {
+  box-sizing: border-box;
 }
 
-.service-history-scroll {
-  overflow-x: auto;
-}
-
-.service-history-subrow {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 18px 10px;
-  background-color: #f4f4f4;
-  border-top: 2px solid #94a3b8;
-  border-bottom: 2px solid #94a3b8;
-  box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.06);
-}
-
-.service-history-subsection {
-  background-color: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  overflow: hidden;
-  box-shadow:
-    0 4px 6px -1px rgb(0 0 0 / 0.1),
-    0 2px 4px -2px rgb(0 0 0 / 0.1);
-}
-
-.service-history-subsection-header {
+.service-history-card {
   position: relative;
+  width: 100%;
+  color: var(--ink);
+  /* No font-family: the wrapper's root sets the face for the language and this inherits it. */
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Rows: clamped text, so every row is the same height
+   ------------------------------------------------------------------------------------------- */
+
+/* Two lines at most, so the row holds its height (--lt-row-min above). Only the service type is
+   clamped: it carries its whole text as a title (the table sets it on the growing column), so
+   `[title]` selects it and leaves branch and dealer whole. Only the main table's rows:
+   the drawer's embedded tables are descendants of a row's drawer, not children of a row. */
+.lt-rows > .lt-slot > .lt-slot-body > .lt-row > .lt-text > .lt-value[title] {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Drawer: what an open row holds
+   ------------------------------------------------------------------------------------------- */
+
+/* A closed drawer has no sweep (decision 16). The table keeps an empty, shut shell under every row so
+   that opening one is a real transition, and puts the family's skeleton class on its content; under
+   the wrapper's .loading that class runs the sheen on every shell of the page, on an element no one can
+   see. Only an open or a shutting drawer has content to cover, so a shell with none (:empty) shows no
+   cover and runs no loop. Specificity above `.loading .shift-skeleton::before` (0,2,1). */
+.lt-drawer-row .lt-drawer-content:empty::before,
+.lt-drawer-row .lt-drawer-content:empty::after {
+  opacity: 0;
+  animation: none;
+}
+
+/* The meta line, then the two kinds of line. 14px between them: the language's gap between a
+   drawer's head and its steps. */
+.service-history-drawer {
+  display: grid;
+  gap: 14px;
+}
+
+/* The facts that name the record, one line that wraps: job number, original invoice, account.
+   Only the ones that have a value are in it, so it is absent for a record with none. Ruled
+   underneath (a row separator, so a border is allowed: --line-soft, 1px) to set it apart from
+   the tables below. */
+.service-history-meta {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-inline-start: 14px;
-  padding-inline-end: 8px;
-  background-color: #e2e8f0;
-  border-bottom: 1px solid #cbd5e1;
-}
-
-.service-history-subsection-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  inset-inline-start: 0;
-  width: 4px;
-  background-color: #64748b;
-}
-
-.service-history-subsection-title {
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-soft);
   font-size: 12px;
-  font-weight: 700;
-  color: #1e293b;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
 }
 
-.service-history-subsection-meta {
+/* Small label (design language § 11): 11px, 700, +0.06em, uppercase, in --muted. */
+.service-history-meta-label,
+.service-history-lines-title {
+  color: var(--muted);
   font-size: 11px;
-  padding-left: 6px;
-  padding-right: 6px;
-  min-width: 16px;
-  flex-shrink: 0;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* A number from the source: tabular, in its own left-to-right island so an invoice number survives
+   a right-to-left page (the table's date cell does the same). Codes may be long: wrap anywhere
+   rather than widen the drawer. */
+.service-history-meta-value {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.service-history-lines {
+  min-width: 0;
+}
+
+/* A section's name and how many lines it holds. */
+.service-history-lines-head {
   display: flex;
   align-items: center;
-  font-weight: 700;
-  color: #334155;
-  background-color: #fff;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.25rem;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
-.service-history-subsection-table {
-  max-width: 100%;
-  overflow: auto;
+/* The count: a small note (12px / 600, tabular) in a grey pill (rim .22, the idle furniture's). */
+.service-history-lines-count {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--paper-soft);
+  box-shadow: inset 0 0 0 1px var(--lt-rim-idle);
+  color: var(--date-ink);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
-.service-history-empty {
-  padding: 8px;
-  padding-inline-start: 16px;
-  color: #64748b;
-  font-size: 14px;
-  background-color: #fff;
+/* The statement for an invoice that has no lines of this kind: about a record that exists, never a
+   verdict about the vehicle. Grey, a small note. */
+.service-history-none {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
 }
 
-.service-history-subrow .table-header-cell,
-.service-history-subrow .table-body-cell {
-  padding: 6px !important;
-  line-height: 16px;
+/* ---------------------------------------------------------------------------------------------
+   Narrow panels (720 and under): the table turns its rows into cards (lookup-table.css); the
+   page controls (lookup-pager.css) tighten their own row.
+   ------------------------------------------------------------------------------------------- */
+
+@container (max-width: 720px) {
+  /* A card is several captioned lines, so it is not held to the row's floor; it is only tightened,
+     from the table's 12px 14px and 10px gaps. Only the main table's cards: the drawer's embedded
+     rows have their own compact card rules. */
+  .lt-rows > .lt-slot > .lt-slot-body > .lt-row {
+    min-height: 0;
+    gap: 6px 12px;
+    padding: 10px 14px;
+  }
+
+  /* No floor, so no clamp: a phone cannot show a title, and the full service type is nowhere else. */
+  .lt-rows > .lt-slot > .lt-slot-body > .lt-row > .lt-text > .lt-value[title] {
+    display: block;
+    overflow: visible;
+    -webkit-line-clamp: unset;
+  }
 }
