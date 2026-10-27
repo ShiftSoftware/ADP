@@ -159,7 +159,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
               {/* The table's auto-width mode renders a bare <table>, so its height would jump on the frame the
                   rows land; the container measures the change and animates it, as the table's own flex mode does. */}
               <flexible-container>
-                <div class="overflow-x-auto">
+                <div class="service-history-scroll">
                   <information-table
                     size="small"
                     allowAutoWidth
