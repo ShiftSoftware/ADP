@@ -20,12 +20,14 @@ import {
   leadNotice,
   listed,
   panelBody,
+  panelPlaceholder,
   sameColumns,
 } from './components/VehicleAccessoriesPanel';
 
 import {
   DEFAULT_PAGE_SIZE,
   PageSize,
+  PlaceholderKind,
   RowVeil,
   clampPage,
   pageForSize,
@@ -299,6 +301,32 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
     }
   }
 
+  private retainedPlaceholder: PlaceholderKind | null = null;
+  private placeholderTimer?: ReturnType<typeof setTimeout>;
+
+  /**
+   * Remembers the placeholder's kind and forgets it a settle after the region shut (a list opened over it),
+   * so its words slide away with their region (motion.md rule 5) and no stale sentence is under a region that
+   * opens next. While a lookup is in flight the state is the last answer's, so the kind does not change and
+   * the placeholder stays where it stands under the skeleton.
+   */
+  private retainPlaceholder(kind: PlaceholderKind | null) {
+    if (kind !== null) {
+      this.retainedPlaceholder = kind;
+      clearTimeout(this.placeholderTimer);
+      this.placeholderTimer = undefined;
+      return;
+    }
+
+    if (this.retainedPlaceholder !== null && !this.placeholderTimer) {
+      this.placeholderTimer = setTimeout(() => {
+        this.placeholderTimer = undefined;
+        this.retainedPlaceholder = null;
+        forceUpdate(this);
+      }, this.settleMs());
+    }
+  }
+
   // #endregion
 
   // #region Pages
@@ -467,6 +495,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
       this.opened,
       this.outgoing.length,
       this.isError,
+      panelPlaceholder(state, this.leaving),
     ].join('|');
   }
 
@@ -502,6 +531,11 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
   disconnectedCallback() {
     clearTimeout(this.retainTimer);
+    clearTimeout(this.placeholderTimer);
+    this.retainTimer = undefined;
+    this.retainedBody = 'none';
+    this.placeholderTimer = undefined;
+    this.retainedPlaceholder = null;
     clearTimeout(this.pagingTimer);
     clearTimeout(this.outgoingTimer);
     this.stopFollowing?.();
@@ -538,6 +572,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
     const busy = this.isLoading || this.leaving;
     this.retainBody(panelBody(state));
+    this.retainPlaceholder(panelPlaceholder(state, this.leaving));
 
     const open = bodyOpen(state, this.leaving, this.reconfiguring);
     const current = panelBody(state) === 'rows' ? pageRows(listed(state), this.page, this.pageSize) : [];
@@ -571,6 +606,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
             reconfiguring={this.reconfiguring}
             retainedBody={this.retainedBody}
             retainedNotice={this.retainedNotice}
+            retainedPlaceholder={this.retainedPlaceholder}
             slotRows={[...current, ...this.outgoing]}
             slots={slots}
             page={this.page}

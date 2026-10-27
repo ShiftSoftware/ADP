@@ -1,6 +1,20 @@
 import { VNode, h } from '@stencil/core';
 
-import { ClosingDrawer, LookupPager, LookupColumn, LookupTable, LookupTableProps, PageSize, RowSlot, isPaginated, pageRows } from '~features/lookup-table';
+import {
+  ClosingDrawer,
+  LookupPager,
+  LookupColumn,
+  LookupTable,
+  LookupTableProps,
+  PageSize,
+  PlaceholderKind,
+  RowSlot,
+  TablePlaceholder,
+  isPaginated,
+  pageRows,
+  placeholderKind,
+} from '~features/lookup-table';
+import { PLACEHOLDER_GLYPHS } from '../vehicle-lookup/components/glyphs';
 import type { VerdictState } from '~features/vehicle-info-layout';
 import type { LanguageKeys } from '~features/multi-lingual';
 
@@ -14,6 +28,7 @@ import {
   PartLine,
   RELOOKUP_DROP,
   RELOOKUP_KEEP,
+  SHOWCASE_STRINGS,
   ShowcaseStrings,
   VISITS,
   Visit,
@@ -29,6 +44,12 @@ import {
  * ones with a `dataset`: the host owns their rows, so it can run the choreography an owner runs
  * (single-open, the closing drawers, a lookup that keeps or drops the open row, paging away).
  */
+
+/**
+ * What a placeholder scenario's lookup can end in: a list (`rows`), a vehicle with nothing on file,
+ * one that is not in the records, a failed lookup, or nothing asked yet.
+ */
+export type Outcome = 'idle' | 'rows' | 'empty' | 'unauthorized' | 'error';
 
 /** What the host hands a scenario: the language, its words and the showcase's own state. */
 export type ShowcaseContext = {
@@ -48,11 +69,21 @@ export type ShowcaseContext = {
   looking: boolean;
   /** A page change is in progress: the values fade while the open drawer shuts. */
   fading: boolean;
+  /** The outcome of a scenario that has `outcomes`: what the last lookup ended in. `idle` elsewhere. */
+  outcome: Outcome;
+  /** The panel is clearing: the rows are shutting and the idle placeholder opens under the skeleton. */
+  clearing: boolean;
+  /** The rows an outcome without rows is still shutting over (kept a settle, so they slide away with the body). */
+  heldRows: Visit[];
+  /** The placeholder's last kind, kept a settle after it went, as an owner keeps it (rule 5). */
+  retainedPlaceholder: PlaceholderKind | null;
   toggle: (key: string) => void;
   setPage: (page: number) => void;
   setPageSize: (size: PageSize) => void;
-  /** "Look up again": the next answer in the scenario's `lookups`. */
+  /** "Look up again": the next answer in the scenario's `lookups` (or the next `outcome`). */
   relookup: () => void;
+  /** Clear the panel: the rows leave under the skeleton and the idle placeholder opens. */
+  clear: () => void;
 };
 
 export type Scenario = {
@@ -74,6 +105,8 @@ export type Scenario = {
   initialOpen?: string;
   /** The answers "look up again" cycles through, the first being the dataset itself. */
   lookups?: Visit[][];
+  /** The placeholder scenarios that are interactive: the outcomes "look up again" cycles through, the first being where it starts. */
+  outcomes?: Outcome[];
   render: (context: ShowcaseContext) => VNode;
 };
 
@@ -243,6 +276,60 @@ const stand = (caption: string, table: VNode): VNode => (
     <p class="showcase-stand-caption">{caption}</p>
     {table}
   </section>
+);
+
+/** The words and glyph of each outcome, as a panel hands them to the table. */
+export const placeholderContent = (t: ShowcaseStrings): TablePlaceholder['content'] => ({
+  idle: { glyph: PLACEHOLDER_GLYPHS.search, text: t.placeholderIdle },
+  empty: { glyph: PLACEHOLDER_GLYPHS.box, text: t.placeholderEmpty },
+  error: { glyph: PLACEHOLDER_GLYPHS.warning, text: t.placeholderError },
+  unauthorized: { glyph: PLACEHOLDER_GLYPHS.unknown, text: t.placeholderUnauthorized },
+});
+
+/** What the placeholder says for an outcome, by the table's own derivation, as a panel with all six columns shown would ask it. */
+export const placeholderFor = (outcome: Outcome, leaving = false): PlaceholderKind | null =>
+  placeholderKind({
+    columns: visitColumns(SHOWCASE_STRINGS.en).length,
+    loaded: outcome !== 'idle' && outcome !== 'error',
+    failed: outcome === 'error',
+    authorized: outcome !== 'unauthorized',
+    records: outcome === 'rows' ? VISITS.length : 0,
+    leaving,
+  });
+
+/** The main table with the body's placeholder, for the outcome-less scenarios: no rows, the body shut, the placeholder open on `kind`. */
+const placeholderTable = (context: ShowcaseContext, kind: PlaceholderKind | null, over: Partial<LookupTableProps<Visit>> = {}): VNode =>
+  visitTable(context, [], { body: 'none', open: false, placeholder: { kind, retained: kind, content: placeholderContent(context.t) }, ...over });
+
+/**
+ * The interactive placeholder scenario: the table as an owner drives it through "look up again" and
+ * "clear". Rows stay under the skeleton while a lookup is in flight; an outcome without rows shuts the
+ * body over them (they are kept a settle in `heldRows`) as the placeholder opens, and every other pair
+ * is a cross-fade of the placeholder's layers.
+ */
+const outcomeTable = (context: ShowcaseContext): VNode => {
+  const listed = context.outcome === 'rows';
+  const rows = listed ? VISITS : context.heldRows;
+  const open = listed && !context.clearing;
+
+  return visitTable(context, rows, {
+    busy: context.looking,
+    body: rows.length > 0 ? 'rows' : 'none',
+    open,
+    slots: rows.map(() => ({ open: true, veil: context.looking ? ('cover' as const) : ('none' as const) })),
+    placeholder: { kind: placeholderFor(context.outcome, context.clearing), retained: context.retainedPlaceholder, content: placeholderContent(context.t) },
+  });
+};
+
+const outcomeControls = (context: ShowcaseContext): VNode => (
+  <div class="showcase-controls">
+    <button type="button" class="showcase-lookup" disabled={context.looking} onClick={context.relookup}>
+      {context.t.lookUpAgain}
+    </button>
+    <button type="button" class="showcase-lookup" disabled={context.looking || context.outcome === 'idle'} onClick={context.clear}>
+      {context.t.clear}
+    </button>
+  </div>
 );
 
 export const SCENARIOS: Record<string, Scenario> = {
@@ -438,5 +525,44 @@ export const SCENARIOS: Record<string, Scenario> = {
     note: 'A failed lookup: a negative notice replaces the headings, the body is shut.',
     verdict: 'negative',
     render: context => visitTable(context, [], { lead: 'notice', body: 'none', open: false, notice: { tone: 'negative', text: context.t.errorNotice } }),
+  },
+  'placeholder-idle': {
+    label: 'Placeholder, idle',
+    note: 'Before a lookup: the headings stay on the strip and the body holds a large grey magnifier and one line. It asserts nothing about a vehicle.',
+    render: context => placeholderTable(context, 'idle'),
+  },
+  'placeholder-empty': {
+    label: 'Placeholder, empty',
+    note: 'An authorized vehicle with nothing on file: a grey box and "no records". The table never reads a verdict off the empty list.',
+    render: context => placeholderTable(context, 'empty'),
+  },
+  'placeholder-error': {
+    label: 'Placeholder, error',
+    note: 'A failed lookup: a red warning triangle and one line; the pill and the accent bar carry the reason. The headings stay.',
+    verdict: 'negative',
+    render: context => placeholderTable(context, 'error'),
+  },
+  'placeholder-unauthorized': {
+    label: 'Placeholder, not in records',
+    note: 'A vehicle the distributor has no record of: an amber question mark and one line. It is not "none" and never the list.',
+    verdict: 'neutral',
+    render: context => placeholderTable(context, 'unauthorized'),
+  },
+  'placeholder-busy': {
+    label: 'Placeholder, busy',
+    note: 'A lookup in flight over an empty answer: the placeholder stays where it stands, its icon and words under the skeleton, and the body does not move.',
+    busy: true,
+    render: context => placeholderTable(context, 'empty', { busy: true }),
+  },
+  'placeholder-cycle': {
+    label: 'Placeholder, every pair',
+    note: 'Look up again walks idle, rows, empty, not in records, error, empty and rows, each over a 1.6 second lookup; Clear goes back to idle. Rows stay under the skeleton, the placeholder cross-fades or slides with the body, and nothing below it jumps.',
+    outcomes: ['idle', 'rows', 'empty', 'unauthorized', 'error', 'empty', 'rows'],
+    render: context => (
+      <div>
+        {outcomeTable(context)}
+        {outcomeControls(context)}
+      </div>
+    ),
   },
 };

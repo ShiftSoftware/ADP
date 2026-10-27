@@ -21,6 +21,8 @@
   "pageRange": "{from}–{to} of {total}",
   "previousPage": "Previous page",
   "nextPage": "Next page",
-  "idleHint": "Look up a vehicle to see the accessories fitted to it.",
-  "emptyHint": "Accessories fitted to this vehicle after it left the factory are listed here."
+  "idleHint": "Look up a vehicle to see its accessory records.",
+  "emptyHint": "No accessories on record for this vehicle.",
+  "errorHint": "The accessories could not be loaded.",
+  "unauthorizedHint": "This vehicle is not in the distributor's records."
 }

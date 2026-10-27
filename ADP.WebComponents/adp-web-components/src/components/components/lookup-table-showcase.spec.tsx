@@ -88,6 +88,106 @@ describe('lookup-table-showcase', () => {
     expect(expanded().every(state => state === 'false')).toBe(true);
   });
 
+  describe('placeholder scenarios', () => {
+    const mountPlaceholder = (name: string, extra = '') => mount(`<lookup-table-showcase scenario="${name}" ${extra}></lookup-table-showcase>`);
+    const kinds = (qa: (s: string) => HTMLElement[]) =>
+      qa('.lt-placeholder-layer')
+        .filter(layer => layer.getAttribute('data-active') === 'true')
+        .map(layer => layer.getAttribute('data-kind'));
+    const settle = async (page: { waitForChanges: () => Promise<void> }, ms = 650) => {
+      await new Promise(resolve => setTimeout(resolve, ms));
+      await page.waitForChanges();
+    };
+
+    it.each([
+      ['placeholder-idle', 'idle'],
+      ['placeholder-empty', 'empty'],
+      ['placeholder-error', 'error'],
+      ['placeholder-unauthorized', 'unauthorized'],
+    ])('%s shows the %s placeholder, open, with its line, the headings kept on the strip', async (name, kind) => {
+      const { q, qa } = await mountPlaceholder(name);
+      expect(kinds(qa)).toEqual([kind]);
+      expect(q('.lt-placeholder').getAttribute('data-open')).toBe('true');
+      expect(q(`.lt-placeholder-layer.is-${kind} .lt-placeholder-text`).textContent.length).toBeGreaterThan(10);
+      expect(q('.lt-lead').getAttribute('data-lead')).toBe('columns');
+      expect(q('.lt-body').getAttribute('data-open')).toBe('false');
+    });
+
+    it('placeholder-busy keeps the empty placeholder in place under the skeleton', async () => {
+      const { q, qa } = await mountPlaceholder('placeholder-busy');
+      expect(q('.lookup-panel').classList.contains('loading')).toBe(true);
+      expect(kinds(qa)).toEqual(['empty']);
+      expect(q('.lt-placeholder').getAttribute('data-open')).toBe('true');
+      expect(q('.lt-placeholder-layer.is-empty .lt-placeholder-text').classList.contains('shift-skeleton')).toBe(true);
+    });
+
+    it('speaks Arabic and flips to right-to-left', async () => {
+      const { q } = await mountPlaceholder('placeholder-unauthorized', 'language="ar"');
+      expect(q('.lookup-panel').getAttribute('dir')).toBe('rtl');
+      expect(q('.lt-placeholder-layer.is-unauthorized .lt-placeholder-text').textContent).toMatch(/[\u0600-\u06FF]/);
+    });
+
+    it('placeholder-cycle starts idle; a lookup keeps it under the skeleton, then rows open and the region shuts', async () => {
+      const { page, q, qa } = await mountPlaceholder('placeholder-cycle');
+      expect(kinds(qa)).toEqual(['idle']);
+
+      (q('.showcase-lookup') as HTMLButtonElement).click();
+      await page.waitForChanges();
+      expect(q('.lookup-panel').classList.contains('loading')).toBe(true);
+      expect(kinds(qa)).toEqual(['idle']);
+      expect(q('.lt-placeholder').getAttribute('data-open')).toBe('true');
+
+      await settle(page, 1700);
+      expect(q('.lookup-panel').classList.contains('loading')).toBe(false);
+      expect(q('.lt-placeholder').getAttribute('data-open')).toBe('false');
+      expect(q('.lt-body').getAttribute('data-open')).toBe('true');
+      expect(qa('.lt-row').length).toBeGreaterThan(0);
+    });
+
+    it('placeholder-cycle: rows -> empty keeps the rows covered while the body shuts, then lets them go; empty -> not in records is a cross-fade', async () => {
+      const { page, q, qa } = await mountPlaceholder('placeholder-cycle');
+      const lookup = async () => {
+        (q('.showcase-lookup') as HTMLButtonElement).click();
+        await settle(page, 1700);
+      };
+
+      await lookup(); // rows
+      await lookup(); // empty
+      expect(kinds(qa)).toEqual(['empty']);
+      expect(q('.lt-body').getAttribute('data-open')).toBe('false');
+      expect(q('.lt-placeholder').getAttribute('data-open')).toBe('true');
+      // The rows are still mounted, shutting inside the body.
+      expect(qa('.lt-row').length).toBeGreaterThan(0);
+      await settle(page);
+      expect(qa('.lt-row').length).toBe(0);
+
+      await lookup(); // not in records
+      expect(kinds(qa)).toEqual(['unauthorized']);
+      expect(qa('.lt-placeholder').length).toBe(1);
+      await lookup(); // error
+      expect(kinds(qa)).toEqual(['error']);
+    });
+
+    it('placeholder-cycle: Clear from rows covers them, opens the idle placeholder, and ends idle', async () => {
+      const { page, q, qa } = await mountPlaceholder('placeholder-cycle');
+      (q('.showcase-lookup') as HTMLButtonElement).click();
+      await settle(page, 1700);
+      expect(q('.lt-body').getAttribute('data-open')).toBe('true');
+
+      const clear = qa('.showcase-lookup')[1] as HTMLButtonElement;
+      clear.click();
+      await page.waitForChanges();
+      expect(q('.lookup-panel').classList.contains('loading')).toBe(true);
+      expect(kinds(qa)).toEqual(['idle']);
+      expect(q('.lt-body').getAttribute('data-open')).toBe('false');
+
+      await settle(page);
+      expect(q('.lookup-panel').classList.contains('loading')).toBe(false);
+      expect(kinds(qa)).toEqual(['idle']);
+      expect(qa('.showcase-lookup')[1].hasAttribute('disabled')).toBe(true);
+    });
+  });
+
   describe('drawer scenarios', () => {
     let reveal: jest.SpyInstance;
     beforeEach(() => {

@@ -3,8 +3,9 @@
  * Vehicle accessories — the stylesheet for <vehicle-accessories>, in the component design language.
  * The card is the wrapper's; this file styles what is particular to this panel: the total in the
  * head, the compact rows and the page controls under the table. The strip, the rows, the cards at
- * 720px and under and the thumbnails are the lookup table's (features/lookup-table/lookup-table.css),
- * imported below.
+ * 720px and under, the thumbnails and the body's placeholder (a large muted icon and one line for idle,
+ * nothing on file, not in the records and a failed lookup) are the lookup table's
+ * (features/lookup-table/lookup-table.css), imported below.
  *
  * Rows stay on screen through a lookup: their values go under the skeleton where they stand
  * (shift-skeleton, imported below) and only the rows the answer adds or drops slide (owner,
@@ -34,9 +35,6 @@
   --lt-media-size: 48px;
   --lt-cell-pad-block: 8px;
   --lt-row-min: 65px;
-  /* No blank floor under the strip: the placeholder fills that space when there is no list
-     (idle, or nothing on file), and after a notice that has said everything the card simply ends. */
-  --body-rest: 0px;
 }
 
 .accessories-card,
@@ -83,47 +81,6 @@
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-}
-
-/* ---------------------------------------------------------------------------------------------
-   Placeholder: idle ("look a vehicle up") and nothing on file
-   ------------------------------------------------------------------------------------------- */
-
-/* Quiet and centred: a muted glyph in a recessed disc, one line of small text. It is the space a list
-   would take, said in words, so it uses the list's colours and never a verdict's. */
-.accessories-placeholder-layer {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: center;
-  justify-content: center;
-  padding: 26px 20px 28px;
-  text-align: center;
-}
-
-.accessories-placeholder-mark {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  color: var(--muted);
-  background: var(--paper-soft);
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1px var(--lt-rim-idle);
-}
-
-.accessories-placeholder-glyph {
-  width: 22px;
-  height: 22px;
-}
-
-.accessories-placeholder-text {
-  max-width: 46ch;
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
 }
 
 /* ---------------------------------------------------------------------------------------------

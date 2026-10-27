@@ -4,11 +4,24 @@ import { InferType } from 'yup';
 import accessoriesSchema from '~locales/vehicleLookup/accessories/type';
 import { AccessoryDTO } from '~types/generated/vehicle-lookup/accessory-dto';
 
-import { SearchIcon } from '~assets/search-icon';
-import { PackageIcon } from '~assets/package-icon';
-
 import { LookupHead, PanelVerdict } from '~features/vehicle-info-layout';
-import { LeadKind, LookupColumn, LookupPager, LookupTable, NoticeTone, PageSize, RowSlot, isPaginated, shownBody, visibleColumns } from '~features/lookup-table';
+import {
+  LeadKind,
+  LookupColumn,
+  LookupPager,
+  LookupTable,
+  NoticeTone,
+  PageSize,
+  PlaceholderKind,
+  RowSlot,
+  TablePlaceholder,
+  isPaginated,
+  placeholderKind,
+  shownBody,
+  visibleColumns,
+} from '~features/lookup-table';
+
+import { PLACEHOLDER_GLYPHS } from './glyphs';
 
 export type AccessoriesLocale = InferType<typeof accessoriesSchema>;
 
@@ -75,9 +88,10 @@ export const panelBody = (state: PanelState): 'rows' | 'none' => (hasRecords(sta
 
 /**
  * The strip's layer: always the column headings (they depend on hiddenFields alone, never on the
- * data). An outcome without rows is said by the pill, never by covering the headings, and there is no
- * band repeating it (owner, 2026-10-25). The one exception is a host that hid every column: there are
- * no headings to show, and the strip carries the sentence.
+ * data). An outcome without rows is said by the pill and by the body's placeholder (`panelPlaceholder`,
+ * owner, 2026-10-27), never by covering the headings, so the strip does not say it a third time. The one
+ * exception is a host that hid every column: there are no headings to show, and the strip carries the
+ * sentence.
  */
 export const panelLead = (state: PanelState, _busy: boolean): LeadKind => (columnCount(state.hidden) === 0 ? 'notice' : 'columns');
 
@@ -98,21 +112,32 @@ export const leadNotice = (state: PanelState, locale: AccessoriesLocale): PanelN
 };
 
 /**
- * What fills the space under the strip when there is no list: `idle` before any lookup, after a failed
- * one and for a vehicle not in the distributor's records ("look up a vehicle" -- the pill says what
- * happened), `empty` for an authorized vehicle with nothing on file (what would be listed here), and
- * nothing when a host hid every column, where there is no list to describe. It holds through a lookup (the
- * state is still the last one), so the space does not collapse and reopen while the answer is on its way.
- * Owner, 2026-10-25: a strip over a blank band read as "nothing is shown".
+ * What the body says when there is no list: the table's `placeholderKind` fed this panel's state (owner,
+ * 2026-10-27). `idle` before any lookup (a magnifier and "look up a vehicle": nothing is asserted about a
+ * vehicle), `empty` for an authorized vehicle with nothing on file (grey; never a verdict), `unauthorized`
+ * for a vehicle not in the distributor's records (amber; not "none", and never the list), `error` for a
+ * failed lookup, and null above rows and when a host hid every column (the strip carries the sentence).
+ * It holds through a lookup: the state is still the last answer's, so the placeholder in place stays in
+ * place under the skeleton and cross-fades when the answer lands. `leaving` (a clear, or a failure on a
+ * settled card) opens the idle one as the rows shut.
  */
-export const panelPlaceholder = (state: PanelState): 'idle' | 'empty' | null => {
-  if (columnCount(state.hidden) === 0) return null;
-  // Before a lookup, after a failed one, and for a vehicle not in the distributor's records: the pill
-  // says what happened, and the table is in its idle look (owner, 2026-10-25).
-  if (!state.vehicleLoaded || state.authorized === false) return 'idle';
-  if (!hasRecords(state)) return 'empty';
-  return null;
-};
+export const panelPlaceholder = (state: PanelState, leaving = false): PlaceholderKind | null =>
+  placeholderKind({
+    columns: columnCount(state.hidden),
+    loaded: state.vehicleLoaded,
+    failed: !!state.error,
+    authorized: state.authorized,
+    records: listed(state).length,
+    leaving,
+  });
+
+/** The glyph and the one line of each outcome, from the panel's locale. */
+export const placeholderContent = (locale: AccessoriesLocale): TablePlaceholder['content'] => ({
+  idle: { glyph: PLACEHOLDER_GLYPHS.search, text: locale.idleHint },
+  empty: { glyph: PLACEHOLDER_GLYPHS.box, text: locale.emptyHint },
+  error: { glyph: PLACEHOLDER_GLYPHS.warning, text: locale.errorHint },
+  unauthorized: { glyph: PLACEHOLDER_GLYPHS.unknown, text: locale.unauthorizedHint },
+});
 
 // ---------------------------------------------------------------------------------------------
 // The count, in real plural forms
@@ -179,6 +204,8 @@ type Props = {
   retainedBody: string;
   /** The strip's last sentence, kept so a notice that is leaving fades out with its words, not blank. */
   retainedNotice: PanelNotice | null;
+  /** The placeholder's last kind, kept a settle after it went (rows opened) so its words slide away with their region. */
+  retainedPlaceholder: PlaceholderKind | null;
   /** The rows in the table's slots: the page on screen, then any rows that are leaving (the owner's). */
   slotRows: AccessoryDTO[];
   /** One per slot row: open or shut, and how its values are veiled (the owner's `tableSlots`). */
@@ -194,7 +221,25 @@ type Props = {
 export const bodyOpen = (state: PanelState, leaving: boolean, reconfiguring: boolean): boolean => !leaving && !reconfiguring && panelBody(state) === 'rows';
 
 export const VehicleAccessoriesPanel: FunctionalComponent<Props> = props => {
-  const { locale, language, state, verdict, busy, leaving, reconfiguring, retainedBody, retainedNotice, slotRows, slots, page, pageSize, onPage, onPageSize, onOpenMedia } = props;
+  const {
+    locale,
+    language,
+    state,
+    verdict,
+    busy,
+    leaving,
+    reconfiguring,
+    retainedBody,
+    retainedNotice,
+    retainedPlaceholder,
+    slotRows,
+    slots,
+    page,
+    pageSize,
+    onPage,
+    onPageSize,
+    onOpenMedia,
+  } = props;
 
   const columns = visibleColumns(accessoryColumns(locale), state.hidden);
   const total = listed(state).length;
@@ -206,10 +251,7 @@ export const VehicleAccessoriesPanel: FunctionalComponent<Props> = props => {
   const pagerOpen = open && isPaginated(total);
 
   const notice = leadNotice(state, locale) ?? retainedNotice;
-  // Leaving (a clear, or an error raised on a settled card) always ends idle, so the placeholder is
-  // the idle one for the whole leave: from idle or an empty list it stays open (its words cross-fade
-  // at most) instead of shutting and reopening, and from rows it opens while the rows shut, as one movement.
-  const placeholder = leaving && columnCount(state.hidden) > 0 ? 'idle' : panelPlaceholder(state);
+  const placeholder = panelPlaceholder(state, leaving);
 
   return (
     <section class="accessories-card" data-verdict={verdict.state} data-phase={busy ? 'busy' : 'settled'} data-lead={lead} data-body={body}>
@@ -239,29 +281,8 @@ export const VehicleAccessoriesPanel: FunctionalComponent<Props> = props => {
               reshaping={reconfiguring}
               strings={{ columnsLabel: locale.columnsLabel, noImage: locale.noImage, imageFailed: locale.imageFailed, openImage: locale.openImage }}
               onOpenMedia={onOpenMedia}
+              placeholder={{ kind: placeholder, retained: retainedPlaceholder, content: placeholderContent(locale) }}
             />
-          </div>
-
-          {/* The placeholder under the strip when there is no list (panelPlaceholder). Always mounted; it
-              slides open and shut, and its two sentences cross-fade, so it never pops. Its words go
-              under the skeleton while a lookup is in flight: "look a vehicle up" is not true then. */}
-          <div class="accessories-placeholder collapsible" data-open={placeholder ? 'true' : 'false'} aria-hidden={placeholder ? null : 'true'}>
-            <div class="collapsible-body">
-              <div class="accessories-placeholder-stack layer-stack">
-                <div class="layer accessories-placeholder-layer" data-active={placeholder === 'empty' ? 'false' : 'true'} aria-hidden={placeholder === 'idle' ? null : 'true'}>
-                  <span class="accessories-placeholder-mark">
-                    <SearchIcon class="accessories-placeholder-glyph" />
-                  </span>
-                  <p class="accessories-placeholder-text shift-skeleton">{locale.idleHint}</p>
-                </div>
-                <div class="layer accessories-placeholder-layer" data-active={placeholder === 'empty' ? 'true' : 'false'} aria-hidden={placeholder === 'empty' ? null : 'true'}>
-                  <span class="accessories-placeholder-mark">
-                    <PackageIcon class="accessories-placeholder-glyph" />
-                  </span>
-                  <p class="accessories-placeholder-text shift-skeleton">{locale.emptyHint}</p>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* The page controls. Always mounted, shut when the list fits on the smallest page: they slide with the body, never pop. */}

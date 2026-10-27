@@ -20,10 +20,14 @@ import {
   drawerId,
   formatNumber,
   nonEmptyColumns,
+  PlaceholderKind,
+  TablePlaceholder,
   parseHiddenFields,
+  placeholderKind,
   revealDrawer,
   shouldToggleOnRowClick,
   shownBody,
+  shownPlaceholder,
   tableLead,
   tableRoles,
   tableSlots,
@@ -238,7 +242,7 @@ describe('derivations', () => {
 
   describe('tableLead', () => {
     // The headings depend on the configuration alone, so the answer cannot change them (owner, F1).
-    const lead = (over: Partial<{ busy: boolean; idle: boolean; body: string; columns: number }> = {}) =>
+    const lead = (over: Partial<{ busy: boolean; idle: boolean; body: string; columns: number; placeholder: boolean }> = {}) =>
       tableLead({ busy: false, idle: false, body: 'rows', columns: 3, ...over });
 
     it('is the headings while idle, whatever the body is', () => {
@@ -274,6 +278,17 @@ describe('derivations', () => {
         for (const idle of [false, true]) for (const body of ['rows', 'none', 'run']) for (const columns of [0, 3]) answers.add(lead({ busy, idle, body, columns }));
       expect([...answers].sort()).toEqual(['columns', 'notice']);
     });
+
+    // Owner, 2026-10-27: the body's placeholder says a row-less outcome in words, so the strip does not.
+    it('keeps the headings for an outcome without rows when the body says it in words (placeholder), so it is said once', () => {
+      expect(lead({ body: 'none', placeholder: true })).toBe('columns');
+      expect(lead({ body: 'run', placeholder: true })).toBe('columns');
+      expect(lead({ body: 'none', placeholder: false })).toBe('notice');
+    });
+
+    it('still has no headings to keep when every column is hidden, placeholder or not', () => {
+      expect(lead({ columns: 0, body: 'none', placeholder: true })).toBe('notice');
+    });
   });
 
   describe('shownBody', () => {
@@ -286,6 +301,86 @@ describe('derivations', () => {
       expect(shownBody('rows', 'run')).toBe('rows');
       expect(shownBody('run', 'rows')).toBe('run');
     });
+  });
+});
+
+describe('placeholderKind', () => {
+  const kind = (over: Partial<Parameters<typeof placeholderKind>[0]> = {}) => placeholderKind({ columns: 3, loaded: true, failed: false, authorized: true, records: 4, ...over });
+
+  it('is idle before any lookup, and asserts nothing about a vehicle', () => {
+    expect(kind({ loaded: false, records: 0, authorized: undefined })).toBe('idle');
+    // Whatever stale data the state carries, no vehicle on screen is idle: nothing is claimed about one.
+    expect(kind({ loaded: false, records: 9, authorized: false })).toBe('idle');
+  });
+
+  it('is empty for an authorized vehicle with nothing on file (and for an authorization the DTO leaves unsaid)', () => {
+    expect(kind({ records: 0 })).toBe('empty');
+    expect(kind({ records: 0, authorized: undefined })).toBe('empty');
+  });
+
+  it('is unauthorized for a vehicle not in the records, whatever its list holds: not-in-records is never "empty" and never the list', () => {
+    expect(kind({ authorized: false, records: 0 })).toBe('unauthorized');
+    expect(kind({ authorized: false, records: 7 })).toBe('unauthorized');
+  });
+
+  it('is error for a failed lookup, whatever else the state holds', () => {
+    expect(kind({ failed: true, loaded: false, records: 0 })).toBe('error');
+    expect(kind({ failed: true, loaded: true, authorized: false, records: 3 })).toBe('error');
+  });
+
+  it('is null above rows', () => {
+    expect(kind()).toBeNull();
+    expect(kind({ records: 1 })).toBeNull();
+  });
+
+  it('is null when every column is hidden, in every state: the strip carries the sentence and the body does not say it again', () => {
+    for (const over of [{ loaded: false }, { records: 0 }, { authorized: false }, { failed: true }, {}, { leaving: true }]) expect(kind({ columns: 0, ...over })).toBeNull();
+  });
+
+  describe('through a lookup (the placeholder in place stays in place)', () => {
+    // The owner's state is the last answer's until the next lands, so the same inputs give the same kind
+    // whether or not a lookup is in flight: nothing in the derivation reads `busy`, and nothing may flip.
+    it('keeps the idle placeholder through the first lookup, the empty one through a retry, and the error one while the retry is in flight', () => {
+      expect(kind({ loaded: false, records: 0 })).toBe('idle');
+      expect(kind({ records: 0 })).toBe('empty');
+      expect(kind({ failed: true, loaded: false, records: 0 })).toBe('error');
+      expect(kind({ authorized: false, records: 0 })).toBe('unauthorized');
+    });
+
+    it('has no placeholder under rows in flight: the rows stay, covered, and the region stays shut', () => {
+      expect(kind({ records: 4 })).toBeNull();
+    });
+  });
+
+  describe('leaving (a clear, or a failure raised on a settled card)', () => {
+    it('opens the idle placeholder as rows shut, so the region is not empty while the rows go', () => {
+      expect(kind({ leaving: true, records: 4 })).toBe('idle');
+    });
+
+    it('holds the kind it already has: empty stays empty, unauthorized stays unauthorized, error stays error, until the state itself changes', () => {
+      expect(kind({ leaving: true, records: 0 })).toBe('empty');
+      expect(kind({ leaving: true, authorized: false, records: 0 })).toBe('unauthorized');
+      expect(kind({ leaving: true, failed: true, loaded: false, records: 0 })).toBe('error');
+    });
+  });
+
+  it('only ever answers one of the four kinds or null', () => {
+    const answers = new Set<string | null>();
+    for (const columns of [0, 3])
+      for (const loaded of [false, true])
+        for (const failed of [false, true])
+          for (const authorized of [undefined, true, false])
+            for (const records of [0, 5]) for (const leaving of [false, true]) answers.add(placeholderKind({ columns, loaded, failed, authorized, records, leaving }));
+    expect([...answers].map(String).sort()).toEqual(['empty', 'error', 'idle', 'null', 'unauthorized']);
+  });
+});
+
+describe('shownPlaceholder', () => {
+  it('is the current kind, else the one the region last showed while it slides shut, else nothing', () => {
+    expect(shownPlaceholder('empty', 'idle')).toBe('empty');
+    expect(shownPlaceholder(null, 'error')).toBe('error');
+    expect(shownPlaceholder(null, null)).toBeNull();
+    expect(shownPlaceholder(null)).toBeNull();
   });
 });
 
@@ -852,10 +947,21 @@ describe('date, number and action: derivations', () => {
       expect(formatNumber(0)).toBe('0');
     });
 
-    it("speaks the language: the runtime's own Arabic and Russian digits and grouping, English for a language it does not know", () => {
-      expect(formatNumber(101328, 'ar')).toBe(new Intl.NumberFormat(['ar'], { maximumFractionDigits: 3 }).format(101328));
-      expect(formatNumber(101328, 'ru')).toBe(new Intl.NumberFormat(['ru'], { maximumFractionDigits: 3 }).format(101328));
+    it("speaks the language's grouping and separators (the runtime's own), English for a language it does not know", () => {
+      expect(formatNumber(101328, 'ru')).toBe(new Intl.NumberFormat(['ru'], { maximumFractionDigits: 3, numberingSystem: 'latn' }).format(101328));
       expect(formatNumber(101328, 'xx')).toBe('101,328');
+    });
+
+    // Owner, 2026-10-27 (decision 19): Latin digits in every language, so a figure sits with the ISO
+    // dates, VINs and invoice numbers beside it. Only the digits are pinned, not the separators.
+    it('uses Latin digits in Arabic, Kurdish, Russian and English', () => {
+      const arabicIndic = /[\u0660-\u0669\u06F0-\u06F9]/;
+      for (const lang of ['ar', 'ku', 'ru', 'en']) {
+        expect(formatNumber(1234567.891, lang)).toMatch(/1.234.567.891/);
+        expect(formatNumber(1234567.891, lang)).not.toMatch(arabicIndic);
+        expect(formatNumber(0, lang)).toBe('0');
+      }
+      expect(formatNumber(101328, 'ar')).toMatch(/^101.328$/);
     });
   });
 
@@ -988,9 +1094,10 @@ describe('number cell', () => {
     expect(qa(page, '.lt-row > .lt-number').every(el => el.getAttribute('data-kind') === 'number')).toBe(true);
   });
 
-  it('follows the table language', async () => {
+  it('follows the table language, in Latin digits in every language', async () => {
     const page = await renderVisits({ lang: 'ar', rows: [visit()] });
     expect(q(page, '.lt-row > .lt-number').textContent).toBe(formatNumber(101328, 'ar'));
+    expect(q(page, '.lt-row > .lt-number').textContent).toMatch(/^101.328$/);
   });
 
   it('shows a zero, and the dash for null and for a value that is not a number', async () => {
@@ -1782,6 +1889,223 @@ describe('drawer', () => {
 // own grid, so a descendant selector from the grid reaches its rows. The rules that are for the
 // table's own rows and headings are anchored with child combinators instead.
 // ---------------------------------------------------------------------------------------------
+
+describe('placeholder', () => {
+  const GLYPHS: Record<PlaceholderKind, string> = { idle: 'M1 1h2v2z', empty: 'M2 2h2v2z', error: 'M3 3h2v2z', unauthorized: 'M4 4h2v2z' };
+  const TEXT: Record<PlaceholderKind, string> = {
+    idle: 'Look up a vehicle to see its items.',
+    empty: 'No items on file for this vehicle.',
+    error: "Couldn't load the items.",
+    unauthorized: 'This vehicle is not in the distributor\u2019s records.',
+  };
+  const content = Object.fromEntries((Object.keys(TEXT) as PlaceholderKind[]).map(kind => [kind, { glyph: GLYPHS[kind], text: TEXT[kind] }])) as TablePlaceholder['content'];
+
+  const withPlaceholder = (kind: PlaceholderKind | null, over: Partial<LookupTableProps<Item>> = {}, retained?: PlaceholderKind | null) =>
+    render({ rows: [], body: 'none', open: false, placeholder: { kind, retained, content }, ...over });
+
+  const layer = (page: Page, kind: PlaceholderKind) => q(page, `.lt-placeholder-layer.is-${kind}`);
+  const active = (page: Page) => qa(page, '.lt-placeholder-layer').filter(el => el.getAttribute('data-active') === 'true');
+
+  it('is not rendered by a table that has no placeholder prop, and then the body keeps its floor', async () => {
+    const page = await render({ rows: [], body: 'none', open: false });
+    expect(q(page, '.lt-placeholder')).toBeNull();
+    expect(q(page, '.lt-grid').getAttribute('data-placeholder')).toBeNull();
+  });
+
+  it('is always mounted for a panel that has one: four layers, one per outcome, in every state', async () => {
+    for (const kind of [null, 'idle', 'empty', 'error', 'unauthorized'] as const) {
+      const page = await withPlaceholder(kind);
+      expect(qa(page, '.lt-placeholder-layer').map(el => el.getAttribute('data-kind'))).toEqual(['idle', 'empty', 'error', 'unauthorized']);
+      expect(q(page, '.lt-grid').getAttribute('data-placeholder')).toBe('true');
+    }
+  });
+
+  it.each(['idle', 'empty', 'error', 'unauthorized'] as const)('says %s: its region is open, only its layer is active, with its own glyph and its line', async kind => {
+    const page = await withPlaceholder(kind);
+    expect(q(page, '.lt-placeholder').getAttribute('data-open')).toBe('true');
+    expect(q(page, '.lt-placeholder').getAttribute('data-kind')).toBe(kind);
+    expect(active(page).map(el => el.getAttribute('data-kind'))).toEqual([kind]);
+    expect(layer(page, kind).classList.contains(`is-${kind}`)).toBe(true);
+    expect(layer(page, kind).querySelector('.lt-placeholder-text').textContent).toBe(TEXT[kind]);
+    expect(layer(page, kind).querySelector('.lt-placeholder-glyph path').getAttribute('d')).toBe(GLYPHS[kind]);
+  });
+
+  it("keeps every outcome's words and glyph mounted, so a cross-fade has both ends", async () => {
+    const page = await withPlaceholder('idle');
+    for (const kind of ['idle', 'empty', 'error', 'unauthorized'] as const) {
+      expect(layer(page, kind).querySelector('.lt-placeholder-text').textContent).toBe(TEXT[kind]);
+      expect(layer(page, kind).querySelector('.lt-placeholder-glyph path').getAttribute('d')).toBe(GLYPHS[kind]);
+    }
+  });
+
+  it('draws the icon as decoration: aria-hidden, not focusable', async () => {
+    const page = await withPlaceholder('error');
+    const icon = q(page, '.lt-placeholder-layer.is-error svg');
+    expect(icon.getAttribute('aria-hidden')).toBe('true');
+    expect(icon.getAttribute('focusable')).toBe('false');
+    expect(icon.getAttribute('viewBox')).toBe('0 0 512 512');
+  });
+
+  describe('announced once per outcome', () => {
+    it("exposes one status, the active layer's, and hides the other three from assistive technology", async () => {
+      for (const kind of ['idle', 'empty', 'error', 'unauthorized'] as const) {
+        const page = await withPlaceholder(kind);
+        const statuses = qa(page, '.lt-placeholder [role="status"]');
+        expect(statuses.length).toBe(4);
+        const exposed = statuses.filter(el => el.getAttribute('aria-hidden') === null);
+        expect(exposed.map(el => el.getAttribute('data-kind'))).toEqual([kind]);
+        expect(exposed[0].textContent).toBe(TEXT[kind]);
+      }
+    });
+
+    it("does not repeat the outcome in the strip: the headings stay (lead columns) and the strip's notice is hidden", async () => {
+      const page = await withPlaceholder('empty', { lead: 'columns', notice: { tone: 'idle', text: 'Said in the strip' } });
+      expect(q(page, '.lt-notice').getAttribute('aria-hidden')).toBe('true');
+      expect(q(page, '.lt-notice').getAttribute('data-active')).toBe('false');
+      // The only exposed status in the whole table is the placeholder's.
+      const exposed = qa(page, '[role="status"]').filter(el => el.getAttribute('aria-hidden') === null);
+      expect(exposed.length).toBe(1);
+      expect(exposed[0].classList.contains('lt-placeholder-layer')).toBe(true);
+    });
+
+    it('is out of the accessibility tree with its region when there is no outcome to say', async () => {
+      const page = await withPlaceholder(null);
+      expect(q(page, '.lt-placeholder').getAttribute('data-open')).toBe('false');
+      expect(q(page, '.lt-placeholder').getAttribute('aria-hidden')).toBe('true');
+      expect(active(page)).toEqual([]);
+    });
+  });
+
+  describe("every state pair (the cross-fade is the layers' data-active, on one clock)", () => {
+    const settle = async (from: PlaceholderKind | null, to: PlaceholderKind | null, retained?: PlaceholderKind | null) => {
+      const model = base({ rows: [], body: 'none', open: false, placeholder: { kind: from, content } });
+      const page = await renderHost(model);
+      expect(q(page, '.lt-placeholder').getAttribute('data-open')).toBe(from === null ? 'false' : 'true');
+      page.root.model = { ...model, placeholder: { kind: to, retained, content } };
+      await page.waitForChanges();
+      return page;
+    };
+
+    const kinds = ['idle', 'empty', 'error', 'unauthorized'] as const;
+
+    for (const from of kinds)
+      for (const to of kinds)
+        if (from !== to)
+          it(`${from} -> ${to}: one region stays open, the active layer moves, and nothing mounts or unmounts`, async () => {
+            const page = await settle(from, to);
+            expect(qa(page, '.lt-placeholder').length).toBe(1);
+            expect(qa(page, '.lt-placeholder-layer').length).toBe(4);
+            expect(q(page, '.lt-placeholder').getAttribute('data-open')).toBe('true');
+            expect(active(page).map(el => el.getAttribute('data-kind'))).toEqual([to]);
+          });
+
+    it('idle -> rows (a lookup landed with records): the region slides shut and the outgoing words stay mounted and active while it does', async () => {
+      const page = await settle('idle', null, 'idle');
+      expect(q(page, '.lt-placeholder').getAttribute('data-open')).toBe('false');
+      expect(active(page).map(el => el.getAttribute('data-kind'))).toEqual(['idle']);
+      expect(layer(page, 'idle').querySelector('.lt-placeholder-text').textContent).toBe(TEXT.idle);
+    });
+
+    it('once the owner lets the retained kind go, nothing is active under the shut region, so the next outcome fades in alone', async () => {
+      const page = await settle('error', null, null);
+      expect(q(page, '.lt-placeholder').getAttribute('data-open')).toBe('false');
+      expect(active(page)).toEqual([]);
+    });
+
+    it('rows -> empty: the region opens on the empty layer alone', async () => {
+      const page = await settle(null, 'empty');
+      expect(q(page, '.lt-placeholder').getAttribute('data-open')).toBe('true');
+      expect(active(page).map(el => el.getAttribute('data-kind'))).toEqual(['empty']);
+    });
+  });
+
+  describe('busy over a placeholder (a lookup in flight)', () => {
+    it.each(['idle', 'empty', 'error', 'unauthorized'] as const)(
+      'keeps the %s placeholder where it stands, its icon and words each on the skeleton class (the cover itself comes from a .loading ancestor), and the region aria-busy',
+      async kind => {
+        const page = await withPlaceholder(kind, { busy: true });
+        expect(q(page, '.lt-grid').getAttribute('data-phase')).toBe('busy');
+        expect(q(page, '.lt-placeholder').getAttribute('aria-busy')).toBe('true');
+        expect(q(page, '.lt-placeholder').getAttribute('data-open')).toBe('true');
+        expect(active(page).map(el => el.getAttribute('data-kind'))).toEqual([kind]);
+        expect(layer(page, kind).querySelector('.lt-placeholder-mark').classList.contains('shift-skeleton')).toBe(true);
+        expect(layer(page, kind).querySelector('.lt-placeholder-text').classList.contains('shift-skeleton')).toBe(true);
+      },
+    );
+
+    it('aria-busy on the region follows busy: set in flight, gone once settled', async () => {
+      const model = base({ rows: [], body: 'none', open: false, placeholder: { kind: 'empty', content } });
+      const page = await renderHost(model);
+      expect(q(page, '.lt-placeholder').hasAttribute('aria-busy')).toBe(false);
+      page.root.model = { ...model, busy: true };
+      await page.waitForChanges();
+      expect(q(page, '.lt-placeholder').getAttribute('aria-busy')).toBe('true');
+      page.root.model = { ...model, busy: false };
+      await page.waitForChanges();
+      expect(q(page, '.lt-placeholder').hasAttribute('aria-busy')).toBe(false);
+    });
+
+    it('puts the skeleton on the icon and the words only, never on the region or the layers (chrome)', async () => {
+      const page = await withPlaceholder('empty', { busy: true });
+      expect(
+        qa(page, '.shift-skeleton')
+          .filter(el => el.closest('.lt-placeholder'))
+          .every(el => /lt-placeholder-(mark|text)/.test(el.className)),
+      ).toBe(true);
+      expect(q(page, '.lt-placeholder').classList.contains('shift-skeleton')).toBe(false);
+      expect(layer(page, 'empty').classList.contains('shift-skeleton')).toBe(false);
+    });
+
+    it('is the same region before, during and after: idle -> busy -> empty changes only the active layer', async () => {
+      const model = base({ rows: [], body: 'none', open: false, placeholder: { kind: 'idle', content } });
+      const page = await renderHost(model);
+      const region = q(page, '.lt-placeholder');
+
+      page.root.model = { ...model, busy: true };
+      await page.waitForChanges();
+      expect(q(page, '.lt-placeholder')).toBe(region);
+      expect(active(page).map(el => el.getAttribute('data-kind'))).toEqual(['idle']);
+
+      page.root.model = { ...model, busy: false, placeholder: { kind: 'empty', content } };
+      await page.waitForChanges();
+      expect(q(page, '.lt-placeholder')).toBe(region);
+      expect(active(page).map(el => el.getAttribute('data-kind'))).toEqual(['empty']);
+    });
+  });
+
+  it('is under the rows of a body that holds them only as a region that is shut', async () => {
+    const page = await render({ placeholder: { kind: null, content } });
+    expect(q(page, '.lt-placeholder').getAttribute('data-open')).toBe('false');
+    expect(qa(page, '.lt-row').length).toBe(2);
+    expect(q(page, '.lt-body').getAttribute('data-open')).toBe('true');
+  });
+
+  it('is not drawn by an embedded table', async () => {
+    const page = await render({ embedded: true, placeholder: { kind: 'idle', content } });
+    expect(q(page, '.lt-placeholder')).toBeNull();
+  });
+
+  describe('stylesheet', () => {
+    const css = readFileSync(path.resolve(__dirname, 'lookup-table.css'), 'utf8');
+    const section = css.slice(css.indexOf('Placeholder: what the body says'), css.indexOf('Rows\n   ---'));
+
+    it('colours the four outcomes by role: grey (muted) for idle and empty, amber for not-in-records, red for a failed lookup', () => {
+      const rule = (selector: string) => section.slice(section.indexOf(selector)).split('}')[0];
+      expect(rule('.lt-placeholder-layer.is-idle,')).toContain('--muted');
+      expect(rule('.lt-placeholder-layer.is-unauthorized {')).toContain('--amber');
+      expect(rule('.lt-placeholder-layer.is-error {')).toContain('--red');
+    });
+
+    it('uses tokens only: no hex colour in its rules', () => {
+      const code = section.replace(/\/\*[\s\S]*?\*\//g, '');
+      expect(code).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    });
+
+    it("has no transition of its own: it moves on the collapsible and layer primitives, and the skeleton's file", () => {
+      expect(section.replace(/\/\*[\s\S]*?\*\//g, '')).not.toMatch(/transition|animation/);
+    });
+  });
+});
 
 describe('lookup-table.css scope (the embedded tables in a drawer are not the table)', () => {
   const css = readFileSync(path.resolve(__dirname, 'lookup-table.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');

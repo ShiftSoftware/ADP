@@ -110,6 +110,41 @@ export type RowActions<Row> = {
 /** A drawer that is shutting: the slot it hangs from and the row whose content it still shows. */
 export type ClosingDrawer<Row> = { index: number; row: Row };
 
+/**
+ * What the body says in words when there is no list to show (owner, 2026-10-27, task T2s: it
+ * overrides design language § 17 "a notice that only repeats the pill is not shown" for table
+ * panels). Before a lookup the reader needs to know where a list will appear; after one, an empty
+ * region next to a VIN reads as broken, so each outcome without rows is a large muted icon and one
+ * line of text, in the colour of its role (design language § 10).
+ *
+ * - `idle`: before any lookup. Asserts nothing about a vehicle. Grey.
+ * - `empty`: an authorized vehicle with nothing on file. "No records", never a verdict. Grey.
+ * - `error`: the lookup failed. Red, the role of a failed lookup (the pill and the accent bar are
+ *   negative for it too).
+ * - `unauthorized`: the vehicle is not in the distributor's records, which is not "none". Amber.
+ */
+export type PlaceholderKind = 'idle' | 'empty' | 'error' | 'unauthorized';
+
+/** One outcome's glyph (512 x 512 path data, see `PLACEHOLDER_GLYPHS`) and its single line of text, already localised. */
+export type PlaceholderContent = { glyph: string; text: string };
+
+export type TablePlaceholder = {
+  /**
+   * The outcome to say, or null when the body holds rows (or there is nothing to say): from
+   * `placeholderKind`. Non-null opens the region; null slides it shut.
+   */
+  kind: PlaceholderKind | null;
+  /**
+   * The kind the region last showed. The owner keeps it a settle after `kind` went null, so the
+   * words slide away with their region instead of blinking out (motion.md rule 5), and drops it
+   * once the region has shut so a stale sentence is never under a region that opens. Omitted, a
+   * shutting region fades its words out with it.
+   */
+  retained?: PlaceholderKind | null;
+  /** The glyph and the line of every outcome the panel can be in; the four layers cross-fade in place. */
+  content: Record<PlaceholderKind, PlaceholderContent>;
+};
+
 export type Density = 'comfortable' | 'compact';
 
 export type LookupTableProps<Row> = {
@@ -160,6 +195,16 @@ export type LookupTableProps<Row> = {
    * Not used by an embedded table. A table without it renders exactly as before.
    */
   drawer?: (row: Row, key: string) => VNode | null;
+  /**
+   * The body's words for an outcome without rows (see `TablePlaceholder`): a region under the body
+   * that slides open for `kind` and shut for null, with one layer per outcome, cross-fading. Always
+   * mounted for a panel that has one. Its icon and words are each a `shift-skeleton`, covered only
+   * under a `.loading` ancestor (`shift-skeleton.css`): the owner's wrapper must carry `.loading` while
+   * a lookup is in flight, or the last outcome's words stay uncovered. `busy` itself sets `data-phase`
+   * and `aria-busy` on the region (a reader waits for the settled layer), not the cover.
+   * Omit it and the table is exactly as before. Not used by an embedded table.
+   */
+  placeholder?: TablePlaceholder;
   /**
    * One entry per row in `rows`: whether the row's slot is open and how its values are veiled.
    * Omitted, every row is open and unveiled. A panel that keeps its rows on screen through a lookup
@@ -288,14 +333,21 @@ const NUMBER_LOCALES: Record<string, string[]> = { en: ['en'], ar: ['ar'], ku: [
 
 const numberFormats = new Map<string, Intl.NumberFormat>();
 
-/** A figure in the language's digits and grouping ("101,328"; fractions up to three places, so a quantity of 4.2 stays 4.2). No unit: the record carries none. */
+/**
+ * A figure in the language's grouping and separators, always in Latin digits ("101,328"; fractions up
+ * to three places, so a quantity of 4.2 stays 4.2). No unit: the record carries none. Latin digits in
+ * every language (owner, 2026-10-27): the dates beside it, the VINs, the invoice numbers and the part
+ * numbers are Latin digits too, and a column of figures that switches script is a column that cannot
+ * be compared across rows or panels. Only the digits are pinned: Arabic and Kurdish keep their own
+ * separators and grouping.
+ */
 export const formatNumber = (value: number, lang: string = 'en'): string => {
   let format = numberFormats.get(lang);
   if (!format) {
     try {
-      format = new Intl.NumberFormat(NUMBER_LOCALES[lang] ?? NUMBER_LOCALES.en, { maximumFractionDigits: 3 });
+      format = new Intl.NumberFormat(NUMBER_LOCALES[lang] ?? NUMBER_LOCALES.en, { maximumFractionDigits: 3, numberingSystem: 'latn' });
     } catch {
-      format = new Intl.NumberFormat('en', { maximumFractionDigits: 3 });
+      format = new Intl.NumberFormat('en', { maximumFractionDigits: 3, numberingSystem: 'latn' });
     }
     numberFormats.set(lang, format);
   }
@@ -450,15 +502,69 @@ export const tableRoles = (body: string, open: boolean, reshaping: boolean): boo
 /**
  * The strip shows the headings whenever there is something to head: idle, in flight, and above rows
  * (they depend on the configuration alone, so the answer cannot change them). It shows a notice
- * only for an outcome that has no rows (authorized and empty, unauthorized, a failed lookup, a
- * panel's own body) and when every column is hidden, where there are no headings to show. § 20's
- * `panelLead`, generalised, with the skeleton leg removed.
+ * only for an outcome that has no rows to head (authorized and empty, unauthorized, a failed lookup,
+ * a panel's own body) and when every column is hidden, where there are no headings to show. A panel
+ * whose body says that outcome in words (`placeholder: true`, see `placeholderKind`) keeps its
+ * headings for it, so the strip and the body never say the same thing twice (owner, 2026-10-27).
+ * § 20's `panelLead`, generalised, with the skeleton leg removed.
  */
-export const tableLead = ({ busy, idle, body, columns }: { busy: boolean; idle: boolean; body: string; columns: number }): LeadKind =>
-  columns === 0 ? 'notice' : busy || idle || body === 'rows' ? 'columns' : 'notice';
+export const tableLead = ({ busy, idle, body, columns, placeholder = false }: { busy: boolean; idle: boolean; body: string; columns: number; placeholder?: boolean }): LeadKind =>
+  columns === 0 ? 'notice' : busy || idle || placeholder || body === 'rows' ? 'columns' : 'notice';
 
 /** What the body renders: it keeps its outgoing kind while it shuts, so the content slides away instead of blinking out. */
 export const shownBody = (body: string, retained: string): string => (body === 'none' ? retained : body);
+
+/**
+ * What the body says when there is no list, from the panel's state. Pure: no timers, no memory.
+ *
+ * - No column to show (a host hid every one): null. There are no headings either, so the strip
+ *   carries the sentence (`tableLead` answers `notice`) and the body says nothing a second time.
+ * - A failed lookup: `error`, whatever else the state holds.
+ * - No vehicle on screen: `idle`.
+ * - `authorized === false`: `unauthorized`, whatever the DTO's list holds (the distributor may not
+ *   show it). Not-in-records is never "empty".
+ * - An authorized vehicle with no records on file: `empty`. A statement about the records, not a verdict.
+ * - Rows to show: null, except while the panel is `leaving` (a clear, or a failure on a settled
+ *   card): the rows are shutting, and the region opens on the idle words as they go. Under the cover
+ *   (a leave is busy), so it reads as a placeholder that is there, not as a claim.
+ *
+ * **During a lookup the inputs are still the last answer's** (the owner's state changes when the
+ * answer lands), so the placeholder in place stays in place, under the skeleton, and cross-fades
+ * when the answer arrives: an idle one stays through the first lookup, an empty one through a
+ * retry, an error one while the retry is in flight. A `leaving` panel holds the kind it already
+ * has (empty, unauthorized, error) and only a panel leaving from rows opens the idle one.
+ */
+export const placeholderKind = ({
+  columns,
+  loaded,
+  failed,
+  authorized,
+  records,
+  leaving = false,
+}: {
+  /** How many columns are visible (`visibleColumns(...).length`). */
+  columns: number;
+  /** A vehicle's answer is on screen: a lookup landed and did not fail. */
+  loaded: boolean;
+  /** The last lookup failed. */
+  failed: boolean;
+  /** The vehicle's `isAuthorized`; `false` is not in the records. */
+  authorized?: boolean;
+  /** How many records the answer holds, judged on the whole list (never on the rows a page shows). */
+  records: number;
+  /** The panel is on its way to idle or to an error: its rows are shutting. */
+  leaving?: boolean;
+}): PlaceholderKind | null => {
+  if (columns === 0) return null;
+  if (failed) return 'error';
+  if (!loaded) return 'idle';
+  if (authorized === false) return 'unauthorized';
+  if (records === 0) return 'empty';
+  return leaving ? 'idle' : null;
+};
+
+/** The kind the region renders: the current one, else the one it last showed while it slides shut. */
+export const shownPlaceholder = (kind: PlaceholderKind | null, retained?: PlaceholderKind | null): PlaceholderKind | null => kind ?? retained ?? null;
 
 // ---------------------------------------------------------------------------------------------
 // Render
@@ -761,10 +867,61 @@ const EmbeddedTable = <Row,>(props: LookupTableProps<Row>): VNode => {
   );
 };
 
+const PLACEHOLDER_KINDS: PlaceholderKind[] = ['idle', 'empty', 'error', 'unauthorized'];
+
+/**
+ * The body's words for an outcome without rows: one region that slides open and shut (a
+ * `.collapsible`, so it never pops, and it moves with the body it replaces: the same clock), holding
+ * one layer per outcome that cross-fade in place (a `.layer-stack`, so the region is as tall as its
+ * tallest line and nothing below it moves when the outcome changes).
+ *
+ * Announced once per outcome, on the pattern the strip's notice already uses: every layer is a
+ * `role="status"` and only the active one is exposed (`aria-hidden` on the rest and on a shut
+ * region), so a reader hears the sentence when its outcome arrives and never twice. A panel whose
+ * strip also says the outcome would double-announce it, which is why `tableLead` keeps the headings
+ * for a panel that has a placeholder.
+ *
+ * Icon and words are each their own `shift-skeleton`, so a `.loading` ancestor (the owner's wrapper)
+ * covers them in flight: the last outcome stays where it stands without being read as the next one's.
+ * The table does not set `.loading`. `busy` makes the region `aria-busy`, so a flight or a leave
+ * (an error raised on rows, before the state says so) is not read out half way: only the layer
+ * that is active once `busy` ends is announced.
+ */
+const Placeholder = ({ placeholder, busy }: { placeholder: TablePlaceholder; busy: boolean }) => {
+  const shown = shownPlaceholder(placeholder.kind, placeholder.retained);
+  const open = placeholder.kind !== null;
+
+  return (
+    <div class="lt-placeholder collapsible" data-open={open ? 'true' : 'false'} data-kind={shown ?? 'none'} aria-hidden={open ? null : 'true'} aria-busy={busy ? 'true' : null}>
+      <div class="collapsible-body">
+        <div class="lt-placeholder-stack layer-stack">
+          {PLACEHOLDER_KINDS.map(kind => {
+            const active = shown === kind;
+            return (
+              <div
+                class={{ 'layer': true, 'lt-placeholder-layer': true, [`is-${kind}`]: true }}
+                data-kind={kind}
+                data-active={active ? 'true' : 'false'}
+                role="status"
+                aria-hidden={active ? null : 'true'}
+              >
+                <span class="lt-placeholder-mark shift-skeleton">
+                  <Glyph path={placeholder.content[kind].glyph} className="lt-placeholder-glyph" />
+                </span>
+                <p class="lt-placeholder-text shift-skeleton">{placeholder.content[kind].text}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[]): VNode {
   if (props.embedded) return EmbeddedTable(props);
 
-  const { columns, rows, rowKey, lead, notice, busy, body, open, reshaping = false, strings, onOpenMedia, slots, lang, density, label, actions, drawer } = props;
+  const { columns, rows, rowKey, lead, notice, busy, body, open, reshaping = false, strings, onOpenMedia, slots, lang, density, label, actions, drawer, placeholder } = props;
 
   // A row's identity for the action column and the drawer: the panel's `keyOf`, else the key the vdom uses.
   const keyOfRow = (row: Row, index: number, fallback?: string): string => (actions?.keyOf ? actions.keyOf(row, index) : (fallback ?? rowKey(row, index)));
@@ -808,6 +965,7 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
       data-phase={busy ? 'busy' : 'settled'}
       data-stack={tracks.stacked ? 'true' : 'false'}
       data-density={density === 'compact' ? 'compact' : null}
+      data-placeholder={placeholder ? 'true' : null}
       style={style}
     >
       <div class="lt-lead layer-stack" data-lead={lead}>
@@ -934,6 +1092,8 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
           )}
         </div>
       </div>
+
+      {placeholder && <Placeholder placeholder={placeholder} busy={busy} />}
     </div>
   );
 }

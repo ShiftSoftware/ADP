@@ -25,6 +25,8 @@ const accessoriesSchema = yupTypeMapper([
   'nextPage',
   'idleHint',
   'emptyHint',
+  'errorHint',
+  'unauthorizedHint',
 ]);
 
 export default accessoriesSchema;

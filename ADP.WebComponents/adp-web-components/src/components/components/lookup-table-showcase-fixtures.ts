@@ -144,6 +144,11 @@ export type ShowcaseStrings = {
   idleHint: string;
   emptyNotice: string;
   errorNotice: string;
+  placeholderIdle: string;
+  placeholderEmpty: string;
+  placeholderError: string;
+  placeholderUnauthorized: string;
+  clear: string;
 };
 
 const EN: ShowcaseStrings = {
@@ -182,6 +187,11 @@ const EN: ShowcaseStrings = {
   idleHint: 'Look a vehicle up',
   emptyNotice: 'No service visits on record',
   errorNotice: 'The lookup failed',
+  placeholderIdle: 'Look up a vehicle to see its service history.',
+  placeholderEmpty: 'No service visits on record for this vehicle.',
+  placeholderError: "Couldn't load the service history.",
+  placeholderUnauthorized: "This vehicle is not in the distributor's records.",
+  clear: 'Clear',
 };
 
 const AR: ShowcaseStrings = {
@@ -220,6 +230,11 @@ const AR: ShowcaseStrings = {
   idleHint: 'ابحث عن مركبة',
   emptyNotice: 'لا توجد زيارات صيانة مسجلة',
   errorNotice: 'فشل البحث',
+  placeholderIdle: 'ابحث عن مركبة لعرض سجل صيانتها.',
+  placeholderEmpty: 'لا توجد زيارات صيانة مسجلة لهذه المركبة.',
+  placeholderError: 'تعذر تحميل سجل الصيانة.',
+  placeholderUnauthorized: 'هذه المركبة غير مسجلة في سجلات الموزع.',
+  clear: 'مسح',
 };
 
 export const SHOWCASE_STRINGS: Record<LanguageKeys, ShowcaseStrings> = { en: EN, ar: AR, ku: EN, ru: EN };

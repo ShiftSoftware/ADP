@@ -1,9 +1,10 @@
-import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Element, Host, Method, Prop, State, Watch, forceUpdate, h } from '@stencil/core';
 
 import { LookupHead, VehicleInfoLayout } from '~features/vehicle-info-layout';
 import {
   ClosingDrawer,
   PageSize,
+  PlaceholderKind,
   closingDrawers,
   drawerAfterLookup,
   drawerAfterPage,
@@ -16,8 +17,8 @@ import {
 import type { LanguageKeys } from '~features/multi-lingual';
 import { createHeightChangeAnnouncer } from '~lib/flexible-parents';
 
-import { MANY_VISITS, SHOWCASE_STRINGS, Visit, showcaseDirection } from './lookup-table-showcase-fixtures';
-import { SCENARIOS, SHOWCASE_PAGE_SIZE_KEY, ShowcaseContext, visitKey } from './lookup-table-showcase-scenarios';
+import { MANY_VISITS, SHOWCASE_STRINGS, VISITS, Visit, showcaseDirection } from './lookup-table-showcase-fixtures';
+import { Outcome, SCENARIOS, SHOWCASE_PAGE_SIZE_KEY, ShowcaseContext, placeholderFor, visitKey } from './lookup-table-showcase-scenarios';
 
 const DEFAULT_SETTLE_MS = 480;
 /** How long a "look up again" takes to answer. */
@@ -63,11 +64,21 @@ export class LookupTableShowcase {
   @State() lookupIndex = 0;
   @State() looking = false;
   @State() fading = false;
+  /** The placeholder scenario's last outcome: an index into the scenario's `outcomes`. */
+  @State() outcomeIndex = 0;
+  /** The panel is clearing: the rows are shutting under the skeleton and the idle placeholder opens. */
+  @State() clearing = false;
+  /** Rows an outcome without rows is still shutting over, kept a settle so they slide away with the body (rule 5). */
+  @State() heldRows: Visit[] = [];
 
   private fetchTimer: ReturnType<typeof setTimeout> | undefined;
   private lookupTimer: ReturnType<typeof setTimeout> | undefined;
   private closingTimer: ReturnType<typeof setTimeout> | undefined;
   private pageTimer: ReturnType<typeof setTimeout> | undefined;
+  private heldTimer: ReturnType<typeof setTimeout> | undefined;
+  private placeholderTimer: ReturnType<typeof setTimeout> | undefined;
+  /** The placeholder's last kind, kept a settle after the region shut, as an owner keeps it. Not state: render reads it and the timer forces a render. */
+  private retainedPlaceholder: PlaceholderKind | null = null;
 
   private heightAnnouncer?: ReturnType<typeof createHeightChangeAnnouncer>;
   private heightSignature?: string;
@@ -98,6 +109,10 @@ export class LookupTableShowcase {
     clearTimeout(this.lookupTimer);
     clearTimeout(this.closingTimer);
     clearTimeout(this.pageTimer);
+    clearTimeout(this.heldTimer);
+    clearTimeout(this.placeholderTimer);
+    this.placeholderTimer = undefined;
+    this.retainedPlaceholder = null;
     this.stopFollowing?.();
     this.stopFollowing = undefined;
 
@@ -111,6 +126,9 @@ export class LookupTableShowcase {
     this.lookupIndex = 0;
     this.looking = false;
     this.fading = false;
+    this.outcomeIndex = 0;
+    this.clearing = false;
+    this.heldRows = [];
   }
 
   componentDidRender() {
@@ -123,7 +141,18 @@ export class LookupTableShowcase {
     }
 
     // Everything that moves the card's height, joined: a render that changes none of it announces nothing.
-    const signature = [this.expandedKey, this.closing.length, this.looking, this.fading, this.lookupIndex, this.page, this.pageSize].join('|');
+    const signature = [
+      this.expandedKey,
+      this.closing.length,
+      this.looking,
+      this.fading,
+      this.lookupIndex,
+      this.page,
+      this.pageSize,
+      this.outcomeIndex,
+      this.clearing,
+      this.heldRows.length,
+    ].join('|');
     const changed = this.heightSignature !== undefined && this.heightSignature !== signature;
     this.heightSignature = signature;
     if (!changed) return;
@@ -137,6 +166,8 @@ export class LookupTableShowcase {
     clearTimeout(this.lookupTimer);
     clearTimeout(this.closingTimer);
     clearTimeout(this.pageTimer);
+    clearTimeout(this.heldTimer);
+    clearTimeout(this.placeholderTimer);
     this.stopFollowing?.();
     this.heightAnnouncer?.dispose();
   }
@@ -249,7 +280,22 @@ export class LookupTableShowcase {
    */
   private relookup = () => {
     const scenario = this.current();
-    if (this.looking || !scenario.lookups) return;
+    if (this.looking) return;
+
+    // A placeholder scenario: the next outcome in its list, under the skeleton for the same 1.6 seconds.
+    if (scenario.outcomes) {
+      this.looking = true;
+      this.lookupTimer = setTimeout(() => {
+        const next = this.outcomeIndex + 1;
+        const index = next < scenario.outcomes.length ? next : 1; // wrap past idle: Clear is the way back to it
+        this.land(scenario.outcomes[index]);
+        this.outcomeIndex = index;
+        this.looking = false;
+      }, LOOKUP_MS);
+      return;
+    }
+
+    if (!scenario.lookups) return;
 
     this.looking = true;
     this.lookupTimer = setTimeout(() => {
@@ -265,9 +311,63 @@ export class LookupTableShowcase {
     }, LOOKUP_MS);
   };
 
+  /** The outcome the last lookup ended in; `idle` for a scenario that has none. */
+  private outcome(): Outcome {
+    return this.current().outcomes?.[this.outcomeIndex] ?? 'idle';
+  }
+
+  /** Moves to an outcome. Rows an outcome without rows replaces are kept a settle, so the body shuts over them. */
+  private land(next: Outcome) {
+    if (this.outcome() === 'rows' && next !== 'rows') {
+      this.heldRows = VISITS;
+      clearTimeout(this.heldTimer);
+      this.heldTimer = setTimeout(() => (this.heldRows = []), this.settleMs());
+    }
+  }
+
+  /**
+   * An owner's retention of the placeholder (rule 5): remembers its kind, and forgets it a settle after the
+   * region shut, so the words slide away with it and no stale sentence is under a region that opens next.
+   */
+  private retainPlaceholder(kind: PlaceholderKind | null) {
+    if (kind !== null) {
+      this.retainedPlaceholder = kind;
+      clearTimeout(this.placeholderTimer);
+      this.placeholderTimer = undefined;
+      return;
+    }
+
+    if (this.retainedPlaceholder !== null && !this.placeholderTimer) {
+      this.placeholderTimer = setTimeout(() => {
+        this.placeholderTimer = undefined;
+        this.retainedPlaceholder = null;
+        forceUpdate(this);
+      }, this.settleMs());
+    }
+  }
+
+  /** Clear: the rows leave under the skeleton and the idle placeholder opens; after a settle the state is idle. */
+  private clear = () => {
+    const scenario = this.current();
+    if (this.looking || !scenario.outcomes) return;
+
+    this.looking = true;
+    this.clearing = true;
+    this.lookupTimer = setTimeout(() => {
+      this.land('idle');
+      this.outcomeIndex = 0;
+      this.clearing = false;
+      this.looking = false;
+    }, this.settleMs());
+  };
+
   render() {
     const scenario = this.current();
     const t = SHOWCASE_STRINGS[this.language] ?? SHOWCASE_STRINGS.en;
+
+    // The placeholder scenario's table is an owner's: it keeps the kind a settle after its region shuts.
+    const outcome = this.outcome();
+    this.retainPlaceholder(scenario.outcomes ? placeholderFor(outcome, this.clearing) : null);
 
     const context: ShowcaseContext = {
       lang: this.language,
@@ -280,10 +380,15 @@ export class LookupTableShowcase {
       closing: this.closing,
       looking: this.looking,
       fading: this.fading,
+      outcome,
+      clearing: this.clearing,
+      heldRows: this.heldRows,
+      retainedPlaceholder: this.retainedPlaceholder,
       toggle: this.toggle,
       setPage: this.setPage,
       setPageSize: this.setPageSize,
       relookup: this.relookup,
+      clear: this.clear,
     };
 
     return (
