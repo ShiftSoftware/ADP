@@ -5,7 +5,7 @@
 
 ### A VIN to reach the same menu from the other end. Only used by the vehicle section at the bottom,
 ### which needs the CompanyData/Vehicles containers this sample does not provision.
-@vin = JTMHX01J8L4198293
+@vin = JTMHX01J6M4217945
 
 ### ─────────────────────────────── replicate ───────────────────────────────
 
