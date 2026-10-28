@@ -1,26 +1,3 @@
-/* tailwind: off */
-/*
- * Vehicle paint thickness — the stylesheet for <vehicle-paint-thickness>, in the component design
- * language. The card is the wrapper's; this file styles what is particular to this panel: the certificate
- * (an action in the head's trailing group), the inspection tabs and the reading summary above the table, the reading
- * cells and the photos (thumbnails, the per-row drawer's content, the all-photos section). The strip,
- * the rows, the cards at 720px and under, the photo toggle and the drawer chrome are the lookup
- * table's (features/lookup-table/lookup-table.css), imported below.
- *
- * Rows, tabs and photos stay on screen through a lookup: their values go under the skeleton where they
- * stand (shift-skeleton, imported below) and only the rows the answer adds or drops slide (design
- * language § 21a). Nothing in this panel animates a height with a layout-driven component: every
- * region that comes or goes is the shared .collapsible (grid-template-rows) and every transition
- * names its properties. Never `transition: all`.
- *
- * Panel states, as data attributes on .paint-card: data-verdict, data-phase (busy while a lookup is in
- * flight), data-body (rows | none), data-swapping (an inspection is being switched: nothing is
- * fetched, the values fade out and back) and data-reconfiguring (a live hiddenFields change).
- */
-
-/* Order is the table fragment's contract: the reset, the tokens, the wrapper (which brings the
-   motion primitives and .sr-only — never import lookup-motion.css directly, a second import loses
-   its @keyframes), the head, then the table. */
 @import '../style/base.css';
 @import '../style/lookup-tokens.css';
 @import '../style/shift-skeleton.css';
@@ -30,12 +7,7 @@
 
 :host {
   display: block;
-  /* No blank floor under the strip: the table's placeholder fills that space when there is no list,
-     and after that the card simply ends. */
   --body-rest: 0px;
-  /* The photo box. The inspection photos are portrait phone shots (336 x 600 in the fixtures), so the
-     box is portrait, 9:16 at 72 x 128, and the picture is contained, never covered: a gauge reading
-     at the edge of a shot must not be cropped (owner, 2026-10-27). */
   --photo-w: 72px;
   --photo-h: 128px;
 }
@@ -51,18 +23,10 @@
   position: relative;
   width: 100%;
   color: var(--ink);
-  /* No font-family: the wrapper's root sets the face for the language and this inherits it. */
   font-size: 13px;
   line-height: 1.35;
 }
 
-/* ---------------------------------------------------------------------------------------------
-   Head: the certificate, an action in the trailing group
-   ------------------------------------------------------------------------------------------- */
-
-/* The menu hangs from the head's bottom edge. The head clips its own content (overflow: hidden, for
-   the lookup's leave), so the menu is the head's sibling and this wrapper is what it is positioned
-   against. No z-index of its own: the menu's is what lifts it over the strip and the skeleton covers. */
 .paint-head {
   position: relative;
 }
@@ -71,8 +35,6 @@
   min-height: 58px;
 }
 
-/* The title over its second line (§ 14): the line keeps its box and fades with data-empty, so moving
-   between vehicles never resizes the head. */
 .paint-main {
   flex: 1 1 0;
   min-width: 0;
@@ -103,23 +65,10 @@
   -webkit-line-clamp: 1;
 }
 
-/* The trailing group's gap would leave a 10px hole before the pill whenever the certificate is shut
-   (a slot of no width still has a gap on each side), and under 430px the pill must reach both edges.
-   So the gap lives on the slot, open only. */
 .paint-head .lookup-summary {
   gap: 0;
 }
 
-/* The certificate (owner decision 16, 2026-10-27; extends § 14: the head's trailing group may carry an
-   action before the pill, which stays the head's last child). It is a slot that is open when there is
-   a certificate to say something about and shut otherwise, and it never mounts: opacity and visibility
-   on --settle, like a .layer, so a shut one cannot be tabbed to. The group is 30px tall (the pill
-   wrapper's min-height) and the button is exactly that, so the head is the same height with the
-   button, with the pill, with both and with neither.
-   Its width is the part that cannot ease (an auto width has nothing to ease to), so it changes only
-   while the slot is invisible: it opens at the start of the fade-in and shuts at the end of the
-   fade-out. In the head the slot is the only thing beside the title (a record panel with records
-   has no pill words), so nothing sits next to it to be seen moving. */
 .paint-certificate-slot {
   display: grid;
   grid-template-columns: 0fr;
@@ -145,20 +94,16 @@
     visibility 0s;
 }
 
-/* Alone in the group (no pill with words) it has nothing to be spaced from. */
 .paint-certificate-slot[data-open='true']:last-child {
   margin-inline-end: 0;
 }
 
-/* The track is 0fr while shut: the content's automatic minimum would hold it open. */
 .paint-certificate {
   min-width: 0;
   border-radius: 6px;
   transition: opacity var(--settle) ease;
 }
 
-/* White, a thin blue outline, the printer, "Certificate", a chevron: the outlined button of § 18 in the
-   interaction blue. The rim is an inset shadow (§ 10). 30px is the pill wrapper's height (§ 14). */
 .paint-certificate-button {
   display: inline-flex;
   gap: 6px;
@@ -219,9 +164,6 @@
   transform: rotate(180deg);
 }
 
-/* No certificate: the same place, the same height, said in grey (§ 10: grey is "not applicable") and
-   with a glyph, so it is never colour alone (§ 24). The neutral chip's recipe (§ 18): a grey field, a
-   grey rim at .22, a pill. Not a button: there is nothing to open, and a dead control is a lie. */
 .paint-certificate-none {
   display: inline-flex;
   gap: 6px;
@@ -238,9 +180,6 @@
   white-space: nowrap;
 }
 
-/* The language menu is a <shift-popover> (top layer, anchored under the button, a bottom sheet on a phone). The popover is the
-   surface: the language's inset object (§ 12), paper, a blue rim, radius 8 and the one shadow the language allows because it floats
-   over the strip and rows it hangs above; it opens and shuts as a layer over --settle, the way the old floating menu did. */
 .paint-popover {
   --shift-popover-surface: var(--paper);
   --shift-popover-border-width: 0px;
@@ -277,23 +216,11 @@
   outline-offset: 0;
 }
 
-/* ---------------------------------------------------------------------------------------------
-   Inspection tabs: the shared <shift-tabs> (components/shift-tabs.css) draws the strip, the captions and
-   the sliding underline; this file only gives it a slot
-   ------------------------------------------------------------------------------------------- */
-
-/* The strip's slot, the .collapsible primitive: open when there is an inspection to choose between,
-   shut over the last labels when there is not. In flight it stays open: the labels are the last
-   answer's (§ 21a). Its first label sits on the table's first column, 12px in (14px in the narrow
-   card, below). */
 .paint-bar {
   min-width: 0;
   --shift-tabs-inset: 12px;
 }
 
-/* The strip goes and comes in two beats inside the one --settle: its labels fade, then the slot shuts;
-   on arrival the slot opens, then the labels come up. Nothing pops, and the card below moves once the
-   labels are gone. */
 .paint-bar.collapsible {
   transition:
     grid-template-rows calc(var(--settle) / 2) ease calc(var(--settle) / 2),
@@ -308,17 +235,6 @@
     visibility 0s;
 }
 
-/* ---------------------------------------------------------------------------------------------
-   The reading summary: a quiet line between the tabs and the table (off by default)
-   ------------------------------------------------------------------------------------------- */
-
-/* A fact, not a verdict, so it is not a pill. Small note: 12px, 600, tabular (design language § 11,
-   "counts"), in --muted: secondary text, read after the tabs. It was in the head's trailing group; the
-   certificate took that place (owner decision 16) and the line is too long to share a 430px head. It
-   is a slot (the .collapsible primitive) that opens when the shown inspection has readings and the
-   host asked for it, and its figures are the answer's, so they go under the skeleton in flight and
-   fade while an inspection is switched. Margins and not padding, so the slot can shut to nothing. The
-   block is as wide as its words (the skeleton's cover is the box), at the table's 12px inset. */
 .paint-summary {
   display: flex;
   flex-wrap: wrap;
@@ -338,17 +254,10 @@
   color: var(--line);
 }
 
-/* ---------------------------------------------------------------------------------------------
-   The table: the reading cells
-   ------------------------------------------------------------------------------------------- */
-
-/* The row's name: the panel, at 650 (§ 11, between the body's 500 and the pill's 700). */
 .lt-row > .lt-cell[data-identity='true'] {
   font-weight: 650;
 }
 
-/* The two readings are figures, read: --date-ink, 600, tabular (§ 9, § 11). Columns three and four
-   always: hiddenFields can only take the photos column away, which is last. */
 .lt-row > .lt-cell:nth-child(3),
 .lt-row > .lt-cell:nth-child(4) {
   color: var(--date-ink);
@@ -356,16 +265,10 @@
   font-weight: 600;
 }
 
-/* Those two headings (and, on a card, their captions) carry the unit, which the panel has already
-   upper-cased: the table's own uppercase would turn the micro sign into a Greek capital mu. */
 .lt-columns > .lt-cell:nth-child(3),
 .lt-columns > .lt-cell:nth-child(4) {
   text-transform: none;
 }
-
-/* ---------------------------------------------------------------------------------------------
-   The photos: the drawer's content and the all-photos section's groups
-   ------------------------------------------------------------------------------------------- */
 
 .paint-drawer-head {
   display: flex;
@@ -380,7 +283,6 @@
   font-weight: 760;
 }
 
-/* Small note: 12px, 600, tabular (§ 11). */
 .paint-note {
   color: var(--muted);
   font-size: 12px;
@@ -394,7 +296,6 @@
   gap: 14px 32px;
 }
 
-/* A side's caption: the small-label type (§ 11) with the reading beside it in figures. */
 .paint-side-caption {
   margin-bottom: 6px;
   color: var(--muted);
@@ -417,10 +318,6 @@
   gap: 8px;
 }
 
-/* The thumbnail: the table's media treatment (lookup-table.css): a box on recessed paper, a grey rim
-   at rest, the interaction blue on hover or focus. The rim is a pseudo-element over the picture, an
-   inset shadow on the box itself would paint under the <img> and vanish. NOTHING covers the
-   picture: the see-through dark "expand" overlay of the old panel is gone (§ 12: no translucency). */
 .paint-photo {
   position: relative;
   display: block;
@@ -447,7 +344,6 @@
   transition: box-shadow 0.2s ease;
 }
 
-/* Photos sit on white once they have arrived (the phone shots have their own background). */
 .paint-photo[data-state='ready'] {
   background: var(--paper);
 }
@@ -485,8 +381,6 @@
   cursor: default;
 }
 
-/* contain, not cover: a gauge reading at the edge of a shot must not be cropped. Hidden until the
-   file has arrived, so a lazy picture fades in rather than popping. */
 .paint-photo-image {
   display: block;
   width: 100%;
@@ -502,7 +396,6 @@
   opacity: 1;
 }
 
-/* A picture that did not load: the struck-picture glyph in the box, cross-faded in place. */
 .paint-photo-stand {
   position: absolute;
   inset: 0;
@@ -524,13 +417,6 @@
   height: 20px;
 }
 
-/* ---------------------------------------------------------------------------------------------
-   All photos: the end of the panel, a band like the strip and a region of groups
-   ------------------------------------------------------------------------------------------- */
-
-/* The band is a button over the full width, so the whole band is the target. It is the strip's own
-   look (recessed paper, ruled top and bottom, --lead-height) because it heads a body the way the
-   strip does; the interaction blue marks it while it is open. */
 .paint-photos-toggle {
   display: flex;
   gap: 8px;
@@ -568,7 +454,6 @@
   color: var(--blue-dark);
 }
 
-/* Small label: 11px, 700, +0.06em, uppercase (§ 11). */
 .paint-photos-label {
   font-size: 11px;
   font-weight: 700;
@@ -576,7 +461,6 @@
   text-transform: uppercase;
 }
 
-/* The count is a value: small note, tabular, --date-ink (read), under the skeleton in flight. */
 .paint-photos-count {
   color: var(--date-ink);
   font-size: 12px;
@@ -590,7 +474,6 @@
   height: 15px;
 }
 
-/* One path says open and shut: it turns over when the section opens, on --settle like the region. */
 .paint-photos-chevron {
   flex: none;
   width: 12px;
@@ -603,11 +486,7 @@
   transform: rotate(180deg);
 }
 
-/* The groups: one per reading that has photos, in a grid that fills the width. The block the skeleton
-   covers (with the all-photos region's own chrome staying) and the one an inspection switch fades. */
 .paint-photos-content {
-  /* No `contain: layout paint` here: measured at 4x CPU it made the close dearer (paint 55 vs 32 ms, raster 117 vs 70 ms) and the open no cheaper;
-     the region's own overflow: hidden already keeps the groups' paint inside it (T3t, 2026-10-27). */
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
   gap: 12px;
@@ -615,14 +494,7 @@
   transition: opacity var(--settle) ease;
 }
 
-/* A group is an item inside the card (§ 12): recessed paper, a grey rim at .22, radius 10 (an inset
-   inside the card), with its photos inside on white. */
 .paint-group {
-  /* A group below the fold is not styled, laid out or painted until it nears the window: the 22 pictures' cards were the largest
-     part of the reveal's style work on a lookup (T3t). `auto` keeps the last drawn height, so scrolling back does not jump; before
-     its first draw a group stands at an estimate of its content (the name line with its margin, 25.55px, then the photo boxes, `--paint-per-row` to a row), which
-     the panel's `--paint-photos` count feeds. The first declaration is the fallback for a browser without round(). Find-in-page still
-     sees the text of a skipped group. */
   --paint-per-row: 2;
   --paint-rows: round(up, calc(var(--paint-photos, 2) / var(--paint-per-row)), 1);
   contain-intrinsic-block-size: auto 153.55px;
@@ -649,17 +521,10 @@
   font-weight: 650;
 }
 
-/* The figure keeps its unit on one line; it is the name that wraps. */
 .paint-group-name > .paint-note {
   flex: none;
   white-space: nowrap;
 }
-
-/* ---------------------------------------------------------------------------------------------
-   Switching an inspection, and a live configuration change: nothing is fetched, so no skeleton --
-   what changes fades out, is swapped while out and fades back (the table fades its own values and its
-   drawer's content, lookup-table.css).
-   ------------------------------------------------------------------------------------------- */
 
 .paint-card[data-swapping='true'] .paint-photos-content,
 .paint-card[data-swapping='true'] .paint-summary,
@@ -669,16 +534,7 @@
   opacity: 0;
 }
 
-/* ---------------------------------------------------------------------------------------------
-   Loading: no sweep for a skeleton that is not on screen
-   ------------------------------------------------------------------------------------------- */
-
-/* The wrapper's `.loading` starts every .shift-skeleton's sweep, and a lookup used to run one for each
-   of these shut places (a shut drawer carries no skeleton, so it is not listed): the placeholder's sentences while a list is on
-   screen, the closed all-photos region, a shut tab strip and a shut summary line. A shut .collapsible is hidden, so
-   its sweep was invisible work on every frame of the wait (design language § 21: the loops are the
-   cost). The cover stays and fades as before; only the loop is not started. Specificity above the
-   shared `.loading .shift-skeleton::before`, which is why these name their parent's state. */
+/* The wrapper's `.loading` starts every .shift-skeleton's sweep, and a lookup used to run one for each */
 .lt-placeholder[data-open='false'] .shift-skeleton::before,
 .lt-placeholder .layer[data-active='false'] .shift-skeleton::before,
 .paint-photos[data-open='false'] .shift-skeleton::before,
@@ -688,18 +544,11 @@
   animation: none;
 }
 
-/* ---------------------------------------------------------------------------------------------
-   Narrow panels (720 and under): the table turns its rows into cards (lookup-table.css); here Left and
-   Right sit side by side in the card, as two readings of one panel
-   ------------------------------------------------------------------------------------------- */
-
 @container (max-width: 720px) {
   .paint-bar {
     --shift-tabs-inset: 14px;
   }
 
-  /* Two equal columns: the name and the photo toggle share row one, Left and Right share the last row.
-     The table's card has a flexible column and an auto one, which would make the readings unequal. */
   .lt-row {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
@@ -712,7 +561,6 @@
     grid-column: 2;
   }
 
-  /* The unit is already in the caption's text: keep the table's caption type but not its uppercase. */
   .lt-row > .lt-cell:nth-child(3)::before,
   .lt-row > .lt-cell:nth-child(4)::before {
     text-transform: none;
@@ -738,10 +586,6 @@
   }
 }
 
-/* ---------------------------------------------------------------------------------------------
-   Phones (430 and under): the head stacks (lookup-head.css) and the certificate stacks with it
-   ------------------------------------------------------------------------------------------- */
-
 @container (max-width: 400px) {
   .paint-group {
     --paint-per-row: 1;
@@ -749,9 +593,6 @@
 }
 
 @container (max-width: 430px) {
-  /* The certificate takes the pill's place on the head's second row, edge to edge like the pill; if a
-     pill with words is there too the two share the row. Shut, it takes no room, so the pill keeps the
-     whole row. */
   .paint-certificate-slot[data-open='true'] {
     flex: 1 1 auto;
     margin-inline-end: 8px;
@@ -764,19 +605,10 @@
   }
 }
 
-/* ---------------------------------------------------------------------------------------------
-   The phone's bottom sheet (the same <shift-popover>, a viewport of 720px or less): the certificate menu and a
-   row's photos. The popover is the surface and does its own sliding (paper, the card's radius on its two top corners,
-   a rim, the one shadow turned to throw upward, the viewer's ink at .46 over the page); what it holds is this panel's
-   own content, styled here because it stays in this shadow tree. The title and each block go under the skeleton in a
-   lookup (the rules of shift-skeleton.css apply, the popover is inside the wrapper's .loading) and are inert while it lasts.
-   ------------------------------------------------------------------------------------------- */
-
 .paint-popover[data-phone='true'] {
   --shift-popover-sheet-radius: 13px;
   --shift-popover-shadow: inset 0 0 0 1px var(--line), 0 -18px 45px rgba(27, 45, 61, 0.1), 0 -2px 7px rgba(27, 45, 61, 0.06);
   --shift-popover-sheet-max-block-size: 85dvh;
-  /* The sheet's own height plus the shadow's reach (18px + 45px blur) below the screen, so nothing of either is left showing at rest. */
   --shift-popover-sheet-closed-offset: 64px;
   --shift-popover-backdrop: rgba(12, 18, 24, 0.46);
   --shift-popover-backdrop-blur: 0px;
@@ -788,7 +620,6 @@
   box-shadow: inset 0 -1px 0 var(--line-soft);
 }
 
-/* The title: 16px / 760 / -0.025em, the narrow panel title of § 11. Arabic script joins its letters, so its tracking is 0. */
 .paint-popover::part(sheet-title) {
   font-size: 16px;
   font-weight: 760;
@@ -829,8 +660,6 @@
   padding-inline: max(20px, env(safe-area-inset-left), env(safe-area-inset-right));
 }
 
-/* The photos: each side is an inset panel on the recessed paper (§ 12), stacked, so a side's four
-   thumbnails sit side by side at a phone's width and a second side goes under it. */
 .paint-sheet-content {
   display: block;
   padding-block: 14px 16px;
@@ -850,7 +679,6 @@
   box-shadow: inset 0 0 0 1px var(--line-soft);
 }
 
-/* The language list: the menu's items at touch size (44px, 15px). */
 .paint-popover[data-phone='true'] .paint-menu {
   display: flex;
   flex-direction: column;
@@ -864,11 +692,6 @@
   padding-block: 10px;
   font-size: 15px;
 }
-
-/* ---------------------------------------------------------------------------------------------
-   Reduced motion: every transition above is on a state attribute, so it is kept and made
-   immediate. The table's own block is in its fragment.
-   ------------------------------------------------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
   .paint-summary,

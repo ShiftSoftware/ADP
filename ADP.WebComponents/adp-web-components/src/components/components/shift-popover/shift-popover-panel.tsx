@@ -31,7 +31,6 @@ export class ShiftPopoverPanel {
   @Prop() panelLabel: string = '';
   @Prop() panelLabelledBy: string = '';
   @Prop() panelPart: string = 'panel';
-  // Content stays where its page put it and the panel is shown in the browser's top layer; a sheet then has a title bar and a close button.
   @Prop() topLayer: boolean = false;
   @Prop() closeLabel: string = '';
   @Prop() focusToken: number = 0;
@@ -63,7 +62,6 @@ export class ShiftPopoverPanel {
     clearTimeout(this.leaveTimer);
   }
 
-  // The panel is a top-layer element only while it is on screen. Its closed style is computed and painted once before it opens, so it moves from there.
   private present() {
     clearTimeout(this.leaveTimer);
     if (this.presented) return;
@@ -73,10 +71,10 @@ export class ShiftPopoverPanel {
     if (this.el.hasAttribute('popover') && !this.el.matches(':popover-open')) this.el.showPopover();
     void this.el.offsetWidth;
     this.handlers?.shown?.();
+    // Painted once in its closed style before it opens, so the first frame is the start of the motion.
     this.enterFrame = requestAnimationFrame(() => (this.enterFrame = requestAnimationFrame(() => (this.entered = true))));
   }
 
-  // Taken out of the top layer once the closing movement has finished.
   private retire() {
     cancelAnimationFrame(this.enterFrame);
     if (!this.presented || this.open) return;
@@ -129,7 +127,14 @@ export class ShiftPopoverPanel {
         inert={this.open ? undefined : true}
         data-top-layer={this.topLayer ? '' : undefined}
       >
-        <div class="pop-backdrop" part="backdrop" aria-hidden="true" onClick={() => this.handlers?.dismiss()} data-open={open ? '' : undefined} data-sheet={this.sheet ? '' : undefined} />
+        <div
+          class="pop-backdrop"
+          part="backdrop"
+          aria-hidden="true"
+          onClick={() => this.handlers?.dismiss()}
+          data-open={open ? '' : undefined}
+          data-sheet={this.sheet ? '' : undefined}
+        />
         <div
           class="pop-panel"
           part={this.panelPart}

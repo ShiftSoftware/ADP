@@ -163,7 +163,6 @@ export class ShiftPopover {
   // Off by default: inside an embedded webview the viewport is only part of the screen, so a sheet pinned to its bottom edge looks broken.
   @Prop() mobileSheet: boolean = false;
   @Prop() alwaysSheet: boolean = false;
-  // The content stays where the page put it (so the page's own styles still apply) and the panel is shown in the browser's top layer instead of on <body>. As a sheet it is modal: a title bar with a close button, Tab kept inside, and a click or Escape closes it.
   @Prop({ reflect: true }) topLayer: boolean = false;
   @Prop() heading?: string;
   @Prop() closeLabel?: string;
@@ -529,7 +528,6 @@ export class ShiftPopover {
     // The sheet's backdrop lives in the panel's shadow root, but a tap on it is a tap outside.
     if ((path[0] as Element)?.classList?.contains('pop-backdrop')) return false;
 
-    // A sheet that opens the picture viewer keeps its place while the viewer is used.
     if (this.topLayer && path.some(node => (node as Element).tagName === 'SHIFT-IMAGE-LAYER')) return true;
 
     return (!!this.panel && path.includes(this.panel)) || (!!this.anchorEl && path.includes(this.anchorEl));
@@ -594,7 +592,7 @@ export class ShiftPopover {
       const active = deepActiveElement();
       const at = active ? stops.indexOf(active as HTMLElement) : -1;
 
-      // Moved here, not left to the browser: Safari does not Tab to links by default, and none may leave the sheet.
+      // Our own Tab order: Safari does not Tab to links by default.
       event.preventDefault();
       const next = event.shiftKey ? (at <= 0 ? stops.length - 1 : at - 1) : at < 0 || at === stops.length - 1 ? 0 : at + 1;
       stops[next]?.focus({ preventScroll: true });

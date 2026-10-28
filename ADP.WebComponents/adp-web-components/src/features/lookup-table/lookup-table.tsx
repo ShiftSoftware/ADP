@@ -1,4 +1,5 @@
 import { FunctionalComponent, VNode, h } from '@stencil/core';
+import { ChevronDownIcon } from '~assets/chevron-down-icon';
 
 // The panels' shared glyph set (the features/ folder reaches into it already: lookup-head.tsx).
 import { BADGE_GLYPHS, MEDIA_GLYPHS } from '../../components/vehicle-lookup/components/glyphs';
@@ -16,44 +17,15 @@ import { BADGE_GLYPHS, MEDIA_GLYPHS } from '../../components/vehicle-lookup/comp
  * What it never does: decide a verdict, pick a notice, or read meaning off an empty list. The panel
  * says what the strip shows (`lead`, `notice`) and what the body holds (`body`, `open`).
  *
- * DRAWER MODE (opt-in, `drawer` prop; a table that does not pass it renders exactly what it always
- * did). A row can carry a drawer: a row-spanning `.collapsible` under it, holding content the
- * consumer renders. At most one is open. The table owns the toggle (the `action` cell's button),
- * the motion (the shared `.collapsible` primitive), the ARIA wiring and the card layout; the OWNER
- * holds the state, as it holds `retainedBody`, and hands it down:
- *
- *   drawer={{
- *     has: (row, i) => boolean,            // does this row have drawer content? no -> no button
- *     render: (row, i) => VNode | VNode[], // the content; called ONLY for a drawer in `shown`
- *     label: (row, i, expanded) => string, // the button's aria-label, localised, e.g. "Show 3 photos"
- *     regionLabel: (row, i) => string,     // the drawer region's aria-label, localised
- *     open: number | null,                 // the slot index that is open (single open)
- *     shown: readonly number[],            // `open` plus any drawer still shutting (shownDrawers)
- *     onToggle: (i) => void,               // the owner: open = toggleDrawer(open, i), retainDrawers(...)
- *     idPrefix: string,                    // unique in the shadow root; drawerId(idPrefix, i) is the region's id
- *   }}
- *   columns: [{ field, label, kind: 'action', value: row => '3 photos', glyph?: path512 }, ...]
- *
- * The open drawer is a slot index, because rows are slots keyed by position (§ 21a). Busy does not
- * change it: an open drawer stays open into a lookup, under the skeleton with the rest of its row
- * (the row's veil is the drawer's), and at the answer the owner runs `settleDrawer`, which keeps it
- * if its slot still has drawer content and shuts it if not. A page change is the same with the
- * `fade` veil. A clear shuts it at once.
- *
- * A closed drawer costs nothing: `render` is not called for it, it mounts no content and its content block
- * carries no skeleton (no cover, no pseudo-elements, no transition under `.loading`), so a
- * consumer's photos are not even requested until the reader opens one. A consumer that puts
- * images in a drawer should still use `loading="lazy"` and `decoding="async"` on them.
+ * Drawer mode (opt-in, `drawer` prop): a row can carry a row-spanning `.collapsible` the consumer renders;
+ * the owner holds which one is open.
  */
 
 // ---------------------------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------------------------
 
-/**
- * Built kinds. 'number' | 'date' | 'chip' are specified and deferred to a named consumer.
- * 'action' is the drawer's toggle: its `value(row)` is the button's visible text.
- */
+/** Built kinds. 'number' | 'date' | 'chip' | 'action' are specified and deferred to a named consumer. */
 export type CellKind = 'text' | 'code' | 'media' | 'action';
 
 export type NoticeTone = 'positive' | 'negative' | 'neutral' | 'attention' | 'idle';
@@ -78,13 +50,7 @@ export type LookupColumn<Row> = {
   identity?: boolean;
   /** The one column that absorbs the slack (§ 18). At most one, and only on a 'text' column. */
   grow?: boolean;
-  /** 'action' only: the glyph on the toggle, as 512 x 512 path data (like `BADGE_GLYPHS`). Without one the toggle is a chevron. */
-  glyph?: string;
-  /**
-   * 'text' only: a small grey chip after the value, naming what the value is (a lone reading that
-   * belongs to no side: "Centre"). Null or blank draws none, and a blank value draws no chip. Inside
-   * the value's own block, so the skeleton covers it with the value.
-   */
+  icon?: PlaceholderIcon;
   note?: (row: Row) => string | null | undefined;
 };
 
@@ -99,36 +65,15 @@ export type LookupTableStrings = {
   openImage: string;
 };
 
-/**
- * What the body says in words when there is no list to show (owner, 2026-10-27: it overrides design
- * language § 17 "a notice that only repeats the pill is not shown" for table panels). Before a lookup the
- * reader needs to know where a list will appear; after one, an empty region next to a VIN reads as
- * broken, so each outcome without rows is a large muted icon and one line of text, in the colour of its
- * role (design language § 10).
- *
- * - `idle`: before any lookup. Asserts nothing about a vehicle. Grey.
- * - `empty`: an authorized vehicle with nothing on file. "No records", never a verdict. Grey.
- * - `error`: the lookup failed. Red, the role of a failed lookup (the pill and the accent bar are negative for it too).
- * - `unauthorized`: the vehicle is not in the distributor's records, which is not "none". Amber.
- */
 export type PlaceholderKind = 'idle' | 'empty' | 'error' | 'unauthorized';
 
-/** An icon component from `~assets` (`class` is the only prop it needs). */
 export type PlaceholderIcon = FunctionalComponent<{ class?: string }>;
 
-/** One outcome's icon (an `~assets` component, or 512 x 512 path data in `glyph`) and its single line of text, already localised. */
 export type PlaceholderContent = { icon?: PlaceholderIcon; glyph?: string; text: string };
 
 export type TablePlaceholder = {
-  /** The outcome to say, or null when the body holds rows (or there is nothing to say): from `placeholderKind`. Non-null opens the region; null slides it shut. */
   kind: PlaceholderKind | null;
-  /**
-   * The kind the region last showed. The owner keeps it a settle after `kind` went null, so the words
-   * slide away with their region instead of blinking out (motion.md rule 5), and drops it once the region
-   * has shut. Omitted, a shutting region fades its words out with it.
-   */
   retained?: PlaceholderKind | null;
-  /** The icon and the line of every outcome the panel can be in; the four layers cross-fade in place. */
   content: Record<PlaceholderKind, PlaceholderContent>;
 };
 
@@ -158,39 +103,18 @@ export type LookupTableProps<Row> = {
    * stays while its values change under a cover, and only the rows that come or go slide.
    */
   slots?: RowSlot[];
-  /**
-   * The body's words for an outcome without rows (see `TablePlaceholder`): a region under the body that
-   * slides open for `kind` and shut for null, one layer per outcome, cross-fading. Always mounted for a
-   * panel that has one. Its icon and words are each a `shift-skeleton`, covered only under a `.loading`
-   * ancestor: the owner's wrapper carries `.loading` while a lookup is in flight. `busy` sets
-   * `aria-busy` on the region (a reader waits for the settled layer), not the cover. Omit it and the
-   * table is exactly as before.
-   */
   placeholder?: TablePlaceholder;
-  /** Drawer mode. Omitted, no row has a drawer and no DOM of it exists. */
   drawer?: RowDrawer<Row>;
 };
 
-/** What the owner hands the table for drawer mode. See the block at the top of the file. */
 export type RowDrawer<Row> = {
-  /** Does this row have drawer content? A row without it renders no toggle: its action cell is plain text, or `—`. */
   has: (row: Row, index: number) => boolean;
-  /**
-   * The drawer's content. Called only for an index in `shown`, never for a closed drawer. While a
-   * drawer shuts because its slot no longer has content, the owner returns the content it last
-   * showed so it slides away instead of blinking out.
-   */
   render: (row: Row, index: number) => VNode | VNode[] | null;
-  /** The toggle's accessible name, already localised; it should contain the button's visible text. `expanded` is its current state, so it can say show or hide. */
   label: (row: Row, index: number, expanded: boolean) => string;
-  /** The drawer region's accessible name, already localised. */
   regionLabel: (row: Row, index: number) => string;
-  /** The open slot, or null. Single open. */
   open: number | null;
-  /** The slots whose content is still rendered: the open one, plus any that are shutting. */
   shown: readonly number[];
   onToggle: (index: number) => void;
-  /** Unique within the shadow root; the region's id is `drawerId(idPrefix, index)`. */
   idPrefix: string;
 };
 
@@ -236,33 +160,18 @@ export const tableSlots = ({
   ...Array.from({ length: outgoing }, () => ({ open: !bodyOpen, veil: outgoingVeil })),
 ];
 
-/** Single open: a click on the open row's toggle shuts it, a click on another row's opens that one (and shuts the first). */
 export const toggleDrawer = (open: number | null, index: number): number | null => (open === index ? null : index);
 
-/**
- * Which slot is open once an answer has landed (or the page has swapped, while the values are out).
- * `hasAt` says, per slot of the NEW answer, whether the row there has drawer content; a slot past
- * its end is a row that went. An open drawer stays open if its slot still has content (a lookup does
- * not shut it: owner, 2026-10-27), and shuts if not. A clear shuts it at once. Busy does not enter
- * into it: while a lookup is in flight the owner leaves `open` alone.
- */
 export const settleDrawer = ({ open, hasAt, cleared = false }: { open: number | null; hasAt: readonly boolean[]; cleared?: boolean }): number | null =>
   cleared || open === null ? null : hasAt[open] === true ? open : null;
 
-/**
- * The drawers still rendered after `open` changed from `previous` to `next`: the one that just shut
- * (or is shutting because another opened) keeps its content while it slides away, and the one that
- * is opening needs no keeping. The owner drops `retained` a settle later. Mirrors `shownBody`.
- */
 export const retainDrawers = (retained: readonly number[], previous: number | null, next: number | null): number[] => {
   const kept = retained.filter(index => index !== next);
   return previous !== null && previous !== next && !kept.includes(previous) ? [...kept, previous] : kept;
 };
 
-/** What `RowDrawer.shown` is: the open drawer and the ones still shutting. */
 export const shownDrawers = (open: number | null, retained: readonly number[]): number[] => (open === null ? [...retained] : [...retained.filter(index => index !== open), open]);
 
-/** The id of the drawer region at `index`; the toggle's `aria-controls` names it. */
 export const drawerId = (prefix: string, index: number): string => `${prefix}-drawer-${index}`;
 
 /** Comma-separated field names, trimmed, empty names dropped. Moved here from the sale panel. */
@@ -295,7 +204,6 @@ const GROW = 'minmax(200px, 2.4fr)';
 const TEXT = 'minmax(150px, 1.2fr)';
 /** The thumbnail: exactly its 4:3 box and the cell's padding, whatever the width. */
 const MEDIA = 'calc(var(--lt-media-width) + 24px)';
-/** The drawer's toggle: a fixed share like the rest (glyph 15 + gap 6 + "12 photos" ~56 + gap 6 + chevron 12 + button padding 17 = ~112, plus the cell's 12+12 = ~136, so the 150 floor leaves headroom), so it never moves with the data. */
 const ACTION = 'minmax(150px, 0.9fr)';
 /** The stacked layout's first column (identity above its description): the slack, with a floor. */
 const STACK_FIRST = 'minmax(160px, 1fr)';
@@ -339,11 +247,10 @@ export const tableRoles = (body: string, open: boolean, reshaping: boolean): boo
 /**
  * The strip shows the headings whenever there is something to head: idle, in flight, and above rows
  * (they depend on the configuration alone, so the answer cannot change them). It shows a notice
- * only for an outcome that has no rows to head (authorized and empty, unauthorized, a failed lookup,
+ * only for an outcome that has no rows (authorized and empty, unauthorized, a failed lookup,
  * a panel's own body) and when every column is hidden, where there are no headings to show. A panel
- * whose body says that outcome in words (`placeholder: true`, see `placeholderKind`) keeps its
- * headings for it, so the strip and the body never say the same thing twice (owner, 2026-10-27).
- * § 20's `panelLead`, generalised, with the skeleton leg removed.
+ * whose body says that outcome in words (`placeholder: true`) keeps its headings. § 20's
+ * `panelLead`, generalised, with the skeleton leg removed.
  */
 export const tableLead = ({ busy, idle, body, columns, placeholder = false }: { busy: boolean; idle: boolean; body: string; columns: number; placeholder?: boolean }): LeadKind =>
   columns === 0 ? 'notice' : busy || idle || placeholder || body === 'rows' ? 'columns' : 'notice';
@@ -351,20 +258,6 @@ export const tableLead = ({ busy, idle, body, columns, placeholder = false }: { 
 /** What the body renders: it keeps its outgoing kind while it shuts, so the content slides away instead of blinking out. */
 export const shownBody = (body: string, retained: string): string => (body === 'none' ? retained : body);
 
-/**
- * What the body says when there is no list, from the panel's state. Pure: no timers, no memory.
- *
- * - No column to show (a host hid every one): null. The strip carries the sentence (`tableLead` answers `notice`).
- * - A failed lookup: `error`, whatever else the state holds.
- * - No vehicle on screen: `idle`.
- * - `authorized === false`: `unauthorized`, whatever the DTO's list holds. Not-in-records is never "empty".
- * - An authorized vehicle with no records on file: `empty`. A statement about the records, not a verdict.
- * - Rows to show: null, except while the panel is `leaving` (a clear, or a failure on a settled card):
- *   the rows are shutting, and the region opens on the idle words as they go, under the cover.
- *
- * During a lookup the inputs are still the last answer's, so the placeholder in place stays in place,
- * under the skeleton, and cross-fades when the answer arrives.
- */
 export const placeholderKind = ({
   columns,
   loaded,
@@ -373,17 +266,11 @@ export const placeholderKind = ({
   records,
   leaving = false,
 }: {
-  /** How many columns are visible (`visibleColumns(...).length`). */
   columns: number;
-  /** A vehicle's answer is on screen: a lookup landed and did not fail. */
   loaded: boolean;
-  /** The last lookup failed. */
   failed: boolean;
-  /** The vehicle's `isAuthorized`; `false` is not in the records. */
   authorized?: boolean;
-  /** How many records the answer holds, judged on the whole list (never on the rows a page shows). */
   records: number;
-  /** The panel is on its way to idle or to an error: its rows are shutting. */
   leaving?: boolean;
 }): PlaceholderKind | null => {
   if (columns === 0) return null;
@@ -394,8 +281,7 @@ export const placeholderKind = ({
   return leaving ? 'idle' : null;
 };
 
-/** The kind the region renders: the current one, else the one it last showed while it slides shut. */
-export const shownPlaceholder = (kind: PlaceholderKind | null, retained?: PlaceholderKind | null): PlaceholderKind | null => kind ?? retained ?? null;
+const shownPlaceholder = (kind: PlaceholderKind | null, retained?: PlaceholderKind | null): PlaceholderKind | null => kind ?? retained ?? null;
 
 // ---------------------------------------------------------------------------------------------
 // Render
@@ -525,21 +411,9 @@ const MediaBox = ({ src, identity, strings, onOpenMedia }: MediaProps) => {
  */
 const keepUntranslated = (cell: HTMLElement | undefined) => cell?.setAttribute('translate', 'no');
 
-/** The toggle's chevron, 512 x 512 like the family's glyphs. It rotates half a turn on open (CSS), so one path says both show and hide. */
-const CHEVRON = 'M256 368 96 208l32-32 128 128 128-128 32 32z';
-
-/** What a row's action cell needs from the drawer: null when the table has no drawer mode. */
 type ActionState = { has: boolean; expanded: boolean; controls: string; label: string; covered: boolean; onToggle: () => void };
 
-/**
- * The `action` cell's value. A row with drawer content gets the toggle: a real `<button type="button">`,
- * so the keyboard (Enter, Space) and the focus ring are the browser's. With text it is the pill
- * (glyph, the text, a chevron); with an empty value it is the 30px round icon-only button. A row
- * WITHOUT drawer content gets no button at all -- a dead control is a lie -- only its text, muted,
- * or the blank marker. Another module (a spinner, `aria-busy`, for a drawer whose content is
- * fetched on open) is deliberately not built: no consumer in this run has one.
- */
-const ActionValue = ({ text, glyph, action }: { text: string | null; glyph?: string; action: ActionState | null }) => {
+const ActionValue = ({ text, icon: Icon, action }: { text: string | null; icon?: PlaceholderIcon; action: ActionState | null }) => {
   if (!action || !action.has) return text === null ? <span class="lt-none">—</span> : <span class="lt-action-plain">{text}</span>;
 
   return (
@@ -553,10 +427,9 @@ const ActionValue = ({ text, glyph, action }: { text: string | null; glyph?: str
       inert={action.covered}
       onClick={action.onToggle}
     >
-      {glyph && <Glyph path={glyph} className="lt-action-glyph" />}
+      {Icon && <Icon class="lt-action-glyph" />}
       {text !== null && <span class="lt-action-text">{text}</span>}
-      {/* The chevron is the only mark on a round button with no glyph; beside a glyph and a text it is the "this opens" cue. */}
-      {(text !== null || !glyph) && <Glyph path={CHEVRON} className="lt-action-chevron" />}
+      {(text !== null || !Icon) && <ChevronDownIcon class="lt-action-chevron" />}
     </button>
   );
 };
@@ -598,7 +471,7 @@ const Cell = <Row,>({
       */}
       <span class="lt-value shift-skeleton" title={growing(column) && text !== null ? text : null}>
         {actionKind ? (
-          <ActionValue text={text} glyph={column.glyph} action={action} />
+          <ActionValue text={text} icon={column.icon} action={action} />
         ) : media ? (
           <MediaBox src={text} identity={identity} strings={strings} onOpenMedia={onOpenMedia} />
         ) : text === null ? (
@@ -623,16 +496,6 @@ const uniqueKey = (seen: Set<string>, key: string): string => {
 
 const PLACEHOLDER_KINDS: PlaceholderKind[] = ['idle', 'empty', 'error', 'unauthorized'];
 
-/**
- * The body's words for an outcome without rows: one region that slides open and shut (a `.collapsible`,
- * on the clock of the body it replaces), holding one layer per outcome that cross-fade in place (a
- * `.layer-stack`, so the region is as tall as its tallest line and nothing below it moves).
- *
- * Announced once per outcome, on the pattern the strip's notice uses: every layer is a `role="status"`
- * and only the active one is exposed (`aria-hidden` on the rest and on a shut region). Icon and words
- * are each their own `shift-skeleton`, so a `.loading` ancestor covers them in flight: the last outcome
- * stays where it stands without being read as the next one's. `busy` makes the region `aria-busy`.
- */
 const Placeholder = ({ placeholder, busy }: { placeholder: TablePlaceholder; busy: boolean }) => {
   const shown = shownPlaceholder(placeholder.kind, placeholder.retained);
   const open = placeholder.kind !== null;
@@ -745,13 +608,9 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
                 const slot = slotOf(index);
                 const rowRoles = roles && slot.open;
 
-                // Drawer mode only. `drawerOpen` needs the row to still have content: if an answer took it
-                // away, the drawer shuts on this very render, before the owner's settle has run.
                 const drawerHas = drawer ? drawer.has(row, index) : false;
                 const drawerOpen = drawerHas && drawer?.open === index;
                 const id = drawer ? drawerId(drawer.idPrefix, index) : '';
-                // A shut drawer that is not on its way out has no content, so it carries no skeleton and is not made inert:
-                // a cover, its two pseudo-elements and their transitions on every shut shell are work with nothing to cover.
                 const drawerShown = drawer ? drawer.shown.includes(index) : false;
                 const action: ActionState | null = drawer
                   ? {
@@ -781,16 +640,6 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
                           <Cell column={column} row={row} roles={rowRoles} identity={identity} strings={strings} onOpenMedia={onOpenMedia} action={action} />
                         ))}
                       </div>
-                      {/*
-                        The drawer: after its row in the DOM, so it is next in focus and reading order. It is
-                        a `.collapsible` of its own inside the row's slot (the slot's `.collapsible-body`
-                        clips it when the slot shuts), and it shares the row's veil: `.loading` for `cover`
-                        puts the content under the skeleton, and the slot's `data-veil='fade'` fades it.
-                        With table roles on it is a row holding one spanning cell, so it never breaks the
-                        table; the region inside is what a reader lands on. The shell is rendered for
-                        every row (a shut, empty, aria-hidden one costs a few nodes), so opening is a
-                        state change and not a mount; the CONTENT is rendered only for `shown`.
-                      */}
                       {drawer && (
                         <div
                           class={{ 'lt-drawer': true, 'collapsible': true, 'loading': slot.veil === 'cover' }}
@@ -802,7 +651,6 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
                           <div class="collapsible-body lt-drawer-body">
                             <div class="lt-drawer-cell" role={rowRoles ? 'cell' : null}>
                               <div class="lt-drawer-panel" id={id} role={drawerHas ? 'region' : null} aria-label={drawerHas ? drawer.regionLabel(row, index) : null}>
-                                {/* The skeleton covers the content only; the panel's rail, rim and shadow are chrome and stay. */}
                                 <div class={{ 'lt-drawer-content': true, 'shift-skeleton': drawerShown }}>{drawerShown ? drawer.render(row, index) : null}</div>
                               </div>
                             </div>

@@ -58,14 +58,7 @@
      three rules. */
   --lt-rim-idle: rgba(95, 108, 120, 0.22);
   --lt-rim-blue: rgba(48, 113, 169, 0.32);
-  /* The body placeholder's icon: 38px, the strip's own height (--lead-height) and a step on the
-     spacing ladder (design language § 12, 38), so the mark is as tall as the band that heads the
-     table. Large enough to be seen before it is read; no bigger, because it carries a sentence of
-     13px text and a mark that outweighs its sentence reads as an error screen. */
   --lt-placeholder-icon: 38px;
-  /* How much of its hue the placeholder's mark keeps. The fill at full strength is a cap's colour and,
-     at 38px, shouts; --line (the idle cap) is too faint to see on paper. Sixty per cent of the role's
-     own fill is the quiet that is still legible, one figure for all four so the hues stay in step. */
   --lt-placeholder-strength: 60%;
 }
 
@@ -254,38 +247,24 @@
   align-content: start;
 }
 
-/* A panel with a placeholder has no blank floor under the strip: the placeholder fills that space when
-   there is no list, and after a strip that has said everything the card simply ends. */
 .lt-grid[data-placeholder='true'] > .lt-body {
   min-height: 0;
 }
 
-/* ---------------------------------------------------------------------------------------------
-   Placeholder: what the body says when there is no list (idle, empty, error, not in the records)
-   ------------------------------------------------------------------------------------------- */
-
-/* One region under the body: a .collapsible, so it slides open and shut on the clock the body does (a
-   lookup that ends in rows opens the body as this shuts, one movement) and never pops. It spans the
-   grid because it belongs to no column. */
 .lt-placeholder {
   grid-column: 1 / -1;
 }
 
-/* One layer per outcome, cross-fading in place: the stack is as tall as its tallest line whichever is
-   showing, so the outcome changing never moves what is below. */
 .lt-placeholder-layer {
   display: flex;
   flex-direction: column;
   gap: 12px;
   align-items: center;
   justify-content: center;
-  /* 22 block (the language's drawer padding), 20 inline (the card's horizontal inset). */
   padding: 22px 20px;
   text-align: center;
 }
 
-/* The icon is its own block, so the skeleton's cover is the size of the icon and takes its corners (8: a
-   thumbnail's), and decoration only: the words carry the meaning. */
 .lt-placeholder-layer > .lt-placeholder-mark {
   display: block;
   width: var(--lt-placeholder-icon);
@@ -300,9 +279,6 @@
   height: 100%;
 }
 
-/* One line of text: the body's 13px at the notice weight (650), centred. As wide as its words up to 52
-   characters, so the cover is the size of the sentence and a longer one wraps rather than running the
-   card's width. */
 .lt-placeholder-text {
   max-width: 52ch;
   margin: 0;
@@ -312,9 +288,6 @@
   line-height: 1.4;
 }
 
-/* Colour by role (design language § 10): grey for nothing to say yet and nothing on file, amber for a
-   vehicle the distributor has no record of (a statement without a verdict, never green), red for a
-   failed lookup. Text is the hue's dark, never its fill. */
 .lt-placeholder-layer.is-idle,
 .lt-placeholder-layer.is-empty {
   --lt-placeholder-hue: var(--muted);
@@ -434,9 +407,6 @@
   color: var(--muted);
 }
 
-/* A text value's note (LookupColumn.note): the neutral chip of § 18 -- a grey field, a grey rim at
-   .22, 11px/700, a pill (radius 999) -- naming what the value is. Opt-in: nothing here matches a
-   column that passes no `note`. */
 .lt-note {
   display: inline-flex;
   align-items: center;
@@ -563,11 +533,6 @@
   height: 20px;
 }
 
-/* ---------------------------------------------------------------------------------------------
-   Action: the drawer's toggle (opt-in; a table without an 'action' column never renders these)
-   ------------------------------------------------------------------------------------------- */
-
-/* The cover takes the button's corners, not the text's 4px (the same device as the media cell). */
 .lt-row > .lt-action > .lt-value {
   border-radius: 6px;
 }
@@ -576,8 +541,6 @@
   border-radius: 999px;
 }
 
-/* A row with no drawer content has no control: its text, muted, in the small note's type (12px/600,
-   the "no photos" of the photo options), or the blank marker above. */
 .lt-action-plain {
   color: var(--muted);
   font-size: 12px;
@@ -585,10 +548,6 @@
   font-weight: 600;
 }
 
-/* The pill: outlined in the interaction blue on paper (blue is interaction, § 10; the rim is an
-   inset shadow, § 10), filled white-on-blue while its drawer is open. 30px minimum height is the
-   outlined round button's (§ 18), so the toggle is the same size whichever shape a row gets. The
-   press transition is .2s, the one duration shorter than --settle (§ 18). */
 .lt-action-button {
   display: inline-flex;
   gap: 6px;
@@ -614,7 +573,6 @@
     box-shadow 0.2s ease;
 }
 
-/* The same rule as the media button's, and the language's: 2px in the hue's dark, offset 2px. */
 .lt-action-button:focus-visible {
   outline: 2px solid var(--blue-dark);
   outline-offset: 2px;
@@ -626,8 +584,6 @@
   box-shadow: inset 0 0 0 1px var(--blue-dark);
 }
 
-/* Pointer devices only, so a tap does not leave a sticky tint. A wash of the interaction blue, well
-   under the open state's fill; the round button fills like the language's trace button. */
 @media (hover: hover) {
   .lt-action-button[aria-expanded='false']:hover {
     background: var(--blue-tint);
@@ -640,7 +596,6 @@
   }
 }
 
-/* Icon only: the 30px circle (§ 18, the outlined round button). */
 .lt-action-button[data-shape='round'] {
   justify-content: center;
   width: 30px;
@@ -665,7 +620,6 @@
   height: 18px;
 }
 
-/* One path says show and hide: it turns over when the drawer opens, on --settle like the drawer. */
 .lt-action-chevron {
   flex: none;
   width: 12px;
@@ -682,22 +636,11 @@
   transform: rotate(180deg);
 }
 
-/* ---------------------------------------------------------------------------------------------
-   Drawer: a row-spanning .collapsible under its row (§ 18), opt-in
-   ------------------------------------------------------------------------------------------- */
-
-/* An open row and its drawer read as one tinted block. The row's own background transition (above)
-   fades its half; the drawer's half is the drawer's opacity, so the two fade together with the
-   drawer instead of switching off while it is still shutting (§ 18). The :hover twin keeps an
-   open row's tint from turning into the hover wash. After the hover rule above, on purpose. */
 .lt-row[data-open='true'],
 .lt-row[data-open='true']:hover {
   background: var(--blue-tint);
 }
 
-/* A .collapsible (display: grid, 0fr <-> 1fr, opacity and visibility from the primitive): only its
-   row track animates here, as the primitive does it. It takes the whole table, under its row.
-   min-width: 0 so a wide piece of content inside cannot widen the table. */
 .lt-drawer {
   grid-column: 1 / -1;
   min-width: 0;
@@ -713,11 +656,7 @@
   display: block;
 }
 
-/* The panel: an inset object (§ 18) -- its own paper on the tinted block, radius 10, a 4px blue rail
-   on the reading edge, a blue rim, and the one shadow in the language (§ 12: "because it is inset
-   into a tinted row"). The margin sits inside the sliding region, so it slides too. The padding is
-   asymmetric for the rail and logical, so RTL mirrors it with no override; only the one-sided
-   inset shadow needs [dir='rtl'] below. Raw rgba: the language's own figure for the drawer shadow. */
+/* The panel: an inset object (§ 18) -- its own paper on the tinted block, radius 10, a 4px blue rail */
 .lt-drawer-panel {
   min-width: 0;
   padding-block: 12px 16px;
@@ -738,8 +677,6 @@
     0 6px 18px rgba(27, 45, 61, 0.08);
 }
 
-/* The block the skeleton covers (.shift-skeleton, with the row's or the wrapper's .loading) and a
-   page change fades: the content only, so the rail, rim and shadow stay while it is replaced. */
 .lt-drawer-content {
   display: block;
   transition: opacity var(--settle) ease;
@@ -749,8 +686,6 @@
   opacity: 0;
 }
 
-/* A shut drawer that is not shutting holds nothing (no skeleton class either): nothing to fade, so no
-   opacity transition is started on it when the slot's veil changes. */
 .lt-drawer-content:not(.shift-skeleton) {
   transition: none;
 }
@@ -829,7 +764,6 @@
     overflow: visible;
   }
 
-  /* The placeholder takes the card's narrower inset, as the notice does. */
   .lt-placeholder-layer {
     padding-inline: 14px;
   }
@@ -908,9 +842,6 @@
     white-space: normal;
   }
 
-  /* The action: row 1, column 2, at the end -- where the SSC puts its trace button -- and not
-     captioned: a button names itself. The drawer under it is not a .lt-row, so it already spans the
-     card full width. */
   .lt-row > .lt-action {
     grid-column: 2;
     grid-row: 1;
@@ -922,7 +853,6 @@
     display: none;
   }
 
-  /* A little tighter on a card, the rail kept: the panel is as wide as the card less its margin. */
   .lt-drawer-panel {
     padding-block: 12px 14px;
     padding-inline: 18px 14px;
