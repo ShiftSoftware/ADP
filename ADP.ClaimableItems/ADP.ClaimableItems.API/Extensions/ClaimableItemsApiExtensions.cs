@@ -109,6 +109,7 @@ public static class ClaimableItemsApiExtensions
         target.Schema = source.Schema;
         target.ClaimableItemSetupAction = source.ClaimableItemSetupAction;
         target.CampaignVinEntriesAction = source.CampaignVinEntriesAction;
+        target.ClaimableItemContractsAction = source.ClaimableItemContractsAction;
         target.ClaimingAction = source.ClaimingAction;
         target.CertifyingAction = source.CertifyingAction;
         target.InvoicingAction = source.InvoicingAction;

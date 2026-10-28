@@ -29,6 +29,13 @@ public class ClaimableItemsApiOptions
     public ReadWriteDeleteAction? CampaignVinEntriesAction { get; set; }
 
     /// <summary>
+    /// The TypeAuth action node gating the ClaimableItemContract (service contract) controller
+    /// (consumer-supplied, per D9). Only used when <see cref="EnableClaimableItemsActionTreeAuthorization"/>
+    /// is true.
+    /// </summary>
+    public ReadWriteDeleteAction? ClaimableItemContractsAction { get; set; }
+
+    /// <summary>
     /// The TypeAuth action node gating the ItemClaim controller (CRUD + the hot claim endpoint,
     /// which additionally requires Write on this node). Consumer-supplied, per D9 — the original
     /// host application passes its existing <c>Claiming</c> node.

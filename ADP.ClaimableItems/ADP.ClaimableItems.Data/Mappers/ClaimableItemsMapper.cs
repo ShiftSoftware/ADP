@@ -5,6 +5,7 @@ using ShiftSoftware.ADP.ClaimableItems.Data.Entities;
 using ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.Campaign;
 using ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.CampaignVinEntry;
 using ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ClaimableItem;
+using ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ClaimableItemContract;
 using ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ItemClaim;
 using ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ItemClaimCertificate;
 using ShiftSoftware.ADP.ClaimableItems.Shared.Enums;
@@ -49,6 +50,7 @@ public class ClaimableItemsMapper : ShiftMapperBase
         AddCampaignMaps();
         AddCampaignVinEntryMaps();
         AddClaimableItemMaps();
+        AddClaimableItemContractMaps();
         AddItemClaimMaps();
         AddItemClaimCertificateMaps();
     }
@@ -148,6 +150,42 @@ public class ClaimableItemsMapper : ShiftMapperBase
 
         // As on Campaign, `Campaign` is left entirely to the select convention - and a ClaimableItem may
         // legitimately have a null CampaignID, so the two convention behaviours noted there apply here in particular.
+    }
+
+    // ────────────────────────────────────────────────────────────────────────────────────────────────────────
+    // ClaimableItemContract
+    // ────────────────────────────────────────────────────────────────────────────────────────────────────────
+    private void AddClaimableItemContractMaps()
+    {
+        CreateMap<ClaimableItemContract, ClaimableItemContractDTO>()
+            // ── VIEW ──────────────────────────────────────────────────────────────────────
+            // The DTO's IsDraft is nullable because the framework's draft checkbox is; the column is not.
+            .ForMember(d => d.IsDraft, opt => opt.MapFrom(e => (bool?)e.IsDraft))
+
+            // ── ENTITY ────────────────────────────────────────────────────────────────────
+            // The lines are REPLACED, as on the warranty claim: ClaimableItemContractRepository.UpsertAsync
+            // removes the old rows before the base upsert maps anything. A null collection is left alone.
+            //
+            // The cancel members are written only by the cancel action, so a save never touches them, and a
+            // missing draft flag means draft.
+            .ReverseMap()
+            .ForMember(e => e.IsDraft, opt => opt.MapFrom(dto => dto.IsDraft ?? true))
+            .ForMember(e => e.Lines, opt => opt.Condition((dto, _, _) => dto.Lines != null))
+            .ForMember(e => e.IsCancelled, opt => opt.Ignore())
+            .ForMember(e => e.CancelledDate, opt => opt.Ignore())
+            .ForMember(e => e.CancelReason, opt => opt.Ignore());
+
+        CreateMap<ClaimableItemContractLine, ClaimableItemContractLineDTO>()
+            // ── ENTITY ────────────────────────────────────────────────────────────────────
+            // Every written line is a new row (the old ones are already removed), so the client's ID is not
+            // carried over: re-using it would collide with the removed row EF is still tracking. The expiry
+            // and the cancel members belong to the issue and cancel actions.
+            .ReverseMap()
+            .ForMember(e => e.ID, opt => opt.Ignore())
+            .ForMember(e => e.ExpireDate, opt => opt.Ignore())
+            .ForMember(e => e.IsCancelled, opt => opt.Ignore())
+            .ForMember(e => e.CancelledDate, opt => opt.Ignore())
+            .ForMember(e => e.CancelReason, opt => opt.Ignore());
     }
 
     // ────────────────────────────────────────────────────────────────────────────────────────────────────────
