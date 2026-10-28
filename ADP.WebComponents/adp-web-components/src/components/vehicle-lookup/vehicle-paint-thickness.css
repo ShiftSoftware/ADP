@@ -495,11 +495,6 @@
 }
 
 .paint-group {
-  --paint-per-row: 2;
-  --paint-rows: round(up, calc(var(--paint-photos, 2) / var(--paint-per-row)), 1);
-  contain-intrinsic-block-size: auto 153.55px;
-  contain-intrinsic-block-size: auto calc(25.55px + var(--paint-rows, 1) * 128px + (var(--paint-rows, 1) - 1) * 8px);
-  content-visibility: auto;
   min-width: 0;
   padding: 12px 14px 14px;
   background: var(--paper-soft);
@@ -583,12 +578,6 @@
 
   .paint-sides {
     gap: 12px 20px;
-  }
-}
-
-@container (max-width: 400px) {
-  .paint-group {
-    --paint-per-row: 1;
   }
 }
 

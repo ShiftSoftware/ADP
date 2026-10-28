@@ -721,7 +721,7 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
                 <div class="collapsible-body">
                   <div class="paint-photos-content shift-skeleton">
                     {(photosRendered ? shownGroups : []).map(group => (
-                      <div key={group.key} class="paint-group" style={{ '--paint-photos': `${group.images.length}` }}>
+                      <div key={group.key} class="paint-group">
                         <div class="paint-group-name">
                           <span class="paint-group-title">{group.name}</span>
                           <span class="paint-note">
