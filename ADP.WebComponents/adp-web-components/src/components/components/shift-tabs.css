@@ -1,57 +1,180 @@
 /* tailwind: off */
-@import '../style/base.css';
+/*
+ * shift-tabs: the slim tab strip of the component design language. A label per tab with an optional date
+ * beneath, and ONE blue underline that slides to the selected tab (the indicator below).
+ *
+ * shift-tabs renders without a shadow root, so this sheet lands in the shadow root of whichever component
+ * holds it, and the tokens it reads (--muted, --blue, --settle, ...) are the holder's own, from
+ * lookup-tokens.css. It resets what it draws (box-sizing, the button's chrome) rather than importing a
+ * reset, which would land a second `:host` rule in the holder's root.
+ */
 
-/* shift-tabs renders without a shadow root, so this sheet lands in the shadow root of whichever component hosts it. */
+shift-tabs {
+  display: block;
+  min-width: 0;
+}
 
+.shift-tabs {
+  min-width: 0;
+}
+
+/* position: relative makes the strip the offsetParent the indicator and a leaving tab are placed from. Tabs
+   wrap onto a second row in a narrow holder; the indicator follows by its own row (it carries a y as well as
+   an x). isolation keeps a leaving tab's z-index inside the strip. */
 .shift-tabs-bar {
   position: relative;
+  isolation: isolate;
   display: flex;
-  margin-bottom: 6px;
-  padding-inline-start: 12px;
-  gap: 4px;
-  border-bottom: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+  gap: 6px 4px;
+  align-items: flex-end;
+  min-width: 0;
 }
 
+/* A slim tab: the label on top, the date small beneath. The underline is not the tab's: it is the strip's
+   one indicator, so the tab is the same box selected or not. 12px of inline padding puts the first label on
+   the same line as the table's first column under it; a holder moves it with --shift-tabs-inset. The colour
+   runs on --settle, the indicator's clock, so the label and the line change together; the hover wash is a
+   press, .2s (design language § 18). Named properties, never `all`. */
 .shift-tabs-tab {
-  position: relative;
-  padding: 6px 16px;
-  border: 1px solid #e5e7eb;
-  border-bottom: 0;
-  border-top-left-radius: 4px;
-  border-top-right-radius: 4px;
-  background-color: #f6f6f6;
-  color: #000;
-  font-size: 17px;
-  font-weight: 500;
+  display: block;
+  box-sizing: border-box;
+  padding: 6px var(--shift-tabs-inset, 12px) 8px;
+  margin: 0;
+  color: var(--muted);
+  background-color: transparent;
+  border: 0;
+  border-radius: 6px 6px 0 0;
   cursor: pointer;
-  outline: 2px solid transparent;
-  outline-offset: 2px;
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-  transition-duration: 500ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  font: inherit;
+  text-align: start;
+  transition:
+    color var(--settle) ease,
+    background-color 0.2s ease;
 }
 
-.shift-tabs-tab::after {
-  content: '';
+.shift-tabs-tab[data-selected='true'] {
+  color: var(--blue-dark);
+}
+
+/* Pointer devices only, so a tap does not leave a sticky wash. The selected tab keeps its own look. */
+@media (hover: hover) {
+  .shift-tabs-tab[data-selected='false']:not([aria-disabled='true']):hover {
+    color: var(--ink);
+    background-color: var(--row-hover);
+  }
+}
+
+/* A tab the new list dropped: out of the flow, where it stood (the script sets left, top, width and height), under
+   its neighbours while it fades. The script runs the fade and the move; this is only where it sits. */
+.shift-tabs-tab[data-leaving='true'] {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  z-index: 10;
-  width: 100%;
-  height: 1px;
-  background-color: #fff;
-  opacity: 0;
-  transform: translateY(100%);
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
-  transition-duration: 500ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: -1;
+  pointer-events: none;
 }
 
-.shift-tabs-tab-active {
-  background-color: #fff;
+/* Inside the tab, not outside it: a holder's slot is often overflow: hidden and would cut an outline drawn
+   outwards. 2px solid in the hue's dark (§ 24), offset inwards for that reason. */
+.shift-tabs-tab:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: -2px;
+}
+
+.shift-tabs-tab[aria-disabled='true'] {
   cursor: default;
 }
 
-.shift-tabs-tab-active::after {
+/* One block per tab, so a lookup covers the labels with a single cover and one sweep. */
+.shift-tabs-text {
+  display: grid;
+  box-sizing: border-box;
+  transition: opacity var(--settle) ease;
+}
+
+.shift-tabs-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+}
+
+/* The caption is its own slot (the same grid-template-rows recipe as .collapsible, kept here so the strip
+   stands alone in a holder that does not import lookup-motion.css), so a hidden date closes the line instead
+   of removing it in one frame. */
+.shift-tabs-caption {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows var(--settle) ease,
+    opacity var(--settle) ease,
+    visibility 0s linear var(--settle);
+}
+
+.shift-tabs-caption[data-open='true'] {
+  grid-template-rows: 1fr;
   opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows var(--settle) ease,
+    opacity var(--settle) ease,
+    visibility 0s;
+}
+
+.shift-tabs-caption-body {
+  display: block;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The date is read, so it is --date-ink (§ 9), 12px/600 tabular (small note). */
+.shift-tabs-date {
+  display: block;
+  color: var(--date-ink);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* A selected tab's date takes the tab's blue; the unselected ones are --date-ink. */
+.shift-tabs-tab[data-selected='true'] .shift-tabs-date {
+  color: inherit;
+}
+
+/* The underline: one element, moved with transform alone (the compositor, no layout). The script writes
+   translate(x, y) to the selected tab's bottom-left corner and scaleX(width); this 1px-wide, 2px-tall box
+   becomes the tab's width. The origin is the box's corner and the anchor is the strip's physical left: both
+   come from physical measurements, so a right-to-left strip needs nothing else.
+   It is invisible until first placed, then fades in where it stands (nothing flies in from the corner). A
+   selection change is a Web Animation the script runs on --settle: it reaches out over both tabs, then the
+   trailing edge follows onto the new one. Placements that are not a selection land in place. */
+.shift-tabs-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 2px;
+  background-color: var(--blue);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(0, 0) scaleX(0);
+  transform-origin: 0 0;
+  transition: opacity var(--settle) ease;
+}
+
+.shift-tabs-indicator[data-placed='true'] {
+  opacity: 1;
+}
+
+/* Reduced motion keeps the change and makes it immediate. */
+@media (prefers-reduced-motion: reduce) {
+  .shift-tabs-tab,
+  .shift-tabs-text,
+  .shift-tabs-caption,
+  .shift-tabs-indicator {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
 }

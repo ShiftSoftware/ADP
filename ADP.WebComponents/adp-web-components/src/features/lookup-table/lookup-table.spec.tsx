@@ -1,7 +1,20 @@
 import { Component, Prop, VNode, h } from '@stencil/core';
 import { newSpecPage } from '@stencil/core/testing';
 
-import { LookupColumn, LookupTable, RowDrawer, RowSlot, RowVeil, drawerId, retainDrawers, settleDrawer, shownDrawers, tableTracks, toggleDrawer } from './lookup-table';
+import {
+  LookupColumn,
+  LookupTable,
+  RowDrawer,
+  RowSlot,
+  RowVeil,
+  drawerId,
+  placeholderKind,
+  retainDrawers,
+  settleDrawer,
+  shownDrawers,
+  tableTracks,
+  toggleDrawer,
+} from './lookup-table';
 
 /**
  * The drawer mode of the shared table, and the proof that a table which does not opt in is the table
@@ -563,5 +576,19 @@ describe('a column note (a small chip beside a text value)', () => {
 
     expect(root.querySelector('.lt-note')).toBeNull();
     expect(root.querySelectorAll('.lt-row .lt-cell')[1].querySelector('.lt-none').textContent).toBe('—');
+  });
+});
+
+describe('placeholderKind', () => {
+  const base = { columns: 4, loaded: true, failed: false, authorized: true, records: 0 };
+
+  it('picks the outcome without rows, and is null above rows or with no column to head', () => {
+    expect(placeholderKind({ ...base, loaded: false })).toBe('idle');
+    expect(placeholderKind(base)).toBe('empty');
+    expect(placeholderKind({ ...base, authorized: false, records: 3 })).toBe('unauthorized');
+    expect(placeholderKind({ ...base, loaded: false, failed: true })).toBe('error');
+    expect(placeholderKind({ ...base, records: 3 })).toBeNull();
+    expect(placeholderKind({ ...base, records: 3, leaving: true })).toBe('idle');
+    expect(placeholderKind({ ...base, columns: 0 })).toBeNull();
   });
 });

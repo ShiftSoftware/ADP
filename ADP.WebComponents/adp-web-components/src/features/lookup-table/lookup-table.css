@@ -58,6 +58,15 @@
      three rules. */
   --lt-rim-idle: rgba(95, 108, 120, 0.22);
   --lt-rim-blue: rgba(48, 113, 169, 0.32);
+  /* The body placeholder's icon: 38px, the strip's own height (--lead-height) and a step on the
+     spacing ladder (design language § 12, 38), so the mark is as tall as the band that heads the
+     table. Large enough to be seen before it is read; no bigger, because it carries a sentence of
+     13px text and a mark that outweighs its sentence reads as an error screen. */
+  --lt-placeholder-icon: 38px;
+  /* How much of its hue the placeholder's mark keeps. The fill at full strength is a cap's colour and,
+     at 38px, shouts; --line (the idle cap) is too faint to see on paper. Sixty per cent of the role's
+     own fill is the quiet that is still legible, one figure for all four so the hues stay in step. */
+  --lt-placeholder-strength: 60%;
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -243,6 +252,83 @@
 
 .lt-body-inner {
   align-content: start;
+}
+
+/* A panel with a placeholder has no blank floor under the strip: the placeholder fills that space when
+   there is no list, and after a strip that has said everything the card simply ends. */
+.lt-grid[data-placeholder='true'] > .lt-body {
+  min-height: 0;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Placeholder: what the body says when there is no list (idle, empty, error, not in the records)
+   ------------------------------------------------------------------------------------------- */
+
+/* One region under the body: a .collapsible, so it slides open and shut on the clock the body does (a
+   lookup that ends in rows opens the body as this shuts, one movement) and never pops. It spans the
+   grid because it belongs to no column. */
+.lt-placeholder {
+  grid-column: 1 / -1;
+}
+
+/* One layer per outcome, cross-fading in place: the stack is as tall as its tallest line whichever is
+   showing, so the outcome changing never moves what is below. */
+.lt-placeholder-layer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  /* 22 block (the language's drawer padding), 20 inline (the card's horizontal inset). */
+  padding: 22px 20px;
+  text-align: center;
+}
+
+/* The icon is its own block, so the skeleton's cover is the size of the icon and takes its corners (8: a
+   thumbnail's), and decoration only: the words carry the meaning. */
+.lt-placeholder-layer > .lt-placeholder-mark {
+  display: block;
+  width: var(--lt-placeholder-icon);
+  height: var(--lt-placeholder-icon);
+  border-radius: 8px;
+  color: color-mix(in srgb, var(--lt-placeholder-hue) var(--lt-placeholder-strength), transparent);
+}
+
+.lt-placeholder-glyph {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* One line of text: the body's 13px at the notice weight (650), centred. As wide as its words up to 52
+   characters, so the cover is the size of the sentence and a longer one wraps rather than running the
+   card's width. */
+.lt-placeholder-text {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--lt-placeholder-ink);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+/* Colour by role (design language § 10): grey for nothing to say yet and nothing on file, amber for a
+   vehicle the distributor has no record of (a statement without a verdict, never green), red for a
+   failed lookup. Text is the hue's dark, never its fill. */
+.lt-placeholder-layer.is-idle,
+.lt-placeholder-layer.is-empty {
+  --lt-placeholder-hue: var(--muted);
+  --lt-placeholder-ink: var(--muted);
+}
+
+.lt-placeholder-layer.is-unauthorized {
+  --lt-placeholder-hue: var(--amber);
+  --lt-placeholder-ink: var(--amber-dark);
+}
+
+.lt-placeholder-layer.is-error {
+  --lt-placeholder-hue: var(--red);
+  --lt-placeholder-ink: var(--red-dark);
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -741,6 +827,11 @@
   .lt-grid {
     grid-template-columns: minmax(0, 1fr);
     overflow: visible;
+  }
+
+  /* The placeholder takes the card's narrower inset, as the notice does. */
+  .lt-placeholder-layer {
+    padding-inline: 14px;
   }
 
   /* The headings hide behind one word; each card captions its own fields. */

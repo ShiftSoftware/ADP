@@ -1,6 +1,5 @@
 import { Component, Element, Event, EventEmitter, Host, Listen, Method, Prop, State, Watch, forceUpdate, h } from '@stencil/core';
 
-import { revealBelow } from '~lib/reveal-below';
 import { createHeightChangeAnnouncer } from '~lib/flexible-parents';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
@@ -22,6 +21,7 @@ import {
   certificateKind,
   hasRecords,
   panelBody,
+  panelPlaceholder,
   photosSectionOpen,
   reshapesTable,
   rowHasPhotos,
@@ -31,7 +31,7 @@ import {
   tabsOf,
 } from './components/VehiclePaintThicknessPanel';
 
-import { RowVeil, parseHiddenFields, retainDrawers, settleDrawer, shownDrawers, tableSlots, toggleDrawer } from '~features/lookup-table';
+import { PlaceholderKind, RowVeil, drawerId, parseHiddenFields, retainDrawers, settleDrawer, shownDrawers, tableSlots, toggleDrawer } from '~features/lookup-table';
 import { VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
@@ -129,13 +129,6 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
   /** Opens the viewer on `src`, growing out of the thumbnail `origin`. The same picture again while open is ignored. */
   private openImage(origin: HTMLImageElement, src: string, label?: string) {
-    // A photo in the phone's sheet opens in the sheet's own viewer: the page's would sit outside the modal dialog, inert.
-    const sheet = origin.closest('shift-sheet');
-    if (sheet) {
-      void sheet.showImage(src, { origin, label });
-      return;
-    }
-
     if (this.expandedImage === src) return;
     this.expandedImage = src;
     void this.imageViewer?.show(src, { origin, label });
@@ -172,37 +165,36 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     this.phoneQuery?.addEventListener?.('change', this.onPhoneChange);
   }
 
-  /** What is open as a sheet, kept (with its slot) a settle after it shuts so its content slides away with it. */
-  private sheetHold = new Retained<{ kind: 'photos' | 'certificate'; index: number }>(
-    // Dropped on the sheet's own `sheetClosed`; the timer is only a generous fallback so a missed event never leaves it mounted.
+  /** The row whose photos are open as a sheet, kept (with its slot) a settle after it shuts so its content slides away with it. */
+  private sheetHold = new Retained<number>(
     () => this.settleMs() + 200,
     () => forceUpdate(this),
   );
 
-  /** The slot a photos sheet is for, or the certificate: what the reader opened, wherever the viewport is. */
-  private wantedSheet(): { kind: 'photos' | 'certificate'; index: number } | null {
+  /** The slot whose photos are open: what the reader opened, wherever the viewport is. The certificate menu, when open, has the screen. */
+  private wantedSheet(): number | null {
     const menuAvailable = this.certificateMenuOpen && !this.leaving && certificateKind(this.panelState()) === 'menu';
-    if (menuAvailable) return { kind: 'certificate', index: -1 };
-    if (this.openDrawer !== null && !this.applied.has('photos')) return { kind: 'photos', index: this.openDrawer };
-    return null;
+    if (menuAvailable) return null;
+    return this.openDrawer !== null && !this.applied.has('photos') ? this.openDrawer : null;
   }
 
+  // Only a close by the reader counts: the owner's own (the certificate menu taking the screen) leaves the row open.
   private onCloseSheet = () => {
-    if (this.certificateMenuOpen) this.onCloseCertificate(false);
-    else if (this.openDrawer !== null) this.closeDrawer();
+    if (this.phone && this.wantedSheet() !== null) this.closeDrawer();
   };
 
-  private onSheetClosed = () => this.sheetHold.release();
-
-  /** `aria-haspopup="dialog"` on the row toggles while photos open as a sheet; the shared table draws them and does not know. */
+  /** `aria-haspopup="dialog"` and the open state on the row toggles while photos open as a sheet; the shared table draws them and does not know. */
   private popupMarked = false;
 
   private markPhotoToggles() {
     if (!this.phone && !this.popupMarked) return;
     this.popupMarked = this.phone;
-    this.el.shadowRoot
-      ?.querySelectorAll('.lt-action-button')
-      .forEach(button => (this.phone ? button.setAttribute('aria-haspopup', 'dialog') : button.removeAttribute('aria-haspopup')));
+    const open = this.phone && this.openDrawer !== null ? drawerId('paint', this.openDrawer) : null;
+    this.el.shadowRoot?.querySelectorAll('.lt-action-button').forEach(button => {
+      if (!this.phone) return button.removeAttribute('aria-haspopup');
+      button.setAttribute('aria-haspopup', 'dialog');
+      button.setAttribute('aria-expanded', String(button.getAttribute('aria-controls') === open));
+    });
   }
 
   // #endregion
@@ -388,11 +380,10 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     }
 
     const adopt = () => {
-      // The photos going away takes every drawer and the all-photos section with it.
+      // The photos going away takes every drawer and the all-photos section with it (the section's own say, expanded or not, is the reader's and is kept).
       if (next.has('photos')) {
         this.retainedDrawers = [];
         this.openDrawer = null;
-        this.photosOpen = false;
       }
 
       this.applied = next;
@@ -473,21 +464,31 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   /** Drawers that have just shut and are still rendered while they slide away. */
   @State() retainedDrawers: number[] = [];
 
-  /** The all-photos section is expanded. It survives a lookup, and shuts only if the new answer has no photo. */
-  @State() photosOpen: boolean = false;
+  /**
+   * The reader folded the all-photos section away. It is EXPANDED by default (owner, 2026-10-27), so what is kept is the
+   * exception: the fold survives a lookup, and a clear starts afresh. An expanded section with nothing to show (an answer
+   * with no photo) is shut by the answer, not by this, so the next vehicle that has photos finds it open again.
+   */
+  @State() photosCollapsed: boolean = false;
+
+  /**
+   * The section's pictures have been drawn, so they stay in the tree when it is folded: opening it again moves nothing
+   * but the region's height, instead of creating a screenful of <img> in the frame it opens. Folded they cost no fetch
+   * (loading="lazy" on a clipped box), no sweep (the shut region's skeleton does not loop) and no tab stop (the collapsible hides it).
+   */
+  private photosMounted = false;
 
   private drawerTimer?: ReturnType<typeof setTimeout>;
   /** The rows as they were last rendered, taken when a drawer shuts because its slot lost its photos: what it slides away on. */
   private drawerSnapshot: PaintRow[] = [];
   private photosGroups = new Retained<PhotoGroup[]>(
     () => this.settleMs(),
-    () => forceUpdate(this),
+    () => {
+      // The section has had nothing to show for a settle, and has slid away on what it last held: the pictures can go.
+      this.photosMounted = false;
+      forceUpdate(this);
+    },
   );
-  private photosRendering = new Retained<true>(
-    () => this.settleMs(),
-    () => forceUpdate(this),
-  );
-  private revealTarget: 'drawer' | 'photos' | null = null;
 
   /** Drops the retained drawers a settle after the last change. */
   private scheduleDrawerDrop() {
@@ -506,8 +507,6 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     this.drawerSnapshot = this.shownBefore;
     this.openDrawer = next;
     this.scheduleDrawerDrop();
-    // On a phone the photos are in a sheet over the page, not under the row: there is nothing to scroll to.
-    if (next !== null && !this.phone) this.revealTarget = 'drawer';
   };
 
   /** An explicit close, not a toggle: a stale second request does nothing. */
@@ -521,14 +520,13 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   };
 
   private onTogglePhotos = () => {
-    this.photosOpen = !this.photosOpen;
-    if (this.photosOpen) this.revealTarget = 'photos';
+    this.photosCollapsed = !this.photosCollapsed;
   };
 
   /**
    * Runs when the shown readings have changed under cover (an answer, an inspection switched) or the
    * panel is cleared: a drawer stays open if its slot still has photos and shuts if not, the
-   * all-photos section stays open if the new readings have any photo. Never while a lookup is in
+   * all-photos section is shut by the readings having no photo (see `photosBodyOpen`). Never while a lookup is in
    * flight: the open drawer goes straight into loading, under the skeleton.
    */
   private settleSelection(cleared: boolean) {
@@ -543,7 +541,8 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
       this.scheduleDrawerDrop();
     }
 
-    if (this.photosOpen && (cleared || allPhotoGroups(rows, this.locale).length === 0)) this.photosOpen = false;
+    // A clear starts afresh: the next vehicle's section is expanded again.
+    if (cleared) this.photosCollapsed = false;
   }
 
   // #endregion
@@ -571,36 +570,11 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     () => forceUpdate(this),
   );
 
-  // Shadow DOM retargets inner clicks to the host element, so any click whose composed
-  // path includes the host happened inside the component; everything else closes the menu.
-  @Listen('click', { target: 'document' })
-  onDocumentClick(event: MouseEvent) {
-    // A phone's sheet has its own scrim, Escape and focus trap.
-    if (this.phone) return;
-    if (this.certificateMenuOpen && !event.composedPath().includes(this.el)) this.certificateMenuOpen = false;
-  }
-
-  // Escape closes the menu wherever focus is; focus goes back to the button only when it was in this panel.
-  @Listen('keydown', { target: 'document' })
-  onDocumentKeyDown(event: KeyboardEvent) {
-    if (event.key !== 'Escape' || !this.certificateMenuOpen || this.phone) return;
-    this.onCloseCertificate(event.composedPath().includes(this.el));
-  }
-
-  /** Set when the button opens the menu from the keyboard or a press: the first item takes focus once it is rendered focusable. */
-  private focusMenuOnRender = false;
-  private focusOutTimer?: ReturnType<typeof setTimeout>;
-
-  // The items of whichever menu is on screen: the floating one, or the phone's sheet (the other one's are shut and cannot take focus).
-  private menuItems = () =>
-    Array.from(
-      this.el.shadowRoot?.querySelectorAll<HTMLElement>(this.phone ? '.paint-sheet-menu .paint-certificate-item' : '.paint-certificate-menu .paint-certificate-item') ?? [],
-    );
+  // The items of the menu on screen. (Escape, a press outside and Tab away are the popover's.)
+  private menuItems = () => Array.from(this.el.shadowRoot?.querySelectorAll<HTMLElement>('.paint-menu .paint-certificate-item') ?? []);
 
   private onToggleCertificate = () => {
     this.certificateMenuOpen = !this.certificateMenuOpen;
-    // The sheet takes focus itself when it opens.
-    this.focusMenuOnRender = this.certificateMenuOpen && !this.phone;
   };
 
   // Menu keyboard: Down / Up / Home / End move between the language items (wrapping), Down on the button opens the menu.
@@ -623,29 +597,11 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     if (at < 0) return;
     event.preventDefault();
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (at + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
-    items[next]?.focus();
+    items[next]?.focus({ preventScroll: true });
   }
 
-  // Focus leaving the button and the menu (Tab away) closes the menu. Focus moving between the two stays inside.
-  @Listen('focusout')
-  onMenuFocusOut(event: FocusEvent) {
-    if (!this.certificateMenuOpen || this.phone) return;
-    const to = event.relatedTarget as Node | null;
-    if (!to) return; // a pointer press elsewhere is the document click handler's
-    if (to !== this.el) {
-      this.certificateMenuOpen = false;
-      return;
-    }
-    clearTimeout(this.focusOutTimer);
-    this.focusOutTimer = setTimeout(() => {
-      const active = this.el.shadowRoot?.activeElement;
-      if (this.certificateMenuOpen && active && !active.closest('.paint-certificate-button, .paint-certificate-menu')) this.certificateMenuOpen = false;
-    });
-  }
-
-  private onCloseCertificate = (restoreFocus: boolean) => {
+  private onCloseCertificate = () => {
     this.certificateMenuOpen = false;
-    if (restoreFocus) this.el.shadowRoot?.querySelector<HTMLElement>('.paint-certificate-button')?.focus();
   };
 
   // #endregion
@@ -688,6 +644,27 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
       this.retainTimer = setTimeout(() => {
         this.retainTimer = undefined;
         this.retainedBody = 'none';
+        forceUpdate(this);
+      }, this.settleMs());
+    }
+  }
+
+  private retainedPlaceholder: PlaceholderKind | null = null;
+  private placeholderTimer?: ReturnType<typeof setTimeout>;
+
+  /** Remembers the placeholder's kind and forgets it a settle after its region shut, so its words slide away with it. */
+  private retainPlaceholder(kind: PlaceholderKind | null) {
+    if (kind !== null) {
+      this.retainedPlaceholder = kind;
+      clearTimeout(this.placeholderTimer);
+      this.placeholderTimer = undefined;
+      return;
+    }
+
+    if (this.retainedPlaceholder !== null && !this.placeholderTimer) {
+      this.placeholderTimer = setTimeout(() => {
+        this.placeholderTimer = undefined;
+        this.retainedPlaceholder = null;
         forceUpdate(this);
       }, this.settleMs());
     }
@@ -772,7 +749,6 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
   private heightAnnouncer?: ReturnType<typeof createHeightChangeAnnouncer>;
   private layoutSignature?: string;
-  private stopFollowing?: () => void;
 
   /** Everything that moves the panel's height, joined; a render that changes none of it announces nothing. */
   private signature(): string {
@@ -793,10 +769,11 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
       certificateKind(state),
       this.openDrawer,
       this.retainedDrawers.join('.'),
-      this.photosOpen,
+      this.photosCollapsed,
       this.opened,
       this.outgoing.length,
       this.isError,
+      panelPlaceholder(state, this.leaving),
     ].join('|');
   }
 
@@ -805,11 +782,6 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   componentDidRender() {
     this.announceVerdict();
     this.markPhotoToggles();
-
-    if (this.focusMenuOnRender) {
-      this.focusMenuOnRender = false;
-      if (this.certificateMenuOpen) this.menuItems()[0]?.focus();
-    }
 
     if (this.openPending) {
       this.openPending = false;
@@ -826,14 +798,6 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
       });
     }
 
-    // What opens below the fold brings its anchor up and the page follows it (motion.md rule 10).
-    if (this.revealTarget) {
-      const anchor = this.el.shadowRoot?.querySelector(this.revealTarget === 'drawer' ? '.lt-row[data-open="true"]' : '.paint-photos-toggle');
-      this.revealTarget = null;
-      this.stopFollowing?.();
-      if (anchor) this.stopFollowing = revealBelow(anchor, this.settleMs() + 80);
-    }
-
     const signature = this.signature();
     const changed = this.layoutSignature !== undefined && this.layoutSignature !== signature;
     this.layoutSignature = signature;
@@ -846,10 +810,10 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
   disconnectedCallback() {
     clearTimeout(this.retainTimer);
+    clearTimeout(this.placeholderTimer);
     clearTimeout(this.swapTimer);
     clearTimeout(this.drawerTimer);
     clearTimeout(this.outgoingTimer);
-    clearTimeout(this.focusOutTimer);
     clearTimeout(this.loadTimer);
     this.cancelOpenFrame();
     if (this.loadFrame !== undefined) cancelAnimationFrame(this.loadFrame);
@@ -857,11 +821,9 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     this.phoneQuery = undefined;
     this.sheetHold.dispose();
     this.photosGroups.dispose();
-    this.photosRendering.dispose();
     this.certificate.dispose();
     this.summary.dispose();
     this.tabs.dispose();
-    this.stopFollowing?.();
     this.heightAnnouncer?.dispose();
   }
 
@@ -883,6 +845,8 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
       certificateUrls: this.vehicleLookup?.paintThicknessCertificateUrls,
       showCertificateButton: this.showCertificateButton,
       error: this.errorText(),
+      model: this.vehicleLookup?.vehicleSpecification?.modelDescription,
+      modelYear: this.vehicleLookup?.vehicleVariantInfo?.modelYear ?? this.vehicleLookup?.vehicleSpecification?.modelYear,
     };
   }
 
@@ -901,6 +865,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     const busy = this.isLoading || this.leaving;
     const body = panelBody(state);
     this.retainBody(body);
+    this.retainPlaceholder(panelPlaceholder(state, this.leaving));
 
     const open = bodyOpen(state, this.leaving, this.reshaping);
     const current = body === 'rows' ? shownRows(state) : [];
@@ -918,14 +883,14 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     this.summary.track(state.showSummary ? summaryOf(current) : null);
     const groups = allPhotoGroups(current, this.locale);
     this.photosGroups.track(groups.length ? groups : null);
-    const photosBodyOpen = this.photosOpen && photosSectionOpen(state, groups.length, this.leaving, this.reshaping);
-    this.photosRendering.track(photosBodyOpen ? true : null);
+    const photosBodyOpen = !this.photosCollapsed && photosSectionOpen(state, groups.length, this.leaving, this.reshaping);
+    if (photosBodyOpen) this.photosMounted = true;
 
     // The phone's sheet: open for what the reader opened, mounted a settle longer so it can slide away (also when the viewport leaves the phone range).
     const wanted = this.phone ? this.wantedSheet() : null;
     this.sheetHold.track(wanted);
     const held = wanted ?? this.sheetHold.value ?? null;
-    const sheet: PaintSheet | null = !held ? null : held.kind === 'photos' ? { kind: 'photos', index: held.index, open: !!wanted } : { kind: 'certificate', open: !!wanted };
+    const sheet: PaintSheet | null = held === null ? null : { index: held, open: wanted !== null };
 
     return (
       <Host translate="no">
@@ -951,6 +916,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
             reshaping={this.reshaping}
             swapping={this.swapping}
             retainedBody={this.retainedBody}
+            retainedPlaceholder={this.retainedPlaceholder}
             selectedTab={this.activeTabIndex}
             retainedTabs={this.tabs.value ?? []}
             retainedCertificate={this.certificate.value ?? null}
@@ -962,8 +928,8 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
             // A slot that lost its photos to the new answer slides away on the photos it last showed.
             drawerRowFor={(row, index) => ((row && rowHasPhotos(row)) || !this.retainedDrawers.includes(index) ? row : (this.drawerSnapshot[index] ?? row))}
             onToggleDrawer={this.onToggleDrawer}
-            photosOpen={this.photosOpen}
-            photosRendered={photosBodyOpen || this.photosRendering.value === true}
+            photosOpen={!this.photosCollapsed}
+            photosRendered={photosBodyOpen || (this.photosMounted && !state.hidden.has('photos'))}
             retainedGroups={this.photosGroups.value ?? []}
             onTogglePhotos={this.onTogglePhotos}
             onSelectTab={this.onSelectTab}
@@ -974,7 +940,6 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
             phone={this.phone}
             sheet={sheet}
             onCloseSheet={this.onCloseSheet}
-            onSheetClosed={this.onSheetClosed}
           />
         </VehicleInfoLayout>
       </Host>

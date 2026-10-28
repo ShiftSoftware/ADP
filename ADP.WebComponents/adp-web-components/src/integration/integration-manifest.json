@@ -369,7 +369,7 @@
           { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
         ],
         "events": [{ "name": "verdictChange", "type": "\"attention\" | \"idle\" | \"negative\" | \"neutral\" | \"positive\"" }],
-        "dependencies": ["shift-image", "shift-sheet"]
+        "dependencies": ["shift-image", "shift-popover", "shift-tabs"]
       },
       "runtimeAssets": { "locales": "dist/locales", "notes": [] }
     },
@@ -1953,6 +1953,16 @@
       "api": {
         "props": [
           {
+            "name": "align",
+            "attribute": "align",
+            "type": "\"end\" | \"start\"",
+            "default": "'start'",
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "start (default) or end: which edge of the anchor the floating panel lines up with. Ignored in a bottom sheet."
+          },
+          {
             "name": "alwaysSheet",
             "attribute": "always-sheet",
             "type": "boolean",
@@ -1983,6 +1993,16 @@
             "description": "vanilla, material, soft, sharp or minimal. Unset renders vanilla."
           },
           {
+            "name": "closeLabel",
+            "attribute": "close-label",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Accessible name of the sheet’s close button. Top layer only. The default is in language."
+          },
+          {
             "name": "colorScheme",
             "attribute": "color-scheme",
             "type": "\"auto\" | \"dark\" | \"light\"",
@@ -2001,6 +2021,16 @@
             "required": false,
             "reflect": true,
             "description": "Keeps it shut: closes it when set while open, and show(), toggle() and the anchor trigger do nothing. It is also shut while the anchor's input (the anchor itself, or the first input, textarea or select inside it) is disabled or aria-disabled."
+          },
+          {
+            "name": "heading",
+            "attribute": "heading",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Title of a bottom sheet, shown in its title bar. Top layer only; the heading slot replaces it."
           },
           {
             "name": "label",
@@ -2073,6 +2103,16 @@
             "description": "xs, sm, md (default), lg or xl. md equals no size."
           },
           {
+            "name": "topLayer",
+            "attribute": "top-layer",
+            "type": "boolean",
+            "default": "false",
+            "mutable": false,
+            "required": false,
+            "reflect": true,
+            "description": "Off (default): the panel is portaled to the document body. On: it is shown in the browser top layer and its content stays in the popover’s own shadow tree."
+          },
+          {
             "name": "trigger",
             "attribute": "trigger",
             "type": "\"anchor\" | \"manual\"",
@@ -2134,7 +2174,13 @@
             "default": "var(--shift-shadow-panel, var(--_ap-popover-shadow, var(--_ap-shadow-panel, 0 10px 30px -12px rgba(15, 23, 42, 0.25))))",
             "description": "Colour · panel shadow"
           },
+          {
+            "name": "--shift-popover-sheet-closed-offset",
+            "default": "0px",
+            "description": "Length · how far below its resting place a bottom sheet sits while closed; 0px by default"
+          },
           { "name": "--shift-popover-sheet-max-block-size", "default": "82dvh", "description": "Size · tallest the bottom sheet may get" },
+          { "name": "--shift-popover-sheet-radius", "default": "0", "description": "Length · radius of a bottom sheet’s top corners; 0 by default" },
           {
             "name": "--shift-popover-surface",
             "default": "var(--shift-surface, var(--_ap-popover-surface, var(--_ap-panel-surface, #ffffff)))",

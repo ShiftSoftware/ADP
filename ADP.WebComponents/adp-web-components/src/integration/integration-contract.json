@@ -667,7 +667,11 @@
           "appearance": "vanilla, material, soft, sharp or minimal. Unset renders vanilla.",
           "colorScheme": "light (default), dark, or auto (follows prefers-color-scheme; for hosts that are themselves dark-aware).",
           "size": "xs, sm, md (default), lg or xl. md equals no size.",
-          "language": "en, ar, ku or ru. Language of the default dialog name."
+          "language": "en, ar, ku or ru. Language of the default dialog name.",
+          "topLayer": "Off (default): the panel is portaled to the document body. On: it is shown in the browser top layer and its content stays in the popover\u2019s own shadow tree.",
+          "heading": "Title of a bottom sheet, shown in its title bar. Top layer only; the heading slot replaces it.",
+          "closeLabel": "Accessible name of the sheet\u2019s close button. Top layer only. The default is in language.",
+          "align": "start (default) or end: which edge of the anchor the floating panel lines up with. Ignored in a bottom sheet."
         },
         "events": {
           "openChange": "Detail { open }. Fires whenever the panel opens or closes: by method, by attribute or by dismissal."
@@ -683,6 +687,8 @@
           "backdrop": "The overlay behind a bottom sheet; tapping it closes the sheet. Sheet mode only."
         },
         "cssProperties": {
+          "--shift-popover-sheet-closed-offset": "Length \u00b7 how far below its resting place a bottom sheet sits while closed; 0px by default",
+          "--shift-popover-sheet-radius": "Length \u00b7 radius of a bottom sheet\u2019s top corners; 0 by default",
           "--shift-popover-backdrop": "Colour · the overlay behind a bottom sheet (phones); dark in the dark scheme",
           "--shift-popover-backdrop-blur": "Effect · how much the page behind a bottom sheet blurs; none where backdrop-filter is unsupported",
           "--shift-popover-border-width": "Shape · panel border width",

@@ -10,9 +10,11 @@ import { ArrowIcon } from '~assets/arrow-icon';
 import { PrintIcon } from '~assets/print-icon';
 import { SearchIcon } from '~assets/search-icon';
 import { EmptyTableIcon } from '~assets/empty-table-icon';
+import { QuestionMark } from '~assets/question-mark';
+import { TriangleAlertIcon } from '~assets/triangle-alert';
 
-import { LookupHead, PanelVerdict } from '~features/vehicle-info-layout';
-import { LookupColumn, LookupTable, RowDrawer, RowSlot, drawerId, shownBody, visibleColumns } from '~features/lookup-table';
+import { LookupHeadWait, PanelVerdict, StatusBadge } from '~features/vehicle-info-layout';
+import { LookupColumn, LookupTable, PlaceholderKind, RowDrawer, RowSlot, TablePlaceholder, drawerId, placeholderKind, shownBody, visibleColumns } from '~features/lookup-table';
 import type { LanguageKeys } from '~features/multi-lingual';
 
 import { MEDIA_GLYPHS } from './glyphs';
@@ -47,6 +49,9 @@ export type PanelState = {
   showCertificateButton: boolean;
   /** The lookup failed: the sentence the pill carries in the negative tone. */
   error?: string;
+  /** The vehicle's model description and model year, for the head's title. */
+  model?: string | null;
+  modelYear?: number | null;
 };
 
 /** The hiddenFields names, the host's whole vocabulary for this panel: every part of the panel that can be left out. */
@@ -169,9 +174,9 @@ export const positionLabel = (locale: PaintThicknessLocale, position: string | n
 
 export const sideLabel = (locale: PaintThicknessLocale, side: Side): string => (side === 'left' ? locale.left : side === 'right' ? locale.right : locale.centre);
 
-const fill = (template: string, values: Record<string, string | number>): string =>
+const fill = (template: string | undefined, values: Record<string, string | number>): string =>
   Object.entries(values)
-    .reduce((text, [name, value]) => text.split(`{${name}}`).join(String(value)), template)
+    .reduce((text, [name, value]) => text.split(`{${name}}`).join(String(value)), template ?? '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 
@@ -211,6 +216,15 @@ export const pluralCategory = (count: number, language: string): Intl.LDMLPlural
 export const photoCountText = (count: number, locale: PaintThicknessLocale, language: string): string =>
   (locale[PLURAL_KEYS[pluralCategory(count, language)]] || locale.photoCountOther).replace('{count}', String(count));
 
+const COUNT_KEYS = {
+  zero: 'inspectionCountOther',
+  one: 'inspectionCountOne',
+  two: 'inspectionCountTwo',
+  few: 'inspectionCountFew',
+  many: 'inspectionCountMany',
+  other: 'inspectionCountOther',
+} as const;
+
 // ---------------------------------------------------------------------------------------------
 // The derivations (design language § 20): what the panel may say, what the body holds, the tabs
 // ---------------------------------------------------------------------------------------------
@@ -225,6 +239,21 @@ export const listed = (state: PanelState): PaintThicknessInspectionDTO[] => (sta
 /** Whether the vehicle has an inspection on record. Judged on the list, never on one tab's rows. */
 export const hasRecords = (state: PanelState): boolean => listed(state).length > 0;
 
+/** The head's title: the vehicle's model and its year, or the panel's name when the lookup carries no model. */
+export const headTitle = (state: PanelState, locale: PaintThicknessLocale): string => {
+  const model = state.vehicleLoaded ? (state.model ?? '').trim() : '';
+  return model ? [model, state.modelYear || ''].filter(Boolean).join(' ') : locale.paintThickness;
+};
+
+/** The head's second line: "2 inspections · last 2026-03-12"; empty when there is nothing listed. */
+export const headCount = (state: PanelState, locale: PaintThicknessLocale, language: string): string => {
+  const inspections = listed(state);
+  if (!inspections.length) return '';
+  const count = (locale[COUNT_KEYS[pluralCategory(inspections.length, language)]] || locale.inspectionCountOther).replace('{count}', String(inspections.length));
+  const latest = inspections.map(inspection => isoDay(inspection.inspectionDate)).reduce<string | null>((last, day) => (day && (!last || day > last) ? day : last), null);
+  return latest ? `${count} · ${locale.lastInspection.replace('{date}', latest)}` : count;
+};
+
 /** The inspection the table shows; a stale index (a shorter answer) falls back to the first. */
 export const shownInspection = (state: PanelState): PaintThicknessInspectionDTO | undefined => {
   const all = listed(state);
@@ -237,16 +266,32 @@ export const shownRows = (state: PanelState): PaintRow[] => paintRows(shownInspe
 /** `rows` when the shown inspection has readings; `none` otherwise (idle, unauthorized, error, nothing on file). The body shuts for `none`. */
 export const panelBody = (state: PanelState): 'rows' | 'none' => (shownRows(state).length > 0 ? 'rows' : 'none');
 
+/** Visible columns: panel, position and the two sides are fixed; the photos column is the host's to hide. */
+export const columnCount = (hidden: ReadonlySet<string>): number => (hidden.has('photos') ? 4 : 5);
+
 /**
- * What fills the space under the strip when there is no list: `idle` before a lookup, after a failed
- * one and for a vehicle not in the distributor's records ("look a vehicle up": the pill says what
- * happened), `empty` for an authorized vehicle with no readings (what would be listed here), none
- * when there is a list. Absence of data is never a verdict (vehicle-lookup-invariants.md).
+ * What the body says when there is no list: the table's `placeholderKind` fed this panel's state. `idle`
+ * before a lookup, `empty` for an authorized vehicle whose shown inspection has no readings (never a
+ * verdict), `unauthorized` for a vehicle not in the distributor's records, `error` for a failed lookup,
+ * null above rows. `leaving` (a clear, or a failure on a settled card) opens the idle one as the rows shut.
  */
-export const panelPlaceholder = (state: PanelState): 'idle' | 'empty' | null => {
-  if (!state.vehicleLoaded || state.authorized === false) return 'idle';
-  return panelBody(state) === 'rows' ? null : 'empty';
-};
+export const panelPlaceholder = (state: PanelState, leaving = false): PlaceholderKind | null =>
+  placeholderKind({
+    columns: columnCount(state.hidden),
+    loaded: state.vehicleLoaded,
+    failed: !!state.error,
+    authorized: state.authorized,
+    records: shownRows(state).length,
+    leaving,
+  });
+
+/** The icon and the one line of each outcome, from the panel's locale. */
+export const placeholderContent = (locale: PaintThicknessLocale): TablePlaceholder['content'] => ({
+  idle: { icon: SearchIcon, text: locale.idleHint },
+  empty: { icon: EmptyTableIcon, text: locale.emptyHint },
+  error: { icon: TriangleAlertIcon, text: locale.errorHint },
+  unauthorized: { icon: QuestionMark, text: locale.unauthorizedHint },
+});
 
 /**
  * Whether the all-photos section is on screen: the host did not hide photos, the shown inspection has
@@ -288,20 +333,6 @@ export const tabsOf = (state: PanelState, locale: PaintThicknessLocale): PaintTa
 
 /** The tab strip is open whenever there is an inspection to choose between, including one. */
 export const tabsOpen = (state: PanelState): boolean => hasRecords(state);
-
-/**
- * The tab a key press moves to, or null when the key is not one the tabs answer to. Left and right
- * follow the reading direction (an rtl panel reverses them); home and end go to the ends; a move
- * wraps.
- */
-export const tabForKey = (key: string, current: number, count: number, rtl: boolean): number | null => {
-  if (count < 1) return null;
-  const step = key === 'ArrowRight' ? (rtl ? -1 : 1) : key === 'ArrowLeft' ? (rtl ? 1 : -1) : 0;
-  if (step !== 0) return (current + step + count) % count;
-  if (key === 'Home') return 0;
-  if (key === 'End') return count - 1;
-  return null;
-};
 
 // -- Certificate ----------------------------------------------------------------------------------
 
@@ -530,87 +561,15 @@ export const certificateMenuContent = (urls: PaintThicknessCertificateUrlDTO[], 
   ));
 
 // ---------------------------------------------------------------------------------------------
-// The tab strip: self-contained, so it can be lifted into a shared tabs component
+// The tab strip is the shared <shift-tabs>; the panel only names the tabpanel and the tabs' ids
 // ---------------------------------------------------------------------------------------------
 
 export const TABPANEL_ID = 'paint-tabpanel';
-export const tabId = (index: number) => `paint-tab-${index}`;
+export const TAB_ID_PREFIX = 'paint-tab';
+export const tabId = (index: number) => `${TAB_ID_PREFIX}-${index}`;
 
-type TabsProps = {
-  tabs: PaintTab[];
-  /** The tab pressed: the one `aria-selected` says, and the one in the tab order. */
-  selected: number;
-  disabled: boolean;
-  rtl: boolean;
-  /** The strip's accessible name. */
-  label: string;
-  /** The panel the tabs control. */
-  panelId: string;
-  onSelect: (index: number) => void;
-};
-
-/**
- * A tab strip: a label per tab with an optional caption beneath (the date). Its markup and classes
- * (`paint-tabs*`) stand on their own: nothing in the table's stylesheet styles it. The full tabs
- * contract: `tablist` / `tab`, `aria-selected`, `aria-controls`, a roving tabindex (only the
- * selected tab is in the tab order), Left / Right (reversed in a right-to-left panel), Home and End,
- * wrapping. Selection follows focus. The caption is its own slot that opens and shuts, so a hidden
- * date closes the line instead of removing it in one frame.
- */
-export const PaintTabs: FunctionalComponent<TabsProps> = ({ tabs, selected, disabled, rtl, label, panelId, onSelect }) => {
-  const current = Math.min(selected, Math.max(0, tabs.length - 1));
-
-  return (
-    <div class="paint-tabs" role="tablist" aria-label={label}>
-      {tabs.map((tab, index) => {
-        const isSelected = index === current;
-
-        return (
-          <button
-            key={tab.key}
-            type="button"
-            role="tab"
-            class="paint-tabs-tab"
-            id={tabId(index)}
-            aria-selected={isSelected ? 'true' : 'false'}
-            aria-controls={panelId}
-            tabIndex={isSelected ? 0 : -1}
-            data-selected={isSelected ? 'true' : 'false'}
-            aria-disabled={disabled ? 'true' : null}
-            onClick={() => {
-              if (!disabled) onSelect(index);
-            }}
-            onKeyDown={event => {
-              if (disabled) return;
-              const next = tabForKey(event.key, index, tabs.length, rtl);
-              if (next === null) return;
-              event.preventDefault();
-              onSelect(next);
-              (event.currentTarget as HTMLElement).parentElement?.querySelectorAll<HTMLElement>('[role="tab"]')[next]?.focus();
-            }}
-          >
-            {/* One cover per tab: the labels are the answer's, so they go under the skeleton with it (§ 21a). */}
-            <span class="paint-tabs-text shift-skeleton">
-              <span class="paint-tabs-label">{tab.title}</span>
-              <span class="paint-tabs-caption" data-open={tab.subtitle !== null ? 'true' : 'false'} aria-hidden={tab.subtitle !== null ? null : 'true'}>
-                <span class="paint-tabs-caption-body">
-                  <span class="paint-tabs-date">{tab.subtitle}</span>
-                </span>
-              </span>
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-};
-
-/**
- * What the phone's bottom sheet holds, decided by the owner: the kind, the slot of a photos sheet, and
- * whether it is open. It is mounted while open and for a settle after, so its content is still there
- * while it slides away; `open` false on a mounted sheet is that closing.
- */
-export type PaintSheet = { kind: 'photos'; index: number; open: boolean } | { kind: 'certificate'; open: boolean };
+/** The row whose photos the phone's bottom sheet holds, and whether it is open (kept mounted while it slides away, `open` false). */
+export type PaintSheet = { index: number; open: boolean };
 
 /** A photos sheet's title: the row's name and its photo count, e.g. "Door · Front — 4 photos". */
 export const sheetPhotosTitle = (row: PaintRow, locale: PaintThicknessLocale, language: string): string =>
@@ -635,6 +594,8 @@ type Props = {
   swapping: boolean;
   /** The body's last kind, kept a settle after it shut so its content slides away instead of blinking out. */
   retainedBody: string;
+  /** The placeholder's last kind, kept a settle after a list opened over it so its words slide away with their region. */
+  retainedPlaceholder: PlaceholderKind | null;
   /** The tab pressed, which is the one `aria-selected` says; the table's own tab follows once the values are out (`state.shownIndex`). */
   selectedTab: number;
   /** The last tabs, kept so a strip that is shutting still has its labels. */
@@ -653,7 +614,7 @@ type Props = {
   onToggleDrawer: (index: number) => void;
   /** The all-photos section: open or shut, and the last groups, kept while it shuts. */
   photosOpen: boolean;
-  /** The section's pictures exist in the DOM: it is open, or still shutting. Closed, no picture is rendered, so none is requested. */
+  /** The section's pictures exist in the DOM: it is open, still shutting, or has been open and is now folded (so opening it again creates nothing). Never drawn before the first time it is open. */
   photosRendered: boolean;
   retainedGroups: PhotoGroup[];
   onTogglePhotos: () => void;
@@ -664,73 +625,59 @@ type Props = {
   onOpenPhoto?: OpenPhoto;
   /** The viewport is a phone (<= 720px): the certificate menu and a row's photos open as a bottom sheet, not a floating menu and an inline drawer. */
   phone?: boolean;
-  /** The sheet to mount, or null: none mounted. */
+  /** The row photos sheet (phone), or null: none held. */
   sheet?: PaintSheet | null;
-  /** The reader asked the sheet to close (Escape, the scrim, the button). */
+  /** The reader asked the photos sheet to close (Escape, the scrim, the button). */
   onCloseSheet?: () => void;
-  /** The sheet has finished closing: the owner may unmount it. */
-  onSheetClosed?: () => void;
 };
 
-const CERTIFICATE_MENU_ID = 'paint-certificate-menu';
 const PHOTOS_REGION_ID = 'paint-photos-region';
 const DRAWER_PREFIX = 'paint';
 
-type SheetViewProps = {
-  sheet: PaintSheet;
+type PhotosSheetProps = {
+  sheet: PaintSheet | null;
   locale: PaintThicknessLocale;
   language: string;
-  direction: string;
   busy: boolean;
   slotRows: PaintRow[];
   drawerRowFor: (row: PaintRow, index: number) => PaintRow;
-  certificateUrls: PaintThicknessCertificateUrlDTO[];
   onOpenPhoto?: OpenPhoto;
   onCloseSheet: () => void;
-  onSheetClosed?: () => void;
 };
 
 /**
- * The sheet and what it holds. A lookup in flight puts the content and the title under the skeleton
- * where they stand and makes them inert, exactly as a drawer's content is (the answer decides whether
- * the sheet stays: the owner shuts it only when its content is gone).
+ * A row's photos as a bottom sheet (<shift-popover>), on a phone. The row is drawn from the retained row
+ * too, so a row that vanishes while the sheet is closing slides out on its old content. A lookup in
+ * flight puts the title and the content under the skeleton where they stand and makes them inert, exactly
+ * as a drawer's content is (the answer decides whether the sheet stays: the owner shuts it only when its content is gone).
  */
-const PaintSheetView = ({ sheet, locale, language, direction, busy, slotRows, drawerRowFor, certificateUrls, onOpenPhoto, onCloseSheet, onSheetClosed }: SheetViewProps) => {
-  // Drawn from the retained row too: a row that vanishes while the sheet is closing slides out on its old content.
-  const shownRow = sheet.kind === 'photos' ? drawerRowFor(slotRows[sheet.index], sheet.index) : undefined;
-  if (sheet.kind === 'photos' && !shownRow) return null;
-
-  const title = shownRow ? sheetPhotosTitle(shownRow, locale, language) : locale.printCertificate;
-
-  // The trigger is the focus's way home when what had focus at open is gone (a tap on Safari does not focus a button; a menu item behind the sheet is hidden).
-  const restoreFocus = (host: HTMLElement): HTMLElement | null => {
-    const root = host.getRootNode() as ShadowRoot | Document;
-    return root.querySelector<HTMLElement>(sheet.kind === 'photos' ? `[aria-controls="${drawerId(DRAWER_PREFIX, sheet.index)}"]` : '.paint-certificate-button');
-  };
+const PaintPhotosSheet = ({ sheet, locale, language, busy, slotRows, drawerRowFor, onOpenPhoto, onCloseSheet }: PhotosSheetProps) => {
+  const row = sheet ? drawerRowFor(slotRows[sheet.index], sheet.index) : undefined;
+  const title = row ? sheetPhotosTitle(row, locale, language) : '';
 
   return (
-    <shift-sheet
-      open={sheet.open}
-      direction={direction}
-      language={language as LanguageKeys}
+    <shift-popover
+      class="paint-popover paint-photos-popover"
+      data-phone="true"
+      topLayer
+      alwaysSheet
+      open={!!sheet?.open && !!row}
+      anchor={sheet ? `[aria-controls="${drawerId(DRAWER_PREFIX, sheet.index)}"]` : undefined}
+      label={title || locale.allPhotos}
+      heading={title}
       closeLabel={locale.closeSheet}
-      restoreFocus={restoreFocus}
-      onSheetClose={onCloseSheet}
-      onSheetClosed={onSheetClosed}
+      language={language as LanguageKeys}
+      onOpenChange={(event: CustomEvent<{ open: boolean }>) => !event.detail.open && onCloseSheet()}
     >
       <span slot="heading" class="paint-sheet-title shift-skeleton">
         {title}
       </span>
-      {shownRow ? (
+      {row && (
         <div class="paint-sheet-content shift-skeleton" inert={busy}>
-          {rowPhotosContent(shownRow, locale, onOpenPhoto)}
-        </div>
-      ) : (
-        <div class="paint-sheet-menu shift-skeleton" role="menu" aria-label={locale.printCertificate} inert={busy}>
-          {certificateMenuContent(certificateUrls, sheet.open && !busy, onCloseSheet)}
+          {rowPhotosContent(row, locale, onOpenPhoto)}
         </div>
       )}
-    </shift-sheet>
+    </shift-popover>
   );
 };
 
@@ -747,6 +694,7 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
     reshaping,
     swapping,
     retainedBody,
+    retainedPlaceholder,
     selectedTab,
     retainedTabs,
     retainedCertificate,
@@ -769,7 +717,6 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
     phone = false,
     sheet = null,
     onCloseSheet = () => {},
-    onSheetClosed,
   } = props;
 
   const photosShown = !state.hidden.has('photos');
@@ -777,7 +724,7 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
 
   const body = panelBody(state);
   const open = bodyOpen(state, leaving, reshaping);
-  const placeholder = leaving ? 'idle' : panelPlaceholder(state);
+  const placeholder = panelPlaceholder(state, leaving);
 
   const rows = shownRows(state);
   const summaryNow = state.showSummary ? summaryOf(rows) : null;
@@ -793,9 +740,7 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
   const certificate: CertificateSnapshot | null = kind === 'hidden' || leaving ? retainedCertificate : { kind, urls: state.certificateUrls ?? [] };
   const summaryIsOpen = !!summaryNow && !leaving;
   const certificateAreOpen = kind !== 'hidden' && !leaving;
-  // The menu is open wherever it is drawn; on a phone the floating box stays shut and the sheet is the menu.
   const certificateExpanded = certificateOpen && certificateAreOpen && certificate?.kind === 'menu';
-  const menuOpen = certificateExpanded && !phone;
 
   const groups = allPhotoGroups(rows, locale);
   const shownGroups = groups.length ? groups : retainedGroups;
@@ -818,6 +763,7 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
     : undefined;
 
   const rtl = direction === 'rtl';
+  const count = headCount(state, locale, language);
 
   return (
     <section
@@ -829,49 +775,72 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
       data-reconfiguring={reconfiguring ? 'true' : 'false'}
       data-certificate={kind}
     >
-      {/* The anchor for the certificate menu: the head clips its own content (overflow: hidden), so the menu is the head's sibling, hung from the head's bottom edge. */}
+      {/* The certificate menu is a popover under the button (a bottom sheet on a phone); it sits outside the head band, which clips its own content, though the top layer would not care. */}
       <div class="paint-head">
-        <LookupHead title={locale.paintThickness} verdict={verdict}>
-          {/* The certificate: an action in the head's trailing group, before the pill (owner decision 16, extending § 14). It rides in the head's content block, so it leaves
-              and returns with every lookup, and it is a slot that fades: the head is the same height with it and without it. */}
-          <div class="paint-certificate-slot" data-open={certificateAreOpen ? 'true' : 'false'} aria-hidden={certificateAreOpen ? null : 'true'}>
-            <div class="paint-certificate" data-kind={certificate?.kind ?? 'none'}>
-              {!certificate ? null : certificate.kind === 'none' ? (
-                <span class="paint-certificate-none" title={locale.noCertificateHint}>
-                  <PrintIcon fill="currentColor" viewBox="0 0 24 24" class="paint-certificate-print" />
-                  <span>{locale.noCertificate}</span>
-                  <span class="sr-only">{locale.noCertificateHint}</span>
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  class="paint-certificate-button"
-                  aria-haspopup={phone ? 'dialog' : 'menu'}
-                  aria-expanded={certificateExpanded ? 'true' : 'false'}
-                  aria-controls={phone ? null : CERTIFICATE_MENU_ID}
-                  aria-label={locale.printCertificate}
-                  disabled={!certificateAreOpen || busy}
-                  onClick={onToggleCertificate}
-                >
-                  <PrintIcon fill="currentColor" viewBox="0 0 24 24" class="paint-certificate-print" />
-                  <span class="paint-certificate-label">{locale.certificate}</span>
-                  <ArrowIcon class="paint-certificate-arrow" />
-                </button>
-              )}
+        <header class="lookup-head lookup-head-band paint-head-band">
+          <div class="paint-main lookup-head-content">
+            <p class="lookup-title paint-title">{headTitle(state, locale)}</p>
+            <div class="paint-count-slot" data-empty={count ? 'false' : 'true'} aria-hidden={count ? null : 'true'}>
+              <p class="paint-count">{count || ' '}</p>
             </div>
           </div>
-        </LookupHead>
+          <div class="lookup-summary lookup-head-content">
+            {/* The certificate: an action in the head's trailing group, before the pill (owner decision 16, extending § 14). It rides in the head's content block, so it leaves
+              and returns with every lookup, and it is a slot that fades: the head is the same height with it and without it. */}
+            <div class="paint-certificate-slot" data-open={certificateAreOpen ? 'true' : 'false'} aria-hidden={certificateAreOpen ? null : 'true'}>
+              <div class="paint-certificate" data-kind={certificate?.kind ?? 'none'}>
+                {!certificate ? null : certificate.kind === 'none' ? (
+                  <span class="paint-certificate-none" title={locale.noCertificateHint}>
+                    <PrintIcon fill="currentColor" viewBox="0 0 24 24" class="paint-certificate-print" />
+                    <span>{locale.noCertificate}</span>
+                    <span class="sr-only">{locale.noCertificateHint}</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    class="paint-certificate-button"
+                    aria-haspopup="dialog"
+                    aria-expanded={certificateExpanded ? 'true' : 'false'}
+                    aria-label={locale.printCertificate}
+                    disabled={!certificateAreOpen || busy}
+                    onClick={onToggleCertificate}
+                  >
+                    <PrintIcon fill="currentColor" viewBox="0 0 24 24" class="paint-certificate-print" />
+                    <span class="paint-certificate-label">{locale.certificate}</span>
+                    <ArrowIcon class="paint-certificate-arrow" />
+                  </button>
+                )}
+              </div>
+            </div>
+            <StatusBadge state={verdict.state} text={verdict.text} />
+          </div>
+          <LookupHeadWait />
+        </header>
 
-        <div
-          id={CERTIFICATE_MENU_ID}
-          class="paint-certificate-menu"
-          role="menu"
-          aria-label={locale.printCertificate}
-          data-open={menuOpen ? 'true' : 'false'}
-          aria-hidden={menuOpen ? null : 'true'}
-        >
-          {certificateMenuContent(certificate?.urls ?? [], menuOpen, () => onCloseCertificate(false))}
-        </div>
+        {certificate?.kind === 'menu' && (
+          <shift-popover
+            class="paint-popover paint-certificate-popover"
+            data-phone={phone ? 'true' : 'false'}
+            topLayer
+            align="end"
+            offset={6}
+            alwaysSheet={phone}
+            open={certificateExpanded}
+            anchor=".paint-certificate-button"
+            label={locale.printCertificate}
+            heading={locale.printCertificate}
+            closeLabel={locale.closeSheet}
+            language={language as LanguageKeys}
+            onOpenChange={(event: CustomEvent<{ open: boolean }>) => !event.detail.open && onCloseCertificate(false)}
+          >
+            <span slot="heading" class="paint-sheet-title shift-skeleton">
+              {locale.printCertificate}
+            </span>
+            <div class="paint-menu shift-skeleton" role="menu" aria-label={locale.printCertificate} inert={busy}>
+              {certificateMenuContent(certificate.urls, certificateExpanded && !busy, () => onCloseCertificate(false))}
+            </div>
+          </shift-popover>
+        )}
       </div>
 
       <div class="lookup-slide-clip">
@@ -879,7 +848,18 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
           {/* The strip of inspections. A slot like any other: open when there is something to choose between, shut over its last labels when there is not. */}
           <div class="paint-bar collapsible" data-open={tabsAreOpen ? 'true' : 'false'} aria-hidden={tabsAreOpen ? null : 'true'}>
             <div class="collapsible-body">
-              <PaintTabs tabs={tabs} selected={selectedTab} disabled={busy} rtl={rtl} label={locale.inspections} panelId={TABPANEL_ID} onSelect={onSelectTab} />
+              <shift-tabs
+                bare
+                skeleton
+                tabs={tabs.map(tab => ({ key: tab.key, label: tab.title, caption: tab.subtitle }))}
+                activeTabIndex={selectedTab}
+                disabled={busy}
+                direction={rtl ? 'rtl' : 'ltr'}
+                label={locale.inspections}
+                panelId={TABPANEL_ID}
+                tabIdPrefix={TAB_ID_PREFIX}
+                changeActiveTab={({ idx }) => onSelectTab(idx)}
+              />
             </div>
           </div>
 
@@ -919,30 +899,11 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
               reshaping={reshaping}
               strings={{ columnsLabel: locale.columnsLabel, noImage: '', imageFailed: '', openImage: '' }}
               drawer={drawer}
+              placeholder={{ kind: placeholder, retained: retainedPlaceholder, content: placeholderContent(locale) }}
             />
           </div>
 
-          {/* The placeholder under the strip when there is no list (panelPlaceholder). Always mounted; it slides open and shut and its two sentences cross-fade, so it never pops. Its words go under the skeleton in flight: "look a vehicle up" is not true then. */}
-          <div class="paint-placeholder collapsible" data-open={placeholder ? 'true' : 'false'} aria-hidden={placeholder ? null : 'true'}>
-            <div class="collapsible-body">
-              <div class="paint-placeholder-stack layer-stack">
-                <div class="layer paint-placeholder-layer" data-active={placeholder === 'empty' ? 'false' : 'true'} aria-hidden={placeholder === 'idle' ? null : 'true'}>
-                  <span class="paint-placeholder-mark">
-                    <SearchIcon class="paint-placeholder-glyph" />
-                  </span>
-                  <p class="paint-placeholder-text shift-skeleton">{locale.idleHint}</p>
-                </div>
-                <div class="layer paint-placeholder-layer" data-active={placeholder === 'empty' ? 'true' : 'false'} aria-hidden={placeholder === 'empty' ? null : 'true'}>
-                  <span class="paint-placeholder-mark" aria-hidden="true">
-                    <EmptyTableIcon class="paint-placeholder-glyph" />
-                  </span>
-                  <p class="paint-placeholder-text shift-skeleton">{locale.emptyHint}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* All photos: the end of the panel. Collapsed by default, and nothing in it is rendered as an image until it opens. A slot like the rows: open while the inspection has any photo. */}
+          {/* All photos: the end of the panel. Expanded by default (owner, 2026-10-27). A slot like the rows: open while the inspection has any photo, and the reader may fold it. */}
           <section class="paint-photos collapsible" data-open={photosSection ? 'true' : 'false'} aria-hidden={photosSection ? null : 'true'} aria-label={locale.allPhotos}>
             <div class="collapsible-body">
               <button
@@ -961,10 +922,10 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
 
               <div id={PHOTOS_REGION_ID} class="paint-photos-region collapsible" data-open={photosBodyOpen ? 'true' : 'false'} aria-hidden={photosBodyOpen ? null : 'true'}>
                 <div class="collapsible-body">
-                  {/* Rendered only while open or shutting: a closed section requests no picture. The skeleton covers the groups only; the band above and the section's chrome stay. */}
+                  {/* Drawn once the section has been open, and kept while it is folded (the owner's `photosRendered`), so opening it again creates no pictures. Folded, the region is hidden (the collapsible's delayed visibility, so nothing in it takes focus) and its lazy pictures sit in a clipped box and fetch nothing. The skeleton covers the groups only; the band above and the section's chrome stay. */}
                   <div class="paint-photos-content shift-skeleton">
                     {(photosRendered ? shownGroups : []).map(group => (
-                      <div key={group.key} class="paint-group">
+                      <div key={group.key} class="paint-group" style={{ '--paint-photos': `${group.images.length}` }}>
                         <div class="paint-group-name">
                           <span class="paint-group-title">{group.name}</span>
                           <span class="paint-note">
@@ -982,20 +943,17 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
         </div>
       </div>
 
-      {/* The phone's bottom sheet. Mounted by the owner while something is open and for a settle after, so it can slide away; the sheet is the transition, and what it holds is the panel's own content (the same render functions, the same skeleton covers). */}
-      {sheet && (
-        <PaintSheetView
+      {/* The phone's photos sheet: on a phone it is always mounted and shut, so opening it is a transition (and a settle longer once the viewport leaves the phone range); it holds the panel's own content (the same render functions, the same skeleton covers). */}
+      {(phone || sheet) && (
+        <PaintPhotosSheet
           sheet={sheet}
           locale={locale}
           language={language}
-          direction={direction}
           busy={busy}
           slotRows={slotRows}
           drawerRowFor={drawerRowFor}
-          certificateUrls={certificate?.urls ?? []}
           onOpenPhoto={onOpenPhoto}
           onCloseSheet={onCloseSheet}
-          onSheetClosed={onSheetClosed}
         />
       )}
     </section>

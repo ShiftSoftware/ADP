@@ -64,8 +64,9 @@
           <p class="lede text-base-content/70 mt-2 text-sm">
             Paint readings for the VIN, one tab per inspection (source on top, date beneath). Each row is a body panel with its left and right reading; a panel with one reading
             (roof, hood, tail gate) puts it in the Left column with a grey <strong class="text-accent">Centre</strong> chip. The photo button on a row opens that row's pictures
-            under it, one row at a time; <strong class="text-accent">All photos</strong> at the foot of the panel opens every picture of the inspection. Both start shut, and
-            neither requests a picture until it is opened.
+            under it, one row at a time; <strong class="text-accent">All photos</strong> at the foot of the panel shows every picture of the inspection. A row's drawer starts shut
+            and requests no picture until it is opened; <strong class="text-accent">All photos</strong> starts expanded (its pictures load lazily as they scroll into view) and the
+            reader can fold it, which survives a lookup.
           </p>
           <p class="text-base-content/70 mt-2 text-sm">
             Open a drawer, then look up another vehicle: it stays open, goes under the skeleton with its row and shows the new vehicle's pictures on the answer. It shuts only if
@@ -80,8 +81,6 @@
           <p class="text-base-content/70 mt-2 text-sm">
             The controls above the panel are what a host sets on the element: <code>hidden-fields</code> (<code>inspectionDate</code>, <code>source</code>, <code>photos</code>,
             <code>certificate</code>), <code>show-reading-summary</code> (off by default: one quiet line between the tabs and the table) and <code>show-certificate-button</code>.
-            The two toggles under &ldquo;This page only&rdquo; are for this page: the fixtures never have a missing date or a picture that fails to load, so they rewrite the data
-            to reach those states.
           </p>
         </aside>
       </div>
@@ -94,8 +93,8 @@
         <!-- Host configuration, not harness chrome: what a host sets on the element. -->
         <div
           class="card border-base-300 bg-base-100 flex flex-col gap-2 border p-3"
-          x-data="{ showCertificateButton: true, summary: false, hidden: { inspectionDate: false, source: false, photos: false, certificate: false }, noDate: false, failedPhotos: false }"
-          x-effect="window.paintThicknessControls.apply({ showCertificateButton, summary, hidden: { ...hidden }, noDate, failedPhotos })"
+          x-data="{ showCertificateButton: true, summary: false, hidden: { inspectionDate: false, source: false, photos: false, certificate: false } }"
+          x-effect="window.paintThicknessControls.apply({ showCertificateButton, summary, hidden: { ...hidden } })"
         >
           <div class="flex flex-row flex-wrap items-center gap-x-6 gap-y-2">
             <label class="flex cursor-pointer items-center gap-2 text-sm">
@@ -117,18 +116,6 @@
               </label>
             </template>
           </div>
-
-          <div class="flex flex-row flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-            <span class="eyebrow text-neutral">This page only</span>
-            <label class="flex cursor-pointer items-center gap-2">
-              <input type="checkbox" class="toggle toggle-sm" x-model="noDate" />
-              No inspection date
-            </label>
-            <label class="flex cursor-pointer items-center gap-2">
-              <input type="checkbox" class="toggle toggle-sm" x-model="failedPhotos" />
-              Pictures fail to load
-            </label>
-          </div>
         </div>
 
         <!-- No card of the page's own around the component: the component draws the design language's card itself. -->
@@ -142,64 +129,18 @@
     </section>
 
     <script>
-      /*
-       * Host configuration for the controls above the panel. `setMockData` is wrapped so the two
-       * page-only toggles can rewrite the fixtures the harness hands the panel (a null inspection date,
-       * pictures that 404): the generated data has neither, and a state the page cannot show is a state
-       * that will regress. The raw data is kept, so a toggle re-feeds the panel and looks the current
-       * vehicle up again.
-       */
+      // Host configuration for the controls above the panel.
       const ready = customElements.whenDefined('vehicle-paint-thickness').then(async () => {
         const subject = document.querySelector('#subject');
 
         await subject.componentOnReady?.();
 
-        const tweaks = { noDate: false, failedPhotos: false };
-        let raw;
-
-        const rewrite = data => {
-          if (!data || (!tweaks.noDate && !tweaks.failedPhotos)) return data;
-
-          const copy = structuredClone(data);
-
-          for (const vehicle of Object.values(copy)) {
-            for (const inspection of vehicle?.paintThicknessInspections ?? []) {
-              if (tweaks.noDate) inspection.inspectionDate = null;
-
-              for (const panel of inspection.panels ?? []) {
-                if (tweaks.failedPhotos) panel.images = (panel.images ?? []).map((_, index) => `/templates/assets/missing-photo-${index}.jpg`);
-              }
-            }
-          }
-
-          return copy;
-        };
-
-        const original = subject.setMockData.bind(subject);
-
-        subject.setMockData = data => {
-          raw = data;
-
-          return original(rewrite(data));
-        };
-
-        return {
-          subject,
-          tweaks,
-          async refeed() {
-            if (!raw) return;
-
-            await original(rewrite(raw));
-
-            const vin = subject.vehicleLookup?.vin;
-            if (vin) subject.fetchVin(vin);
-          },
-        };
+        return subject;
       });
 
       window.paintThicknessControls = {
-        async apply({ showCertificateButton, summary, hidden, noDate, failedPhotos }) {
-          const { subject, tweaks, refeed } = await ready;
+        async apply({ showCertificateButton, summary, hidden }) {
+          const subject = await ready;
 
           subject.showCertificateButton = showCertificateButton;
           subject.showReadingSummary = summary;
@@ -209,12 +150,6 @@
             .join(',');
 
           if (subject.hiddenFields !== hiddenFields) subject.hiddenFields = hiddenFields;
-
-          if (tweaks.noDate !== noDate || tweaks.failedPhotos !== failedPhotos) {
-            tweaks.noDate = noDate;
-            tweaks.failedPhotos = failedPhotos;
-            await refeed();
-          }
         },
       };
     </script>

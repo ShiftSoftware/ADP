@@ -30,17 +30,14 @@
 
 :host {
   display: block;
-  /* No blank floor under the strip: the placeholder fills that space when there is no list (idle,
-     or nothing on file), and after that the card simply ends. */
+  /* No blank floor under the strip: the table's placeholder fills that space when there is no list,
+     and after that the card simply ends. */
   --body-rest: 0px;
   /* The photo box. The inspection photos are portrait phone shots (336 x 600 in the fixtures), so the
      box is portrait, 9:16 at 72 x 128, and the picture is contained, never covered: a gauge reading
      at the edge of a shot must not be cropped (owner, 2026-10-27). */
   --photo-w: 72px;
   --photo-h: 128px;
-  /* Where a row or the toggle comes to rest when something opens under it (lib/reveal-below reads
-     scroll-margin-top): near the top of the page, with the head of the card still in view. */
-  --reveal-margin: 72px;
 }
 
 .paint-card,
@@ -68,6 +65,42 @@
    against. No z-index of its own: the menu's is what lifts it over the strip and the skeleton covers. */
 .paint-head {
   position: relative;
+}
+
+.paint-head-band {
+  min-height: 58px;
+}
+
+/* The title over its second line (§ 14): the line keeps its box and fades with data-empty, so moving
+   between vehicles never resizes the head. */
+.paint-main {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.paint-title {
+  margin: 0;
+}
+
+.paint-count-slot {
+  margin-top: 3px;
+  transition: opacity var(--settle) ease;
+}
+
+.paint-count-slot[data-empty='true'] {
+  opacity: 0;
+}
+
+.paint-count {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.2;
+  min-height: 1.2em;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
 }
 
 /* The trailing group's gap would leave a 10px hole before the pill whenever the certificate is shut
@@ -205,43 +238,23 @@
   white-space: nowrap;
 }
 
-/* The language menu. It opens and shuts as a layer (opacity, a short rise, visibility delayed on the
-   way out), over --settle like everything that appears. An inset object like the drawer (§ 18): paper,
-   a blue rim, radius 8 (an item inside the card, § 12) and the one shadow the language allows, because
-   it floats over the strip and rows it hangs above. It starts just under the button (the head's bottom
-   padding is 12px, so 6px below the button's edge) and ends where the head's padding does. z-index above
-   the skeleton covers (10 and 11). */
-.paint-certificate-menu {
-  position: absolute;
-  inset-block-start: calc(100% - 6px);
-  inset-inline-end: 20px;
-  z-index: 20;
-  min-width: 168px;
-  padding: 4px;
-  background: var(--paper);
-  border-radius: 8px;
-  box-shadow:
-    inset 0 0 0 1px var(--lt-rim-blue),
-    0 6px 18px rgba(27, 45, 61, 0.08);
-  opacity: 0;
-  transform: translateY(-4px);
-  visibility: hidden;
-  pointer-events: none;
-  transition:
-    opacity var(--settle) ease,
-    transform var(--settle) ease,
-    visibility 0s linear var(--settle);
+/* The language menu is a <shift-popover> (top layer, anchored under the button, a bottom sheet on a phone). The popover is the
+   surface: the language's inset object (§ 12), paper, a blue rim, radius 8 and the one shadow the language allows because it floats
+   over the strip and rows it hangs above; it opens and shuts as a layer over --settle, the way the old floating menu did. */
+.paint-popover {
+  --shift-popover-surface: var(--paper);
+  --shift-popover-border-width: 0px;
+  --shift-popover-radius: 8px;
+  --shift-popover-shadow: inset 0 0 0 1px var(--lt-rim-blue), 0 6px 18px rgba(27, 45, 61, 0.08);
+  --shift-popover-lift: 4px;
+  --shift-popover-scale: 1;
+  --shift-popover-settle: var(--settle);
+  --shift-popover-ease: ease;
 }
 
-.paint-certificate-menu[data-open='true'] {
-  opacity: 1;
-  transform: none;
-  visibility: visible;
-  pointer-events: auto;
-  transition:
-    opacity var(--settle) ease,
-    transform var(--settle) ease,
-    visibility 0s;
+.paint-menu {
+  min-width: 168px;
+  padding: 4px;
 }
 
 .paint-certificate-item {
@@ -265,128 +278,34 @@
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Inspection tabs: a self-contained strip (paint-tabs*), nothing here leans on the table's CSS, so
-   it can be lifted into a shared tabs component whole
+   Inspection tabs: the shared <shift-tabs> (components/shift-tabs.css) draws the strip, the captions and
+   the sliding underline; this file only gives it a slot
    ------------------------------------------------------------------------------------------- */
 
 /* The strip's slot, the .collapsible primitive: open when there is an inspection to choose between,
    shut over the last labels when there is not. In flight it stays open: the labels are the last
-   answer's (§ 21a). */
+   answer's (§ 21a). Its first label sits on the table's first column, 12px in (14px in the narrow
+   card, below). */
 .paint-bar {
   min-width: 0;
+  --shift-tabs-inset: 12px;
 }
 
-.paint-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 4px;
-  align-items: flex-end;
-  min-width: 0;
-}
-
-/* A slim tab: the source on top, the date small beneath, a blue underline on the selected one (owner,
-   2026-10-27). The underline is an inset shadow, not a border, so a selected tab is the same box as the
-   others (§ 10). 12px of inline padding puts the first label on the same line as the table's first
-   column under it. .2s, the language's one duration shorter than --settle: a press must feel instant
-   (§ 18). */
-.paint-tabs-tab {
-  display: block;
-  padding: 6px 12px 8px;
-  margin: 0;
-  color: var(--muted);
-  background: none;
-  border: 0;
-  border-radius: 6px 6px 0 0;
-  box-shadow: inset 0 -2px 0 transparent;
-  cursor: pointer;
-  font: inherit;
-  text-align: start;
+/* The strip goes and comes in two beats inside the one --settle: its labels fade, then the slot shuts;
+   on arrival the slot opens, then the labels come up. Nothing pops, and the card below moves once the
+   labels are gone. */
+.paint-bar.collapsible {
   transition:
-    color 0.2s ease,
-    background 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.paint-tabs-tab[data-selected='true'] {
-  color: var(--blue-dark);
-  box-shadow: inset 0 -2px 0 var(--blue);
-}
-
-/* Pointer devices only, so a tap does not leave a sticky wash. The selected tab keeps its own look. */
-@media (hover: hover) {
-  .paint-tabs-tab[data-selected='false']:not([aria-disabled='true']):hover {
-    color: var(--ink);
-    background: var(--row-hover);
-  }
-}
-
-/* Inside the tab, not outside it: the strip's slot is overflow: hidden and would cut an outline drawn
-   outwards. 2px solid in the hue's dark (§ 24), offset inwards for that reason. */
-.paint-tabs-tab:focus-visible {
-  outline: 2px solid var(--blue-dark);
-  outline-offset: -2px;
-}
-
-.paint-tabs-tab[aria-disabled='true'] {
-  cursor: default;
-}
-
-/* One block per tab, so a lookup covers the labels with a single cover and one sweep. */
-.paint-tabs-text {
-  display: grid;
-  transition: opacity var(--settle) ease;
-}
-
-.paint-tabs-label {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: -0.005em;
-  line-height: 1.3;
-}
-
-/* The caption is its own slot (the same grid-template-rows recipe as .collapsible, kept here so the
-   strip stands alone), so hiding the date from hiddenFields closes the line instead of removing it in
-   one frame. */
-.paint-tabs-caption {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    grid-template-rows var(--settle) ease,
-    opacity var(--settle) ease,
+    grid-template-rows calc(var(--settle) / 2) ease calc(var(--settle) / 2),
+    opacity calc(var(--settle) / 2) ease,
     visibility 0s linear var(--settle);
 }
 
-.paint-tabs-caption[data-open='true'] {
-  grid-template-rows: 1fr;
-  opacity: 1;
-  visibility: visible;
+.paint-bar.collapsible[data-open='true'] {
   transition:
-    grid-template-rows var(--settle) ease,
-    opacity var(--settle) ease,
+    grid-template-rows calc(var(--settle) / 2) ease,
+    opacity calc(var(--settle) / 2) ease calc(var(--settle) / 2),
     visibility 0s;
-}
-
-.paint-tabs-caption-body {
-  display: block;
-  min-height: 0;
-  overflow: hidden;
-}
-
-/* The date is read, so it is --date-ink (§ 9), 12px/600 tabular (small note). */
-.paint-tabs-date {
-  display: block;
-  color: var(--date-ink);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-/* A selected tab's date takes the tab's blue; the unselected ones are --date-ink. */
-.paint-tabs-tab[data-selected='true'] .paint-tabs-date {
-  color: inherit;
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -442,12 +361,6 @@
 .lt-columns > .lt-cell:nth-child(3),
 .lt-columns > .lt-cell:nth-child(4) {
   text-transform: none;
-}
-
-/* A row's no-photo statement is the table's plain action text (.lt-action-plain); nothing to add.
-   Where a row's photos open, it stops under the head of the card, not against the window's edge. */
-.lt-row[data-open='true'] {
-  scroll-margin-top: var(--reveal-margin);
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -539,9 +452,28 @@
   background: var(--paper);
 }
 
-.paint-photo:not(:disabled):hover::after,
-.paint-photo:not(:disabled):focus-visible::after {
-  box-shadow: inset 0 0 0 1px var(--lt-rim-blue);
+.paint-photo[data-state='ready'] {
+  cursor: zoom-in;
+}
+
+@media (hover: hover) {
+  .paint-photo:not(:disabled):hover::after {
+    box-shadow: inset 0 0 0 2px var(--blue);
+  }
+
+  .paint-photo:not(:disabled):hover .paint-photo-image {
+    transform: scale(1.04);
+  }
+}
+
+.paint-photo:not(:disabled):focus-visible::after,
+.paint-photo:not(:disabled):focus-within::after {
+  box-shadow: inset 0 0 0 2px var(--blue);
+}
+
+.paint-photo:not(:disabled):focus-visible .paint-photo-image,
+.paint-photo:not(:disabled):focus-within .paint-photo-image {
+  transform: scale(1.04);
 }
 
 .paint-photo:focus-visible {
@@ -561,7 +493,9 @@
   height: 100%;
   object-fit: contain;
   opacity: 0;
-  transition: opacity var(--settle) ease;
+  transition:
+    opacity var(--settle) ease,
+    transform 0.2s ease;
 }
 
 .paint-photo[data-state='ready'] .paint-photo-image {
@@ -591,47 +525,6 @@
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Placeholder: idle ("look a vehicle up") and nothing on file
-   ------------------------------------------------------------------------------------------- */
-
-/* Quiet and centred: a muted glyph in a recessed disc, one line of small text. It is the space a list
-   would take, said in words, so it uses the list's colours and never a verdict's. */
-.paint-placeholder-layer {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: center;
-  justify-content: center;
-  padding: 26px 20px 28px;
-  text-align: center;
-}
-
-.paint-placeholder-mark {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  color: var(--muted);
-  background: var(--paper-soft);
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1px var(--lt-rim-idle);
-}
-
-.paint-placeholder-glyph {
-  width: 22px;
-  height: 22px;
-}
-
-.paint-placeholder-text {
-  max-width: 46ch;
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-/* ---------------------------------------------------------------------------------------------
    All photos: the end of the panel, a band like the strip and a region of groups
    ------------------------------------------------------------------------------------------- */
 
@@ -655,7 +548,6 @@
   cursor: pointer;
   font: inherit;
   text-align: start;
-  scroll-margin-top: var(--reveal-margin);
   transition:
     color 0.2s ease,
     background 0.2s ease;
@@ -714,6 +606,8 @@
 /* The groups: one per reading that has photos, in a grid that fills the width. The block the skeleton
    covers (with the all-photos region's own chrome staying) and the one an inspection switch fades. */
 .paint-photos-content {
+  /* No `contain: layout paint` here: measured at 4x CPU it made the close dearer (paint 55 vs 32 ms, raster 117 vs 70 ms) and the open no cheaper;
+     the region's own overflow: hidden already keeps the groups' paint inside it (T3t, 2026-10-27). */
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
   gap: 12px;
@@ -724,6 +618,16 @@
 /* A group is an item inside the card (§ 12): recessed paper, a grey rim at .22, radius 10 (an inset
    inside the card), with its photos inside on white. */
 .paint-group {
+  /* A group below the fold is not styled, laid out or painted until it nears the window: the 22 pictures' cards were the largest
+     part of the reveal's style work on a lookup (T3t). `auto` keeps the last drawn height, so scrolling back does not jump; before
+     its first draw a group stands at an estimate of its content (the name line with its margin, 25.55px, then the photo boxes, `--paint-per-row` to a row), which
+     the panel's `--paint-photos` count feeds. The first declaration is the fallback for a browser without round(). Find-in-page still
+     sees the text of a skipped group. */
+  --paint-per-row: 2;
+  --paint-rows: round(up, calc(var(--paint-photos, 2) / var(--paint-per-row)), 1);
+  contain-intrinsic-block-size: auto 153.55px;
+  contain-intrinsic-block-size: auto calc(25.55px + var(--paint-rows, 1) * 128px + (var(--paint-rows, 1) - 1) * 8px);
+  content-visibility: auto;
   min-width: 0;
   padding: 12px 14px 14px;
   background: var(--paper-soft);
@@ -760,7 +664,7 @@
 .paint-card[data-swapping='true'] .paint-photos-content,
 .paint-card[data-swapping='true'] .paint-summary,
 .paint-card[data-reconfiguring='true'] .paint-summary,
-.paint-card[data-reconfiguring='true'] .paint-tabs-text,
+.paint-card[data-reconfiguring='true'] .shift-tabs-text,
 .paint-card[data-reconfiguring='true'] .paint-certificate {
   opacity: 0;
 }
@@ -770,13 +674,13 @@
    ------------------------------------------------------------------------------------------- */
 
 /* The wrapper's `.loading` starts every .shift-skeleton's sweep, and a lookup used to run one for each
-   of these shut places (a shut drawer carries no skeleton, so it is not listed): the two placeholder sentences while a list is on
+   of these shut places (a shut drawer carries no skeleton, so it is not listed): the placeholder's sentences while a list is on
    screen, the closed all-photos region, a shut tab strip and a shut summary line. A shut .collapsible is hidden, so
    its sweep was invisible work on every frame of the wait (design language § 21: the loops are the
    cost). The cover stays and fades as before; only the loop is not started. Specificity above the
    shared `.loading .shift-skeleton::before`, which is why these name their parent's state. */
-.paint-placeholder[data-open='false'] .shift-skeleton::before,
-.paint-placeholder .layer[data-active='false'] .shift-skeleton::before,
+.lt-placeholder[data-open='false'] .shift-skeleton::before,
+.lt-placeholder .layer[data-active='false'] .shift-skeleton::before,
 .paint-photos[data-open='false'] .shift-skeleton::before,
 .paint-photos-region[data-open='false'] .shift-skeleton::before,
 .paint-bar[data-open='false'] .shift-skeleton::before,
@@ -790,8 +694,8 @@
    ------------------------------------------------------------------------------------------- */
 
 @container (max-width: 720px) {
-  .paint-tabs-tab {
-    padding-inline: 14px;
+  .paint-bar {
+    --shift-tabs-inset: 14px;
   }
 
   /* Two equal columns: the name and the photo toggle share row one, Left and Right share the last row.
@@ -812,12 +716,6 @@
   .lt-row > .lt-cell:nth-child(3)::before,
   .lt-row > .lt-cell:nth-child(4)::before {
     text-transform: none;
-  }
-
-  /* The head's padding is 14px here (10px under the button), so the menu follows it. */
-  .paint-certificate-menu {
-    inset-block-start: calc(100% - 4px);
-    inset-inline-end: 14px;
   }
 
   .paint-summary {
@@ -844,6 +742,12 @@
    Phones (430 and under): the head stacks (lookup-head.css) and the certificate stacks with it
    ------------------------------------------------------------------------------------------- */
 
+@container (max-width: 400px) {
+  .paint-group {
+    --paint-per-row: 1;
+  }
+}
+
 @container (max-width: 430px) {
   /* The certificate takes the pill's place on the head's second row, edge to edge like the pill; if a
      pill with words is there too the two share the row. Shut, it takes no room, so the pill keeps the
@@ -858,30 +762,79 @@
     justify-content: center;
     width: 100%;
   }
-
-  /* A narrow column on a wide screen keeps the floating menu, spanning the head's width. On a phone (a viewport of 720px or less) the menu is the bottom sheet instead. */
-  .paint-certificate-menu {
-    inset-inline: 14px;
-    min-width: 0;
-  }
 }
 
 /* ---------------------------------------------------------------------------------------------
-   The phone's bottom sheet (<shift-sheet>, a viewport of 720px or less): the certificate menu and a
-   row's photos. The sheet is the surface (paper, the card's radius, a rim, the one shadow) and does
-   its own sliding; what it holds is this panel's own content, styled here because it stays in this
-   shadow tree. The title and each block go under the skeleton in a lookup (the rules of
-   shift-skeleton.css apply, the sheet is inside the wrapper's .loading) and are inert while it lasts.
+   The phone's bottom sheet (the same <shift-popover>, a viewport of 720px or less): the certificate menu and a
+   row's photos. The popover is the surface and does its own sliding (paper, the card's radius on its two top corners,
+   a rim, the one shadow turned to throw upward, the viewer's ink at .46 over the page); what it holds is this panel's
+   own content, styled here because it stays in this shadow tree. The title and each block go under the skeleton in a
+   lookup (the rules of shift-skeleton.css apply, the popover is inside the wrapper's .loading) and are inert while it lasts.
    ------------------------------------------------------------------------------------------- */
+
+.paint-popover[data-phone='true'] {
+  --shift-popover-sheet-radius: 13px;
+  --shift-popover-shadow: inset 0 0 0 1px var(--line), 0 -18px 45px rgba(27, 45, 61, 0.1), 0 -2px 7px rgba(27, 45, 61, 0.06);
+  --shift-popover-sheet-max-block-size: 85dvh;
+  /* The sheet's own height plus the shadow's reach (18px + 45px blur) below the screen, so nothing of either is left showing at rest. */
+  --shift-popover-sheet-closed-offset: 64px;
+  --shift-popover-backdrop: rgba(12, 18, 24, 0.46);
+  --shift-popover-backdrop-blur: 0px;
+  --shift-popover-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.paint-popover::part(sheet-head) {
+  padding-inline: max(20px, env(safe-area-inset-left), env(safe-area-inset-right)) 8px;
+  box-shadow: inset 0 -1px 0 var(--line-soft);
+}
+
+/* The title: 16px / 760 / -0.025em, the narrow panel title of § 11. Arabic script joins its letters, so its tracking is 0. */
+.paint-popover::part(sheet-title) {
+  font-size: 16px;
+  font-weight: 760;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+}
+
+[dir='rtl'] .paint-popover::part(sheet-title) {
+  letter-spacing: 0;
+}
+
+.paint-popover::part(sheet-close) {
+  color: var(--muted);
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .paint-popover::part(sheet-close):hover {
+    background: var(--line-soft);
+    color: var(--ink);
+  }
+}
+
+.paint-popover::part(sheet-close):focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: -2px;
+}
 
 .paint-sheet-title {
   display: block;
+}
+
+.paint-popover[data-phone='true'] .paint-menu {
+  min-width: 0;
+  padding-block: 14px 16px;
+  padding-inline: max(20px, env(safe-area-inset-left), env(safe-area-inset-right));
 }
 
 /* The photos: each side is an inset panel on the recessed paper (§ 12), stacked, so a side's four
    thumbnails sit side by side at a phone's width and a second side goes under it. */
 .paint-sheet-content {
   display: block;
+  padding-block: 14px 16px;
+  padding-inline: max(20px, env(safe-area-inset-left), env(safe-area-inset-right));
 }
 
 .paint-sheet-content .paint-sides {
@@ -898,13 +851,13 @@
 }
 
 /* The language list: the menu's items at touch size (44px, 15px). */
-.paint-sheet-menu {
+.paint-popover[data-phone='true'] .paint-menu {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.paint-sheet-menu .paint-certificate-item {
+.paint-popover[data-phone='true'] .paint-certificate-item {
   display: flex;
   align-items: center;
   min-height: 44px;
@@ -919,14 +872,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .paint-summary,
-  .paint-tabs-tab,
-  .paint-tabs-text,
-  .paint-tabs-caption,
+  .paint-count-slot,
   .paint-certificate,
   .paint-certificate-slot,
   .paint-certificate-button,
   .paint-certificate-arrow,
-  .paint-certificate-menu,
   .paint-certificate-item,
   .paint-photo,
   .paint-photo::after,
@@ -937,5 +887,11 @@
   .paint-photos-content {
     transition-duration: 0.01ms !important;
     transition-delay: 0s !important;
+  }
+
+  .paint-photo:hover .paint-photo-image,
+  .paint-photo:focus-visible .paint-photo-image,
+  .paint-photo:focus-within .paint-photo-image {
+    transform: none;
   }
 }
