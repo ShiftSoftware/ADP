@@ -123,6 +123,13 @@ public class VehicleInspectionModel : IPartitionedItem, ICompanyProps
     /// </summary>
     public bool IsDeleted { get; set; }
 
+    /// <summary>
+    /// Indicates that the inspection is recorded but waiting on a step outside it (a check of its VIN, for example).
+    /// A pending inspection is not loaded into the vehicle lookup, so it counts toward no eligibility rule and activates
+    /// no service item until the flag is cleared. Documents written before this property existed read as not pending.
+    /// </summary>
+    public bool IsPending { get; set; }
+
     [DocIgnore]
     public string ItemType => ModelTypes.VehicleInspection;
 
