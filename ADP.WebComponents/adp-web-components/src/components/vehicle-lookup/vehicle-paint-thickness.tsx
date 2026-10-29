@@ -1,22 +1,95 @@
-import { Component, Element, Event, EventEmitter, Host, Listen, Method, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, forceUpdate, h } from '@stencil/core';
 
-import cn from '~lib/cn';
+import { createHeightChangeAnnouncer } from '~lib/flexible-parents';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
-import Eye from '~assets/eye.svg';
-import { ArrowIcon } from '~assets/arrow-icon';
-import { PrintIcon } from '~assets/print-icon';
-import { CalendarDaysIcon } from '~assets/calendar-days-icon';
-
 import paintThicknessSchema from '~locales/vehicleLookup/paintThickness/type';
 
-import { PaintThicknessInspectionPanelDTO } from '~types/generated/vehicle-lookup/paint-thickness-inspection-panel-dto';
+import {
+  CertificateSnapshot,
+  DEFAULT_HIDDEN_FIELDS,
+  PaintRow,
+  PaintTab,
+  PaintSheet,
+  PanelState,
+  PhotoActions,
+  PhotoGroup,
+  PhotoState,
+  ReadingSummary,
+  VehiclePaintThicknessPanel,
+  allPhotoGroups,
+  bodyOpen,
+  certificateKind,
+  hasRecords,
+  panelBody,
+  panelPlaceholder,
+  photosSectionOpen,
+  reshapesTable,
+  rowHasPhotos,
+  sameConfig,
+  shownRows,
+  slotIndex,
+  slotKey,
+  summaryOf,
+  tabsOf,
+} from './components/VehiclePaintThicknessPanel';
 
-import { LookupHead, VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
+import { RowVeil, parseHiddenFields, tableSlots } from '~features/lookup-table';
+import { VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
-import { VehicleLookupComponent, VehicleLookupMock, setVehicleLookupData, setVehicleLookupErrorState } from '~features/vehicle-lookup-component';
+import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
+
+// The --settle token's value, for when it cannot be read (a spec page has no computed styles).
+const DEFAULT_SETTLE_MS = 480;
+
+class Retained<T> {
+  value: T | undefined;
+  private timer?: ReturnType<typeof setTimeout>;
+
+  constructor(
+    private settleMs: () => number,
+    private redraw: () => void,
+  ) {}
+
+  track(content: T | null) {
+    if (content !== null) {
+      this.value = content;
+      this.cancel();
+    } else if (this.value !== undefined && !this.timer) {
+      this.dropLater();
+    }
+  }
+
+  hold(content: T) {
+    this.value = content;
+    this.cancel();
+    this.dropLater();
+  }
+
+  clear() {
+    this.cancel();
+    this.value = undefined;
+  }
+
+  dispose() {
+    this.cancel();
+  }
+
+  private dropLater() {
+    this.timer = setTimeout(() => {
+      this.timer = undefined;
+      this.value = undefined;
+      this.redraw();
+    }, this.settleMs());
+  }
+
+  private cancel() {
+    clearTimeout(this.timer);
+    this.timer = undefined;
+  }
+}
 
 @Component({
   shadow: true,
@@ -31,6 +104,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   @State() locale: ComponentLocale<typeof paintThicknessSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...paintThicknessSchema.getDefault() };
 
   async componentWillLoad() {
+    this.applied = { hidden: parseHiddenFields(this.hiddenFields), summary: this.showReadingSummary };
     await this.changeLanguage(this.language);
   }
 
@@ -50,8 +124,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
   // #region Image viewer (<shift-image>, portaled onto <body>)
 
-  /** The picture open in the viewer, or empty. */
-  @State() expandedImage?: string = '';
+  private expandedImage = '';
 
   private imageViewer?: HTMLShiftImageElement;
 
@@ -67,7 +140,41 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     if (!event.detail.open) this.expandedImage = '';
   };
 
+  private photoStates = new Map<string, Exclude<PhotoState, 'loading'>>();
+
+  private settlePhoto = (src: string, state: Exclude<PhotoState, 'loading'>) => {
+    if (this.photoStates.get(src) === state) return;
+    this.photoStates.set(src, state);
+    forceUpdate(this);
+  };
+
   // #endregion
+
+  /** Whether the popovers are bottom sheets, as shift-popover decides it for its own breakpoint. */
+  @State() sheetMode: boolean = false;
+
+  private onSheetChange = (sheet: boolean) => {
+    this.sheetMode = sheet;
+  };
+
+  private redraw = () => forceUpdate(this);
+
+  private retain<T>() {
+    return new Retained<T>(() => this.settleMs(), this.redraw);
+  }
+
+  // The sheet slides down over --settle; its row is kept a little longer so it never empties in view.
+  private sheetHold = new Retained<string>(() => this.settleMs() + 200, this.redraw);
+
+  private wantedSheet(): string | null {
+    const menuAvailable = this.certificateMenuOpen && !this.leaving && certificateKind(this.panelState()) === 'menu';
+    if (menuAvailable) return null;
+    return this.openKey !== null && !this.applied.hidden.has('photos') ? this.openKey : null;
+  }
+
+  private onCloseSheet = () => {
+    if (this.sheetMode && this.wantedSheet() !== null) this.closeDrawer();
+  };
 
   // #region Blazor Invokable logic
   @State() blazorRef?: DotNetObjectReference;
@@ -86,6 +193,10 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   @Prop() baseUrl: string;
   @Prop() headers: object = {};
   @Prop() queryString: string = '';
+
+  @Prop() hiddenFields: string = DEFAULT_HIDDEN_FIELDS;
+
+  @Prop() showReadingSummary: boolean = false;
 
   @Prop() errorCallback?: BlazorInvokableFunction<(errorMessage: ErrorKeys) => void>;
   @Prop() loadingStateChange?: BlazorInvokableFunction<(isLoading: boolean) => void>;
@@ -109,13 +220,22 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   }
 
   @Method()
-  async fetchVin(newData: VehicleLookupDTO | string, headers: any = {}) {
+  async fetchVin(newData: VehicleLookupDTO | string, headers: object = {}) {
+    this.leaveGeneration++;
+    this.leaving = false;
     await setVehicleLookupData(this, newData, headers);
   }
 
   @Method()
   async setErrorMessage(message: ErrorKeys) {
+    if (!this.isLoading && !(await this.leave())) return;
     setVehicleLookupErrorState(this, message);
+  }
+
+  @Method()
+  async clearData() {
+    if (!(await this.leave())) return;
+    this.emptyPanel();
   }
 
   @Watch('isLoading')
@@ -123,61 +243,199 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
-  // #endregion
+  @State() leaving: boolean = false;
 
-  // #region Tab Logic
+  private leaveGeneration = 0;
+
+  private settleCache?: number;
+
+  private settleMs(): number {
+    if (this.settleCache === undefined) {
+      const raw = typeof getComputedStyle === 'function' ? getComputedStyle(this.el).getPropertyValue('--settle') : '';
+      const parsed = parseFloat(raw);
+      this.settleCache = (Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_SETTLE_MS) + 40;
+    }
+
+    return this.settleCache;
+  }
+
+  private async leave(): Promise<boolean> {
+    const generation = ++this.leaveGeneration;
+
+    if (!this.vehicleLookup && !this.isError) return true;
+
+    clearTimeout(this.networkTimeoutRef);
+    this.abortController?.abort();
+    this.leaving = true;
+    this.certificateMenuOpen = false;
+    this.settleSelection(true);
+
+    await new Promise(resolve => setTimeout(resolve, this.settleMs()));
+
+    if (generation !== this.leaveGeneration) return false;
+    this.leaving = false;
+    return true;
+  }
+
+  private emptyPanel() {
+    this.vehicleLookup = undefined;
+    this.isError = false;
+    this.errorMessage = undefined;
+    this.isLoading = false;
+  }
+
+  @State() applied: { hidden: ReadonlySet<string>; summary: boolean } = { hidden: new Set(), summary: false };
+
+  @State() reconfiguring: false | 'values' | 'shape' = false;
+
+  private get reshaping() {
+    return this.reconfiguring === 'shape';
+  }
+
+  private configGeneration = 0;
+
+  @Watch('hiddenFields')
+  @Watch('showReadingSummary')
+  async reconfigure() {
+    const next = parseHiddenFields(this.hiddenFields);
+    const generation = ++this.configGeneration;
+
+    if (sameConfig(next, this.applied.hidden) && this.showReadingSummary === this.applied.summary) {
+      this.reconfiguring = false;
+      return;
+    }
+
+    const adopt = () => {
+      if (next.has('photos')) {
+        this.retainedDrawer.clear();
+        this.openKey = null;
+      }
+
+      this.applied = { hidden: next, summary: this.showReadingSummary };
+      this.reconfiguring = false;
+    };
+
+    if (this.leaving || !hasRecords(this.panelState())) {
+      adopt();
+      return;
+    }
+
+    this.reconfiguring = reshapesTable(this.applied.hidden, next) && panelBody(this.panelState()) === 'rows' ? 'shape' : 'values';
+
+    await new Promise(resolve => setTimeout(resolve, this.settleMs()));
+    if (generation !== this.configGeneration) return;
+
+    adopt();
+  }
+
+  // #endregion
 
   @State() activeTabIndex: number = 0;
 
+  @State() shownTabIndex: number = 0;
+
+  @State() swapping: boolean = false;
+
+  private swapGeneration = 0;
+  private swapTimer?: ReturnType<typeof setTimeout>;
+
   @Watch('vehicleLookup')
   onVehicleLookupChange() {
+    this.swapGeneration++;
+    clearTimeout(this.swapTimer);
+    this.swapping = false;
     this.activeTabIndex = 0;
-    this.certificateMenuOpen = false;
+    this.shownTabIndex = 0;
+    this.certificateMenuOpen = this.certificateMenuOpen && certificateKind(this.panelState()) === 'menu';
+    this.settleSelection(!this.vehicleLookup);
+    this.keepPhotoStates();
   }
 
-  private onActiveTabChange = ({ idx }: { label: string; idx: number }) => {
-    this.activeTabIndex = idx;
+  // Only the new answer's photos: one that stays keeps its element, which will not fire `load` again.
+  private keepPhotoStates() {
+    const kept = new Set((this.vehicleLookup?.paintThicknessInspections ?? []).flatMap(inspection => (inspection.panels ?? []).flatMap(panel => panel.images ?? [])));
+    for (const src of this.photoStates.keys()) if (!kept.has(src)) this.photoStates.delete(src);
+  }
+
+  private onSelectTab = (index: number) => {
+    if (index === this.activeTabIndex || this.isLoading || this.leaving) return;
+
+    this.activeTabIndex = index;
+    const generation = ++this.swapGeneration;
+
+    clearTimeout(this.swapTimer);
+    this.swapping = true;
+    this.swapTimer = setTimeout(() => {
+      if (generation !== this.swapGeneration) return;
+      this.swapCause = 'page';
+      this.shownTabIndex = index;
+      this.settleSelection(false);
+      this.swapping = false;
+    }, this.settleMs());
   };
 
   // #endregion
 
-  // #region Certificate Print Logic
+  @State() openKey: string | null = null;
 
-  /** Host-controlled visibility (e.g. a feature gate). The links themselves come from the lookup
-   *  response (`paintThicknessCertificateUrls`, one signed URL per print language with its menu
-   *  label) — the server only issues them to callers allowed to print, so no endpoint, auth
-   *  headers, fetch or language knowledge live on the client. */
-  @Prop() showCertificateButton: boolean = false;
+  @State() photosCollapsed: boolean = false;
 
-  @State() certificateMenuOpen: boolean = false;
+  private photosMounted = false;
 
-  // Shadow DOM retargets inner clicks to the host element, so any click whose composed
-  // path includes the host happened inside the component; everything else closes the menu.
-  @Listen('click', { target: 'document' })
-  onDocumentClick(event: MouseEvent) {
-    if (this.certificateMenuOpen && !event.composedPath().includes(this.el)) this.certificateMenuOpen = false;
+  private retainedDrawer = this.retain<string>();
+  private drawerSnapshot: PaintRow[] = [];
+  private photosGroups = new Retained<PhotoGroup[]>(
+    () => this.settleMs(),
+    () => {
+      this.photosMounted = false;
+      this.redraw();
+    },
+  );
+
+  private moveDrawer(next: string | null) {
+    if (this.openKey !== null && this.openKey !== next) this.retainedDrawer.hold(this.openKey);
+    else if (this.retainedDrawer.value === next) this.retainedDrawer.clear();
+    this.drawerSnapshot = this.shownBefore;
+    this.openKey = next;
+  }
+
+  private onToggleDrawer = (key: string) => this.moveDrawer(this.openKey === key ? null : key);
+
+  private closeDrawer = () => {
+    if (this.openKey !== null) this.moveDrawer(null);
+  };
+
+  private onTogglePhotos = () => {
+    this.photosCollapsed = !this.photosCollapsed;
+  };
+
+  private settleSelection(cleared: boolean) {
+    const state = this.panelState();
+    const rows = cleared ? [] : shownRows(state);
+    const kept = rows.some((row, index) => slotKey(index) === this.openKey && rowHasPhotos(row));
+
+    if (this.openKey !== null && !kept) this.moveDrawer(null);
+
+    if (cleared) this.photosCollapsed = false;
   }
 
   // #endregion
 
-  private groupPanels = (panels: PaintThicknessInspectionPanelDTO[]) => {
-    const groups = new Map<string, { panel: string; position: string; left?: number; right?: number; center?: number }>();
+  /** Host-controlled visibility (e.g. a feature gate). The links themselves come from the lookup */
+  @Prop() showCertificateButton: boolean = false;
 
-    for (const p of panels) {
-      const key = `${p.panelType}|${p.panelPosition || ''}`;
+  @State() certificateMenuOpen: boolean = false;
 
-      if (!groups.has(key)) {
-        groups.set(key, { panel: p.panelType, position: p.panelPosition || '' });
-      }
+  private certificate = this.retain<CertificateSnapshot>();
+  private summary = this.retain<ReadingSummary>();
+  private tabs = this.retain<PaintTab[]>();
 
-      const row = groups.get(key)!;
+  private onToggleCertificate = () => {
+    this.certificateMenuOpen = !this.certificateMenuOpen;
+  };
 
-      if (p.panelSide === 'Left') row.left = p.measuredThickness;
-      else if (p.panelSide === 'Right') row.right = p.measuredThickness;
-      else row.center = p.measuredThickness;
-    }
-
-    return Array.from(groups.values());
+  private onCloseCertificate = () => {
+    this.certificateMenuOpen = false;
   };
 
   // #region Verdict
@@ -198,48 +456,190 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     this.verdictChange.emit(this.currentVerdict);
   }
 
+  private body = this.retain<'rows'>();
+  private placeholder = this.retain<'idle' | 'empty'>();
+
+  private shownBefore: PaintRow[] = [];
+  private bodyWasOpen = false;
+
+  private outgoing = this.retain<PaintRow[]>();
+  private outgoingVeil: RowVeil = 'cover';
+
+  private opened = 0;
+  private openPending = false;
+
+  private swapCause: 'lookup' | 'page' = 'lookup';
+  private lastVeil: RowVeil = 'none';
+
+  private cancelOpenFrame() {
+    if (this.openFrame !== undefined) cancelAnimationFrame(this.openFrame);
+    this.openFrame = undefined;
+  }
+
+  private updateSlots(current: PaintRow[], open: boolean) {
+    const before = this.shownBefore;
+    const changed = current.length !== before.length || current.some((row, index) => row !== before[index]);
+
+    if (changed) {
+      const cause = this.swapCause;
+      this.swapCause = 'lookup';
+
+      if (this.bodyWasOpen && before.length > current.length) {
+        this.outgoing.hold(before.slice(current.length));
+        this.outgoingVeil = cause === 'page' ? this.lastVeil : 'cover';
+      } else if (current.length > 0) {
+        this.outgoing.clear();
+      }
+
+      if (this.bodyWasOpen && open) {
+        this.cancelOpenFrame();
+        this.opened = Math.min(before.length, current.length);
+        this.openPending = this.opened < current.length;
+      } else {
+        this.cancelOpenFrame();
+        this.opened = current.length;
+        this.openPending = false;
+      }
+    } else if (!open) {
+      this.cancelOpenFrame();
+      this.opened = current.length;
+    }
+
+    this.shownBefore = current;
+    this.bodyWasOpen = open;
+  }
+
+  private heightAnnouncer?: ReturnType<typeof createHeightChangeAnnouncer>;
+  private layoutSignature?: string;
+
+  private signature(): string {
+    const state = this.panelState();
+
+    return [
+      this.isLoading || this.leaving,
+      this.vehicleLookup?.vin,
+      panelBody(state),
+      this.body.value,
+      shownRows(state).length,
+      [...this.applied.hidden].sort().join(','),
+      this.applied.summary,
+      this.reconfiguring,
+      this.shownTabIndex,
+      tabsOf(state, this.locale).length,
+      certificateKind(state),
+      this.openKey,
+      this.retainedDrawer.value,
+      this.photosCollapsed,
+      this.sheetMode,
+      this.opened,
+      this.outgoing.value?.length,
+      this.isError,
+      panelPlaceholder(state, this.leaving),
+    ].join('|');
+  }
+
+  private openFrame?: number;
+
   componentDidRender() {
     this.announceVerdict();
+
+    if (this.openPending) {
+      this.openPending = false;
+      this.cancelOpenFrame();
+      // Two frames, so the new slots are styled shut once and open as a transition; MAX_SAFE_INTEGER opens every slot there is.
+      this.openFrame = requestAnimationFrame(() => {
+        this.openFrame = requestAnimationFrame(() => {
+          this.openFrame = undefined;
+          this.opened = Number.MAX_SAFE_INTEGER;
+          this.redraw();
+        });
+      });
+    }
+
+    const signature = this.signature();
+    const changed = this.layoutSignature !== undefined && this.layoutSignature !== signature;
+    this.layoutSignature = signature;
+
+    if (!changed) return;
+
+    this.heightAnnouncer ??= createHeightChangeAnnouncer(this.el);
+    this.heightAnnouncer.announce(this.settleMs() + 80);
+  }
+
+  disconnectedCallback() {
+    clearTimeout(this.swapTimer);
+    this.cancelOpenFrame();
+    [this.body, this.placeholder, this.outgoing, this.retainedDrawer, this.sheetHold, this.photosGroups, this.certificate, this.summary, this.tabs].forEach(retained =>
+      retained.dispose(),
+    );
+    this.heightAnnouncer?.dispose();
   }
 
   // #endregion
 
+  private errorText(): string | undefined {
+    return this.isError ? this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard : undefined;
+  }
+
+  private panelState(): PanelState {
+    return {
+      vehicleLoaded: !!this.vehicleLookup?.vin && !this.isError,
+      authorized: this.vehicleLookup?.isAuthorized,
+      inspections: this.vehicleLookup?.paintThicknessInspections,
+      shownIndex: this.shownTabIndex,
+      hidden: this.applied.hidden,
+      showSummary: this.applied.summary,
+      certificateAvailable: this.vehicleLookup?.paintThicknessCertificateAvailable,
+      certificateUrls: this.vehicleLookup?.paintThicknessCertificateUrls,
+      showCertificateButton: this.showCertificateButton,
+      error: this.errorText(),
+      model: this.vehicleLookup?.vehicleSpecification?.modelDescription,
+      modelYear: this.vehicleLookup?.vehicleVariantInfo?.modelYear ?? this.vehicleLookup?.vehicleSpecification?.modelYear,
+    };
+  }
+
   render() {
+    const state = this.panelState();
+
     const verdict = recordVerdict({
       locale: this.locale.sharedLocales,
-      error: this.isError ? this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard : undefined,
-      vehicleLoaded: !!this.vehicleLookup?.vin,
-      authorized: this.vehicleLookup?.isAuthorized,
-      hasRecords: (this.vehicleLookup?.paintThicknessInspections?.length ?? 0) > 0,
+      error: this.errorText(),
+      vehicleLoaded: state.vehicleLoaded,
+      authorized: state.authorized,
+      hasRecords: hasRecords(state),
     });
     this.currentVerdict = verdict.accent;
 
-    const texts = this.locale;
+    const busy = this.isLoading || this.leaving;
+    const body = panelBody(state);
+    this.body.track(body === 'rows' ? body : null);
+    this.placeholder.track(panelPlaceholder(state, this.leaving));
 
-    const inspections = this.vehicleLookup?.paintThicknessInspections || [];
-    const tabs = inspections.map((inspection, idx) => {
-      const isDuplicate = inspections.some((other, otherIdx) => otherIdx !== idx && other.source === inspection.source);
-      return isDuplicate && inspection.inspectionDate ? `${inspection.source} (${inspection.inspectionDate})` : inspection.source;
-    });
-    // No inspections means no tab strip: shift-tabs draws its baseline even with zero tabs, which
-    // would read as a second rule under the head's own.
-    const hideTabs = this.isLoading || this.isError || !tabs.length;
+    const open = bodyOpen(state, this.leaving, this.reshaping);
+    const current = body === 'rows' ? shownRows(state) : [];
+    this.updateSlots(current, open);
 
-    const activeInspection = inspections[this.activeTabIndex] || inspections[0];
-    const panels = activeInspection?.panels || [];
+    const veil: RowVeil = busy ? 'cover' : this.swapping ? 'fade' : 'none';
+    this.lastVeil = veil;
+    const outgoing = this.outgoing.value ?? [];
+    const retainedKey = this.retainedDrawer.value ?? null;
+    const slots = tableSlots({ current: current.length, outgoing: outgoing.length, opened: this.opened, bodyOpen: open, currentVeil: veil, outgoingVeil: this.outgoingVeil });
 
-    const groupedRows = this.groupPanels(panels);
+    const tabs = tabsOf(state, this.locale);
+    this.tabs.track(tabs.length ? tabs : null);
+    const kind = certificateKind(state);
+    this.certificate.track(kind === 'hidden' ? null : { kind, urls: state.certificateUrls ?? [] });
+    this.summary.track(state.showSummary ? summaryOf(current) : null);
+    const groups = allPhotoGroups(current, this.locale);
+    this.photosGroups.track(groups.length ? groups : null);
+    const photosBodyOpen = !this.photosCollapsed && photosSectionOpen(state, groups.length, this.leaving, this.reshaping);
+    if (photosBodyOpen) this.photosMounted = true;
 
-    const imageGroups = panels
-      .filter(panel => panel.images?.length)
-      .map(panel => ({
-        name: [panel.panelPosition, panel.panelSide, panel.panelType].filter(Boolean).join(' '),
-        images: panel.images,
-      }));
-
-    const certificateUrls = this.vehicleLookup?.paintThicknessCertificateUrls || [];
-
-    const colWidths = { panel: 200, position: 200, side: 150 };
+    const wanted = this.sheetMode ? this.wantedSheet() : null;
+    this.sheetHold.track(wanted);
+    const held = wanted ?? this.sheetHold.value ?? null;
+    const sheet: PaintSheet | null = held === null ? null : { key: held, open: wanted !== null };
+    const photos: PhotoActions = { open: (image, src, label) => this.openImage(image, src, label), state: src => this.photoStates.get(src) ?? 'loading', settle: this.settlePhoto };
 
     return (
       <Host translate="no">
@@ -248,163 +648,48 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
         <VehicleInfoLayout
           isError={this.isError}
           verdict={verdict.accent}
+          isLoading={busy}
           coreOnly={this.coreOnly}
-          isLoading={this.isLoading}
           header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
         >
-          <LookupHead title={texts.paintThickness} verdict={verdict} />
-          <div class="lookup-slide-clip">
-            <div class="lookup-slide">
-              <div class={cn('duration-300', 'py-[15px]', 'flex', 'items-center', 'gap-[8px]', { hidden: hideTabs })}>
-                <div class="min-w-0 flex-1">
-                  <shift-tabs activeTabIndex={this.activeTabIndex} changeActiveTab={this.onActiveTabChange} tabs={tabs}></shift-tabs>
-                </div>
-
-                {/* Print menu sized to mirror the shift-tabs tab buttons (px-16 / py-6 / 17px).
-                    The button opens a language menu; each item is a plain anchor to that
-                    language's server-issued signed URL — opens in a new tab with no fetch, so
-                    no auth plumbing and no popup-blocker interception. */}
-                {this.showCertificateButton && !!certificateUrls.length && (
-                  <div class="relative me-[16px] shrink-0">
-                    <button
-                      aria-haspopup="menu"
-                      aria-expanded={this.certificateMenuOpen ? 'true' : 'false'}
-                      onClick={() => (this.certificateMenuOpen = !this.certificateMenuOpen)}
-                      class="flex w-full cursor-pointer items-center gap-[8px] rounded-[4px] border border-amber-500 bg-amber-500 px-[16px] py-[6px] text-[17px] font-medium text-white shadow-sm transition-colors duration-300 hover:border-amber-600 hover:bg-amber-600"
-                    >
-                      <PrintIcon fill="currentColor" viewBox="0 0 24 24" class="size-[18px] shrink-0" />
-                      <span class="whitespace-nowrap">{texts.printCertificate}</span>
-                      <ArrowIcon class={cn('size-[16px] shrink-0 transition-transform duration-300', { 'rotate-180': this.certificateMenuOpen })} />
-                    </button>
-
-                    {this.certificateMenuOpen && (
-                      <div role="menu" class="absolute end-0 top-full z-10 mt-[4px] min-w-full overflow-hidden rounded-[4px] border border-slate-200 bg-white shadow-lg">
-                        {certificateUrls.map(({ language, name, url }) => (
-                          <a
-                            key={language}
-                            role="menuitem"
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => (this.certificateMenuOpen = false)}
-                            class="block whitespace-nowrap px-[16px] py-[8px] text-[16px] text-slate-700 no-underline transition-colors duration-150 hover:bg-amber-50"
-                          >
-                            {name || language}
-                          </a>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <flexible-container isOpened={!this.isLoading && !!activeInspection?.inspectionDate}>
-                <div class="flex items-center justify-center gap-[6px] border-b border-slate-200 px-[16px] py-[10px] text-[16px] text-slate-700">
-                  <CalendarDaysIcon class="size-[18px] shrink-0" />
-                  <span class="font-semibold">{texts.inspectionDate}:</span>
-                  <span class="shift-skeleton">{activeInspection?.inspectionDate}</span>
-                </div>
-              </flexible-container>
-
-              <div class="overflow-x-auto">
-                <div class={cn('mx-auto w-fit', { loading: this.isLoading })}>
-                  {/* Header */}
-                  <div class="flex">
-                    <div class="font-semibold border-b py-[16px] px-[16px] text-center" style={{ width: `${colWidths.panel}px` }}>
-                      {texts.panel}
-                    </div>
-                    <div class="font-semibold border-b py-[16px] px-[16px] text-center" style={{ width: `${colWidths.position}px` }}>
-                      {texts.position}
-                    </div>
-                    <div class="font-semibold border-b py-[16px] px-[16px] text-center" style={{ width: `${colWidths.side}px` }}>
-                      {texts.left}
-                    </div>
-                    <div class="font-semibold border-b py-[16px] px-[16px] text-center" style={{ width: `${colWidths.side}px` }}>
-                      {texts.right}
-                    </div>
-                  </div>
-
-                  {/* Rows */}
-                  <flexible-container height="auto">
-                    {!groupedRows.length && (
-                      <div class="border-b">
-                        <div class="flex">
-                          <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.panel}px` }}>
-                            <div class="shift-skeleton">&nbsp;</div>
-                          </div>
-                          <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.position}px` }}>
-                            <div class="shift-skeleton">&nbsp;</div>
-                          </div>
-                          <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side}px` }}>
-                            <div class="shift-skeleton">&nbsp;</div>
-                          </div>
-                          <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side}px` }}>
-                            <div class="shift-skeleton">&nbsp;</div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {groupedRows.map((row, idx) => (
-                      <div key={row.panel + row.position + idx} class="border-b last:border-b-0">
-                        <div class={cn('flex hover:bg-sky-100/50 transition duration-300', { 'bg-slate-100': idx % 2 === 1 })}>
-                          <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.panel}px` }}>
-                            <div class="shift-skeleton">{row.panel}</div>
-                          </div>
-                          <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.position}px` }}>
-                            <div class="shift-skeleton">{row.position || '\u00A0'}</div>
-                          </div>
-                          {row.center !== undefined ? (
-                            <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side * 2}px` }}>
-                              <div class="shift-skeleton">{row.center}</div>
-                            </div>
-                          ) : (
-                            [
-                              <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side}px` }}>
-                                <div class="shift-skeleton">{row.left !== undefined ? row.left : '\u00A0'}</div>
-                              </div>,
-                              <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side}px` }}>
-                                <div class="shift-skeleton">{row.right !== undefined ? row.right : '\u00A0'}</div>
-                              </div>,
-                            ]
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </flexible-container>
-                </div>
-              </div>
-
-              <flexible-container isOpened={!this.isLoading && !!imageGroups?.length}>
-                <div class="py-[16px] gap-[16px] justify-center flex flex-wrap px-[24px] w-full">
-                  {imageGroups?.map((imageGroup, index) => (
-                    <div class="shrink-0 rounded-lg shadow-sm border overflow-hidden flex flex-col" key={imageGroup?.name + index}>
-                      <h1 class="text-center border-b bg-slate-50 font-semibold p-[6px]">
-                        <span class="shift-skeleton">{imageGroup?.name}</span>
-                      </h1>
-
-                      <div class="flex max-w-full flex-wrap p-[12px] gap-[8px]">
-                        {imageGroup?.images.map((image, idx) => (
-                          <div class={cn('flex shift-skeleton gap-[8px]', { loading: !image })} key={image + idx}>
-                            <button
-                              onClick={({ target }) => this.openImage(target as HTMLImageElement, image)}
-                              class="shrink-0 relative ring-0 outline-none w-fit mx-auto [&_img]:hover:shadow-lg [&_div]:hover:!opacity-100 cursor-pointer"
-                            >
-                              <div class="absolute flex-col justify-center gap-[4px] size-full flex items-center pointer-events-none hover:opacity-100 rounded-lg opacity-0 bg-black/40 transition-all duration-300">
-                                <img src={Eye} />
-                                <span class="text-white">{texts.expand}</span>
-                              </div>
-                              <img src={image} class="h-[150px] cursor-pointer shadow-sm rounded-lg w-[84px] transition-all duration-300" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </flexible-container>
-            </div>
-          </div>
+          <VehiclePaintThicknessPanel
+            locale={this.locale}
+            language={this.language}
+            direction={this.locale.sharedLocales.direction}
+            state={state}
+            verdict={verdict}
+            busy={busy}
+            leaving={this.leaving}
+            reconfiguring={!!this.reconfiguring}
+            reshaping={this.reshaping}
+            swapping={this.swapping}
+            retainedBody={this.body.value ?? 'none'}
+            retainedPlaceholder={this.placeholder.value ?? null}
+            selectedTab={this.activeTabIndex}
+            retainedTabs={this.tabs.value ?? []}
+            retainedCertificate={this.certificate.value ?? null}
+            retainedSummary={this.summary.value ?? null}
+            slotRows={[...current, ...outgoing]}
+            slots={slots}
+            openKey={this.openKey}
+            retainedKey={retainedKey}
+            drawerRowFor={(row, key) => ((row && rowHasPhotos(row)) || key !== retainedKey ? row : (this.drawerSnapshot[slotIndex(key)] ?? row))}
+            onToggleDrawer={this.onToggleDrawer}
+            photosOpen={!this.photosCollapsed}
+            photosRendered={photosBodyOpen || (this.photosMounted && !state.hidden.has('photos'))}
+            retainedGroups={this.photosGroups.value ?? []}
+            onTogglePhotos={this.onTogglePhotos}
+            onSelectTab={this.onSelectTab}
+            certificateOpen={this.certificateMenuOpen}
+            onToggleCertificate={this.onToggleCertificate}
+            onCloseCertificate={this.onCloseCertificate}
+            photos={photos}
+            sheetMode={this.sheetMode}
+            sheet={sheet}
+            onCloseSheet={this.onCloseSheet}
+            onSheetChange={this.onSheetChange}
+          />
         </VehicleInfoLayout>
       </Host>
     );

@@ -1,0 +1,158 @@
+/*
+  A row's photos, as the inline drawer, the photos section and the bottom sheet (vehicle-paint-thickness-popup)
+  all show them. A fragment, imported once by each of those two shadow roots.
+*/
+:host {
+  --photo-w: 72px;
+  --photo-h: 128px;
+}
+
+.paint-note {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.paint-sides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 32px;
+}
+
+.paint-side-caption {
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.paint-figure {
+  color: var(--date-ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.paint-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.paint-photo {
+  position: relative;
+  display: block;
+  flex: none;
+  width: var(--photo-w);
+  height: var(--photo-h);
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  background: var(--paper-soft);
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--settle) ease;
+}
+
+.paint-photo::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--lt-rim-idle);
+  content: '';
+  pointer-events: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.paint-photo[data-state='ready'] {
+  background: var(--paper);
+}
+
+.paint-photo[data-state='ready'] {
+  cursor: zoom-in;
+}
+
+@media (hover: hover) {
+  .paint-photo:not(:disabled):hover::after {
+    box-shadow: inset 0 0 0 2px var(--blue);
+  }
+
+  .paint-photo:not(:disabled):hover .paint-photo-image {
+    transform: scale(1.04);
+  }
+}
+
+.paint-photo:not(:disabled):focus-visible::after,
+.paint-photo:not(:disabled):focus-within::after {
+  box-shadow: inset 0 0 0 2px var(--blue);
+}
+
+.paint-photo:not(:disabled):focus-visible .paint-photo-image,
+.paint-photo:not(:disabled):focus-within .paint-photo-image {
+  transform: scale(1.04);
+}
+
+.paint-photo:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 2px;
+}
+
+.paint-photo:disabled {
+  cursor: default;
+}
+
+.paint-photo-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transition:
+    opacity var(--settle) ease,
+    transform 0.2s ease;
+}
+
+.paint-photo[data-state='ready'] .paint-photo-image {
+  opacity: 1;
+}
+
+.paint-photo-stand {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--settle) ease;
+}
+
+.paint-photo[data-state='failed'] .paint-photo-stand {
+  opacity: 1;
+}
+
+.paint-photo-glyph {
+  width: 20px;
+  height: 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paint-photo,
+  .paint-photo::after,
+  .paint-photo-image,
+  .paint-photo-stand {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+
+  .paint-photo:hover .paint-photo-image,
+  .paint-photo:focus-visible .paint-photo-image,
+  .paint-photo:focus-within .paint-photo-image {
+    transform: none;
+  }
+}

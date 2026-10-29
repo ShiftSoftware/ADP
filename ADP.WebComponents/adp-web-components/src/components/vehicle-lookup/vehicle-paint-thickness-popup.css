@@ -1,0 +1,174 @@
+/* tailwind: off */
+@import '../style/base.css';
+@import '../style/lookup-tokens.css';
+@import '../style/shift-skeleton.css';
+@import './vehicle-paint-thickness-photos.css';
+
+/*
+  The certificate menu and a row's photo sheet, inside shift-popover's panel on <body>. The panel draws
+  the chrome (vehicle-paint-thickness.css hands it the tokens); this is everything inside it.
+*/
+:host {
+  display: block;
+  /* The grey rim (design language § 10), as lookup-table.css declares it for the panel. */
+  --lt-rim-idle: rgba(95, 108, 120, 0.22);
+}
+
+.paint-popup {
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.paint-popup[dir='rtl'] {
+  font-family: var(--font-arabic);
+}
+
+/* A sheet is named and closable on its own; a floating menu is the button's, which says both. */
+.paint-popup-head {
+  display: none;
+}
+
+.paint-popup[data-sheet='true'] .paint-popup-head {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 56px;
+  padding-block: 6px;
+  padding-inline: max(20px, env(safe-area-inset-left), env(safe-area-inset-right)) 8px;
+  background: var(--paper);
+  box-shadow: inset 0 -1px 0 var(--line-soft);
+}
+
+.paint-popup-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 760;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.paint-popup[dir='rtl'] .paint-popup-title {
+  letter-spacing: 0;
+}
+
+.paint-popup-title > span {
+  display: inline-block;
+  max-width: 100%;
+}
+
+/* 44px: a thumb's target on the phone the sheet is for. */
+.paint-popup-close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .paint-popup-close:hover {
+    color: var(--ink);
+    background: var(--line-soft);
+  }
+}
+
+.paint-popup-close:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: -2px;
+}
+
+.paint-popup-close-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.paint-popup-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 168px;
+  padding: 4px;
+}
+
+.paint-popup-item {
+  display: block;
+  padding: 8px 12px;
+  color: var(--ink);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.paint-popup-item > span {
+  display: inline-block;
+}
+
+@media (hover: hover) {
+  .paint-popup-item:hover {
+    background: var(--blue-tint);
+  }
+}
+
+.paint-popup-item:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: -2px;
+}
+
+.paint-popup[data-sheet='true'] .paint-popup-menu,
+.paint-popup-photos {
+  min-width: 0;
+  padding-block: 14px 16px;
+  padding-inline: max(20px, env(safe-area-inset-left), env(safe-area-inset-right));
+}
+
+.paint-popup[data-sheet='true'] .paint-popup-item {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding-block: 10px;
+  font-size: 15px;
+}
+
+/* In the sheet each side is its own recessed card, stacked: the screen is too narrow for them side by side. */
+.paint-popup-photos .paint-sides {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+
+.paint-popup-photos .paint-side {
+  padding: 12px 14px 14px;
+  background: var(--paper-soft);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--lt-rim-idle);
+}
+
+.paint-popup-photos .paint-figure,
+.paint-popup-photos .paint-note {
+  display: inline-block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paint-popup-close,
+  .paint-popup-item {
+    transition-duration: 0.01ms !important;
+  }
+}
