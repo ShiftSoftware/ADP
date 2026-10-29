@@ -1,58 +1,524 @@
+/* tailwind: off */
+/*
+ * Vehicle service history — the stylesheet for <vehicle-service-history>, in the component design
+ * language. The card is the wrapper's; this file styles what is particular to this panel: the visit
+ * count in the head, the compact rows, the placeholder under the strip, the page controls and what
+ * a visit's drawer holds. The strip, the rows, the drawer panel and the cards at 720px and under
+ * are the lookup table's (features/lookup-table/lookup-table.css), imported below.
+ *
+ * Rows stay on screen through a lookup: their values go under the skeleton where they stand
+ * (shift-skeleton, imported below) and only the rows the answer adds or drops slide. A page change
+ * is the same without the skeleton: the values fade, swap and fade back (the table's fade veil).
+ *
+ * Panel states, as data attributes on .service-history-card: data-verdict, data-phase (busy while a
+ * lookup is in flight or the panel is leaving), data-lead (always columns) and data-body (rows | none).
+ */
+
+/* Order is the table fragment's contract: the reset, the tokens, the wrapper (which brings the
+   motion primitives and .sr-only — never import lookup-motion.css directly, a second import loses
+   its @keyframes), the head, then the table. */
+@import '../style/base.css';
+@import '../style/lookup-tokens.css';
 @import '../style/shift-skeleton.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 @import '../../features/vehicle-info-layout/lookup-head.css';
+@import '../../features/lookup-table/lookup-table.css';
 
 :host {
   display: block;
-  all: initial !important;
-  /* The family's face (lookup-tokens.css); the wrapper's root switches it for an rtl locale. */
-  font-family: var(--font-sans) !important;
+  /* Compact rows, every one 51px tall: two clamped lines of service type (2 x 13px x 1.3, about
+     34px) with 8px above and below is 50px, plus the 1px rule between rows. A one-line visit is
+     held to the same height, so a lookup only changes what a row says, never how tall it is. */
+  --lt-cell-pad-block: 8px;
+  --lt-row-min: 51px;
+  /* No blank floor under the strip: the placeholder fills that space when there is no list. */
+  --body-rest: 0px;
 }
 
-*,
-:host * {
-  font-family: inherit !important;
+.service-history-card,
+.service-history-card *,
+.service-history-card *::before,
+.service-history-card *::after {
+  box-sizing: border-box;
 }
 
-.service-history-scroll {
-  @apply overflow-x-auto;
+.service-history-card {
+  position: relative;
+  width: 100%;
+  color: var(--ink);
+  /* No font-family: the wrapper's root sets the face for the language and this inherits it. */
+  font-size: 13px;
+  line-height: 1.35;
 }
 
-.service-history-subrow {
-  @apply border-y-2 border-slate-400 flex flex-col gap-[10px] bg-[#f4f4f4] px-[10px] py-[18px];
-  box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.06);
+/* ---------------------------------------------------------------------------------------------
+   Head: the visit count
+   ------------------------------------------------------------------------------------------- */
+
+/* A fact, not a verdict, so it is not a pill. Small note: 12px, 600, tabular (§ 11, "counts"), in
+   --muted -- secondary text, read after the title. A record panel with records has no pill, so it
+   has the head's trailing group to itself. */
+.service-history-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.service-history-subsection {
-  @apply bg-white border border-slate-200 rounded-[4px] overflow-hidden shadow-md;
+/* ---------------------------------------------------------------------------------------------
+   Rows: clamped text, so every row is the same height
+   ------------------------------------------------------------------------------------------- */
+
+/* Two lines at most (2 x 13px x 1.3, about 34px, inside the 35px a row has between its padding). A row that grows
+   with its text would change height as the cover lifts on the next vehicle's words. The service
+   type carries its whole text as a title; the dealer and branch rarely reach a second line. The
+   growing column is named as well, to out-specify the table's display: block on it. */
+.lt-row > .lt-text > .lt-value,
+.lt-row > .lt-text[data-grow='true'] > .lt-value {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
-.service-history-subsection-header {
-  @apply relative flex items-center gap-[10px] py-[4px] ps-[14px] pe-[8px] bg-slate-200 border-b border-slate-300;
+/* ---------------------------------------------------------------------------------------------
+   Placeholder: idle ("look a vehicle up") and no visits on file
+   ------------------------------------------------------------------------------------------- */
+
+/* Quiet and centred: a muted glyph in a recessed disc, one line of small text. It is the space a
+   list would take, said in words, so it uses the list's colours and never a verdict's. */
+.service-history-placeholder-layer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  padding: 26px 20px 28px;
+  text-align: center;
 }
 
-.service-history-subsection-header::before {
-  content: '';
-  @apply absolute top-0 bottom-0 start-0 w-[4px] bg-slate-500;
+/* 48px disc, the idle rim (grey .22, § 10). */
+.service-history-placeholder-mark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  color: var(--muted);
+  background: var(--paper-soft);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--lt-rim-idle);
 }
 
-.service-history-subsection-title {
-  @apply text-[12px] font-bold text-slate-800 uppercase tracking-wide;
+.service-history-placeholder-glyph {
+  width: 22px;
+  height: 22px;
 }
 
-.service-history-subsection-meta {
-  @apply text-[11px] px-[6px] min-w-[16px] shrink-0 flex items-center font-bold text-slate-700 bg-white border border-slate-300 rounded;
+/* 46ch keeps the sentence to a line or two on a wide card instead of one long thin line. */
+.service-history-placeholder-text {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
-.service-history-subsection-table {
-  @apply max-w-full overflow-auto;
+/* ---------------------------------------------------------------------------------------------
+   Page controls: rows per page, the range, previous and next. The accessories panel's pager,
+   restated here so the two panels look and behave alike.
+   ------------------------------------------------------------------------------------------- */
+
+/* Ruled like a row of the table (--line-soft, § 12), so it reads as the foot of the list. The page
+   size sits on the reading edge, the range and the arrows on the far one. 4px of padding around
+   the controls leaves room for the 2px focus outline and its 2px offset, which the collapsible's
+   overflow:hidden would otherwise clip. No scroll-margin: a shorter page lifts the controls and
+   the page stays where it is (motion.md rule 10). */
+.service-history-pager-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  align-items: center;
+  padding: 4px 12px 4px 20px;
+  border-top: 1px solid var(--line-soft);
 }
 
-.service-history-empty {
-  @apply py-[8px] px-[8px] ps-[16px] text-slate-500 text-[14px] bg-white;
+.service-history-page-size {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin-inline-end: auto;
 }
 
-.service-history-subrow .table-header-cell,
-.service-history-subrow .table-body-cell {
-  @apply !p-[6px] leading-[16px];
+/* Small note: 12px, 600 (§ 11). */
+.service-history-page-size-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* A select cannot hold children, so the chevron is placed against this box instead. */
+.service-history-page-size-field {
+  position: relative;
+  display: inline-flex;
+}
+
+/* The platform's own select, so its list is the platform's too (keyboard, touch, screen reader);
+   dressed in the family's type and line. 44px tall, the touch target a finger needs, like the
+   arrows beside it.
+   appearance: none, because Chromium and Firefox otherwise draw their own bevel and arrow; the
+   chevron beside it is the one arrow in every engine. */
+.service-history-page-size-select {
+  -webkit-appearance: none;
+  appearance: none;
+  /* A dark host must not turn the closed control or its list into a dark native field: the card is
+     --paper whatever the page is. */
+  color-scheme: light;
+  min-height: 44px;
+  /* 10px before the value; after it, room for the chevron's 6px inset and 16px box, so the glyph (4px
+     inside its box) stands about 8px from the text (§ 12's glyph gap; 9px with the 1px border). */
+  padding-block: 0;
+  padding-inline: 10px 26px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  transition:
+    border-color 0.2s ease,
+    opacity var(--settle) ease;
+}
+
+/* The engines that dress the open list read these; the rest keep the platform's. */
+.service-history-page-size-select option {
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.service-history-page-size-select:hover {
+  border-color: var(--blue);
+}
+
+.service-history-page-size-select:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 2px;
+}
+
+/* In flight: the list on screen is the last vehicle's, so it cannot be paged; the control dims
+   rather than vanishing. */
+.service-history-page-size-select:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+/* Decoration only, so clicks fall through to the select. --muted like the label, --blue-dark when
+   the select is hovered or focused, on the same .2s as its border (§ 18), and dimmed with it. */
+.service-history-page-size-caret {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 6px;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  pointer-events: none;
+  transition:
+    color 0.2s ease,
+    opacity var(--settle) ease;
+}
+
+.service-history-page-size-select:hover + .service-history-page-size-caret,
+.service-history-page-size-select:focus-visible + .service-history-page-size-caret {
+  color: var(--blue-dark);
+}
+
+.service-history-page-size-select:disabled + .service-history-page-size-caret {
+  opacity: 0.55;
+}
+
+/* The page arrows' glyph at their size, turned to point down; down is the same in RTL. */
+.service-history-page-size-chevron {
+  width: 16px;
+  height: 16px;
+  transform: rotate(90deg);
+}
+
+/* A value, read: dates and counts are --date-ink and tabular (§ 9, § 11). It carries
+   shift-skeleton, so a lookup covers it with the rows. */
+.service-history-page-range {
+  display: inline-block;
+  color: var(--date-ink);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.service-history-page-nav {
+  display: inline-flex;
+  gap: 2px;
+}
+
+/* Interaction is blue (§ 10), a quiet icon button: the list is the content, these only move through
+   it. 44px square, the touch target a finger needs. .2s, the language's one duration shorter than
+   --settle: a press must feel instant (§ 18). */
+.service-history-page-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--blue-dark);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.service-history-page-button:hover:not(:disabled) {
+  background: var(--blue-tint);
+}
+
+.service-history-page-button:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 2px;
+}
+
+/* The end of the list in that direction: grey, the colour of idle furniture (§ 10). */
+.service-history-page-button:disabled {
+  color: var(--line);
+  cursor: default;
+}
+
+.service-history-page-chevron {
+  width: 16px;
+  height: 16px;
+}
+
+/* Previous points to the reading start and next to the reading end, so RTL mirrors both. */
+[dir='rtl'] .service-history-page-chevron {
+  transform: scaleX(-1);
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Drawer: the visit's job, account and parent invoice, then its labor and part lines
+   ------------------------------------------------------------------------------------------- */
+
+/* Inside the table's drawer panel, which draws the paper, the rim, the rail and the one inner
+   shadow. Nothing here is a box of its own (§ 13, one card): the lists are ruled, not framed. */
+.service-history-drawer {
+  display: grid;
+  gap: 14px;
+}
+
+/* One line of label/value pairs; a pair wraps as a whole. Ruled off from the lists below it. */
+.service-history-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.service-history-detail {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+/* Small label (§ 11): the detail labels, the list captions and the list headings. */
+.service-history-detail > dt,
+.service-history-caption,
+.service-history-line-head > .service-history-cell {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* A value is read: 13px at 650, figures tabular (§ 11, body notices weight). */
+.service-history-detail > dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.service-history-caption {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin: 0 0 6px;
+}
+
+/* Small note (§ 11, counts), a shade darker than the label because it is read. */
+.service-history-caption-count {
+  color: var(--date-ink);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A statement about a record that exists, not a verdict: grey, no glyph. */
+.service-history-none {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* One grid per list, its lines subgrids of it, so the headings and every line share one set of
+   tracks (the owner's --service-history-tracks, one per column this visit has). A drawer narrower
+   than the floors scrolls inside the list, never the card. */
+.service-history-list {
+  display: grid;
+  grid-template-columns: var(--service-history-tracks);
+  overflow-x: auto;
+}
+
+.service-history-line {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+/* The headings on the recessed paper, like the table's strip; lines ruled in the soft line (§ 12). */
+.service-history-line-head {
+  background: var(--paper-soft);
+}
+
+.service-history-line:not(.service-history-line-head) {
+  border-top: 1px solid var(--line-soft);
+}
+
+/* The table's cell padding, tightened: a drawer's lines are read in a block, not one by one. */
+.service-history-cell {
+  min-width: 0;
+  padding: 8px 12px;
+  line-height: 1.3;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.service-history-line-head > .service-history-cell {
+  padding-block: 6px;
+}
+
+/* Code (§ 11): the line's name. */
+.service-history-line > .service-history-cell[data-identity='true'] {
+  font-weight: 760;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A figure is read, so --date-ink, and lines up on its end with its heading. */
+.service-history-cell[data-kind='number'] {
+  color: var(--date-ink);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.service-history-line-head > .service-history-cell[data-kind='number'] {
+  color: var(--muted);
+}
+
+.service-history-blank {
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Narrow panels (720 and under): the table turns its rows into cards (lookup-table.css)
+   ------------------------------------------------------------------------------------------- */
+
+@container (max-width: 720px) {
+  /* A card is several captioned lines, so it is not held to the row's 51px; it is only tightened,
+     from the table's 12px 14px and 10px gaps. */
+  .lt-row {
+    gap: 6px 12px;
+    padding: 10px 14px;
+  }
+
+  /* Each drawer line becomes a stacked card in two tracks, every field captioned by its heading
+     (data-label); the code and the description take the whole width. The headings go. */
+  .service-history-list {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-x: visible;
+  }
+
+  .service-history-line-head {
+    display: none;
+  }
+
+  .service-history-line {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 12px;
+    padding: 10px 0;
+  }
+
+  .service-history-line-head + .service-history-line {
+    border-top: 0;
+  }
+
+  .service-history-line > .service-history-cell {
+    padding: 0;
+    text-align: start;
+  }
+
+  .service-history-line > .service-history-cell::before {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    content: attr(data-label);
+  }
+
+  .service-history-line > .service-history-cell[data-identity='true'],
+  .service-history-line > .service-history-cell[data-grow='true'] {
+    grid-column: 1 / -1;
+  }
+
+  .service-history-line > .service-history-cell[data-identity='true']::before {
+    display: none;
+  }
+
+  /* Code at 15px when a line becomes a card (§ 11). */
+  .service-history-line > .service-history-cell[data-identity='true'] {
+    font-size: 15px;
+  }
+
+  /* The controls keep their 44px targets and only tighten their row to the card's inset. */
+  .service-history-pager-row {
+    padding-inline: 14px 8px;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Reduced motion: every transition above is on a state attribute, so it is kept and made
+   immediate. The table's own block is in its fragment.
+   ------------------------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .service-history-page-size-select,
+  .service-history-page-size-caret,
+  .service-history-page-button {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
 }

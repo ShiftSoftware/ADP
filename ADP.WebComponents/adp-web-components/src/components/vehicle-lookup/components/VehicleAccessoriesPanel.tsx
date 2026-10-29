@@ -332,18 +332,23 @@ export const VehicleAccessoriesPanel: FunctionalComponent<Props> = props => {
               <div class="accessories-pager-row">
                 <label class="accessories-page-size">
                   <span class="accessories-page-size-label">{locale.rowsPerPage}</span>
-                  <select
-                    class="accessories-page-size-select"
-                    aria-controls="accessories-list"
-                    disabled={busy}
-                    onChange={event => onPageSize(parsePageSize((event.target as HTMLSelectElement).value))}
-                  >
-                    {PAGE_SIZE_OPTIONS.map(size => (
-                      <option value={String(size)} selected={size === pageSize}>
-                        {size === 'all' ? locale.pageAll : String(size)}
-                      </option>
-                    ))}
-                  </select>
+                  <span class="accessories-page-size-field">
+                    <select
+                      class="accessories-page-size-select"
+                      aria-controls="accessories-list"
+                      disabled={busy}
+                      onChange={event => onPageSize(parsePageSize((event.target as HTMLSelectElement).value))}
+                    >
+                      {PAGE_SIZE_OPTIONS.map(size => (
+                        <option value={String(size)} selected={size === pageSize}>
+                          {size === 'all' ? locale.pageAll : String(size)}
+                        </option>
+                      ))}
+                    </select>
+                    <span class="accessories-page-size-caret" aria-hidden="true">
+                      <ChevronRightIcon class="accessories-page-size-chevron" />
+                    </span>
+                  </span>
                 </label>
 
                 {/* A value like any other: it goes under the skeleton with the rows while a lookup is in flight. */}
