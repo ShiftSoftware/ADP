@@ -17,4 +17,10 @@ public class ClaimableItemsDataOptions
     /// repository overrides <c>ItemClaimRepository.CanModifyPostClaim</c>.
     /// </summary>
     public BooleanAction? PostClaimModificationAction { get; set; }
+
+    /// <summary>
+    /// Km of tolerance when a service contract leaves out periodic services the vehicle has already
+    /// passed: a periodic menu due at or below <c>mileage + margin</c> is not offered. Default 0.
+    /// </summary>
+    public long ContractPeriodicMileageMargin { get; set; }
 }

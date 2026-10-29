@@ -36,6 +36,12 @@ public class ClaimableItemsApiOptions
     public ReadWriteDeleteAction? ClaimableItemContractsAction { get; set; }
 
     /// <summary>
+    /// Km of tolerance when a service contract leaves out periodic services the vehicle has already
+    /// passed: a periodic menu due at or below <c>mileage + margin</c> is not offered. Default 0.
+    /// </summary>
+    public long ContractPeriodicMileageMargin { get; set; }
+
+    /// <summary>
     /// The TypeAuth action node gating the ItemClaim controller (CRUD + the hot claim endpoint,
     /// which additionally requires Write on this node). Consumer-supplied, per D9 — the original
     /// host application passes its existing <c>Claiming</c> node.

@@ -36,6 +36,10 @@
 		     ADP-internal convention: source project in-repo, published package when packed standalone. -->
 		<PackageReference Include="ShiftSoftware.ADP.Lookup.Services" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj')" />
 		<ProjectReference Include="..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj" Condition="Exists('..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj')" />
+		<!-- Service contracts price a menu for the countries the host configures for the menus module
+		     (IMenuCountryProvider), so both offer the same countries. Same in-repo/package convention. -->
+		<PackageReference Include="ShiftSoftware.ADP.Menus.Shared" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Menus\ADP.Menus.Shared\ADP.Menus.Shared.csproj')" />
+		<ProjectReference Include="..\..\ADP.Menus\ADP.Menus.Shared\ADP.Menus.Shared.csproj" Condition="Exists('..\..\ADP.Menus\ADP.Menus.Shared\ADP.Menus.Shared.csproj')" />
 	</ItemGroup>
 
 	<ItemGroup>
