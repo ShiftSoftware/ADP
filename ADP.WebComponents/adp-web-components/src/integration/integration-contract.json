@@ -640,7 +640,7 @@
         "locales": null,
         "notes": [
           "The content is slotted: the children of shift-popover move into a shift-popover-panel element that shift-portal appends to <body>, so no overflow or stacking context on the page clips them. Keep references to your content elements; do not look them up inside the popover after it loads. Children added later move too.",
-          "The panel receives the popover’s appearance, color-scheme and size attributes and its classes. It inherits nothing from where the popover sits, so set --shift-* variables on :root or on a class you give the popover.",
+          "The panel receives the popover’s appearance, color-scheme and size attributes and its classes. It inherits nothing else from where the popover sits: the --shift-popover-* variables are read on the popover and carried over to the panel, so they may be set anywhere above it, even inside a shadow root; other --shift-* variables go on :root or on a class you give the popover.",
           "Positioning, placement bottom (default): below the anchor, aligned to its inline start (its right edge in RTL, from the anchor’s computed direction); above when there is no room below. It never covers the anchor: when neither side has room it takes the larger side and caps its height to it, and the content scrolls inside the panel. Shifted sideways to stay 8px inside the viewport; re-placed on scroll of any ancestor, on resize and when the anchor or the content resizes. It never scrolls the page. When the anchor scrolls out of sight the panel closes. placement top is the mirror: above the anchor, below when only below has room, and the larger side when neither has.",
           "With mobileSheet, under 600px of viewport width the panel is a bottom sheet whatever the placement: full width, at most 82dvh, sliding up from the bottom edge. Off by default, so the panel stays anchored at every width: a page inside an app’s webview fills only part of the screen, and a sheet there would sit at the bottom of the webview and dim only the webview.",
           "Dismissal: pointer-down outside the panel and the anchor, Escape (focus returns to the anchor), Tab out of the panel (Shift+Tab from its first control returns to the anchor; Tab from its last moves to the control after the anchor), focus moving to any element that is neither the anchor nor a popover panel, a pickerChange with complete true from the content (a time or date picked in shift-booking-calendar or shift-calendar), and hide() from the content.",
@@ -667,10 +667,14 @@
           "appearance": "vanilla, material, soft, sharp or minimal. Unset renders vanilla.",
           "colorScheme": "light (default), dark, or auto (follows prefers-color-scheme; for hosts that are themselves dark-aware).",
           "size": "xs, sm, md (default), lg or xl. md equals no size.",
-          "language": "en, ar, ku or ru. Language of the default dialog name."
+          "language": "en, ar, ku or ru. Language of the default dialog name.",
+          "align": "start (default) or end: which edge of the anchor the floating panel lines up with. Ignored in a bottom sheet.",
+          "anchorAria": "On (default): the popover sets aria-haspopup, aria-expanded and aria-controls on its anchor. Off: it leaves them to the anchor's owner, which renders them itself.",
+          "inside": "A CSS selector. A pointer-down or focus on a matching element elsewhere on the page (a viewer opened from the content) counts as inside and leaves the panel open. Unset by default."
         },
         "events": {
-          "openChange": "Detail { open }. Fires whenever the panel opens or closes: by method, by attribute or by dismissal."
+          "openChange": "Detail { open }. Fires whenever the panel opens or closes: by method, by attribute or by dismissal.",
+          "sheetChange": "Detail { sheet }. Fires when the panel becomes a bottom sheet or stops being one (mobileSheet and the viewport, or alwaysSheet), and once on connect when it starts as one. Does not bubble."
         },
         "methods": {
           "show": "Opens the panel and focuses the content. show({ focus: false }) leaves focus where it is. Called while open, it moves focus into the content.",
@@ -683,6 +687,8 @@
           "backdrop": "The overlay behind a bottom sheet; tapping it closes the sheet. Sheet mode only."
         },
         "cssProperties": {
+          "--shift-popover-sheet-closed-offset": "Length \u00b7 how far below its resting place a bottom sheet sits while closed; 0px by default",
+          "--shift-popover-sheet-radius": "Length \u00b7 radius of a bottom sheet\u2019s top corners; 0 by default",
           "--shift-popover-backdrop": "Colour · the overlay behind a bottom sheet (phones); dark in the dark scheme",
           "--shift-popover-backdrop-blur": "Effect · how much the page behind a bottom sheet blurs; none where backdrop-filter is unsupported",
           "--shift-popover-border-width": "Shape · panel border width",

@@ -19,16 +19,20 @@ export interface Placement {
 
 export type PopoverPlacement = 'bottom' | 'top';
 
+/** Which edge of the anchor the panel lines up with: the reading start (the default) or the reading end. */
+export type PopoverAlign = 'start' | 'end';
+
 export interface PlaceOptions {
   offset: number;
   margin: number;
   rtl: boolean;
   placement?: PopoverPlacement;
+  align?: PopoverAlign;
 }
 
 const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(value, Math.max(low, high)));
 
-export function placePanel(anchor: Box, panel: Size, viewport: Size, { offset, margin, rtl, placement = 'bottom' }: PlaceOptions): Placement {
+export function placePanel(anchor: Box, panel: Size, viewport: Size, { offset, margin, rtl, placement = 'bottom', align = 'start' }: PlaceOptions): Placement {
   const roomBelow = Math.max(0, viewport.height - margin - (anchor.bottom + offset));
   const roomAbove = Math.max(0, anchor.top - offset - margin);
 
@@ -40,7 +44,7 @@ export function placePanel(anchor: Box, panel: Size, viewport: Size, { offset, m
     panel.height <= room(preferred) ? preferred : panel.height <= room(other) ? other : room(other) > room(preferred) ? other : preferred;
   const height = Math.min(panel.height, side === 'below' ? roomBelow : roomAbove);
   const top = side === 'below' ? anchor.bottom + offset : anchor.top - offset - height;
-  const left = clamp(rtl ? anchor.right - panel.width : anchor.left, margin, viewport.width - margin - panel.width);
+  const left = clamp(rtl !== (align === 'end') ? anchor.right - panel.width : anchor.left, margin, viewport.width - margin - panel.width);
 
   return { top: Math.round(top), left: Math.round(left), side, maxHeight: height < panel.height ? Math.floor(height) : null };
 }
