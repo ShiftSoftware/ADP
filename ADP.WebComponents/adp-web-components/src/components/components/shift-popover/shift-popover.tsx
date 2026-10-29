@@ -14,6 +14,10 @@ export interface PopoverOpenChangeDetail {
   open: boolean;
 }
 
+export interface PopoverSheetChangeDetail {
+  sheet: boolean;
+}
+
 export type PopoverTrigger = 'manual' | 'anchor';
 
 export interface PopoverShowOptions {
@@ -21,6 +25,26 @@ export interface PopoverShowOptions {
 }
 
 const VIEWPORT_MARGIN = 8;
+
+// The panel lives on <body>, so these are read where the popover sits and carried over to it.
+const PANEL_PROPERTIES = [
+  'surface',
+  'line',
+  'border-width',
+  'radius',
+  'shadow',
+  'width',
+  'sheet-max-block-size',
+  'sheet-radius',
+  'sheet-closed-offset',
+  'z-index',
+  'lift',
+  'scale',
+  'backdrop',
+  'backdrop-blur',
+  'settle',
+  'ease',
+].map(name => `--shift-popover-${name}`);
 
 const openByAnchor = new Map<HTMLElement, { hide: () => Promise<void> }>();
 
@@ -135,16 +159,11 @@ const contains = (root: Node, node: Node): boolean => {
 
 /**
  * @part backdrop - rendered by the portaled panel behind a bottom sheet, so declared here for the docs.
- * @part sheet-head - with top-layer, the title bar of a bottom sheet.
- * @part sheet-title - with top-layer, the sheet's title (the heading slot or prop).
- * @part sheet-close - with top-layer, the sheet's close button.
- * @part sheet-body - with top-layer, the sheet's scrolling body.
- * @slot heading - with top-layer, the title of a bottom sheet, in place of the heading prop.
  */
 @Component({
   shadow: true,
   tag: 'shift-popover',
-  styles: ':host{display:none}:host([top-layer]){display:contents}',
+  styles: ':host{display:none}',
 })
 export class ShiftPopover {
   @Element() el!: HTMLElement;
@@ -163,12 +182,14 @@ export class ShiftPopover {
   // Off by default: inside an embedded webview the viewport is only part of the screen, so a sheet pinned to its bottom edge looks broken.
   @Prop() mobileSheet: boolean = false;
   @Prop() alwaysSheet: boolean = false;
-  @Prop({ reflect: true }) topLayer: boolean = false;
-  @Prop() heading?: string;
-  @Prop() closeLabel?: string;
   @Prop() align: PopoverAlign = 'start';
+  // Off when the anchor's owner renders its own aria-haspopup and aria-expanded.
+  @Prop() anchorAria: boolean = true;
+  // Elements elsewhere on the page, matched by this selector, count as inside: a press or focus there leaves the panel open.
+  @Prop() inside?: string;
 
   @Event({ bubbles: true, composed: true }) openChange!: EventEmitter<PopoverOpenChangeDetail>;
+  @Event({ bubbles: false, composed: false }) sheetChange!: EventEmitter<PopoverSheetChangeDetail>;
 
   @State() sheet: boolean = false;
   @State() side: 'below' | 'above' = 'below';
@@ -198,6 +219,7 @@ export class ShiftPopover {
     this.sheetQuery = window.matchMedia(SHEET_QUERY);
     this.sheet = this.wantsSheet();
     this.sheetQuery.addEventListener?.('change', this.onSheetChange);
+    if (this.sheet) this.sheetChange.emit({ sheet: true });
   }
 
   componentDidLoad() {
@@ -212,7 +234,7 @@ export class ShiftPopover {
     this.stopListening();
     this.releaseAnchor();
     this.unbindTrigger();
-    if (!this.topLayer) this.panel?.remove();
+    this.panel?.remove();
   }
 
   @Watch('placement')
@@ -287,6 +309,7 @@ export class ShiftPopover {
     }
 
     this.direction = anchor && getComputedStyle(anchor).direction === 'rtl' ? 'rtl' : 'ltr';
+    this.carryProperties();
     this.place();
     this.startListening();
     this.syncAria();
@@ -300,7 +323,7 @@ export class ShiftPopover {
     this.unregister();
 
     const active = deepActiveElement();
-    if (this.panel && active && (contains(this.panel, active) || (this.topLayer && contains(this.el, active)))) this.focusAnchor();
+    if (this.panel && active && contains(this.panel, active)) this.focusAnchor();
 
     this.stopListening();
     this.syncAria();
@@ -341,7 +364,7 @@ export class ShiftPopover {
 
   private releaseAnchor() {
     const anchor = this.ariaAnchor;
-    if (anchor) {
+    if (anchor && this.anchorAria) {
       anchor.removeAttribute('aria-haspopup');
       if (supportsExpanded(anchor)) anchor.removeAttribute('aria-expanded');
       if (anchor.getAttribute('aria-controls') === this.panelId) anchor.removeAttribute('aria-controls');
@@ -399,13 +422,15 @@ export class ShiftPopover {
     if (!anchor) return;
 
     this.ariaAnchor = anchor;
-    // A foreign anchor keeps its own role; aria-expanded goes only where that role allows it.
-    anchor.setAttribute('aria-haspopup', 'dialog');
-    if (supportsExpanded(anchor)) anchor.setAttribute('aria-expanded', String(this.open));
-
     // An IDREF cannot cross a shadow boundary, so aria-controls and aria-labelledby need the anchor in the panel's tree.
     const reachable = anchor.getRootNode() === document;
-    if (reachable) anchor.setAttribute('aria-controls', this.panelId);
+
+    if (this.anchorAria) {
+      // A foreign anchor keeps its own role; aria-expanded goes only where that role allows it.
+      anchor.setAttribute('aria-haspopup', 'dialog');
+      if (supportsExpanded(anchor)) anchor.setAttribute('aria-expanded', String(this.open));
+      if (reachable) anchor.setAttribute('aria-controls', this.panelId);
+    }
 
     this.nameFrom = reachable ? this.nameFromTree(anchor) : { labelledBy: '', label: nameText(anchor) };
   }
@@ -519,7 +544,9 @@ export class ShiftPopover {
   }
 
   private onSheetChange = () => {
-    this.sheet = this.wantsSheet();
+    const sheet = this.wantsSheet();
+    if (sheet !== this.sheet) this.sheetChange.emit({ sheet });
+    this.sheet = sheet;
     this.syncScrollLock();
     if (this.open) this.schedule();
   };
@@ -528,15 +555,35 @@ export class ShiftPopover {
     // The sheet's backdrop lives in the panel's shadow root, but a tap on it is a tap outside.
     if ((path[0] as Element)?.classList?.contains('pop-backdrop')) return false;
 
-    if (this.topLayer && path.some(node => (node as Element).tagName === 'SHIFT-IMAGE-LAYER')) return true;
-
     return (!!this.panel && path.includes(this.panel)) || (!!this.anchorEl && path.includes(this.anchorEl));
+  }
+
+  private alsoInside(path: EventTarget[]): boolean {
+    const selector = this.inside?.trim();
+    if (!selector) return false;
+
+    try {
+      return path.some(node => typeof (node as Element).matches === 'function' && (node as Element).matches(selector));
+    } catch {
+      return false;
+    }
+  }
+
+  private carryProperties() {
+    if (!this.panel || typeof getComputedStyle !== 'function') return;
+
+    const style = getComputedStyle(this.el);
+    for (const name of PANEL_PROPERTIES) {
+      const value = style.getPropertyValue?.(name)?.trim();
+      if (value) this.panel.style.setProperty(name, value);
+      else this.panel.style.removeProperty(name);
+    }
   }
 
   private onPointerDown = (event: PointerEvent) => {
     const path = event.composedPath();
     // The sheet's backdrop closes on its own click; closing here would drop it before that click, which then lands on the page beneath.
-    if (this.within(path) || (path[0] as Element)?.classList?.contains('pop-backdrop')) return;
+    if (this.within(path) || this.alsoInside(path) || (path[0] as Element)?.classList?.contains('pop-backdrop')) return;
 
     this.pointerDismissed = true;
     const release = () => {
@@ -552,16 +599,14 @@ export class ShiftPopover {
 
   // Tab and Shift+Tab out of the panel are handled on the panel; here only focus that leaves for a non-popover element closes it.
   private onFocusIn = (event: FocusEvent) => {
-    if (this.modalSheet()) return;
-
     const path = event.composedPath();
-    if (this.within(path) || path.some(node => (node as Element).tagName === 'SHIFT-POPOVER-PANEL')) return;
+    if (this.within(path) || this.alsoInside(path) || path.some(node => (node as Element).tagName === 'SHIFT-POPOVER-PANEL')) return;
 
     this.hide();
   };
 
   private onKeyDown = (event: KeyboardEvent) => {
-    if (event.key !== 'Escape' || event.defaultPrevented || !(this.modalSheet() || this.within(event.composedPath()))) return;
+    if (event.key !== 'Escape' || event.defaultPrevented || !this.within(event.composedPath())) return;
 
     // The Escape that closes the panel is spent: a dialog or page listening on window must not close as well.
     event.preventDefault();
@@ -570,36 +615,10 @@ export class ShiftPopover {
     this.focusAnchor();
   };
 
-  private modalSheet(): boolean {
-    return this.topLayer && this.sheet;
-  }
-
-  private contentRoot(): Element | null {
-    return this.topLayer ? this.el : this.panel;
-  }
-
-  private closeButton(): HTMLElement | null {
-    return this.panel?.shadowRoot?.querySelector<HTMLElement>('.pop-close') ?? null;
-  }
-
   private onPanelKeyDown = (event: KeyboardEvent) => {
-    const root = this.contentRoot();
-    if (event.key !== 'Tab' || !this.panel || !root) return;
+    if (event.key !== 'Tab' || !this.panel) return;
 
-    if (this.modalSheet()) {
-      const close = this.closeButton();
-      const stops = [...(close ? [close] : []), ...tabbables(root)];
-      const active = deepActiveElement();
-      const at = active ? stops.indexOf(active as HTMLElement) : -1;
-
-      // Our own Tab order: Safari does not Tab to links by default.
-      event.preventDefault();
-      const next = event.shiftKey ? (at <= 0 ? stops.length - 1 : at - 1) : at < 0 || at === stops.length - 1 ? 0 : at + 1;
-      stops[next]?.focus({ preventScroll: true });
-      return;
-    }
-
-    const stops = tabbables(root);
+    const stops = tabbables(this.panel);
     const active = deepActiveElement();
     if (!stops.length || !active) return;
 
@@ -620,7 +639,7 @@ export class ShiftPopover {
     const anchor = this.anchorEl;
     if (!anchor) return null;
 
-    const all = tabbables(document.body).filter(element => !(this.panel && contains(this.panel, element)) && !(this.topLayer && contains(this.el, element)));
+    const all = tabbables(document.body).filter(element => !this.panel || !contains(this.panel, element));
     const inAnchor = all.filter(element => contains(anchor, element));
     const last = inAnchor.length ? inAnchor[inAnchor.length - 1] : null;
     const index = last ? all.indexOf(last) : all.findIndex(element => anchor.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING);
@@ -638,19 +657,13 @@ export class ShiftPopover {
 
   // Content that has a Stencil-style setFocus() (shift-calendar does) chooses its own focus; anything else gets its first tab stop.
   private focusContent() {
-    const root = this.contentRoot();
-    if (!this.panel || !root) return;
+    if (!this.panel) return;
 
-    if (this.modalSheet() && this.closeButton()) {
-      this.closeButton()?.focus({ preventScroll: true });
-      return;
-    }
-
-    const withSetFocus = Array.from(root.children).find(child => typeof (child as unknown as { setFocus?: unknown }).setFocus === 'function') as unknown as
+    const withSetFocus = Array.from(this.panel.children).find(child => typeof (child as unknown as { setFocus?: unknown }).setFocus === 'function') as unknown as
       | { setFocus: () => Promise<void> }
       | undefined;
     if (withSetFocus) withSetFocus.setFocus();
-    else tabbables(root)[0]?.focus({ preventScroll: true });
+    else tabbables(this.panel)[0]?.focus({ preventScroll: true });
   }
 
   // The content moves into the panel on <body>, so no overflow or stacking context on the page clips it.
@@ -670,14 +683,12 @@ export class ShiftPopover {
     focus: () => this.focusContent(),
     strayFocus: () => this.focusAnchor(),
     dismiss: () => this.hide(),
-    shown: () => {
-      if (this.open) this.place();
-    },
     ready: panel => {
       this.panel = panel;
+      this.carryProperties();
       panel.addEventListener('pickerChange', this.onContentPick);
-      if (!this.topLayer) this.adoptContent();
-      if (!this.topLayer && typeof MutationObserver !== 'undefined') {
+      this.adoptContent();
+      if (typeof MutationObserver !== 'undefined') {
         this.contentObserver = new MutationObserver(() => this.adoptContent());
         this.contentObserver.observe(this.el, { childList: true });
       }
@@ -709,19 +720,6 @@ export class ShiftPopover {
       colorScheme: this.colorScheme,
       size: this.size,
     };
-
-    if (this.topLayer) {
-      return (
-        <Host exportparts="backdrop, panel, sheet, sheet-head, sheet-title, sheet-close, sheet-body">
-          <shift-popover-panel {...panelProps} topLayer exportparts="backdrop, panel, sheet, sheet-head, sheet-title, sheet-close, sheet-body" closeLabel={this.closeLabel}>
-            <slot name="heading" slot="heading">
-              {this.heading}
-            </slot>
-            <slot />
-          </shift-popover-panel>
-        </Host>
-      );
-    }
 
     return (
       <Host>

@@ -17,8 +17,9 @@ import { QuestionMark } from '~assets/question-mark';
 import { TriangleAlertIcon } from '~assets/triangle-alert';
 
 import { LookupHeadWait, PanelVerdict, StatusBadge } from '~features/vehicle-info-layout';
-import { LookupColumn, LookupTable, PlaceholderKind, RowDrawer, RowSlot, TablePlaceholder, drawerId, placeholderKind, shownBody, visibleColumns } from '~features/lookup-table';
+import { LookupColumn, LookupTable, PlaceholderKind, RowDrawer, RowSlot, TablePlaceholder, placeholderKind, shownBody, visibleColumns } from '~features/lookup-table';
 import type { LanguageKeys } from '~features/multi-lingual';
+import type { PopoverSheetChangeDetail } from '../../components/shift-popover/shift-popover';
 
 export type PaintThicknessLocale = InferType<typeof paintThicknessSchema>;
 
@@ -319,7 +320,7 @@ const settleIfComplete = (image: HTMLImageElement | undefined) => {
   });
 };
 
-type OpenPhoto = (image: HTMLImageElement, src: string, label: string) => void;
+export type OpenPhoto = (image: HTMLImageElement, src: string, label: string) => void;
 
 const Photo = ({ src, label, onOpenPhoto }: { src: string; label: string; onOpenPhoto?: OpenPhoto }) => (
   <button
@@ -349,34 +350,34 @@ const Photo = ({ src, label, onOpenPhoto }: { src: string; label: string; onOpen
   </button>
 );
 
-type PhotosProps = { images: string[]; name: string; locale: PaintThicknessLocale; onOpenPhoto?: OpenPhoto };
+type PhotosProps = { images: string[]; name: string; locale: PaintThicknessLocale; onOpenPhoto?: OpenPhoto; skeleton?: boolean };
 
-const Thumbs = ({ images, name, locale, onOpenPhoto }: PhotosProps) => (
-  <div class="paint-thumbs">
+const Thumbs = ({ images, name, locale, onOpenPhoto, skeleton = false }: PhotosProps) => (
+  <div class={{ 'paint-thumbs': true, 'shift-skeleton': skeleton }}>
     {images.map((src, index) => (
       <Photo src={src} label={fill(locale.openPhotoLabel, { index: index + 1, total: images.length, name })} onOpenPhoto={onOpenPhoto} />
     ))}
   </div>
 );
 
-const sideCaption = (locale: PaintThicknessLocale, side: Side, value: number): VNode => (
+const sideCaption = (locale: PaintThicknessLocale, side: Side, value: number, skeleton: boolean): VNode => (
   <div class="paint-side-caption">
     {sideLabel(locale, side)} ·{' '}
-    <span class="paint-figure">
+    <span class={{ 'paint-figure': true, 'shift-skeleton': skeleton }}>
       {formatReading(value)} {locale.unit}
     </span>
   </div>
 );
 
-const rowPhotosContent = (row: PaintRow, locale: PaintThicknessLocale, onOpenPhoto?: OpenPhoto): VNode => (
+export const rowPhotosContent = (row: PaintRow, locale: PaintThicknessLocale, onOpenPhoto?: OpenPhoto, skeleton = false): VNode => (
   <div class="paint-sides">
     {readingsOf(row).map(reading => (
       <div class="paint-side">
-        {sideCaption(locale, reading.side, reading.value)}
+        {sideCaption(locale, reading.side, reading.value, skeleton)}
         {reading.images.length ? (
-          <Thumbs images={reading.images} name={photoGroupName(locale, row, reading.side)} locale={locale} onOpenPhoto={onOpenPhoto} />
+          <Thumbs images={reading.images} name={photoGroupName(locale, row, reading.side)} locale={locale} onOpenPhoto={onOpenPhoto} skeleton={skeleton} />
         ) : (
-          <span class="paint-note">{locale.noPhotos}</span>
+          <span class={{ 'paint-note': true, 'shift-skeleton': skeleton }}>{locale.noPhotos}</span>
         )}
       </div>
     ))}
@@ -390,13 +391,6 @@ const drawerContent = (row: PaintRow, locale: PaintThicknessLocale, language: st
   </div>,
   rowPhotosContent(row, locale, onOpenPhoto),
 ];
-
-const certificateMenuContent = (urls: PaintThicknessCertificateUrlDTO[], focusable: boolean, onChoose: () => void): VNode[] =>
-  urls.map(({ language: code, name, url }) => (
-    <a key={code} role="menuitem" class="paint-certificate-item" href={url} target="_blank" rel="noopener noreferrer" tabIndex={focusable ? 0 : -1} onClick={onChoose}>
-      {name || code}
-    </a>
-  ));
 
 const TABPANEL_ID = 'paint-tabpanel';
 const TAB_ID_PREFIX = 'paint-tab';
@@ -439,54 +433,17 @@ type Props = {
   onToggleCertificate: () => void;
   onCloseCertificate: (restoreFocus: boolean) => void;
   onOpenPhoto?: OpenPhoto;
-  phone?: boolean;
+  sheetMode?: boolean;
   sheet?: PaintSheet | null;
   onCloseSheet?: () => void;
+  onSheetChange?: (sheet: boolean) => void;
 };
 
 const PHOTOS_REGION_ID = 'paint-photos-region';
 const DRAWER_PREFIX = 'paint';
 
-type PhotosSheetProps = {
-  sheet: PaintSheet | null;
-  locale: PaintThicknessLocale;
-  language: string;
-  busy: boolean;
-  slotRows: PaintRow[];
-  drawerRowFor: (row: PaintRow, index: number) => PaintRow;
-  onOpenPhoto?: OpenPhoto;
-  onCloseSheet: () => void;
-};
-
-const PaintPhotosSheet = ({ sheet, locale, language, busy, slotRows, drawerRowFor, onOpenPhoto, onCloseSheet }: PhotosSheetProps) => {
-  const row = sheet ? drawerRowFor(slotRows[sheet.index], sheet.index) : undefined;
-  const title = row ? sheetPhotosTitle(row, locale, language) : '';
-
-  return (
-    <shift-popover
-      class="paint-popover paint-photos-popover"
-      data-phone="true"
-      topLayer
-      alwaysSheet
-      open={!!sheet?.open && !!row}
-      anchor={sheet ? `[aria-controls="${drawerId(DRAWER_PREFIX, sheet.index)}"]` : undefined}
-      label={title || locale.allPhotos}
-      heading={title}
-      closeLabel={locale.closeSheet}
-      language={language as LanguageKeys}
-      onOpenChange={(event: CustomEvent<{ open: boolean }>) => !event.detail.open && onCloseSheet()}
-    >
-      <span slot="heading" class="paint-sheet-title shift-skeleton">
-        {title}
-      </span>
-      {row && (
-        <div class="paint-sheet-content shift-skeleton" inert={busy}>
-          {rowPhotosContent(row, locale, onOpenPhoto)}
-        </div>
-      )}
-    </shift-popover>
-  );
-};
+// The row's photo toggle, found in the table by its slot: in dialog mode a toggle carries no id to point at.
+const photoToggle = (index: number) => `.paint-table .lt-rows > :nth-child(${index + 1}) .lt-action-button`;
 
 export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
   const {
@@ -521,9 +478,10 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
     onToggleCertificate,
     onCloseCertificate,
     onOpenPhoto,
-    phone = false,
+    sheetMode = false,
     sheet = null,
     onCloseSheet = () => {},
+    onSheetChange = () => {},
   } = props;
 
   const photosShown = !state.hidden.has('photos');
@@ -559,15 +517,20 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
         label: (row, _index, expanded) =>
           fill(expanded ? locale.hidePhotosLabel : locale.showPhotosLabel, { photos: photoCountText(rowPhotoCount(row), locale, language), panel: rowName(locale, row) }),
         regionLabel: row => fill(locale.photosRegionLabel, { panel: rowName(locale, row) }),
-        open: phone ? null : drawerOpen,
-        shown: phone ? [] : drawerShown,
+        open: sheetMode ? null : drawerOpen,
+        shown: sheetMode ? [] : drawerShown,
         onToggle: onToggleDrawer,
         idPrefix: DRAWER_PREFIX,
+        dialog: sheetMode ? { open: sheet?.open ? sheet.index : null } : undefined,
       }
     : undefined;
 
   const rtl = direction === 'rtl';
   const count = headCount(state, locale, language);
+
+  const sheetRow = sheet ? drawerRowFor(slotRows[sheet.index], sheet.index) : undefined;
+  const sheetTitle = sheetRow ? sheetPhotosTitle(sheetRow, locale, language) : '';
+  const onPopoverSheet = (event: CustomEvent<PopoverSheetChangeDetail>) => onSheetChange(event.detail.sheet);
 
   return (
     <section
@@ -600,11 +563,16 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
                   <button
                     type="button"
                     class="paint-certificate-button"
-                    aria-haspopup="dialog"
+                    aria-haspopup={sheetMode ? 'dialog' : 'menu'}
                     aria-expanded={certificateExpanded ? 'true' : 'false'}
                     aria-label={locale.printCertificate}
                     disabled={!certificateAreOpen || busy}
                     onClick={onToggleCertificate}
+                    onKeyDown={(event: KeyboardEvent) => {
+                      if (event.key !== 'ArrowDown' || certificateExpanded) return;
+                      event.preventDefault();
+                      onToggleCertificate();
+                    }}
                   >
                     <PrintIcon fill="currentColor" viewBox="0 0 24 24" class="paint-certificate-print" />
                     <span class="paint-certificate-label">{locale.certificate}</span>
@@ -618,30 +586,31 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
           <LookupHeadWait />
         </header>
 
-        {certificate?.kind === 'menu' && (
-          <shift-popover
-            class="paint-popover paint-certificate-popover"
-            data-phone={phone ? 'true' : 'false'}
-            topLayer
-            align="end"
-            offset={6}
-            alwaysSheet={phone}
-            open={certificateExpanded}
-            anchor=".paint-certificate-button"
-            label={locale.printCertificate}
+        <shift-popover
+          class={{ 'paint-popover': true, 'paint-certificate-popover': true, 'paint-popover-sheet': sheetMode }}
+          mobileSheet
+          align="end"
+          offset={6}
+          anchorAria={false}
+          open={certificateExpanded}
+          anchor=".paint-certificate-button"
+          label={locale.printCertificate}
+          language={language as LanguageKeys}
+          onOpenChange={(event: CustomEvent<{ open: boolean }>) => !event.detail.open && onCloseCertificate(false)}
+          onSheetChange={onPopoverSheet}
+        >
+          <vehicle-paint-thickness-popup
+            kind="menu"
+            sheet={sheetMode}
             heading={locale.printCertificate}
             closeLabel={locale.closeSheet}
-            language={language as LanguageKeys}
-            onOpenChange={(event: CustomEvent<{ open: boolean }>) => !event.detail.open && onCloseCertificate(false)}
-          >
-            <span slot="heading" class="paint-sheet-title shift-skeleton">
-              {locale.printCertificate}
-            </span>
-            <div class="paint-menu shift-skeleton" role="menu" aria-label={locale.printCertificate} inert={busy}>
-              {certificateMenuContent(certificate.urls, certificateExpanded && !busy, () => onCloseCertificate(false))}
-            </div>
-          </shift-popover>
-        )}
+            busy={busy}
+            direction={direction}
+            links={certificate?.kind === 'menu' ? certificate.urls : []}
+            choose={() => onCloseCertificate(false)}
+            dismiss={() => onCloseCertificate(false)}
+          />
+        </shift-popover>
       </div>
 
       <div class="lookup-slide-clip">
@@ -739,18 +708,31 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
         </div>
       </div>
 
-      {(phone || sheet) && (
-        <PaintPhotosSheet
-          sheet={sheet}
-          locale={locale}
-          language={language}
+      <shift-popover
+        class={{ 'paint-popover': true, 'paint-photos-popover': true, 'paint-popover-sheet': sheetMode }}
+        mobileSheet
+        anchorAria={false}
+        inside="shift-image-layer"
+        open={!!sheet?.open && !!sheetRow}
+        anchor={sheet ? photoToggle(sheet.index) : undefined}
+        label={sheetTitle || locale.allPhotos}
+        language={language as LanguageKeys}
+        onOpenChange={(event: CustomEvent<{ open: boolean }>) => !event.detail.open && onCloseSheet()}
+        onSheetChange={onPopoverSheet}
+      >
+        <vehicle-paint-thickness-popup
+          kind="photos"
+          sheet={sheetMode}
+          heading={sheetTitle}
+          closeLabel={locale.closeSheet}
           busy={busy}
-          slotRows={slotRows}
-          drawerRowFor={drawerRowFor}
-          onOpenPhoto={onOpenPhoto}
-          onCloseSheet={onCloseSheet}
+          direction={direction}
+          row={sheetRow}
+          locale={locale}
+          openPhoto={onOpenPhoto}
+          dismiss={onCloseSheet}
         />
-      )}
+      </shift-popover>
     </section>
   );
 };

@@ -40,7 +40,8 @@ export function placePanel(anchor: Box, panel: Size, viewport: Size, { offset, m
   const preferred: Placement['side'] = placement === 'top' ? 'above' : 'below';
   const other: Placement['side'] = preferred === 'above' ? 'below' : 'above';
   const room = (side: Placement['side']) => (side === 'below' ? roomBelow : roomAbove);
-  const side: Placement['side'] = panel.height <= room(preferred) ? preferred : panel.height <= room(other) ? other : room(other) > room(preferred) ? other : preferred;
+  const side: Placement['side'] =
+    panel.height <= room(preferred) ? preferred : panel.height <= room(other) ? other : room(other) > room(preferred) ? other : preferred;
   const height = Math.min(panel.height, side === 'below' ? roomBelow : roomAbove);
   const top = side === 'below' ? anchor.bottom + offset : anchor.top - offset - height;
   const left = clamp(rtl !== (align === 'end') ? anchor.right - panel.width : anchor.left, margin, viewport.width - margin - panel.width);

@@ -1,4 +1,4 @@
-import { Component, Element, Event, EventEmitter, Host, Listen, Method, Prop, State, Watch, forceUpdate, h } from '@stencil/core';
+import { Component, Element, Event, EventEmitter, Host, Method, Prop, State, Watch, forceUpdate, h } from '@stencil/core';
 
 import { createHeightChangeAnnouncer } from '~lib/flexible-parents';
 
@@ -31,15 +31,13 @@ import {
   tabsOf,
 } from './components/VehiclePaintThicknessPanel';
 
-import { PlaceholderKind, RowVeil, drawerId, parseHiddenFields, retainDrawers, settleDrawer, shownDrawers, tableSlots, toggleDrawer } from '~features/lookup-table';
+import { PlaceholderKind, RowVeil, parseHiddenFields, retainDrawers, settleDrawer, shownDrawers, tableSlots, toggleDrawer } from '~features/lookup-table';
 import { VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
 const DEFAULT_SETTLE_MS = 480;
-
-const PHONE_QUERY = '(max-width: 720px)';
 
 class Retained<T> {
   value: T | undefined;
@@ -133,21 +131,12 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
   // #endregion
 
-  @State() phone: boolean = false;
+  /** Whether the popovers are bottom sheets, as shift-popover decides it for its own breakpoint. */
+  @State() sheetMode: boolean = false;
 
-  private phoneQuery?: MediaQueryList;
-
-  private onPhoneChange = (event: MediaQueryListEvent) => {
-    this.phone = event.matches;
-    void this.imageViewer?.hide();
+  private onSheetChange = (sheet: boolean) => {
+    this.sheetMode = sheet;
   };
-
-  connectedCallback() {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
-    this.phoneQuery = window.matchMedia(PHONE_QUERY);
-    this.phone = !!this.phoneQuery?.matches;
-    this.phoneQuery?.addEventListener?.('change', this.onPhoneChange);
-  }
 
   private sheetHold = new Retained<number>(
     () => this.settleMs() + 200,
@@ -161,21 +150,8 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   }
 
   private onCloseSheet = () => {
-    if (this.phone && this.wantedSheet() !== null) this.closeDrawer();
+    if (this.sheetMode && this.wantedSheet() !== null) this.closeDrawer();
   };
-
-  private popupMarked = false;
-
-  private markPhotoToggles() {
-    if (!this.phone && !this.popupMarked) return;
-    this.popupMarked = this.phone;
-    const open = this.phone && this.openDrawer !== null ? drawerId('paint', this.openDrawer) : null;
-    this.el.shadowRoot?.querySelectorAll('.lt-action-button').forEach(button => {
-      if (!this.phone) return button.removeAttribute('aria-haspopup');
-      button.setAttribute('aria-haspopup', 'dialog');
-      button.setAttribute('aria-expanded', String(button.getAttribute('aria-controls') === open));
-    });
-  }
 
   // #region Blazor Invokable logic
   @State() blazorRef?: DotNetObjectReference;
@@ -242,8 +218,6 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   @Watch('isLoading')
   onLoadingChange(newValue: boolean) {
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
-
-    if (newValue && !this.phone) this.certificateMenuOpen = false;
   }
 
   @State() leaving: boolean = false;
@@ -359,7 +333,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     this.swapping = false;
     this.activeTabIndex = 0;
     this.shownTabIndex = 0;
-    this.certificateMenuOpen = this.phone && this.certificateMenuOpen && certificateKind(this.panelState()) === 'menu';
+    this.certificateMenuOpen = this.certificateMenuOpen && certificateKind(this.panelState()) === 'menu';
     this.settleSelection(!this.vehicleLookup);
   }
 
@@ -466,33 +440,9 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     () => forceUpdate(this),
   );
 
-  private menuItems = () => Array.from(this.el.shadowRoot?.querySelectorAll<HTMLElement>('.paint-menu .paint-certificate-item') ?? []);
-
   private onToggleCertificate = () => {
     this.certificateMenuOpen = !this.certificateMenuOpen;
   };
-
-  @Listen('keydown')
-  onMenuKeyDown(event: KeyboardEvent) {
-    const root = this.el.shadowRoot;
-    const target = root?.activeElement as HTMLElement | null;
-    if (!target || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
-
-    if (target.classList.contains('paint-certificate-button')) {
-      if (event.key !== 'ArrowDown' || this.certificateMenuOpen || target.hasAttribute('disabled')) return;
-      event.preventDefault();
-      this.onToggleCertificate();
-      return;
-    }
-
-    if (!this.certificateMenuOpen || !target.classList.contains('paint-certificate-item')) return;
-    const items = this.menuItems();
-    const at = items.indexOf(target);
-    if (at < 0) return;
-    event.preventDefault();
-    const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (at + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
-    items[next]?.focus({ preventScroll: true });
-  }
 
   private onCloseCertificate = () => {
     this.certificateMenuOpen = false;
@@ -635,6 +585,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
       this.openDrawer,
       this.retainedDrawers.join('.'),
       this.photosCollapsed,
+      this.sheetMode,
       this.opened,
       this.outgoing.length,
       this.isError,
@@ -646,7 +597,6 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
   componentDidRender() {
     this.announceVerdict();
-    this.markPhotoToggles();
 
     if (this.openPending) {
       this.openPending = false;
@@ -679,8 +629,6 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     clearTimeout(this.loadTimer);
     this.cancelOpenFrame();
     if (this.loadFrame !== undefined) cancelAnimationFrame(this.loadFrame);
-    this.phoneQuery?.removeEventListener?.('change', this.onPhoneChange);
-    this.phoneQuery = undefined;
     this.sheetHold.dispose();
     this.photosGroups.dispose();
     this.certificate.dispose();
@@ -747,7 +695,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     const photosBodyOpen = !this.photosCollapsed && photosSectionOpen(state, groups.length, this.leaving, this.reshaping);
     if (photosBodyOpen) this.photosMounted = true;
 
-    const wanted = this.phone ? this.wantedSheet() : null;
+    const wanted = this.sheetMode ? this.wantedSheet() : null;
     this.sheetHold.track(wanted);
     const held = wanted ?? this.sheetHold.value ?? null;
     const sheet: PaintSheet | null = held === null ? null : { index: held, open: wanted !== null };
@@ -796,9 +744,10 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
             onToggleCertificate={this.onToggleCertificate}
             onCloseCertificate={this.onCloseCertificate}
             onOpenPhoto={(image, src, label) => this.openImage(image, src, label)}
-            phone={this.phone}
+            sheetMode={this.sheetMode}
             sheet={sheet}
             onCloseSheet={this.onCloseSheet}
+            onSheetChange={this.onSheetChange}
           />
         </VehicleInfoLayout>
       </Host>

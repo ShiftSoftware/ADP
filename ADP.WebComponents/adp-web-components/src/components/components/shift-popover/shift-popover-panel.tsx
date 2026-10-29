@@ -1,7 +1,5 @@
 import { Component, Element, Host, Prop, State, h } from '@stencil/core';
 
-import { CloseIcon } from '~assets/close-icon';
-
 export type PopoverAppearance = 'vanilla' | 'material' | 'soft' | 'sharp' | 'minimal';
 export type PopoverColorScheme = 'light' | 'dark' | 'auto';
 export type PopoverSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -12,7 +10,6 @@ export interface PopoverPanelHandlers {
   strayFocus: () => void;
   dismiss: () => void;
   ready: (panel: HTMLElement) => void;
-  shown?: () => void;
 }
 
 @Component({
@@ -31,8 +28,6 @@ export class ShiftPopoverPanel {
   @Prop() panelLabel: string = '';
   @Prop() panelLabelledBy: string = '';
   @Prop() panelPart: string = 'panel';
-  @Prop() topLayer: boolean = false;
-  @Prop() closeLabel: string = '';
   @Prop() focusToken: number = 0;
   @Prop() handlers?: PopoverPanelHandlers;
 
@@ -41,58 +36,12 @@ export class ShiftPopoverPanel {
   @Prop({ reflect: true }) size: PopoverSize = 'md';
 
   @State() slotVersion: number = 0;
-  @State() entered: boolean = false;
 
   private focusedToken = 0;
   private closingWithFocus = false;
-  private presented = false;
-  private enterFrame = 0;
-  private leaveTimer?: ReturnType<typeof setTimeout>;
-
-  componentWillLoad() {
-    if (this.topLayer && typeof this.el.showPopover === 'function') this.el.setAttribute('popover', 'manual');
-  }
 
   componentDidLoad() {
     this.handlers?.ready(this.el);
-  }
-
-  disconnectedCallback() {
-    cancelAnimationFrame(this.enterFrame);
-    clearTimeout(this.leaveTimer);
-  }
-
-  private present() {
-    clearTimeout(this.leaveTimer);
-    if (this.presented) return;
-
-    this.presented = true;
-    this.el.setAttribute('data-presented', '');
-    if (this.el.hasAttribute('popover') && !this.el.matches(':popover-open')) this.el.showPopover();
-    void this.el.offsetWidth;
-    this.handlers?.shown?.();
-    // Painted once in its closed style before it opens, so the first frame is the start of the motion.
-    this.enterFrame = requestAnimationFrame(() => (this.enterFrame = requestAnimationFrame(() => (this.entered = true))));
-  }
-
-  private retire() {
-    cancelAnimationFrame(this.enterFrame);
-    if (!this.presented || this.open) return;
-
-    const box = this.el.shadowRoot?.querySelector('.pop-panel');
-    const toMs = (value: string) => (value.trim().endsWith('ms') ? parseFloat(value) : parseFloat(value) * 1000) || 0;
-    const style = box ? getComputedStyle(box) : null;
-    const delays = style ? style.transitionDelay.split(',').map(toMs) : [];
-    const ms = style ? Math.max(0, ...style.transitionDuration.split(',').map((duration, index) => toMs(duration) + (delays[index % delays.length] ?? 0))) : 0;
-
-    clearTimeout(this.leaveTimer);
-    this.leaveTimer = setTimeout(() => {
-      if (this.open) return;
-      this.presented = false;
-      this.entered = false;
-      this.el.removeAttribute('data-presented');
-      if (this.el.hasAttribute('popover') && this.el.matches(':popover-open')) this.el.hidePopover();
-    }, ms + 60);
   }
 
   componentWillRender() {
@@ -102,11 +51,6 @@ export class ShiftPopoverPanel {
   componentDidRender() {
     // Focus queued by the content before the panel closed can land after it; inert would drop it on <body>.
     if (this.closingWithFocus) this.handlers?.strayFocus();
-    if (this.topLayer) {
-      if (this.open) this.present();
-      else this.retire();
-      if (!this.entered) return;
-    }
     if (!this.open || this.focusToken === this.focusedToken) return;
 
     this.focusedToken = this.focusToken;
@@ -115,7 +59,6 @@ export class ShiftPopoverPanel {
 
   render() {
     const scrollsInside = Array.from(this.el.children).some(child => child.localName === 'shift-select-sheet');
-    const open = this.topLayer ? this.open && this.entered : this.open;
 
     return (
       <Host
@@ -125,44 +68,19 @@ export class ShiftPopoverPanel {
         aria-labelledby={this.panelLabelledBy || undefined}
         aria-hidden={this.open ? undefined : 'true'}
         inert={this.open ? undefined : true}
-        data-top-layer={this.topLayer ? '' : undefined}
       >
-        <div
-          class="pop-backdrop"
-          part="backdrop"
-          aria-hidden="true"
-          onClick={() => this.handlers?.dismiss()}
-          data-open={open ? '' : undefined}
-          data-sheet={this.sheet ? '' : undefined}
-        />
+        <div class="pop-backdrop" part="backdrop" aria-hidden="true" onClick={() => this.handlers?.dismiss()} data-open={this.open ? '' : undefined} data-sheet={this.sheet ? '' : undefined} />
         <div
           class="pop-panel"
           part={this.panelPart}
           dir={this.direction}
-          data-open={open ? '' : undefined}
+          data-open={this.open ? '' : undefined}
           data-sheet={this.sheet ? '' : undefined}
-          data-titled={this.topLayer ? '' : undefined}
           data-side={this.side}
           data-inner-scroll={scrollsInside ? '' : undefined}
           onKeyDown={(event: KeyboardEvent) => this.handlers?.keydown(event)}
         >
-          {this.topLayer ? (
-            [
-              <div class="pop-head" part="sheet-head">
-                <span class="pop-title" part="sheet-title">
-                  <slot name="heading" />
-                </span>
-                <button type="button" class="pop-close" part="sheet-close" aria-label={this.closeLabel || undefined} onClick={() => this.handlers?.dismiss()}>
-                  <CloseIcon class="pop-close-icon" />
-                </button>
-              </div>,
-              <div class="pop-body" part="sheet-body">
-                <slot onSlotchange={() => this.slotVersion++} />
-              </div>,
-            ]
-          ) : (
-            <slot onSlotchange={() => this.slotVersion++} />
-          )}
+          <slot onSlotchange={() => this.slotVersion++} />
         </div>
       </Host>
     );
