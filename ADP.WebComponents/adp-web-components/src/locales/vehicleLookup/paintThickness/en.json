@@ -45,8 +45,6 @@
   "openPhotoLabel": "Open photo {index} of {total}, {name}",
   "idleHint": "Look up a vehicle to see its paint thickness readings.",
   "emptyHint": "No paint thickness readings are on record for this vehicle.",
-  "errorHint": "The paint thickness readings could not be loaded.",
-  "unauthorizedHint": "This vehicle is not in the distributor's records.",
   "summaryCount": "Readings {value}",
   "summaryLowest": "Lowest {value}",
   "summaryHighest": "Highest {value}",

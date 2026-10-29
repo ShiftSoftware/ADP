@@ -13,7 +13,9 @@ import {
   PaintTab,
   PaintSheet,
   PanelState,
+  PhotoActions,
   PhotoGroup,
+  PhotoState,
   ReadingSummary,
   VehiclePaintThicknessPanel,
   allPhotoGroups,
@@ -31,12 +33,13 @@ import {
   tabsOf,
 } from './components/VehiclePaintThicknessPanel';
 
-import { PlaceholderKind, RowVeil, parseHiddenFields, retainDrawers, settleDrawer, shownDrawers, tableSlots, toggleDrawer } from '~features/lookup-table';
+import { RowVeil, parseHiddenFields, retainDrawers, settleDrawer, shownDrawers, tableSlots, toggleDrawer } from '~features/lookup-table';
 import { VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
+// The --settle token's value, for when it cannot be read (a spec page has no computed styles).
 const DEFAULT_SETTLE_MS = 480;
 
 class Retained<T> {
@@ -51,30 +54,38 @@ class Retained<T> {
   track(content: T | null) {
     if (content !== null) {
       this.value = content;
-      clearTimeout(this.timer);
-      this.timer = undefined;
-      return;
-    }
-
-    if (this.value !== undefined && !this.timer) {
-      this.timer = setTimeout(() => {
-        this.timer = undefined;
-        this.value = undefined;
-        this.redraw();
-      }, this.settleMs());
+      this.cancel();
+    } else if (this.value !== undefined && !this.timer) {
+      this.dropLater();
     }
   }
 
-  release() {
-    if (!this.timer) return;
-    clearTimeout(this.timer);
-    this.timer = undefined;
+  hold(content: T) {
+    this.value = content;
+    this.cancel();
+    this.dropLater();
+  }
+
+  clear() {
+    this.cancel();
     this.value = undefined;
-    this.redraw();
   }
 
   dispose() {
+    this.cancel();
+  }
+
+  private dropLater() {
+    this.timer = setTimeout(() => {
+      this.timer = undefined;
+      this.value = undefined;
+      this.redraw();
+    }, this.settleMs());
+  }
+
+  private cancel() {
     clearTimeout(this.timer);
+    this.timer = undefined;
   }
 }
 
@@ -91,8 +102,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   @State() locale: ComponentLocale<typeof paintThicknessSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...paintThicknessSchema.getDefault() };
 
   async componentWillLoad() {
-    this.applied = parseHiddenFields(this.hiddenFields);
-    this.appliedSummary = this.showReadingSummary;
+    this.applied = { hidden: parseHiddenFields(this.hiddenFields), summary: this.showReadingSummary };
     await this.changeLanguage(this.language);
   }
 
@@ -112,8 +122,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
   // #region Image viewer (<shift-image>, portaled onto <body>)
 
-  /** The picture open in the viewer, or empty. */
-  @State() expandedImage?: string = '';
+  private expandedImage = '';
 
   private imageViewer?: HTMLShiftImageElement;
 
@@ -129,6 +138,14 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     if (!event.detail.open) this.expandedImage = '';
   };
 
+  private photoStates = new Map<string, Exclude<PhotoState, 'loading'>>();
+
+  private settlePhoto = (src: string, state: Exclude<PhotoState, 'loading'>) => {
+    if (this.photoStates.get(src) === state) return;
+    this.photoStates.set(src, state);
+    forceUpdate(this);
+  };
+
   // #endregion
 
   /** Whether the popovers are bottom sheets, as shift-popover decides it for its own breakpoint. */
@@ -138,15 +155,19 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     this.sheetMode = sheet;
   };
 
-  private sheetHold = new Retained<number>(
-    () => this.settleMs() + 200,
-    () => forceUpdate(this),
-  );
+  private redraw = () => forceUpdate(this);
+
+  private retain<T>() {
+    return new Retained<T>(() => this.settleMs(), this.redraw);
+  }
+
+  // The sheet slides down over --settle; its row is kept a little longer so it never empties in view.
+  private sheetHold = new Retained<number>(() => this.settleMs() + 200, this.redraw);
 
   private wantedSheet(): number | null {
     const menuAvailable = this.certificateMenuOpen && !this.leaving && certificateKind(this.panelState()) === 'menu';
     if (menuAvailable) return null;
-    return this.openDrawer !== null && !this.applied.has('photos') ? this.openDrawer : null;
+    return this.openDrawer !== null && !this.applied.hidden.has('photos') ? this.openDrawer : null;
   }
 
   private onCloseSheet = () => {
@@ -236,13 +257,6 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     return this.settleCache;
   }
 
-  private loadFrame?: number;
-  private loadTimer?: ReturnType<typeof setTimeout>;
-
-  componentDidLoad() {
-    if (typeof requestAnimationFrame === 'function') this.loadFrame = requestAnimationFrame(() => (this.loadTimer = setTimeout(() => this.settleMs())));
-  }
-
   private async leave(): Promise<boolean> {
     const generation = ++this.leaveGeneration;
 
@@ -268,12 +282,13 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     this.isLoading = false;
   }
 
-  @State() applied: ReadonlySet<string> = new Set();
-  @State() appliedSummary: boolean = false;
+  @State() applied: { hidden: ReadonlySet<string>; summary: boolean } = { hidden: new Set(), summary: false };
 
-  @State() reconfiguring: boolean = false;
+  @State() reconfiguring: false | 'values' | 'shape' = false;
 
-  @State() reshaping: boolean = false;
+  private get reshaping() {
+    return this.reconfiguring === 'shape';
+  }
 
   private configGeneration = 0;
 
@@ -283,22 +298,19 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     const next = parseHiddenFields(this.hiddenFields);
     const generation = ++this.configGeneration;
 
-    if (sameConfig(next, this.applied) && this.showReadingSummary === this.appliedSummary) {
+    if (sameConfig(next, this.applied.hidden) && this.showReadingSummary === this.applied.summary) {
       this.reconfiguring = false;
-      this.reshaping = false;
       return;
     }
 
     const adopt = () => {
       if (next.has('photos')) {
-        this.retainedDrawers = [];
+        this.drawers.clear();
         this.openDrawer = null;
       }
 
-      this.applied = next;
-      this.appliedSummary = this.showReadingSummary;
+      this.applied = { hidden: next, summary: this.showReadingSummary };
       this.reconfiguring = false;
-      this.reshaping = false;
     };
 
     if (this.leaving || !hasRecords(this.panelState())) {
@@ -306,8 +318,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
       return;
     }
 
-    this.reconfiguring = true;
-    this.reshaping = reshapesTable(this.applied, next) && panelBody(this.panelState()) === 'rows';
+    this.reconfiguring = reshapesTable(this.applied.hidden, next) && panelBody(this.panelState()) === 'rows' ? 'shape' : 'values';
 
     await new Promise(resolve => setTimeout(resolve, this.settleMs()));
     if (generation !== this.configGeneration) return;
@@ -335,6 +346,13 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     this.shownTabIndex = 0;
     this.certificateMenuOpen = this.certificateMenuOpen && certificateKind(this.panelState()) === 'menu';
     this.settleSelection(!this.vehicleLookup);
+    this.keepPhotoStates();
+  }
+
+  // Only the new answer's photos: one that stays keeps its element, which will not fire `load` again.
+  private keepPhotoStates() {
+    const kept = new Set((this.vehicleLookup?.paintThicknessInspections ?? []).flatMap(inspection => (inspection.panels ?? []).flatMap(panel => panel.images ?? [])));
+    for (const src of this.photoStates.keys()) if (!kept.has(src)) this.photoStates.delete(src);
   }
 
   private onSelectTab = (index: number) => {
@@ -358,47 +376,32 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
   @State() openDrawer: number | null = null;
 
-  @State() retainedDrawers: number[] = [];
-
   @State() photosCollapsed: boolean = false;
 
   private photosMounted = false;
 
-  private drawerTimer?: ReturnType<typeof setTimeout>;
+  private drawers = this.retain<number[]>();
   private drawerSnapshot: PaintRow[] = [];
   private photosGroups = new Retained<PhotoGroup[]>(
     () => this.settleMs(),
     () => {
       this.photosMounted = false;
-      forceUpdate(this);
+      this.redraw();
     },
   );
 
-  private scheduleDrawerDrop() {
-    clearTimeout(this.drawerTimer);
-    if (!this.retainedDrawers.length) return;
-
-    this.drawerTimer = setTimeout(() => {
-      this.drawerTimer = undefined;
-      this.retainedDrawers = [];
-    }, this.settleMs());
+  private moveDrawer(next: number | null) {
+    const closing = retainDrawers(this.drawers.value ?? [], this.openDrawer, next);
+    if (closing.length) this.drawers.hold(closing);
+    else this.drawers.clear();
+    this.drawerSnapshot = this.shownBefore;
+    this.openDrawer = next;
   }
 
-  private onToggleDrawer = (index: number) => {
-    const next = toggleDrawer(this.openDrawer, index);
-    this.retainedDrawers = retainDrawers(this.retainedDrawers, this.openDrawer, next);
-    this.drawerSnapshot = this.shownBefore;
-    this.openDrawer = next;
-    this.scheduleDrawerDrop();
-  };
+  private onToggleDrawer = (index: number) => this.moveDrawer(toggleDrawer(this.openDrawer, index));
 
   private closeDrawer = () => {
-    if (this.openDrawer === null) return;
-    const next = null;
-    this.retainedDrawers = retainDrawers(this.retainedDrawers, this.openDrawer, next);
-    this.drawerSnapshot = this.shownBefore;
-    this.openDrawer = next;
-    this.scheduleDrawerDrop();
+    if (this.openDrawer !== null) this.moveDrawer(null);
   };
 
   private onTogglePhotos = () => {
@@ -410,12 +413,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     const rows = cleared ? [] : shownRows(state);
     const next = settleDrawer({ open: this.openDrawer, hasAt: rows.map(rowHasPhotos), cleared });
 
-    if (next !== this.openDrawer) {
-      this.retainedDrawers = retainDrawers(this.retainedDrawers, this.openDrawer, next);
-      this.drawerSnapshot = this.shownBefore;
-      this.openDrawer = next;
-      this.scheduleDrawerDrop();
-    }
+    if (next !== this.openDrawer) this.moveDrawer(next);
 
     if (cleared) this.photosCollapsed = false;
   }
@@ -427,18 +425,9 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
   @State() certificateMenuOpen: boolean = false;
 
-  private certificate = new Retained<CertificateSnapshot>(
-    () => this.settleMs(),
-    () => forceUpdate(this),
-  );
-  private summary = new Retained<ReadingSummary>(
-    () => this.settleMs(),
-    () => forceUpdate(this),
-  );
-  private tabs = new Retained<PaintTab[]>(
-    () => this.settleMs(),
-    () => forceUpdate(this),
-  );
+  private certificate = this.retain<CertificateSnapshot>();
+  private summary = this.retain<ReadingSummary>();
+  private tabs = this.retain<PaintTab[]>();
 
   private onToggleCertificate = () => {
     this.certificateMenuOpen = !this.certificateMenuOpen;
@@ -466,52 +455,14 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     this.verdictChange.emit(this.currentVerdict);
   }
 
-  private retainedBody = 'none';
-  private retainTimer?: ReturnType<typeof setTimeout>;
-
-  private retainBody(body: string) {
-    if (body !== 'none') {
-      this.retainedBody = body;
-      clearTimeout(this.retainTimer);
-      this.retainTimer = undefined;
-      return;
-    }
-
-    if (this.retainedBody !== 'none' && !this.retainTimer) {
-      this.retainTimer = setTimeout(() => {
-        this.retainTimer = undefined;
-        this.retainedBody = 'none';
-        forceUpdate(this);
-      }, this.settleMs());
-    }
-  }
-
-  private retainedPlaceholder: PlaceholderKind | null = null;
-  private placeholderTimer?: ReturnType<typeof setTimeout>;
-
-  private retainPlaceholder(kind: PlaceholderKind | null) {
-    if (kind !== null) {
-      this.retainedPlaceholder = kind;
-      clearTimeout(this.placeholderTimer);
-      this.placeholderTimer = undefined;
-      return;
-    }
-
-    if (this.retainedPlaceholder !== null && !this.placeholderTimer) {
-      this.placeholderTimer = setTimeout(() => {
-        this.placeholderTimer = undefined;
-        this.retainedPlaceholder = null;
-        forceUpdate(this);
-      }, this.settleMs());
-    }
-  }
+  private body = this.retain<'rows'>();
+  private placeholder = this.retain<'idle' | 'empty'>();
 
   private shownBefore: PaintRow[] = [];
   private bodyWasOpen = false;
 
-  private outgoing: PaintRow[] = [];
+  private outgoing = this.retain<PaintRow[]>();
   private outgoingVeil: RowVeil = 'cover';
-  private outgoingTimer?: ReturnType<typeof setTimeout>;
 
   private opened = 0;
   private openPending = false;
@@ -533,16 +484,10 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
       this.swapCause = 'lookup';
 
       if (this.bodyWasOpen && before.length > current.length) {
-        this.outgoing = before.slice(current.length);
+        this.outgoing.hold(before.slice(current.length));
         this.outgoingVeil = cause === 'page' ? this.lastVeil : 'cover';
-        clearTimeout(this.outgoingTimer);
-        this.outgoingTimer = setTimeout(() => {
-          this.outgoingTimer = undefined;
-          this.outgoing = [];
-          forceUpdate(this);
-        }, this.settleMs());
       } else if (current.length > 0) {
-        this.outgoing = [];
+        this.outgoing.clear();
       }
 
       if (this.bodyWasOpen && open) {
@@ -573,21 +518,20 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
       this.isLoading || this.leaving,
       this.vehicleLookup?.vin,
       panelBody(state),
-      this.retainedBody,
+      this.body.value,
       shownRows(state).length,
-      [...this.applied].sort().join(','),
-      this.appliedSummary,
+      [...this.applied.hidden].sort().join(','),
+      this.applied.summary,
       this.reconfiguring,
-      this.reshaping,
       this.shownTabIndex,
       tabsOf(state, this.locale).length,
       certificateKind(state),
       this.openDrawer,
-      this.retainedDrawers.join('.'),
+      this.drawers.value?.join('.'),
       this.photosCollapsed,
       this.sheetMode,
       this.opened,
-      this.outgoing.length,
+      this.outgoing.value?.length,
       this.isError,
       panelPlaceholder(state, this.leaving),
     ].join('|');
@@ -601,11 +545,12 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     if (this.openPending) {
       this.openPending = false;
       this.cancelOpenFrame();
+      // Two frames, so the new slots are styled shut once and open as a transition; MAX_SAFE_INTEGER opens every slot there is.
       this.openFrame = requestAnimationFrame(() => {
         this.openFrame = requestAnimationFrame(() => {
           this.openFrame = undefined;
           this.opened = Number.MAX_SAFE_INTEGER;
-          forceUpdate(this);
+          this.redraw();
         });
       });
     }
@@ -621,19 +566,11 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   }
 
   disconnectedCallback() {
-    clearTimeout(this.retainTimer);
-    clearTimeout(this.placeholderTimer);
     clearTimeout(this.swapTimer);
-    clearTimeout(this.drawerTimer);
-    clearTimeout(this.outgoingTimer);
-    clearTimeout(this.loadTimer);
     this.cancelOpenFrame();
-    if (this.loadFrame !== undefined) cancelAnimationFrame(this.loadFrame);
-    this.sheetHold.dispose();
-    this.photosGroups.dispose();
-    this.certificate.dispose();
-    this.summary.dispose();
-    this.tabs.dispose();
+    [this.body, this.placeholder, this.outgoing, this.drawers, this.sheetHold, this.photosGroups, this.certificate, this.summary, this.tabs].forEach(retained =>
+      retained.dispose(),
+    );
     this.heightAnnouncer?.dispose();
   }
 
@@ -649,8 +586,8 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
       authorized: this.vehicleLookup?.isAuthorized,
       inspections: this.vehicleLookup?.paintThicknessInspections,
       shownIndex: this.shownTabIndex,
-      hidden: this.applied,
-      showSummary: this.appliedSummary,
+      hidden: this.applied.hidden,
+      showSummary: this.applied.summary,
       certificateAvailable: this.vehicleLookup?.paintThicknessCertificateAvailable,
       certificateUrls: this.vehicleLookup?.paintThicknessCertificateUrls,
       showCertificateButton: this.showCertificateButton,
@@ -674,8 +611,8 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
     const busy = this.isLoading || this.leaving;
     const body = panelBody(state);
-    this.retainBody(body);
-    this.retainPlaceholder(panelPlaceholder(state, this.leaving));
+    this.body.track(body === 'rows' ? body : null);
+    this.placeholder.track(panelPlaceholder(state, this.leaving));
 
     const open = bodyOpen(state, this.leaving, this.reshaping);
     const current = body === 'rows' ? shownRows(state) : [];
@@ -683,7 +620,9 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
     const veil: RowVeil = busy ? 'cover' : this.swapping ? 'fade' : 'none';
     this.lastVeil = veil;
-    const slots = tableSlots({ current: current.length, outgoing: this.outgoing.length, opened: this.opened, bodyOpen: open, currentVeil: veil, outgoingVeil: this.outgoingVeil });
+    const outgoing = this.outgoing.value ?? [];
+    const drawers = this.drawers.value ?? [];
+    const slots = tableSlots({ current: current.length, outgoing: outgoing.length, opened: this.opened, bodyOpen: open, currentVeil: veil, outgoingVeil: this.outgoingVeil });
 
     const tabs = tabsOf(state, this.locale);
     this.tabs.track(tabs.length ? tabs : null);
@@ -699,6 +638,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     this.sheetHold.track(wanted);
     const held = wanted ?? this.sheetHold.value ?? null;
     const sheet: PaintSheet | null = held === null ? null : { index: held, open: wanted !== null };
+    const photos: PhotoActions = { open: (image, src, label) => this.openImage(image, src, label), state: src => this.photoStates.get(src) ?? 'loading', settle: this.settlePhoto };
 
     return (
       <Host translate="no">
@@ -720,20 +660,20 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
             verdict={verdict}
             busy={busy}
             leaving={this.leaving}
-            reconfiguring={this.reconfiguring}
+            reconfiguring={!!this.reconfiguring}
             reshaping={this.reshaping}
             swapping={this.swapping}
-            retainedBody={this.retainedBody}
-            retainedPlaceholder={this.retainedPlaceholder}
+            retainedBody={this.body.value ?? 'none'}
+            retainedPlaceholder={this.placeholder.value ?? null}
             selectedTab={this.activeTabIndex}
             retainedTabs={this.tabs.value ?? []}
             retainedCertificate={this.certificate.value ?? null}
             retainedSummary={this.summary.value ?? null}
-            slotRows={[...current, ...this.outgoing]}
+            slotRows={[...current, ...outgoing]}
             slots={slots}
             drawerOpen={this.openDrawer}
-            drawerShown={shownDrawers(this.openDrawer, this.retainedDrawers)}
-            drawerRowFor={(row, index) => ((row && rowHasPhotos(row)) || !this.retainedDrawers.includes(index) ? row : (this.drawerSnapshot[index] ?? row))}
+            drawerShown={shownDrawers(this.openDrawer, drawers)}
+            drawerRowFor={(row, index) => ((row && rowHasPhotos(row)) || !drawers.includes(index) ? row : (this.drawerSnapshot[index] ?? row))}
             onToggleDrawer={this.onToggleDrawer}
             photosOpen={!this.photosCollapsed}
             photosRendered={photosBodyOpen || (this.photosMounted && !state.hidden.has('photos'))}
@@ -743,7 +683,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
             certificateOpen={this.certificateMenuOpen}
             onToggleCertificate={this.onToggleCertificate}
             onCloseCertificate={this.onCloseCertificate}
-            onOpenPhoto={(image, src, label) => this.openImage(image, src, label)}
+            photos={photos}
             sheetMode={this.sheetMode}
             sheet={sheet}
             onCloseSheet={this.onCloseSheet}

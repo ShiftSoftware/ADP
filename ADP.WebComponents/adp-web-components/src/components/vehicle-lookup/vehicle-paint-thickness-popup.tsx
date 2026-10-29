@@ -4,7 +4,7 @@ import { PaintThicknessCertificateUrlDTO } from '~types/generated/vehicle-lookup
 
 import { CloseIcon } from '~assets/close-icon';
 
-import { OpenPhoto, PaintRow, PaintThicknessLocale, rowPhotosContent } from './components/VehiclePaintThicknessPanel';
+import { PaintRow, PaintThicknessLocale, PhotoActions, rowPhotosContent } from './components/VehiclePaintThicknessPanel';
 
 const MENU_KEYS = ['ArrowDown', 'ArrowUp', 'Home', 'End'];
 
@@ -30,7 +30,7 @@ export class VehiclePaintThicknessPopup {
   @Prop() links: PaintThicknessCertificateUrlDTO[] = [];
   @Prop() row?: PaintRow;
   @Prop() locale?: PaintThicknessLocale;
-  @Prop() openPhoto?: OpenPhoto;
+  @Prop() photos?: PhotoActions;
   @Prop() choose?: () => void;
   @Prop() dismiss?: () => void;
 
@@ -72,7 +72,7 @@ export class VehiclePaintThicknessPopup {
             </div>
           ) : (
             <div class="paint-popup-photos" inert={this.busy}>
-              {this.row && this.locale ? rowPhotosContent(this.row, this.locale, this.openPhoto, true) : null}
+              {this.row && this.locale && this.photos ? rowPhotosContent(this.row, this.locale, this.photos, true) : null}
             </div>
           )}
         </div>

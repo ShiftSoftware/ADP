@@ -222,20 +222,6 @@
   --shift-tabs-inset: 12px;
 }
 
-.paint-bar.collapsible {
-  transition:
-    grid-template-rows calc(var(--settle) / 2) ease calc(var(--settle) / 2),
-    opacity calc(var(--settle) / 2) ease,
-    visibility 0s linear var(--settle);
-}
-
-.paint-bar.collapsible[data-open='true'] {
-  transition:
-    grid-template-rows calc(var(--settle) / 2) ease,
-    opacity calc(var(--settle) / 2) ease calc(var(--settle) / 2),
-    visibility 0s;
-}
-
 .paint-summary {
   display: flex;
   flex-wrap: wrap;

@@ -13,11 +13,9 @@ import { CameraSolidIcon } from '~assets/camera-solid-icon';
 import { ChevronDownIcon } from '~assets/chevron-down-icon';
 import { SearchIcon } from '~assets/search-icon';
 import { EmptyTableIcon } from '~assets/empty-table-icon';
-import { QuestionMark } from '~assets/question-mark';
-import { TriangleAlertIcon } from '~assets/triangle-alert';
 
 import { LookupHeadWait, PanelVerdict, StatusBadge } from '~features/vehicle-info-layout';
-import { LookupColumn, LookupTable, PlaceholderKind, RowDrawer, RowSlot, TablePlaceholder, placeholderKind, shownBody, visibleColumns } from '~features/lookup-table';
+import { LookupColumn, LookupTable, PlaceholderKind, RowDrawer, RowSlot, TablePlaceholder, shownBody, visibleColumns } from '~features/lookup-table';
 import type { LanguageKeys } from '~features/multi-lingual';
 import type { PopoverSheetChangeDetail } from '../../components/shift-popover/shift-popover';
 
@@ -200,22 +198,16 @@ export const panelBody = (state: PanelState): 'rows' | 'none' => (shownRows(stat
 
 export const columnCount = (hidden: ReadonlySet<string>): number => (hidden.has('photos') ? 4 : 5);
 
-export const panelPlaceholder = (state: PanelState, leaving = false): PlaceholderKind | null =>
-  placeholderKind({
-    columns: columnCount(state.hidden),
-    loaded: state.vehicleLoaded,
-    failed: !!state.error,
-    authorized: state.authorized,
-    records: shownRows(state).length,
-    leaving,
-  });
+export const panelPlaceholder = (state: PanelState, leaving = false): 'idle' | 'empty' | null => {
+  if (!state.vehicleLoaded || state.authorized === false) return 'idle';
+  if (!shownRows(state).length) return 'empty';
+  return leaving ? 'idle' : null;
+};
 
-const placeholderContent = (locale: PaintThicknessLocale): TablePlaceholder['content'] => ({
-  idle: { icon: SearchIcon, text: locale.idleHint },
-  empty: { icon: EmptyTableIcon, text: locale.emptyHint },
-  error: { icon: TriangleAlertIcon, text: locale.errorHint },
-  unauthorized: { icon: QuestionMark, text: locale.unauthorizedHint },
-});
+const placeholderContent = (locale: PaintThicknessLocale): TablePlaceholder['content'] => {
+  const idle = { icon: SearchIcon, text: locale.idleHint };
+  return { idle, empty: { icon: EmptyTableIcon, text: locale.emptyHint }, error: idle, unauthorized: idle };
+};
 
 export const photosSectionOpen = (state: PanelState, groupCount: number, leaving: boolean, reshaping: boolean): boolean =>
   !state.hidden.has('photos') && groupCount > 0 && panelBody(state) === 'rows' && !leaving && !reshaping;
@@ -261,10 +253,15 @@ export const summaryOf = (rows: PaintRow[]): ReadingSummary | null => {
   return finite.length ? { count: finite.length, lowest: Math.min(...finite), highest: Math.max(...finite) } : null;
 };
 
-const summaryParts = (summary: ReadingSummary, locale: PaintThicknessLocale): string[] => [
-  fill(locale.summaryCount, { value: summary.count }),
-  fill(locale.summaryLowest, { value: `${formatReading(summary.lowest)} ${locale.unit}` }),
-  fill(locale.summaryHighest, { value: `${formatReading(summary.highest)} ${locale.unit}` }),
+const summaryPart = (template: string, value: string): (string | VNode)[] => {
+  const [before, after = ''] = template.split('{value}');
+  return [before, <span class="paint-summary-value shift-skeleton">{value}</span>, after];
+};
+
+const summaryParts = (summary: ReadingSummary, locale: PaintThicknessLocale): (string | VNode)[][] => [
+  summaryPart(locale.summaryCount, String(summary.count)),
+  summaryPart(locale.summaryLowest, `${formatReading(summary.lowest)} ${locale.unit}`),
+  summaryPart(locale.summaryHighest, `${formatReading(summary.highest)} ${locale.unit}`),
 ];
 
 export type PhotoGroup = { key: string; name: string; value: number; images: string[] };
@@ -306,56 +303,48 @@ const paintColumns = (locale: PaintThicknessLocale, language: string): LookupCol
   },
 ];
 
-const settlePhoto = (image: HTMLImageElement, state: 'ready' | 'failed') => {
-  const photo = image.closest('.paint-photo');
-  if (!photo || photo.getAttribute('data-state') !== 'loading') return;
-  photo.setAttribute('data-state', state);
-  if (state === 'failed') photo.setAttribute('disabled', '');
-};
-
-const settleIfComplete = (image: HTMLImageElement | undefined) => {
-  if (!image) return;
-  queueMicrotask(() => {
-    if (image.complete === true && image.naturalWidth > 0) settlePhoto(image, 'ready');
-  });
-};
-
 export type OpenPhoto = (image: HTMLImageElement, src: string, label: string) => void;
 
-const Photo = ({ src, label, onOpenPhoto }: { src: string; label: string; onOpenPhoto?: OpenPhoto }) => (
-  <button
-    key={src}
-    type="button"
-    class="paint-photo"
-    data-state="loading"
-    aria-label={label}
-    onClick={event => {
-      const image = (event.currentTarget as HTMLElement).querySelector('img');
-      if (image) onOpenPhoto?.(image, src, label);
-    }}
-  >
-    <img
-      class="paint-photo-image"
-      src={src}
-      alt=""
-      loading="lazy"
-      decoding="async"
-      ref={settleIfComplete}
-      onLoad={event => settlePhoto(event.currentTarget as HTMLImageElement, 'ready')}
-      onError={event => settlePhoto(event.currentTarget as HTMLImageElement, 'failed')}
-    />
-    <span class="paint-photo-stand" aria-hidden="true">
-      <PictureOffIcon class="paint-photo-glyph" />
-    </span>
-  </button>
-);
+export type PhotoState = 'loading' | 'ready' | 'failed';
 
-type PhotosProps = { images: string[]; name: string; locale: PaintThicknessLocale; onOpenPhoto?: OpenPhoto; skeleton?: boolean };
+export type PhotoActions = {
+  open?: OpenPhoto;
+  state: (src: string) => PhotoState;
+  settle: (src: string, state: Exclude<PhotoState, 'loading'>) => void;
+};
 
-const Thumbs = ({ images, name, locale, onOpenPhoto, skeleton = false }: PhotosProps) => (
+const NO_PHOTO_ACTIONS: PhotoActions = { state: () => 'loading', settle: () => undefined };
+
+const Photo = ({ src, label, photos }: { src: string; label: string; photos: PhotoActions }) => {
+  const state = photos.state(src);
+
+  return (
+    <button
+      key={src}
+      type="button"
+      class="paint-photo"
+      data-state={state}
+      disabled={state === 'failed'}
+      aria-label={label}
+      onClick={event => {
+        const image = (event.currentTarget as HTMLElement).querySelector('img');
+        if (image) photos.open?.(image, src, label);
+      }}
+    >
+      <img class="paint-photo-image" src={src} alt="" loading="lazy" decoding="async" onLoad={() => photos.settle(src, 'ready')} onError={() => photos.settle(src, 'failed')} />
+      <span class="paint-photo-stand" aria-hidden="true">
+        <PictureOffIcon class="paint-photo-glyph" />
+      </span>
+    </button>
+  );
+};
+
+type PhotosProps = { images: string[]; name: string; locale: PaintThicknessLocale; photos: PhotoActions; skeleton?: boolean };
+
+const Thumbs = ({ images, name, locale, photos, skeleton = false }: PhotosProps) => (
   <div class={{ 'paint-thumbs': true, 'shift-skeleton': skeleton }}>
     {images.map((src, index) => (
-      <Photo src={src} label={fill(locale.openPhotoLabel, { index: index + 1, total: images.length, name })} onOpenPhoto={onOpenPhoto} />
+      <Photo src={src} label={fill(locale.openPhotoLabel, { index: index + 1, total: images.length, name })} photos={photos} />
     ))}
   </div>
 );
@@ -369,13 +358,13 @@ const sideCaption = (locale: PaintThicknessLocale, side: Side, value: number, sk
   </div>
 );
 
-export const rowPhotosContent = (row: PaintRow, locale: PaintThicknessLocale, onOpenPhoto?: OpenPhoto, skeleton = false): VNode => (
+export const rowPhotosContent = (row: PaintRow, locale: PaintThicknessLocale, photos: PhotoActions, skeleton = false): VNode => (
   <div class="paint-sides">
     {readingsOf(row).map(reading => (
       <div class="paint-side">
         {sideCaption(locale, reading.side, reading.value, skeleton)}
         {reading.images.length ? (
-          <Thumbs images={reading.images} name={photoGroupName(locale, row, reading.side)} locale={locale} onOpenPhoto={onOpenPhoto} skeleton={skeleton} />
+          <Thumbs images={reading.images} name={photoGroupName(locale, row, reading.side)} locale={locale} photos={photos} skeleton={skeleton} />
         ) : (
           <span class={{ 'paint-note': true, 'shift-skeleton': skeleton }}>{locale.noPhotos}</span>
         )}
@@ -384,12 +373,12 @@ export const rowPhotosContent = (row: PaintRow, locale: PaintThicknessLocale, on
   </div>
 );
 
-const drawerContent = (row: PaintRow, locale: PaintThicknessLocale, language: string, onOpenPhoto?: OpenPhoto): VNode[] => [
+const drawerContent = (row: PaintRow, locale: PaintThicknessLocale, language: string, photos: PhotoActions): VNode[] => [
   <div class="paint-drawer-head">
     <span class="paint-drawer-name">{rowName(locale, row)}</span>
     <span class="paint-note">{photoCountText(rowPhotoCount(row), locale, language)}</span>
   </div>,
-  rowPhotosContent(row, locale, onOpenPhoto),
+  rowPhotosContent(row, locale, photos),
 ];
 
 const TABPANEL_ID = 'paint-tabpanel';
@@ -432,7 +421,7 @@ type Props = {
   certificateOpen: boolean;
   onToggleCertificate: () => void;
   onCloseCertificate: (restoreFocus: boolean) => void;
-  onOpenPhoto?: OpenPhoto;
+  photos?: PhotoActions;
   sheetMode?: boolean;
   sheet?: PaintSheet | null;
   onCloseSheet?: () => void;
@@ -477,7 +466,7 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
     certificateOpen,
     onToggleCertificate,
     onCloseCertificate,
-    onOpenPhoto,
+    photos = NO_PHOTO_ACTIONS,
     sheetMode = false,
     sheet = null,
     onCloseSheet = () => {},
@@ -513,7 +502,7 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
   const drawer: RowDrawer<PaintRow> | undefined = photosShown
     ? {
         has: row => rowHasPhotos(row),
-        render: (row, index) => drawerContent(drawerRowFor(row, index), locale, language, onOpenPhoto),
+        render: (row, index) => drawerContent(drawerRowFor(row, index), locale, language, photos),
         label: (row, _index, expanded) =>
           fill(expanded ? locale.hidePhotosLabel : locale.showPhotosLabel, { photos: photoCountText(rowPhotoCount(row), locale, language), panel: rowName(locale, row) }),
         regionLabel: row => fill(locale.photosRegionLabel, { panel: rowName(locale, row) }),
@@ -530,6 +519,10 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
 
   const sheetRow = sheet ? drawerRowFor(slotRows[sheet.index], sheet.index) : undefined;
   const sheetTitle = sheetRow ? sheetPhotosTitle(sheetRow, locale, language) : '';
+  const sheetOpen = !!sheet?.open && !!sheetRow;
+  // A shut popover's content stays mounted on <body>; busy there, its sweeps re-layerized the page every frame of a lookup.
+  const menuBusy = busy && certificateExpanded;
+  const sheetBusy = busy && sheetOpen;
   const onPopoverSheet = (event: CustomEvent<PopoverSheetChangeDetail>) => onSheetChange(event.detail.sheet);
 
   return (
@@ -604,7 +597,7 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
             sheet={sheetMode}
             heading={locale.printCertificate}
             closeLabel={locale.closeSheet}
-            busy={busy}
+            busy={menuBusy}
             direction={direction}
             links={certificate?.kind === 'menu' ? certificate.urls : []}
             choose={() => onCloseCertificate(false)}
@@ -634,7 +627,7 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
 
           <div class="paint-summary-slot collapsible" data-open={summaryIsOpen ? 'true' : 'false'} aria-hidden={summaryIsOpen ? null : 'true'}>
             <div class="collapsible-body">
-              <p class="paint-summary shift-skeleton">
+              <p class="paint-summary">
                 {(summary ? summaryParts(summary, locale) : []).map((part, index) => [
                   index > 0 && (
                     <span class="paint-summary-dot" aria-hidden="true">
@@ -688,16 +681,16 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
 
               <div id={PHOTOS_REGION_ID} class="paint-photos-region collapsible" data-open={photosBodyOpen ? 'true' : 'false'} aria-hidden={photosBodyOpen ? null : 'true'}>
                 <div class="collapsible-body">
-                  <div class="paint-photos-content shift-skeleton">
+                  <div class="paint-photos-content">
                     {(photosRendered ? shownGroups : []).map(group => (
                       <div key={group.key} class="paint-group">
-                        <div class="paint-group-name">
+                        <div class="paint-group-name shift-skeleton">
                           <span class="paint-group-title">{group.name}</span>
                           <span class="paint-note">
                             {formatReading(group.value)} {locale.unit}
                           </span>
                         </div>
-                        <Thumbs images={group.images} name={group.name} locale={locale} onOpenPhoto={onOpenPhoto} />
+                        <Thumbs images={group.images} name={group.name} locale={locale} photos={photos} skeleton />
                       </div>
                     ))}
                   </div>
@@ -713,7 +706,7 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
         mobileSheet
         anchorAria={false}
         inside="shift-image-layer"
-        open={!!sheet?.open && !!sheetRow}
+        open={sheetOpen}
         anchor={sheet ? photoToggle(sheet.index) : undefined}
         label={sheetTitle || locale.allPhotos}
         language={language as LanguageKeys}
@@ -725,11 +718,11 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
           sheet={sheetMode}
           heading={sheetTitle}
           closeLabel={locale.closeSheet}
-          busy={busy}
+          busy={sheetBusy}
           direction={direction}
           row={sheetRow}
           locale={locale}
-          openPhoto={onOpenPhoto}
+          photos={photos}
           dismiss={onCloseSheet}
         />
       </shift-popover>

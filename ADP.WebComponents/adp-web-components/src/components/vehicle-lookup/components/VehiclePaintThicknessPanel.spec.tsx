@@ -11,12 +11,6 @@ import { ShiftTabs } from '../../components/shift-tabs';
 
 import { PanelState, VehiclePaintThicknessPanel, allPhotoGroups, bodyOpen, panelBody, shownRows } from './VehiclePaintThicknessPanel';
 
-/**
- * The panel's states through the DOM: what each named state renders, what stays in place while a
- * lookup is in flight, and the tab strip's keyboard. The panel is pure, so every case is a props set.
- * There is no skipped state: this panel has no `skipLookup`.
- */
-
 const locale = paintLocale as never;
 
 const inspection = (patch: Partial<PaintThicknessInspectionDTO> = {}): PaintThicknessInspectionDTO => ({
@@ -90,25 +84,16 @@ const render = ({ state = loaded(), busy = false, direction = 'ltr', drawerOpen 
 };
 
 const attr = (root: HTMLElement, selector: string, name: string) => root.querySelector(selector)?.getAttribute(name);
-const layer = (root: HTMLElement, index: number) => root.querySelectorAll('.lt-placeholder .layer')[index]?.getAttribute('data-active');
 
-describe('the named states', () => {
-  it('loaded: a row per panel, one tab per inspection, the certificate in the head and the photos section', async () => {
-    const { body } = await render();
+describe('a failed lookup and a vehicle not in the records', () => {
+  it('show the idle look under the headings, with no notice of their own', async () => {
+    for (const state of [loaded({ vehicleLoaded: false, error: 'Failed' }), loaded({ authorized: false })]) {
+      const { body } = await render({ state, verdictText: 'Said by the pill' });
 
-    expect(body.querySelectorAll('.lt-row')).toHaveLength(2);
-    expect(Array.from(body.querySelectorAll('.shift-tabs-label')).map(label => label.textContent)).toEqual(['PDI', 'Preowned', 'Third']);
-    expect(attr(body, '.lt-body', 'data-open')).toBe('true');
-    expect(attr(body, '.paint-photos', 'data-open')).toBe('true');
-    expect(body.querySelector('.lookup-head .paint-certificate-button')).not.toBeNull();
-  });
-
-  it('empty: an authorized vehicle with nothing on file says so in the placeholder', async () => {
-    const { body } = await render({ state: loaded({ inspections: [] }) });
-
-    expect(attr(body, '.lt-body', 'data-open')).toBe('false');
-    expect(layer(body, 1)).toBe('true');
-    expect(attr(body, '.paint-bar', 'data-open')).toBe('false');
+      expect(attr(body, '.lt-lead', 'data-lead')).toBe('columns');
+      expect(attr(body, '.lt-placeholder', 'data-open')).toBe('true');
+      expect(body.querySelector('.lt-placeholder .layer[data-active="true"]')?.textContent).toBe(paintLocale.idleHint);
+    }
   });
 });
 

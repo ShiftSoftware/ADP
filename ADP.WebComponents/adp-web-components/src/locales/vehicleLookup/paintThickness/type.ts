@@ -47,8 +47,6 @@ const paintThicknessSchema = yupTypeMapper([
   'openPhotoLabel',
   'idleHint',
   'emptyHint',
-  'errorHint',
-  'unauthorizedHint',
   'summaryCount',
   'summaryLowest',
   'summaryHighest',

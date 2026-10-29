@@ -45,8 +45,6 @@
   "openPhotoLabel": "فتح الصورة {index} من {total}، {name}",
   "idleHint": "ابحث عن مركبة لعرض قراءات سمك الطلاء.",
   "emptyHint": "لا توجد قراءات لسمك الطلاء مسجّلة لهذه المركبة.",
-  "errorHint": "تعذّر تحميل قراءات سمك الطلاء.",
-  "unauthorizedHint": "هذه المركبة غير مسجّلة في سجلات الموزّع.",
   "summaryCount": "القراءات {value}",
   "summaryLowest": "الأدنى {value}",
   "summaryHighest": "الأعلى {value}",
