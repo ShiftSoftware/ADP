@@ -19,7 +19,8 @@
  * THE RULE THAT FOLLOWS: nothing between a panel host and its table may declare a container.
  *
  * Reads top to bottom as the table does: :host tokens, grid, strip, notice tones, body, rows, cells
- * by kind, media, loading rules, container queries widest-first, reduced motion.
+ * by kind, media, action and drawer (opt-in: nothing here matches a table that passes no `drawer`
+ * and has no 'action' column), loading rules, container queries widest-first, reduced motion.
  *
  * Mobile: it must work at 400px with no horizontal scroll of the host page. At 720px and under every
  * row is a labelled card in one track (minmax(0, 1fr)) and nothing in it can be wider than the card;
@@ -57,6 +58,8 @@
      three rules. */
   --lt-rim-idle: rgba(95, 108, 120, 0.22);
   --lt-rim-blue: rgba(48, 113, 169, 0.32);
+  --lt-placeholder-icon: 38px;
+  --lt-placeholder-strength: 60%;
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -244,6 +247,63 @@
   align-content: start;
 }
 
+.lt-grid[data-placeholder='true'] > .lt-body {
+  min-height: 0;
+}
+
+.lt-placeholder {
+  grid-column: 1 / -1;
+}
+
+.lt-placeholder-layer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 22px 20px;
+  text-align: center;
+}
+
+.lt-placeholder-layer > .lt-placeholder-mark {
+  display: block;
+  width: var(--lt-placeholder-icon);
+  height: var(--lt-placeholder-icon);
+  border-radius: 8px;
+  color: color-mix(in srgb, var(--lt-placeholder-hue) var(--lt-placeholder-strength), transparent);
+}
+
+.lt-placeholder-glyph {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.lt-placeholder-text {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--lt-placeholder-ink);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.lt-placeholder-layer.is-idle,
+.lt-placeholder-layer.is-empty {
+  --lt-placeholder-hue: var(--muted);
+  --lt-placeholder-ink: var(--muted);
+}
+
+.lt-placeholder-layer.is-unauthorized {
+  --lt-placeholder-hue: var(--amber);
+  --lt-placeholder-ink: var(--amber-dark);
+}
+
+.lt-placeholder-layer.is-error {
+  --lt-placeholder-hue: var(--red);
+  --lt-placeholder-ink: var(--red-dark);
+}
+
 /* ---------------------------------------------------------------------------------------------
    Rows
    ------------------------------------------------------------------------------------------- */
@@ -345,6 +405,22 @@
 /* A shown field with no value: the grey empty marker (§ 10). */
 .lt-none {
   color: var(--muted);
+}
+
+.lt-note {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  margin-inline-start: 8px;
+  color: var(--muted);
+  background: var(--line-soft);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--lt-rim-idle);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  vertical-align: 1px;
+  white-space: nowrap;
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -457,6 +533,163 @@
   height: 20px;
 }
 
+.lt-row > .lt-action > .lt-value {
+  border-radius: 6px;
+}
+
+.lt-row > .lt-action[data-shape='round'] > .lt-value {
+  border-radius: 999px;
+}
+
+.lt-action-plain {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.lt-action-button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  max-width: 100%;
+  min-height: 30px;
+  padding-block: 0;
+  padding-inline: 9px 8px;
+  color: var(--blue-dark);
+  background: var(--paper);
+  border: 0;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px var(--lt-rim-blue);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.lt-action-button:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 2px;
+}
+
+.lt-action-button[aria-expanded='true'] {
+  color: #ffffff;
+  background: var(--blue);
+  box-shadow: inset 0 0 0 1px var(--blue-dark);
+}
+
+@media (hover: hover) {
+  .lt-action-button[aria-expanded='false']:hover {
+    background: var(--blue-tint);
+  }
+
+  .lt-action-button[data-shape='round'][aria-expanded='false']:hover {
+    color: #ffffff;
+    background: var(--blue);
+    box-shadow: inset 0 0 0 1px var(--blue-dark);
+  }
+}
+
+.lt-action-button[data-shape='round'] {
+  justify-content: center;
+  width: 30px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.lt-action-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lt-action-glyph {
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
+.lt-action-button[data-shape='round'] .lt-action-glyph {
+  width: 18px;
+  height: 18px;
+}
+
+.lt-action-chevron {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  transition: transform var(--settle) ease;
+}
+
+.lt-action-button[data-shape='round'] .lt-action-chevron {
+  width: 16px;
+  height: 16px;
+}
+
+.lt-action-button[aria-expanded='true'] .lt-action-chevron {
+  transform: rotate(180deg);
+}
+
+.lt-row[data-open='true'],
+.lt-row[data-open='true']:hover {
+  background: var(--blue-tint);
+}
+
+.lt-drawer {
+  grid-column: 1 / -1;
+  min-width: 0;
+  background: var(--blue-tint);
+}
+
+.lt-drawer-body,
+.lt-drawer-cell {
+  min-width: 0;
+}
+
+.lt-drawer-cell {
+  display: block;
+}
+
+/* The panel: an inset object (§ 18) -- its own paper on the tinted block, radius 10, a 4px blue rail */
+.lt-drawer-panel {
+  min-width: 0;
+  padding-block: 12px 16px;
+  padding-inline: 22px 18px;
+  margin: 0 12px 14px;
+  background: var(--paper);
+  border-radius: 10px;
+  box-shadow:
+    inset 4px 0 0 var(--blue),
+    inset 0 0 0 1px var(--lt-rim-blue),
+    0 6px 18px rgba(27, 45, 61, 0.08);
+}
+
+[dir='rtl'] .lt-drawer-panel {
+  box-shadow:
+    inset -4px 0 0 var(--blue),
+    inset 0 0 0 1px var(--lt-rim-blue),
+    0 6px 18px rgba(27, 45, 61, 0.08);
+}
+
+.lt-drawer-content {
+  display: block;
+  transition: opacity var(--settle) ease;
+}
+
+.lt-slot[data-veil='fade'] .lt-drawer-content {
+  opacity: 0;
+}
+
+.lt-drawer-content:not(.shift-skeleton) {
+  transition: none;
+}
+
 /* ---------------------------------------------------------------------------------------------
    Loading, and the reshape
    ------------------------------------------------------------------------------------------- */
@@ -529,6 +762,10 @@
   .lt-grid {
     grid-template-columns: minmax(0, 1fr);
     overflow: visible;
+  }
+
+  .lt-placeholder-layer {
+    padding-inline: 14px;
   }
 
   /* The headings hide behind one word; each card captions its own fields. */
@@ -604,6 +841,22 @@
     overflow-wrap: anywhere;
     white-space: normal;
   }
+
+  .lt-row > .lt-action {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+  }
+
+  .lt-row > .lt-action::before {
+    display: none;
+  }
+
+  .lt-drawer-panel {
+    padding-block: 12px 14px;
+    padding-inline: 18px 14px;
+  }
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -626,7 +879,10 @@
   .lt-media-box,
   .lt-media-box::after,
   .lt-media-image,
-  .lt-media-stand {
+  .lt-media-stand,
+  .lt-action-button,
+  .lt-action-chevron,
+  .lt-drawer-content {
     transition-duration: 0.01ms !important;
     transition-delay: 0s !important;
     animation-duration: 0.01ms !important;

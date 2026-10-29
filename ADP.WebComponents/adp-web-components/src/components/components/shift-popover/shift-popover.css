@@ -15,6 +15,8 @@
   --_shadow: var(--shift-popover-shadow, var(--shift-shadow-panel, var(--_ap-popover-shadow, var(--_ap-shadow-panel, 0 10px 30px -12px rgba(15, 23, 42, 0.25)))));
   --_width: var(--shift-popover-width, max-content);
   --_sheet-max-height: var(--shift-popover-sheet-max-block-size, 82dvh);
+  --_sheet-radius: var(--shift-popover-sheet-radius, 0);
+  --_sheet-offset: var(--shift-popover-sheet-closed-offset, 0px);
   --_z: var(--shift-popover-z-index, 2000);
   --_lift: var(--shift-popover-lift, 6px);
   --_scale: var(--shift-popover-scale, 0.96);
@@ -31,6 +33,20 @@
   display: block;
   inline-size: 0;
   block-size: 0;
+}
+
+:host([data-top-layer]) {
+  inset: 0 auto auto 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+  background: transparent;
+  color: inherit;
+}
+
+:host([data-top-layer]:not([data-presented])) {
+  display: none;
 }
 
 /* Proposed for appearances.css: minimal has no opaque surface or shadow for a floating panel (guide § The five appearances). */
@@ -155,13 +171,73 @@
   padding-block-end: env(safe-area-inset-bottom, 0px);
   border-block-end-width: 0;
   border-inline-width: 0;
-  border-radius: 0;
+  border-radius: var(--_sheet-radius) var(--_sheet-radius) 0 0;
   opacity: 1;
-  transform: translateY(100%);
+  transform: translateY(calc(100% + var(--_sheet-offset)));
 }
 
 .pop-panel[data-sheet][data-open] {
   transform: none;
+}
+
+.pop-head {
+  display: none;
+}
+
+.pop-body {
+  display: contents;
+}
+
+.pop-panel[data-sheet][data-titled] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.pop-panel[data-sheet][data-titled] .pop-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-block-size: 56px;
+  padding-block: 6px;
+  padding-inline: 20px 8px;
+  box-shadow: inset 0 -1px 0 var(--_line);
+}
+
+.pop-panel[data-sheet][data-titled] .pop-body {
+  display: block;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.pop-title {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.pop-close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.pop-close-icon {
+  inline-size: 18px;
+  block-size: 18px;
 }
 
 /*
