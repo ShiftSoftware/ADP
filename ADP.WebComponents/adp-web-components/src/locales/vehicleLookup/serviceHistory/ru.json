@@ -18,5 +18,15 @@
 
   "partNumber": "Номер детали",
   "qty": "Кол-во",
-  "partDescription": "Описание детали"
+  "partDescription": "Описание детали",
+
+  "columnsLabel": "Сервисные визиты",
+  "idleHint": "Найдите автомобиль, чтобы увидеть его сервисные визиты.",
+  "emptyHint": "Здесь перечисляются все сервисные визиты, записанные для этого автомобиля.",
+  "visitCountZero": "{count} визитов",
+  "visitCountOne": "{count} визит",
+  "visitCountTwo": "{count} визита",
+  "visitCountFew": "{count} визита",
+  "visitCountMany": "{count} визитов",
+  "visitCountOther": "{count} визита"
 }

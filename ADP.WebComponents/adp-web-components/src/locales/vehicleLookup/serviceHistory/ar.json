@@ -18,5 +18,15 @@
 
   "partNumber": "رقم القطعة",
   "qty": "الكمية",
-  "partDescription": "وصف القطعة"
+  "partDescription": "وصف القطعة",
+
+  "columnsLabel": "زيارات الخدمة",
+  "idleHint": "ابحث عن مركبة لعرض زيارات الخدمة الخاصة بها.",
+  "emptyHint": "تظهر هنا كل زيارات الخدمة المسجّلة لهذه المركبة.",
+  "visitCountZero": "{count} زيارة",
+  "visitCountOne": "{count} زيارة",
+  "visitCountTwo": "{count} زيارة",
+  "visitCountFew": "{count} زيارات",
+  "visitCountMany": "{count} زيارةً",
+  "visitCountOther": "{count} زيارة"
 }

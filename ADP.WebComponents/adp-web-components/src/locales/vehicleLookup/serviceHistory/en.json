@@ -18,5 +18,15 @@
 
   "partNumber": "Part Number",
   "qty": "Part Quantity",
-  "partDescription": "Part Description"
+  "partDescription": "Part Description",
+
+  "columnsLabel": "Service visits",
+  "idleHint": "Look up a vehicle to see its service visits.",
+  "emptyHint": "Every service visit recorded for this vehicle is listed here.",
+  "visitCountZero": "{count} visits",
+  "visitCountOne": "{count} visit",
+  "visitCountTwo": "{count} visits",
+  "visitCountFew": "{count} visits",
+  "visitCountMany": "{count} visits",
+  "visitCountOther": "{count} visits"
 }

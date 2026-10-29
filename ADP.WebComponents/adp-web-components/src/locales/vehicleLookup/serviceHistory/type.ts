@@ -18,6 +18,15 @@ const ServiceHistorySchema = yupTypeMapper([
   'partNumber',
   'qty',
   'partDescription',
+  'columnsLabel',
+  'idleHint',
+  'emptyHint',
+  'visitCountZero',
+  'visitCountOne',
+  'visitCountTwo',
+  'visitCountFew',
+  'visitCountMany',
+  'visitCountOther',
 ]);
 
 export default ServiceHistorySchema;

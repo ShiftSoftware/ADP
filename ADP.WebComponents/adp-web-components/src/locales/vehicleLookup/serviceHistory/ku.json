@@ -18,5 +18,15 @@
 
   "partNumber": "ژمارەی پارچە",
   "qty": "ژمارە",
-  "partDescription": "وەسفی پارچە"
+  "partDescription": "وەسفی پارچە",
+
+  "columnsLabel": "سەردانەکانی خزمەتگوزاری",
+  "idleHint": "بۆ بینینی سەردانەکانی خزمەتگوزاری، بەدوای ئۆتۆمبێلێکدا بگەڕێ.",
+  "emptyHint": "هەموو سەردانێکی خزمەتگوزاری کە بۆ ئەم ئۆتۆمبێلە تۆمار کراوە لێرە پیشان دەدرێت.",
+  "visitCountZero": "{count} سەردان",
+  "visitCountOne": "{count} سەردان",
+  "visitCountTwo": "{count} سەردان",
+  "visitCountFew": "{count} سەردان",
+  "visitCountMany": "{count} سەردان",
+  "visitCountOther": "{count} سەردان"
 }

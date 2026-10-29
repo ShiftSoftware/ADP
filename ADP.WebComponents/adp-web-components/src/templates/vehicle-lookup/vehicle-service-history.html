@@ -31,11 +31,17 @@
       dir="ltr"
       x-data="harness({
         mocks: 'vehicle-lookup',
+        defaultEnvironment: 'broker-market',
         labels: {
+          ZS8AJAYC7N6060123: '51 visits',
+          ZS8SV9KXXST918958: 'long service type, missing mileage',
+          ZS8EU2ZF5RT696831: 'missing branch',
+          ZS8AJAYCXR6471313: 'no service history on record',
           ZS88F5CL80J407317: 'no service history on record',
           JTMW43FV10D123456: 'no service history on record',
+          ZV8GHHHP37P214642: 'not in distributor records',
           ZV9LMW6D75T151181: 'not in distributor records',
-          UNKNOWN_VIN_12345: 'not in distributor records',
+          UNKNOWN_VIN_12345: 'unknown VIN, not in distributor records',
         },
         has: vehicle => vehicle?.serviceHistory?.length > 0,
       })"

@@ -1,104 +1,138 @@
 /* tailwind: off */
+/*
+ * Vehicle service history — the stylesheet for <vehicle-service-history>, in the component design
+ * language. The card is the wrapper's; this file styles what is particular to this panel: the visit
+ * count in the head, the compact rows and the placeholder under the strip. The strip, the rows and
+ * the cards at 720px and under are the lookup table's (features/lookup-table/lookup-table.css),
+ * imported below.
+ *
+ * Rows stay on screen through a lookup: their values go under the skeleton where they stand
+ * (shift-skeleton, imported below) and only the rows the answer adds or drops slide.
+ *
+ * Panel states, as data attributes on .service-history-card: data-verdict, data-phase (busy while a
+ * lookup is in flight or the panel is leaving), data-lead (always columns) and data-body (rows | none).
+ */
+
+/* Order is the table fragment's contract: the reset, the tokens, the wrapper (which brings the
+   motion primitives and .sr-only — never import lookup-motion.css directly, a second import loses
+   its @keyframes), the head, then the table. */
 @import '../style/base.css';
+@import '../style/lookup-tokens.css';
 @import '../style/shift-skeleton.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 @import '../../features/vehicle-info-layout/lookup-head.css';
+@import '../../features/lookup-table/lookup-table.css';
 
 :host {
   display: block;
-  all: initial !important;
-  /* The family's face (lookup-tokens.css); the wrapper's root switches it for an rtl locale. */
-  font-family: var(--font-sans) !important;
+  /* Compact rows, every one 51px tall: two clamped lines of service type (2 x 13px x 1.3, about
+     34px) with 8px above and below is 50px, plus the 1px rule between rows. A one-line visit is
+     held to the same height, so a lookup only changes what a row says, never how tall it is. */
+  --lt-cell-pad-block: 8px;
+  --lt-row-min: 51px;
+  /* No blank floor under the strip: the placeholder fills that space when there is no list. */
+  --body-rest: 0px;
 }
 
-*,
-:host * {
-  font-family: inherit !important;
+.service-history-card,
+.service-history-card *,
+.service-history-card *::before,
+.service-history-card *::after {
+  box-sizing: border-box;
 }
 
-.service-history-scroll {
-  overflow-x: auto;
+.service-history-card {
+  position: relative;
+  width: 100%;
+  color: var(--ink);
+  /* No font-family: the wrapper's root sets the face for the language and this inherits it. */
+  font-size: 13px;
+  line-height: 1.35;
 }
 
-.service-history-subrow {
+/* ---------------------------------------------------------------------------------------------
+   Head: the visit count
+   ------------------------------------------------------------------------------------------- */
+
+/* A fact, not a verdict, so it is not a pill. Small note: 12px, 600, tabular (§ 11, "counts"), in
+   --muted -- secondary text, read after the title. A record panel with records has no pill, so it
+   has the head's trailing group to itself. */
+.service-history-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Rows: clamped text, so every row is the same height
+   ------------------------------------------------------------------------------------------- */
+
+/* Two lines at most (2 x 13px x 1.3, about 34px, inside the 35px a row has between its padding). A row that grows
+   with its text would change height as the cover lifts on the next vehicle's words. The service
+   type carries its whole text as a title; the dealer and branch rarely reach a second line. The
+   growing column is named as well, to out-specify the table's display: block on it. */
+.lt-row > .lt-text > .lt-value,
+.lt-row > .lt-text[data-grow='true'] > .lt-value {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Placeholder: idle ("look a vehicle up") and no visits on file
+   ------------------------------------------------------------------------------------------- */
+
+/* Quiet and centred: a muted glyph in a recessed disc, one line of small text. It is the space a
+   list would take, said in words, so it uses the list's colours and never a verdict's. */
+.service-history-placeholder-layer {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 18px 10px;
-  border-top: 2px solid #94a3b8;
-  border-bottom: 2px solid #94a3b8;
-  background-color: #f4f4f4;
-  box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.06);
-}
-
-.service-history-subsection {
-  overflow: hidden;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  background-color: #fff;
-  box-shadow:
-    0 4px 6px -1px rgb(0 0 0 / 0.1),
-    0 2px 4px -2px rgb(0 0 0 / 0.1);
-}
-
-.service-history-subsection-header {
-  position: relative;
-  display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 4px 8px;
-  padding-inline-start: 14px;
-  border-bottom: 1px solid #cbd5e1;
-  background-color: #e2e8f0;
+  justify-content: center;
+  padding: 26px 20px 28px;
+  text-align: center;
 }
 
-.service-history-subsection-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  inset-inline-start: 0;
-  width: 4px;
-  background-color: #64748b;
+/* 48px disc, the idle rim (grey .22, § 10). */
+.service-history-placeholder-mark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  color: var(--muted);
+  background: var(--paper-soft);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--lt-rim-idle);
 }
 
-.service-history-subsection-title {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.025em;
-  text-transform: uppercase;
-  color: #1e293b;
+.service-history-placeholder-glyph {
+  width: 22px;
+  height: 22px;
 }
 
-.service-history-subsection-meta {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  min-width: 16px;
-  padding-inline: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #334155;
-  background-color: #fff;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
+/* 46ch keeps the sentence to a line or two on a wide card instead of one long thin line. */
+.service-history-placeholder-text {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
-.service-history-subsection-table {
-  max-width: 100%;
-  overflow: auto;
-}
+/* ---------------------------------------------------------------------------------------------
+   Narrow panels (720 and under): the table turns its rows into cards (lookup-table.css)
+   ------------------------------------------------------------------------------------------- */
 
-.service-history-empty {
-  padding: 8px;
-  padding-inline-start: 16px;
-  font-size: 14px;
-  color: #64748b;
-  background-color: #fff;
-}
-
-.service-history-subrow .table-header-cell,
-.service-history-subrow .table-body-cell {
-  padding: 6px;
-  line-height: 16px;
+@container (max-width: 720px) {
+  /* A card is several captioned lines, so it is not held to the row's 51px; it is only tightened,
+     from the table's 12px 14px and 10px gaps. */
+  .lt-row {
+    gap: 6px 12px;
+    padding: 10px 14px;
+  }
 }
