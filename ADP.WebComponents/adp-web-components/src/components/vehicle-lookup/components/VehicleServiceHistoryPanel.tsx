@@ -312,18 +312,23 @@ export const VehicleServiceHistoryPanel: FunctionalComponent<Props> = ({
               <div class="service-history-pager-row">
                 <label class="service-history-page-size">
                   <span class="service-history-page-size-label">{locale.rowsPerPage}</span>
-                  <select
-                    class="service-history-page-size-select"
-                    aria-controls="service-history-list"
-                    disabled={busy}
-                    onChange={event => onPageSize(parsePageSize((event.target as HTMLSelectElement).value))}
-                  >
-                    {PAGE_SIZE_OPTIONS.map(size => (
-                      <option value={String(size)} selected={size === pageSize}>
-                        {size === 'all' ? locale.pageAll : String(size)}
-                      </option>
-                    ))}
-                  </select>
+                  <span class="service-history-page-size-field">
+                    <select
+                      class="service-history-page-size-select"
+                      aria-controls="service-history-list"
+                      disabled={busy}
+                      onChange={event => onPageSize(parsePageSize((event.target as HTMLSelectElement).value))}
+                    >
+                      {PAGE_SIZE_OPTIONS.map(size => (
+                        <option value={String(size)} selected={size === pageSize}>
+                          {size === 'all' ? locale.pageAll : String(size)}
+                        </option>
+                      ))}
+                    </select>
+                    <span class="service-history-page-size-caret" aria-hidden="true">
+                      <ChevronRightIcon class="service-history-page-size-chevron" />
+                    </span>
+                  </span>
                 </label>
 
                 {/* A value like any other: it goes under the skeleton with the rows while a lookup is in flight. */}
