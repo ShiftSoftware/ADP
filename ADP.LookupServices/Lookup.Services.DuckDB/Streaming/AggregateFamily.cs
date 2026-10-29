@@ -118,7 +118,9 @@ public static class AggregateFamilies
     public static readonly AggregateFamily VehicleAccessory =
         AggregateFamily.Of<VehicleAccessoryModel>("VehicleAccessory", (a, m) => a.Accessories.Add(m));
     public static readonly AggregateFamily VehicleInspection =
-        AggregateFamily.Of<VehicleInspectionModel>("VehicleInspection", (a, m) => a.VehicleInspections.Add(m), "IsDeleted = false");
+        // IsPending is dropped on attach rather than in the WHERE, as the per-VIN storage does: an older
+        // snapshot has no IsPending column, and the mapper reads a missing or NULL column as false.
+        AggregateFamily.Of<VehicleInspectionModel>("VehicleInspection", (a, m) => { if (!m.IsPending) a.VehicleInspections.Add(m); }, "IsDeleted = false");
     public static readonly AggregateFamily CampaignVinEntry =
         AggregateFamily.Of<CampaignVinEntryModel>("CampaignVinEntry", (a, m) => a.CampaignVinEntries.Add(m), "IsDeleted = false");
     public static readonly AggregateFamily VehicleServiceActivation =
