@@ -40,18 +40,18 @@ const toItems = (tabs?: (string | ShiftTabItem)[]): ShiftTabItem[] => (tabs || [
 const signature = (tabs?: (string | ShiftTabItem)[]): string =>
   JSON.stringify(toItems(tabs).map((item, idx) => [keyOf(item, idx), item.label, item.caption === undefined ? 0 : item.caption]));
 
-const transformOf = ({ x, y, w }: Box): string => `translate(${x}px, ${y}px) scaleX(${w})`;
+const transformOf = ({ x, y, w }: Box, base: number): string => `translate(${x}px, ${y}px) scaleX(${w / base})`;
 
 const glidePath = (from: Box, to: Box, stretch: boolean): Keyframe[] => {
-  if (!stretch) return [{ transform: transformOf(from), easing: 'ease' }, { transform: transformOf(to) }];
+  if (!stretch) return [{ transform: transformOf(from, to.w), easing: 'ease' }, { transform: transformOf(to, to.w) }];
 
   const left = Math.min(from.x, to.x);
   const right = Math.max(from.x + from.w, to.x + to.w);
 
   return [
-    { transform: transformOf(from), easing: 'ease' },
-    { transform: transformOf({ x: left, y: from.y, w: right - left }), offset: STRETCH, easing: 'ease' },
-    { transform: transformOf(to) },
+    { transform: transformOf(from, to.w), easing: 'ease' },
+    { transform: transformOf({ x: left, y: from.y, w: right - left }, to.w), offset: STRETCH, easing: 'ease' },
+    { transform: transformOf(to, to.w) },
   ];
 };
 
@@ -85,6 +85,7 @@ export class ShiftTabs {
   private bar?: HTMLElement;
   private indicator?: HTMLElement;
   private observer?: ResizeObserver;
+  private dirObserver?: MutationObserver;
   private observed = new Set<Element>();
   private tabRefs = new Map<string, HTMLElement>();
   private selected = -1;
@@ -205,6 +206,7 @@ export class ShiftTabs {
 
   disconnectedCallback() {
     this.observer?.disconnect();
+    this.dirObserver?.disconnect();
     this.observed.clear();
     this.glide?.cancel();
     if (this.frame !== undefined) cancelAnimationFrame(this.frame);
@@ -221,9 +223,15 @@ export class ShiftTabs {
       if (!now.has(element)) this.observer!.unobserve(element);
     });
     now.forEach(element => {
-      if (!this.observed.has(element)) this.observer!.observe(element);
+      if (!this.observed.has(element)) this.observer!.observe(element, { box: 'border-box' });
     });
     this.observed = now;
+
+    if (typeof MutationObserver === 'undefined') return;
+
+    // A host that flips `dir` on an ancestor moves every tab without resizing one.
+    this.dirObserver ??= new MutationObserver(() => this.later('rest'));
+    this.dirObserver.observe(this.el.getRootNode(), { attributes: true, attributeFilter: ['dir'], subtree: true });
   }
 
   private later(mode: Mode) {
@@ -298,10 +306,10 @@ export class ShiftTabs {
   }
 
   private visible(): Box | undefined {
-    if (!this.glide || !this.indicator || typeof DOMMatrixReadOnly === 'undefined') return this.at;
+    if (!this.glide || !this.indicator || !this.at || typeof DOMMatrixReadOnly === 'undefined') return this.at;
 
     const matrix = new DOMMatrixReadOnly(getComputedStyle(this.indicator).transform);
-    return { x: matrix.m41, y: matrix.m42, w: matrix.a };
+    return { x: matrix.m41, y: matrix.m42, w: matrix.a * this.at.w };
   }
 
   private place(mode: Mode) {
@@ -317,16 +325,20 @@ export class ShiftTabs {
       return;
     }
 
-    const w = tab.offsetWidth;
+    const text = tab.querySelector<HTMLElement>('.shift-tabs-text') ?? tab;
+    const w = text.offsetWidth;
     if (!w) return;
 
-    const to: Box = { x: tab.offsetLeft, y: tab.offsetTop + tab.offsetHeight - UNDERLINE, w };
+    // A tab mid-FLIP has a transform, which makes it the text's offsetParent.
+    const inset = text.offsetParent === tab ? text.offsetLeft : text.offsetLeft - tab.offsetLeft;
+    const to: Box = { x: tab.offsetLeft + inset, y: tab.offsetTop + tab.offsetHeight - UNDERLINE, w };
     const from = this.visible();
 
     this.at = to;
     this.placedAt = this.selected;
     this.placed = true;
-    indicator.style.transform = transformOf(to);
+    indicator.style.width = `${w}px`;
+    indicator.style.transform = transformOf(to, w);
     indicator.setAttribute('data-placed', 'true');
 
     if (this.glide && mode === 'rest' && this.glideFrom) {
