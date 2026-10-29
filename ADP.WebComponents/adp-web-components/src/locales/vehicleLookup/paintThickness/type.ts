@@ -6,7 +6,6 @@ const paintThicknessSchema = yupTypeMapper([
   'position',
   'left',
   'right',
-  'inspectionDate',
   'printCertificate',
   'certificate',
   'noCertificate',

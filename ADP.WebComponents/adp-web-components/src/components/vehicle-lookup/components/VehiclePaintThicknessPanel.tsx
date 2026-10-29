@@ -9,8 +9,7 @@ import { PaintThicknessCertificateUrlDTO } from '~types/generated/vehicle-lookup
 import { ArrowIcon } from '~assets/arrow-icon';
 import { PrintIcon } from '~assets/print-icon';
 import { PictureOffIcon } from '~assets/picture-off-icon';
-import { CameraSolidIcon } from '~assets/camera-solid-icon';
-import { ChevronDownIcon } from '~assets/chevron-down-icon';
+import { CameraIcon } from '~assets/camera-icon';
 import { SearchIcon } from '~assets/search-icon';
 import { EmptyTableIcon } from '~assets/empty-table-icon';
 
@@ -184,7 +183,7 @@ const headCount = (state: PanelState, locale: PaintThicknessLocale, language: st
   if (!inspections.length) return '';
   const count = (locale[COUNT_KEYS[pluralCategory(inspections.length, language)]] || locale.inspectionCountOther).replace('{count}', String(inspections.length));
   const latest = inspections.map(inspection => isoDay(inspection.inspectionDate)).reduce<string | null>((last, day) => (day && (!last || day > last) ? day : last), null);
-  return latest ? `${count} · ${locale.lastInspection.replace('{date}', latest)}` : count;
+  return latest && !state.hidden.has('inspectionDate') ? `${count} · ${locale.lastInspection.replace('{date}', latest)}` : count;
 };
 
 const shownInspection = (state: PanelState): PaintThicknessInspectionDTO | undefined => {
@@ -220,18 +219,23 @@ export type PaintTab = {
   subtitle: string | null;
 };
 
-export const tabsOf = (state: PanelState, locale: PaintThicknessLocale): PaintTab[] =>
-  listed(state).map((inspection, index) => {
-    const showSource = !state.hidden.has('source');
-    const showDate = !state.hidden.has('inspectionDate');
-    const source = inspection.source?.trim() || null;
-    const date = isoDay(inspection.inspectionDate);
+export const tabsOf = (state: PanelState, locale: PaintThicknessLocale): PaintTab[] => {
+  const showSource = !state.hidden.has('source');
+  const showDate = !state.hidden.has('inspectionDate');
+  const sourceOf = (inspection: PaintThicknessInspectionDTO) => (showSource ? inspection.source?.trim() || null : null);
+  const all = listed(state);
 
-    const title = showSource && source ? source : showDate ? (date ?? '—') : `${locale.inspection} ${index + 1}`;
-    const subtitle = showSource && source && showDate ? (date ?? '—') : null;
+  return all.map((inspection, index) => {
+    const source = sourceOf(inspection);
+    const date = isoDay(inspection.inspectionDate);
+    const shared = !showDate && source !== null && all.filter(other => sourceOf(other) === source).length > 1;
+
+    const title = shared ? `${locale.inspection} ${index + 1}` : source ? source : showDate ? (date ?? '—') : `${locale.inspection} ${index + 1}`;
+    const subtitle = shared ? source : source && showDate ? (date ?? '—') : null;
 
     return { key: `${index}`, title, subtitle };
   });
+};
 
 const tabsOpen = (state: PanelState): boolean => hasRecords(state);
 
@@ -298,7 +302,7 @@ const paintColumns = (locale: PaintThicknessLocale, language: string): LookupCol
     field: 'photos',
     label: locale.photos,
     kind: 'action',
-    icon: CameraSolidIcon,
+    icon: CameraIcon,
     value: row => (rowHasPhotos(row) ? photoCountText(rowPhotoCount(row), locale, language) : locale.noPhotos),
   },
 ];
@@ -673,10 +677,10 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
                 disabled={!photosSection}
                 onClick={onTogglePhotos}
               >
-                <CameraSolidIcon class="paint-photos-glyph" />
+                <CameraIcon class="paint-photos-glyph" />
                 <span class="paint-photos-label">{locale.allPhotos}</span>
                 <span class="paint-photos-count shift-skeleton">{photoCountText(groupsPhotoCount(shownGroups), locale, language)}</span>
-                <ChevronDownIcon class="paint-photos-chevron" />
+                <ArrowIcon class="paint-photos-chevron" />
               </button>
 
               <div id={PHOTOS_REGION_ID} class="paint-photos-region collapsible" data-open={photosBodyOpen ? 'true' : 'false'} aria-hidden={photosBodyOpen ? null : 'true'}>
