@@ -42,6 +42,12 @@
 
 .paint-title {
   margin: 0;
+  transition: translate var(--settle) ease;
+}
+
+/* Half the reserved second line (its 3px gap and 13px/1.2 line), so the title sits level with the pill. */
+.paint-main:has(> .paint-count-slot[data-empty='true']) > .paint-title {
+  translate: 0 calc((3px + 13px * 1.2) / 2);
 }
 
 .paint-count-slot {
@@ -449,6 +455,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .paint-summary,
+  .paint-title,
   .paint-count-slot,
   .paint-certificate,
   .paint-certificate-slot,
