@@ -33,5 +33,10 @@
   "visitCountTwo": "{count} زيارة",
   "visitCountFew": "{count} زيارات",
   "visitCountMany": "{count} زيارةً",
-  "visitCountOther": "{count} زيارة"
+  "visitCountOther": "{count} زيارة",
+  "rowsPerPage": "عدد الصفوف في الصفحة",
+  "pageAll": "الكل",
+  "pageRange": "{from}–{to} من {total}",
+  "previousPage": "الصفحة السابقة",
+  "nextPage": "الصفحة التالية"
 }

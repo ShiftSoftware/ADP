@@ -33,5 +33,10 @@
   "visitCountTwo": "{count} سەردان",
   "visitCountFew": "{count} سەردان",
   "visitCountMany": "{count} سەردان",
-  "visitCountOther": "{count} سەردان"
+  "visitCountOther": "{count} سەردان",
+  "rowsPerPage": "ڕیز لە هەر پەڕەیەکدا",
+  "pageAll": "هەموو",
+  "pageRange": "{from}–{to} لە {total}",
+  "previousPage": "پەڕەی پێشوو",
+  "nextPage": "پەڕەی دواتر"
 }

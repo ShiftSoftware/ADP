@@ -33,5 +33,10 @@
   "visitCountTwo": "{count} визита",
   "visitCountFew": "{count} визита",
   "visitCountMany": "{count} визитов",
-  "visitCountOther": "{count} визита"
+  "visitCountOther": "{count} визита",
+  "rowsPerPage": "Строк на странице",
+  "pageAll": "Все",
+  "pageRange": "{from}–{to} из {total}",
+  "previousPage": "Предыдущая страница",
+  "nextPage": "Следующая страница"
 }

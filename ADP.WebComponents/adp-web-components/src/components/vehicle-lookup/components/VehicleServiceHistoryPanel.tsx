@@ -6,6 +6,8 @@ import { VehicleServiceHistoryDTO } from '~types/generated/vehicle-lookup/vehicl
 
 import { SearchIcon } from '~assets/search-icon';
 import { CalendarDaysIcon } from '~assets/calendar-days-icon';
+import { ChevronLeftIcon } from '~assets/chevron-left-icon';
+import { ChevronRightIcon } from '~assets/chevron-right-icon';
 
 import { SharedLocales } from '~features/multi-lingual';
 import { LookupHead, PanelVerdict, recordVerdict } from '~features/vehicle-info-layout';
@@ -26,6 +28,22 @@ export type PanelState = {
   /** The lookup failed: the sentence the pill carries in the negative tone. */
   error?: string;
 };
+
+/**
+ * The page sizes the reader can pick, the same as the accessories panel's so the two read alike:
+ * steps of five up to twenty-five, then every visit. Five by default; a vehicle can carry fifty
+ * visits and more.
+ */
+export const PAGE_SIZES = [5, 10, 15, 20, 25] as const;
+
+export type PageSize = (typeof PAGE_SIZES)[number] | 'all';
+
+export const PAGE_SIZE_OPTIONS: PageSize[] = [...PAGE_SIZES, 'all'];
+
+export const DEFAULT_PAGE_SIZE: PageSize = 5;
+
+/** Where the reader's choice is kept, per browser: the panel opens on it next time. */
+export const PAGE_SIZE_STORAGE_KEY = 'shift-components:vehicle-service-history:page-size';
 
 // ---------------------------------------------------------------------------------------------
 // Columns
@@ -130,6 +148,46 @@ export const toggleLabel = (visit: VehicleServiceHistoryDTO, open: boolean, loca
 };
 
 // ---------------------------------------------------------------------------------------------
+// Pages: restated from the accessories panel, not shared with it (owner's scope rule)
+// ---------------------------------------------------------------------------------------------
+
+/** A stored or chosen value read back as a page size; anything else is the default. */
+export const parsePageSize = (raw: string | number | null | undefined): PageSize => {
+  if (raw === 'all') return 'all';
+  const size = Number(raw);
+  return (PAGE_SIZES as readonly number[]).includes(size) ? (size as PageSize) : DEFAULT_PAGE_SIZE;
+};
+
+/** How many pages a list makes; at least one, so an empty list is page 1 of 1, never page 1 of 0. */
+export const pageCount = (total: number, size: PageSize): number => (size === 'all' ? 1 : Math.max(1, Math.ceil(total / size)));
+
+/** A page index brought back inside the list: a shorter list or a bigger page can leave it past the end. */
+export const clampPage = (page: number, total: number, size: PageSize): number => Math.min(Math.max(0, Math.floor(page) || 0), pageCount(total, size) - 1);
+
+/** The rows of one page. */
+export const pageRows = <Row,>(rows: Row[], page: number, size: PageSize): Row[] => {
+  if (size === 'all') return rows;
+  const start = clampPage(page, rows.length, size) * size;
+  return rows.slice(start, start + size);
+};
+
+/** Whether the list needs the page controls: longer than the smallest page. */
+export const isPaginated = (total: number): boolean => total > PAGE_SIZES[0];
+
+/** The page that keeps the first row on screen in view when the page size changes. */
+export const pageForSize = (page: number, from: PageSize, to: PageSize, total: number): number => {
+  if (to === 'all' || from === 'all') return 0;
+  return clampPage(Math.floor((clampPage(page, total, from) * from) / to), total, to);
+};
+
+/** "6–10 of 51": the visits on screen and the whole list, in the locale's words. */
+export const pageRangeText = (page: number, size: PageSize, total: number, locale: ServiceHistoryLocale): string => {
+  const from = total === 0 ? 0 : (size === 'all' ? 0 : clampPage(page, total, size) * size) + 1;
+  const to = size === 'all' ? total : Math.min(total, from - 1 + size);
+  return locale.pageRange.replace('{from}', String(from)).replace('{to}', String(to)).replace('{total}', String(total));
+};
+
+// ---------------------------------------------------------------------------------------------
 // Render
 // ---------------------------------------------------------------------------------------------
 
@@ -153,6 +211,10 @@ type Props = {
   openKey: string | null;
   retainedKey: string | null;
   onToggleDrawer: (key: string) => void;
+  page: number;
+  pageSize: PageSize;
+  onPage: (page: number) => void;
+  onPageSize: (size: PageSize) => void;
 };
 
 export const VehicleServiceHistoryPanel: FunctionalComponent<Props> = ({
@@ -168,11 +230,19 @@ export const VehicleServiceHistoryPanel: FunctionalComponent<Props> = ({
   openKey,
   retainedKey,
   onToggleDrawer,
+  page,
+  pageSize,
+  onPage,
+  onPageSize,
 }) => {
   const body = panelBody(state);
   const lead = panelLead();
   const open = bodyOpen(state, leaving);
   const count = totalCount(state);
+  const total = listed(state).length;
+  const pagerOpen = open && isPaginated(total);
+  const pages = pageCount(total, pageSize);
+  const current = clampPage(page, total, pageSize);
   // A leave always ends idle, so the placeholder is the idle one for the whole leave: from rows it
   // opens while they shut, as one movement.
   const placeholder = leaving ? 'idle' : panelPlaceholder(state);
@@ -190,28 +260,30 @@ export const VehicleServiceHistoryPanel: FunctionalComponent<Props> = ({
 
       <div class="lookup-slide-clip">
         <div class="lookup-slide">
-          <LookupTable
-            columns={serviceHistoryColumns(locale)}
-            rows={slotRows}
-            slots={slots}
-            // Keyed by slot, not by visit: a slot is a place on the card that stays while its values change.
-            rowKey={(_, index) => `slot-${index}`}
-            lead={lead}
-            notice={null}
-            busy={busy}
-            body={shownBody(body, retainedBody)}
-            open={open}
-            // No media column, so the picture strings are never read.
-            strings={{ columnsLabel: locale.columnsLabel, noImage: '', imageFailed: '', openImage: '' }}
-            drawer={{
-              openKey,
-              retainedKey,
-              render: visit => <ServiceHistoryDrawer visit={visit} locale={locale} />,
-              label: locale.visitDetails,
-              toggleLabel: (visit, open) => toggleLabel(visit, open, locale),
-              onToggle: onToggleDrawer,
-            }}
-          />
+          <div id="service-history-list">
+            <LookupTable
+              columns={serviceHistoryColumns(locale)}
+              rows={slotRows}
+              slots={slots}
+              // Keyed by slot, not by visit: a slot is a place on the card that stays while its values change.
+              rowKey={(_, index) => `slot-${index}`}
+              lead={lead}
+              notice={null}
+              busy={busy}
+              body={shownBody(body, retainedBody)}
+              open={open}
+              // No media column, so the picture strings are never read.
+              strings={{ columnsLabel: locale.columnsLabel, noImage: '', imageFailed: '', openImage: '' }}
+              drawer={{
+                openKey,
+                retainedKey,
+                render: visit => <ServiceHistoryDrawer visit={visit} locale={locale} />,
+                label: locale.visitDetails,
+                toggleLabel: (visit, open) => toggleLabel(visit, open, locale),
+                onToggle: onToggleDrawer,
+              }}
+            />
+          </div>
 
           {/* Always mounted: it slides open and shut and its two sentences cross-fade. Its words go under
               the skeleton in flight, where "look a vehicle up" is not true. */}
@@ -230,6 +302,59 @@ export const VehicleServiceHistoryPanel: FunctionalComponent<Props> = ({
                   </span>
                   <p class="service-history-placeholder-text shift-skeleton">{locale.emptyHint}</p>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* The page controls. Always mounted, shut when the list fits on the smallest page: they slide with the body, never pop. */}
+          <div class="service-history-pager collapsible" data-open={pagerOpen ? 'true' : 'false'} aria-hidden={pagerOpen ? null : 'true'}>
+            <div class="collapsible-body">
+              <div class="service-history-pager-row">
+                <label class="service-history-page-size">
+                  <span class="service-history-page-size-label">{locale.rowsPerPage}</span>
+                  <select
+                    class="service-history-page-size-select"
+                    aria-controls="service-history-list"
+                    disabled={busy}
+                    onChange={event => onPageSize(parsePageSize((event.target as HTMLSelectElement).value))}
+                  >
+                    {PAGE_SIZE_OPTIONS.map(size => (
+                      <option value={String(size)} selected={size === pageSize}>
+                        {size === 'all' ? locale.pageAll : String(size)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {/* A value like any other: it goes under the skeleton with the rows while a lookup is in flight. */}
+                <span class="service-history-page-range shift-skeleton" aria-live="polite">
+                  {pageRangeText(current, pageSize, total, locale)}
+                </span>
+
+                <span class="service-history-page-nav">
+                  <button
+                    type="button"
+                    class="service-history-page-button is-previous"
+                    aria-label={locale.previousPage}
+                    title={locale.previousPage}
+                    aria-controls="service-history-list"
+                    disabled={busy || current === 0}
+                    onClick={() => onPage(current - 1)}
+                  >
+                    <ChevronLeftIcon class="service-history-page-chevron" />
+                  </button>
+                  <button
+                    type="button"
+                    class="service-history-page-button is-next"
+                    aria-label={locale.nextPage}
+                    title={locale.nextPage}
+                    aria-controls="service-history-list"
+                    disabled={busy || current >= pages - 1}
+                    onClick={() => onPage(current + 1)}
+                  >
+                    <ChevronRightIcon class="service-history-page-chevron" />
+                  </button>
+                </span>
               </div>
             </div>
           </div>

@@ -33,5 +33,10 @@
   "visitCountTwo": "{count} visits",
   "visitCountFew": "{count} visits",
   "visitCountMany": "{count} visits",
-  "visitCountOther": "{count} visits"
+  "visitCountOther": "{count} visits",
+  "rowsPerPage": "Rows per page",
+  "pageAll": "All",
+  "pageRange": "{from}–{to} of {total}",
+  "previousPage": "Previous page",
+  "nextPage": "Next page"
 }

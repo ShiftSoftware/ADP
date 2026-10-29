@@ -36,6 +36,11 @@ const ServiceHistorySchema = yupTypeMapper([
   'visitCountFew',
   'visitCountMany',
   'visitCountOther',
+  'rowsPerPage',
+  'pageAll',
+  'pageRange',
+  'previousPage',
+  'nextPage',
 ]);
 
 export default ServiceHistorySchema;
