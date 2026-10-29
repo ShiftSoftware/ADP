@@ -443,3 +443,6 @@ ADP.Docs/Docs/site/
 # a changed golden in a PR is a claimed behaviour change that must be explained. reports/ is the
 # verify-mode diff output and is regenerated on every run.
 /ADP.Menus/samples/ADP.Menus.Sample.FreeServiceParity/reports/free-service-menu-parity-summary.csv
+
+# Coordinator's local knowledge
+/.coordinator/
