@@ -1,0 +1,401 @@
+@attribute [Route($"/{nameof(ClaimableItemContractForm)}/{{Key?}}")]
+
+@inject IOptions<ClaimableItemsWebOptions> CIOptions
+@inject HttpClient Http
+
+<ShiftEntityForm T="ClaimableItemContractDTO"
+                 @bind-Mode="Mode"
+                 @bind-Mode:after="ModeChangedAsync"
+                 @bind-Value="Contract"
+                 Endpoint="@(CIOptions.Value.ResolvedRoutePrefix + "ClaimableItemContract")"
+                 Title="Service Contract"
+                 TypeAuthAction="CIOptions.Value.ClaimableItemContractsAction"
+                 HideEdit="!IsEditable"
+                 HideDelete="!IsEditable"
+                 OnTaskFinished="OnTaskFinished"
+                 @bind-Key="@Key">
+    <MudGrid Spacing="8" Class="pt-4">
+
+        @if (!string.IsNullOrWhiteSpace(Contract.ID))
+        {
+            <MudItem Class="pt-2 pb-2" lg="6" md="6" sm="12" xs="12">
+                <MudAlert Severity="Severity.Info" Icon="@Icons.Material.Filled.Numbers">
+                    <strong>@Contract.ID</strong>
+                </MudAlert>
+            </MudItem>
+
+            <MudItem Class="pt-2 pb-2" lg="6" md="6" sm="12" xs="12">
+                <MudText Typo="Typo.body2">Status</MudText>
+                <MudDivider />
+                <ClaimableItemContractStatusChip Status="Contract.Status" EndDate="Contract.EndDate" />
+            </MudItem>
+        }
+
+        @* 1. The vehicle. The menu is read once the VIN and the mileage are both entered. *@
+        <MudItem Class="pt-2 pb-2" lg="12" md="12" sm="12" xs="12">
+            <MudCard Elevation="3">
+                <MudCardHeader Style="background: var(--mud-palette-divider); font-weight: bold;">
+                    Vehicle
+                </MudCardHeader>
+
+                <MudCardContent>
+                    <MudGrid Spacing="4">
+                        <MudItem lg="4" md="4" sm="6" xs="12">
+                            <MudTextFieldExtended Label="VIN"
+                                                  ReadOnly="ReadOnly || IsExisting"
+                                                  Disabled="!ReadOnly && IsExisting"
+                                                  Value="Contract.VIN"
+                                                  T="string"
+                                                  ValueChanged="VinChangedAsync"
+                                                  For="() => Contract.VIN" />
+                        </MudItem>
+
+                        <MudItem lg="4" md="4" sm="6" xs="12">
+                            <MudNumericFieldExtended Label="Mileage (km)"
+                                                     Format="#,0"
+                                                     Step="1"
+                                                     T="long?"
+                                                     Value="Contract.Mileage"
+                                                     ValueChanged="MileageChangedAsync"
+                                                     For="() => Contract.Mileage" />
+                        </MudItem>
+
+                        @if (!string.IsNullOrWhiteSpace(Contract.ModelDescription))
+                        {
+                            <MudItem lg="4" md="4" sm="12" xs="12">
+                                <MudField Label="Model" Variant="Variant.Text">@Contract.ModelDescription</MudField>
+                            </MudItem>
+                            <MudItem lg="4" md="4" sm="4" xs="12">
+                                <MudField Label="Katashiki" Variant="Variant.Text">@Contract.Katashiki</MudField>
+                            </MudItem>
+                            <MudItem lg="4" md="4" sm="4" xs="12">
+                                <MudField Label="Model Code" Variant="Variant.Text">@Contract.ModelCode</MudField>
+                            </MudItem>
+                            <MudItem lg="4" md="4" sm="4" xs="12">
+                                <MudField Label="Variant" Variant="Variant.Text">@Contract.Variant</MudField>
+                            </MudItem>
+                        }
+
+                        @* 2. Several countries: the user picks the one whose prices apply and enters the rate. *@
+                        @if (!ReadOnly && lookup is { CountryIsFixed: false })
+                        {
+                            <MudItem lg="4" md="4" sm="6" xs="12">
+                                <MudSelectExtended T="string"
+                                                   Label="Country"
+                                                   Value="Contract.Country?.Value"
+                                                   ValueChanged="CountryChangedAsync">
+                                    @foreach (var country in lookup.Countries)
+                                    {
+                                        <MudSelectItem Value="@country.Value">@country.Text</MudSelectItem>
+                                    }
+                                </MudSelectExtended>
+                            </MudItem>
+
+                            <MudItem lg="4" md="4" sm="6" xs="12">
+                                <MudNumericFieldExtended Label="Transfer Rate"
+                                                         Format="#,0.####"
+                                                         T="decimal"
+                                                         Value="Contract.TransferRate"
+                                                         ValueChanged="TransferRateChangedAsync"
+                                                         For="() => Contract.TransferRate" />
+                            </MudItem>
+                        }
+                        else if (ReadOnly && Contract.Country is not null && Contract.TransferRate != 1m)
+                        {
+                            <MudItem lg="4" md="4" sm="6" xs="12">
+                                <MudField Label="Transfer Rate" Variant="Variant.Text">@Contract.TransferRate.ToString("#,0.####")</MudField>
+                            </MudItem>
+                        }
+
+                        <MudItem lg="12" md="12" sm="12" xs="12" Class="pt-0">
+                            @if (lookupLoading)
+                            {
+                                <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                            }
+                            else if (!ReadOnly && LookupMessage is { } message)
+                            {
+                                <MudAlert Severity="message.Severity">@message.Text</MudAlert>
+                            }
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        @* 3. The contract-type menu. Periodic lines are picked once; standalone lines may be added more than once. *@
+        @if (!ReadOnly && lookup is { Status: ClaimableItemContractLookupStatus.Found })
+        {
+            <MudItem Class="pt-2 pb-2" lg="12" md="12" sm="12" xs="12">
+                <MudCard Elevation="3">
+                    <MudCardHeader Style="background: var(--mud-palette-divider); font-weight: bold;">
+                        Contract Menu
+                    </MudCardHeader>
+
+                    <MudCardContent>
+                        @if (lookup.Lines.Count == 0)
+                        {
+                            <MudAlert Severity="Severity.Info">The vehicle's menu has no contract services that can be offered at this mileage.</MudAlert>
+                        }
+
+                        @foreach (var group in OfferedGroups)
+                        {
+                            <MudText Typo="Typo.subtitle2" Class="mt-4 mb-1">@group.Key.Describe()</MudText>
+
+                            <MudSimpleTable Dense Hover Bordered Style="overflow-x: auto;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 140px;"></th>
+                                        <th>Menu Code</th>
+                                        <th>Description</th>
+                                        <th>Variant</th>
+                                        @if (group.Key == ClaimableItemContractLineType.Periodic)
+                                        {
+                                            <th>Interval (km)</th>
+                                        }
+                                        <th style="text-align: end;">Price</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var menuLine in group)
+                                    {
+                                        var available = menuLine.UnavailableReason is null;
+                                        var count = SelectedCount(menuLine);
+
+                                        <tr>
+                                            <td>
+                                                @if (group.Key == ClaimableItemContractLineType.Periodic)
+                                                {
+                                                    <MudCheckBox T="bool"
+                                                                 Dense
+                                                                 Disabled="!available"
+                                                                 Value="count > 0"
+                                                                 ValueChanged="(bool v) => TogglePeriodic(menuLine, v)" />
+                                                }
+                                                else
+                                                {
+                                                    <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+                                                        <MudIconButton Size="Size.Small"
+                                                                       Icon="@Icons.Material.Filled.Remove"
+                                                                       Disabled="count == 0"
+                                                                       OnClick="() => RemoveOne(menuLine)" />
+                                                        <MudText Typo="Typo.body2">@count</MudText>
+                                                        <MudIconButton Size="Size.Small"
+                                                                       Icon="@Icons.Material.Filled.Add"
+                                                                       Disabled="!available"
+                                                                       OnClick="() => AddLine(menuLine)" />
+                                                    </MudStack>
+                                                }
+                                            </td>
+                                            <td class="whitespace-nowrap">@menuLine.MenuCode</td>
+                                            <td>@menuLine.Description</td>
+                                            <td class="whitespace-nowrap">@menuLine.VariantName</td>
+                                            @if (group.Key == ClaimableItemContractLineType.Periodic)
+                                            {
+                                                <td class="whitespace-nowrap">@menuLine.ServiceIntervalValueInMeter?.ToString("#,0")</td>
+                                            }
+                                            <td class="whitespace-nowrap" style="text-align: end;">@menuLine.Price.ToString("#,0.00")</td>
+                                            <td>
+                                                @if (!available)
+                                                {
+                                                    <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">@menuLine.UnavailableReason!.Value.Describe()</MudChip>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </MudSimpleTable>
+                        }
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+
+        @* 4. The contract. *@
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <MudTextFieldExtended Label="Customer Name"
+                                  @bind-Value="Contract.CustomerName"
+                                  For="() => Contract.CustomerName" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <MudTextFieldExtended Label="Customer Phone"
+                                  @bind-Value="Contract.CustomerPhone"
+                                  For="() => Contract.CustomerPhone" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <MudSelectExtended OnlyValidateIfDirty="true"
+                               T="ClaimableItemContractType"
+                               Label="Contract Type"
+                               @bind-Value="Contract.ContractType"
+                               For="() => Contract.ContractType">
+                @foreach (var x in Enum.GetValues<ClaimableItemContractType>())
+                {
+                    <MudSelectItem Value="@x">@x.Describe()</MudSelectItem>
+                }
+            </MudSelectExtended>
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="3" md="3" sm="6" xs="12">
+            <MudDatePickerExtended Label="Start Date"
+                                   @bind-Date="Contract.StartDate"
+                                   For="() => Contract.StartDate" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="2" md="2" sm="3" xs="6">
+            <MudNumericFieldExtended Label="Duration"
+                                     Format="0"
+                                     Step="1"
+                                     @bind-Value="Contract.Duration"
+                                     For="() => Contract.Duration" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="2" md="2" sm="3" xs="6">
+            <MudSelectExtended OnlyValidateIfDirty="true"
+                               T="ClaimableItemContractDurationUnit?"
+                               Label="Unit"
+                               @bind-Value="Contract.DurationUnit"
+                               For="() => Contract.DurationUnit">
+                @foreach (var x in Enum.GetValues<ClaimableItemContractDurationUnit>())
+                {
+                    <MudSelectItem Value="@((ClaimableItemContractDurationUnit?)x)">@x.Describe()</MudSelectItem>
+                }
+            </MudSelectExtended>
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="2" md="2" sm="6" xs="12">
+            <MudField Label="End Date" Variant="Variant.Text">@(EndDate?.ToString("yyyy-MM-dd") ?? "-")</MudField>
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="3" md="3" sm="6" xs="12">
+            <MudSelectExtended OnlyValidateIfDirty="true"
+                               T="decimal"
+                               Label="Price Increment"
+                               @bind-Value="Contract.PriceIncrement"
+                               For="() => Contract.PriceIncrement">
+                @foreach (var x in IncrementOptions)
+                {
+                    <MudSelectItem Value="@x">@((x * 100).ToString("0.##"))%</MudSelectItem>
+                }
+            </MudSelectExtended>
+        </MudItem>
+
+        @* 5. The selected services, each periodic one with its own duration and the expiry it rolls to. *@
+        <MudItem Class="pt-2 pb-2" lg="12" md="12" sm="12" xs="12">
+            <MudCard Elevation="3">
+                <MudCardHeader Style="background: var(--mud-palette-divider); font-weight: bold;">
+                    Contract Services
+                </MudCardHeader>
+
+                <MudCardContent>
+                    @if (Contract.Lines.Count == 0)
+                    {
+                        <MudAlert Severity="Severity.Info">No services selected yet. Pick them from the contract menu above.</MudAlert>
+                    }
+                    else
+                    {
+                        <MudSimpleTable Dense Bordered Style="overflow-x: auto;">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Menu Code</th>
+                                    <th>Description</th>
+                                    <th style="width: 120px;">Duration</th>
+                                    <th style="width: 140px;">Unit</th>
+                                    <th>Expires</th>
+                                    <th style="text-align: end;">Cost</th>
+                                    <th style="text-align: end;">Customer Price</th>
+                                    @if (!ReadOnly)
+                                    {
+                                        <th></th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var line in OrderedLines)
+                                {
+                                    var periodic = line.LineType == ClaimableItemContractLineType.Periodic;
+
+                                    <tr>
+                                        <td class="whitespace-nowrap">
+                                            @line.LineType.Describe()
+                                            @if (line.IsCancelled)
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Outlined">Cancelled</MudChip>
+                                            }
+                                        </td>
+                                        <td class="whitespace-nowrap">@line.MenuCode</td>
+                                        <td>
+                                            @line.Description
+                                            @if (!ReadOnly && IsNotOffered(line))
+                                            {
+                                                <MudText Typo="Typo.caption" Color="Color.Error" Class="d-block">No longer offered for this vehicle. Remove it before saving.</MudText>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (periodic)
+                                            {
+                                                <MudNumericFieldExtended Format="0"
+                                                                         Step="1"
+                                                                         Margin="Margin.Dense"
+                                                                         @bind-Value="line.Duration"
+                                                                         For="() => line.Duration" />
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (periodic)
+                                            {
+                                                <MudSelectExtended T="ClaimableItemContractDurationUnit?"
+                                                                   Margin="Margin.Dense"
+                                                                   @bind-Value="line.DurationUnit"
+                                                                   For="() => line.DurationUnit">
+                                                    @foreach (var x in Enum.GetValues<ClaimableItemContractDurationUnit>())
+                                                    {
+                                                        <MudSelectItem Value="@((ClaimableItemContractDurationUnit?)x)">@x.Describe()</MudSelectItem>
+                                                    }
+                                                </MudSelectExtended>
+                                            }
+                                            else
+                                            {
+                                                <MudText Typo="Typo.caption">Whole contract</MudText>
+                                            }
+                                        </td>
+                                        <td class="whitespace-nowrap">@(ExpiryOf(line)?.ToString("yyyy-MM-dd") ?? "-")</td>
+                                        <td class="whitespace-nowrap" style="text-align: end;">@line.Cost.ToString("#,0.00")</td>
+                                        <td class="whitespace-nowrap" style="text-align: end;">@PriceOf(line).ToString("#,0.00")</td>
+                                        @if (!ReadOnly)
+                                        {
+                                            <td>
+                                                <MudIconButton Size="Size.Small"
+                                                               Color="Color.Error"
+                                                               Icon="@Icons.Material.Filled.Delete"
+                                                               OnClick="() => Contract.Lines.Remove(line)" />
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="6" style="text-align: end;"><strong>Total</strong></td>
+                                    <td class="whitespace-nowrap" style="text-align: end;"><strong>@Total.ToString("#,0.00")</strong></td>
+                                    <td class="whitespace-nowrap" style="text-align: end;"><strong>@TotalWithIncrement.ToString("#,0.00")</strong></td>
+                                    @if (!ReadOnly)
+                                    {
+                                        <td></td>
+                                    }
+                                </tr>
+                            </tfoot>
+                        </MudSimpleTable>
+
+                        @if (PeriodicChainWarning is { } warning)
+                        {
+                            <MudAlert Severity="Severity.Warning" Class="mt-3">@warning</MudAlert>
+                        }
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</ShiftEntityForm>

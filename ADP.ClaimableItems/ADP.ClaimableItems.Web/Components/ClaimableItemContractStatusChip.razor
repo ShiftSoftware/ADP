@@ -1,0 +1,23 @@
+@* An issued contract whose end date has passed shows as Expired. Expired is not stored; it is read from the dates. *@
+@{
+    var expired = Status == ClaimableItemContractStatus.Issued && EndDate is not null && EndDate.Value.Date < DateTime.Today;
+
+    var (icon, color, text) = expired
+        ? (Icons.Material.Outlined.EventBusy, Color.Warning, "Expired")
+        : Status switch
+        {
+            ClaimableItemContractStatus.Issued => (Icons.Material.Outlined.Check, Color.Success, Status.Describe()),
+            ClaimableItemContractStatus.Cancelled => (Icons.Material.Outlined.Cancel, Color.Error, Status.Describe()),
+            _ => (Icons.Material.Outlined.Drafts, Color.Default, Status.Describe()),
+        };
+}
+
+<MudChip T="string" Variant="Variant.Filled" Size="@Size.Small" Icon="@icon" Color="@color">@text</MudChip>
+
+@code {
+    [Parameter]
+    public ClaimableItemContractStatus Status { get; set; }
+
+    [Parameter]
+    public DateTime? EndDate { get; set; }
+}

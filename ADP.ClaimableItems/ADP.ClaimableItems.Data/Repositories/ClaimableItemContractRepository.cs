@@ -150,7 +150,7 @@ public class ClaimableItemContractRepository
         var sort = 0;
         foreach (var line in contract.Lines)
         {
-            line.PriceWithIncrement = decimal.Round(line.Cost * (1 + contract.PriceIncrement), 2);
+            line.PriceWithIncrement = ClaimableItemContractCalculations.PriceWithIncrement(line.Cost, contract.PriceIncrement);
             line.Sort = sort++;
 
             if (line.LineType != ClaimableItemContractLineType.Periodic)

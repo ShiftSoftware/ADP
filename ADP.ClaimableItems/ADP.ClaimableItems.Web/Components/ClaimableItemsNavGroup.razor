@@ -42,6 +42,12 @@
                           TypeAuthAction="Options.InvoicingAction"
                           Match="NavLinkMatch.All"
                           Icon="@Icons.Material.Filled.InsertDriveFile">Invoices</AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink Href="@($"/{nameof(ClaimableItemContractList)}")"
+                          IconColor="Color.Primary"
+                          TypeAuthAction="Options.ClaimableItemContractsAction"
+                          Match="NavLinkMatch.All"
+                          Icon="@Icons.Material.Filled.Handshake">Service Contracts</AuthorizedMudNavLink>
 </AuthorizedMudNavGroup>
 
 @code {
@@ -61,5 +67,6 @@
         Options.ClaimingAction,
         Options.CertifyingAction,
         Options.InvoicingAction,
+        Options.ClaimableItemContractsAction,
     }.Where(a => a is not null).Select(a => a!).ToList();
 }

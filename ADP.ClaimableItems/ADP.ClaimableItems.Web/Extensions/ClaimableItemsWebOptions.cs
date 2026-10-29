@@ -17,6 +17,12 @@ public class ClaimableItemsWebOptions
     public ReadWriteDeleteAction? CampaignVinEntriesAction { get; set; }
 
     /// <summary>
+    /// TypeAuth node gating the service contract pages (consumer-supplied, per D9; the same node the API
+    /// options take). Null → not gated.
+    /// </summary>
+    public ReadWriteDeleteAction? ClaimableItemContractsAction { get; set; }
+
+    /// <summary>
     /// TypeAuth node gating the ItemClaim pages (consumer-supplied, per D9 — the original host application passes
     /// <c>Claiming</c>). Null → not gated.
     /// </summary>
