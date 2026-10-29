@@ -32,6 +32,7 @@ public static class ClaimableItemsModelBuilderExtensions
         // come from its navigations; ItemClaim->VehicleInspectionResult is a plain FK column the
         // consumer configures from its side (module-dependent -> consumer-principal; spike-proven).
         modelBuilder.Entity<ClaimableItemContract>();
+        modelBuilder.Entity<ClaimableItemContractLine>();
         modelBuilder.Entity<ItemClaim>();
 
         if (!string.IsNullOrWhiteSpace(schema))

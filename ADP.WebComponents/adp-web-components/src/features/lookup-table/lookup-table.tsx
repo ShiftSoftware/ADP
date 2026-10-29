@@ -1,5 +1,7 @@
 import { FunctionalComponent, VNode, h } from '@stencil/core';
+
 import { ChevronDownIcon } from '~assets/chevron-down-icon';
+import { ChevronRightIcon } from '~assets/chevron-right-icon';
 
 // The panels' shared glyph set (the features/ folder reaches into it already: lookup-head.tsx).
 import { BADGE_GLYPHS, MEDIA_GLYPHS } from '../../components/vehicle-lookup/components/glyphs';
@@ -16,17 +18,14 @@ import { BADGE_GLYPHS, MEDIA_GLYPHS } from '../../components/vehicle-lookup/comp
  *
  * What it never does: decide a verdict, pick a notice, or read meaning off an empty list. The panel
  * says what the strip shows (`lead`, `notice`) and what the body holds (`body`, `open`).
- *
- * Drawer mode (opt-in, `drawer` prop): a row can carry a row-spanning `.collapsible` the consumer renders;
- * the owner holds which one is open.
  */
 
 // ---------------------------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------------------------
 
-/** 'action' is a row's drawer toggle: the cell's text and icon on a button (`drawer`). */
-export type CellKind = 'text' | 'code' | 'media' | 'action';
+/** Built kinds. 'chip' | 'action' are specified and deferred to a named consumer. `date` and `number` show `value()` as given: the table never formats. */
+export type CellKind = 'text' | 'code' | 'media' | 'date' | 'number';
 
 export type NoticeTone = 'positive' | 'negative' | 'neutral' | 'attention' | 'idle';
 
@@ -50,7 +49,7 @@ export type LookupColumn<Row> = {
   identity?: boolean;
   /** The one column that absorbs the slack (§ 18). At most one, and only on a 'text' column. */
   grow?: boolean;
-  icon?: IconComponent;
+  /** A small grey chip after the value, e.g. "Centre". Only beside a value, never in place of one. */
   note?: (row: Row) => string | null | undefined;
 };
 
@@ -71,6 +70,7 @@ export type IconComponent = FunctionalComponent<{ class?: string }>;
 
 export type PlaceholderContent = { icon: IconComponent; text: string };
 
+/** The body's own words for an outcome with no rows, under the headings, instead of the strip's notice. */
 export type TablePlaceholder = {
   kind: PlaceholderKind | null;
   retained?: PlaceholderKind | null;
@@ -103,21 +103,33 @@ export type LookupTableProps<Row> = {
    * stays while its values change under a cover, and only the rows that come or go slide.
    */
   slots?: RowSlot[];
+  /** A drawer under each row, one open at a time; the panel owns which and its timers. */
+  drawer?: LookupDrawer<Row>;
   placeholder?: TablePlaceholder;
-  drawer?: RowDrawer<Row>;
 };
 
-export type RowDrawer<Row> = {
-  has: (row: Row, index: number) => boolean;
-  render: (row: Row, index: number) => VNode | VNode[] | null;
-  label: (row: Row, index: number, expanded: boolean) => string;
-  regionLabel: (row: Row, index: number) => string;
-  open: number | null;
-  shown: readonly number[];
-  onToggle: (index: number) => void;
-  idPrefix: string;
-  /** Set when the toggles open a dialog elsewhere instead (a sheet on a phone): the row whose dialog is open. */
-  dialog?: { open: number | null };
+export type LookupDrawer<Row> = {
+  /** The one open row, keyed like `rowKey`. */
+  openKey: string | null;
+  /** The row whose drawer is shutting: its content stays rendered until the panel drops it. */
+  retainedKey?: string | null;
+  /** The drawer's content, the panel's own. */
+  render: (row: Row, key: string) => VNode | VNode[];
+  /** The toggle's `.sr-only` column heading. Already localised. */
+  label: string;
+  /** The toggle's aria-label and title. Already localised. */
+  toggleLabel: (row: Row, open: boolean) => string;
+  onToggle: (key: string) => void;
+  /** Rows that have a drawer; the others get no toggle and no row click. Omitted, every row has one. */
+  has?: (row: Row) => boolean;
+  /** The toggle as a labelled button (the icon, `text` and a chevron) under a visible heading, in place of the 30px round one; a row with no drawer shows `text` plain. */
+  labelled?: { text: (row: Row) => string; icon: IconComponent };
+  /** The toggle opens a dialog elsewhere (a sheet on a phone) and not the drawer: the row whose dialog is open. */
+  dialog?: { openKey: string | null };
+  /** Names the drawer's panel as a region. Already localised. */
+  regionLabel?: (row: Row) => string;
+  /** For a panel that keeps a drawer open through a lookup: its content goes under the row's skeleton, and the drawer, its toggle and the row click are inert while covered. */
+  cover?: boolean;
 };
 
 /**
@@ -162,20 +174,6 @@ export const tableSlots = ({
   ...Array.from({ length: outgoing }, () => ({ open: !bodyOpen, veil: outgoingVeil })),
 ];
 
-export const toggleDrawer = (open: number | null, index: number): number | null => (open === index ? null : index);
-
-export const settleDrawer = ({ open, hasAt, cleared = false }: { open: number | null; hasAt: readonly boolean[]; cleared?: boolean }): number | null =>
-  cleared || open === null ? null : hasAt[open] === true ? open : null;
-
-export const retainDrawers = (retained: readonly number[], previous: number | null, next: number | null): number[] => {
-  const kept = retained.filter(index => index !== next);
-  return previous !== null && previous !== next && !kept.includes(previous) ? [...kept, previous] : kept;
-};
-
-export const shownDrawers = (open: number | null, retained: readonly number[]): number[] => (open === null ? [...retained] : [...retained.filter(index => index !== open), open]);
-
-export const drawerId = (prefix: string, index: number): string => `${prefix}-drawer-${index}`;
-
 /** Comma-separated field names, trimmed, empty names dropped. Moved here from the sale panel. */
 export const parseHiddenFields = (raw?: string): Set<string> =>
   new Set(
@@ -204,9 +202,16 @@ const CODE = 'minmax(180px, 1.1fr)';
 const GROW = 'minmax(200px, 2.4fr)';
 /** Other text: wraps at its spaces inside its share. */
 const TEXT = 'minmax(150px, 1.2fr)';
+/** Dates: a `yyyy-MM-dd` at 13px tabular and a two-word heading like "Invoice date" in small caps, with the cell's padding. */
+const DATE = 'minmax(120px, 0.8fr)';
+/** Figures: a six-digit odometer with its grouping and a unit, and a one-word heading, with the cell's padding. */
+const NUMBER = 'minmax(110px, 0.7fr)';
+/** The drawer's toggle: exactly its 30px button and the cell's padding, whatever the width. */
+const TOGGLE = '54px';
+/** The labelled toggle: a count like "12 photos" with its icon and chevron, and a one-word heading. */
+const LABELLED_TOGGLE = 'minmax(150px, 0.9fr)';
 /** The thumbnail: exactly its 4:3 box and the cell's padding, whatever the width. */
 const MEDIA = 'calc(var(--lt-media-width) + 24px)';
-const ACTION = 'minmax(150px, 0.9fr)';
 /** The stacked layout's first column (identity above its description): the slack, with a floor. */
 const STACK_FIRST = 'minmax(160px, 1fr)';
 /** No visible column at all: one track, so the strip's notice still spans the card. */
@@ -214,23 +219,27 @@ const SINGLE = 'minmax(0, 1fr)';
 
 const growing = <Row,>(column: LookupColumn<Row>): boolean => !!column.grow && column.kind === 'text';
 
-const track = <Row,>(column: LookupColumn<Row>): string =>
-  growing(column) ? GROW : column.kind === 'code' ? CODE : column.kind === 'media' ? MEDIA : column.kind === 'action' ? ACTION : TEXT;
+const KIND_TRACK: Record<CellKind, string> = { text: TEXT, code: CODE, media: MEDIA, date: DATE, number: NUMBER };
+
+const track = <Row,>(column: LookupColumn<Row>): string => (growing(column) ? GROW : KIND_TRACK[column.kind]);
 
 /**
  * The `grid-template-columns` strings. `stacked` is the 720–960 layout, where the description sits
  * under its code: it exists only when the first visible column is the identity and a different,
  * growing column is visible. Otherwise it is null and the wide layout simply continues.
  */
-export const tableTracks = <Row,>(columns: LookupColumn<Row>[]): { wide: string; stacked: string | null } => {
+export const tableTracks = <Row,>(columns: LookupColumn<Row>[], drawer: boolean | 'labelled' = false): { wide: string; stacked: string | null } => {
   if (columns.length === 0) return { wide: SINGLE, stacked: null };
 
+  // The drawer's toggle is a last column of its own, in both layouts.
+  const toggle = drawer ? [drawer === 'labelled' ? LABELLED_TOGGLE : TOGGLE] : [];
+
   // A media column is a fixed width; if it is the only column, it still has to reach the card's edge.
-  const wide = columns.length === 1 && columns[0].kind === 'media' ? SINGLE : columns.map(track).join(' ');
+  const wide = [columns.length === 1 && columns[0].kind === 'media' ? SINGLE : columns.map(track).join(' '), ...toggle].join(' ');
 
   const first = columns[0];
   const stackable = !!first.identity && columns.some(column => column !== first && growing(column));
-  const stacked = stackable ? [STACK_FIRST, ...columns.filter(column => column !== first && !growing(column)).map(track)].join(' ') : null;
+  const stacked = stackable ? [STACK_FIRST, ...columns.filter(column => column !== first && !growing(column)).map(track), ...toggle].join(' ') : null;
 
   return { wide, stacked };
 };
@@ -249,8 +258,8 @@ export const tableRoles = (body: string, open: boolean, reshaping: boolean): boo
 /**
  * The strip shows the headings whenever there is something to head: idle, in flight, and above rows
  * (they depend on the configuration alone, so the answer cannot change them). It shows a notice
- * only for an outcome that has no rows (authorized and empty, unauthorized, a failed lookup,
- * a panel's own body) and when every column is hidden, where there are no headings to show. A panel
+ * only for an outcome that has no rows (authorized and empty, unauthorized, a failed lookup, a
+ * panel's own body) and when every column is hidden, where there are no headings to show. A panel
  * whose body says that outcome in words (`placeholder: true`) keeps its headings. § 20's
  * `panelLead`, generalised, with the skeleton leg removed.
  */
@@ -413,30 +422,6 @@ const MediaBox = ({ src, identity, strings, onOpenMedia }: MediaProps) => {
  */
 const keepUntranslated = (cell: HTMLElement | undefined) => cell?.setAttribute('translate', 'no');
 
-type ActionState = { has: boolean; expanded: boolean; controls: string | null; popup: boolean; label: string; covered: boolean; onToggle: () => void };
-
-const ActionValue = ({ text, icon: Icon, action }: { text: string | null; icon?: IconComponent; action: ActionState | null }) => {
-  if (!action || !action.has) return text === null ? <span class="lt-none">—</span> : <span class="lt-action-plain">{text}</span>;
-
-  return (
-    <button
-      type="button"
-      class="lt-action-button"
-      data-shape={text === null ? 'round' : 'pill'}
-      aria-haspopup={action.popup ? 'dialog' : null}
-      aria-expanded={action.expanded ? 'true' : 'false'}
-      aria-controls={action.controls}
-      aria-label={action.label}
-      inert={action.covered}
-      onClick={action.onToggle}
-    >
-      {Icon && <Icon class="lt-action-glyph" />}
-      {text !== null && <span class="lt-action-text">{text}</span>}
-      {(text !== null || !Icon) && <ChevronDownIcon class="lt-action-chevron" />}
-    </button>
-  );
-};
-
 const Cell = <Row,>({
   column,
   row,
@@ -444,11 +429,9 @@ const Cell = <Row,>({
   identity,
   strings,
   onOpenMedia,
-  action,
-}: { column: LookupColumn<Row>; row: Row; roles: boolean; identity: string | null; action: ActionState | null } & Pick<LookupTableProps<Row>, 'strings' | 'onOpenMedia'>) => {
+}: { column: LookupColumn<Row>; row: Row; roles: boolean; identity: string | null } & Pick<LookupTableProps<Row>, 'strings' | 'onOpenMedia'>) => {
   const text = cellText(column, row);
   const media = column.kind === 'media';
-  const actionKind = column.kind === 'action';
   const note = text !== null ? column.note?.(row)?.trim() : null;
   // A media cell is keyed by its picture, so a new picture is a new element starting at `loading`.
   const key = media ? `${column.field}:${text ?? ''}` : column.field;
@@ -463,7 +446,6 @@ const Cell = <Row,>({
       data-identity={column.identity ? 'true' : null}
       data-grow={growing(column) ? 'true' : null}
       data-media={media ? (text === null ? 'none' : 'loading') : null}
-      data-shape={actionKind ? (action?.has ? (text === null ? 'round' : 'pill') : 'plain') : null}
       ref={column.kind === 'code' ? keepUntranslated : undefined}
     >
       {/*
@@ -473,9 +455,7 @@ const Cell = <Row,>({
         column may be clamped by the panel, so it carries its whole text as a title.
       */}
       <span class="lt-value shift-skeleton" title={growing(column) && text !== null ? text : null}>
-        {actionKind ? (
-          <ActionValue text={text} icon={column.icon} action={action} />
-        ) : media ? (
+        {media ? (
           <MediaBox src={text} identity={identity} strings={strings} onOpenMedia={onOpenMedia} />
         ) : text === null ? (
           <span class="lt-none">—</span>
@@ -487,14 +467,6 @@ const Cell = <Row,>({
       </span>
     </div>
   );
-};
-
-/** Row keys must be unique or the vdom moves the wrong element; a host key that repeats is suffixed rather than trusted. */
-const uniqueKey = (seen: Set<string>, key: string): string => {
-  let candidate = key;
-  for (let n = 2; seen.has(candidate); n++) candidate = `${key}~${n}`;
-  seen.add(candidate);
-  return candidate;
 };
 
 const PLACEHOLDER_KINDS: PlaceholderKind[] = ['idle', 'empty', 'error', 'unauthorized'];
@@ -531,6 +503,36 @@ const Placeholder = ({ placeholder, busy }: { placeholder: TablePlaceholder; bus
   );
 };
 
+/** The drawer's id for the toggle's aria-controls: a row key may carry characters an id should not. */
+// Every character outside [A-Za-z0-9-] is escaped by its code, `_` included, so two keys never share an id.
+const drawerId = (key: string): string => `lt-drawer-${key.replace(/[^A-Za-z0-9-]/g, char => `_${char.charCodeAt(0)}_`)}`;
+
+const INTERACTIVE = 'button, a, input, select, textarea, label, summary, [role="button"], [tabindex], [contenteditable]';
+
+/**
+ * A click anywhere on the row toggles its drawer, except on a control inside the row (a media button,
+ * the toggle itself), which does its own thing, and except a double click or a drag that selected
+ * text: a reader copying a value must not open and shut the drawer.
+ */
+const toggleFromRow = (event: MouseEvent, key: string, onToggle: (key: string) => void) => {
+  if (event.detail > 1) return;
+  const row = event.currentTarget as HTMLElement;
+  const control = (event.target as HTMLElement | null)?.closest?.(INTERACTIVE);
+  if (control && row.contains(control)) return;
+  const root = row.getRootNode() as ShadowRoot & { getSelection?: () => Selection | null };
+  const selection = root.getSelection?.() ?? window.getSelection();
+  if (selection && selection.toString() !== '') return;
+  onToggle(key);
+};
+
+/** Row keys must be unique or the vdom moves the wrong element; a host key that repeats is suffixed rather than trusted. */
+const uniqueKey = (seen: Set<string>, key: string): string => {
+  let candidate = key;
+  for (let n = 2; seen.has(candidate); n++) candidate = `${key}~${n}`;
+  seen.add(candidate);
+  return candidate;
+};
+
 export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[]): VNode {
   const { columns, rows, rowKey, lead, notice, busy, body, open, reshaping = false, strings, onOpenMedia, slots, drawer, placeholder } = props;
 
@@ -539,7 +541,7 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
   // `rows: []` is not a table: no row, so no role for a reader to land on (§ 10). A row whose slot is
   // shut (arriving, or leaving) is not one either.
   const roles = tableRoles(body, open, reshaping) && rows.some((_, index) => slotOf(index).open);
-  const tracks = tableTracks(columns);
+  const tracks = tableTracks(columns, !drawer || columns.length === 0 ? false : drawer.labelled ? 'labelled' : true);
   const identityColumn = columns.find(column => column.identity);
   const seen = new Set<string>();
 
@@ -595,6 +597,11 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
               {column.label}
             </span>
           ))}
+          {drawer && columns.length > 0 && (
+            <span key="lt-toggle" class="lt-cell lt-toggle-head" role={roles ? 'columnheader' : null} data-kind="toggle">
+              {drawer.labelled ? drawer.label : <span class="sr-only">{drawer.label}</span>}
+            </span>
+          )}
           {/* Narrow panels drop the headings (each card captions its own fields) and keep one word on the strip. */}
           <span class="lt-columns-label" aria-hidden="true">
             {strings.columnsLabel}
@@ -610,56 +617,96 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
                 const identity = identityColumn ? cellText(identityColumn, row) : null;
                 const slot = slotOf(index);
                 const rowRoles = roles && slot.open;
-
-                const drawerHas = drawer ? drawer.has(row, index) : false;
-                const drawerOpen = drawerHas && drawer?.open === index;
-                const id = drawer ? drawerId(drawer.idPrefix, index) : '';
-                const drawerShown = drawer ? drawer.shown.includes(index) : false;
-                const dialog = drawer?.dialog;
-                const expanded = dialog ? drawerHas && dialog.open === index : drawerOpen;
-                const action: ActionState | null = drawer
-                  ? {
-                      has: drawerHas,
-                      expanded,
-                      controls: dialog ? null : id,
-                      popup: !!dialog,
-                      label: drawerHas ? drawer.label(row, index, expanded) : '',
-                      covered: slot.veil === 'cover',
-                      onToggle: () => drawer.onToggle(index),
-                    }
-                  : null;
+                const key = uniqueKey(seen, rowKey(row, index));
+                const hasDrawer = !!drawer && columns.length > 0;
+                const rowHas = hasDrawer && (drawer.has?.(row) ?? true);
+                const drawerOpen = rowHas && drawer.openKey === key;
+                // Only the open row and the one shutting render their content: a long list must not render a drawer per row.
+                const drawerShown = drawerOpen || (hasDrawer && drawer.retainedKey === key);
+                const expanded = drawer?.dialog ? rowHas && drawer.dialog.openKey === key : drawerOpen;
+                const inert = hasDrawer && drawer.cover ? slot.veil === 'cover' : undefined;
+                const labelled = hasDrawer ? drawer.labelled : undefined;
+                const LabelIcon = labelled?.icon;
 
                 // Each row is its own slot: a .collapsible, so a row that comes or goes slides on its own
                 // while the rest of the list stays where it is. `cover` puts the row under the family's
                 // skeleton (`.loading` is the shift-skeleton switch), `fade` fades its values.
                 return (
-                  <div
-                    key={uniqueKey(seen, rowKey(row, index))}
-                    class="lt-slot collapsible"
-                    data-open={slot.open ? 'true' : 'false'}
-                    data-veil={slot.veil}
-                    aria-hidden={slot.open ? null : 'true'}
-                  >
+                  <div key={key} class="lt-slot collapsible" data-open={slot.open ? 'true' : 'false'} data-veil={slot.veil} aria-hidden={slot.open ? null : 'true'}>
                     <div class="collapsible-body lt-slot-body">
-                      <div class={{ 'lt-row': true, 'loading': slot.veil === 'cover' }} role={rowRoles ? 'row' : null} data-open={drawerOpen ? 'true' : null}>
+                      <div
+                        class={{ 'lt-row': true, 'loading': slot.veil === 'cover' }}
+                        role={rowRoles ? 'row' : null}
+                        data-drawer={rowHas ? 'true' : null}
+                        data-open={hasDrawer ? (drawerOpen ? 'true' : 'false') : null}
+                        onClick={rowHas ? (event: MouseEvent) => !inert && toggleFromRow(event, key, drawer.onToggle) : undefined}
+                      >
                         {columns.map(column => (
-                          <Cell column={column} row={row} roles={rowRoles} identity={identity} strings={strings} onOpenMedia={onOpenMedia} action={action} />
+                          <Cell column={column} row={row} roles={rowRoles} identity={identity} strings={strings} onOpenMedia={onOpenMedia} />
                         ))}
+                        {hasDrawer && (
+                          <div key="lt-toggle" class="lt-cell lt-toggle" role={rowRoles ? 'cell' : null} data-kind="toggle" data-look={labelled ? 'labelled' : null}>
+                            {labelled ? (
+                              // The count changes with the row, so it goes under the skeleton like any value.
+                              <span class="lt-value shift-skeleton">
+                                {rowHas ? (
+                                  <button
+                                    type="button"
+                                    class="lt-toggle-pill"
+                                    aria-haspopup={drawer.dialog ? 'dialog' : null}
+                                    aria-expanded={expanded ? 'true' : 'false'}
+                                    aria-controls={drawer.dialog ? null : drawerId(key)}
+                                    aria-label={drawer.toggleLabel(row, expanded)}
+                                    inert={inert}
+                                    onClick={() => drawer.onToggle(key)}
+                                  >
+                                    <LabelIcon class="lt-toggle-pill-icon" />
+                                    <span class="lt-toggle-pill-text">{labelled.text(row)}</span>
+                                    <ChevronDownIcon class="lt-toggle-pill-chevron" />
+                                  </button>
+                                ) : (
+                                  <span class="lt-toggle-plain">{labelled.text(row)}</span>
+                                )}
+                              </span>
+                            ) : (
+                              rowHas && (
+                                <button
+                                  type="button"
+                                  class="lt-toggle-button"
+                                  aria-haspopup={drawer.dialog ? 'dialog' : null}
+                                  aria-expanded={expanded ? 'true' : 'false'}
+                                  aria-controls={drawer.dialog ? null : drawerId(key)}
+                                  aria-label={drawer.toggleLabel(row, expanded)}
+                                  title={drawer.toggleLabel(row, expanded)}
+                                  inert={inert}
+                                  onClick={() => drawer.onToggle(key)}
+                                >
+                                  <span class="lt-toggle-glyph" aria-hidden="true">
+                                    <ChevronRightIcon class="lt-toggle-icon" />
+                                  </span>
+                                </button>
+                              )
+                            )}
+                          </div>
+                        )}
                       </div>
-                      {drawer && (
+                      {/* Inside the slot, after the row, so it slides with the slot. SSC's row > cell model, with roles only while the table has them. */}
+                      {hasDrawer && (
                         <div
-                          class={{ 'lt-drawer': true, 'collapsible': true, 'loading': slot.veil === 'cover' }}
+                          key="lt-drawer"
+                          id={drawerId(key)}
+                          class={{ 'lt-drawer': true, 'collapsible': true, 'loading': !!inert }}
                           data-open={drawerOpen ? 'true' : 'false'}
                           role={rowRoles ? 'row' : null}
                           aria-hidden={drawerOpen ? null : 'true'}
-                          inert={slot.veil === 'cover' && drawerShown}
+                          inert={inert && drawerShown}
                         >
-                          <div class="collapsible-body lt-drawer-body">
-                            <div class="lt-drawer-cell" role={rowRoles ? 'cell' : null}>
-                              <div class="lt-drawer-panel" id={id} role={drawerHas ? 'region' : null} aria-label={drawerHas ? drawer.regionLabel(row, index) : null}>
-                                <div class={{ 'lt-drawer-content': true, 'shift-skeleton': drawerShown }}>{drawerShown ? drawer.render(row, index) : null}</div>
+                          <div class="collapsible-body lt-drawer-body" role={rowRoles ? 'cell' : null}>
+                            {drawerShown && (
+                              <div class="lt-drawer-panel" role={drawer.regionLabel ? 'region' : null} aria-label={drawer.regionLabel?.(row) ?? null}>
+                                {drawer.cover ? <div class="lt-drawer-content shift-skeleton">{drawer.render(row, key)}</div> : drawer.render(row, key)}
                               </div>
-                            </div>
+                            )}
                           </div>
                         </div>
                       )}

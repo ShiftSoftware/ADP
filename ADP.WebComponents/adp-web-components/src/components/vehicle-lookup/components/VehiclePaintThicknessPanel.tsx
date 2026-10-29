@@ -14,7 +14,7 @@ import { SearchIcon } from '~assets/search-icon';
 import { EmptyTableIcon } from '~assets/empty-table-icon';
 
 import { LookupHeadWait, PanelVerdict, StatusBadge } from '~features/vehicle-info-layout';
-import { LookupColumn, LookupTable, PlaceholderKind, RowDrawer, RowSlot, TablePlaceholder, shownBody, visibleColumns } from '~features/lookup-table';
+import { LookupColumn, LookupDrawer, LookupTable, PlaceholderKind, RowSlot, TablePlaceholder, shownBody, visibleColumns } from '~features/lookup-table';
 import type { LanguageKeys } from '~features/multi-lingual';
 import type { PopoverSheetChangeDetail } from '../../components/shift-popover/shift-popover';
 
@@ -298,13 +298,6 @@ const paintColumns = (locale: PaintThicknessLocale, language: string): LookupCol
     note: row => (row.left ? null : row.centre ? locale.centre : null),
   },
   { field: 'right', label: `${upper(locale.right, language)} (${locale.unit})`, kind: 'text', value: row => formatReading(row.right?.value) },
-  {
-    field: 'photos',
-    label: locale.photos,
-    kind: 'action',
-    icon: CameraIcon,
-    value: row => (rowHasPhotos(row) ? photoCountText(rowPhotoCount(row), locale, language) : locale.noPhotos),
-  },
 ];
 
 export type OpenPhoto = (image: HTMLImageElement, src: string, label: string) => void;
@@ -389,7 +382,14 @@ const TABPANEL_ID = 'paint-tabpanel';
 const TAB_ID_PREFIX = 'paint-tab';
 const tabId = (index: number) => `${TAB_ID_PREFIX}-${index}`;
 
-export type PaintSheet = { index: number; open: boolean };
+// Rows are keyed by slot, so a row is a place that stays through a lookup (§ 21a) and its drawer with it.
+const SLOT = 'slot-';
+
+export const slotKey = (index: number): string => `${SLOT}${index}`;
+
+export const slotIndex = (key: string): number => Number(key.slice(SLOT.length));
+
+export type PaintSheet = { key: string; open: boolean };
 
 export const sheetPhotosTitle = (row: PaintRow, locale: PaintThicknessLocale, language: string): string =>
   fill(locale.sheetPhotosTitle, { name: rowName(locale, row), photos: photoCountText(rowPhotoCount(row), locale, language) });
@@ -413,10 +413,10 @@ type Props = {
   retainedSummary: ReadingSummary | null;
   slotRows: PaintRow[];
   slots: RowSlot[];
-  drawerOpen: number | null;
-  drawerShown: readonly number[];
-  drawerRowFor: (row: PaintRow, index: number) => PaintRow;
-  onToggleDrawer: (index: number) => void;
+  openKey: string | null;
+  retainedKey: string | null;
+  drawerRowFor: (row: PaintRow, key: string) => PaintRow;
+  onToggleDrawer: (key: string) => void;
   photosOpen: boolean;
   photosRendered: boolean;
   retainedGroups: PhotoGroup[];
@@ -433,10 +433,9 @@ type Props = {
 };
 
 const PHOTOS_REGION_ID = 'paint-photos-region';
-const DRAWER_PREFIX = 'paint';
 
 // The row's photo toggle, found in the table by its slot: in dialog mode a toggle carries no id to point at.
-const photoToggle = (index: number) => `.paint-table .lt-rows > :nth-child(${index + 1}) .lt-action-button`;
+const photoToggle = (key: string) => `.paint-table .lt-rows > :nth-child(${slotIndex(key) + 1}) .lt-toggle-pill`;
 
 export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
   const {
@@ -458,8 +457,8 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
     retainedSummary,
     slotRows,
     slots,
-    drawerOpen,
-    drawerShown,
+    openKey,
+    retainedKey,
     drawerRowFor,
     onToggleDrawer,
     photosOpen,
@@ -503,25 +502,27 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
   const photosSection = photosSectionOpen(state, groups.length, leaving, reshaping);
   const photosBodyOpen = photosSection && photosOpen;
 
-  const drawer: RowDrawer<PaintRow> | undefined = photosShown
+  const drawer: LookupDrawer<PaintRow> | undefined = photosShown
     ? {
-        has: row => rowHasPhotos(row),
-        render: (row, index) => drawerContent(drawerRowFor(row, index), locale, language, photos),
-        label: (row, _index, expanded) =>
+        openKey: sheetMode ? null : openKey,
+        retainedKey: sheetMode ? null : retainedKey,
+        render: (row, key) => drawerContent(drawerRowFor(row, key), locale, language, photos),
+        label: locale.photos,
+        toggleLabel: (row, expanded) =>
           fill(expanded ? locale.hidePhotosLabel : locale.showPhotosLabel, { photos: photoCountText(rowPhotoCount(row), locale, language), panel: rowName(locale, row) }),
-        regionLabel: row => fill(locale.photosRegionLabel, { panel: rowName(locale, row) }),
-        open: sheetMode ? null : drawerOpen,
-        shown: sheetMode ? [] : drawerShown,
         onToggle: onToggleDrawer,
-        idPrefix: DRAWER_PREFIX,
-        dialog: sheetMode ? { open: sheet?.open ? sheet.index : null } : undefined,
+        has: rowHasPhotos,
+        regionLabel: row => fill(locale.photosRegionLabel, { panel: rowName(locale, row) }),
+        labelled: { text: row => (rowHasPhotos(row) ? photoCountText(rowPhotoCount(row), locale, language) : locale.noPhotos), icon: CameraIcon },
+        dialog: sheetMode ? { openKey: sheet?.open ? sheet.key : null } : undefined,
+        cover: true,
       }
     : undefined;
 
   const rtl = direction === 'rtl';
   const count = headCount(state, locale, language);
 
-  const sheetRow = sheet ? drawerRowFor(slotRows[sheet.index], sheet.index) : undefined;
+  const sheetRow = sheet ? drawerRowFor(slotRows[slotIndex(sheet.key)], sheet.key) : undefined;
   const sheetTitle = sheetRow ? sheetPhotosTitle(sheetRow, locale, language) : '';
   const sheetOpen = !!sheet?.open && !!sheetRow;
   // A shut popover's content stays mounted on <body>; busy there, its sweeps re-layerized the page every frame of a lookup.
@@ -654,7 +655,7 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
               columns={columns}
               rows={slotRows}
               slots={slots}
-              rowKey={(_, index) => `slot-${index}`}
+              rowKey={(_, index) => slotKey(index)}
               lead="columns"
               notice={null}
               busy={busy}
@@ -711,7 +712,7 @@ export const VehiclePaintThicknessPanel: FunctionalComponent<Props> = props => {
         anchorAria={false}
         inside="shift-image-layer"
         open={sheetOpen}
-        anchor={sheet ? photoToggle(sheet.index) : undefined}
+        anchor={sheet ? photoToggle(sheet.key) : undefined}
         label={sheetTitle || locale.allPhotos}
         language={language as LanguageKeys}
         onOpenChange={(event: CustomEvent<{ open: boolean }>) => !event.detail.open && onCloseSheet()}

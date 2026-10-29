@@ -9,7 +9,7 @@ import { tableSlots } from '~features/lookup-table';
 
 import { ShiftTabs } from '../../components/shift-tabs';
 
-import { PanelState, VehiclePaintThicknessPanel, allPhotoGroups, bodyOpen, panelBody, shownRows } from './VehiclePaintThicknessPanel';
+import { PanelState, VehiclePaintThicknessPanel, allPhotoGroups, bodyOpen, panelBody, shownRows, slotKey } from './VehiclePaintThicknessPanel';
 
 const locale = paintLocale as never;
 
@@ -66,8 +66,8 @@ const render = ({ state = loaded(), busy = false, direction = 'ltr', drawerOpen 
         retainedSummary={null}
         slotRows={rows}
         slots={tableSlots({ current: rows.length, outgoing: 0, opened: rows.length, bodyOpen: open, currentVeil: busy ? 'cover' : 'none', outgoingVeil: 'none' })}
-        drawerOpen={drawerOpen}
-        drawerShown={drawerOpen === null ? [] : [drawerOpen]}
+        openKey={drawerOpen === null ? null : slotKey(drawerOpen)}
+        retainedKey={null}
         drawerRowFor={row => row}
         onToggleDrawer={() => undefined}
         photosOpen={false}

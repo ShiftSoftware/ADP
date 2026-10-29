@@ -420,6 +420,12 @@
     text-transform: none;
   }
 
+  .paint-table .lt-drawer-panel {
+    padding-block: 12px 14px;
+    padding-inline: 18px 14px;
+    margin-inline: 12px;
+  }
+
   .paint-summary {
     margin-inline: 14px;
     max-width: calc(100% - 28px);

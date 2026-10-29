@@ -118,7 +118,7 @@ public class CosmosVehicleLookupStorageService : IVehicleLookupStorageService
 
         companyData.VehicleInspections = items.Where(x => x.ItemType.ToString() == ModelTypes.VehicleInspection)
             .Select(x => ((JObject)x).ToObject<VehicleInspectionModel>())
-            .Where(x => !(x?.IsDeleted ?? false))
+            .Where(x => !(x?.IsDeleted ?? false) && !(x?.IsPending ?? false))
             .ToList();
 
         companyData.CampaignVinEntries = items.Where(x => x.ItemType.ToString() == ModelTypes.CampaignVinEntry)

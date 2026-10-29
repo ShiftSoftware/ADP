@@ -389,8 +389,12 @@ public class DuckDBVehicleLookupStorageService(global::DuckDB.NET.Data.DuckDBCon
 
     private async Task<List<VehicleInspectionModel>> GetVehicleInspectionsByVinsAsync(string vinInClause)
     {
-        return await ExecuteQueryAsync<VehicleInspectionModel>(
+        // IsPending is filtered here, not in SQL: a snapshot written before the column existed has no such
+        // column (or NULL in it), and the mapper reads both as false.
+        var inspections = await ExecuteQueryAsync<VehicleInspectionModel>(
             $"SELECT * FROM VehicleInspection WHERE VIN IN ({vinInClause}) AND IsDeleted = false");
+
+        return inspections.Where(x => !x.IsPending).ToList();
     }
 
     #endregion

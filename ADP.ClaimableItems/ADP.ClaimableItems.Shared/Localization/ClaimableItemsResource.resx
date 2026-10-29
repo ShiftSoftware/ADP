@@ -156,4 +156,12 @@
   <data name="Eligibility conditions (JSON)" xml:space="preserve"><value>Eligibility conditions (JSON)</value></data>
   <data name="Conditions are AND. Use an anyOf group for alternatives and set whenUnmet on the group. Groups cannot nest. Leave blank or use [] for no extra conditions. Campaign activation and validity still apply." xml:space="preserve"><value>Conditions are AND. Use an anyOf group for alternatives and set whenUnmet on the group. Groups cannot nest. Leave blank or use [] for no extra conditions. Campaign activation and validity still apply.</value></data>
   <data name="Enter leaf conditions or non-empty anyOf groups using supported fields and properties. Groups cannot nest; set whenUnmet on the group, not its alternatives." xml:space="preserve"><value>Enter leaf conditions or non-empty anyOf groups using supported fields and properties. Groups cannot nest; set whenUnmet on the group, not its alternatives.</value></data>
+  <data name="Mileage cannot be negative" xml:space="preserve"><value>Mileage cannot be negative</value></data>
+  <data name="Duration must be greater than zero" xml:space="preserve"><value>Duration must be greater than zero</value></data>
+  <data name="Transfer rate must be greater than zero" xml:space="preserve"><value>Transfer rate must be greater than zero</value></data>
+  <data name="Price increment must be between 0% and 10%" xml:space="preserve"><value>Price increment must be between 0% and 10%</value></data>
+  <data name="Select at least one menu" xml:space="preserve"><value>Select at least one menu</value></data>
+  <data name="A periodic menu can be added to a contract only once" xml:space="preserve"><value>A periodic menu can be added to a contract only once</value></data>
+  <data name="Price cannot be negative" xml:space="preserve"><value>Price cannot be negative</value></data>
+  <data name="Enter a duration for every periodic menu" xml:space="preserve"><value>Enter a duration for every periodic menu</value></data>
 </root>

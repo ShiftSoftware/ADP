@@ -2,7 +2,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using ShiftSoftware.ADP.Cases.Shared.Printing;
+using ShiftSoftware.ADP.ClaimableItems.API.Services;
 using ShiftSoftware.ADP.ClaimableItems.Data.Extensions;
+using ShiftSoftware.ADP.ClaimableItems.Data.Services;
+using ShiftSoftware.ADP.ClaimableItems.Shared;
 using ShiftSoftware.ADP.ClaimableItems.Shared.ActionTrees;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.EFCore;
@@ -83,7 +86,13 @@ public static class ClaimableItemsApiExtensions
         services.AddSingleton(new Data.ClaimableItemsDataOptions
         {
             PostClaimModificationAction = options.PostClaimModificationAction,
+            ContractPeriodicMileageMargin = options.ContractPeriodicMileageMargin,
         });
+
+        // Service contracts. The default menu provider goes through the vehicle lookup, resolved only when a
+        // contract needs it; TryAdd lets a host register its own provider instead.
+        services.AddScoped<ClaimableItemContractMenuService>();
+        services.TryAddScoped<IClaimableItemContractMenuProvider, VehicleLookupContractMenuProvider>();
 
         mvcBuilder.AddApplicationPart(typeof(ClaimableItemsApiExtensions).Assembly);
 
@@ -109,6 +118,8 @@ public static class ClaimableItemsApiExtensions
         target.Schema = source.Schema;
         target.ClaimableItemSetupAction = source.ClaimableItemSetupAction;
         target.CampaignVinEntriesAction = source.CampaignVinEntriesAction;
+        target.ClaimableItemContractsAction = source.ClaimableItemContractsAction;
+        target.ContractPeriodicMileageMargin = source.ContractPeriodicMileageMargin;
         target.ClaimingAction = source.ClaimingAction;
         target.CertifyingAction = source.CertifyingAction;
         target.InvoicingAction = source.InvoicingAction;

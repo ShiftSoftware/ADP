@@ -90,8 +90,8 @@ var host = new HostBuilder()
         // Everything that depends on the choice is in the "storage-specific registrations" block right
         // after AddLookupService, and follows this value — nothing else needs commenting in or out.
         // (GET api/menu-duckdb/{code} always reads DuckDB, whatever is chosen here.)
-        var lookupStorage = StorageSources.DuckDB;
-        // var lookupStorage = StorageSources.CosmosDB;
+        // var lookupStorage = StorageSources.DuckDB;
+        var lookupStorage = StorageSources.CosmosDB;
         // =======================================================================================
 
         services.AddLookupService(options =>

@@ -29,4 +29,5 @@ Represents a comprehensive vehicle inspection record.
 | CustomerEmail <div><strong>``string``</strong></div> | The customer's email address. |
 | CustomerGender <div><strong>``Genders``</strong></div> | The customer's gender. |
 | IsDeleted <div><strong>``bool``</strong></div> | Indicates whether this inspection record has been deleted. |
+| IsPending <div><strong>``bool``</strong></div> | Indicates that the inspection is recorded but waiting on a step outside it (a check of its VIN, for example). A pending inspection is not loaded into the vehicle lookup, so it counts toward no eligibility rule and activates no service item until the flag is cleared. Documents written before this property existed read as not pending. |
 | CompanyHashID <div><strong>``string``</strong></div> | The Company Hash ID from the Identity System. |
