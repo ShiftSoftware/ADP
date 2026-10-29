@@ -19,7 +19,7 @@
  * THE RULE THAT FOLLOWS: nothing between a panel host and its table may declare a container.
  *
  * Reads top to bottom as the table does: :host tokens, grid, strip, notice tones, body, rows, cells
- * by kind, media, loading rules, container queries widest-first, reduced motion.
+ * by kind, media, the row drawer, loading rules, container queries widest-first, reduced motion.
  *
  * Mobile: it must work at 400px with no horizontal scroll of the host page. At 720px and under every
  * row is a labelled card in one track (minmax(0, 1fr)) and nothing in it can be wider than the card;
@@ -342,6 +342,24 @@
   white-space: nowrap;
 }
 
+/* date and number: read, not glanced at, so --date-ink (§ 9); tabular so a column of them lines up.
+   Never wrapped: the track's floor holds an ordinary value. */
+.lt-row > .lt-date,
+.lt-row > .lt-number {
+  color: var(--date-ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A figure aligns to the inline end, heading and cells, so its digits line up by place value. */
+.lt-row > .lt-number {
+  text-align: end;
+}
+
+.lt-columns > .lt-cell[data-kind='number'] {
+  justify-content: flex-end;
+}
+
 /* A shown field with no value: the grey empty marker (§ 10). */
 .lt-none {
   color: var(--muted);
@@ -455,6 +473,127 @@
 .lt-media-glyph {
   width: 20px;
   height: 20px;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Row drawer: a last, narrow column with a round toggle, and a drawer under the row. Only with the
+   `drawer` prop; one open at a time, which the panel decides.
+   ------------------------------------------------------------------------------------------- */
+
+/* The whole row toggles too (a convenience; the button is the control). */
+.lt-row[data-drawer='true'] {
+  cursor: pointer;
+}
+
+/* An open row tints, and keeps the tint under the pointer: hover is well under an open row (§ 9). */
+.lt-row[data-open='true'],
+.lt-row[data-open='true']:hover {
+  background: var(--blue-tint);
+}
+
+/* The button centred in its 54px track, on the row's middle line like every other cell. */
+.lt-row > .lt-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Outlined round (§ 18): 30px, the blue's dark on paper with the blue rim as an inset shadow (§ 10);
+   hover and open fill it white on the fill. .2s, a press must feel instant. */
+.lt-toggle-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  margin: 0;
+  color: var(--blue-dark);
+  background: var(--paper);
+  border: 0;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--lt-rim-blue);
+  cursor: pointer;
+  font: inherit;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.lt-toggle-button:hover,
+.lt-toggle-button[aria-expanded='true'] {
+  color: #ffffff;
+  background: var(--blue);
+  box-shadow: inset 0 0 0 1px var(--blue-dark);
+}
+
+/* § 24: every control's focus ring, 2px in the hue's dark. */
+.lt-toggle-button:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 2px;
+}
+
+/* The chevron points along the reading direction and turns down as the drawer opens, on the
+   drawer's own clock. RTL mirrors it with the same function list, so the turn interpolates. */
+.lt-toggle-glyph {
+  display: inline-flex;
+  transform: scaleX(1) rotate(0deg);
+  transition: transform var(--settle) ease;
+}
+
+.lt-toggle-button[aria-expanded='true'] .lt-toggle-glyph {
+  transform: scaleX(1) rotate(90deg);
+}
+
+[dir='rtl'] .lt-toggle-glyph {
+  transform: scaleX(-1) rotate(0deg);
+}
+
+[dir='rtl'] .lt-toggle-button[aria-expanded='true'] .lt-toggle-glyph {
+  transform: scaleX(-1) rotate(90deg);
+}
+
+/* The outlined round button's glyph is 18px (§ 18). */
+.lt-toggle-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* The drawer spans every track under its row and carries the tint, unkeyed, so it fades with the
+   collapsible. It clips, not its body: a grid-item collapsible's body resolves its fr track against
+   the already-shrunk drawer, and lagged behind the rows below it, leaving an untinted band. */
+.lt-drawer {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  background: var(--blue-tint);
+}
+
+.lt-drawer > .lt-drawer-body {
+  overflow: visible;
+}
+
+/* An inset panel (§ 13, § 18): paper on the tinted row, the blue rim, radius 10, the 4px rail on
+   the reading edge and the one inner shadow that says "set into the row". The margin is inside the
+   sliding region, so it slides too. */
+.lt-drawer-panel {
+  margin: 0 12px 14px;
+  padding: 12px 18px 16px 22px;
+  background: var(--paper);
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 1px var(--lt-rim-blue),
+    inset 4px 0 0 var(--blue),
+    0 6px 18px rgba(27, 45, 61, 0.08);
+}
+
+[dir='rtl'] .lt-drawer-panel {
+  padding: 12px 22px 16px 18px;
+  box-shadow:
+    inset 0 0 0 1px var(--lt-rim-blue),
+    inset -4px 0 0 var(--blue),
+    0 6px 18px rgba(27, 45, 61, 0.08);
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -604,6 +743,28 @@
     overflow-wrap: anywhere;
     white-space: normal;
   }
+
+  /* On a card a figure sits under its start-aligned caption, so it starts there too. */
+  .lt-row > .lt-number {
+    text-align: start;
+  }
+
+  /* The toggle is the card's top inline-end corner, uncaptioned -- where SSC puts its trace button. */
+  .lt-row > .lt-toggle {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+  }
+
+  .lt-row > .lt-toggle::before {
+    display: none;
+  }
+
+  /* The panel's edges line up with the card's 14px content inset. */
+  .lt-drawer-panel {
+    margin-inline: 14px;
+  }
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -626,7 +787,9 @@
   .lt-media-box,
   .lt-media-box::after,
   .lt-media-image,
-  .lt-media-stand {
+  .lt-media-stand,
+  .lt-toggle-button,
+  .lt-toggle-glyph {
     transition-duration: 0.01ms !important;
     transition-delay: 0s !important;
     animation-duration: 0.01ms !important;

@@ -1,5 +1,7 @@
 import { VNode, h } from '@stencil/core';
 
+import { ChevronRightIcon } from '~assets/chevron-right-icon';
+
 // The panels' shared glyph set (the features/ folder reaches into it already: lookup-head.tsx).
 import { BADGE_GLYPHS, MEDIA_GLYPHS } from '../../components/vehicle-lookup/components/glyphs';
 
@@ -21,8 +23,8 @@ import { BADGE_GLYPHS, MEDIA_GLYPHS } from '../../components/vehicle-lookup/comp
 // Types
 // ---------------------------------------------------------------------------------------------
 
-/** Built kinds. 'number' | 'date' | 'chip' | 'action' are specified and deferred to a named consumer. */
-export type CellKind = 'text' | 'code' | 'media';
+/** Built kinds. 'chip' | 'action' are specified and deferred to a named consumer. `date` and `number` show `value()` as given: the table never formats. */
+export type CellKind = 'text' | 'code' | 'media' | 'date' | 'number';
 
 export type NoticeTone = 'positive' | 'negative' | 'neutral' | 'attention' | 'idle';
 
@@ -85,6 +87,22 @@ export type LookupTableProps<Row> = {
    * stays while its values change under a cover, and only the rows that come or go slide.
    */
   slots?: RowSlot[];
+  /** A drawer under each row, one open at a time; the panel owns which and its timers. */
+  drawer?: LookupDrawer<Row>;
+};
+
+export type LookupDrawer<Row> = {
+  /** The one open row, keyed like `rowKey`. */
+  openKey: string | null;
+  /** The row whose drawer is shutting: its content stays rendered until the panel drops it. */
+  retainedKey?: string | null;
+  /** The drawer's content, the panel's own. */
+  render: (row: Row) => VNode;
+  /** The toggle's `.sr-only` column heading. Already localised. */
+  label: string;
+  /** The toggle's aria-label and title. Already localised. */
+  toggleLabel: (row: Row, open: boolean) => string;
+  onToggle: (key: string) => void;
 };
 
 /**
@@ -157,6 +175,12 @@ const CODE = 'minmax(180px, 1.1fr)';
 const GROW = 'minmax(200px, 2.4fr)';
 /** Other text: wraps at its spaces inside its share. */
 const TEXT = 'minmax(150px, 1.2fr)';
+/** Dates: a `yyyy-MM-dd` at 13px tabular and a two-word heading like "Invoice date" in small caps, with the cell's padding. */
+const DATE = 'minmax(120px, 0.8fr)';
+/** Figures: a six-digit odometer with its grouping and a unit, and a one-word heading, with the cell's padding. */
+const NUMBER = 'minmax(110px, 0.7fr)';
+/** The drawer's toggle: exactly its 30px button and the cell's padding, whatever the width. */
+const TOGGLE = '54px';
 /** The thumbnail: exactly its 4:3 box and the cell's padding, whatever the width. */
 const MEDIA = 'calc(var(--lt-media-width) + 24px)';
 /** The stacked layout's first column (identity above its description): the slack, with a floor. */
@@ -166,22 +190,27 @@ const SINGLE = 'minmax(0, 1fr)';
 
 const growing = <Row,>(column: LookupColumn<Row>): boolean => !!column.grow && column.kind === 'text';
 
-const track = <Row,>(column: LookupColumn<Row>): string => (growing(column) ? GROW : column.kind === 'code' ? CODE : column.kind === 'media' ? MEDIA : TEXT);
+const KIND_TRACK: Record<CellKind, string> = { text: TEXT, code: CODE, media: MEDIA, date: DATE, number: NUMBER };
+
+const track = <Row,>(column: LookupColumn<Row>): string => (growing(column) ? GROW : KIND_TRACK[column.kind]);
 
 /**
  * The `grid-template-columns` strings. `stacked` is the 720–960 layout, where the description sits
  * under its code: it exists only when the first visible column is the identity and a different,
  * growing column is visible. Otherwise it is null and the wide layout simply continues.
  */
-export const tableTracks = <Row,>(columns: LookupColumn<Row>[]): { wide: string; stacked: string | null } => {
+export const tableTracks = <Row,>(columns: LookupColumn<Row>[], drawer = false): { wide: string; stacked: string | null } => {
   if (columns.length === 0) return { wide: SINGLE, stacked: null };
 
+  // The drawer's toggle is a last column of its own, in both layouts.
+  const toggle = drawer ? [TOGGLE] : [];
+
   // A media column is a fixed width; if it is the only column, it still has to reach the card's edge.
-  const wide = columns.length === 1 && columns[0].kind === 'media' ? SINGLE : columns.map(track).join(' ');
+  const wide = [columns.length === 1 && columns[0].kind === 'media' ? SINGLE : columns.map(track).join(' '), ...toggle].join(' ');
 
   const first = columns[0];
   const stackable = !!first.identity && columns.some(column => column !== first && growing(column));
-  const stacked = stackable ? [STACK_FIRST, ...columns.filter(column => column !== first && !growing(column)).map(track)].join(' ') : null;
+  const stacked = stackable ? [STACK_FIRST, ...columns.filter(column => column !== first && !growing(column)).map(track), ...toggle].join(' ') : null;
 
   return { wide, stacked };
 };
@@ -376,6 +405,28 @@ const Cell = <Row,>({
   );
 };
 
+/** The drawer's id for the toggle's aria-controls: a row key may carry characters an id should not. */
+// Every character outside [A-Za-z0-9-] is escaped by its code, `_` included, so two keys never share an id.
+const drawerId = (key: string): string => `lt-drawer-${key.replace(/[^A-Za-z0-9-]/g, char => `_${char.charCodeAt(0)}_`)}`;
+
+const INTERACTIVE = 'button, a, input, select, textarea, label, summary, [role="button"], [tabindex], [contenteditable]';
+
+/**
+ * A click anywhere on the row toggles its drawer, except on a control inside the row (a media button,
+ * the toggle itself), which does its own thing, and except a double click or a drag that selected
+ * text: a reader copying a value must not open and shut the drawer.
+ */
+const toggleFromRow = (event: MouseEvent, key: string, onToggle: (key: string) => void) => {
+  if (event.detail > 1) return;
+  const row = event.currentTarget as HTMLElement;
+  const control = (event.target as HTMLElement | null)?.closest?.(INTERACTIVE);
+  if (control && row.contains(control)) return;
+  const root = row.getRootNode() as ShadowRoot & { getSelection?: () => Selection | null };
+  const selection = root.getSelection?.() ?? window.getSelection();
+  if (selection && selection.toString() !== '') return;
+  onToggle(key);
+};
+
 /** Row keys must be unique or the vdom moves the wrong element; a host key that repeats is suffixed rather than trusted. */
 const uniqueKey = (seen: Set<string>, key: string): string => {
   let candidate = key;
@@ -385,14 +436,14 @@ const uniqueKey = (seen: Set<string>, key: string): string => {
 };
 
 export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[]): VNode {
-  const { columns, rows, rowKey, lead, notice, busy, body, open, reshaping = false, strings, onOpenMedia, slots } = props;
+  const { columns, rows, rowKey, lead, notice, busy, body, open, reshaping = false, strings, onOpenMedia, slots, drawer } = props;
 
   const slotOf = (index: number): RowSlot => slots?.[index] ?? { open: true, veil: 'none' };
 
   // `rows: []` is not a table: no row, so no role for a reader to land on (§ 10). A row whose slot is
   // shut (arriving, or leaving) is not one either.
   const roles = tableRoles(body, open, reshaping) && rows.some((_, index) => slotOf(index).open);
-  const tracks = tableTracks(columns);
+  const tracks = tableTracks(columns, !!drawer && columns.length > 0);
   const identityColumn = columns.find(column => column.identity);
   const seen = new Set<string>();
 
@@ -447,6 +498,11 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
               {column.label}
             </span>
           ))}
+          {drawer && columns.length > 0 && (
+            <span key="lt-toggle" class="lt-cell lt-toggle-head" role={roles ? 'columnheader' : null} data-kind="toggle">
+              <span class="sr-only">{drawer.label}</span>
+            </span>
+          )}
           {/* Narrow panels drop the headings (each card captions its own fields) and keep one word on the strip. */}
           <span class="lt-columns-label" aria-hidden="true">
             {strings.columnsLabel}
@@ -462,24 +518,61 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
                 const identity = identityColumn ? cellText(identityColumn, row) : null;
                 const slot = slotOf(index);
                 const rowRoles = roles && slot.open;
+                const key = uniqueKey(seen, rowKey(row, index));
+                const hasDrawer = !!drawer && columns.length > 0;
+                const drawerOpen = hasDrawer && drawer.openKey === key;
+                // Only the open row and the one shutting render their content: a long list must not render a drawer per row.
+                const drawerShown = drawerOpen || (hasDrawer && drawer.retainedKey === key);
 
                 // Each row is its own slot: a .collapsible, so a row that comes or goes slides on its own
                 // while the rest of the list stays where it is. `cover` puts the row under the family's
                 // skeleton (`.loading` is the shift-skeleton switch), `fade` fades its values.
                 return (
-                  <div
-                    key={uniqueKey(seen, rowKey(row, index))}
-                    class="lt-slot collapsible"
-                    data-open={slot.open ? 'true' : 'false'}
-                    data-veil={slot.veil}
-                    aria-hidden={slot.open ? null : 'true'}
-                  >
+                  <div key={key} class="lt-slot collapsible" data-open={slot.open ? 'true' : 'false'} data-veil={slot.veil} aria-hidden={slot.open ? null : 'true'}>
                     <div class="collapsible-body lt-slot-body">
-                      <div class={{ 'lt-row': true, 'loading': slot.veil === 'cover' }} role={rowRoles ? 'row' : null}>
+                      <div
+                        class={{ 'lt-row': true, 'loading': slot.veil === 'cover' }}
+                        role={rowRoles ? 'row' : null}
+                        data-drawer={hasDrawer ? 'true' : null}
+                        data-open={hasDrawer ? (drawerOpen ? 'true' : 'false') : null}
+                        onClick={hasDrawer ? (event: MouseEvent) => toggleFromRow(event, key, drawer.onToggle) : undefined}
+                      >
                         {columns.map(column => (
                           <Cell column={column} row={row} roles={rowRoles} identity={identity} strings={strings} onOpenMedia={onOpenMedia} />
                         ))}
+                        {hasDrawer && (
+                          <div key="lt-toggle" class="lt-cell lt-toggle" role={rowRoles ? 'cell' : null} data-kind="toggle">
+                            <button
+                              type="button"
+                              class="lt-toggle-button"
+                              aria-expanded={drawerOpen ? 'true' : 'false'}
+                              aria-controls={drawerId(key)}
+                              aria-label={drawer.toggleLabel(row, drawerOpen)}
+                              title={drawer.toggleLabel(row, drawerOpen)}
+                              onClick={() => drawer.onToggle(key)}
+                            >
+                              <span class="lt-toggle-glyph" aria-hidden="true">
+                                <ChevronRightIcon class="lt-toggle-icon" />
+                              </span>
+                            </button>
+                          </div>
+                        )}
                       </div>
+                      {/* Inside the slot, after the row, so it slides with the slot. SSC's row > cell model, with roles only while the table has them. */}
+                      {hasDrawer && (
+                        <div
+                          key="lt-drawer"
+                          id={drawerId(key)}
+                          class="lt-drawer collapsible"
+                          data-open={drawerOpen ? 'true' : 'false'}
+                          role={rowRoles ? 'row' : null}
+                          aria-hidden={drawerOpen ? null : 'true'}
+                        >
+                          <div class="collapsible-body lt-drawer-body" role={rowRoles ? 'cell' : null}>
+                            {drawerShown && <div class="lt-drawer-panel">{drawer.render(row)}</div>}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
