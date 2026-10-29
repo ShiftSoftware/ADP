@@ -90,6 +90,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
   // instead of flipping `leaving` back, and `leaving` is cleared here because the older call will not.
   @Method()
   async fetchVin(newData: VehicleLookupDTO | string, headers: object = {}) {
+    this.shutDrawer();
     this.leaveGeneration++;
     this.leaving = false;
     await setVehicleLookupData(this, newData, headers);
@@ -136,6 +137,9 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
    */
   private async leave(): Promise<boolean> {
     const generation = ++this.leaveGeneration;
+
+    // A slot keeps its element across lookups, so an open drawer would stay open on another visit.
+    this.shutDrawer();
 
     if (!this.vehicleLookup && !this.isError) return true;
 
@@ -200,6 +204,43 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
         forceUpdate(this);
       }, this.settleMs());
     }
+  }
+
+  // #endregion
+
+  // #region Drawer: one visit open at a time, keyed by its slot
+
+  @State() openKey: string | null = null;
+  /** The drawer that is shutting: its content stays rendered until it has slid shut, then is dropped. */
+  @State() retainedKey: string | null = null;
+  private retainedKeyTimer?: ReturnType<typeof setTimeout>;
+
+  private toggleDrawer = (key: string) => {
+    // The rows are under the skeleton: their visits are about to change.
+    if (this.isLoading || this.leaving) return;
+
+    if (this.openKey === key) {
+      this.shutDrawer();
+      return;
+    }
+
+    if (this.openKey !== null) this.retainDrawer(this.openKey);
+    this.openKey = key;
+  };
+
+  private shutDrawer() {
+    if (this.openKey === null) return;
+    this.retainDrawer(this.openKey);
+    this.openKey = null;
+  }
+
+  private retainDrawer(key: string) {
+    this.retainedKey = key;
+    clearTimeout(this.retainedKeyTimer);
+    this.retainedKeyTimer = setTimeout(() => {
+      this.retainedKeyTimer = undefined;
+      this.retainedKey = null;
+    }, this.settleMs());
   }
 
   // #endregion
@@ -277,6 +318,8 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
       this.opened,
       this.outgoing.length,
       this.isError,
+      this.openKey,
+      this.retainedKey,
     ].join('|');
   }
 
@@ -306,6 +349,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
   disconnectedCallback() {
     clearTimeout(this.retainTimer);
     clearTimeout(this.outgoingTimer);
+    clearTimeout(this.retainedKeyTimer);
     this.heightAnnouncer?.dispose();
   }
 
@@ -361,6 +405,9 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
             retainedBody={this.retainedBody}
             slotRows={[...current, ...this.outgoing]}
             slots={slots}
+            openKey={this.openKey}
+            retainedKey={this.retainedKey}
+            onToggleDrawer={this.toggleDrawer}
           />
         </VehicleInfoLayout>
       </Host>

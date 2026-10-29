@@ -561,15 +561,17 @@
   height: 18px;
 }
 
-/* The drawer spans every track under its row. Its tint is on the body, not keyed to data-open, so
-   it fades and shuts with the collapsible's own opacity rather than switching off mid-shut. A
-   transition here would replace the primitive's. */
+/* The drawer spans every track under its row and carries the tint, unkeyed, so it fades with the
+   collapsible. It clips, not its body: a grid-item collapsible's body resolves its fr track against
+   the already-shrunk drawer, and lagged behind the rows below it, leaving an untinted band. */
 .lt-drawer {
   grid-column: 1 / -1;
+  overflow: hidden;
+  background: var(--blue-tint);
 }
 
-.lt-drawer-body {
-  background: var(--blue-tint);
+.lt-drawer > .lt-drawer-body {
+  overflow: visible;
 }
 
 /* An inset panel (§ 13, § 18): paper on the tinted row, the blue rim, radius 10, the 4px rail on

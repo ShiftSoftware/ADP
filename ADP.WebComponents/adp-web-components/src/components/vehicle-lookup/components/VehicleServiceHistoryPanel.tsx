@@ -11,6 +11,8 @@ import { SharedLocales } from '~features/multi-lingual';
 import { LookupHead, PanelVerdict, recordVerdict } from '~features/vehicle-info-layout';
 import { LeadKind, LookupColumn, LookupTable, RowSlot, shownBody } from '~features/lookup-table';
 
+import { ServiceHistoryDrawer } from './ServiceHistoryDrawer';
+
 export type ServiceHistoryLocale = InferType<typeof serviceHistorySchema>;
 
 /** Everything the panel is decided from, assembled by the owner. */
@@ -120,6 +122,13 @@ export const countText = (count: number, locale: ServiceHistoryLocale, language:
   return template.replace('{count}', String(count));
 };
 
+/** The drawer toggle's name, which says which visit it opens: by its date, or "this visit" when it has none. */
+export const toggleLabel = (visit: VehicleServiceHistoryDTO, open: boolean, locale: ServiceHistoryLocale): string => {
+  const date = visitDate(visit);
+  if (date === null) return open ? locale.hideDetailsUndated : locale.showDetailsUndated;
+  return (open ? locale.hideDetails : locale.showDetails).replace('{date}', date);
+};
+
 // ---------------------------------------------------------------------------------------------
 // Render
 // ---------------------------------------------------------------------------------------------
@@ -140,9 +149,26 @@ type Props = {
   slotRows: VehicleServiceHistoryDTO[];
   /** One per slot row (the owner's `tableSlots`). */
   slots: RowSlot[];
+  /** The slot whose drawer is open, and the one still shutting (the owner's). */
+  openKey: string | null;
+  retainedKey: string | null;
+  onToggleDrawer: (key: string) => void;
 };
 
-export const VehicleServiceHistoryPanel: FunctionalComponent<Props> = ({ locale, language, state, verdict, busy, leaving, retainedBody, slotRows, slots }) => {
+export const VehicleServiceHistoryPanel: FunctionalComponent<Props> = ({
+  locale,
+  language,
+  state,
+  verdict,
+  busy,
+  leaving,
+  retainedBody,
+  slotRows,
+  slots,
+  openKey,
+  retainedKey,
+  onToggleDrawer,
+}) => {
   const body = panelBody(state);
   const lead = panelLead();
   const open = bodyOpen(state, leaving);
@@ -177,6 +203,14 @@ export const VehicleServiceHistoryPanel: FunctionalComponent<Props> = ({ locale,
             open={open}
             // No media column, so the picture strings are never read.
             strings={{ columnsLabel: locale.columnsLabel, noImage: '', imageFailed: '', openImage: '' }}
+            drawer={{
+              openKey,
+              retainedKey,
+              render: visit => <ServiceHistoryDrawer visit={visit} locale={locale} />,
+              label: locale.visitDetails,
+              toggleLabel: (visit, open) => toggleLabel(visit, open, locale),
+              onToggle: onToggleDrawer,
+            }}
           />
 
           {/* Always mounted: it slides open and shut and its two sentences cross-fade. Its words go under

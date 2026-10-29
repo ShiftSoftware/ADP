@@ -2,9 +2,9 @@
 /*
  * Vehicle service history — the stylesheet for <vehicle-service-history>, in the component design
  * language. The card is the wrapper's; this file styles what is particular to this panel: the visit
- * count in the head, the compact rows and the placeholder under the strip. The strip, the rows and
- * the cards at 720px and under are the lookup table's (features/lookup-table/lookup-table.css),
- * imported below.
+ * count in the head, the compact rows, the placeholder under the strip and what a visit's drawer
+ * holds. The strip, the rows, the drawer panel and the cards at 720px and under are the lookup
+ * table's (features/lookup-table/lookup-table.css), imported below.
  *
  * Rows stay on screen through a lookup: their values go under the skeleton where they stand
  * (shift-skeleton, imported below) and only the rows the answer adds or drops slide.
@@ -125,6 +125,138 @@
 }
 
 /* ---------------------------------------------------------------------------------------------
+   Drawer: the visit's job, account and parent invoice, then its labor and part lines
+   ------------------------------------------------------------------------------------------- */
+
+/* Inside the table's drawer panel, which draws the paper, the rim, the rail and the one inner
+   shadow. Nothing here is a box of its own (§ 13, one card): the lists are ruled, not framed. */
+.service-history-drawer {
+  display: grid;
+  gap: 14px;
+}
+
+/* One line of label/value pairs; a pair wraps as a whole. Ruled off from the lists below it. */
+.service-history-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.service-history-detail {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+/* Small label (§ 11): the detail labels, the list captions and the list headings. */
+.service-history-detail > dt,
+.service-history-caption,
+.service-history-line-head > .service-history-cell {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* A value is read: 13px at 650, figures tabular (§ 11, body notices weight). */
+.service-history-detail > dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.service-history-caption {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin: 0 0 6px;
+}
+
+/* Small note (§ 11, counts), a shade darker than the label because it is read. */
+.service-history-caption-count {
+  color: var(--date-ink);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A statement about a record that exists, not a verdict: grey, no glyph. */
+.service-history-none {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* One grid per list, its lines subgrids of it, so the headings and every line share one set of
+   tracks (the owner's --service-history-tracks, one per column this visit has). A drawer narrower
+   than the floors scrolls inside the list, never the card. */
+.service-history-list {
+  display: grid;
+  grid-template-columns: var(--service-history-tracks);
+  overflow-x: auto;
+}
+
+.service-history-line {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+/* The headings on the recessed paper, like the table's strip; lines ruled in the soft line (§ 12). */
+.service-history-line-head {
+  background: var(--paper-soft);
+}
+
+.service-history-line:not(.service-history-line-head) {
+  border-top: 1px solid var(--line-soft);
+}
+
+/* The table's cell padding, tightened: a drawer's lines are read in a block, not one by one. */
+.service-history-cell {
+  min-width: 0;
+  padding: 8px 12px;
+  line-height: 1.3;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.service-history-line-head > .service-history-cell {
+  padding-block: 6px;
+}
+
+/* Code (§ 11): the line's name. */
+.service-history-line > .service-history-cell[data-identity='true'] {
+  font-weight: 760;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A figure is read, so --date-ink, and lines up on its end with its heading. */
+.service-history-cell[data-kind='number'] {
+  color: var(--date-ink);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.service-history-line-head > .service-history-cell[data-kind='number'] {
+  color: var(--muted);
+}
+
+.service-history-blank {
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------------------------------------------
    Narrow panels (720 and under): the table turns its rows into cards (lookup-table.css)
    ------------------------------------------------------------------------------------------- */
 
@@ -134,5 +266,56 @@
   .lt-row {
     gap: 6px 12px;
     padding: 10px 14px;
+  }
+
+  /* Each drawer line becomes a stacked card in two tracks, every field captioned by its heading
+     (data-label); the code and the description take the whole width. The headings go. */
+  .service-history-list {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-x: visible;
+  }
+
+  .service-history-line-head {
+    display: none;
+  }
+
+  .service-history-line {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 12px;
+    padding: 10px 0;
+  }
+
+  .service-history-line-head + .service-history-line {
+    border-top: 0;
+  }
+
+  .service-history-line > .service-history-cell {
+    padding: 0;
+    text-align: start;
+  }
+
+  .service-history-line > .service-history-cell::before {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    content: attr(data-label);
+  }
+
+  .service-history-line > .service-history-cell[data-identity='true'],
+  .service-history-line > .service-history-cell[data-grow='true'] {
+    grid-column: 1 / -1;
+  }
+
+  .service-history-line > .service-history-cell[data-identity='true']::before {
+    display: none;
+  }
+
+  /* Code at 15px when a line becomes a card (§ 11). */
+  .service-history-line > .service-history-cell[data-identity='true'] {
+    font-size: 15px;
   }
 }
