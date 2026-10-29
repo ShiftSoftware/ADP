@@ -22,7 +22,7 @@ describe('shift-tabs', () => {
     press(tabs(ltr)[0], 'ArrowLeft');
     press(tabs(ltr)[0], 'End');
     press(tabs(ltr)[2], 'Home');
-    // Right from the last wraps onto the selected first tab and Home from the last lands on it too: a key that lands on the selected tab asks for nothing.
+    // A key that lands on the selected tab asks for nothing.
     expect(calls).toEqual([2, 2]);
 
     const rtl = await mount({ tabs: ['A', 'B', 'C'], activeTabIndex: 1, direction: 'rtl', changeActiveTab });

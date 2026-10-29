@@ -3,11 +3,7 @@ import { newSpecPage } from '@stencil/core/testing';
 
 import { LookupColumn, LookupTable, RowDrawer, RowSlot, RowVeil, drawerId, placeholderKind } from './lookup-table';
 
-/**
- * The drawer mode of the shared table, and the proof that a table which does not opt in is the table
- * it always was. The table is pure: every state below is a props change on a tiny host element, the
- * way a panel's owner drives it, and the DOM is read back.
- */
+// The table's drawer mode, and a table that does not opt in staying as it was.
 
 type Row = { name: string; photos: string[] | null };
 
@@ -101,10 +97,6 @@ const mount = async (initial: Model) => {
 };
 
 // ---------------------------------------------------------------------------------------------
-// The derivations
-// ---------------------------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------------------------
 // A table that does not opt in is the table it always was (the accessories shape)
 // ---------------------------------------------------------------------------------------------
 
@@ -171,10 +163,6 @@ describe('open and shut', () => {
     expect(initial.render.mock.calls[0][1]).toBe(1);
   });
 });
-
-// ---------------------------------------------------------------------------------------------
-// A drawer through a lookup, a page change and a clear (owner, 2026-10-27)
-// ---------------------------------------------------------------------------------------------
 
 describe('placeholderKind', () => {
   const base = { columns: 4, loaded: true, failed: false, authorized: true, records: 0 };

@@ -25,7 +25,7 @@ import { BADGE_GLYPHS, MEDIA_GLYPHS } from '../../components/vehicle-lookup/comp
 // Types
 // ---------------------------------------------------------------------------------------------
 
-/** Built kinds. 'number' | 'date' | 'chip' | 'action' are specified and deferred to a named consumer. */
+/** 'action' is a row's drawer toggle: the cell's text and icon on a button (`drawer`). */
 export type CellKind = 'text' | 'code' | 'media' | 'action';
 
 export type NoticeTone = 'positive' | 'negative' | 'neutral' | 'attention' | 'idle';
@@ -50,7 +50,7 @@ export type LookupColumn<Row> = {
   identity?: boolean;
   /** The one column that absorbs the slack (§ 18). At most one, and only on a 'text' column. */
   grow?: boolean;
-  icon?: PlaceholderIcon;
+  icon?: IconComponent;
   note?: (row: Row) => string | null | undefined;
 };
 
@@ -67,9 +67,9 @@ export type LookupTableStrings = {
 
 export type PlaceholderKind = 'idle' | 'empty' | 'error' | 'unauthorized';
 
-export type PlaceholderIcon = FunctionalComponent<{ class?: string }>;
+export type IconComponent = FunctionalComponent<{ class?: string }>;
 
-export type PlaceholderContent = { icon?: PlaceholderIcon; glyph?: string; text: string };
+export type PlaceholderContent = { icon: IconComponent; text: string };
 
 export type TablePlaceholder = {
   kind: PlaceholderKind | null;
@@ -116,6 +116,8 @@ export type RowDrawer<Row> = {
   shown: readonly number[];
   onToggle: (index: number) => void;
   idPrefix: string;
+  /** Set when the toggles open a dialog elsewhere instead (a sheet on a phone): the row whose dialog is open. */
+  dialog?: { open: number | null };
 };
 
 /**
@@ -411,9 +413,9 @@ const MediaBox = ({ src, identity, strings, onOpenMedia }: MediaProps) => {
  */
 const keepUntranslated = (cell: HTMLElement | undefined) => cell?.setAttribute('translate', 'no');
 
-type ActionState = { has: boolean; expanded: boolean; controls: string; label: string; covered: boolean; onToggle: () => void };
+type ActionState = { has: boolean; expanded: boolean; controls: string | null; popup: boolean; label: string; covered: boolean; onToggle: () => void };
 
-const ActionValue = ({ text, icon: Icon, action }: { text: string | null; icon?: PlaceholderIcon; action: ActionState | null }) => {
+const ActionValue = ({ text, icon: Icon, action }: { text: string | null; icon?: IconComponent; action: ActionState | null }) => {
   if (!action || !action.has) return text === null ? <span class="lt-none">—</span> : <span class="lt-action-plain">{text}</span>;
 
   return (
@@ -421,6 +423,7 @@ const ActionValue = ({ text, icon: Icon, action }: { text: string | null; icon?:
       type="button"
       class="lt-action-button"
       data-shape={text === null ? 'round' : 'pill'}
+      aria-haspopup={action.popup ? 'dialog' : null}
       aria-expanded={action.expanded ? 'true' : 'false'}
       aria-controls={action.controls}
       aria-label={action.label}
@@ -506,7 +509,7 @@ const Placeholder = ({ placeholder, busy }: { placeholder: TablePlaceholder; bus
         <div class="lt-placeholder-stack layer-stack">
           {PLACEHOLDER_KINDS.map(kind => {
             const active = shown === kind;
-            const { icon: Icon, glyph, text } = placeholder.content[kind];
+            const { icon: Icon, text } = placeholder.content[kind];
             return (
               <div
                 class={{ 'layer': true, 'lt-placeholder-layer': true, [`is-${kind}`]: true }}
@@ -516,7 +519,7 @@ const Placeholder = ({ placeholder, busy }: { placeholder: TablePlaceholder; bus
                 aria-hidden={active ? null : 'true'}
               >
                 <span class="lt-placeholder-mark shift-skeleton">
-                  {Icon ? <Icon class="lt-placeholder-glyph" /> : glyph ? <Glyph path={glyph} className="lt-placeholder-glyph" /> : null}
+                  <Icon class="lt-placeholder-glyph" />
                 </span>
                 <p class="lt-placeholder-text shift-skeleton">{text}</p>
               </div>
@@ -612,12 +615,15 @@ export function LookupTable<Row>(props: LookupTableProps<Row>, children?: VNode[
                 const drawerOpen = drawerHas && drawer?.open === index;
                 const id = drawer ? drawerId(drawer.idPrefix, index) : '';
                 const drawerShown = drawer ? drawer.shown.includes(index) : false;
+                const dialog = drawer?.dialog;
+                const expanded = dialog ? drawerHas && dialog.open === index : drawerOpen;
                 const action: ActionState | null = drawer
                   ? {
                       has: drawerHas,
-                      expanded: drawerOpen,
-                      controls: id,
-                      label: drawerHas ? drawer.label(row, index, drawerOpen) : '',
+                      expanded,
+                      controls: dialog ? null : id,
+                      popup: !!dialog,
+                      label: drawerHas ? drawer.label(row, index, expanded) : '',
                       covered: slot.veil === 'cover',
                       onToggle: () => drawer.onToggle(index),
                     }
