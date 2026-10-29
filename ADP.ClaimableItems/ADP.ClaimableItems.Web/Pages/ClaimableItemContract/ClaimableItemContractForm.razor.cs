@@ -3,7 +3,12 @@ using MudBlazor;
 using ShiftSoftware.ADP.ClaimableItems.Shared;
 using ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ClaimableItemContract;
 using ShiftSoftware.ADP.ClaimableItems.Shared.Enums;
+using ShiftSoftware.ADP.ClaimableItems.Web.Components;
 using ShiftSoftware.ShiftBlazor.Enums;
+using ShiftSoftware.ShiftBlazor.Services;
+using ShiftSoftware.ShiftEntity.Model;
+using ShiftSoftware.TypeAuth.Core;
+using ShiftSoftware.TypeAuth.Core.Actions;
 using System.Globalization;
 using System.Net.Http.Json;
 
@@ -16,11 +21,22 @@ namespace ShiftSoftware.ADP.ClaimableItems.Web.Pages.ClaimableItemContract;
 /// </summary>
 public partial class ClaimableItemContractForm
 {
-    // 0% to 10%, the range the validator accepts.
+    // Offered until the lookup brings the host's own list (it always does before anything can be picked).
     private static readonly decimal[] DefaultIncrementOptions = Enumerable.Range(0, 11).Select(x => x / 100m).ToArray();
 
     [Parameter]
     public object? Key { get; set; }
+
+    [Inject]
+    private IDialogService DialogService { get; set; } = default!;
+
+    [Inject]
+    private MessageService MessageService { get; set; } = default!;
+
+    [Inject]
+    private ITypeAuthService TypeAuthService { get; set; } = default!;
+
+    private bool actionRunning;
 
     private FormModes Mode { get; set; }
 
@@ -39,6 +55,20 @@ public partial class ClaimableItemContractForm
 
     /// <summary>Only a draft can be changed or deleted.</summary>
     private bool IsEditable => !IsExisting || Contract.Status == ClaimableItemContractStatus.Draft;
+
+    // The server checks the same nodes; these only decide which buttons are shown.
+    private bool CanIssue => IsExisting && ReadOnly && Contract.Status == ClaimableItemContractStatus.Draft
+        && CanWriteContracts && Allows(CIOptions.Value.IssueContractAction);
+
+    private bool CanCancel => IsExisting && ReadOnly && Contract.Status == ClaimableItemContractStatus.Issued
+        && CanWriteContracts && Allows(CIOptions.Value.CancelContractAction);
+
+    private bool ShowLineActions => !ReadOnly || CanCancel;
+
+    private bool CanWriteContracts =>
+        CIOptions.Value.ClaimableItemContractsAction is not { } action || TypeAuthService.CanWrite(action);
+
+    private bool Allows(BooleanAction? action) => action is null || TypeAuthService.CanAccess(action);
 
     protected override void OnInitialized()
     {
@@ -270,10 +300,107 @@ public partial class ClaimableItemContractForm
             .OrderBy(x => x.ServiceIntervalValueInMeter ?? 0)
             .Concat(Contract.Lines.Where(x => x.LineType != ClaimableItemContractLineType.Periodic));
 
-    private IEnumerable<decimal> IncrementOptions =>
-        DefaultIncrementOptions.Contains(Contract.PriceIncrement)
-            ? DefaultIncrementOptions
-            : DefaultIncrementOptions.Append(Contract.PriceIncrement).Order();
+    private IEnumerable<decimal> IncrementOptions
+    {
+        get
+        {
+            IEnumerable<decimal> options = lookup?.PriceIncrements is { Count: > 0 } configured ? configured : DefaultIncrementOptions;
+
+            return options.Contains(Contract.PriceIncrement) ? options : options.Append(Contract.PriceIncrement).Order();
+        }
+    }
+
+    private async Task IssueAsync()
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            title: "Issue the contract",
+            markupMessage: new MarkupString(
+                "Once issued, the contract's services and prices are frozen and it can no longer be changed or deleted, " +
+                "only cancelled.<br/><br/>Issue it now?"),
+            yesText: "Issue",
+            cancelText: "Back");
+
+        if (confirmed == true)
+            await RunActionAsync("issue", null, "The contract is issued.");
+    }
+
+    private async Task CancelContractAsync()
+    {
+        var reason = await AskReasonAsync(
+            "Cancel the contract",
+            "Every service still on the contract is cancelled with it, and its periodic services become free for a new contract.",
+            "Cancel Contract");
+
+        if (reason is not null)
+            await RunActionAsync("cancel", new ClaimableItemContractCancelDTO { Reason = reason }, "The contract is cancelled.");
+    }
+
+    private async Task CancelLineAsync(ClaimableItemContractLineDTO line)
+    {
+        var reason = await AskReasonAsync(
+            $"Cancel {line.MenuCode ?? line.Description}",
+            "The rest of the contract stays issued. Cancelling its last service cancels the contract.",
+            "Cancel Service");
+
+        if (reason is not null)
+            await RunActionAsync($"lines/{line.ID}/cancel", new ClaimableItemContractCancelDTO { Reason = reason }, "The service is cancelled.");
+    }
+
+    private async Task<string?> AskReasonAsync(string title, string message, string confirmText)
+    {
+        var dialog = await DialogService.ShowAsync<ClaimableItemContractCancelDialog>(title, new DialogParameters<ClaimableItemContractCancelDialog>
+        {
+            { x => x.Title, title },
+            { x => x.Message, message },
+            { x => x.ConfirmText, confirmText },
+        });
+
+        var result = await dialog.Result;
+
+        return result is { Canceled: false, Data: string reason } ? reason : null;
+    }
+
+    /// <summary>Posts one of the contract actions and shows the contract as the server returns it.</summary>
+    private async Task RunActionAsync(string path, ClaimableItemContractCancelDTO? body, string done)
+    {
+        actionRunning = true;
+
+        try
+        {
+            var url = $"{CIOptions.Value.ResolvedRoutePrefix}ClaimableItemContract/{Uri.EscapeDataString(Contract.ID!)}/{path}";
+
+            using var response = await Http.PostAsJsonAsync(url, body ?? new ClaimableItemContractCancelDTO());
+
+            ShiftEntityResponse<ClaimableItemContractDTO>? result = null;
+            try
+            {
+                result = await response.Content.ReadFromJsonAsync<ShiftEntityResponse<ClaimableItemContractDTO>>();
+            }
+            catch
+            {
+                // A Forbid or a proxy error has no JSON body; the status below covers it.
+            }
+
+            if (response.IsSuccessStatusCode && result?.Entity is { } contract)
+            {
+                Contract = contract;
+                MessageService.Success(done);
+            }
+            else
+            {
+                MessageService.Error(result?.Message?.Body ?? $"The action failed ({(int)response.StatusCode}).");
+            }
+        }
+        catch
+        {
+            MessageService.Error("The action failed. Check the connection and try again.");
+        }
+        finally
+        {
+            actionRunning = false;
+            StateHasChanged();
+        }
+    }
 
     private DateTime? EndDate =>
         ReadOnly && Contract.EndDate is not null

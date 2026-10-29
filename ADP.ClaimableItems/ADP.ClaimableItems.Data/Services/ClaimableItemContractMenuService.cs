@@ -20,13 +20,27 @@ public class ClaimableItemContractMenuService
     private readonly ShiftDbContext db;
     private readonly IClaimableItemContractMenuProvider provider;
     private readonly ClaimableItemsDataOptions options;
+    private readonly TimeProvider timeProvider;
 
-    public ClaimableItemContractMenuService(ShiftDbContext db, IClaimableItemContractMenuProvider provider, ClaimableItemsDataOptions options)
+    public ClaimableItemContractMenuService(
+        ShiftDbContext db,
+        IClaimableItemContractMenuProvider provider,
+        ClaimableItemsDataOptions options,
+        TimeProvider timeProvider)
     {
         this.db = db;
         this.provider = provider;
         this.options = options;
+        this.timeProvider = timeProvider;
     }
+
+    public ClaimableItemsDataOptions Options => options;
+
+    /// <summary>Today in the contracts' time zone (<see cref="ClaimableItemsDataOptions.ContractTimeZone"/>).</summary>
+    public DateTime Today =>
+        TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow(), options.ContractTimeZone ?? TimeZoneInfo.Local).Date;
+
+    public DateTime UtcNow => timeProvider.GetUtcNow().UtcDateTime;
 
     /// <summary>
     /// Every contract-type line of the vehicle's menu, each with the reason it cannot be put on a contract
@@ -51,6 +65,8 @@ public class ClaimableItemContractMenuService
         {
             VIN = vin,
             MenuLanguage = string.IsNullOrWhiteSpace(language) ? DefaultLanguage : language,
+            PriceIncrements = options.ContractPriceIncrements.ToList(),
+            MinimumLines = options.ContractMinimumLines,
         };
 
         // The same rule as the menus module: with one country (or none) the server picks it and the rate is 1;

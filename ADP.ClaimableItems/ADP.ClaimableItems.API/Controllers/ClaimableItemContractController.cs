@@ -7,6 +7,7 @@ using ShiftSoftware.ADP.ClaimableItems.Data.Repositories;
 using ShiftSoftware.ADP.ClaimableItems.Data.Services;
 using ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ClaimableItemContract;
 using ShiftSoftware.ShiftEntity.Core;
+using ShiftSoftware.ShiftEntity.Model;
 using ShiftSoftware.ShiftEntity.Web;
 using ShiftSoftware.ShiftIdentity.Core.DTOs.Country;
 using ShiftSoftware.TypeAuth.Core;
@@ -40,12 +41,8 @@ public class ClaimableItemContractController : ShiftEntitySecureControllerAsync<
         [FromQuery] string? language = null,
         [FromQuery] string? contractId = null)
     {
-        if (options.EnableClaimableItemsActionTreeAuthorization && options.ClaimableItemContractsAction is { } action)
-        {
-            var typeAuth = HttpContext.RequestServices.GetRequiredService<ITypeAuthService>();
-            if (!typeAuth.CanRead(action))
-                return Forbid();
-        }
+        if (!CanAccessContracts(write: false))
+            return Forbid();
 
         var hashIdService = HttpContext.RequestServices.GetRequiredService<IHashIdService>();
         var menuService = HttpContext.RequestServices.GetRequiredService<ClaimableItemContractMenuService>();
@@ -57,8 +54,60 @@ public class ClaimableItemContractController : ShiftEntitySecureControllerAsync<
             transferRate,
             language,
             string.IsNullOrWhiteSpace(contractId) ? null : hashIdService.Decode<ClaimableItemContractDTO>(contractId),
-            DateTime.Today);
+            menuService.Today);
 
         return Ok(ClaimableItemContractMenuService.ForForm(lookup));
+    }
+
+    /// <summary>Issues a saved draft: the lines and prices are frozen and each line gets its expiry.</summary>
+    [HttpPost("{key}/issue")]
+    public Task<ActionResult<ShiftEntityResponse<ClaimableItemContractDTO>>> Issue(string key) =>
+        RunAsync(key, (repository, id, userId) => repository.IssueAsync(id, userId));
+
+    /// <summary>Cancels an issued contract and all its live lines.</summary>
+    [HttpPost("{key}/cancel")]
+    public Task<ActionResult<ShiftEntityResponse<ClaimableItemContractDTO>>> Cancel(string key, [FromBody] ClaimableItemContractCancelDTO body) =>
+        RunAsync(key, (repository, id, userId) => repository.CancelAsync(id, body?.Reason, userId));
+
+    /// <summary>Cancels one line of an issued contract.</summary>
+    [HttpPost("{key}/lines/{lineId:long}/cancel")]
+    public Task<ActionResult<ShiftEntityResponse<ClaimableItemContractDTO>>> CancelLine(string key, long lineId, [FromBody] ClaimableItemContractCancelDTO body) =>
+        RunAsync(key, (repository, id, userId) => repository.CancelLineAsync(id, lineId, body?.Reason, userId));
+
+    private async Task<ActionResult<ShiftEntityResponse<ClaimableItemContractDTO>>> RunAsync(
+        string key,
+        Func<ClaimableItemContractRepository, long, long?, Task<ClaimableItemContract>> action)
+    {
+        if (!CanAccessContracts(write: true))
+            return Forbid();
+
+        var repository = HttpContext.RequestServices.GetRequiredService<ClaimableItemContractRepository>();
+        var hashIdService = HttpContext.RequestServices.GetRequiredService<IHashIdService>();
+
+        try
+        {
+            var contract = await action(repository, hashIdService.Decode<ClaimableItemContractDTO>(key), HttpContext.GetUserID());
+            await repository.SaveChangesAsync();
+
+            return Ok(new ShiftEntityResponse<ClaimableItemContractDTO>(await repository.ViewAsync(contract)));
+        }
+        catch (ShiftEntityException ex)
+        {
+            return StatusCode(ex.HttpStatusCode, new ShiftEntityResponse<ClaimableItemContractDTO>
+            {
+                Message = ex.Message,
+                Additional = ex.AdditionalData,
+            });
+        }
+    }
+
+    private bool CanAccessContracts(bool write)
+    {
+        if (!options.EnableClaimableItemsActionTreeAuthorization || options.ClaimableItemContractsAction is not { } action)
+            return true;
+
+        var typeAuth = HttpContext.RequestServices.GetRequiredService<ITypeAuthService>();
+
+        return write ? typeAuth.CanWrite(action) : typeAuth.CanRead(action);
     }
 }

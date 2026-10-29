@@ -19,4 +19,6 @@ public class ClaimableItemsActionTree
     public readonly static ReadWriteDeleteAction ClaimableItemSetup = new("Claimable Item Setup");
     public readonly static ReadWriteDeleteAction CampaignVinEntries = new("Campaign Vin Entries");
     public readonly static ReadWriteDeleteAction ClaimableItemContracts = new("Service Contracts");
+    public readonly static BooleanAction IssueClaimableItemContracts = new("Issue Service Contracts");
+    public readonly static BooleanAction CancelClaimableItemContracts = new("Cancel Service Contracts");
 }

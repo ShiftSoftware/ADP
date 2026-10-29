@@ -42,6 +42,34 @@ public class ClaimableItemsApiOptions
     public long ContractPeriodicMileageMargin { get; set; }
 
     /// <summary>
+    /// The TypeAuth boolean node a user needs to issue a service contract (consumer-supplied, per D9).
+    /// Null (default) → anyone who may write contracts may issue them. Checked whatever
+    /// <see cref="EnableClaimableItemsActionTreeAuthorization"/> says, like <see cref="PostClaimModificationAction"/>.
+    /// </summary>
+    public BooleanAction? IssueContractAction { get; set; }
+
+    /// <summary>
+    /// The TypeAuth boolean node a user needs to cancel a service contract or one of its lines
+    /// (consumer-supplied, per D9). Null (default) → anyone who may write contracts may cancel them.
+    /// </summary>
+    public BooleanAction? CancelContractAction { get; set; }
+
+    /// <summary>The fewest services a contract can be issued with. Default 1.</summary>
+    public int ContractMinimumLines { get; set; } = 1;
+
+    /// <summary>
+    /// The price increments a contract may use, as fractions (0.05 is 5%), each within 0–10%. The form offers
+    /// exactly these. Default 0%, 1%, …, 10%.
+    /// </summary>
+    public IReadOnlyList<decimal> ContractPriceIncrements { get; set; } = Data.ClaimableItemsDataOptions.DefaultContractPriceIncrements;
+
+    /// <summary>
+    /// The time zone that decides what "today" is for contracts (the earliest start date when issuing, and
+    /// when a line has expired). Null (default) → the server's local zone.
+    /// </summary>
+    public TimeZoneInfo? ContractTimeZone { get; set; }
+
+    /// <summary>
     /// The TypeAuth action node gating the ItemClaim controller (CRUD + the hot claim endpoint,
     /// which additionally requires Write on this node). Consumer-supplied, per D9 — the original
     /// host application passes its existing <c>Claiming</c> node.

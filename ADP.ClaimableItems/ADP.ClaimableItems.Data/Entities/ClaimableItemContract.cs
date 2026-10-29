@@ -61,7 +61,13 @@ public class ClaimableItemContract :
 
     public bool IsDraft { get; set; }
 
+    /// <summary>UTC.</summary>
+    public DateTime? IssuedDate { get; set; }
+    public long? IssuedByUserID { get; set; }
+
     public bool IsCancelled { get; set; }
+
+    /// <summary>UTC.</summary>
     public DateTime? CancelledDate { get; set; }
     public long? CancelledByUserID { get; set; }
     public string? CancelReason { get; set; }

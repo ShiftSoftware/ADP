@@ -23,6 +23,12 @@ public class ClaimableItemContractListDTO : ShiftEntityListDTO, IHasDraftColumn<
     public decimal Total { get; set; }
     public decimal TotalWithIncrement { get; set; }
 
+    /// <summary>
+    /// <see cref="TotalWithIncrement"/> without the cancelled lines. The totals keep cancelled lines as
+    /// history; this is what the contract is still worth.
+    /// </summary>
+    public decimal LiveTotalWithIncrement { get; set; }
+
     public bool IsDraft { get; set; }
     public bool IsCancelled { get; set; }
 

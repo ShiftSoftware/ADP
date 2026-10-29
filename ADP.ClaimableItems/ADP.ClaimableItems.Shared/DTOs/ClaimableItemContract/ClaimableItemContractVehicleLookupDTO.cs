@@ -41,6 +41,12 @@ public class ClaimableItemContractVehicleLookupDTO
 
     public string MenuLanguage { get; set; } = default!;
 
+    /// <summary>The price increments a contract may use, as fractions (0.05 is 5%). Host configuration.</summary>
+    public List<decimal> PriceIncrements { get; set; } = new();
+
+    /// <summary>The fewest services a contract can be issued with. Host configuration.</summary>
+    public int MinimumLines { get; set; }
+
     /// <summary>
     /// The lines a contract may take. Lines with unpriced parts and periodic lines at or below the mileage
     /// are left out; a periodic line already on another contract is listed with its reason.

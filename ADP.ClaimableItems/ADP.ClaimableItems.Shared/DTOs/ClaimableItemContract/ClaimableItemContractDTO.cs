@@ -67,6 +67,9 @@ public class ClaimableItemContractDTO : ShiftEntityViewAndUpsertDTO, IHasDraftCh
 
     public bool? IsDraft { get; set; }
 
+    /// <summary>Server: when the contract was issued, in UTC. Set by issuing, never by a save.</summary>
+    public DateTime? IssuedDate { get; set; }
+
     // Server: set by the cancel action, never by a save.
     public bool IsCancelled { get; set; }
     public DateTime? CancelledDate { get; set; }

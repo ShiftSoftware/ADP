@@ -48,6 +48,8 @@ public class ClaimableItemContractLine : ShiftEntity<ClaimableItemContractLine>
     public DateTime? ExpireDate { get; set; }
 
     public bool IsCancelled { get; set; }
+
+    /// <summary>UTC.</summary>
     public DateTime? CancelledDate { get; set; }
     public long? CancelledByUserID { get; set; }
     public string? CancelReason { get; set; }

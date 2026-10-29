@@ -87,10 +87,16 @@ public static class ClaimableItemsApiExtensions
         {
             PostClaimModificationAction = options.PostClaimModificationAction,
             ContractPeriodicMileageMargin = options.ContractPeriodicMileageMargin,
+            IssueContractAction = options.IssueContractAction,
+            CancelContractAction = options.CancelContractAction,
+            ContractMinimumLines = options.ContractMinimumLines,
+            ContractPriceIncrements = options.ContractPriceIncrements,
+            ContractTimeZone = options.ContractTimeZone,
         });
 
         // Service contracts. The default menu provider goes through the vehicle lookup, resolved only when a
         // contract needs it; TryAdd lets a host register its own provider instead.
+        services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<ClaimableItemContractMenuService>();
         services.TryAddScoped<IClaimableItemContractMenuProvider, VehicleLookupContractMenuProvider>();
 
@@ -120,6 +126,11 @@ public static class ClaimableItemsApiExtensions
         target.CampaignVinEntriesAction = source.CampaignVinEntriesAction;
         target.ClaimableItemContractsAction = source.ClaimableItemContractsAction;
         target.ContractPeriodicMileageMargin = source.ContractPeriodicMileageMargin;
+        target.IssueContractAction = source.IssueContractAction;
+        target.CancelContractAction = source.CancelContractAction;
+        target.ContractMinimumLines = source.ContractMinimumLines;
+        target.ContractPriceIncrements = source.ContractPriceIncrements;
+        target.ContractTimeZone = source.ContractTimeZone;
         target.ClaimingAction = source.ClaimingAction;
         target.CertifyingAction = source.CertifyingAction;
         target.InvoicingAction = source.InvoicingAction;

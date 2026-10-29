@@ -27,8 +27,46 @@
             <MudItem Class="pt-2 pb-2" lg="6" md="6" sm="12" xs="12">
                 <MudText Typo="Typo.body2">Status</MudText>
                 <MudDivider />
-                <ClaimableItemContractStatusChip Status="Contract.Status" EndDate="Contract.EndDate" />
+                <MudStack Row AlignItems="AlignItems.Center" Wrap="Wrap.Wrap" Class="pt-1">
+                    <ClaimableItemContractStatusChip Status="Contract.Status" EndDate="Contract.EndDate" />
+
+                    @if (Contract.IssuedDate is not null)
+                    {
+                        <MudText Typo="Typo.caption">Issued @Contract.IssuedDate.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudText>
+                    }
+
+                    <MudSpacer />
+
+                    @if (CanIssue)
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Success"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.Verified"
+                                   Disabled="actionRunning"
+                                   OnClick="IssueAsync">Issue</MudButton>
+                    }
+
+                    @if (CanCancel)
+                    {
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Error"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.Cancel"
+                                   Disabled="actionRunning"
+                                   OnClick="CancelContractAsync">Cancel Contract</MudButton>
+                    }
+                </MudStack>
             </MudItem>
+
+            @if (Contract.IsCancelled)
+            {
+                <MudItem Class="pt-2 pb-2" lg="12" md="12" sm="12" xs="12">
+                    <MudAlert Severity="Severity.Error" Icon="@Icons.Material.Filled.Cancel">
+                        Cancelled@(Contract.CancelledDate is { } cancelled ? $" on {cancelled.ToLocalTime():yyyy-MM-dd}" : ""): @Contract.CancelReason
+                    </MudAlert>
+                </MudItem>
+            }
         }
 
         @* 1. The vehicle. The menu is read once the VIN and the mileage are both entered. *@
@@ -306,7 +344,7 @@
                                     <th>Expires</th>
                                     <th style="text-align: end;">Cost</th>
                                     <th style="text-align: end;">Customer Price</th>
-                                    @if (!ReadOnly)
+                                    @if (ShowLineActions)
                                     {
                                         <th></th>
                                     }
@@ -331,6 +369,10 @@
                                             @if (!ReadOnly && IsNotOffered(line))
                                             {
                                                 <MudText Typo="Typo.caption" Color="Color.Error" Class="d-block">No longer offered for this vehicle. Remove it before saving.</MudText>
+                                            }
+                                            @if (line.IsCancelled && !string.IsNullOrWhiteSpace(line.CancelReason))
+                                            {
+                                                <MudText Typo="Typo.caption" Color="Color.Error" Class="d-block">Cancelled: @line.CancelReason</MudText>
                                             }
                                         </td>
                                         <td>
@@ -364,13 +406,26 @@
                                         <td class="whitespace-nowrap">@(ExpiryOf(line)?.ToString("yyyy-MM-dd") ?? "-")</td>
                                         <td class="whitespace-nowrap" style="text-align: end;">@line.Cost.ToString("#,0.00")</td>
                                         <td class="whitespace-nowrap" style="text-align: end;">@PriceOf(line).ToString("#,0.00")</td>
-                                        @if (!ReadOnly)
+                                        @if (ShowLineActions)
                                         {
                                             <td>
-                                                <MudIconButton Size="Size.Small"
-                                                               Color="Color.Error"
-                                                               Icon="@Icons.Material.Filled.Delete"
-                                                               OnClick="() => Contract.Lines.Remove(line)" />
+                                                @if (!ReadOnly)
+                                                {
+                                                    <MudIconButton Size="Size.Small"
+                                                                   Color="Color.Error"
+                                                                   Icon="@Icons.Material.Filled.Delete"
+                                                                   OnClick="() => Contract.Lines.Remove(line)" />
+                                                }
+                                                else if (!line.IsCancelled)
+                                                {
+                                                    <MudTooltip Text="Cancel this service">
+                                                        <MudIconButton Size="Size.Small"
+                                                                       Color="Color.Error"
+                                                                       Icon="@Icons.Material.Filled.Cancel"
+                                                                       Disabled="actionRunning"
+                                                                       OnClick="() => CancelLineAsync(line)" />
+                                                    </MudTooltip>
+                                                }
                                             </td>
                                         }
                                     </tr>
@@ -381,7 +436,7 @@
                                     <td colspan="6" style="text-align: end;"><strong>Total</strong></td>
                                     <td class="whitespace-nowrap" style="text-align: end;"><strong>@Total.ToString("#,0.00")</strong></td>
                                     <td class="whitespace-nowrap" style="text-align: end;"><strong>@TotalWithIncrement.ToString("#,0.00")</strong></td>
-                                    @if (!ReadOnly)
+                                    @if (ShowLineActions)
                                     {
                                         <td></td>
                                     }
@@ -393,6 +448,11 @@
                         {
                             <MudAlert Severity="Severity.Warning" Class="mt-3">@warning</MudAlert>
                         }
+                    }
+
+                    @if (!ReadOnly && lookup is { MinimumLines: > 1 } && Contract.Lines.Count < lookup.MinimumLines)
+                    {
+                        <MudAlert Severity="Severity.Info" Class="mt-3">A contract needs at least @lookup.MinimumLines services to be issued.</MudAlert>
                     }
                 </MudCardContent>
             </MudCard>

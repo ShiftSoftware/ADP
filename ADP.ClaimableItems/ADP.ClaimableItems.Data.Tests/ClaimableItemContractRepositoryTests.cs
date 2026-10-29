@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Reflection;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
@@ -37,7 +38,7 @@ public class ClaimableItemContractRepositoryTests
         var contract = await InsertAsync(db, repository, dto);
 
         Assert.True(contract.IsDraft);
-        Assert.Equal(new DateTime(2027, 1, 1), contract.EndDate);
+        Assert.Equal(new DateTime(2027, 6, 1), contract.EndDate);
         Assert.Equal(105m, contract.Lines.Single(x => x.MenuLineKey == "P|1|10").PriceWithIncrement);
         Assert.Equal(42m, contract.Lines.Single(x => x.MenuLineKey == "S|1|7").PriceWithIncrement);
         Assert.Equal(140m, contract.Total);
@@ -234,16 +235,14 @@ public class ClaimableItemContractRepositoryTests
     }
 
     [Fact]
-    public async Task A_contract_cannot_be_issued_by_a_save_yet()
+    public async Task A_price_increment_outside_the_configured_list_is_refused()
     {
         await using var scope = NewScope();
         var (_, repository, _) = Resolve(scope);
 
-        var dto = NewDto(0m, Periodic("P|1|10"));
-        dto.IsDraft = false;
-
-        await Assert.ThrowsAsync<ShiftEntityException>(async () =>
-            await repository.UpsertAsync(new ClaimableItemContract(), dto, ActionTypes.Insert, 7, null, true, false));
+        var error = await Assert.ThrowsAsync<ShiftEntityException>(async () =>
+            await repository.UpsertAsync(new ClaimableItemContract(), NewDto(0.025m, Standalone("S|1|7")), ActionTypes.Insert, 7, null, true, false));
+        Assert.Contains("A price increment of 2.5% is not allowed", error.Message.Body);
     }
 
     [Fact]
@@ -256,7 +255,253 @@ public class ClaimableItemContractRepositoryTests
         await repository.DeleteAsync(contract, 7, true, false);
     }
 
+    // ───── Issue ────────────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Saving_with_the_draft_flag_off_issues_and_rolls_the_expiries()
+    {
+        await using var scope = NewScope();
+        var (db, repository, _) = Resolve(scope);
+
+        var dto = NewDto(0m, Periodic("P|1|20"), Periodic("P|1|10"), Standalone("S|1|7"));
+        dto.IsDraft = false;
+        var contract = await InsertAsync(db, repository, dto);
+
+        Assert.False(contract.IsDraft);
+        Assert.Equal(Today.AddHours(12), contract.IssuedDate);
+        Assert.Equal(7, contract.IssuedByUserID);
+        Assert.Equal(new DateTime(2026, 12, 1), Line(contract, "P|1|10").ExpireDate);
+        Assert.Equal(new DateTime(2027, 6, 1), Line(contract, "P|1|20").ExpireDate);
+        Assert.Equal(contract.EndDate, Line(contract, "S|1|7").ExpireDate);
+    }
+
+    [Fact]
+    public async Task A_saved_draft_is_issued_by_the_issue_action()
+    {
+        await using var scope = NewScope();
+        var (db, repository, _) = Resolve(scope);
+        var draft = await InsertAsync(db, repository, NewDto(0m, Periodic("P|1|10"), Standalone("S|1|7")));
+
+        await repository.IssueAsync(draft.ID, 8, disableDefaultDataLevelAccess: true);
+        await db.SaveChangesAsync();
+
+        var saved = await db.Set<ClaimableItemContract>().Include(x => x.Lines).SingleAsync(x => x.ID == draft.ID);
+        Assert.False(saved.IsDraft);
+        Assert.Equal(8, saved.IssuedByUserID);
+        Assert.Equal(new DateTime(2026, 12, 1), Line(saved, "P|1|10").ExpireDate);
+        Assert.Equal(saved.EndDate, Line(saved, "S|1|7").ExpireDate);
+    }
+
+    [Fact]
+    public async Task An_issued_contract_cannot_be_issued_again()
+    {
+        await using var scope = NewScope();
+        var (db, repository, _) = Resolve(scope);
+        var dto = NewDto(0m, Periodic("P|1|10"));
+        dto.IsDraft = false;
+        var contract = await InsertAsync(db, repository, dto);
+
+        await Assert.ThrowsAsync<ShiftEntityException>(async () => await repository.IssueAsync(contract.ID, 7, true));
+    }
+
+    [Fact]
+    public async Task A_periodic_chain_that_outlives_the_contract_is_refused_naming_the_line_and_dates()
+    {
+        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+        await using var scope = NewScope();
+        var (_, repository, _) = Resolve(scope);
+
+        var dto = NewDto(0m, Periodic("P|1|10"), Periodic("P|1|20"), Periodic("P|1|30"));
+        dto.IsDraft = false;
+
+        var error = await Assert.ThrowsAsync<ShiftEntityException>(async () =>
+            await repository.UpsertAsync(new ClaimableItemContract(), dto, ActionTypes.Insert, 7, null, true, false));
+        Assert.Equal(
+            "The 30,000 km service would expire on 2027-12-01, after the contract ends on 2027-06-01. Shorten the service durations or lengthen the contract.",
+            error.Message.Body);
+    }
+
+    [Fact]
+    public async Task A_draft_may_start_in_the_past_but_is_not_issued_so()
+    {
+        await using var scope = NewScope();
+        var (db, repository, _) = Resolve(scope);
+
+        var dto = NewDto(0m, Periodic("P|1|10"));
+        dto.StartDate = Today.AddDays(-1);
+        var draft = await InsertAsync(db, repository, dto);
+
+        var error = await Assert.ThrowsAsync<ShiftEntityException>(async () => await repository.IssueAsync(draft.ID, 7, true));
+        Assert.Contains("starts on 2026-05-31, which is in the past", error.Message.Body);
+    }
+
+    [Fact]
+    public async Task A_contract_is_issued_only_with_the_minimum_number_of_lines()
+    {
+        await using var scope = NewScope(minimumLines: 2);
+        var (db, repository, _) = Resolve(scope);
+        var draft = await InsertAsync(db, repository, NewDto(0m, Periodic("P|1|10")));
+
+        var error = await Assert.ThrowsAsync<ShiftEntityException>(async () => await repository.IssueAsync(draft.ID, 7, true));
+        Assert.Contains("at least 2 services", error.Message.Body);
+    }
+
+    [Fact]
+    public async Task A_price_that_moved_since_the_draft_was_saved_is_not_issued()
+    {
+        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+        await using var scope = NewScope();
+        var (db, repository, provider) = Resolve(scope);
+        var draft = await InsertAsync(db, repository, NewDto(0m, Periodic("P|1|10")));
+        provider.PriceChange = 5m;
+
+        var error = await Assert.ThrowsAsync<ShiftEntityException>(async () => await repository.IssueAsync(draft.ID, 7, true));
+        Assert.Contains("changed from 100.00 to 105.00", error.Message.Body);
+    }
+
+    [Fact]
+    public async Task Issuing_checks_again_that_no_other_contract_took_the_periodic_menu()
+    {
+        await using var scope = NewScope();
+        var (db, repository, _) = Resolve(scope);
+        var draft = await InsertAsync(db, repository, NewDto(0m, Periodic("P|1|10")));
+        await AddOtherContractAsync(db, "P|1|10");
+
+        var error = await Assert.ThrowsAsync<ShiftEntityException>(async () => await repository.IssueAsync(draft.ID, 7, true));
+        Assert.Contains("already on another contract", error.Message.Body);
+    }
+
+    [Fact]
+    public async Task An_issued_contract_holds_its_periodic_menus()
+    {
+        await using var scope = NewScope();
+        var (db, repository, _) = Resolve(scope);
+        var dto = NewDto(0m, Periodic("P|1|10"));
+        dto.IsDraft = false;
+        await InsertAsync(db, repository, dto);
+
+        var error = await Assert.ThrowsAsync<ShiftEntityException>(async () =>
+            await repository.UpsertAsync(new ClaimableItemContract(), NewDto(0m, Periodic("P|1|10")), ActionTypes.Insert, 7, null, true, false));
+        Assert.Contains("already on another contract", error.Message.Body);
+    }
+
+    // ───── Cancel ───────────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Cancelling_a_contract_cancels_its_lines_and_frees_its_periodic_menus()
+    {
+        await using var scope = NewScope();
+        var (db, repository, _) = Resolve(scope);
+        var issued = await IssueNewAsync(db, repository, Periodic("P|1|10"), Standalone("S|1|7"));
+
+        await repository.CancelAsync(issued.ID, "  customer withdrew  ", 9, disableDefaultDataLevelAccess: true);
+        await db.SaveChangesAsync();
+
+        var saved = await db.Set<ClaimableItemContract>().Include(x => x.Lines).SingleAsync(x => x.ID == issued.ID);
+        Assert.True(saved.IsCancelled);
+        Assert.Equal("customer withdrew", saved.CancelReason);
+        Assert.Equal(9, saved.CancelledByUserID);
+        Assert.Equal(Today.AddHours(12), saved.CancelledDate);
+        Assert.All(saved.Lines, x => Assert.True(x.IsCancelled));
+        Assert.All(saved.Lines, x => Assert.Equal("customer withdrew", x.CancelReason));
+        Assert.Equal(140m, saved.Total);
+
+        await InsertAsync(db, repository, NewDto(0m, Periodic("P|1|10")));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public async Task A_cancellation_needs_a_reason(string? reason)
+    {
+        await using var scope = NewScope();
+        var (db, repository, _) = Resolve(scope);
+        var issued = await IssueNewAsync(db, repository, Periodic("P|1|10"));
+
+        var error = await Assert.ThrowsAsync<ShiftEntityException>(async () => await repository.CancelAsync(issued.ID, reason, 9, true));
+        Assert.Contains("reason", error.Message.Body);
+    }
+
+    [Fact]
+    public async Task A_draft_is_deleted_not_cancelled_and_a_cancelled_contract_not_cancelled_again()
+    {
+        await using var scope = NewScope();
+        var (db, repository, _) = Resolve(scope);
+        var draft = await InsertAsync(db, repository, NewDto(0m, Periodic("P|1|10")));
+        var issued = await IssueNewAsync(db, repository, Periodic("P|1|20"));
+        await repository.CancelAsync(issued.ID, "first", 9, true);
+        await db.SaveChangesAsync();
+
+        var draftError = await Assert.ThrowsAsync<ShiftEntityException>(async () => await repository.CancelAsync(draft.ID, "no", 9, true));
+        Assert.Contains("delete it instead", draftError.Message.Body);
+        var againError = await Assert.ThrowsAsync<ShiftEntityException>(async () => await repository.CancelAsync(issued.ID, "again", 9, true));
+        Assert.Contains("already cancelled", againError.Message.Body);
+    }
+
+    [Fact]
+    public async Task Cancelling_a_line_frees_its_menu_and_leaves_the_contract_issued()
+    {
+        await using var scope = NewScope();
+        var (db, repository, _) = Resolve(scope);
+        var issued = await IssueNewAsync(db, repository, Periodic("P|1|10"), Standalone("S|1|7"));
+
+        await repository.CancelLineAsync(issued.ID, Line(issued, "P|1|10").ID, "serviced elsewhere", 9, true);
+        await db.SaveChangesAsync();
+
+        var saved = await db.Set<ClaimableItemContract>().Include(x => x.Lines).SingleAsync(x => x.ID == issued.ID);
+        Assert.False(saved.IsCancelled);
+        Assert.True(Line(saved, "P|1|10").IsCancelled);
+        Assert.Equal("serviced elsewhere", Line(saved, "P|1|10").CancelReason);
+        Assert.False(Line(saved, "S|1|7").IsCancelled);
+
+        await InsertAsync(db, repository, NewDto(0m, Periodic("P|1|10")));
+    }
+
+    [Fact]
+    public async Task Cancelling_the_last_live_line_cancels_the_contract()
+    {
+        await using var scope = NewScope();
+        var (db, repository, _) = Resolve(scope);
+        var issued = await IssueNewAsync(db, repository, Periodic("P|1|10"), Standalone("S|1|7"));
+
+        await repository.CancelLineAsync(issued.ID, Line(issued, "P|1|10").ID, "one", 9, true);
+        await repository.CancelLineAsync(issued.ID, Line(issued, "S|1|7").ID, "two", 9, true);
+        await db.SaveChangesAsync();
+
+        var saved = await db.Set<ClaimableItemContract>().SingleAsync(x => x.ID == issued.ID);
+        Assert.True(saved.IsCancelled);
+        Assert.Equal("two", saved.CancelReason);
+    }
+
+    [Fact]
+    public async Task A_line_is_cancelled_only_once_and_only_if_it_exists()
+    {
+        await using var scope = NewScope();
+        var (db, repository, _) = Resolve(scope);
+        var issued = await IssueNewAsync(db, repository, Periodic("P|1|10"), Standalone("S|1|7"));
+        var lineId = Line(issued, "P|1|10").ID;
+        await repository.CancelLineAsync(issued.ID, lineId, "one", 9, true);
+        await db.SaveChangesAsync();
+
+        var again = await Assert.ThrowsAsync<ShiftEntityException>(async () => await repository.CancelLineAsync(issued.ID, lineId, "again", 9, true));
+        Assert.Contains("already cancelled", again.Message.Body);
+        var missing = await Assert.ThrowsAsync<ShiftEntityException>(async () => await repository.CancelLineAsync(issued.ID, 999_999, "x", 9, true));
+        Assert.Equal(404, missing.HttpStatusCode);
+    }
+
     // ───── Lookup ───────────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task The_lookup_carries_the_configured_increments_and_minimum_lines()
+    {
+        await using var scope = NewScope(minimumLines: 4);
+        var (service, _) = ResolveService(scope);
+
+        var lookup = await service.LookupAsync(Vin, null, null, null, null, null, Today);
+
+        Assert.Equal(4, lookup.MinimumLines);
+        Assert.Equal(ClaimableItemsDataOptions.DefaultContractPriceIncrements, lookup.PriceIncrements);
+    }
 
     [Fact]
     public async Task With_no_country_configured_the_lookups_default_country_applies()
@@ -401,6 +646,28 @@ public class ClaimableItemContractRepositoryTests
     }
 
     [Fact]
+    public void The_list_shows_what_the_contract_is_still_worth()
+    {
+        var mapper = ModuleMapper.For<ClaimableItemContract, ClaimableItemContractListDTO, ClaimableItemContractDTO>();
+        var stored = new ClaimableItemContract
+        {
+            VIN = Vin,
+            CustomerName = "Customer",
+            TotalWithIncrement = 150m,
+            Lines =
+            {
+                new ClaimableItemContractLine { MenuLineKey = "P|1|10", PriceWithIncrement = 100m, IsCancelled = true },
+                new ClaimableItemContractLine { MenuLineKey = "S|1|7", PriceWithIncrement = 50m },
+            },
+        };
+
+        var row = mapper.MapToList(new[] { stored }.AsQueryable()).Single();
+
+        Assert.Equal(150m, row.TotalWithIncrement);
+        Assert.Equal(50m, row.LiveTotalWithIncrement);
+    }
+
+    [Fact]
     public void A_periodic_menu_may_appear_once_but_a_standalone_may_repeat()
     {
         var validator = new ClaimableItemContractValidator(new KeyLocalizer());
@@ -447,7 +714,7 @@ public class ClaimableItemContractRepositoryTests
         CustomerName = "Customer",
         ContractType = ClaimableItemContractType.PurchasedServiceContract,
         Mileage = 5000,
-        StartDate = new DateTime(2026, 1, 1),
+        StartDate = Today,
         Duration = 1,
         DurationUnit = ClaimableItemContractDurationUnit.Years,
         PriceIncrement = priceIncrement,
@@ -476,6 +743,15 @@ public class ClaimableItemContractRepositoryTests
         return contract;
     }
 
+    private static Task<ClaimableItemContract> IssueNewAsync(ShiftDbContext db, ClaimableItemContractRepository repository, params ClaimableItemContractLineDTO[] lines)
+    {
+        var dto = NewDto(0m, lines);
+        dto.IsDraft = false;
+        return InsertAsync(db, repository, dto);
+    }
+
+    private static ClaimableItemContractLine Line(ClaimableItemContract contract, string key) => contract.Lines.Single(x => x.MenuLineKey == key);
+
     /// <summary>Another contract, for the same VIN unless one is given, written straight to the database.</summary>
     private static async Task AddOtherContractAsync(
         ShiftDbContext db,
@@ -498,7 +774,7 @@ public class ClaimableItemContractRepositoryTests
         await db.SaveChangesAsync();
     }
 
-    private static AsyncServiceScope NewScope(long mileageMargin = 0)
+    private static AsyncServiceScope NewScope(long mileageMargin = 0, int minimumLines = 1)
     {
         var services = ModuleMapper.Services();
         services.AddDbContext<ShiftDbContext, ContractDb>(o => o.UseInMemoryDatabase(Guid.NewGuid().ToString()));
@@ -508,7 +784,13 @@ public class ClaimableItemContractRepositoryTests
         services.AddScoped<IdentityClaimProvider>();
         services.AddSingleton(DispatchProxy.Create<IDefaultDataLevelAccess, UnusedAccess>());
         services.AddSingleton<IHashIdService>(new HashIdService(Options.Create(new ShiftEntityOptions())));
-        services.AddSingleton(new ClaimableItemsDataOptions { ContractPeriodicMileageMargin = mileageMargin });
+        services.AddSingleton(new ClaimableItemsDataOptions
+        {
+            ContractPeriodicMileageMargin = mileageMargin,
+            ContractMinimumLines = minimumLines,
+            ContractTimeZone = TimeZoneInfo.Utc,
+        });
+        services.AddSingleton<TimeProvider>(new NoonOf(Today));
         services.AddScoped<FakeMenuProvider>();
         services.AddScoped<IClaimableItemContractMenuProvider>(sp => sp.GetRequiredService<FakeMenuProvider>());
         services.AddScoped<ClaimableItemContractMenuService>();
@@ -538,6 +820,9 @@ public class ClaimableItemContractRepositoryTests
         public ClaimableItemContractVehicleMenuStatus MenuStatus { get; set; } = ClaimableItemContractVehicleMenuStatus.Found;
         public (long? CountryId, decimal TransferRate)? LastCall { get; private set; }
 
+        /// <summary>Added to every price, to move the menu's prices after a draft was saved.</summary>
+        public decimal PriceChange { get; set; }
+
         public ValueTask<IReadOnlyList<ClaimableItemContractCountry>> GetSupportedCountriesAsync() =>
             ValueTask.FromResult<IReadOnlyList<ClaimableItemContractCountry>>(Countries);
 
@@ -545,7 +830,7 @@ public class ClaimableItemContractRepositoryTests
         {
             LastCall = (countryId, transferRate);
 
-            return Task.FromResult(new ClaimableItemContractVehicleMenu
+            var menu = new ClaimableItemContractVehicleMenu
             {
                 IsOfficial = IsOfficial,
                 Katashiki = "KAT-1",
@@ -564,7 +849,11 @@ public class ClaimableItemContractRepositoryTests
                         new() { MenuLineKey = "S|1|8", MenuCode = "BATTERY", LineType = ClaimableItemContractLineType.Standalone, Price = 10m, HasUnpricedParts = true },
                     ]
                     : [],
-            });
+            };
+
+            menu.Lines.ForEach(x => x.Price += PriceChange);
+
+            return Task.FromResult(menu);
         }
 
         private static ClaimableItemContractMenuLineDTO PeriodicLine(string key, int km, decimal price) => new()
@@ -575,6 +864,12 @@ public class ClaimableItemContractRepositoryTests
             ServiceIntervalValueInMeter = km,
             Price = price,
         };
+    }
+
+    /// <summary>Noon UTC of a fixed day, so "today" in the UTC contract time zone is that day.</summary>
+    private class NoonOf(DateTime day) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => new(day.AddHours(12), TimeSpan.Zero);
     }
 
     private class ContractDb(DbContextOptions<ContractDb> options) : ShiftDbContext(options);

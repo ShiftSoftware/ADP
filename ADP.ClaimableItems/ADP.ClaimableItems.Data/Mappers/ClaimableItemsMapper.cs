@@ -166,14 +166,19 @@ public class ClaimableItemsMapper : ShiftMapperBase
             // The lines are REPLACED, as on the warranty claim: ClaimableItemContractRepository.UpsertAsync
             // removes the old rows before the base upsert maps anything. A null collection is left alone.
             //
-            // The cancel members are written only by the cancel action, so a save never touches them, and a
-            // missing draft flag means draft.
+            // The cancel and issue members are written only by those actions, so a save never touches them, and
+            // a missing draft flag means draft.
             .ReverseMap()
             .ForMember(e => e.IsDraft, opt => opt.MapFrom(dto => dto.IsDraft ?? true))
             .ForMember(e => e.Lines, opt => opt.Condition((dto, _, _) => dto.Lines != null))
             .ForMember(e => e.IsCancelled, opt => opt.Ignore())
             .ForMember(e => e.CancelledDate, opt => opt.Ignore())
-            .ForMember(e => e.CancelReason, opt => opt.Ignore());
+            .ForMember(e => e.CancelReason, opt => opt.Ignore())
+            .ForMember(e => e.IssuedDate, opt => opt.Ignore());
+
+        // LIST: what the contract is still worth. Cancelled lines stay in the stored totals, as history.
+        CreateMap<ClaimableItemContract, ClaimableItemContractListDTO>()
+            .ForMember(d => d.LiveTotalWithIncrement, opt => opt.MapFrom(e => e.Lines.Where(l => !l.IsCancelled && !l.IsDeleted).Sum(l => l.PriceWithIncrement)));
 
         CreateMap<ClaimableItemContractLine, ClaimableItemContractLineDTO>()
             // ── ENTITY ────────────────────────────────────────────────────────────────────

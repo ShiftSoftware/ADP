@@ -1,0 +1,44 @@
+@* Asks for the reason of a cancellation. Closes with the trimmed reason, or cancelled. *@
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">@Title</MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudText Class="mb-4">@Message</MudText>
+        <MudTextField T="string"
+                      @bind-Value="reason"
+                      Label="Reason"
+                      Variant="Variant.Outlined"
+                      Lines="3"
+                      Immediate
+                      AutoFocus />
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="() => MudDialog.Cancel()">Back</MudButton>
+        <MudButton Color="Color.Error"
+                   Variant="Variant.Filled"
+                   Disabled="string.IsNullOrWhiteSpace(reason)"
+                   OnClick="() => MudDialog.Close(DialogResult.Ok(reason!.Trim()))">
+            @ConfirmText
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string Title { get; set; } = "Cancel";
+
+    [Parameter]
+    public string Message { get; set; } = string.Empty;
+
+    [Parameter]
+    public string ConfirmText { get; set; } = "Cancel";
+
+    private string? reason;
+}

@@ -23,6 +23,18 @@ public class ClaimableItemsWebOptions
     public ReadWriteDeleteAction? ClaimableItemContractsAction { get; set; }
 
     /// <summary>
+    /// TypeAuth node that shows the contract form's Issue button (the same node the API options take). Null →
+    /// shown to anyone who may write contracts.
+    /// </summary>
+    public BooleanAction? IssueContractAction { get; set; }
+
+    /// <summary>
+    /// TypeAuth node that shows the contract form's Cancel buttons (the same node the API options take). Null →
+    /// shown to anyone who may write contracts.
+    /// </summary>
+    public BooleanAction? CancelContractAction { get; set; }
+
+    /// <summary>
     /// TypeAuth node gating the ItemClaim pages (consumer-supplied, per D9 — the original host application passes
     /// <c>Claiming</c>). Null → not gated.
     /// </summary>
