@@ -169,7 +169,7 @@ const COUNT_KEYS = {
   other: 'inspectionCountOther',
 } as const;
 
-export const listed = (state: PanelState): PaintThicknessInspectionDTO[] => (state.vehicleLoaded && state.authorized !== false ? (state.inspections ?? []) : []);
+export const listed = (state: PanelState): PaintThicknessInspectionDTO[] => (state.vehicleLoaded ? (state.inspections ?? []) : []);
 
 export const hasRecords = (state: PanelState): boolean => listed(state).length > 0;
 
@@ -198,7 +198,7 @@ export const panelBody = (state: PanelState): 'rows' | 'none' => (shownRows(stat
 export const columnCount = (hidden: ReadonlySet<string>): number => (hidden.has('photos') ? 4 : 5);
 
 export const panelPlaceholder = (state: PanelState, leaving = false): 'idle' | 'empty' | null => {
-  if (!state.vehicleLoaded || state.authorized === false) return 'idle';
+  if (!state.vehicleLoaded) return 'idle';
   if (!shownRows(state).length) return 'empty';
   return leaving ? 'idle' : null;
 };

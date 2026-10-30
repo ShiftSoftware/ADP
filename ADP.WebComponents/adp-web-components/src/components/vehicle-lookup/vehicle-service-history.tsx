@@ -44,7 +44,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
   @State() locale: ComponentLocale<typeof ServiceHistorySchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...ServiceHistorySchema.getDefault() };
 
   async componentWillLoad() {
-    this.pageSize = this.readPageSize();
+    this.pageSize = this.initialPageSize();
     await this.changeLanguage(this.language);
   }
 
@@ -262,8 +262,15 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
 
   // #region Pages
 
+  @Prop() pagination: boolean = false;
+
+  @Watch('pagination')
+  onPaginationChange() {
+    this.goTo(0, this.initialPageSize());
+  }
+
   /** The reader's page size, kept in this browser (localStorage) so the panel opens on it next time. */
-  @State() pageSize: PageSize = DEFAULT_PAGE_SIZE;
+  @State() pageSize: PageSize = 'all';
 
   @State() page: number = 0;
 
@@ -274,6 +281,10 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
   private pagingTimer?: ReturnType<typeof setTimeout>;
   /** The size a fading page change is on its way to; a vehicle that lands meanwhile still takes it. */
   private pendingSize?: PageSize;
+
+  private initialPageSize(): PageSize {
+    return this.pagination ? this.readPageSize() : 'all';
+  }
 
   /** Reads the stored size. Storage can be missing or throw (private windows, blocked site data); the default stands then. */
   private readPageSize(): PageSize {
@@ -319,7 +330,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
     const now = pageRows(rows, this.page, this.pageSize);
     const next = pageRows(rows, target, size);
 
-    if (size !== this.pageSize) this.storePageSize(size);
+    if (size !== this.pageSize && this.pagination) this.storePageSize(size);
 
     const overlap = Math.min(now.length, next.length);
     const changes = now.slice(0, overlap).some((row, index) => row !== next[index]);
@@ -528,6 +539,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
             openKey={this.openKey}
             retainedKey={this.retainedKey}
             onToggleDrawer={this.toggleDrawer}
+            pagination={this.pagination}
             page={this.page}
             pageSize={this.pageSize}
             onPage={this.onPage}

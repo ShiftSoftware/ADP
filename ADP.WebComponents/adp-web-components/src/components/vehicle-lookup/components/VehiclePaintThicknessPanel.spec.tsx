@@ -85,15 +85,22 @@ const render = ({ state = loaded(), busy = false, direction = 'ltr', drawerOpen 
 
 const attr = (root: HTMLElement, selector: string, name: string) => root.querySelector(selector)?.getAttribute(name);
 
-describe('a failed lookup and a vehicle not in the records', () => {
-  it('show the idle look under the headings, with no notice of their own', async () => {
-    for (const state of [loaded({ vehicleLoaded: false, error: 'Failed' }), loaded({ authorized: false })]) {
-      const { body } = await render({ state, verdictText: 'Said by the pill' });
+describe('a failed lookup', () => {
+  it('shows the idle look under the headings, with no notice of its own', async () => {
+    const { body } = await render({ state: loaded({ vehicleLoaded: false, error: 'Failed' }), verdictText: 'Said by the pill' });
 
-      expect(attr(body, '.lt-lead', 'data-lead')).toBe('columns');
-      expect(attr(body, '.lt-placeholder', 'data-open')).toBe('true');
-      expect(body.querySelector('.lt-placeholder .layer[data-active="true"]')?.textContent).toBe(paintLocale.idleHint);
-    }
+    expect(attr(body, '.lt-lead', 'data-lead')).toBe('columns');
+    expect(attr(body, '.lt-placeholder', 'data-open')).toBe('true');
+    expect(body.querySelector('.lt-placeholder .layer[data-active="true"]')?.textContent).toBe(paintLocale.idleHint);
+  });
+});
+
+describe('a vehicle not in the records', () => {
+  it('lists its inspections like the live sites', async () => {
+    const { body } = await render({ state: loaded({ authorized: false }) });
+
+    expect(attr(body, '.lt-body', 'data-open')).toBe('true');
+    expect(attr(body, '.lt-placeholder', 'data-open')).toBe('false');
   });
 });
 

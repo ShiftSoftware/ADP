@@ -50,17 +50,9 @@ describe('recordVerdict', () => {
     expect(recordVerdict({ locale, vehicleLoaded: true, authorized: true, hasRecords: true, error: 'Wrong response format', recordsVerdict: 'positive' }).accent).toBe('negative');
   });
 
-  it('is a statement without a verdict for a vehicle the distributor has no record of, whatever the list holds', () => {
-    expect(recordVerdict({ locale, vehicleLoaded: true, authorized: false, hasRecords: false })).toEqual({
-      state: 'neutral',
-      text: 'Not in distributor records',
-      accent: 'neutral',
-    });
-    expect(recordVerdict({ locale, vehicleLoaded: true, authorized: false, hasRecords: true })).toEqual({
-      state: 'neutral',
-      text: 'Not in distributor records',
-      accent: 'neutral',
-    });
+  it('says nothing in the pill for a vehicle the distributor has no record of, and keeps the bar amber, whatever the list holds', () => {
+    expect(recordVerdict({ locale, vehicleLoaded: true, authorized: false, hasRecords: false })).toEqual({ state: 'idle', text: '', accent: 'neutral' });
+    expect(recordVerdict({ locale, vehicleLoaded: true, authorized: false, hasRecords: true })).toEqual({ state: 'idle', text: '', accent: 'neutral' });
   });
 
   it('says "no records" in grey, never green, for an authorized vehicle with nothing on file', () => {

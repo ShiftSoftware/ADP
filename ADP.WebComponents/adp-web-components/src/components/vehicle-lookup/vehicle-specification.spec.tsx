@@ -239,7 +239,7 @@ describe('vehicle-specification', () => {
     expect(shadow(page).querySelector('.lookup-card')?.getAttribute('data-verdict')).toBe('neutral');
     expect(text(page, '.spec-title-value')).toBe('—');
     expect(shadow(page).querySelector('.spec-notice')).toBeNull();
-    expect(shadow(page).querySelector('.lookup-summary .status-badge')?.classList.contains('is-neutral')).toBe(true);
+    expect(shadow(page).querySelector('.lookup-summary .status-badge')).toBeNull();
 
     // Cleared: back to idle, and said so.
     await (page.rootInstance as VehicleSpecification).clearData();
@@ -580,10 +580,7 @@ describe('vehicle-specification — the invariants', () => {
     await page.waitForChanges();
 
     expect(shadow(page).querySelector('.lookup-card')?.getAttribute('data-verdict')).toBe('neutral');
-    expect(shadow(page).querySelector('.lookup-summary .status-badge')?.classList.contains('is-neutral')).toBe(true);
-    expect(text(page, '.lookup-summary .status-badge > span')).toBe('Not in distributor records');
-
-    // The pill says it alone: no band repeating it above the grid (owner, 2026-10-25).
+    expect(shadow(page).querySelector('.lookup-summary .status-badge')).toBeNull();
     expect(shadow(page).querySelector('.spec-notice')).toBeNull();
 
     // The head says nothing, the grade slot is empty but kept, and the eight slots are in their idle
@@ -647,7 +644,7 @@ describe('vehicle-specification — the invariants', () => {
     await page.waitForChanges();
     expect(strip()?.textContent?.trim()).toBe('Identity');
     expect(shadow(page).querySelector('.spec-notice')).toBeNull();
-    expect(text(page, '.lookup-summary .status-badge > span')).toBe('Not in distributor records');
+    expect(shadow(page).querySelector('.lookup-summary .status-badge')).toBeNull();
   });
 });
 
@@ -869,14 +866,14 @@ describe('vehicle-specification — direction and language', () => {
     expect(text(page, '.spec-lead-caption-label')).toBe((specificationLocale as any).identity);
   });
 
-  it('says not-in-records and no-records in the pill, in the locale s words', async () => {
+  it('says no-records in the pill in the locale s words, and nothing for a vehicle not in the records', async () => {
     const page = await newPage(brokerMarketMocks);
 
     await owner(page).changeLanguage('ar');
     await owner(page).fetchVin('ZV8GHHHP37P214642');
     await page.waitForChanges();
     expect(shadow(page).querySelector('.spec-notice')).toBeNull();
-    expect(text(page, '.lookup-summary .status-badge > span')).toBe(arabicShared.notInRecords);
+    expect(shadow(page).querySelector('.lookup-summary .status-badge')).toBeNull();
 
     await owner(page).fetchVin(EMPTY_RECORD_VIN);
     await page.waitForChanges();
