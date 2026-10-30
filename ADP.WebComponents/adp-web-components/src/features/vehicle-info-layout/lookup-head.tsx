@@ -43,9 +43,7 @@ export type RecordPanelState = {
  * history, paint readings, claimable items — rather than a judgement. What it may say, in order:
  *
  *  - no vehicle yet: idle, nothing asserted, an empty pill;
- *  - a vehicle the distributor has no record of: neutral, "not in the distributor's records" —
- *    whatever the list happens to hold, it is not the distributor's to show
- *    (.shift/repos/adp/web-components/vehicle-lookup-invariants.md);
+ *  - a vehicle the distributor has no record of: no pill (only SSC says so) and an amber bar;
  *  - records on file: the pill is idle and says nothing — the records themselves are the
  *    statement, and a green "on record" on every panel that had anything at all said nothing the
  *    body did not (owner, 2026-09-21). The slot stays for a detail a panel may want to say here
@@ -58,7 +56,7 @@ export type RecordPanelState = {
 export const recordVerdict = ({ locale, vehicleLoaded, authorized, hasRecords, error, recordsVerdict }: RecordPanelState): PanelVerdict => {
   if (error) return { state: 'negative', text: error, accent: 'negative' };
   if (!vehicleLoaded) return { state: 'idle', text: '', accent: 'idle' };
-  if (authorized === false) return { state: 'neutral', text: locale.notInRecords, accent: 'neutral' };
+  if (authorized === false) return { state: 'idle', text: '', accent: 'neutral' };
   if (hasRecords) return { state: 'idle', text: '', accent: recordsVerdict ?? 'positive' };
   return { state: 'idle', text: locale.noRecords, accent: 'idle' };
 };

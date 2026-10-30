@@ -519,7 +519,7 @@ describe('vehicle-sale-information — the derivations', () => {
 });
 
 describe('vehicle-sale-information — the case matrix, vehicle by vehicle', () => {
-  it('[4] says nothing but "not in distributor records" for every unauthorized fixture', async () => {
+  it('[4] says nothing for every unauthorized fixture, with an amber bar and no pill', async () => {
     for (const [mocks, vin] of [
       [brokerMarketMocks, 'ZV8GHHHP37P214642'],
       [allocationMarketMocks, 'ZV9LMW6D75T151181'],
@@ -529,8 +529,7 @@ describe('vehicle-sale-information — the case matrix, vehicle by vehicle', () 
       await load(page, vin);
 
       expect(verdict(page)).toBe('neutral');
-      expect(pill(page)).toBe(englishShared.notInRecords);
-      // The pill says it alone, and the card is in its idle look: blank values, not dashes (owner, 2026-10-25).
+      expect(shadow(page).querySelector('.lookup-summary .status-badge')).toBeNull();
       expect(shadow(page).querySelector('.sale-notice')).toBeNull();
       expect(text(page, '.sale-title-value')).toBe('—');
       expect(all(page, '.sale-grid .sale-value').every(value => squash(value.textContent) === '')).toBe(true);
@@ -883,8 +882,7 @@ describe('vehicle-sale-information — the invariants', () => {
       await load(page, { vin: 'ZZ9NOTOURS0000001', isAuthorized: false, saleInformation: LEAKY_SALE });
 
       expect(verdict(page)).toBe('neutral');
-      expect(pill(page)).toBe(englishShared.notInRecords);
-      // No band repeating the pill (owner, 2026-10-25).
+      expect(shadow(page).querySelector('.lookup-summary .status-badge')).toBeNull();
       expect(shadow(page).querySelector('.sale-notice')).toBeNull();
       expect(all(page, '.sale-grid .sale-value').every(value => value.getAttribute('data-role') === 'empty')).toBe(true);
       expect(all(page, '.sale-leg')).toHaveLength(0);
@@ -1422,7 +1420,7 @@ describe('vehicle-sale-information — the owner', () => {
 
     await load(page, UNAUTHORIZED_VIN);
     expect(verdict(page)).toBe('neutral');
-    expect(shadow(page).querySelector('.lookup-summary .status-badge')?.classList.contains('is-neutral')).toBe(true);
+    expect(shadow(page).querySelector('.lookup-summary .status-badge')).toBeNull();
 
     await owner(page).clearData();
     await page.waitForChanges();

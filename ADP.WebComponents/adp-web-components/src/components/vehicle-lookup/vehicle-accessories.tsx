@@ -52,7 +52,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
   async componentWillLoad() {
     this.applied = parseHiddenFields(this.hiddenFields);
-    this.pageSize = this.readPageSize();
+    this.pageSize = this.initialPageSize();
     await this.changeLanguage(this.language);
   }
 
@@ -298,8 +298,15 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
   // #region Pages
 
+  @Prop() pagination: boolean = false;
+
+  @Watch('pagination')
+  onPaginationChange() {
+    this.goTo(0, this.initialPageSize());
+  }
+
   /** The reader's page size, kept in this browser (localStorage) so the panel opens on it next time. */
-  @State() pageSize: PageSize = DEFAULT_PAGE_SIZE;
+  @State() pageSize: PageSize = 'all';
 
   @State() page: number = 0;
 
@@ -310,6 +317,10 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
   private pagingTimer?: ReturnType<typeof setTimeout>;
   private stopFollowing?: () => void;
   private revealPending = false;
+
+  private initialPageSize(): PageSize {
+    return this.pagination ? this.readPageSize() : 'all';
+  }
 
   /** Reads the stored size. Storage can be missing or throw (private windows, blocked site data); the default stands then. */
   private readPageSize(): PageSize {
@@ -349,7 +360,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
     const now = pageRows(rows, this.page, this.pageSize);
     const next = pageRows(rows, target, size);
 
-    if (size !== this.pageSize) this.storePageSize(size);
+    if (size !== this.pageSize && this.pagination) this.storePageSize(size);
 
     const overlap = Math.min(now.length, next.length);
     const changes = now.slice(0, overlap).some((row, index) => row !== next[index]);
@@ -585,6 +596,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
             retainedNotice={this.retainedNotice}
             slotRows={[...current, ...this.outgoing]}
             slots={slots}
+            pagination={this.pagination}
             page={this.page}
             pageSize={this.pageSize}
             onPage={this.onPage}

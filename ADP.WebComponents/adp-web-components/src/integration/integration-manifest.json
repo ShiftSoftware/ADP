@@ -240,6 +240,7 @@
             "mutable": false,
             "required": false
           },
+          { "name": "pagination", "attribute": "pagination", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "queryString", "attribute": "query-string", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "today", "attribute": "today", "type": "string", "default": null, "mutable": false, "required": false }
         ],
@@ -298,6 +299,7 @@
             "mutable": false,
             "required": false
           },
+          { "name": "pagination", "attribute": "pagination", "type": "boolean", "default": null, "mutable": false, "required": false },
           { "name": "queryString", "attribute": "query-string", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "today", "attribute": "today", "type": "string", "default": null, "mutable": false, "required": false }
         ],

@@ -7,7 +7,8 @@ import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup
 import { VehicleServiceHistoryDTO } from '~types/generated/vehicle-lookup/vehicle-service-history-dto';
 
 import { VehicleServiceHistory } from './vehicle-service-history';
-import { PanelState, listed, panelBody, panelPlaceholder, panelVerdict } from './components/VehicleServiceHistoryPanel';
+import { PAGE_SIZE_STORAGE_KEY, PanelState, listed, panelBody, panelPlaceholder, panelVerdict, serviceHistoryColumns } from './components/VehicleServiceHistoryPanel';
+import serviceHistorySchema from '~locales/vehicleLookup/serviceHistory/type';
 
 import englishShared from '../../locales/en.json';
 
@@ -23,15 +24,19 @@ const visit = {
 } as VehicleServiceHistoryDTO;
 
 describe('vehicle-service-history — the honesty rule', () => {
-  it('lists nothing for an unauthorized vehicle, even when the data carries visits, and is amber', () => {
+  it('lists the visits of an unauthorized vehicle like the live sites, with no pill and an amber bar', () => {
     const state: PanelState = { vehicleLoaded: true, authorized: false, visits: [visit, visit] };
-    const verdict = panelVerdict(state, shared);
 
-    expect(listed(state)).toEqual([]);
-    expect(panelBody(state)).toBe('none');
-    expect(verdict.state).toBe('neutral');
-    expect(verdict.text).toBe(shared.notInRecords);
-    expect(verdict.accent).toBe('neutral');
+    expect(listed(state)).toEqual([visit, visit]);
+    expect(panelBody(state)).toBe('rows');
+    expect(panelVerdict(state, shared)).toEqual({ state: 'idle', text: '', accent: 'neutral' });
+  });
+
+  it('shows an unauthorized vehicle with no visits as empty, never green', () => {
+    const state: PanelState = { vehicleLoaded: true, authorized: false, visits: [] };
+
+    expect(panelVerdict(state, shared)).toEqual({ state: 'idle', text: '', accent: 'neutral' });
+    expect(panelPlaceholder(state)).toBe('empty');
   });
 
   it('greys an authorized vehicle with no visits, never green, and shows the empty placeholder', () => {
@@ -87,5 +92,54 @@ describe('vehicle-service-history — the drawer', () => {
     await next;
     await page.waitForChanges();
     expect(drawer().getAttribute('data-open')).toBe('false');
+  });
+});
+
+describe('vehicle-service-history — behaves like the live sites', () => {
+  beforeAll(() => {
+    globalThis.fetch = ((url: string) => {
+      const body = JSON.parse(readFileSync(join(__dirname, '../../', url.slice(url.indexOf('locales/'))), 'utf8'));
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(body) });
+    }) as unknown as typeof fetch;
+  });
+
+  const visits = Array.from({ length: 7 }, (_, index) => ({ ...visit, invoiceNumber: `INV-${index}` }));
+  const record = { vin: 'ZS8TESTVIN0000001', isAuthorized: true, serviceHistory: visits } as unknown as VehicleLookupDTO;
+
+  const mount = async (attributes = '') => {
+    const page = await newSpecPage({ components: [VehicleServiceHistory], html: `<vehicle-service-history is-dev="true" ${attributes}></vehicle-service-history>` });
+    await (page.rootInstance as VehicleServiceHistory).fetchVin(record);
+    await page.waitForChanges();
+    return page;
+  };
+
+  const rowCount = (page: Awaited<ReturnType<typeof mount>>) => page.root.shadowRoot.querySelectorAll('.lt-slot').length;
+  const pagerOpen = (page: Awaited<ReturnType<typeof mount>>) => page.root.shadowRoot.querySelector('.service-history-pager').getAttribute('data-open');
+
+  it('keeps the columns in the order the live sites show them', () => {
+    expect(serviceHistoryColumns(serviceHistorySchema.getDefault()).map(column => column.field)).toEqual([
+      'branchName',
+      'companyName',
+      'invoiceNumber',
+      'serviceDate',
+      'serviceType',
+      'mileage',
+    ]);
+  });
+
+  it('lists every visit with no pager unless pagination is turned on', async () => {
+    const page = await mount();
+
+    expect(rowCount(page)).toBe(7);
+    expect(pagerOpen(page)).toBe('false');
+  });
+
+  it('pages five visits at a time when pagination is on, ignoring a size saved under the old key', async () => {
+    localStorage.setItem('shift-components:vehicle-service-history:page-size', '25');
+    const page = await mount('pagination="true"');
+
+    expect(PAGE_SIZE_STORAGE_KEY).toBe('shift-components:vehicle-service-history:page-size:v2');
+    expect(rowCount(page)).toBe(5);
+    expect(pagerOpen(page)).toBe('true');
   });
 });
