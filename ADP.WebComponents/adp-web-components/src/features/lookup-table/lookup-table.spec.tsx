@@ -94,6 +94,33 @@ describe('a table with no drawer', () => {
   });
 });
 
+describe('a media cell', () => {
+  const columns: LookupColumn<Row>[] = [
+    { field: 'name', label: 'Part', kind: 'code', identity: true, value: row => row.name },
+    { field: 'image', label: 'Image', kind: 'media', value: row => row.photos?.[0] ?? null },
+  ];
+
+  it('shows the no-picture stand-in for a blank URL and the did-not-load one when the picture fails, never a broken image', async () => {
+    const rows: Row[] = [
+      { name: 'Blank', photos: ['   '] },
+      { name: 'Missing', photos: null },
+      { name: 'Broken', photos: ['https://example.com/missing.jpg'] },
+    ];
+    const { root } = await mount(model({ rows, columns }));
+    const cells = Array.from(root.querySelectorAll('.lt-media'));
+
+    expect(cells.map(cell => cell.getAttribute('data-media'))).toEqual(['none', 'none', 'loading']);
+    expect(cells[0].querySelector('img')).toBeNull();
+    expect(cells[0].querySelector('.lt-media-stand').getAttribute('aria-label')).toBe('No image');
+
+    cells[2].querySelector('img').dispatchEvent(new Event('error'));
+
+    expect(cells[2].getAttribute('data-media')).toBe('failed');
+    expect(cells[2].querySelector('.lt-media-stand').getAttribute('aria-hidden')).toBeNull();
+    expect(cells[2].querySelector('.lt-media-open').hasAttribute('disabled')).toBe(true);
+  });
+});
+
 describe('placeholderKind', () => {
   const base = { columns: 4, loaded: true, failed: false, authorized: true, records: 0 };
 

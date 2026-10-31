@@ -59,6 +59,13 @@
         <!-- Generated fixtures. This page has no field of its own — the chips are the search — so they get a dashed card above the component. -->
         <div data-harness-fixtures class="card border-base-300 bg-base-100 border border-dashed p-3" x-cloak></div>
 
+        <div class="card border-base-300 bg-base-100 border p-3" x-data="{ pagination: false }" x-effect="document.getElementById('subject').pagination = pagination">
+          <label class="flex cursor-pointer items-center gap-2 text-sm">
+            <input type="checkbox" class="toggle toggle-sm toggle-primary" x-model="pagination" />
+            Pagination
+          </label>
+        </div>
+
         <!-- No card of the page's own around the component: the component draws the design language's card itself. -->
         <div class="frame">
           <vehicle-accessories id="subject" language="en" query-string=""></vehicle-accessories>

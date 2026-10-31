@@ -29,11 +29,6 @@ export type PanelState = {
   error?: string;
 };
 
-/**
- * The page sizes the reader can pick, the same as the accessories panel's so the two read alike:
- * steps of five up to twenty-five, then every visit. Five by default; a vehicle can carry fifty
- * visits and more.
- */
 export const PAGE_SIZES = [5, 10, 15, 20, 25] as const;
 
 export type PageSize = (typeof PAGE_SIZES)[number] | 'all';
@@ -42,8 +37,7 @@ export const PAGE_SIZE_OPTIONS: PageSize[] = [...PAGE_SIZES, 'all'];
 
 export const DEFAULT_PAGE_SIZE: PageSize = 5;
 
-/** Where the reader's choice is kept, per browser: the panel opens on it next time. */
-export const PAGE_SIZE_STORAGE_KEY = 'shift-components:vehicle-service-history:page-size';
+export const PAGE_SIZE_STORAGE_KEY = 'shift-components:vehicle-service-history:page-size:v2';
 
 // ---------------------------------------------------------------------------------------------
 // Columns
@@ -59,25 +53,21 @@ export const visitDate = (visit: VehicleServiceHistoryDTO): string | null => vis
 export const visitMileage = (visit: VehicleServiceHistoryDTO): string | null =>
   typeof visit.mileage === 'number' && Number.isFinite(visit.mileage) ? MILEAGE_FORMAT.format(visit.mileage) : null;
 
-/** A visit reads date → what was done → odometer → where; the date names it. */
+// Matches the live sites; a client asked for this order.
 export const serviceHistoryColumns = (locale: ServiceHistoryLocale): LookupColumn<VehicleServiceHistoryDTO>[] => [
+  { field: 'branchName', label: locale.branch, kind: 'text', value: visit => visit.branchName },
+  { field: 'companyName', label: locale.dealer, kind: 'text', value: visit => visit.companyName },
+  { field: 'invoiceNumber', label: locale.invoiceNumber, kind: 'code', value: visit => visit.invoiceNumber },
   { field: 'serviceDate', label: locale.date, kind: 'date', identity: true, value: visitDate },
   { field: 'serviceType', label: locale.serviceType, kind: 'text', grow: true, value: visit => visit.serviceType },
   { field: 'mileage', label: locale.odometer, kind: 'number', value: visitMileage },
-  { field: 'companyName', label: locale.dealer, kind: 'text', value: visit => visit.companyName },
-  { field: 'branchName', label: locale.branch, kind: 'text', value: visit => visit.branchName },
-  { field: 'invoiceNumber', label: locale.invoiceNumber, kind: 'code', value: visit => visit.invoiceNumber },
 ];
 
 // ---------------------------------------------------------------------------------------------
 // The derivations (design language § 20)
 // ---------------------------------------------------------------------------------------------
 
-/**
- * The visits the panel may list, in the data's order. An unauthorized vehicle has none whatever
- * the DTO holds: the list is not the distributor's to show (vehicle-lookup-invariants.md).
- */
-export const listed = (state: PanelState): VehicleServiceHistoryDTO[] => (state.vehicleLoaded && state.authorized !== false ? (state.visits ?? []) : []);
+export const listed = (state: PanelState): VehicleServiceHistoryDTO[] => (state.vehicleLoaded ? (state.visits ?? []) : []);
 
 export const hasRecords = (state: PanelState): boolean => listed(state).length > 0;
 
@@ -95,12 +85,12 @@ export const panelLead = (): LeadKind => 'columns';
 export const bodyOpen = (state: PanelState, leaving: boolean): boolean => !leaving && panelBody(state) === 'rows';
 
 /**
- * What fills the space under the strip when there is no list: `idle` before a lookup, after a
- * failed one and for a vehicle not in the distributor's records (the pill says what happened);
- * `empty` for an authorized vehicle with no visits on file. It holds through a lookup.
+ * What fills the space under the strip when there is no list: `idle` before a lookup and after a
+ * failed one (the pill says what happened); `empty` for a vehicle with no visits on file. It holds
+ * through a lookup.
  */
 export const panelPlaceholder = (state: PanelState): 'idle' | 'empty' | null => {
-  if (!state.vehicleLoaded || state.authorized === false) return 'idle';
+  if (!state.vehicleLoaded) return 'idle';
   return hasRecords(state) ? null : 'empty';
 };
 
@@ -211,6 +201,7 @@ type Props = {
   openKey: string | null;
   retainedKey: string | null;
   onToggleDrawer: (key: string) => void;
+  pagination: boolean;
   page: number;
   pageSize: PageSize;
   onPage: (page: number) => void;
@@ -230,6 +221,7 @@ export const VehicleServiceHistoryPanel: FunctionalComponent<Props> = ({
   openKey,
   retainedKey,
   onToggleDrawer,
+  pagination,
   page,
   pageSize,
   onPage,
@@ -240,7 +232,7 @@ export const VehicleServiceHistoryPanel: FunctionalComponent<Props> = ({
   const open = bodyOpen(state, leaving);
   const count = totalCount(state);
   const total = listed(state).length;
-  const pagerOpen = open && isPaginated(total);
+  const pagerOpen = pagination && open && isPaginated(total);
   const pages = pageCount(total, pageSize);
   const current = clampPage(page, total, pageSize);
   // A leave always ends idle, so the placeholder is the idle one for the whole leave: from rows it

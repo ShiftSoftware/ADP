@@ -38,12 +38,6 @@ export const FIELDS = ['partNumber', 'description', 'image'] as const;
 /** What a host sees without configuring anything: every column. */
 export const DEFAULT_HIDDEN_FIELDS = '';
 
-/**
- * The page sizes the reader can pick, in steps of five up to twenty-five, then every row. Five by
- * default (owner, 2026-10-25, replacing the "Show all" disclosure of 2026-10-18): a short card that
- * keeps its height from vehicle to vehicle, and never a list so long that a lookup has a screenful
- * of rows to move.
- */
 export const PAGE_SIZES = [5, 10, 15, 20, 25] as const;
 
 export type PageSize = (typeof PAGE_SIZES)[number] | 'all';
@@ -52,8 +46,7 @@ export const PAGE_SIZE_OPTIONS: PageSize[] = [...PAGE_SIZES, 'all'];
 
 export const DEFAULT_PAGE_SIZE: PageSize = 5;
 
-/** Where the reader's choice is kept, per browser: the panel opens on it next time. */
-export const PAGE_SIZE_STORAGE_KEY = 'shift-components:vehicle-accessories:page-size';
+export const PAGE_SIZE_STORAGE_KEY = 'shift-components:vehicle-accessories:page-size:v2';
 
 // ---------------------------------------------------------------------------------------------
 // Columns
@@ -76,12 +69,7 @@ export const sameColumns = (a: ReadonlySet<string>, b: ReadonlySet<string>): boo
 // The three derivations (design language § 20): what the strip says, what the body holds, the notice
 // ---------------------------------------------------------------------------------------------
 
-/**
- * The rows the panel may list. An unauthorized vehicle has none whatever the DTO holds: the list
- * is not the distributor's to show (vehicle-lookup-invariants.md), and a fixture that carries one
- * is a data fault the panel does not follow.
- */
-export const listed = (state: PanelState): AccessoryDTO[] => (state.vehicleLoaded && state.authorized !== false ? (state.accessories ?? []) : []);
+export const listed = (state: PanelState): AccessoryDTO[] => (state.vehicleLoaded ? (state.accessories ?? []) : []);
 
 /** Whether the vehicle has accessories on record. Judged on the whole list, not on the rows a disclosure shows. */
 export const hasRecords = (state: PanelState): boolean => listed(state).length > 0;
@@ -98,34 +86,30 @@ export const panelBody = (state: PanelState): 'rows' | 'none' => (hasRecords(sta
 export const panelLead = (state: PanelState, _busy: boolean): LeadKind => (columnCount(state.hidden) === 0 ? 'notice' : 'columns');
 
 /**
- * The strip's sentence when there is nothing to list. Never a verdict: an unauthorized vehicle is
- * amber ("not in the records"), an authorized one with nothing on file is grey and says only that,
- * and a host that hid every column is told so in grey -- before a lookup too, since the headings it
- * would otherwise show do not exist. A failed lookup is the one negative sentence. Null above rows
- * and before a lookup.
+ * The strip's sentence when there is nothing to list. Never a verdict: a vehicle with nothing on
+ * file is grey and says only that, and a host that hid every column is told so in grey -- before a
+ * lookup too, since the headings it would otherwise show do not exist. A failed lookup is the one
+ * negative sentence. Null above rows and before a lookup.
  */
 export const leadNotice = (state: PanelState, locale: AccessoriesLocale): PanelNotice | null => {
   if (state.error) return { tone: 'negative', text: state.error };
   if (!state.vehicleLoaded) return columnCount(state.hidden) === 0 ? { tone: 'idle', text: locale.noFieldsShown } : null;
-  if (state.authorized === false) return { tone: 'neutral', text: locale.unauthorizedNotice };
   if (!hasRecords(state)) return { tone: 'idle', text: locale.noAccessories };
   if (columnCount(state.hidden) === 0) return { tone: 'idle', text: locale.noFieldsShown };
   return null;
 };
 
 /**
- * What fills the space under the strip when there is no list: `idle` before any lookup, after a failed
- * one and for a vehicle not in the distributor's records ("look up a vehicle" -- the pill says what
- * happened), `empty` for an authorized vehicle with nothing on file (what would be listed here), and
+ * What fills the space under the strip when there is no list: `idle` before any lookup and after a
+ * failed one ("look up a vehicle" -- the pill says what happened), `empty` for a vehicle with
+ * nothing on file (what would be listed here), and
  * nothing when a host hid every column, where there is no list to describe. It holds through a lookup (the
  * state is still the last one), so the space does not collapse and reopen while the answer is on its way.
  * Owner, 2026-10-25: a strip over a blank band read as "nothing is shown".
  */
 export const panelPlaceholder = (state: PanelState): 'idle' | 'empty' | null => {
   if (columnCount(state.hidden) === 0) return null;
-  // Before a lookup, after a failed one, and for a vehicle not in the distributor's records: the pill
-  // says what happened, and the table is in its idle look (owner, 2026-10-25).
-  if (!state.vehicleLoaded || state.authorized === false) return 'idle';
+  if (!state.vehicleLoaded) return 'idle';
   if (!hasRecords(state)) return 'empty';
   return null;
 };
@@ -135,8 +119,8 @@ export const panelPlaceholder = (state: PanelState): 'idle' | 'empty' | null => 
 // ---------------------------------------------------------------------------------------------
 
 /**
- * The total, only when there is something to count: loaded, the distributor's own, at least one
- * accessory. Never for idle, unauthorized, an error or an empty list: "0 accessories" would be a
+ * The total, only when there is something to count: loaded, at least one accessory. Never for
+ * idle, an error or an empty list: "0 accessories" would be a
  * claim, and the empty list already has its statement. It does not move with hiddenFields or with
  * the disclosure: it is the vehicle's total, not the rows on screen.
  */
@@ -243,6 +227,7 @@ type Props = {
   slotRows: AccessoryDTO[];
   /** One per slot row: open or shut, and how its values are veiled (the owner's `tableSlots`). */
   slots: RowSlot[];
+  pagination: boolean;
   page: number;
   pageSize: PageSize;
   onPage: (page: number) => void;
@@ -254,7 +239,25 @@ type Props = {
 export const bodyOpen = (state: PanelState, leaving: boolean, reconfiguring: boolean): boolean => !leaving && !reconfiguring && panelBody(state) === 'rows';
 
 export const VehicleAccessoriesPanel: FunctionalComponent<Props> = props => {
-  const { locale, language, state, verdict, busy, leaving, reconfiguring, retainedBody, retainedNotice, slotRows, slots, page, pageSize, onPage, onPageSize, onOpenMedia } = props;
+  const {
+    locale,
+    language,
+    state,
+    verdict,
+    busy,
+    leaving,
+    reconfiguring,
+    retainedBody,
+    retainedNotice,
+    slotRows,
+    slots,
+    pagination,
+    page,
+    pageSize,
+    onPage,
+    onPageSize,
+    onOpenMedia,
+  } = props;
 
   const columns = visibleColumns(accessoryColumns(locale), state.hidden);
   const total = listed(state).length;
@@ -263,7 +266,7 @@ export const VehicleAccessoriesPanel: FunctionalComponent<Props> = props => {
   const body = panelBody(state);
   const lead = panelLead(state, busy);
   const open = bodyOpen(state, leaving, reconfiguring);
-  const pagerOpen = open && isPaginated(total);
+  const pagerOpen = pagination && open && isPaginated(total);
   const pages = pageCount(total, pageSize);
   const current = clampPage(page, total, pageSize);
 
