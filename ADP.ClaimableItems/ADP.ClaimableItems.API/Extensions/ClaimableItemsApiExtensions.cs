@@ -128,6 +128,7 @@ public static class ClaimableItemsApiExtensions
         target.ContractPeriodicMileageMargin = source.ContractPeriodicMileageMargin;
         target.IssueContractAction = source.IssueContractAction;
         target.CancelContractAction = source.CancelContractAction;
+        target.PrintContractAction = source.PrintContractAction;
         target.ContractMinimumLines = source.ContractMinimumLines;
         target.ContractPriceIncrements = source.ContractPriceIncrements;
         target.ContractTimeZone = source.ContractTimeZone;

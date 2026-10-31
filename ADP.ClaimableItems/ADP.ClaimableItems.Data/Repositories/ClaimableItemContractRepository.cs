@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using ShiftEntity.Print;
 using ShiftSoftware.ADP.Cases.Data.Printing;
 using ShiftSoftware.ADP.ClaimableItems.Data.Entities;
+using ShiftSoftware.ADP.ClaimableItems.Data.Printing;
 using ShiftSoftware.ADP.ClaimableItems.Data.Services;
 using ShiftSoftware.ADP.ClaimableItems.Shared;
 using ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ClaimableItemContract;
@@ -152,6 +154,98 @@ public class ClaimableItemContractRepository
     }
 
     /// <summary>
+    /// Prints an issued contract (a draft is refused). The template is the module's embedded one unless
+    /// <see cref="ClaimableItemsReportOverrides.ClaimableItemContractFrxPath"/> replaces it; the company name, logo
+    /// and contact details come from the host's <see cref="Cases.Shared.Printing.ICompanyInfoProvider"/>. Cancelled
+    /// lines are listed and marked, and left out of the total. Amounts are in the menu's currency.
+    /// </summary>
+    /// <remarks>
+    /// Reached through the framework's print token, which the controller only issues to a user who may print, so
+    /// data-level access is not applied again here (as on the certificate print).
+    /// </remarks>
+    public override async Task<Stream> PrintAsync(string id)
+    {
+        var companyInfoProvider = PrintingServices.GetRequiredCompanyInfoProvider(this.db);
+        var dateFormatter = PrintingServices.GetPrintoutDateFormatter(this.db);
+        var hashIdService = PrintingServices.GetRequiredService<IHashIdService>(this.db,
+            "Printing requires ShiftSoftware.ShiftEntity.Core.IHashIdService (registered by AddShiftEntityWeb).");
+
+        var contract = await FindContractAsync(hashIdService.Decode<ClaimableItemContractDTO>(id), disableDefaultDataLevelAccess: true);
+
+        if (contract.IsDraft)
+            throw Error("Only an issued contract can be printed.");
+
+        var language = string.IsNullOrWhiteSpace(contract.MenuLanguage) ? ClaimableItemContractMenuService.DefaultLanguage : contract.MenuLanguage;
+        var today = menuService.Today;
+
+        var distributor = await companyInfoProvider.GetDistributorAsync(language);
+        var dealer = contract.CompanyID is { } companyId ? (await companyInfoProvider.GetDealerAsync(language, companyId)).Name : null;
+        var branch = contract.CompanyBranchID is { } branchId ? (await companyInfoProvider.GetBranchAsync(language, branchId)).Name : null;
+
+        var status = contract.IsCancelled ? "Cancelled" : contract.EndDate.Date < today ? "Expired" : "Issued";
+
+        var lines = contract.Lines
+            .Where(x => !x.IsDeleted)
+            .OrderBy(x => x.LineType == ClaimableItemContractLineType.Periodic ? 0 : 1)
+            .ThenBy(x => x.LineType == ClaimableItemContractLineType.Periodic ? x.ServiceIntervalValueInMeter ?? 0 : 0)
+            .ThenBy(x => x.Sort)
+            .ToList();
+
+        var liveLines = lines.Where(x => !x.IsCancelled).ToList();
+        var no = 1;
+
+        return await new FastReportBuilder()
+            .AddFastReportFile(ClaimableItemsReports.ClaimableItemContract(PrintingServices.GetService<ClaimableItemsReportOverrides>(this.db)))
+            .AddDataObject("Header", new
+            {
+                ContractNo = contract.ID.ToString(),
+                IssuedDate = dateFormatter.GetFormattedDateTime(AsUtc(contract.IssuedDate)),
+                PrintedDate = dateFormatter.GetFormattedDateTime(AsUtc(menuService.UtcNow)!.Value),
+                Status = status,
+                contract.CustomerName,
+                contract.CustomerPhone,
+                contract.VIN,
+                Model = contract.ModelDescription,
+                contract.Katashiki,
+                contract.Variant,
+                Mileage = $"{contract.Mileage:N0} km",
+                ContractType = Describe(contract.ContractType),
+                StartDate = dateFormatter.GetFormattedDate(contract.StartDate),
+                EndDate = dateFormatter.GetFormattedDate(contract.EndDate),
+                Dealer = dealer,
+                Branch = branch,
+            })
+            .AddDataList("Lines", "DataLines", lines.Select(x => new
+            {
+                No = no++,
+                x.MenuCode,
+                x.Description,
+                Type = Describe(x.LineType),
+                ExpireDate = dateFormatter.GetFormattedDate(x.ExpireDate),
+                Status = x.IsCancelled ? "Cancelled" : x.ExpireDate?.Date < today ? "Expired" : "Active",
+                Price = x.PriceWithIncrement.ToString("N2"),
+            }).ToList<object>())
+            .AddDataObject("Footer", new
+            {
+                TotalLabel = liveLines.Count == lines.Count ? "Total" : "Total (excluding cancelled)",
+                Total = liveLines.Sum(x => x.PriceWithIncrement).ToString("N2"),
+            })
+            .GetPDFStream(report =>
+            {
+                (report.FindObject("TextTitle") as FastReport.TextObject)!.Text = distributor.Name;
+                (report.FindObject("PictureLogo") as FastReport.PictureObject)!.ImageLocation = distributor.Logo;
+                (report.FindObject("TextFooterAddress") as FastReport.TextObject)!.Text = distributor.Address;
+                (report.FindObject("TextFooterContactDetails") as FastReport.TextObject)!.Text = $"{distributor.Phone}\r\n{distributor.Website}";
+
+                if (contract.IsCancelled)
+                    (report.FindObject("TextDocumentTitle") as FastReport.TextObject)!.Text = "Service Contract - CANCELLED";
+
+                // The contract number and the VIN, so a scan finds the contract and shows which vehicle it belongs to.
+                (report.FindObject("BarcodeContract") as FastReport.Barcode.BarcodeObject)!.Text = $"{contract.ID}|{contract.VIN}";
+            });
+    }
+
+    /// <summary>
     /// The rules that only matter once a contract is sold: enough services, a start that is not in the past, and
     /// every periodic service expiring within the contract. Then each line gets its expiry: the periodic ones
     /// roll from the start date, the others run to the end date.
@@ -270,6 +364,17 @@ public class ClaimableItemContractRepository
     }
 
     private static string Name(ClaimableItemContractLine line) => line.MenuCode ?? line.Description ?? line.MenuLineKey;
+
+    // Issued and cancelled dates are stored as UTC without a kind.
+    private static DateTimeOffset? AsUtc(DateTime? utc) =>
+        utc is { } value ? new DateTimeOffset(DateTime.SpecifyKind(value, DateTimeKind.Utc)) : null;
+
+    private static string Describe(Enum value) =>
+        value.GetType().GetField(value.ToString())?
+            .GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false)
+            .OfType<System.ComponentModel.DescriptionAttribute>()
+            .FirstOrDefault()?.Description
+        ?? value.ToString();
 
     private static string Percent(decimal fraction) => (fraction * 100).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%";
 

@@ -15,4 +15,11 @@ public class ClaimableItemsReportOverrides
     public string? ItemClaimCertificateFrxPath { get; set; }
 
     public string? ItemClaimInvoiceFrxPath { get; set; }
+
+    /// <summary>
+    /// The service contract print. An override must keep the object names the print code fills in: TextTitle,
+    /// TextDocumentTitle, PictureLogo, BarcodeContract, TextFooterAddress and TextFooterContactDetails, and the
+    /// Header, Lines (data band DataLines) and Footer data sources.
+    /// </summary>
+    public string? ClaimableItemContractFrxPath { get; set; }
 }

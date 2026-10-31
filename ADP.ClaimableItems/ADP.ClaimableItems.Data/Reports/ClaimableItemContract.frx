@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report ScriptLanguage="CSharp" ReportInfo.Created="10/31/2026 10:00:00" ReportInfo.Modified="10/31/2026 10:00:00" ReportInfo.CreatorVersion="2025.1.0.0">
+  <Dictionary/>
+  <ReportPage Name="Page1" RawPaperSize="9" LeftMargin="6" TopMargin="6" RightMargin="6" BottomMargin="6" Watermark.Font="Arial, 60pt">
+    <PageHeaderBand Name="PageHeader1" Width="748.44" Height="217.35">
+      <TextObject Name="TextTitle" Top="9.45" Width="491.4" Height="56.7" Text="Distributor" VertAlign="Center" Font="Arial, 22pt, style=Bold"/>
+      <TextObject Name="TextDocumentTitle" Top="66.15" Width="491.4" Height="37.8" Text="Service Contract" VertAlign="Center" Font="Arial, 16pt"/>
+      <PictureObject Name="PictureLogo" Left="548.1" Top="9.45" Width="189" Height="94.5" ImageFormat="Png"/>
+      <LineObject Name="Line1" Left="9.45" Top="113.4" Width="725.76" Border.Color="87, 89, 91" Border.Width="3"/>
+      <LineObject Name="Line2" Left="9.45" Top="113.4" Width="272.16" Border.Color="Red" Border.Width="3"/>
+      <TableObject Name="TablePage" Left="9.45" Top="122.85" Width="245.7" Height="37.8">
+        <TableColumn Name="ColumnPageLabel" Width="75.6"/>
+        <TableColumn Name="ColumnPageValue" Width="170.1"/>
+        <TableRow Name="RowPage">
+          <TableCell Name="CellPageLabel" Text="Page:" Font="Arial, 10pt"/>
+          <TableCell Name="CellPageValue" Text="[Page#] / [TotalPages#]" VertAlign="Center" Font="Arial, 10pt"/>
+        </TableRow>
+        <TableRow Name="RowPrinted">
+          <TableCell Name="CellPrintedLabel" Text="Printed:" Font="Arial, 10pt"/>
+          <TableCell Name="CellPrintedValue" Text="[Header.PrintedDate]" VertAlign="Center" Font="Arial, 10pt"/>
+        </TableRow>
+      </TableObject>
+      <TableObject Name="TableReference" Left="368.55" Top="122.85" Width="274.05" Height="56.7">
+        <TableColumn Name="ColumnReferenceLabel" Width="103.95"/>
+        <TableColumn Name="ColumnReferenceValue" Width="170.1"/>
+        <TableRow Name="RowContractNo">
+          <TableCell Name="CellContractNoLabel" Text="Contract #:" HorzAlign="Right" Font="Arial, 10pt"/>
+          <TableCell Name="CellContractNo" Text="[Header.ContractNo]" AutoShrink="FontSize" HorzAlign="Right" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+        </TableRow>
+        <TableRow Name="RowIssued">
+          <TableCell Name="CellIssuedLabel" Text="Issued:" HorzAlign="Right" Font="Arial, 10pt"/>
+          <TableCell Name="CellIssued" Text="[Header.IssuedDate]" AutoShrink="FontSize" HorzAlign="Right" VertAlign="Center" Font="Arial, 10pt"/>
+        </TableRow>
+        <TableRow Name="RowStatus">
+          <TableCell Name="CellStatusLabel" Text="Status:" HorzAlign="Right" Font="Arial, 10pt"/>
+          <TableCell Name="CellStatus" Text="[Header.Status]" AutoShrink="FontSize" HorzAlign="Right" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+        </TableRow>
+      </TableObject>
+      <BarcodeObject Name="BarcodeContract" Left="652.05" Top="122.85" Width="85.05" Height="85.05" AutoSize="false" ShowText="false" Barcode="QR Code" Barcode.ErrorCorrection="M" Barcode.Encoding="UTF8" Barcode.QuietZone="false"/>
+      <ChildBand Name="ChildDetails" Top="220.55" Width="748.44" Height="160.65" PrintOn="FirstPage">
+        <TableObject Name="TableDetails" Top="9.45" Width="748.44" Height="136.08">
+          <TableColumn Name="ColumnDetailsLabel1" Width="113.4"/>
+          <TableColumn Name="ColumnDetailsValue1" Width="260.82"/>
+          <TableColumn Name="ColumnDetailsLabel2" Width="113.4"/>
+          <TableColumn Name="ColumnDetailsValue2" Width="260.82"/>
+          <TableRow Name="RowDetails1" Height="22.68">
+            <TableCell Name="CellCustomerLabel" Border.Lines="All" Fill.Color="WhiteSmoke" Text="Customer" VertAlign="Center" Font="Arial, 9pt, style=Bold"/>
+            <TableCell Name="CellCustomer" Border.Lines="All" Text="[Header.CustomerName]" VertAlign="Center" Font="Arial, 9pt"/>
+            <TableCell Name="CellVinLabel" Border.Lines="All" Fill.Color="WhiteSmoke" Text="VIN" VertAlign="Center" Font="Arial, 9pt, style=Bold"/>
+            <TableCell Name="CellVin" Border.Lines="All" Text="[Header.VIN]" VertAlign="Center" Font="Arial, 9pt, style=Bold"/>
+          </TableRow>
+          <TableRow Name="RowDetails2" Height="22.68">
+            <TableCell Name="CellPhoneLabel" Border.Lines="All" Fill.Color="WhiteSmoke" Text="Phone" VertAlign="Center" Font="Arial, 9pt, style=Bold"/>
+            <TableCell Name="CellPhone" Border.Lines="All" Text="[Header.CustomerPhone]" VertAlign="Center" Font="Arial, 9pt"/>
+            <TableCell Name="CellModelLabel" Border.Lines="All" Fill.Color="WhiteSmoke" Text="Model" VertAlign="Center" Font="Arial, 9pt, style=Bold"/>
+            <TableCell Name="CellModel" Border.Lines="All" Text="[Header.Model]" AutoShrink="FontSize" VertAlign="Center" Font="Arial, 9pt"/>
+          </TableRow>
+          <TableRow Name="RowDetails3" Height="22.68">
+            <TableCell Name="CellContractTypeLabel" Border.Lines="All" Fill.Color="WhiteSmoke" Text="Contract Type" VertAlign="Center" Font="Arial, 9pt, style=Bold"/>
+            <TableCell Name="CellContractType" Border.Lines="All" Text="[Header.ContractType]" VertAlign="Center" Font="Arial, 9pt"/>
+            <TableCell Name="CellKatashikiLabel" Border.Lines="All" Fill.Color="WhiteSmoke" Text="Katashiki" VertAlign="Center" Font="Arial, 9pt, style=Bold"/>
+            <TableCell Name="CellKatashiki" Border.Lines="All" Text="[Header.Katashiki]" VertAlign="Center" Font="Arial, 9pt"/>
+          </TableRow>
+          <TableRow Name="RowDetails4" Height="22.68">
+            <TableCell Name="CellStartDateLabel" Border.Lines="All" Fill.Color="WhiteSmoke" Text="Start Date" VertAlign="Center" Font="Arial, 9pt, style=Bold"/>
+            <TableCell Name="CellStartDate" Border.Lines="All" Text="[Header.StartDate]" VertAlign="Center" Font="Arial, 9pt"/>
+            <TableCell Name="CellVariantLabel" Border.Lines="All" Fill.Color="WhiteSmoke" Text="Variant" VertAlign="Center" Font="Arial, 9pt, style=Bold"/>
+            <TableCell Name="CellVariant" Border.Lines="All" Text="[Header.Variant]" VertAlign="Center" Font="Arial, 9pt"/>
+          </TableRow>
+          <TableRow Name="RowDetails5" Height="22.68">
+            <TableCell Name="CellEndDateLabel" Border.Lines="All" Fill.Color="WhiteSmoke" Text="End Date" VertAlign="Center" Font="Arial, 9pt, style=Bold"/>
+            <TableCell Name="CellEndDate" Border.Lines="All" Text="[Header.EndDate]" VertAlign="Center" Font="Arial, 9pt"/>
+            <TableCell Name="CellMileageLabel" Border.Lines="All" Fill.Color="WhiteSmoke" Text="Mileage" VertAlign="Center" Font="Arial, 9pt, style=Bold"/>
+            <TableCell Name="CellMileage" Border.Lines="All" Text="[Header.Mileage]" VertAlign="Center" Font="Arial, 9pt"/>
+          </TableRow>
+          <TableRow Name="RowDetails6" Height="22.68">
+            <TableCell Name="CellDealerLabel" Border.Lines="All" Fill.Color="WhiteSmoke" Text="Dealer" VertAlign="Center" Font="Arial, 9pt, style=Bold"/>
+            <TableCell Name="CellDealer" Border.Lines="All" Text="[Header.Dealer]" AutoShrink="FontSize" VertAlign="Center" Font="Arial, 9pt"/>
+            <TableCell Name="CellBranchLabel" Border.Lines="All" Fill.Color="WhiteSmoke" Text="Branch" VertAlign="Center" Font="Arial, 9pt, style=Bold"/>
+            <TableCell Name="CellBranch" Border.Lines="All" Text="[Header.Branch]" AutoShrink="FontSize" VertAlign="Center" Font="Arial, 9pt"/>
+          </TableRow>
+        </TableObject>
+      </ChildBand>
+    </PageHeaderBand>
+    <DataBand Name="DataLines" Top="415.8" Width="748.44" Height="28.35" CanGrow="true">
+      <TableObject Name="TableLines" Width="748.44" Height="28.35">
+        <TableColumn Name="ColumnLineNo" Width="37.8"/>
+        <TableColumn Name="ColumnLineCode" Width="113.4"/>
+        <TableColumn Name="ColumnLineDescription" Width="226.8"/>
+        <TableColumn Name="ColumnLineType" Width="94.5"/>
+        <TableColumn Name="ColumnLineExpires" Width="85.05"/>
+        <TableColumn Name="ColumnLineStatus" Width="85.05"/>
+        <TableColumn Name="ColumnLinePrice" Width="105.84"/>
+        <TableRow Name="RowLine" MinHeight="28.35" Height="28.35" AutoSize="true">
+          <TableCell Name="CellLineNo" Border.Lines="All" Border.Width="2" Text="[Lines.No]" HorzAlign="Center" VertAlign="Center" Font="Arial, 9pt"/>
+          <TableCell Name="CellLineCode" Border.Lines="All" Border.Width="2" Text="[Lines.MenuCode]" HorzAlign="Center" VertAlign="Center" Font="Arial, 9pt"/>
+          <TableCell Name="CellLineDescription" Border.Lines="All" Border.Width="2" Text="[Lines.Description]" VertAlign="Center" Font="Arial, 9pt"/>
+          <TableCell Name="CellLineType" Border.Lines="All" Border.Width="2" Text="[Lines.Type]" HorzAlign="Center" VertAlign="Center" Font="Arial, 9pt"/>
+          <TableCell Name="CellLineExpires" Border.Lines="All" Border.Width="2" Text="[Lines.ExpireDate]" HorzAlign="Center" VertAlign="Center" WordWrap="false" Font="Arial, 9pt"/>
+          <TableCell Name="CellLineStatus" Border.Lines="All" Border.Width="2" Text="[Lines.Status]" HorzAlign="Center" VertAlign="Center" Font="Arial, 9pt"/>
+          <TableCell Name="CellLinePrice" Border.Lines="All" Border.Width="2" Text="[Lines.Price]" HorzAlign="Right" VertAlign="Center" Font="Arial, 9pt"/>
+        </TableRow>
+      </TableObject>
+      <DataHeaderBand Name="DataHeaderLines" Top="384.4" Width="748.44" Height="28.35">
+        <TableObject Name="TableLinesHeader" Width="748.44" Height="28.35">
+          <TableColumn Name="ColumnLineNoHeader" Width="37.8"/>
+          <TableColumn Name="ColumnLineCodeHeader" Width="113.4"/>
+          <TableColumn Name="ColumnLineDescriptionHeader" Width="226.8"/>
+          <TableColumn Name="ColumnLineTypeHeader" Width="94.5"/>
+          <TableColumn Name="ColumnLineExpiresHeader" Width="85.05"/>
+          <TableColumn Name="ColumnLineStatusHeader" Width="85.05"/>
+          <TableColumn Name="ColumnLinePriceHeader" Width="105.84"/>
+          <TableRow Name="RowLinesHeader" Height="28.35">
+            <TableCell Name="CellLineNoHeader" Border.Lines="All" Border.Width="2" Fill.Color="Silver" Text="#" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+            <TableCell Name="CellLineCodeHeader" Border.Lines="All" Border.Width="2" Fill.Color="Silver" Text="Menu Code" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+            <TableCell Name="CellLineDescriptionHeader" Border.Lines="All" Border.Width="2" Fill.Color="Silver" Text="Service" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+            <TableCell Name="CellLineTypeHeader" Border.Lines="All" Border.Width="2" Fill.Color="Silver" Text="Type" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+            <TableCell Name="CellLineExpiresHeader" Border.Lines="All" Border.Width="2" Fill.Color="Silver" Text="Expires" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+            <TableCell Name="CellLineStatusHeader" Border.Lines="All" Border.Width="2" Fill.Color="Silver" Text="Status" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+            <TableCell Name="CellLinePriceHeader" Border.Lines="All" Border.Width="2" Fill.Color="Silver" Text="Price" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+          </TableRow>
+        </TableObject>
+      </DataHeaderBand>
+    </DataBand>
+    <ReportSummaryBand Name="ReportSummary1" Top="447.35" Width="748.44" Height="37.8">
+      <TableObject Name="TableTotal" Width="748.44" Height="28.35">
+        <TableColumn Name="ColumnTotalSpacer" Width="378"/>
+        <TableColumn Name="ColumnTotalLabel" Width="264.6"/>
+        <TableColumn Name="ColumnTotalValue" Width="105.84"/>
+        <TableRow Name="RowTotal" Height="28.35">
+          <TableCell Name="CellTotalSpacer" Font="Arial, 10pt"/>
+          <TableCell Name="CellTotalLabel" Border.Lines="All" Border.Width="2" Fill.Color="Silver" Text="[Footer.TotalLabel]" HorzAlign="Right" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+          <TableCell Name="CellTotal" Border.Lines="All" Border.Width="2" Text="[Footer.Total]" HorzAlign="Right" VertAlign="Center" Font="Arial, 11pt, style=Bold"/>
+        </TableRow>
+      </TableObject>
+      <ChildBand Name="ChildSignatures" Top="488.35" Width="748.44" Height="170.1">
+        <TextObject Name="TextCustomerSignatureTitle" Left="9.45" Top="18.9" Width="311.85" Height="37.8" Text="Customer:&#13;&#10;[Header.CustomerName]" HorzAlign="Center" Font="Arial, 10pt, style=Bold"/>
+        <TextObject Name="TextCustomerSignature" Left="9.45" Top="113.4" Width="321.3" Height="47.25" Border.Lines="Top" Text="Signature:&#13;&#10;Date:" VertAlign="Bottom" Font="Arial, 10pt" LineHeight="22"/>
+        <TextObject Name="TextDealerSignatureTitle" Left="387.45" Top="18.9" Width="330.75" Height="37.8" Text="For the Dealer:&#13;&#10;[Header.Dealer]" HorzAlign="Center" Font="Arial, 10pt, style=Bold"/>
+        <TextObject Name="TextDealerSignature" Left="387.45" Top="113.4" Width="330.75" Height="47.25" Border.Lines="Top" Text="Name and signature:&#13;&#10;Stamp:" VertAlign="Bottom" Font="Arial, 10pt" LineHeight="22"/>
+      </ChildBand>
+    </ReportSummaryBand>
+    <PageFooterBand Name="PageFooter1" Top="661.65" Width="748.44" Height="75.6">
+      <TextObject Name="TextFooterAddress" Left="18.9" Top="18.9" Width="378" Height="47.25" Text="Distributor Address" HorzAlign="Center" VertAlign="Center" Font="Segoe UI, 10pt" TextFill.Color="Gray"/>
+      <TextObject Name="TextFooterContactDetails" Left="396.9" Top="18.9" Width="340.2" Height="47.25" Text="Distributor Phone&#13;&#10;Distributor Website" HorzAlign="Center" VertAlign="Center" Font="Segoe UI, 10pt" TextFill.Color="Gray"/>
+    </PageFooterBand>
+  </ReportPage>
+</Report>

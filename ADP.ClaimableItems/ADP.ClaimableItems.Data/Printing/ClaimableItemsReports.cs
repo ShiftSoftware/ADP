@@ -20,6 +20,9 @@ internal static class ClaimableItemsReports
     internal static string ItemClaimInvoice(ClaimableItemsReportOverrides? overrides)
         => Resolve(overrides?.ItemClaimInvoiceFrxPath, "ItemClaimInvoice.frx");
 
+    internal static string ClaimableItemContract(ClaimableItemsReportOverrides? overrides)
+        => Resolve(overrides?.ClaimableItemContractFrxPath, "ClaimableItemContract.frx");
+
     private static string Resolve(string? overridePath, string fileName)
         => overridePath
             ?? EmbeddedReportProvider.GetReportPath(typeof(ClaimableItemsReports).Assembly, ResourcePrefix + fileName);

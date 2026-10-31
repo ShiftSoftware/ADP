@@ -54,6 +54,12 @@ public class ClaimableItemsApiOptions
     /// </summary>
     public BooleanAction? CancelContractAction { get; set; }
 
+    /// <summary>
+    /// The TypeAuth boolean node a user needs to print a service contract (consumer-supplied, per D9). Null
+    /// (default) → anyone who may read contracts may print an issued one.
+    /// </summary>
+    public BooleanAction? PrintContractAction { get; set; }
+
     /// <summary>The fewest services a contract can be issued with. Default 1.</summary>
     public int ContractMinimumLines { get; set; } = 1;
 

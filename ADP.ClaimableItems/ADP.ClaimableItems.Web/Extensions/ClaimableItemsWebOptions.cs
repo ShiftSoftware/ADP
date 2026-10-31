@@ -35,6 +35,12 @@ public class ClaimableItemsWebOptions
     public BooleanAction? CancelContractAction { get; set; }
 
     /// <summary>
+    /// TypeAuth node that shows the contract form's Print button (the same node the API options take). Null →
+    /// shown on every issued contract.
+    /// </summary>
+    public BooleanAction? PrintContractAction { get; set; }
+
+    /// <summary>
     /// TypeAuth node gating the ItemClaim pages (consumer-supplied, per D9 — the original host application passes
     /// <c>Claiming</c>). Null → not gated.
     /// </summary>

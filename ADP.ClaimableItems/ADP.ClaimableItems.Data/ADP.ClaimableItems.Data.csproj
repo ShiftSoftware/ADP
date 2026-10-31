@@ -36,6 +36,7 @@
 		<EmbeddedResource Include="Reports\ItemClaim.frx" />
 		<EmbeddedResource Include="Reports\ItemClaimCertificate.frx" />
 		<EmbeddedResource Include="Reports\ItemClaimInvoice.frx" />
+		<EmbeddedResource Include="Reports\ClaimableItemContract.frx" />
 	</ItemGroup>
 
 	<ItemGroup>
