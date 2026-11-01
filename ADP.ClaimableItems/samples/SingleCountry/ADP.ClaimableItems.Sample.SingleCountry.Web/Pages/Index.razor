@@ -1,0 +1,16 @@
+@page "/"
+@attribute [Authorize]
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="pt-8">
+    <MudText Typo="Typo.h4" GutterBottom="true">Service Contracts - Single Country</MudText>
+    <MudText Typo="Typo.body1">
+        One country is configured, so the server prices every contract for it and the contract form shows no
+        country or transfer rate.
+    </MudText>
+
+    <MudButton Class="mt-6"
+               Variant="Variant.Filled"
+               Color="Color.Primary"
+               Href="/ClaimableItemContractList"
+               StartIcon="@Icons.Material.Filled.Handshake">Service Contracts</MudButton>
+</MudContainer>

@@ -121,7 +121,15 @@ public class ClaimableItemContractMenuService
         var taken = await GetTakenPeriodicMenuLineKeysAsync(vin, excludeContractId, today);
 
         foreach (var line in menu.Lines)
+        {
+            // To the stored precision, or a draft saved at 63.87 would differ from the menu's 63.8667 at issue.
+            line.LabourTotalPrice = ClaimableItemContractCalculations.ToCents(line.LabourTotalPrice);
+            line.PartsTotalPrice = ClaimableItemContractCalculations.ToCents(line.PartsTotalPrice);
+            line.DiscountAmount = ClaimableItemContractCalculations.ToCents(line.DiscountAmount);
+            line.Price = ClaimableItemContractCalculations.ToCents(line.Price);
+
             line.UnavailableReason = GetUnavailableReason(line, mileage, taken);
+        }
 
         result.Lines = menu.Lines;
         result.Status = ClaimableItemContractLookupStatus.Found;

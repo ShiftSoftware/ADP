@@ -1,0 +1,62 @@
+@host = http://localhost:5171/api/ClaimableItems
+# A token from the browser after signing in (local storage), without "Bearer ".
+@token = paste-a-token-here
+@vin = a-vin-the-vehicle-lookup-knows
+
+### Several countries are configured: without one the lookup answers CountryRequired with the (hashed) list.
+GET {{host}}/ClaimableItemContract/vin-lookup/{{vin}}?mileage=12000
+Authorization: Bearer {{token}}
+
+### The vehicle and its contract menu, priced for a country from that list, with its transfer rate
+GET {{host}}/ClaimableItemContract/vin-lookup/{{vin}}?mileage=12000&countryId=<hashed country ID>&transferRate=1.25
+Authorization: Bearer {{token}}
+
+### Contracts
+GET {{host}}/ClaimableItemContract?$top=5&$orderby=StartDate desc
+Authorization: Bearer {{token}}
+
+### A draft. Lines need only the menu line key (and a duration on periodic lines); the server takes everything
+### else from the menu. Use keys from the lookup above.
+POST {{host}}/ClaimableItemContract
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "VIN": "{{vin}}",
+  "CustomerName": "Sample Customer",
+  "CustomerPhone": "+000 000 0000",
+  "ContractType": "PurchasedServiceContract",
+  "Mileage": 12000,
+  "StartDate": "2026-11-01",
+  "Duration": 2,
+  "DurationUnit": "Years",
+  "PriceIncrement": 0.05,
+  "Country": { "Value": "<hashed country ID>" },
+  "TransferRate": 1.25,
+  "IsDraft": true,
+  "Lines": [
+    { "MenuLineKey": "<a periodic line key>", "LineType": "Periodic", "Duration": 6, "DurationUnit": "Months" }
+  ]
+}
+
+### Issue a saved draft (its ID from the POST above)
+POST {{host}}/ClaimableItemContract/<id>/issue
+Authorization: Bearer {{token}}
+
+### Cancel one line, then the whole contract
+POST {{host}}/ClaimableItemContract/<id>/lines/<lineId>/cancel
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "Reason": "Serviced elsewhere" }
+
+###
+POST {{host}}/ClaimableItemContract/<id>/cancel
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "Reason": "Customer withdrew" }
+
+### A print link for an issued contract (open the returned URL)
+GET {{host}}/ClaimableItemContract/print-token/<id>
+Authorization: Bearer {{token}}

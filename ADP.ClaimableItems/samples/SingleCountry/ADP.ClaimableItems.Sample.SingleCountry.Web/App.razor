@@ -1,0 +1,17 @@
+<CascadingAuthenticationState>
+    <DefaultApp AppTitle="Service Contracts - Single Country"
+                AppAssembly="@typeof(App).Assembly"
+                IdentityHostingType="ShiftSoftware.ShiftIdentity.Core.ShiftIdentityHostingTypes.External"
+                AdditionalAssemblies="additionalAssemblies">
+        <NavMenuTemplate>
+            <SampleNavMenu />
+        </NavMenuTemplate>
+    </DefaultApp>
+</CascadingAuthenticationState>
+
+@code {
+    private readonly List<System.Reflection.Assembly> additionalAssemblies =
+    [
+        typeof(ShiftSoftware.ShiftIdentity.Blazor.ShiftIdentityBlazorMaker).Assembly,
+    ];
+}

@@ -8,9 +8,15 @@ namespace ShiftSoftware.ADP.ClaimableItems.Shared;
 /// </summary>
 public static class ClaimableItemContractCalculations
 {
+    /// <summary>
+    /// An amount to the cent, the precision a contract stores. Menu prices come with more decimals (from the
+    /// transfer rate and discounts), so they are rounded once when read, and the saved draft matches the menu.
+    /// </summary>
+    public static decimal ToCents(decimal amount) => decimal.Round(amount, 2);
+
     /// <summary>The customer price of a line: its cost plus the contract's increment, to the cent.</summary>
     public static decimal PriceWithIncrement(decimal cost, decimal priceIncrement) =>
-        decimal.Round(cost * (1 + priceIncrement), 2);
+        ToCents(cost * (1 + priceIncrement));
 
     /// <summary>
     /// The rolling expiry of the periodic lines. Ordered by the km they are due at, the first expires at

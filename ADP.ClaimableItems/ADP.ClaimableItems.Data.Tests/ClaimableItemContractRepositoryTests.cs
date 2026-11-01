@@ -360,6 +360,23 @@ public class ClaimableItemContractRepositoryTests
     }
 
     [Fact]
+    public async Task A_menu_price_with_more_decimals_is_saved_to_the_cent_and_issues()
+    {
+        await using var scope = NewScope();
+        var (db, repository, provider) = Resolve(scope);
+
+        // The menu prices with the transfer rate and discounts, so its prices can have more decimals than the
+        // contract stores. Saved as-is, the database would round the draft and issuing would see a change.
+        provider.PriceChange = 0.0067m;
+        var draft = await InsertAsync(db, repository, NewDto(0m, Periodic("P|1|10")));
+        Assert.Equal(100.01m, draft.Lines.Single().Cost);
+
+        var issued = await repository.IssueAsync(draft.ID, 7, true);
+        Assert.False(issued.IsDraft);
+        Assert.Equal(100.01m, issued.Lines.Single().Cost);
+    }
+
+    [Fact]
     public async Task Issuing_checks_again_that_no_other_contract_took_the_periodic_menu()
     {
         await using var scope = NewScope();
