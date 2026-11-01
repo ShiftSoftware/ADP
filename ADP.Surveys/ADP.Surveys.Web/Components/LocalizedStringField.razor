@@ -27,7 +27,7 @@
    stale text onto the new object. The field therefore remounts the inner component
    whenever the incoming Value differs from what it last emitted itself; its own
    edits round-trip through ValueChanged and come back equal, so typing never
-   remounts (a remount would lose the caret). *@
+   remounts (a remount would lose the caret). A change to Locales remounts it too. *@
 
 @if (ReadOnly)
 {
@@ -175,6 +175,11 @@ else
         effectiveLocales = (Locales is { Count: > 0 }) ? Locales.ToList() : new List<string> { "en" };
         if (!effectiveLocales.SequenceEqual(currentLocales))
         {
+            // LocalizedInput reads Languages only in OnInitialized too, so a locale
+            // picked after the first render (the bank form's "Locales to edit") needs
+            // a remount to show its box.
+            if (currentLocales.Count > 0)
+                remountKey++;
             currentLocales = effectiveLocales.ToList();
             languageInfos = effectiveLocales
                 .Select(code => new LanguageInfo { CultureName = code, Label = code.ToUpperInvariant() })

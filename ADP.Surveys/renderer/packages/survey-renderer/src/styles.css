@@ -193,6 +193,8 @@
 .survey-screen__description {
   color: #555;
   margin: 0;
+  /* Authors break lines in the multi-line description editor; keep them. */
+  white-space: pre-line;
 }
 
 .survey-screen__questions {
