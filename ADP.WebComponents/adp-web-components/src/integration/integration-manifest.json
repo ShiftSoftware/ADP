@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "adp-web-components",
-  "packageVersion": "0.4.20",
+  "packageVersion": "0.4.21",
   "outputFamily": "per-component",
   "components": [
     {
@@ -1381,6 +1381,7 @@
           "branchId",
           "departmentId",
           "departmentIds",
+          "services",
           "brandId",
           "today",
           "disabledWeekdays",
@@ -1646,6 +1647,16 @@
             "required": false,
             "reflect": true,
             "description": "Field name in the form. Default bookingCalendar."
+          },
+          {
+            "name": "services",
+            "attribute": "services",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false,
+            "reflect": false,
+            "description": "Service Integration IDs, comma separated, used when no department is set: one request, and the calendar endpoint merges those services' departments. A department wins."
           },
           {
             "name": "showEmptyState",

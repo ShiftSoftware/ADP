@@ -32,7 +32,7 @@ type Message = (typeof MESSAGES)[number];
 
 type Frame = Record<string, string>;
 
-const IDENTITY = ['branchId', 'departmentId', 'departmentIds', 'brandId'] as const;
+const IDENTITY = ['branchId', 'departmentId', 'departmentIds', 'services', 'brandId'] as const;
 
 type Identity = Record<(typeof IDENTITY)[number], string>;
 
@@ -52,6 +52,8 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   @Prop() branchId?: string;
   @Prop() departmentId?: string;
   @Prop() departmentIds?: string[];
+  // Comma separated service IDs, used when no department is set: the endpoint merges their departments.
+  @Prop() services?: string;
   @Prop() brandId?: string;
   @Prop() today?: string;
 
@@ -101,7 +103,7 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   private syncQueued = false;
   private loadWanted = false;
   private current = '';
-  private identity: Identity = { branchId: '', departmentId: '', departmentIds: '', brandId: '' };
+  private identity: Identity = { branchId: '', departmentId: '', departmentIds: '', services: '', brandId: '' };
   private valueTouched = false;
   private lastEmit = '\n';
   private pendingFocus: 'times' | 'day' | null = null;
@@ -167,6 +169,7 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
   @Watch('calendarApi')
   @Watch('branchId')
   @Watch('departmentId')
+  @Watch('services')
   @Watch('brandId')
   @Watch('today')
   onTargetChange() {
@@ -384,6 +387,7 @@ export class ShiftBookingCalendar implements FormElement, BlazorInvokable {
       branchId: this.branchId,
       departmentId: this.departmentId,
       departmentIds: this.departmentIds,
+      services: this.services,
       brandId: this.brandId,
     };
   }

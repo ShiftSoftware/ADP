@@ -11,7 +11,9 @@ namespace ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types;
 /// <see cref="BranchId"/>, <see cref="DepartmentId"/> and <see cref="BrandId"/> are each a fixed
 /// value or a token such as <c>{{answers.branch}}</c>, resolved when the question renders.
 /// <see cref="DepartmentId"/> may list several departments, comma separated; the renderer asks
-/// each of them and shows their times merged.
+/// each of them and shows their times merged. With no department, <see cref="Services"/> lists
+/// service IDs, comma separated; the calendar endpoint turns them into their departments and merges
+/// those itself. A department wins when both are set, as it does at the endpoint.
 /// Availability is not re-checked on submit: the answer is a preference, not a reservation.
 /// </summary>
 public class BookingSlotQuestionDto : QuestionDto
@@ -28,6 +30,9 @@ public class BookingSlotQuestionDto : QuestionDto
     [JsonPropertyName("departmentId")]
     public string DepartmentId { get; set; } = "";
 
+    [JsonPropertyName("services")]
+    public string Services { get; set; } = "";
+
     [JsonPropertyName("brandId")]
     public string BrandId { get; set; } = "";
 
@@ -42,8 +47,10 @@ public class BookingSlotQuestionDtoValidator : QuestionDtoBaseValidator<BookingS
             .Must(x => Uri.TryCreate(x, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp))
             .WithMessage("calendarApi must be an absolute http(s) URL.");
         RuleFor(x => x.BranchId).NotEmpty();
-        RuleFor(x => x.DepartmentId).Must(x => x.Split(',').Any(d => !string.IsNullOrWhiteSpace(d)))
-            .WithMessage("departmentId needs at least one department.");
+        RuleFor(x => x.DepartmentId).Must((q, x) => HasAny(x) || HasAny(q.Services))
+            .WithMessage("departmentId or services needs at least one entry.");
         RuleFor(x => x.BrandId).NotEmpty();
     }
+
+    static bool HasAny(string list) => list.Split(',').Any(x => !string.IsNullOrWhiteSpace(x));
 }

@@ -123,6 +123,17 @@ describe('query', () => {
     expect(queryUrl(null)).toBeNull();
   });
 
+  it('services stand in for a department, and a department wins over them', () => {
+    const url = new URL(queryUrl({ ...TARGET, departmentId: '', services: 'auto-repair-and-maintenance,body-and-paint' }, '2026-09-28'));
+
+    expect(url.searchParams.get('services')).toBe('auto-repair-and-maintenance,body-and-paint');
+    expect(url.searchParams.has('departmentId')).toBe(false);
+
+    const both = new URL(queryUrl({ ...TARGET, services: 'body-and-paint' }, '2026-09-28'));
+    expect(both.searchParams.get('departmentId')).toBe('showroom');
+    expect(both.searchParams.has('services')).toBe(false);
+  });
+
   it('today falls back to the local date', () => {
     const from = new URL(queryUrl(TARGET)).searchParams.get('from');
     const now = new Date();
@@ -189,6 +200,15 @@ describe('loader', () => {
     clearAvailabilityCache();
     const failing = (url: string) => (url.includes('satellite-1') ? reply(null, 500) : reply([]));
     expect(await createAvailabilityLoader(failing).load(target, { today: '2026-09-28' })).toEqual({ status: 'error', error: { kind: 'http', status: 500 } });
+  });
+
+  it('services: one request, merged by the endpoint', async () => {
+    const { calls, fetcher } = recorder(() => reply([day('2026-09-30', '09:00 AM')]));
+    const target = { ...TARGET, departmentId: '', services: 'auto-repair-and-maintenance' };
+    const outcome = await createAvailabilityLoader(fetcher).load(target, { today: '2026-09-28' });
+
+    expect(calls.map(call => new URL(call.url).searchParams.get('services'))).toEqual(['auto-repair-and-maintenance']);
+    expect(outcome.status).toBe('ready');
   });
 
   it('no request without every input', async () => {

@@ -17,6 +17,7 @@ type BookingCalendarElement = HTMLElement & {
   branchId?: string;
   departmentId?: string;
   departmentIds?: string[];
+  services?: string;
   brandId?: string;
   language?: string;
   label?: string;
@@ -31,7 +32,7 @@ const LANGUAGES = ['en', 'ar', 'ku', 'ru'];
 
 /** The calendar the stored slot was picked from, per question. A slot only means
  *  something at the branch it came from, so when the respondent goes back and
- *  picks another branch (or department or brand), the slot is cleared. Kept outside
+ *  picks another branch (or department, service or brand), the slot is cleared. Kept outside
  *  React state because the question unmounts while the respondent is on an
  *  earlier screen. */
 const pickedFrom = new WeakMap<object, Map<string, string>>();
@@ -62,7 +63,9 @@ export function BookingSlotQuestion({ question }: QuestionProps) {
   const departments = [...new Set(resolve('departmentId').split(',').map(department => department.trim()).filter(Boolean))];
   const departmentId = departments.length === 1 ? departments[0]! : '';
   const departmentIds = departments.length > 1 ? departments : undefined;
-  const target = [calendarApi, branchId, departments.join(','), brandId].join('\n');
+  // Services stand in for a department: the calendar merges their departments itself. A department wins, as it does there.
+  const services = departments.length ? '' : [...new Set(resolve('services').split(',').map(service => service.trim()).filter(Boolean))].join(',');
+  const target = [calendarApi, branchId, departments.join(','), services, brandId].join('\n');
   const language = LANGUAGES.includes(locale.slice(0, 2)) ? locale.slice(0, 2) : 'en';
   const label = localize(title, locale, schema.defaultLocale);
 
@@ -87,6 +90,7 @@ export function BookingSlotQuestion({ question }: QuestionProps) {
     el.branchId = branchId;
     el.departmentId = departmentId;
     el.departmentIds = departmentIds;
+    el.services = services;
     el.brandId = brandId;
     el.language = language;
     el.label = label;

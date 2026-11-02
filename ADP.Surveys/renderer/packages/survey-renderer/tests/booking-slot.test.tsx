@@ -18,6 +18,7 @@ type CalendarElement = HTMLElement & {
   branchId?: string;
   departmentId?: string;
   departmentIds?: string[];
+  services?: string;
   brandId?: string;
   label?: string;
   isRequired?: boolean;
@@ -188,11 +189,20 @@ describe('bookingSlot question', () => {
     expect(calendar().departmentIds).toBeUndefined();
   });
 
-  it('ignores the removed services and mergeDepartments fields', async () => {
+  it('books by service when no department is listed, one request the calendar merges', async () => {
+    render(<SurveyRenderer schema={fixture({ departmentId: '', services: ' auto-repair-and-maintenance, ,body-and-paint,auto-repair-and-maintenance' })} onSubmit={vi.fn()} />);
+    await toSlotScreen(userEvent.setup(), 'Xr8pQ');
+    expect(calendar().departmentId).toBe('');
+    expect(calendar().departmentIds).toBeUndefined();
+    expect(calendar().services).toBe('auto-repair-and-maintenance,body-and-paint');
+  });
+
+  it('lets a department win over services, and ignores the removed mergeDepartments field', async () => {
     render(<SurveyRenderer schema={fixture({ departmentId: 'showroom', services: 'anything', mergeDepartments: false })} onSubmit={vi.fn()} />);
     await toSlotScreen(userEvent.setup(), 'Xr8pQ');
     expect(calendar().departmentId).toBe('showroom');
     expect(calendar().departmentIds).toBeUndefined();
+    expect(calendar().services).toBe('');
   });
 
   it('with merged departments, keeps the slot for the same branch and clears it for another', async () => {

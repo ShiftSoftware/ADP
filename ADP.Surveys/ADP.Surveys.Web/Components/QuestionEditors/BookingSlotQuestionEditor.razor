@@ -8,7 +8,7 @@
     preferred date and time from. The availability is fetched in the respondent's browser
     by <shift-booking-calendar>, so the endpoint must be public and CORS-open.
 
-    The branch, department and brand are each a fixed value or a token. The branch is
+    The branch, department, services and brand are each a fixed value or a token. The branch is
     normally {{answers.<branch question>}}, filled in the browser from the respondent's
     earlier answer; {{recipient.*}} / {{candidate.*}} are filled when the survey is served.
     The insert menu writes a token at the caret of whichever field was last focused, the
@@ -46,7 +46,7 @@
                   ValueChanged="@((string v) => OnChanged(() => Question.CalendarApi = v?.Trim() ?? ""))"
                   ReadOnly="@ReadOnly"
                   Placeholder="https://…/calendar"
-                  HelperText="The public calendar endpoint. It is called with from, to, branchId, departmentId and brandId."
+                  HelperText="The public calendar endpoint. It is called with from, to, branchId, departmentId or services, and brandId."
                   Class="mb-2" />
 
     <div class="qte-row">
@@ -65,6 +65,14 @@
                       ReadOnly="@ReadOnly"
                       Placeholder="service-center"
                       HelperText="Department IDs, comma separated, or an earlier answer. Several are shown merged"
+                      Class="qte-num" />
+        <MudTextField T="string"
+                      Label="Services"
+                      Value="@Question.Services"
+                      ValueChanged="@((string v) => OnChanged(() => Question.Services = v?.Trim() ?? ""))"
+                      ReadOnly="@ReadOnly"
+                      Placeholder="auto-repair-and-maintenance"
+                      HelperText="Instead of a department: service IDs, comma separated. The calendar merges their departments. A department wins"
                       Class="qte-num" />
         <MudTextField T="string"
                       Label="Brand"

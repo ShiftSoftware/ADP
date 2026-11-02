@@ -28,12 +28,14 @@ public class ValidatorTests
     }
 
     [Theory]
-    [InlineData("service-center", true)]
-    [InlineData("service-center, body-shop", true)]
-    [InlineData("{{answers.department}}", true)]
-    [InlineData("", false)]
-    [InlineData(" , ", false)]
-    public void BookingSlotQuestion_NeedsAtLeastOneDepartment(string departmentId, bool valid)
+    [InlineData("service-center", "", true)]
+    [InlineData("service-center, body-shop", "", true)]
+    [InlineData("{{answers.department}}", "", true)]
+    [InlineData("", "auto-repair-and-maintenance", true)]
+    [InlineData("", "{{answers.service}}, body-and-paint", true)]
+    [InlineData("", "", false)]
+    [InlineData(" , ", " , ", false)]
+    public void BookingSlotQuestion_NeedsADepartmentOrAService(string departmentId, string services, bool valid)
     {
         var q = new BookingSlotQuestionDto
         {
@@ -42,6 +44,7 @@ public class ValidatorTests
             CalendarApi = "https://calendar.example/api/calendar",
             BranchId = "{{answers.branch}}",
             DepartmentId = departmentId,
+            Services = services,
             BrandId = "BRAND",
         };
         Assert.Equal(valid, new BookingSlotQuestionDtoValidator().Validate(q).IsValid);

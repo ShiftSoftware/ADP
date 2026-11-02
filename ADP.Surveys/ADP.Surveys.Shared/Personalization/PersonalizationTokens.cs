@@ -137,6 +137,7 @@ public static class PersonalizationTokens
                 Collect(booking.CalendarApi);
                 Collect(booking.BranchId);
                 Collect(booking.DepartmentId);
+                Collect(booking.Services);
                 Collect(booking.BrandId);
             },
             new HashSet<object>(ReferenceEqualityComparer.Instance), depth: 0);
@@ -296,7 +297,7 @@ public static class PersonalizationTokens
 
     /// <summary>
     /// Substitutes tokens in a booking question's calendar request, in place: the endpoint
-    /// (percent-encoded) and the branch, department and brand ids (raw — the calendar
+    /// (percent-encoded) and the branch, department, service and brand ids (raw — the calendar
     /// component encodes them when it builds the URL). Answer tokens stay for the renderer.
     /// </summary>
     public static void SubstituteBookingSlot(BookingSlotQuestionDto question, PersonalizationContext context)
@@ -305,6 +306,7 @@ public static class PersonalizationTokens
         question.CalendarApi = SubstituteString(question.CalendarApi, context, locale, TokenSurface.Url);
         question.BranchId = SubstituteString(question.BranchId, context, locale, TokenSurface.QueryValue);
         question.DepartmentId = SubstituteString(question.DepartmentId, context, locale, TokenSurface.QueryValue);
+        question.Services = SubstituteString(question.Services, context, locale, TokenSurface.QueryValue);
         question.BrandId = SubstituteString(question.BrandId, context, locale, TokenSurface.QueryValue);
     }
 

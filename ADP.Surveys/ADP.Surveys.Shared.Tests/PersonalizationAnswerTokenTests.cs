@@ -273,18 +273,21 @@ public class PersonalizationAnswerTokenTests
             CalendarApi = "https://{{candidate.host}}/api/calendar",
             BranchId = "{{answers.branch}}",
             DepartmentId = "{{candidate.department}}, body-shop",
+            Services = "{{candidate.service}},{{answers.service}}",
             BrandId = "{{candidate.brand|default brand}}",
         };
         survey.Screens.Add(new InlineScreenDto { Id = "s1", Questions = { QuestionEntryDto.FromInline(question) } });
 
         PersonalizationTokens.Substitute(survey, Live(survey,
-            ("candidate.name", "Sam"), ("candidate.host", "id.example"), ("candidate.department", "service & parts")));
+            ("candidate.name", "Sam"), ("candidate.host", "id.example"), ("candidate.department", "service & parts"),
+            ("candidate.service", "body-and-paint")));
 
         Assert.Equal("When suits you, Sam?", question.Title["en"]);
         Assert.Equal("https://id.example/api/calendar", question.CalendarApi);
         Assert.Equal("{{answers.branch}}", question.BranchId);
         // Raw: the calendar component encodes the ids when it builds the query.
         Assert.Equal("service & parts, body-shop", question.DepartmentId);
+        Assert.Equal("body-and-paint,{{answers.service}}", question.Services);
         Assert.Equal("default brand", question.BrandId);
     }
 
@@ -304,12 +307,13 @@ public class PersonalizationAnswerTokenTests
                     CalendarApi = "https://id.example/api/calendar",
                     BranchId = "{{answers.branch}}",
                     DepartmentId = "{{candidate.department}},{{answers.department}}",
+                    Services = "{{answers.service}}",
                     BrandId = "{{answers.brand}}",
                 }),
             },
         });
 
-        Assert.Equal(new[] { "answers.branch", "answers.brand", "answers.department", "candidate.department" },
+        Assert.Equal(new[] { "answers.branch", "answers.brand", "answers.department", "answers.service", "candidate.department" },
             PersonalizationTokens.CollectTokenNames(survey).OrderBy(x => x, StringComparer.Ordinal));
     }
 

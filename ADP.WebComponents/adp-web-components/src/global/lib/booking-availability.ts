@@ -7,6 +7,8 @@ export interface BookingTarget {
   departmentId: string;
   // Asked in parallel and shown together, instead of departmentId.
   departmentIds?: string[];
+  // Comma separated service IDs, sent instead of a department: the endpoint merges those services' departments itself.
+  services?: string;
   brandId: string;
 }
 
@@ -109,8 +111,11 @@ export function summarise(days: BookingDay[]): BookingAvailability | null {
 
 // Everything the endpoint needs is present.
 export function isCompleteTarget(target: Partial<BookingTarget> | null | undefined): boolean {
-  return !!(target?.url && target.branchId && (target.departmentId || target.departmentIds?.length) && target.brandId);
+  return !!(target?.url && target.branchId && (target.departmentId || target.departmentIds?.length || target.services) && target.brandId);
 }
+
+// A department wins over services, as it does at the endpoint.
+const byServices = (target: Partial<BookingTarget>) => !target.departmentId && !target.departmentIds?.length && !!target.services;
 
 export function queryUrl(target: Partial<BookingTarget> | null | undefined, today?: string): string | null {
   if (!isCompleteTarget(target)) return null;
@@ -120,7 +125,7 @@ export function queryUrl(target: Partial<BookingTarget> | null | undefined, toda
     from,
     to: addDays(from, REQUEST_DAYS),
     branchId: String(target.branchId),
-    departmentId: String(target.departmentId),
+    ...(byServices(target) ? { services: String(target.services) } : { departmentId: String(target.departmentId) }),
     brandId: String(target.brandId),
   });
 
@@ -128,6 +133,11 @@ export function queryUrl(target: Partial<BookingTarget> | null | undefined, toda
 }
 
 export function queryUrls(target: Partial<BookingTarget> | null | undefined, today?: string): string[] | null {
+  if (target && byServices(target)) {
+    const url = queryUrl(target, today);
+    return url ? [url] : null;
+  }
+
   const departments = target?.departmentIds?.length ? target.departmentIds : [target?.departmentId];
   const urls = departments.map(departmentId => queryUrl({ ...target, departmentIds: undefined, departmentId }, today));
 
