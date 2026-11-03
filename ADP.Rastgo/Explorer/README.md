@@ -7,7 +7,11 @@ current implementation; this is not a connected health dashboard.
 
 ## Run
 
-Node.js 22 or newer; no package install, framework build or .NET service required.
+Without a server: open `rastgo-explorer.html` (a checked-in single-file build).
+Opening `index.html` from disk redirects there. Regenerate it after source
+changes with `node ADP.Explorer.Shared/standalone.mjs`.
+
+For live source-freshness checks, run the local server. Node.js 22 or newer; no package install, framework build or .NET service required.
 From the ADP repository root:
 
 ```sh

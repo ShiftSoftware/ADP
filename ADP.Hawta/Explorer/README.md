@@ -11,7 +11,11 @@ ownership boundary is an example host arrangement, not an automatic discovery.
 
 ## Run
 
-Requires Node.js 22 or newer. Uses only Node built-ins; no package install,
+Without a server: open `hawta-explorer.html` (a checked-in single-file build).
+Opening `index.html` from disk redirects there. Regenerate it after source
+changes with `node ADP.Explorer.Shared/standalone.mjs`.
+
+For live source-freshness checks, run the local server. It requires Node.js 22 or newer. Uses only Node built-ins; no package install,
 framework build or .NET service is needed. From the ADP repository root:
 
 ```sh
@@ -125,5 +129,5 @@ node ADP.Explorer.Shared/export.mjs hawta /path/to/hawta.html --single-file
 Open or share that generated file; it embeds styles, scripts, icons, scenarios
 and evidence. Its offline evidence does not claim to check current source files.
 The [shared export workflow](../../ADP.Explorer.Shared/README.md) also supports
-asset folders. Opening the checkout's source `Explorer/index.html` directly is
-not the standalone workflow: use the server for that entry or generate an export.
+asset folders. Opening the checkout's source `Explorer/index.html` directly
+redirects to the checked-in `hawta-explorer.html`.

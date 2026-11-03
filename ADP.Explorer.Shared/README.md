@@ -65,8 +65,22 @@ source preview when live source comparison is needed.
 
 Exports are deterministic for the current source and captured evidence. The
 command refuses existing destinations; regenerate to a new file/directory after
-editing source or deliberately refreshing evidence. Generated artifacts can live
-under the repository's ignored `.scratch/`; do not hand-edit or commit them.
+editing source or deliberately refreshing evidence. Ad-hoc exports can live
+under the repository's ignored `.scratch/`.
+
+## Checked-in standalone files
+
+`ADP.Hawta/Explorer/hawta-explorer.html` and `ADP.Rastgo/Explorer/rastgo-explorer.html`
+are committed single-file builds, so the Explorers open from disk with no server.
+Opening a source `Explorer/index.html` from disk redirects to its standalone file.
+Do not hand-edit them; after changing any Explorer source or evidence, regenerate:
+
+```sh
+node ADP.Explorer.Shared/standalone.mjs
+```
+
+`node ADP.Explorer.Shared/standalone.mjs --check` (also run by `verify.mjs`)
+fails when either file no longer matches its source.
 
 After shared changes run `node ADP.Explorer.Shared/verify.mjs`, both product
 verifiers and Hawta's portability test.

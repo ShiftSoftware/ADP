@@ -21,6 +21,10 @@
   <script src="shared/evidence.js" defer></script><script src="explorer.js" defer></script>
 </head>
 <body data-playing="false" data-view="overview">
+  <script>
+    // Opened from disk: the shared/ assets only exist behind server.mjs, so use the checked-in standalone build.
+    if (location.protocol === 'file:' && !document.getElementById('explorer-evidence')) location.replace('hawta-explorer.html');
+  </script>
   <!-- Illustrative architecture. Sources, mappings, ownership and output delivery
        are configured by the host. Evidence in Explore references public Hawta code. -->
   <main>

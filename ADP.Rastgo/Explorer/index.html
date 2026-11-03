@@ -6,7 +6,11 @@
 <script>try { const t = localStorage.getItem('rastgo-explorer-theme'); if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t; } catch {}</script>
 <link rel="stylesheet" href="shared/theme.css"><link rel="stylesheet" href="shared/engineering.css"><link rel="stylesheet" href="style.css">
 <script src="shared/shell.js" defer></script><script src="overview.js" defer></script><script src="shared/overview.js" defer></script><script src="mechanisms.js" defer></script><script src="shared/evidence.js" defer></script><script src="explorer.js" defer></script>
-</head><body data-view="overview" data-playing="false"><a class="skip-link" href="#workspace">Skip to mechanism</a><main>
+</head><body data-view="overview" data-playing="false">
+<script>
+  // Opened from disk: the shared/ assets only exist behind server.mjs, so use the checked-in standalone build.
+  if (location.protocol === 'file:' && !document.getElementById('explorer-evidence')) location.replace('rastgo-explorer.html');
+</script><a class="skip-link" href="#workspace">Skip to mechanism</a><main>
 <header data-explorer-product="Rastgo" data-explorer-icon="rastgo-icon.svg" data-explorer-theme="rastgo-explorer-theme"></header>
     <div id="overview" data-explorer-overview data-overview-title="Measured facts. Explicit expectations.">
 <section class="diagram" aria-label="Rastgo reliability flow">

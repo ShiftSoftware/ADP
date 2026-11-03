@@ -4,6 +4,9 @@ import {tmpdir} from 'node:os';
 import {join, dirname, basename} from 'node:path';
 import vm from 'node:vm';
 import {exportExplorer, buildStandalone} from './export.mjs';
+import {staleStandalones} from './standalone.mjs';
+
+assert.deepEqual(await staleStandalones(), [], 'Checked-in standalone Explorers are stale: run node ADP.Explorer.Shared/standalone.mjs');
 
 const evidenceLoader = await readFile(new URL('evidence.js', import.meta.url), 'utf8');
 async function checkOfflineLoader(snapshot, protocol) {
