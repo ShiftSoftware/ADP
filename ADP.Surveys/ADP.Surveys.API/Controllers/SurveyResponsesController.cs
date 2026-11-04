@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -7,8 +8,11 @@ using ShiftSoftware.ADP.Surveys.API.Extensions;
 using ShiftSoftware.ADP.Surveys.Data.Entities;
 using ShiftSoftware.ADP.Surveys.Shared;
 using ShiftSoftware.ADP.Surveys.Shared.ActionTrees;
+using ShiftSoftware.ADP.Surveys.Shared.DTOs;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Admin.Responses;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Admin.Survey;
+using ShiftSoftware.ADP.Surveys.Shared.Json;
+using ShiftSoftware.ADP.Surveys.Shared.Triggers;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.EFCore;
 using ShiftSoftware.TypeAuth.Core;
@@ -32,17 +36,23 @@ public class SurveyResponsesController : ControllerBase
     private readonly IHashIdService hashIdService;
     private readonly SurveyApiOptions options;
     private readonly Services.SurveyResponseExporter exporter;
+    private readonly Services.TriggerSchedulerService scheduler;
+    private readonly Channels.SurveyChannelRegistry channels;
 
     public SurveyResponsesController(
         ShiftDbContext db,
         IHashIdService hashIdService,
         SurveyApiOptions options,
-        Services.SurveyResponseExporter exporter)
+        Services.SurveyResponseExporter exporter,
+        Services.TriggerSchedulerService scheduler,
+        Channels.SurveyChannelRegistry channels)
     {
         this.db = db;
         this.hashIdService = hashIdService;
         this.options = options;
         this.exporter = exporter;
+        this.scheduler = scheduler;
+        this.channels = channels;
     }
 
     /// <summary>
@@ -129,6 +139,84 @@ public class SurveyResponsesController : ControllerBase
     }
 
     /// <summary>
+    /// What the Test run dialog needs to send a test to a recipient, read from the latest
+    /// published version: the channels, the survey's locales and the values to ask for.
+    /// </summary>
+    [HttpGet("{surveyId}/test-delivery-form")]
+    public async Task<IActionResult> GetTestDeliveryForm([FromRoute] string surveyId)
+    {
+        if (Forbidden(options.Actions.ResolvedCreateTestInstances, out var forbid)) return forbid!;
+        if (!TryDecodeSurveyId(surveyId, out var id, out var bad)) return bad!;
+
+        var version = await LatestPublishedVersionAsync(id);
+        if (version is null)
+            return BadRequest(new { Message = "Survey has no published version — publish it before creating a test instance." });
+
+        var survey = JsonSerializer.Deserialize<SurveyDto>(version.ResolvedJson, SurveySchemaSerializer.Options)!;
+        var registered = channels.RegisteredKeys.Order(StringComparer.Ordinal).ToList();
+        var triggerChannel = survey.Triggers.FirstOrDefault(t => t.Enabled)?.Channel;
+
+        return Ok(new TestDeliveryFormDTO
+        {
+            Channels = registered,
+            DefaultChannel = registered.Contains(triggerChannel ?? "") ? triggerChannel : null,
+            Locales = survey.Locales,
+            DefaultLocale = survey.DefaultLocale,
+            Fields = TestDelivery.CollectFields(survey, options.TestDeliveryFields),
+        });
+    }
+
+    /// <summary>
+    /// Creates a test instance and sends it to the given recipient over a real channel, straight
+    /// away. Still marked <see cref="SurveysConstants.DashboardTestTriggerSource"/>, so reporting
+    /// leaves it out, but it runs as a real instance would: it personalizes from the values given
+    /// here, and its response reaches the subscribers that opt in to test responses. No reminders.
+    /// </summary>
+    [HttpPost("{surveyId}/test-instances/deliver")]
+    public async Task<IActionResult> CreateDeliveredTestInstance(
+        [FromRoute] string surveyId,
+        [FromBody] CreateDeliveredTestInstanceRequestDTO request,
+        CancellationToken ct)
+    {
+        if (Forbidden(options.Actions.ResolvedCreateTestInstances, out var forbid)) return forbid!;
+        if (!TryDecodeSurveyId(surveyId, out var id, out var bad)) return bad!;
+
+        if (string.IsNullOrWhiteSpace(request.RecipientAddress))
+            return BadRequest(new { Message = "A recipient is required." });
+        if (channels.Resolve(request.Channel) is null)
+            return BadRequest(new { Message = $"Channel '{request.Channel}' is not available in this deployment." });
+
+        var version = await LatestPublishedVersionAsync(id);
+        if (version is null)
+            return BadRequest(new { Message = "Survey has no published version — publish it before creating a test instance." });
+
+        var instance = new SurveyInstance
+        {
+            SurveyID = id,
+            SurveyVersionID = version.ID,
+            TriggeredAt = DateTimeOffset.UtcNow,
+            TriggeredBy = SurveysConstants.DashboardTestTriggerSource,
+            Status = SurveyInstanceStatus.Pending,
+            Channel = request.Channel,
+            RecipientAddress = request.RecipientAddress.Trim(),
+            RecipientLocale = string.IsNullOrWhiteSpace(request.RecipientLocale) ? null : request.RecipientLocale.Trim(),
+            MetaDataJson = TestDelivery.BuildCandidatePayload(request.Variables),
+            NextSendAt = null,
+            RemindersRemaining = 0,
+        };
+        db.Set<SurveyInstance>().Add(instance);
+        await db.SaveChangesAsync(ct);
+
+        return Ok(new CreateTestInstanceResultDTO
+        {
+            PublicId = instance.PublicID,
+            SchemaVersion = version.Version,
+            PublicUrl = ComposePublicUrl(instance.PublicID),
+            DeliveryError = await scheduler.SendNowAsync(instance, ct),
+        });
+    }
+
+    /// <summary>
     /// Creates a test instance pinned to the survey's latest published version.
     /// Marked <see cref="SurveysConstants.DashboardTestTriggerSource"/> so its
     /// responses never fan out through the outbox, and never scheduled for channel
@@ -144,10 +232,7 @@ public class SurveyResponsesController : ControllerBase
             .FirstOrDefaultAsync(s => s.ID == id && !s.IsDeleted);
         if (survey is null) return NotFound();
 
-        var version = await db.Set<SurveyVersion>()
-            .Where(v => v.SurveyID == id)
-            .OrderByDescending(v => v.Version)
-            .FirstOrDefaultAsync();
+        var version = await LatestPublishedVersionAsync(id);
         if (version is null)
             return BadRequest(new { Message = "Survey has no published version — publish it before creating a test instance." });
 
@@ -214,6 +299,12 @@ public class SurveyResponsesController : ControllerBase
         cleaned = string.Join('-', cleaned.Split('-', StringSplitOptions.RemoveEmptyEntries));
         return cleaned.Length == 0 ? "survey" : cleaned[..Math.Min(cleaned.Length, 60)];
     }
+
+    private Task<SurveyVersion?> LatestPublishedVersionAsync(long surveyId) =>
+        db.Set<SurveyVersion>()
+            .Where(v => v.SurveyID == surveyId)
+            .OrderByDescending(v => v.Version)
+            .FirstOrDefaultAsync();
 
     private string? ComposePublicUrl(Guid publicId) =>
         PublicSurveyUrl.Compose(options.PublicSurveyUrlTemplate, publicId);

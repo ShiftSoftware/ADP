@@ -15,6 +15,13 @@ public interface ISurveyResponseSubscriber
     /// <summary>e.g. <c>"servicebus:csi-tickets"</c>, <c>"webhook:bi-ingest"</c>, <c>"memory:default"</c>.</summary>
     string Key { get; }
 
+    /// <summary>
+    /// Whether responses to delivered test runs reach this subscriber
+    /// (<see cref="SurveyOutboxPayload.IsTest"/>). Off by default, so a BI forwarder never
+    /// sees test data. A subscriber that turns it on has to keep test results apart itself.
+    /// </summary>
+    bool ReceivesTestResponses => false;
+
     Task<SubscriberDispatchResult> DispatchAsync(SurveyOutboxPayload payload, CancellationToken ct);
 }
 
@@ -28,6 +35,9 @@ public class SurveyOutboxPayload
     public string? CustomerRef { get; set; }
     public string? RecipientAddress { get; set; }
     public string? RecipientLocale { get; set; }
+
+    /// <summary>True when the response came from a test run delivered to a recipient.</summary>
+    public bool IsTest { get; set; }
 
     /// <summary>Slice 7 always emits <c>"response-completed"</c>. Future events (instance-expired, instance-opened) extend this.</summary>
     public string EventType { get; set; } = "response-completed";

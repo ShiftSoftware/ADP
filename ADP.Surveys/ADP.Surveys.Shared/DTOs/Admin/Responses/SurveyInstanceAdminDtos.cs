@@ -91,4 +91,43 @@ public class CreateTestInstanceResultDTO
     public Guid PublicId { get; set; }
     public int SchemaVersion { get; set; }
     public string? PublicUrl { get; set; }
+
+    /// <summary>A delivered test only: why the channel did not send it. Null when it was sent.</summary>
+    public string? DeliveryError { get; set; }
+}
+
+/// <summary>What the Test run dialog offers for sending a test to a recipient.</summary>
+public class TestDeliveryFormDTO
+{
+    public List<string> Channels { get; set; } = new();
+
+    /// <summary>The channel of the survey's first enabled trigger, when this deployment has it.</summary>
+    public string? DefaultChannel { get; set; }
+
+    public List<string> Locales { get; set; } = new();
+    public string? DefaultLocale { get; set; }
+
+    public List<TestDeliveryFieldDTO> Fields { get; set; } = new();
+}
+
+/// <summary>One <c>candidate.*</c> value a real event would carry and the operator supplies here.</summary>
+public class TestDeliveryFieldDTO
+{
+    /// <summary>Token path, such as <c>candidate.customerName</c>.</summary>
+    public string Name { get; set; } = "";
+
+    public string? Description { get; set; }
+
+    /// <summary>The variable's declared example per locale, to start the field from.</summary>
+    public Dictionary<string, string> Example { get; set; } = new();
+}
+
+public class CreateDeliveredTestInstanceRequestDTO
+{
+    public string Channel { get; set; } = "";
+    public string RecipientAddress { get; set; } = "";
+    public string? RecipientLocale { get; set; }
+
+    /// <summary>Values keyed by token path, such as <c>candidate.customerName</c>.</summary>
+    public Dictionary<string, string> Variables { get; set; } = new();
 }

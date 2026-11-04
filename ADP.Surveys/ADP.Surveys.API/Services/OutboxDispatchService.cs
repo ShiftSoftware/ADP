@@ -153,6 +153,9 @@ public class OutboxDispatchService
 
         foreach (var subscriber in subscribers.All)
         {
+            if (payload.IsTest && !subscriber.ReceivesTestResponses)
+                continue;
+
             var entry = new DispatchLogEntry { Key = subscriber.Key, DispatchedAt = DateTimeOffset.UtcNow };
             try
             {

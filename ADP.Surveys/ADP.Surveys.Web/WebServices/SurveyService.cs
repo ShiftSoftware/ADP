@@ -165,6 +165,34 @@ public class SurveyService
     }
 
     /// <summary>
+    /// GET <c>{prefix}SurveyResponses/{surveyId}/test-delivery-form</c>. Null when it can't be
+    /// read, which leaves the Test run dialog with answering in the dashboard only.
+    /// </summary>
+    public async Task<TestDeliveryFormDTO?> GetTestDeliveryFormAsync(
+        string hashedSurveyId, CancellationToken ct = default)
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<TestDeliveryFormDTO>(
+                $"{prefix}SurveyResponses/{hashedSurveyId}/test-delivery-form", ct);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// POST <c>{prefix}SurveyResponses/{surveyId}/test-instances/deliver</c>. Returns the raw
+    /// response so callers can surface the API's error copy.
+    /// </summary>
+    public async Task<HttpResponseMessage> CreateDeliveredTestInstanceAsync(
+        string hashedSurveyId, CreateDeliveredTestInstanceRequestDTO request, CancellationToken ct = default)
+    {
+        return await http.PostAsJsonAsync($"{prefix}SurveyResponses/{hashedSurveyId}/test-instances/deliver", request, ct);
+    }
+
+    /// <summary>
     /// GET <c>{prefix}Triggers/channels</c>. Returns the registry keys the host has
     /// wired up. Empty (not null) on failure so the dropdown still renders.
     /// </summary>

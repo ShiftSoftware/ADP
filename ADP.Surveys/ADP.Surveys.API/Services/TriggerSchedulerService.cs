@@ -57,6 +57,31 @@ public class TriggerSchedulerService
         return new SchedulerTickResult(processed, expired);
     }
 
+    /// <summary>
+    /// Sends one saved instance now, with the same guards a tick applies. For a test run, where the
+    /// operator is waiting for the message: it does not wait for the next tick or a messaging window.
+    /// The instance is not scheduled, so a failed send is reported here and never retried.
+    /// </summary>
+    /// <returns>Null when it was sent; otherwise why it was not.</returns>
+    public async Task<string?> SendNowAsync(SurveyInstance instance, CancellationToken ct = default)
+    {
+        try
+        {
+            await ProcessOneAsync(instance, DateTimeOffset.UtcNow, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogError(ex, "Sending SurveyInstance {PublicId} failed", instance.PublicID);
+            return ex.Message;
+        }
+
+        if (instance.LastSentAt is not null)
+            return null;
+
+        var entries = JsonSerializer.Deserialize<List<DeliveryLogEntry>>(instance.DeliveryLogJson ?? "[]", SurveySchemaSerializer.Options);
+        return entries?.LastOrDefault()?.Error ?? "The channel did not send it.";
+    }
+
     private async Task<int> SendDueAsync(DateTimeOffset now, int batchSize, CancellationToken ct)
     {
         var due = await db.Set<SurveyInstance>()

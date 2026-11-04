@@ -139,6 +139,13 @@ public class SurveyApiOptions
     public TimeSpan ExpiryGracePeriod { get; set; } = TimeSpan.FromDays(30);
 
     /// <summary>
+    /// <c>candidate.*</c> values the Test run dialog always asks for when sending a test to a
+    /// recipient, on top of the survey's own variables and tokens. For what this host's channels
+    /// need whatever the survey says, such as the name a WhatsApp template greets with.
+    /// </summary>
+    public List<string> TestDeliveryFields { get; set; } = new();
+
+    /// <summary>
     /// Deployment-wide branding (logo, colors, favicon) applied to every survey this
     /// install serves — the knob that makes each deployment's surveys carry that
     /// deployment's own brand. A survey's own <c>SurveyDto.Branding</c> overrides it

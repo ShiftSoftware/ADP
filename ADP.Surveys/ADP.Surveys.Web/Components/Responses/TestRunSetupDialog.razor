@@ -1,0 +1,208 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components.Responses
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Admin.Responses
+@inject SurveyService SurveySvc
+
+@*
+    What "Test run" opens. Either answer in the dashboard, where the survey renders with its
+    declared examples and nothing reaches subscribers, or send a real message: the operator
+    supplies what a real event would, and from there it runs like a real instance.
+
+    Result contract: Ok(CreateTestInstanceResultDTO) = sent, Ok(null) = answer in the dashboard,
+    Cancel = neither. The send happens here so an API refusal keeps the operator's input on screen.
+*@
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.PlayCircle" Class="mr-2" />
+            Test run
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (loading)
+        {
+            <div class="trs__center"><MudProgressCircular Indeterminate="true" /></div>
+        }
+        else
+        {
+            <MudRadioGroup T="bool" @bind-Value="deliver">
+                <div class="trs__mode">
+                    <MudRadio T="bool" Value="false" Color="Color.Primary">Answer here</MudRadio>
+                    <MudText Typo="Typo.caption" Class="trs__hint">
+                        Renders with the survey's example values. Nothing reaches subscribers.
+                    </MudText>
+                </div>
+                <div class="trs__mode">
+                    <MudRadio T="bool" Value="true" Color="Color.Primary" Disabled="@(form is not { Channels.Count: > 0 })">Send to a recipient</MudRadio>
+                    <MudText Typo="Typo.caption" Class="trs__hint">
+                        Sends a real message now, with no reminders. The response reaches the subscribers
+                        that accept test responses, so it can create real records. Leaving a value empty
+                        shows what a real recipient would see if the event lacked it.
+                    </MudText>
+                </div>
+            </MudRadioGroup>
+
+            @if (deliver && form is not null)
+            {
+                <div class="trs__fields">
+                    <MudSelect T="string" @bind-Value="channel" Label="Channel" Dense Margin="Margin.Dense" Variant="Variant.Outlined">
+                        @foreach (var key in form.Channels)
+                        {
+                            <MudSelectItem T="string" Value="@key">@key</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudTextField T="string" @bind-Value="recipient" Label="Recipient" Placeholder="+9647501234567"
+                                  HelperText="The phone number or address the channel sends to."
+                                  Margin="Margin.Dense" Variant="Variant.Outlined" />
+
+                    @if (form.Locales.Count > 0)
+                    {
+                        <MudSelect T="string" Value="@locale" ValueChanged="OnLocaleChanged" Label="Language"
+                                   Dense Margin="Margin.Dense" Variant="Variant.Outlined">
+                            @foreach (var option in form.Locales)
+                            {
+                                <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+                            }
+                        </MudSelect>
+                    }
+
+                    @foreach (var field in form.Fields)
+                    {
+                        <MudTextField T="string" @bind-Value="values[field.Name]" Label="@field.Name" HelperText="@field.Description"
+                                      Margin="Margin.Dense" Variant="Variant.Outlined" />
+                    }
+                </div>
+
+                @if (error is not null)
+                {
+                    <MudAlert Severity="Severity.Error" Dense Class="mt-2">@error</MudAlert>
+                }
+            }
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => MudDialogInstance.Cancel())">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(loading || sending || (deliver && !CanSend))" OnClick="OnConfirm">
+            @(!deliver ? "Start" : sending ? "Sending…" : "Send")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .trs__center {
+        display: flex;
+        justify-content: center;
+        padding: 24px;
+    }
+    .trs__mode {
+        margin-bottom: 8px;
+    }
+    .trs__hint {
+        display: block;
+        margin-inline-start: 42px;
+        color: var(--mud-palette-text-secondary);
+    }
+    .trs__fields {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 8px;
+    }
+</style>
+
+@code {
+    [CascadingParameter]
+    public IMudDialogInstance MudDialogInstance { get; set; } = default!;
+
+    /// <summary>The survey being tested, by its hashed ID.</summary>
+    [Parameter] public string SurveyId { get; set; } = "";
+
+    TestDeliveryFormDTO? form;
+    bool loading = true;
+    bool sending;
+    bool deliver;
+    string? channel;
+    string? recipient;
+    string? locale;
+    string? error;
+    readonly Dictionary<string, string?> values = new();
+
+    bool CanSend => !string.IsNullOrWhiteSpace(channel) && !string.IsNullOrWhiteSpace(recipient);
+
+    protected override async Task OnInitializedAsync()
+    {
+        form = await SurveySvc.GetTestDeliveryFormAsync(SurveyId);
+        loading = false;
+
+        if (form is null) return;
+
+        channel = form.DefaultChannel ?? form.Channels.FirstOrDefault();
+        locale = form.DefaultLocale ?? form.Locales.FirstOrDefault();
+
+        foreach (var field in form.Fields)
+            values[field.Name] = ExampleFor(field, locale);
+    }
+
+    /// <summary>Moves each field to the new language's example, unless the operator already typed over it.</summary>
+    void OnLocaleChanged(string? next)
+    {
+        foreach (var field in form!.Fields)
+        {
+            if (values[field.Name] == ExampleFor(field, locale))
+                values[field.Name] = ExampleFor(field, next);
+        }
+        locale = next;
+    }
+
+    /// <summary>The same forgiving order the server resolves an example in: this locale, the default, any.</summary>
+    string? ExampleFor(TestDeliveryFieldDTO field, string? code)
+    {
+        if (code is not null && field.Example.TryGetValue(code, out var exact) && !string.IsNullOrEmpty(exact))
+            return exact;
+        if (form?.DefaultLocale is { } fallback && field.Example.TryGetValue(fallback, out var byDefault) && !string.IsNullOrEmpty(byDefault))
+            return byDefault;
+        return field.Example.Values.FirstOrDefault(x => !string.IsNullOrEmpty(x));
+    }
+
+    async Task OnConfirm()
+    {
+        if (!deliver)
+        {
+            MudDialogInstance.Close(DialogResult.Ok<CreateTestInstanceResultDTO?>(null));
+            return;
+        }
+
+        sending = true;
+        error = null;
+        try
+        {
+            var response = await SurveySvc.CreateDeliveredTestInstanceAsync(SurveyId, new CreateDeliveredTestInstanceRequestDTO
+            {
+                Channel = channel!,
+                RecipientAddress = recipient!,
+                RecipientLocale = locale,
+                Variables = values
+                    .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+                    .ToDictionary(x => x.Key, x => x.Value!),
+            });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                error = body.Length > 300 ? body[..300] + "…" : body;
+                return;
+            }
+
+            MudDialogInstance.Close(DialogResult.Ok(await response.Content.ReadFromJsonAsync<CreateTestInstanceResultDTO>()));
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            sending = false;
+        }
+    }
+}

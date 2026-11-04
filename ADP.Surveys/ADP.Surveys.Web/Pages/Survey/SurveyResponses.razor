@@ -105,7 +105,7 @@
                 @(exporting ? "Exporting…" : "Export")
             </MudButton>
         </MudTooltip>
-        <MudTooltip Text="@(publishedVersion is null ? "Publish the survey first — test instances pin to the latest published version." : "Create a test instance and answer it right here. Test responses never fan out to subscribers.")">
+        <MudTooltip Text="@(publishedVersion is null ? "Publish the survey first — test instances pin to the latest published version." : "Answer a test instance right here, or send one to a recipient over a real channel.")">
             <MudButton StartIcon="@Icons.Material.Filled.PlayCircle"
                        Variant="Variant.Filled"
                        Color="Color.Primary"
@@ -132,6 +132,10 @@
                     @if (cell.Item.IsTest)
                     {
                         <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">TEST</MudChip>
+                        @if (!string.IsNullOrEmpty(cell.Item.RecipientAddress))
+                        {
+                            <span class="responses-page__recipient">@cell.Item.Channel → @cell.Item.RecipientAddress</span>
+                        }
                     }
                     else
                     {
@@ -415,6 +419,25 @@
     async Task OnTestRun()
     {
         if (string.IsNullOrEmpty(Key)) return;
+
+        var setup = await DialogService.ShowAsync<TestRunSetupDialog>(
+            "",
+            new DialogParameters<TestRunSetupDialog> { { x => x.SurveyId, Key } },
+            new DialogOptions { NoHeader = false, CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true });
+        var setupResult = await setup.Result;
+
+        if (setupResult is null || setupResult.Canceled) return;
+
+        if (setupResult.Data is CreateTestInstanceResultDTO delivered)
+        {
+            if (delivered.DeliveryError is null)
+                Snackbar.Add("Test sent.", MudBlazor.Severity.Success);
+            else
+                Snackbar.Add($"The test was created but not sent: {delivered.DeliveryError}", MudBlazor.Severity.Error);
+
+            list?.Reload();
+            return;
+        }
 
         // The busy flag covers only the create round-trip — the dialogs that
         // follow are modal, and holding the flag through them leaves the header

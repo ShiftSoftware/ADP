@@ -96,16 +96,17 @@ public class PublicSurveyController : ControllerBase
             // A dashboard test instance has no ingested event to personalize from, so
             // it renders with the survey's declared example values instead — that is
             // what makes "Test run" show the sentence a recipient will actually read
-            // rather than a screenful of braces. Any snapshot fields a test instance
-            // does happen to carry still win over the examples.
-            var isTestInstance = instance.TriggeredBy == Shared.SurveysConstants.DashboardTestTriggerSource;
+            // rather than a screenful of braces. A test delivered to a recipient carries
+            // the values the operator entered, so it renders the way a real instance does.
+            var usesExamples = instance.TriggeredBy == Shared.SurveysConstants.DashboardTestTriggerSource
+                && !Shared.SurveysConstants.IsDeliveredTest(instance.TriggeredBy, instance.Channel);
             var snapshot = PersonalizationTokens.BuildContext(
                 instance.CustomerRef,
                 instance.RecipientAddress,
                 instance.RecipientLocale,
                 instance.MetaDataJson);
 
-            var context = isTestInstance
+            var context = usesExamples
                 ? PersonalizationContext.ForSample(resolved, snapshot)
                 : PersonalizationContext.ForInstance(snapshot, resolved);
 
@@ -213,11 +214,11 @@ public class PublicSurveyController : ControllerBase
         // The in-same-transaction write is what gives us at-least-once delivery: if
         // SaveChanges throws, neither the response nor the outbox event lands.
         //
-        // Dashboard test instances are exempt: their responses stay queryable in the
-        // admin views but never fan out — subscribers (BI forwarders, CRM hooks)
-        // must not receive test data.
+        // Test instances answered in the dashboard are exempt: their responses stay
+        // queryable in the admin views but never fan out. A test delivered to a recipient
+        // does write one, marked IsTest, and only subscribers that opt in receive it.
         var isTestInstance = instance.TriggeredBy == Shared.SurveysConstants.DashboardTestTriggerSource;
-        if (!isTestInstance)
+        if (!isTestInstance || Shared.SurveysConstants.IsDeliveredTest(instance.TriggeredBy, instance.Channel))
         {
             var payload = new Shared.Triggers.SurveyOutboxPayload
             {
@@ -229,6 +230,7 @@ public class PublicSurveyController : ControllerBase
                 CustomerRef = instance.CustomerRef,
                 RecipientAddress = instance.RecipientAddress,
                 RecipientLocale = instance.RecipientLocale,
+                IsTest = isTestInstance,
                 EventType = "response-completed",
                 CompletedAt = response.CompletedAt ?? DateTimeOffset.UtcNow,
                 AgentId = response.AgentId,

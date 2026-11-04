@@ -32,6 +32,7 @@ let unpublishedHashId = '';
 let publishedVersion = 0;
 let testPublicId = '';
 let regularPublicId = '';
+let deliveredPublicId = '';
 
 function draft(surveyId: string) {
   return {
@@ -40,10 +41,15 @@ function draft(surveyId: string) {
     title: { en: `E2E Test Loop ${TAG}`, ar: `E2E حلقة الاختبار ${TAG}` },
     locales: ['en', 'ar'],
     defaultLocale: 'en',
+    variables: [
+      { name: 'candidate.customerName', example: { en: 'Sample Customer' }, fallback: {} },
+      { name: 'candidate.vin', example: { en: 'JT0000' }, fallback: {}, description: 'Needed by a subscriber' },
+    ],
     screens: [
       {
         id: 'feedback',
         title: { en: 'Your feedback', ar: 'ملاحظاتك' },
+        description: { en: 'Hello {{candidate.customerName}}' },
         questions: [
           {
             type: 'rating',
@@ -289,9 +295,9 @@ async function verifyOutboxIsolation() {
     const inserted = sql(`
       DECLARE @out TABLE (PublicID UNIQUEIDENTIFIER);
       INSERT INTO [Surveys].[SurveyInstance]
-        (PublicID, SurveyID, SurveyVersionID, TriggeredAt, TriggeredBy, Status, CreateDate, LastSaveDate, IsDeleted)
+        (PublicID, SurveyID, SurveyVersionID, TriggeredAt, TriggeredBy, Status, RemindersRemaining, CreateDate, LastSaveDate, IsDeleted)
       OUTPUT inserted.PublicID INTO @out
-      VALUES (NEWID(), ${surveyIdStr}, ${versionIdStr}, SYSDATETIMEOFFSET(), N'e2e-regular', 1, SYSDATETIMEOFFSET(), SYSDATETIMEOFFSET(), 0);
+      VALUES (NEWID(), ${surveyIdStr}, ${versionIdStr}, SYSDATETIMEOFFSET(), N'e2e-regular', 1, 0, SYSDATETIMEOFFSET(), SYSDATETIMEOFFSET(), 0);
       SELECT CONVERT(NVARCHAR(36), PublicID) FROM @out;
     `);
     regularPublicId = inserted.trim();
@@ -314,9 +320,89 @@ async function verifyOutboxIsolation() {
   })();
 }
 
+async function verifyDeliveredTest() {
+  await step('the form offers the channels, locales and every value to ask for', async () => {
+    const form = await apiJson<{
+      Channels: string[];
+      Locales: string[];
+      Fields: { Name: string; Example: Record<string, string> }[];
+    }>('GET', `/api/Surveys/SurveyResponses/${surveyHashId}/test-delivery-form`, { token });
+    assert(form.Channels.includes('memory:default'), 'the registered channel is offered');
+    assertEq(form.Locales.join(), 'en,ar', 'the survey locales');
+    assertEq(form.Fields.map((f) => f.Name).join(), 'candidate.customerName,candidate.vin', 'declared variables');
+    assertEq(form.Fields[0]!.Example['en'], 'Sample Customer', 'the example starts the field');
+  })();
+
+  await step('an unknown channel is refused', async () => {
+    const r = await api('POST', `/api/Surveys/SurveyResponses/${surveyHashId}/test-instances/deliver`, {
+      token,
+      body: { channel: 'nope', recipientAddress: '+9647500000000' },
+    });
+    assertEq(r.status, 400, `unknown channel rejected (got ${r.status})`);
+  })();
+
+  await step('delivering sends straight away and needs no tick', async () => {
+    const created = await apiJson<CreateResult & { DeliveryError?: string | null }>(
+      'POST',
+      `/api/Surveys/SurveyResponses/${surveyHashId}/test-instances/deliver`,
+      {
+        token,
+        body: {
+          channel: 'memory:default',
+          recipientAddress: '+9647500000000',
+          recipientLocale: 'en',
+          variables: { 'candidate.customerName': 'Aza', 'candidate.vin': 'JT1234' },
+        },
+      },
+    );
+    deliveredPublicId = created.PublicId;
+    assertEq(created.DeliveryError ?? null, null, 'sent without an error');
+
+    const list = await instanceList(surveyHashId, token);
+    const row = list.Value.find((i) => i.PublicID.toLowerCase() === deliveredPublicId.toLowerCase());
+    assert(row, 'listed');
+    assertEq(row!.IsTest, true, 'still flagged as a test');
+    assertEq(row!.Status, 1, 'Sent (ordinal 1)');
+  })();
+
+  await step('it personalizes from what the operator entered, not the examples', async () => {
+    const schema = await apiJson<{ screens: { description?: { en?: string } }[] }>(
+      'GET',
+      `/api/Surveys/SurveyInstances/${deliveredPublicId}/schema`,
+    );
+    assertEq(schema.screens[0]!.description?.en, 'Hello Aza', 'the entered value');
+  })();
+
+  await step('its response reaches the outbox marked as a test', async () => {
+    const r = await api('POST', `/api/Surveys/SurveyInstances/${deliveredPublicId}/responses`, {
+      body: { schemaVersion: publishedVersion, answers: { overall: 5, recommend: true }, meta: {} },
+    });
+    assert(r.ok, `submit accepted (${r.status})`);
+
+    const payload = sql(`
+      SELECT TOP 1 o.PayloadJson FROM [Surveys].[SurveyOutboxEvent] o
+      JOIN [Surveys].[SurveyInstance] i ON i.ID = o.SurveyInstanceID
+      WHERE i.PublicID = '${deliveredPublicId}';
+    `);
+    assert(payload.toLowerCase().includes('"istest":true'), `payload marked (got ${payload.slice(0, 200)})`);
+  })();
+
+  await step('a subscriber that did not opt in is not given it', async () => {
+    const r = await api('POST', '/api/Surveys/Triggers/scheduler/tick', { token });
+    assert(r.ok, `tick ran (${r.status})`);
+
+    const log = sql(`
+      SELECT TOP 1 CONCAT(o.Status, '|', ISNULL(o.DispatchLogJson, '')) FROM [Surveys].[SurveyOutboxEvent] o
+      JOIN [Surveys].[SurveyInstance] i ON i.ID = o.SurveyInstanceID
+      WHERE i.PublicID = '${deliveredPublicId}';
+    `);
+    assert(!log.includes('memory:default'), `the in-memory subscriber was skipped (got ${log})`);
+  })();
+}
+
 async function cleanup() {
   console.log('\nCleanup:');
-  const ids = [testPublicId, regularPublicId].filter(Boolean);
+  const ids = [testPublicId, regularPublicId, deliveredPublicId].filter(Boolean);
   for (const pid of ids) {
     try {
       sql(`
@@ -354,6 +440,7 @@ async function main() {
     await verifyCreateAndList();
     await verifyAnswerLoop();
     await verifyOutboxIsolation();
+    await verifyDeliveredTest();
     console.log('\nAll test-loop e2e checks passed ✔');
   } finally {
     await cleanup();
