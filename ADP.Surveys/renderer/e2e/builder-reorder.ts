@@ -22,7 +22,7 @@ const require = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const puppeteer = require('C:/tmp/screenshot-tool/node_modules/puppeteer-core');
 
-import { API, PASSWORD, USERNAME, apiJson, assert, assertEq, step } from './lib/util.js';
+import { API, apiJson, assert, assertEq, signIn, step } from './lib/util.js';
 
 const SHOT_DIR = 'C:/tmp/survey-renderer-shots/builder-reorder';
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
@@ -135,10 +135,7 @@ async function main() {
   const name = `e2e-builder-reorder-${Date.now()}`;
 
   await step('login + seed survey', async () => {
-    const login = await apiJson<{ Entity: { Token: string } }>('POST', '/api/Auth/Login', {
-      body: { Username: USERNAME, Password: PASSWORD },
-    });
-    token = login.Entity.Token;
+    token = await signIn();
     const created = await apiJson<{ Entity: { ID: string } }>('POST', '/api/Surveys/Survey', {
       token,
       body: { name, draft: draft('pending') },

@@ -102,6 +102,12 @@ mvcBuilder.AddShiftIdentityDashboard<DB>(
     new ShiftIdentityConfiguration
     {
         ShiftIdentityHostingType = ShiftIdentityHostingTypes.Internal,
+        // The identity authority (Settings:Authority): password sign-in lives on its api/identity/v2 routes.
+        // Settings:FactorProtection holds the keys that protect stored authenticators. It needs the identity
+        // security tables: a database EnsureCreated made before them stops the host at startup, so drop the
+        // sample's database once and let it be created again.
+        Authority = builder.Configuration.GetSection("Settings:Authority").Get<AuthoritySettingsModel>() ?? new(),
+        FactorProtection = builder.Configuration.GetSection("Settings:FactorProtection").Get<FactorProtectionSettings>() ?? new(),
         Token = new TokenSettingsModel
         {
             ExpireSeconds = builder.Configuration.GetValue<int>("Settings:TokenSettings:TokenExpirySeconds"),
@@ -236,7 +242,7 @@ app.MapControllers();
 // ShiftIdentity's auth + identity-server endpoints (login / refresh / MFA / auth-code, users,
 // company calendar, …). These used to be classic controllers picked up by MapControllers() above;
 // the 2026-07 framework release moved them to minimal APIs, which the host has to map explicitly.
-// Without this call POST api/Auth/Login does not exist — the request falls through to the
+// Without this call POST api/identity/v2/login does not exist — the request falls through to the
 // MapFallbackToFile below, so login fails in a way that looks like a routing bug rather than a
 // missing endpoint. Only hosts running ShiftIdentityHostingTypes.Internal (as this sample does)
 // need it; hosts that merely validate tokens issued by a separate identity service do not.

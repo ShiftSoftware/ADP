@@ -7,16 +7,13 @@
  * Safe to run even when nothing is seeded. Idempotent.
  */
 
-import { api, apiJson, sql, USERNAME, PASSWORD } from './lib/util.js';
+import { api, apiJson, signIn, sql } from './lib/util.js';
 
 const TAG = 'demo';
 
 async function main() {
   console.log('Tearing down demo surveys…\n');
-  const loginBody = await apiJson<{ Entity: { Token: string } }>('POST', '/api/Auth/Login', {
-    body: { Username: USERNAME, Password: PASSWORD },
-  });
-  const token = loginBody.Entity.Token;
+  const token = await signIn();
 
   // 1. Instance / response / answer rows keyed by the `demo:` survey name.
   try {

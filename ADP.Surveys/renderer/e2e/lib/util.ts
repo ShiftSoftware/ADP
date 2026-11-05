@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createHash, randomBytes } from 'node:crypto';
 
 /** Override with SURVEYS_API to drive a second Sample.API instance (e.g. one built into a scratch folder on another port). */
 export const API = process.env['SURVEYS_API'] ?? 'http://localhost:5134';
@@ -57,6 +58,20 @@ export async function apiJson<T = unknown>(
   const text = await r.text();
   if (!r.ok) throw new Error(`${method} ${path} → ${r.status}: ${text.slice(0, 500)}`);
   return text ? (JSON.parse(text) as T) : (undefined as T);
+}
+
+/** Signs in as the sample's built-in user and returns its access token. The code challenge only matters to a
+ *  sign-in with a further step, which these scripts do not continue. */
+export async function signIn(username: string = USERNAME, password: string = PASSWORD): Promise<string> {
+  const codeChallenge = createHash('sha256').update(randomBytes(32)).digest('base64url');
+  const body = await apiJson<{ session?: { token: string }; Session?: { Token: string } }>(
+    'POST',
+    '/api/identity/v2/login',
+    { body: { username, password, codeChallenge } },
+  );
+  const token = body.session?.token ?? body.Session?.Token;
+  if (!token) throw new Error('Sign-in returned no session. The account may need a further step.');
+  return token;
 }
 
 /** sqlcmd wrapper. `-h -1` strips headers, `-W` trims whitespace, `-s "\t"` picks a

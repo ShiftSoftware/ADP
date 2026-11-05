@@ -19,7 +19,7 @@
  * Run: npx tsx personalization.ts
  */
 
-import { API_SURVEYS, api, apiJson, assert, assertEq, sql, step, USERNAME, PASSWORD } from './lib/util.js';
+import { API_SURVEYS, api, apiJson, assert, assertEq, signIn, sql, step } from './lib/util.js';
 
 interface State {
   tag: string;
@@ -143,10 +143,7 @@ async function fetchSchema(publicId: string): Promise<any> {
 
 async function main() {
   await step('login', async () => {
-    const body = await apiJson<{ Entity: { Token: string } }>('POST', '/api/Auth/Login', {
-      body: { Username: USERNAME, Password: PASSWORD },
-    });
-    state.token = body.Entity.Token;
+    state.token = await signIn();
     assert(state.token.length > 50, 'got a token');
   })();
 

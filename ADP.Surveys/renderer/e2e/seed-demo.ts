@@ -11,7 +11,7 @@
  */
 
 import { apiJson, sql } from './lib/util.js';
-import { api, USERNAME, PASSWORD } from './lib/util.js';
+import { api, signIn } from './lib/util.js';
 
 const TAG = 'demo';
 
@@ -368,10 +368,7 @@ const SURVEYS: SurveyDef[] = [serviceFeedback, testDrive, deliveryExperience];
 interface Login { token: string; }
 
 async function login(): Promise<Login> {
-  const body = await apiJson<{ Entity: { Token: string } }>('POST', '/api/Auth/Login', {
-    body: { Username: USERNAME, Password: PASSWORD },
-  });
-  return { token: body.Entity.Token };
+  return { token: await signIn() };
 }
 
 async function ensureBank(token: string) {

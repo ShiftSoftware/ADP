@@ -16,7 +16,7 @@
  * (dedup recipe is dealerId+vin). Re-running is always safe.
  */
 
-import { api, apiJson, sql, USERNAME, PASSWORD } from './lib/util.js';
+import { api, apiJson, signIn, sql } from './lib/util.js';
 
 const INTEGRATION_ID = 'sf4-purchase-followup';
 const EVENT_KIND = 'vehicle-purchased';
@@ -30,10 +30,7 @@ interface IngestResult {
 async function main() {
   console.log('SF4 demo runner');
 
-  const auth = await apiJson<{ Entity: { Token: string } }>('POST', '/api/Auth/Login', {
-    body: { Username: USERNAME, Password: PASSWORD },
-  });
-  const token = auth.Entity.Token;
+  const token = await signIn();
   console.log('  ✔ logged in');
 
   const list = await apiJson<{ Value: { ID: string; Name: string }[] }>(
