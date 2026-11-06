@@ -1,4 +1,4 @@
-import { api, apiJson, assert, assertEq, sql, step, USERNAME, PASSWORD } from './util.js';
+import { api, apiJson, assert, assertEq, signIn, sql, step } from './util.js';
 
 export interface SeededState {
   readonly tag: string;
@@ -70,10 +70,7 @@ export async function seedSurvey(): Promise<SeededState> {
   };
 
   await step('login', async () => {
-    const body = await apiJson<{ Entity: { Token: string } }>('POST', '/api/Auth/Login', {
-      body: { Username: USERNAME, Password: PASSWORD },
-    });
-    state.token = body.Entity.Token;
+    state.token = await signIn();
     assert(state.token.length > 50, 'got a token');
   })();
 

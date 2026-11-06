@@ -15,7 +15,7 @@
  *   9. cleanup: hard-delete the instance, soft-delete the survey
  */
 
-import { api, apiJson, assert, assertEq, sql, step, USERNAME, PASSWORD } from './lib/util.js';
+import { api, apiJson, assert, assertEq, signIn, sql, step } from './lib/util.js';
 
 interface TriggerState {
   tag: string;
@@ -86,10 +86,7 @@ async function main() {
   state = { tag, token: '', surveyHashId: '', surveyName: `E2E CSI-GR ${tag}`, publishedVersion: 0 };
 
   await step('login', async () => {
-    const body = await apiJson<{ Entity: { Token: string } }>('POST', '/api/Auth/Login', {
-      body: { Username: USERNAME, Password: PASSWORD },
-    });
-    state!.token = body.Entity.Token;
+    state!.token = await signIn();
     assert(state!.token.length > 50, 'got a token');
   })();
 

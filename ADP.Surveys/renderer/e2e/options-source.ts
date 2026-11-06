@@ -21,7 +21,7 @@
  * SurveysSample DB reachable via sqlcmd.
  */
 
-import { api, apiJson, assert, assertEq, sql, step } from './lib/util.js';
+import { api, apiJson, assert, assertEq, signIn, sql, step } from './lib/util.js';
 
 const TAG = `e2e-src-${Date.now()}`;
 const CITY_BANK = `${TAG}-city`;
@@ -83,10 +83,7 @@ function draft(surveyId: string) {
 
 async function seed() {
   await step('login', async () => {
-    const body = await apiJson<{ Entity: { Token: string } }>('POST', '/api/Auth/Login', {
-      body: { Username: 'SuperUser', Password: 'OneTwo' },
-    });
-    token = body.Entity.Token;
+    token = await signIn();
     assert(token.length > 50, 'got a token');
   })();
 

@@ -83,6 +83,8 @@ builder.Services.AddShiftIdentityDashboardBlazor(x =>
     x.ShiftIdentityHostingType = ShiftIdentityHostingTypes.Internal;
     x.LogoPath = "/img/shift-full.png";
     x.Title = "ADP.Menus";
+    // Must match the API's Settings:Authority:Enabled: sign-in lives on the authority's routes.
+    x.StagedAuthority = true;
     x.DynamicTypeAuthActionExpander = () => Task.CompletedTask;
 });
 
