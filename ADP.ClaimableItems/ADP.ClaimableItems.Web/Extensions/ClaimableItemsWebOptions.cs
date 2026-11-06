@@ -36,7 +36,7 @@ public class ClaimableItemsWebOptions
 
     /// <summary>
     /// TypeAuth node that shows the contract form's Print button (the same node the API options take). Null →
-    /// shown on every issued contract.
+    /// shown on every saved contract.
     /// </summary>
     public BooleanAction? PrintContractAction { get; set; }
 

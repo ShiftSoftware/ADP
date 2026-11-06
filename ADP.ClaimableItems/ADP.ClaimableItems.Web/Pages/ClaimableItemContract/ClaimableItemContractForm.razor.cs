@@ -63,9 +63,8 @@ public partial class ClaimableItemContractForm
     private bool CanCancel => IsExisting && ReadOnly && Contract.Status == ClaimableItemContractStatus.Issued
         && CanWriteContracts && Allows(CIOptions.Value.CancelContractAction);
 
-    // Only an issued contract prints, cancelled ones included (the print says so).
-    private bool CanPrint => IsExisting && ReadOnly && Contract.Status != ClaimableItemContractStatus.Draft
-        && Allows(CIOptions.Value.PrintContractAction);
+    // Every saved contract prints; the print says when it is a draft or cancelled.
+    private bool CanPrint => IsExisting && ReadOnly && Allows(CIOptions.Value.PrintContractAction);
 
     private bool ShowLineActions => !ReadOnly || CanCancel;
 

@@ -51,16 +51,15 @@ public class ClaimableItemContractPrintTests
     }
 
     [Fact]
-    public async Task A_draft_is_not_printed()
+    public async Task A_draft_prints()
     {
         await using var services = BuildServices();
         var id = await SeedContractAsync(services, isDraft: true, contractCancelled: false);
 
         using var scope = services.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<ClaimableItemContractRepository>();
+        await using var pdf = await scope.ServiceProvider.GetRequiredService<ClaimableItemContractRepository>().PrintAsync(id.ToString());
 
-        var error = await Assert.ThrowsAsync<ShiftEntityException>(async () => await repository.PrintAsync(id.ToString()));
-        Assert.Contains("Only an issued contract", error.Message.Body);
+        AssertIsPdf(pdf);
     }
 
     private static void AssertIsPdf(Stream pdf)

@@ -57,6 +57,6 @@ Content-Type: application/json
 
 { "Reason": "Customer withdrew" }
 
-### A print link for an issued contract (open the returned URL)
+### A print link for a contract, draft or issued (open the returned URL)
 GET {{host}}/ClaimableItemContract/print-token/<id>
 Authorization: Bearer {{token}}

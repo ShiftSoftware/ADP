@@ -75,7 +75,7 @@ public class ClaimableItemContractController : ShiftEntitySecureControllerAsync<
         RunAsync(key, (repository, id, userId) => repository.CancelLineAsync(id, lineId, body?.Reason, userId));
 
     /// <summary>
-    /// The framework's print token (its route is inherited), issued only for an issued contract and, when the host
+    /// The framework's print token (its route is inherited), issued for a contract the user can read and, when the host
     /// sets <see cref="ClaimableItemsApiOptions.PrintContractAction"/>, only to a user who has it. The print itself is
     /// <see cref="ClaimableItemContractRepository.PrintAsync"/>.
     /// </summary>
@@ -95,12 +95,6 @@ public class ClaimableItemContractController : ShiftEntitySecureControllerAsync<
 
             if (contract is null)
                 return NotFound();
-
-            if (contract.IsDraft)
-                return BadRequest(new ShiftEntityResponse<ClaimableItemContractDTO>
-                {
-                    Message = new Message("Error", "Only an issued contract can be printed."),
-                });
         }
         catch (ShiftEntityException ex)
         {

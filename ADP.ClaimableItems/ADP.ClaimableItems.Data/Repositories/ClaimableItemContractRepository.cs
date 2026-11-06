@@ -154,7 +154,7 @@ public class ClaimableItemContractRepository
     }
 
     /// <summary>
-    /// Prints an issued contract (a draft is refused). The template is the module's embedded one unless
+    /// Prints a contract; a draft is marked as one on the page, so it cannot pass for a sold contract. The template is the module's embedded one unless
     /// <see cref="ClaimableItemsReportOverrides.ClaimableItemContractFrxPath"/> replaces it; the company name, logo
     /// and contact details come from the host's <see cref="Cases.Shared.Printing.ICompanyInfoProvider"/>. Cancelled
     /// lines are listed and marked, and left out of the total. Amounts are in the menu's currency.
@@ -172,9 +172,6 @@ public class ClaimableItemContractRepository
 
         var contract = await FindContractAsync(hashIdService.Decode<ClaimableItemContractDTO>(id), disableDefaultDataLevelAccess: true);
 
-        if (contract.IsDraft)
-            throw Error("Only an issued contract can be printed.");
-
         var language = string.IsNullOrWhiteSpace(contract.MenuLanguage) ? ClaimableItemContractMenuService.DefaultLanguage : contract.MenuLanguage;
         var today = menuService.Today;
 
@@ -182,7 +179,7 @@ public class ClaimableItemContractRepository
         var dealer = contract.CompanyID is { } companyId ? (await companyInfoProvider.GetDealerAsync(language, companyId)).Name : null;
         var branch = contract.CompanyBranchID is { } branchId ? (await companyInfoProvider.GetBranchAsync(language, branchId)).Name : null;
 
-        var status = contract.IsCancelled ? "Cancelled" : contract.EndDate.Date < today ? "Expired" : "Issued";
+        var status = contract.IsDraft ? "Draft" : contract.IsCancelled ? "Cancelled" : contract.EndDate.Date < today ? "Expired" : "Issued";
 
         var lines = contract.Lines
             .Where(x => !x.IsDeleted)
@@ -222,7 +219,7 @@ public class ClaimableItemContractRepository
                 x.Description,
                 Type = Describe(x.LineType),
                 ExpireDate = dateFormatter.GetFormattedDate(x.ExpireDate),
-                Status = x.IsCancelled ? "Cancelled" : x.ExpireDate?.Date < today ? "Expired" : "Active",
+                Status = contract.IsDraft ? "Draft" : x.IsCancelled ? "Cancelled" : x.ExpireDate?.Date < today ? "Expired" : "Active",
                 Price = x.PriceWithIncrement.ToString("N2"),
             }).ToList<object>())
             .AddDataObject("Footer", new
@@ -237,7 +234,9 @@ public class ClaimableItemContractRepository
                 (report.FindObject("TextFooterAddress") as FastReport.TextObject)!.Text = distributor.Address;
                 (report.FindObject("TextFooterContactDetails") as FastReport.TextObject)!.Text = $"{distributor.Phone}\r\n{distributor.Website}";
 
-                if (contract.IsCancelled)
+                if (contract.IsDraft)
+                    (report.FindObject("TextDocumentTitle") as FastReport.TextObject)!.Text = "Service Contract - DRAFT";
+                else if (contract.IsCancelled)
                     (report.FindObject("TextDocumentTitle") as FastReport.TextObject)!.Text = "Service Contract - CANCELLED";
 
                 // The contract number and the VIN, so a scan finds the contract and shows which vehicle it belongs to.
