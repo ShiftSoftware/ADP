@@ -27,10 +27,29 @@ ADP (Auto Distributor Platform) by ShiftSoftware. A multi-project .NET solution 
 > replaced, and older pages move to that layout when they are reworked. Read the relevant guide in full
 > before touching a form field or a docs page.
 >
-> **Forms:** the current form logic is **untouched**: no edits to `src/components/forms/**`,
-> `src/features/form-hook/**`, `form-elements/form-*` or `form-elements/branch-*`, not even additive ones.
-> New `shift-*` components may use `form-hook` as it is. Forms v2 (`"version": "2.0"`) will be a separate
-> form component. Read `.shift/repos/adp/web-components/forms-v2/PLAN.md` before any forms work.
+> **Forms:** the current forms are the only forms — forms v2 was rejected (2026-10-27). Their **logic** stays
+> untouched: no behaviour change in `src/components/forms/**`, `src/features/form-hook/**`,
+> `form-elements/form-*` or `form-elements/branch-*` — mappers, validation, submitted values, events and
+> `part` attributes stay exactly as they are, proven by `src/features/form-hook/v1-freeze.spec.tsx`.
+> **Styling** in those paths may change, and only as a plain-CSS migration with no visual change (the styling
+> rule below). New `shift-*` components may use `form-hook` as it is. Read
+> `.shift/repos/adp/web-components/plain-css-migration/november-2026-plan.md` before touching a form file.
+>
+> **Owner rules for every agent (2026-10-27):**
+> - **Icons** are components, one per glyph, in `src/global/assets/<name>-icon.tsx`, imported as
+>   `~assets/<name>-icon` and sized by a class, like the existing ones. Reuse one before adding one. Never
+>   inline `<svg>`, never path strings; `glyphs.ts` is legacy and nothing new goes in it. Read
+>   `.shift/repos/adp/web-components/icons.md` before drawing any glyph.
+> - **Comments** are as sparse as the code around them: a short line only where the why is not obvious.
+>   No narration of what the code does, no design essays in doc comments.
+> - **Tests**: as few as possible, important UI behaviour only. Never touch `ADP.TestData` or the
+>   generated mock JSON (`src/features/mocks/data/generated/`), and never rewrite existing tests or
+>   snapshots (no `jest -u`).
+> - **No demo or sample data in anything that ships.** Components are generic for every company; showcase
+>   data stays in the dev showcase, never in `src/components/` or `src/features/`.
+> - **Stay in scope.** Do not change a component the task does not name, even to share code with it; ask first.
+> - **Expanding never scrolls the page** (accordion, drawer, sheet, popover): no `scrollIntoView`,
+>   `revealBelow` or `window.scrollTo` on expand; focus with `focus({ preventScroll: true })`.
 
 ## Build & Test Commands
 
