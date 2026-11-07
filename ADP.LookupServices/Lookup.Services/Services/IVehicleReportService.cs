@@ -17,9 +17,9 @@ public interface IVehicleReportService
     Task<IEnumerable<VehicleSscReportModel>> GetVehicleSscReportAsync(IEnumerable<string> vins = null, int? distinctVinCount = null);
     Task<int> ExportVehicleSscReportToCsvAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null, int batchSize = 1000);
     Task<int> ExportVehicleSscReportToParquetAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null, int batchSize = 1000);
-    Task<IEnumerable<VehicleLookupTopLevelReportModel>> GetVehicleLookupTopLevelReportAsync(IEnumerable<string> vins = null, int? distinctVinCount = null);
-    Task<int> ExportVehicleLookupTopLevelReportToCsvAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null, int batchSize = 1000);
-    Task<int> ExportVehicleLookupTopLevelReportToParquetAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null, int batchSize = 1000);
+    Task<IEnumerable<VehicleLookupTopLevelReportModel>> GetVehicleLookupTopLevelReportAsync(IEnumerable<string> vins = null, int? distinctVinCount = null, VehicleLookupRequestOptions requestOptions = null);
+    Task<int> ExportVehicleLookupTopLevelReportToCsvAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null, int batchSize = 1000, VehicleLookupRequestOptions requestOptions = null);
+    Task<int> ExportVehicleLookupTopLevelReportToParquetAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null, int batchSize = 1000, VehicleLookupRequestOptions requestOptions = null);
     Task<(List<VehicleServiceHistoryLaborReportModel> LaborReports, List<VehicleServiceHistoryPartReportModel> PartReports)> GetVehicleServiceHistoryReportsAsync(IEnumerable<string> vins = null, int? distinctVinCount = null);
     Task<(int LaborRowCount, int PartRowCount)> ExportVehicleServiceHistoryReportsToCsvAsync(string laborFileFullPath, string partFileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null, int batchSize = 1000);
     Task<(int LaborRowCount, int PartRowCount)> ExportVehicleServiceHistoryReportsToParquetAsync(string laborFileFullPath, string partFileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null, int batchSize = 1000);

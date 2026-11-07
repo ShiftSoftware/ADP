@@ -282,6 +282,9 @@ const DEFAULTS = {
   // what its component actually needs — `has: vehicle => vehicle.accessories?.length`
   // — and the rest are counted out rather than sitting there rendering nothing.
   has: null,
+  // Vehicles only this page shows, added to every environment: a state the generated fixtures
+  // cannot reach, such as a field only some hosts turn on.
+  extraFixtures: null,
   languages: ['en', 'ku', 'ar', 'ru'],
   rtl: ['ar', 'ku'],
   platforms: [
@@ -614,7 +617,7 @@ window.harness = function harness(options = {}) {
         const response = await fetch(mockUrl);
         if (!response.ok) throw new Error(`${response.status}`);
 
-        const data = (await response.json()) ?? {};
+        const data = { ...((await response.json()) ?? {}), ...config.extraFixtures };
         if (request !== this.environmentRequest) return;
 
         this.data = data;

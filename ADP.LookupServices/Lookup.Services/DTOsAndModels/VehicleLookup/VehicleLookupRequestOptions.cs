@@ -68,6 +68,11 @@ public class VehicleLookupRequestOptions
     public bool GeneratePaintThicknessCertificateUrls { get; set; }
     /// <summary>Whether to use Katashiki instead of VariantCode for vehicle model lookup.</summary>
     public bool UseKatashikiLookup { get; set; }
+    /// <summary>
+    /// Whether to fill <see cref="VehicleLookupDTO.VinDecode"/> for a VIN the distributor has no record of. It adds
+    /// one read per such VIN. Off by default, so bulk runs and reports pay nothing and see no new field.
+    /// </summary>
+    public bool DecodeUnauthorizedVin { get; set; }
 
     /// <summary>
     /// When true, the service item evaluator records a structured

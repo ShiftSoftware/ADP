@@ -31,6 +31,7 @@ public sealed class PreloadedReferenceStorage : IVehicleLookupStorageService
     private readonly Dictionary<(string Code, long? Brand), ColorModel> interiorColors;
     private readonly Dictionary<string, List<TBP_StockModel>> brokerStockByVin;
     private readonly Dictionary<(string CustomerId, long? CompanyId), CustomerModel> customers;
+    private readonly Dictionary<(string Wmi, string Vds), VinModelMappingModel> vinModelMappings;
 
     public sealed class Options
     {
@@ -38,6 +39,8 @@ public sealed class PreloadedReferenceStorage : IVehicleLookupStorageService
         public bool LoadBrokerStock { get; set; } = true;
         /// <summary>Load the customers the vehicle entries name (never the whole customer table).</summary>
         public bool LoadCustomers { get; set; } = true;
+        /// <summary>Load the VIN model mappings. Only a host that decodes unauthorized VINs has the table, so it opts in.</summary>
+        public bool LoadVinModelMappings { get; set; }
 
         // The SELECT per reference table. The defaults are a read snapshot's bare tables, as the
         // per-VIN storage names them; a source binding (BulkLookupSource) points them at its own
@@ -49,6 +52,7 @@ public sealed class PreloadedReferenceStorage : IVehicleLookupStorageService
         public string InteriorColorsSql { get; set; } = "SELECT * FROM InteriorColor";
         public string BrokerStockSql { get; set; } = "SELECT * FROM TBP_BrokerStock";
         public string CustomersSql { get; set; } = "SELECT c.* FROM Customer c WHERE c.CustomerID IN (SELECT DISTINCT CustomerID FROM VehicleEntry WHERE CustomerID IS NOT NULL)";
+        public string VinModelMappingsSql { get; set; } = "SELECT * FROM VinModelMapping";
     }
 
     public sealed class LoadReport
@@ -59,6 +63,7 @@ public sealed class PreloadedReferenceStorage : IVehicleLookupStorageService
         public int InteriorColors { get; set; }
         public int BrokerStockRows { get; set; }
         public int Customers { get; set; }
+        public int VinModelMappings { get; set; }
         public TimeSpan Elapsed { get; set; }
     }
 
@@ -68,7 +73,8 @@ public sealed class PreloadedReferenceStorage : IVehicleLookupStorageService
         Dictionary<(string, long?), ColorModel> exteriorColors,
         Dictionary<(string, long?), ColorModel> interiorColors,
         Dictionary<string, List<TBP_StockModel>> brokerStockByVin,
-        Dictionary<(string, long?), CustomerModel> customers)
+        Dictionary<(string, long?), CustomerModel> customers,
+        Dictionary<(string, string), VinModelMappingModel> vinModelMappings)
     {
         this.serviceItems = serviceItems;
         this.vehicleModels = vehicleModels;
@@ -76,6 +82,7 @@ public sealed class PreloadedReferenceStorage : IVehicleLookupStorageService
         this.interiorColors = interiorColors;
         this.brokerStockByVin = brokerStockByVin;
         this.customers = customers;
+        this.vinModelMappings = vinModelMappings;
         modelByVariantAndBrand = new Dictionary<(string, long?), VehicleModelModel>();
         foreach (var model in vehicleModels)
         {
@@ -100,6 +107,7 @@ public sealed class PreloadedReferenceStorage : IVehicleLookupStorageService
         var interior = Read<ColorModel>(connection, options.InteriorColorsSql);
         var stock = options.LoadBrokerStock ? Read<TBP_StockModel>(connection, options.BrokerStockSql) : new List<TBP_StockModel>();
         var customers = options.LoadCustomers ? Read<CustomerModel>(connection, options.CustomersSql) : new List<CustomerModel>();
+        var mappings = options.LoadVinModelMappings ? Read<VinModelMappingModel>(connection, options.VinModelMappingsSql) : new List<VinModelMappingModel>();
 
         var exteriorByKey = new Dictionary<(string, long?), ColorModel>();
         foreach (var color in exterior)
@@ -125,9 +133,15 @@ public sealed class PreloadedReferenceStorage : IVehicleLookupStorageService
             var key = (customer.CustomerID, customer.CompanyID);
             if (customer.CustomerID is not null && !customerByKey.ContainsKey(key)) customerByKey[key] = customer;
         }
+        var mappingByKey = new Dictionary<(string, string), VinModelMappingModel>();
+        foreach (var mapping in mappings)
+        {
+            var key = (mapping.WMI, mapping.VDS);
+            if (mapping.WMI is not null && mapping.VDS is not null && !mappingByKey.ContainsKey(key)) mappingByKey[key] = mapping;
+        }
 
         clock.Stop();
-        return new PreloadedReferenceStorage(serviceItems, models, exteriorByKey, interiorByKey, stockByVin, customerByKey)
+        return new PreloadedReferenceStorage(serviceItems, models, exteriorByKey, interiorByKey, stockByVin, customerByKey, mappingByKey)
         {
             Report = new LoadReport
             {
@@ -137,6 +151,7 @@ public sealed class PreloadedReferenceStorage : IVehicleLookupStorageService
                 InteriorColors = interior.Count,
                 BrokerStockRows = stock.Count,
                 Customers = customers.Count,
+                VinModelMappings = mappings.Count,
                 Elapsed = clock.Elapsed,
             },
         };
@@ -150,7 +165,7 @@ public sealed class PreloadedReferenceStorage : IVehicleLookupStorageService
     public PreloadedReferenceStorage ForWorker()
     {
         var copy = JsonSerializer.Deserialize<List<ServiceItemModel>>(JsonSerializer.Serialize(serviceItems)) ?? new List<ServiceItemModel>();
-        return new PreloadedReferenceStorage(copy, vehicleModels, exteriorColors, interiorColors, brokerStockByVin, customers) { Report = Report };
+        return new PreloadedReferenceStorage(copy, vehicleModels, exteriorColors, interiorColors, brokerStockByVin, customers, vinModelMappings) { Report = Report };
     }
 
     private static List<T> Read<T>(DuckDBConnection connection, string sql) where T : new()
@@ -218,6 +233,14 @@ public sealed class PreloadedReferenceStorage : IVehicleLookupStorageService
             return Task.FromResult<CustomerModel>(null);
         customers.TryGetValue((customerID, companyID), out var customer);
         return Task.FromResult(customer);
+    }
+
+    public Task<VinModelMappingModel> GetVinModelMappingAsync(string wmi, string vds)
+    {
+        if (wmi is null || vds is null)
+            return Task.FromResult<VinModelMappingModel>(null);
+        vinModelMappings.TryGetValue((wmi, vds), out var mapping);
+        return Task.FromResult(mapping);
     }
 
     // The per-VIN path reads brokers from a table no snapshot to date has carried; the evaluators that

@@ -73,3 +73,5 @@ One row per vehicle in the top-level vehicle report: the lookup's headline field
 | VehicleSpecInteriorColor <div><strong>``string``</strong></div> |  |
 | ClassificationCodes <div><strong>``string``</strong></div> | The classification codes the lookup resolved, in its order, separated by a semicolon and a space. These are the stable values to filter on. Empty when the host resolves none or configures no classifier. |
 | ClassificationLabels <div><strong>``string``</strong></div> | The display labels of `ClassificationCodes`, in the same order and with the same separator. A classification without a label shows its code. Display text only; filter on the codes. |
+| VinDecodeKatashiki <div><strong>``string``</strong></div> | The base Katashiki read from the VIN of a vehicle the distributor has no record of, when the request asked for it. Inferred, so it stays apart from `IdentifiersKatashiki`. |
+| VinDecodeModelDescription <div><strong>``string``</strong></div> | The model name read from the VIN of a vehicle the distributor has no record of, when the request asked for it. Inferred, so it stays apart from `VehicleSpecModelDescription`. |

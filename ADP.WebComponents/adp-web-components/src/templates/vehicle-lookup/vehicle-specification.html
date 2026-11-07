@@ -39,7 +39,9 @@
          * rendering the same thing as its neighbour.
          */
         labelsOnly: true,
-        labels: window.harnessTags('vehicle-specification'),
+        labels: { ...window.harnessTags('vehicle-specification'), ...window.decodedFixtureTags },
+        /* Decoding is a host's opt-in, so no generated environment reaches this state. */
+        extraFixtures: window.decodedFixtures,
         /*
          * The panel's own `hasRecords`, by value rather than by object: the evaluators build
          * `identifiers` and `vehicleSpecification` for every VIN, so testing the objects would keep
@@ -90,6 +92,10 @@
             code with no resolved name reads as the code, which is a complete answer and not a degraded one.
           </p>
           <p class="text-base-content/70 mt-2 text-sm">
+            A vehicle the distributor has no record of reads blank, unless the host asks the lookup to decode the VIN and has a row for its first 8 characters. Then the model and
+            the katashiki take their usual slots, and the pill says they were decoded from the VIN.
+          </p>
+          <p class="text-base-content/70 mt-2 text-sm">
             Each fixture chip says which state it reaches. <strong class="text-accent">Empty</strong> clears the panel back to idle and <strong class="text-accent">Error</strong>
             raises one on a settled card — the edge that has to go through the head's leave. Switch the Environment control in the rail to reach the fixtures from another
             environment.
@@ -133,6 +139,18 @@
        * over those props; the log is fed from here instead.
        */
       const report = (label, detail) => window.dispatchEvent(new CustomEvent('harness:log', { detail: { label, detail } }));
+
+      const decodedVehicle = (vin, vinDecode) => ({ vin, isAuthorized: false, identifiers: { vin }, vehicleVariantInfo: {}, vehicleSpecification: {}, vinDecode });
+
+      window.decodedFixtures = {
+        ZV8DECODEDVIN0001: decodedVehicle('ZV8DECODEDVIN0001', { katashiki: 'TLR200', modelDescription: 'TALORA' }),
+        ZV8DECODEDVIN0002: decodedVehicle('ZV8DECODEDVIN0002', { katashiki: null, modelDescription: 'TALORA' }),
+      };
+
+      window.decodedFixtureTags = {
+        ZV8DECODEDVIN0001: 'not in distributor records · decoded from the VIN',
+        ZV8DECODEDVIN0002: 'decoded from the VIN · no single katashiki',
+      };
 
       const blazorCallbacks = {
         blazorErrorCallback: error => report('error', error),

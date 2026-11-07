@@ -7,7 +7,16 @@ import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup
 
 import specificationSchema from '~locales/vehicleLookup/specification/type';
 
-import { DetailGroup, SpecificationRecord, VehicleSpecificationPanel, detailGroups, hasRecords, identityCells } from './components/VehicleSpecificationPanel';
+import {
+  DetailGroup,
+  SpecificationRecord,
+  VehicleSpecificationPanel,
+  decodedValues,
+  decodedVerdict,
+  detailGroups,
+  hasRecords,
+  identityCells,
+} from './components/VehicleSpecificationPanel';
 
 import { VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
 import { VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
@@ -22,9 +31,10 @@ const DEFAULT_SETTLE_MS = 480;
  * The build record for a VIN: what this vehicle *is* — model, year, grade, and the codes a parts
  * counter or a claim form asks for.
  *
- * It reads five sub-objects and no others (`SpecificationRecord`). Two facts decide what it may
- * say: `isAuthorized === false` means the distributor has no record, so every value dashes; and an
- * *empty* record is not a record, so `hasRecords` counts values rather than objects.
+ * It reads the sub-objects in `SpecificationRecord` and no others. Two facts decide what it may
+ * say: `isAuthorized === false` means the distributor has no record, so every value stays blank
+ * except what the API marks as read from the VIN; and an *empty* record is not a record, so
+ * `hasRecords` counts values rather than objects.
  */
 @Component({
   shadow: true,
@@ -262,7 +272,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   private signature(): string {
     const record = this.record();
     const readable = !!record?.vin && !this.isError && record.isAuthorized !== false;
-    const cells = identityCells(record, this.locale, this.locale.sharedLocales.lang, readable);
+    const cells = identityCells(record, this.locale, this.locale.sharedLocales.lang, readable, decodedValues(record, this.isError));
 
     return [
       this.isLoading || this.leaving,
@@ -309,7 +319,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
   // #endregion
 
   /**
-   * The response narrowed to the five sub-objects the panel may read. Everything downstream — the
+   * The response narrowed to the sub-objects the panel may read. Everything downstream — the
    * render, `hasRecords`, the signature — takes this, so a field outside the barrier has no way in.
    */
   private record(): SpecificationRecord | undefined {
@@ -322,6 +332,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
       identifiers: dto.identifiers,
       vehicleVariantInfo: dto.vehicleVariantInfo,
       vehicleSpecification: dto.vehicleSpecification,
+      vinDecode: dto.vinDecode,
     };
   }
 
@@ -329,15 +340,17 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
     const record = this.record();
     const error = this.isError ? this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard : undefined;
 
-    const verdict = recordVerdict({
-      locale: this.locale.sharedLocales,
-      error,
-      vehicleLoaded: !!record?.vin,
-      authorized: record?.isAuthorized,
-      // By value, not by object: the evaluators hand back `{}` for a VIN they know nothing about,
-      // and a green accent over a blank card is a verdict read off an absence.
-      hasRecords: hasRecords(record),
-    });
+    const verdict = decodedValues(record, this.isError)
+      ? decodedVerdict(this.locale)
+      : recordVerdict({
+          locale: this.locale.sharedLocales,
+          error,
+          vehicleLoaded: !!record?.vin,
+          authorized: record?.isAuthorized,
+          // By value, not by object: the evaluators hand back `{}` for a VIN they know nothing about,
+          // and a green accent over a blank card is a verdict read off an absence.
+          hasRecords: hasRecords(record),
+        });
     this.currentVerdict = verdict.accent;
 
     // The wrapper's phase follows the panel's: the head leaves and the covers come up whenever a

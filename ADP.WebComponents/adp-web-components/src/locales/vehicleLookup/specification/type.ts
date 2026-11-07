@@ -34,6 +34,7 @@ const specification = object({}).concat(
     'expandDetails',
     'collapseDetails',
     'unauthorizedNotice',
+    'decodedFromVin',
   ]),
 );
 

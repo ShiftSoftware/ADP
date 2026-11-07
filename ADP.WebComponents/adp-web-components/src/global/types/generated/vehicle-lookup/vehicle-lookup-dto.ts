@@ -4,6 +4,7 @@ import type { VehicleSaleInformation } from './vehicle-sale-information';
 import type { PaintThicknessInspectionDTO } from './paint-thickness-inspection-dto';
 import type { PaintThicknessCertificateUrlDTO } from './paint-thickness-certificate-url-dto';
 import type { LegacyPaintThicknessDTO } from './legacy-paint-thickness-dto';
+import type { VehicleVinDecodeDTO } from './vehicle-vin-decode-dto';
 import type { VehicleWarrantyDTO } from './vehicle-warranty-dto';
 import type { VehicleServiceHistoryDTO } from './vehicle-service-history-dto';
 import type { SscDTO } from './ssc-dto';
@@ -22,6 +23,7 @@ export type VehicleLookupDTO = {
     paintThicknessCertificateUrls: PaintThicknessCertificateUrlDTO[];
     paintThickness: LegacyPaintThicknessDTO;
     isAuthorized: boolean;
+    vinDecode: VehicleVinDecodeDTO;
     warranty: VehicleWarrantyDTO;
     nextServiceDate?: string;
     serviceHistory: VehicleServiceHistoryDTO[];

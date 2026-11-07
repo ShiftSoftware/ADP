@@ -29,6 +29,7 @@ public class NoSQLConstants
         public const string ExteriorColors = "ExteriorColors";
         public const string InteriorColors = "InteriorColors";
         public const string VehicleModels = "VehicleModels";
+        public const string VinModelMappings = "VinModelMappings";
 
         /// <summary>
         /// Service menus, replicated per row from the menus database. Hierarchical partition key: the
@@ -92,6 +93,11 @@ public class NoSQLConstants
         {
             public const string Level1 = "/" + nameof(VehicleModelModel.VariantCode);
             public const string Level2 = "/" + nameof(VehicleModelModel.BrandID);
+        }
+
+        public class VinModelMappings
+        {
+            public const string Level1 = "/" + nameof(VinModelMappingModel.WMI);
         }
 
         //public class Stock

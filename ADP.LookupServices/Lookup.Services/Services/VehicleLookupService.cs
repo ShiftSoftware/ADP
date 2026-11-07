@@ -176,6 +176,9 @@ public class VehicleLookupService
             SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, lookupOptions, serviceProvider, vehicleLookupStorageService).Evaluate(vehicle, ownership, requestOptions),
         };
 
+        if (!data.IsAuthorized && requestOptions.DecodeUnauthorizedVin)
+            data.VinDecode = await new VehicleVinDecodeEvaluator(vehicleLookupStorageService).Evaluate(vin);
+
         // Enrich SSC recall parts with in-stock availability. This only does anything when the host has wired
         // LookupOptions.SSCPartStockScopeResolver (i.e. a Hub request that carries a region/branch scope);
         // anonymous, bulk and reporting callers leave it unset, so no stock read runs and IsAvailable stays

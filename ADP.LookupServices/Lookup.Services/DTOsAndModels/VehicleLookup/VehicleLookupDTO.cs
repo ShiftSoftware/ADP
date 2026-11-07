@@ -72,6 +72,16 @@ public class VehicleLookupDTO
     public bool IsAuthorized { get; set; }
 
     /// <summary>
+    /// What the VIN's first 8 characters say about a vehicle the distributor has no record of. Set only when
+    /// <see cref="IsAuthorized"/> is false, the request asked for it and the host has a row for those characters.
+    /// It is inferred, so nothing else reads it: <see cref="Identifiers"/>, <see cref="VehicleSpecification"/>
+    /// and everything derived from them stay empty.
+    /// </summary>
+    [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+    [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public VehicleVinDecodeDTO VinDecode { get; set; }
+
+    /// <summary>
     /// The vehicle's <see cref="VehicleWarrantyDTO">warranty information</see> including start/end dates and extended warranty.
     /// </summary>
     public VehicleWarrantyDTO Warranty { get; set; }

@@ -33,6 +33,7 @@ public class DuckDBVehicleLookupStorageService(global::DuckDB.NET.Data.DuckDBCon
     private readonly ConcurrentDictionary<(string TrimCode, long? Brand), ColorModel> interiorColorCache = new();
     private readonly ConcurrentDictionary<(string CustomerId, long? CompanyId), CustomerModel> customerCache = new();
     private readonly ConcurrentDictionary<(long? BrandId, string Vin), List<TBP_StockModel>> brokerStockCache = new();
+    private readonly ConcurrentDictionary<(string Wmi, string Vds), VinModelMappingModel> vinModelMappingCache = new();
 
     #region Aggregated Company Data
 
@@ -549,6 +550,26 @@ public class DuckDBVehicleLookupStorageService(global::DuckDB.NET.Data.DuckDBCon
         var first = items.FirstOrDefault();
         if (first is not null)
             vehicleModelCache[cacheKey] = first;
+
+        return first;
+    }
+
+    public async Task<VinModelMappingModel> GetVinModelMappingAsync(string wmi, string vds)
+    {
+        if (string.IsNullOrWhiteSpace(wmi) || string.IsNullOrWhiteSpace(vds))
+            return null;
+
+        var cacheKey = (wmi, vds);
+
+        if (vinModelMappingCache.TryGetValue(cacheKey, out var cachedMapping))
+            return cachedMapping;
+
+        var items = await ExecuteQueryAsync<VinModelMappingModel>(
+            $"SELECT * FROM VinModelMapping WHERE WMI = '{EscapeSql(wmi)}' AND VDS = '{EscapeSql(vds)}'");
+
+        var first = items.FirstOrDefault();
+        if (first is not null)
+            vinModelMappingCache[cacheKey] = first;
 
         return first;
     }

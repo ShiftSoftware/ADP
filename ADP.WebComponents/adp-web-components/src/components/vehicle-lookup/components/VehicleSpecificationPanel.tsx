@@ -15,14 +15,14 @@ export type SpecificationLocale = InferType<typeof specificationSchema>;
  * campaigns, service history, sales, paint readings and accessories are other panels' questions.
  * `identifiers.brandID` is an internal hash id — never rendered, spoken, titled or logged.
  */
-export type SpecificationRecord = Pick<VehicleLookupDTO, 'vin' | 'isAuthorized' | 'identifiers' | 'vehicleVariantInfo' | 'vehicleSpecification'>;
+export type SpecificationRecord = Pick<VehicleLookupDTO, 'vin' | 'isAuthorized' | 'identifiers' | 'vehicleVariantInfo' | 'vehicleSpecification' | 'vinDecode'>;
 
 /** What the strip — the band between the head and the body — shows. */
 
-/** Everything the panel's strip is decided from. The pill and the accent are the family's `recordVerdict`. */
+/** Everything the panel's strip is decided from. The pill and the accent are the family's `recordVerdict`, or `decodedVerdict`. */
 export type SpecPanelState = {
   locale: SpecificationLocale;
-  /** The five allowed sub-objects; `undefined` before any lookup and after a clear. */
+  /** The allowed sub-objects; `undefined` before any lookup and after a clear. */
   record?: SpecificationRecord;
   /** The lookup failed: the translated message, which the pill carries in the negative tone. */
   error?: string;
@@ -133,6 +133,24 @@ const recordValues = (record?: SpecificationRecord): string[] => {
  */
 export const hasRecords = (record?: SpecificationRecord): boolean => recordValues(record).some(Boolean);
 
+export type DecodedValues = { model: string; katashiki: string };
+
+/**
+ * The one thing the panel may say about a vehicle the distributor has no record of: the API marks
+ * these as read from the VIN, not as the distributor's. `hasRecords` never counts them.
+ */
+export const decodedValues = (record: SpecificationRecord | undefined, isError: boolean): DecodedValues | undefined => {
+  if (isError || !record?.vin || record.isAuthorized !== false) return undefined;
+
+  const model = normalise(record.vinDecode?.modelDescription);
+  const katashiki = normalise(record.vinDecode?.katashiki);
+
+  return model || katashiki ? { model, katashiki } : undefined;
+};
+
+/** Amber, a statement without a verdict: without it nothing says where the values came from. */
+export const decodedVerdict = (locale: SpecificationLocale): PanelVerdict => ({ state: 'neutral', text: locale.decodedFromVin, accent: 'neutral' });
+
 /**
  * One labelled value: `text`, an optional smaller `note`, or `colour` for the two code+name cells.
  */
@@ -197,8 +215,8 @@ export const productionMonth = (raw: string | undefined, lang: string): string =
 
 /**
  * Tier 1 — the identity grid: the same eight titled slots in every state, only their values change.
- * `readable` false (no vehicle, an error, or no record) empties every cell; the renderer decides
- * whether that reads as a dash ("nothing here") or a blank ("no vehicle yet").
+ * `readable` false (no vehicle, an error, or no record) empties every cell but what `decoded` holds;
+ * the renderer decides whether an empty cell reads as a dash ("nothing here") or a blank ("no vehicle yet").
  */
 export const exteriorColour = (record: SpecificationRecord | undefined): SpecColour => ({
   code: normalise(record?.identifiers?.color),
@@ -208,7 +226,7 @@ export const exteriorColour = (record: SpecificationRecord | undefined): SpecCol
   name: normalise(record?.vehicleSpecification?.exteriorColor),
 });
 
-export const identityCells = (record: SpecificationRecord | undefined, locale: SpecificationLocale, lang: string, readable: boolean): SpecCell[] => {
+export const identityCells = (record: SpecificationRecord | undefined, locale: SpecificationLocale, lang: string, readable: boolean, decoded?: DecodedValues): SpecCell[] => {
   const spec = readable ? record?.vehicleSpecification : undefined;
   const variant = readable ? record?.vehicleVariantInfo : undefined;
   const identifiers = readable ? record?.identifiers : undefined;
@@ -223,7 +241,7 @@ export const identityCells = (record: SpecificationRecord | undefined, locale: S
   return [
     { key: 'modelCode', label: locale.modelCode, role: 'code', text: same(modelCode, headValue(readable ? record : undefined)) ? '' : modelCode },
     { key: 'variant', label: locale.variant, role: 'code', text: normalise(identifiers?.variant) },
-    { key: 'katashiki', label: locale.katashiki, role: 'code', text: normalise(identifiers?.katashiki) },
+    { key: 'katashiki', label: locale.katashiki, role: 'code', text: decoded?.katashiki || normalise(identifiers?.katashiki) },
     {
       key: 'modelYear',
       label: locale.modelYear,
@@ -358,9 +376,9 @@ const SpecCellValue: FunctionalComponent<{ cell: SpecCell }> = ({ cell }) => {
   );
 };
 
-/** The head's statement: what the vehicle is, in the distributor's words. Empty in every state the panel may not speak for. */
-export const headStatement = (record: SpecificationRecord | undefined, readable: boolean) => ({
-  value: readable ? headValue(record) : '',
+/** The head's statement: what the vehicle is, in the distributor's words or what the VIN says. Empty in every other state the panel may not speak for. */
+export const headStatement = (record: SpecificationRecord | undefined, readable: boolean, decoded?: DecodedValues) => ({
+  value: readable ? headValue(record) : (decoded?.model ?? ''),
   year: readable ? modelYearOf(record).year : undefined,
   // The grade is the variant *description*. Never `identifiers.variant`: that is a code, and codes
   // are the body's — the head reads the words, the body reads the codes.
@@ -384,13 +402,14 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
 
   const vehicleLoaded = !!record?.vin && !error;
   /**
-   * Whether the panel may speak for this vehicle at all. An unauthorized VIN reads `—` everywhere
+   * Whether the panel may speak for this vehicle at all. An unauthorized VIN reads blank
    * *whatever the DTO carries*: the distributor has no record of it, so nothing in the response is
-   * the distributor's to assert.
+   * the distributor's to assert. `decoded` is the one exception, and its pill says what it is.
    */
   const readable = vehicleLoaded && record?.isAuthorized !== false;
-  const statement = headStatement(record, readable);
-  const cells = identityCells(record, locale, lang, readable);
+  const decoded = decodedValues(record, !!error);
+  const statement = headStatement(record, readable, decoded);
+  const cells = identityCells(record, locale, lang, readable, decoded);
 
   // Two empties, two meanings: before any lookup the values keep their box with a blank, because a
   // dash would say "the record has nothing here" about a vehicle that does not exist yet.
@@ -454,7 +473,7 @@ export const VehicleSpecificationPanel: FunctionalComponent<Props> = props => {
               they stand, and nothing but the values moves. */}
           <div class="spec-identity" role="group" aria-label={locale.identity}>
             {cells.map(cell => (
-              <SpecCellView key={cell.key} cell={cell} blank={blank} />
+              <SpecCellView key={cell.key} cell={cell} blank={blank && cellIsEmpty(cell)} />
             ))}
           </div>
 

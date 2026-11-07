@@ -331,6 +331,9 @@ public static class VehicleReportRows
             ClassificationCodes = string.Join(ClassificationSeparator, classifications.Select(x => x.Code)),
             ClassificationLabels = string.Join(ClassificationSeparator,
                 classifications.Select(x => string.IsNullOrWhiteSpace(x.Label) ? x.Code : x.Label)),
+
+            VinDecodeKatashiki = lookup?.VinDecode?.Katashiki ?? string.Empty,
+            VinDecodeModelDescription = lookup?.VinDecode?.ModelDescription ?? string.Empty,
         };
     }
 

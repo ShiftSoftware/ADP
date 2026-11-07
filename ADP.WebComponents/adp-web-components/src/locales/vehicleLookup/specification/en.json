@@ -29,5 +29,6 @@
   "detailsMany": "details",
   "expandDetails": "Show the details",
   "collapseDetails": "Hide the details",
-  "unauthorizedNotice": "This vehicle is not in the distributor's records, so its specification cannot be shown."
+  "unauthorizedNotice": "This vehicle is not in the distributor's records, so its specification cannot be shown.",
+  "decodedFromVin": "Decoded from VIN"
 }

@@ -202,6 +202,15 @@ Note: You can use [https://www.randomvin.com](https://www.randomvin.com) to gene
     - Android (Not Implemented yet)
     - iOS (Not Implemented yet)
 
+### Naming a vehicle the distributor has no record of
+A host can ask the lookup to name such a vehicle by setting `DecodeUnauthorizedVin` on the request options. The lookup then reads one row from the `VinModelMappings` container: the partition key is the WMI (VIN characters 1 to 3) and the id is the VDS (VIN characters 4 to 8). If there is a row, the response carries its base Katashiki and model name in `VinDecode`.
+
+- Each host loads its own rows. These packages ship none.
+- The VIN stays unauthorized. The values are inferred, so they never reach `Identifiers`, `VehicleSpecification`, warranty, campaigns, service items or menus.
+- A VIN with no row adds nothing to the response.
+- On DuckDB the rows come from a `VinModelMapping` table. The per-VIN storage reads it as it is, and the bulk engine's reference storage reads it only when `LoadVinModelMappings` is on.
+- The top-level report carries the values in `VinDecodeKatashiki` and `VinDecodeModelDescription` when its request sets the option.
+
 ## Non Primary Vehicle Information
 
 ### Variant

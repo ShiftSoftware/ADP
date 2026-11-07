@@ -603,6 +603,40 @@ describe('vehicle-specification — the invariants', () => {
     );
   });
 
+  it('shows what the API marks as read from the VIN, says so, and still holds no record', async () => {
+    const page = await newPageWith('');
+
+    await owner(page).fetchVin({
+      vin: 'ZZ9NOTOURS0000002',
+      isAuthorized: false,
+      identifiers: { vin: 'ZZ9NOTOURS0000002' },
+      vehicleSpecification: {},
+      vinDecode: { katashiki: 'ABC100', modelDescription: 'Sample Model' },
+    } as any);
+    await page.waitForChanges();
+
+    expect(shadow(page).querySelector('.lookup-card')?.getAttribute('data-verdict')).toBe('neutral');
+    expect(text(page, '.lookup-summary .status-badge > span')).toBe((specificationLocale as any).decodedFromVin);
+    expect(text(page, '.spec-title-value')).toBe('Sample Model');
+    expect(text(page, '.spec-cell[data-label="Katashiki"] .spec-value-text')).toBe('ABC100');
+    expect(shadow(page).querySelectorAll('.spec-identity .spec-value-content[data-empty="true"]')).toHaveLength(7);
+    expect(shadow(page).querySelector('.spec-details')?.getAttribute('data-empty')).toBe('true');
+
+    // A vehicle in the records never shows it, whatever the response carries.
+    await owner(page).fetchVin({
+      vin: 'ZZ9NOTOURS0000003',
+      isAuthorized: true,
+      identifiers: { vin: 'ZZ9NOTOURS0000003', katashiki: 'REC100' },
+      vehicleSpecification: { modelDescription: 'Record Model' },
+      vinDecode: { katashiki: 'ABC100', modelDescription: 'Sample Model' },
+    } as any);
+    await page.waitForChanges();
+
+    expect(text(page, '.spec-title-value')).toBe('Record Model');
+    expect(text(page, '.spec-cell[data-label="Katashiki"] .spec-value-text')).toBe('REC100');
+    expect(shadow(page).querySelector('.lookup-summary .status-badge')).toBeNull();
+  });
+
   it('keeps the two empties apart: a blank before a lookup, a dash for a vehicle with nothing in the slot', async () => {
     const page = await newPage(brokerMarketMocks);
 

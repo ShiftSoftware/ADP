@@ -178,6 +178,7 @@ public sealed class HawtaServingConvention
     public string InteriorColors { get; set; } = "InteriorColor";
     public string Customers { get; set; }
     public string BrokerStock { get; set; }
+    public string VinModelMappings { get; set; }
 
     /// <summary>The qualified, quoted serving table for a canonical family or reference name.</summary>
     public string Relation(string canonical) => $"{Schema}.\"{TableName(canonical)}\"";
@@ -192,5 +193,7 @@ public sealed class HawtaServingConvention
         BrokerStockSql = BrokerStock is null ? null : select(BrokerStock),
         LoadCustomers = Customers is not null,
         CustomersSql = Customers is null ? null : select(Customers),
+        LoadVinModelMappings = VinModelMappings is not null,
+        VinModelMappingsSql = VinModelMappings is null ? null : select(VinModelMappings),
     };
 }

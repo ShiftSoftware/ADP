@@ -93,4 +93,16 @@ public class VehicleLookupTopLevelReportModel
     /// separator. A classification without a label shows its code. Display text only; filter on the codes.
     /// </summary>
     public string ClassificationLabels { get; set; }
+
+    /// <summary>
+    /// The base Katashiki read from the VIN of a vehicle the distributor has no record of, when the request
+    /// asked for it. Inferred, so it stays apart from <see cref="IdentifiersKatashiki"/>.
+    /// </summary>
+    public string VinDecodeKatashiki { get; set; }
+
+    /// <summary>
+    /// The model name read from the VIN of a vehicle the distributor has no record of, when the request
+    /// asked for it. Inferred, so it stays apart from <see cref="VehicleSpecModelDescription"/>.
+    /// </summary>
+    public string VinDecodeModelDescription { get; set; }
 }

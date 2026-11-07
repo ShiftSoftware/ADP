@@ -40,6 +40,8 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVariantAsync(string variant);
         /// <summary>Retrieves vehicle models matching a VIN (by extracted variant).</summary>
         Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVinAsync(string vin);
+        /// <summary>Retrieves the VIN model mapping for a WMI and VDS, or null when there is none.</summary>
+        Task<VinModelMappingModel> GetVinModelMappingAsync(string wmi, string vds);
         /// <summary>Retrieves broker stock records for a VIN under a specific brand.</summary>
         Task<IEnumerable<TBP_StockModel>> GetBrokerStockAsync(long? brandId, string vin);
         /// <summary>Retrieves a customer record by customer ID and company ID.</summary>

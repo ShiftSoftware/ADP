@@ -175,6 +175,11 @@ public class Utility
                 NoSQLConstants.Containers.VehicleModels,
                 [NoSQLConstants.PartitionKeys.VehicleModels.Level1, NoSQLConstants.PartitionKeys.VehicleModels.Level2]
             ));
+
+            await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+                NoSQLConstants.Containers.VinModelMappings,
+                [NoSQLConstants.PartitionKeys.VinModelMappings.Level1]
+            ));
         }
 
         if (logsDatabaseThroughput is not null)

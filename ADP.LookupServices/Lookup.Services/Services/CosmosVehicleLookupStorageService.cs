@@ -222,6 +222,30 @@ public class CosmosVehicleLookupStorageService : IVehicleLookupStorageService
         return null;
     }
 
+    public async Task<VinModelMappingModel> GetVinModelMappingAsync(string wmi, string vds)
+    {
+        if (string.IsNullOrWhiteSpace(wmi) || string.IsNullOrWhiteSpace(vds))
+            return null;
+
+        try
+        {
+            var container = client.GetContainer(
+                ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+                ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.VinModelMappings
+            );
+
+            var response = await container.ReadItemAsync<VinModelMappingModel>(vds, new PartitionKey(wmi));
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                return response.Resource;
+        }
+        catch
+        {
+        }
+
+        return null;
+    }
+
     public async Task<ColorModel> GetExteriorColorsAsync(string colorCode, long? brand)
     {
         if (string.IsNullOrWhiteSpace(colorCode))
