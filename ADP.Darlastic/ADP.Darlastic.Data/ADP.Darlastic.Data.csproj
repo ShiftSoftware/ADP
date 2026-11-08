@@ -41,14 +41,15 @@
 		     the day, so referencing Darlastic failed restore outright (NU1605: "Detected package
 		     downgrade"). Raising a host to match can mean upgrades well past the Shift stack.
 
-		     The floor is now 2026.10.7.2 (TypeAuth 1.6.30 in .Shared / .API), raised on purpose.
-		     The golden-customer surfaces mask name, phone and email with the framework's PII
-		     protection (PiiFieldDTO, [Pii], PiiDtoProtector, PiiOptions and the OData query guard).
-		     Those types first shipped in 2026.10.5.1, so no host below that can run this module.
-		     2026.10.7.2 is the version verified to build and test here. A floor between 2026.10.5.1
-		     and 2026.10.7.2 is untested; lower it only with a build to prove it. Hosts above the
-		     floor still resolve their own higher version, because a floor only ever widens. Raise it
-		     again only when Darlastic needs a newer API, knowing that drops every host below it. -->
-		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.10.20.1" />
+		     The floor is now 2026.11.8.1 (TypeAuth 2.0.2 in .Shared / .API), raised on purpose.
+		     The framework carries Microsoft.Azure.Cosmos, which ships native files, and every other ADP
+		     package pins Cosmos to the framework's own version (3.64.0). An older floor here let a
+		     Darlastic project resolve an older Cosmos than the app referencing it, which restores
+		     cleanly but fails publish (NETSDK1152). Keep this floor, Darlastic.Engine's Cosmos and the
+		     rest of ADP on the same framework release. The PII protection the golden-customer surfaces
+		     use (PiiFieldDTO, [Pii], PiiDtoProtector, PiiOptions, the OData query guard) first shipped
+		     in 2026.10.5.1. Hosts above the floor still resolve their own higher version, because a
+		     floor only ever widens; raising it drops every host below it. -->
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.11.8.1" />
 	</ItemGroup>
 </Project>
