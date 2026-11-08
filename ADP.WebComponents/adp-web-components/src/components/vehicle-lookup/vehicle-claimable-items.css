@@ -21,7 +21,6 @@
 
 .progress-container-style {
   height: 10px;
-  transform: translate(0, -0.5rem);
   border-radius: 9999px;
   border-width: 1px;
   border-color: rgb(221 221 221 / 1);

@@ -172,6 +172,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
   private progressBar: HTMLElement;
   private claimableItemsBox: HTMLElement;
+  private loadingLane: HTMLElement;
   private tabAnimationTimeoutRef: ReturnType<typeof setTimeout>;
 
   private getServiceItems = (): VehicleLookupDTO['serviceItems'] => {
@@ -316,6 +317,8 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
     this.claimableItemsBox = this.el.shadowRoot.querySelector('.claimable-items-box');
 
+    this.loadingLane = this.el.shadowRoot.querySelector('.claim-loading-lane');
+
     window.addEventListener('resize', this.onWindowResize);
     document.addEventListener('visibilitychange', this.onVisibilityChange);
 
@@ -328,12 +331,22 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     // A lookup can land before the component has finished loading, in which case the measurement
     // it asked for is still owed.
     this.takePendingProgressBarUpdate();
+    this.alignLoadingLane();
   }
 
   componentDidRender() {
+    if (this.isLoading || this.tabAnimationLoading) this.alignLoadingLane();
     this.takePendingProgressBarUpdate();
     this.announceVerdict();
   }
+
+  // Where the box's horizontal scrollbar takes space, it shortens the box and lifts the lane by
+  // half its height; the margin lifts the loading lane by the same amount.
+  private alignLoadingLane = () => {
+    const box = this.claimableItemsBox;
+    if (!this.loadingLane || !box?.offsetHeight) return;
+    this.loadingLane.style.marginBottom = `${box.offsetHeight - box.clientHeight}px`;
+  };
 
   async disconnectedCallback() {
     window.removeEventListener('resize', this.onWindowResize);
