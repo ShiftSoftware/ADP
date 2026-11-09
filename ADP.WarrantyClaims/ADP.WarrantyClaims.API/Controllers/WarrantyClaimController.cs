@@ -24,9 +24,9 @@ namespace ShiftSoftware.ADP.WarrantyClaims.API.Controllers;
 /// The warranty claim controller: CRUD (action from options) + UpdateStatus, UpdateDeliveryDate
 /// (DeliveryDateOverwrite Maximum), the VIN lookup, and the SAS print-invoice endpoints. Moved from the original host application
 /// (Phase 2b) with routes/EntitySet name preserved via the controller name + route-prefix convention.
-/// The former extras endpoints (ExportManufacturerCSV / DownloadCSV / flat-rate / part-lookup) moved
+/// The former extras endpoints (ExportManufacturerCSV / flat-rate / part-lookup) moved
 /// here too (Phase 3 Slice 3.3) at their byte-identical routes, with the consumer-only dependencies
-/// behind the <see cref="IWarrantyRatesStore"/> / <see cref="IWarrantyCsvExportStorage"/> /
+/// behind the <see cref="IWarrantyRatesStore"/> /
 /// <see cref="IFlatRateProvider"/> / <see cref="IPartLookupProvider"/> seams — resolved lazily per
 /// action so consumers that never call them need no registrations. The new <c>current-rates</c>
 /// endpoint closes the last module-Web-to-host hidden dependency (the list/form pages previously read
@@ -179,7 +179,7 @@ public class WarrantyClaimController : ShiftEntitySecureControllerAsync<Warranty
 
     /// <summary>
     /// Resolves a Phase-3.3 consumer seam lazily from the request services. Deliberately NOT a
-    /// constructor dependency: consumers that never call the CSV-export/download/lookup/rates
+    /// constructor dependency: consumers that never call the CSV-export/lookup/rates
     /// endpoints must not be forced to register the seams just to construct this controller.
     /// </summary>
     private TSeam GetRequiredSeam<TSeam>() where TSeam : class
@@ -190,10 +190,10 @@ public class WarrantyClaimController : ShiftEntitySecureControllerAsync<Warranty
                 "— see the seam's XML documentation in ADP.WarrantyClaims.Shared for the contract.");
 
     /// <summary>
-    /// Persists the export rates (consumer store), mutates the selected claims (rates -> amounts,
-    /// InvoiceNo, ManufacturerStatus=Exported), writes the manufacturer CSV through the consumer
-    /// storage and only then saves. Moved byte-identical (routes/response) from the original host's
-    /// extras controller (Phase 3 Slice 3.3).
+    /// Persists the export rates (consumer store), updates the selected claims (rates -> amounts,
+    /// InvoiceNo, ManufacturerStatus=Exported), saves, and returns the manufacturer CSV in the response
+    /// body. Nothing is stored on the server. The web client reads the file with ActionButton.OnResponse.
+    /// It already knows the invoice number it sent, and it reloads the rates from <c>current-rates</c>.
     /// </summary>
     [HttpPost("ExportManufacturerCSV")]
     public async Task<IActionResult> ExportManufacturerCSV([FromBody] ShiftSoftware.ShiftEntity.Model.Dtos.SelectStateDTO<WarrantyClaimListDTO> selectedItems, [FromQuery] string invoice, [FromQuery] string rates)
@@ -210,7 +210,6 @@ public class WarrantyClaimController : ShiftEntitySecureControllerAsync<Warranty
         }
 
         var ratesStore = GetRequiredSeam<IWarrantyRatesStore>();
-        var exportStorage = GetRequiredSeam<IWarrantyCsvExportStorage>();
 
         this.repository.shouldIncludeLaborLines = true;
         this.repository.shouldIncludeSubletLines = true;
@@ -226,30 +225,18 @@ public class WarrantyClaimController : ShiftEntitySecureControllerAsync<Warranty
 
         try
         {
-            // The consumer store deserializes/persists the rates row (audit-upsert) and hands back the
-            // rates for the export math plus the exact echo object for the response (byte-identical
-            // response shape is the consumer's contract).
+            // The consumer store deserializes and persists the rates row (audit-upsert) and returns the
+            // rates for the export math.
             var persistedRates = await ratesStore.PersistExportRatesAsync(rates, userId);
 
             var exportableStream = await this.repository.ExportManufacturerCSV(invoice, persistedRates.Rates, claims);
 
             exportableStream.Seek(0, SeekOrigin.Begin);
 
-            var relativeExportPath = await exportStorage.WriteAsync($"warranty-claims-{DateTime.UtcNow.ToString("yyyyMMddHHmmss")}.csv", exportableStream);
-
-            // Frozen ordering: the CSV file is written BEFORE the claim/rates mutations are saved.
+            // The CSV is built before the save. If building it fails, no claim is marked as Exported.
             await this.repository.SaveChangesAsync();
 
-            return Ok(new ShiftEntityResponse<IEnumerable<WarrantyClaimListDTO>>()
-            {
-                Additional = new()
-                {
-                    ["Rates"] = persistedRates.RatesEcho,
-                    ["CSVExportPath"] = relativeExportPath,
-                    ["InvoiceNumber"] = invoice
-                },
-                Entity = claims.Select(x => new WarrantyClaimListDTO { })
-            });
+            return File(exportableStream, "text/csv; charset=utf-8", $"warranty-claims-{DateTime.UtcNow:yyyyMMddHHmmss}.csv");
         }
         catch (ShiftEntityException ex)
         {
@@ -259,31 +246,6 @@ public class WarrantyClaimController : ShiftEntitySecureControllerAsync<Warranty
                 Additional = ex.AdditionalData,
             });
         }
-    }
-
-    // [AllowAnonymous] is load-bearing: the export-result dialog opens this URL via window.open with
-    // no bearer token. DELIBERATE SECURITY FIX vs the verbatim-move doctrine: the original host
-    // concatenated the catch-all segment straight onto its content root (path traversal on an
-    // anonymous endpoint). The storage seam's OpenAsync contract now requires canonicalizing the
-    // path and confining it to the export root, treating escapes exactly like a missing file — an
-    // OSS package must not ship a traversal. Legitimate paths under the export folder behave
-    // byte-identically.
-    [HttpGet("DownloadCSV/{*exportPath}")]
-    [AllowAnonymous]
-    public async Task<IActionResult> DownloadCSV([FromRoute] string exportPath)
-    {
-        var exportStorage = GetRequiredSeam<IWarrantyCsvExportStorage>();
-
-        var memoryStream = new MemoryStream();
-
-        using (var fileStream = await exportStorage.OpenAsync(exportPath))
-        {
-            fileStream.CopyTo(memoryStream);
-        }
-
-        memoryStream.Seek(0, SeekOrigin.Begin);
-
-        return File(memoryStream, "text/csv; charset=utf-8", "warranty-claims.csv");
     }
 
     // No authorization node, matching the original host endpoint: authenticated-only (the app-wide

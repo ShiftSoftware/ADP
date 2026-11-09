@@ -65,14 +65,12 @@ public static class WarrantyClaimsApiExtensions
         // guidance when it is missing.
         services.TryAddScoped<IPrintoutDateFormatter>(_ => new DefaultPrintoutDateFormatter());
 
-        // Module defaults for the Phase-3.3 consumer seams (Phase 3 Slice 3.6, D24). TryAdd, same
-        // deterministic swap contract as the date formatter above: a consumer registration made
-        // BEFORE this call wins (e.g. rates kept in an org-private store, exports on blob storage);
-        // one made after wins at resolution time. The rates default persists into the module-owned
-        // WarrantyRates entity; the storage default writes under the content root's
-        // warranty-csv-exports folder.
+        // Module default for the rates seam (Phase 3 Slice 3.6, D24). TryAdd, same deterministic swap
+        // contract as the date formatter above: a consumer registration made BEFORE this call wins
+        // (e.g. rates kept in an org-private store); one made after wins at resolution time. The
+        // default persists into the module-owned WarrantyRates entity. CSV exports are returned in the
+        // response body, so there is no export storage to register.
         services.TryAddScoped<ShiftSoftware.ADP.WarrantyClaims.Shared.IWarrantyRatesStore, Data.Services.DefaultWarrantyRatesStore>();
-        services.TryAddScoped<ShiftSoftware.ADP.WarrantyClaims.Shared.IWarrantyCsvExportStorage, Services.DefaultWarrantyCsvExportStorage>();
 
         // Per-report frx override paths, captured as a singleton value object so the Data-layer print
         // methods can read it without referencing this options type (same capture-at-registration

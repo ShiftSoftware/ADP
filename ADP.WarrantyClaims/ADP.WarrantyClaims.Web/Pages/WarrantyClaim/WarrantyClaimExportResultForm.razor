@@ -7,16 +7,6 @@
         <MudStack Row Spacing="4" AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pb-4 pt-1">
             <MudCard Elevation="3">
                 <MudCardContent>
-                    <MudText Typo="Typo.subtitle1">Manufacturer CSV</MudText>
-                    <MudText Typo="Typo.body2">To be imported to the Manufacturer System</MudText>
-                </MudCardContent>
-                <MudCardActions>
-                    <MudButton OnClick="DownloadCSVFile" StartIcon="@Icons.Material.Filled.Download" Variant="Variant.Text" Color="Color.Info">Download</MudButton>
-                </MudCardActions>
-            </MudCard>
-
-            <MudCard Elevation="3">
-                <MudCardContent>
                     <MudText Typo="Typo.subtitle1">Manufacturer Invoice</MudText>
                     <MudText Typo="Typo.body2">To be Reimbursed by Manufacturer</MudText>
                 </MudCardContent>
@@ -41,15 +31,7 @@
 
 @code {
     [Parameter]
-    public string CSVExportPath { get; set; } = default!;
-
-    [Parameter]
     public string InvoiceNumber { get; set; } = default!;
-
-    private async Task DownloadCSVFile()
-    {
-        await JSRuntime.InvokeVoidAsync("open", $"{Configuration.GetValue<string>("BaseUrl")}WarrantyClaim/DownloadCSV/{CSVExportPath}", "_blank");
-    }
 
     private bool Printing;
 

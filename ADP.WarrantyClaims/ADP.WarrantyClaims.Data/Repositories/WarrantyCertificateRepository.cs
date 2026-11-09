@@ -308,6 +308,41 @@ public class WarrantyCertificateRepository : ShiftRepository<ShiftDbContext, Cer
     }
 
     /// <summary>
+    /// Builds one CSV file for the given certificates, with one row for each claim on each certificate.
+    /// Certificates that are not invoiced yet are included too, with an empty invoice date. Users can
+    /// filter the list on the invoice date when they only want invoiced certificates.
+    /// The dealer name and code come from the consumer's <see cref="Cases.Shared.Printing.ICompanyInfoProvider"/>,
+    /// the same registration the printouts use.
+    /// </summary>
+    public virtual async Task<Stream> ExportCSVAsync(List<Certificate> certificates)
+    {
+        var companyInfoProvider = PrintingServices.GetRequiredCompanyInfoProvider(this.db);
+
+        var certificateIds = certificates.Select(x => (long?)x.ID).ToList();
+
+        var claimsByCertificate = (await this.db.Set<WarrantyClaim>()
+            .Where(x => certificateIds.Contains(x.CertificateID))
+            .OrderBy(x => x.ID)
+            .ToListAsync())
+            .ToLookup(x => x.CertificateID);
+
+        var dealers = new Dictionary<long, Cases.Shared.Printing.CompanyPrintInfo>();
+
+        foreach (var companyId in certificates.Where(x => x.CompanyID.HasValue).Select(x => x.CompanyID!.Value).Distinct())
+            dealers[companyId] = await companyInfoProvider.GetDealerAsync("en", companyId);
+
+        var rows = certificates
+            .OrderBy(x => x.CertificateNo)
+            .ThenBy(x => x.ID)
+            .SelectMany(certificate => CSV.WarrantyCertificateCSV.FromCertificate(
+                certificate,
+                claimsByCertificate[certificate.ID],
+                certificate.CompanyID is { } companyId ? dealers[companyId] : null));
+
+        return await CSV.WarrantyCertificateCSV.WriteAsync(rows);
+    }
+
+    /// <summary>
     /// Formats a date for user-facing message text (the Invoice validation errors). Consumer seam
     /// (Phase 3 Slice 3.6): the default resolves the consumer's
     /// <see cref="Cases.Shared.Printing.IPrintoutDateFormatter"/> lazily (the same registration the

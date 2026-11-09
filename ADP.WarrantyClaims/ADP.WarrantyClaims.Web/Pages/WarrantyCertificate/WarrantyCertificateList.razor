@@ -12,6 +12,7 @@
 @inject IWarrantyClaimsCapabilityProvider CapabilityProvider
 @inject IOptions<WarrantyClaimsWebOptions> WCOptions
 @inject IConfiguration Configuration
+@inject IJSRuntime JSRuntime
 
 <ShiftList Title="Certificates"
            T="CertificateListDTO"
@@ -48,6 +49,16 @@
                     <ChildContent>
                         Invoice
                     </ChildContent>
+                </ActionButton>
+
+                <ActionButton Color="Color.Info"
+                              Variant="Variant.Outlined"
+                              Size="Size.Small"
+                              StartIcon="@Icons.Material.Filled.Download"
+                              OnResponse="CSVExportResponse"
+                              Endpoint="WarrantyCertificate/ExportCSV"
+                              T="CertificateListDTO">
+                    Export CSV
                 </ActionButton>
             </MudStack>
         }
@@ -107,5 +118,18 @@
         }
 
         return new(true);
+    }
+
+    private async ValueTask<bool> CSVExportResponse(HttpResponseMessage response)
+    {
+        // On failure the body is the usual JSON error. Return true so ActionButton shows it as normal.
+        if (!response.IsSuccessStatusCode)
+            return true;
+
+        await JSRuntime.DownloadResponseAsFileAsync(response, $"warranty-certificates-{DateTime.Now:yyyyMMddHHmmss}.csv");
+
+        // The body was a file, not JSON. Return false so ActionButton does not try to read it as JSON.
+        // The export changes no data, so the list does not need a reload.
+        return false;
     }
 }
