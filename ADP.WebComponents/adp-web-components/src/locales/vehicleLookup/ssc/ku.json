@@ -57,6 +57,7 @@
   "traceHistoryNone": "هیچ هێڵێکی کاری مێژووی خزمەتگوزاری کۆدی کاری هەڵمەتی هەڵنەگرتووە.",
   "traceInvoice": "پسوولە",
   "traceInvoiceStatus": "دۆخی پسوولە",
+  "traceOrderStatus": "دۆخی فەرمانی کار",
   "traceVerdictOpen": "هیچ بەڵگەیەکی شیاو نەدۆزرایەوە، بۆیە هەڵمەتەکە هێشتا کراوەیە.",
   "traceVerdictSSCRecord": "بەپێی تۆماری هەڵمەت چاککراوە.",
   "traceVerdictWarrantyClaim": "بەپێی داواکارییەکی گەرەنتی چاککراوە.",

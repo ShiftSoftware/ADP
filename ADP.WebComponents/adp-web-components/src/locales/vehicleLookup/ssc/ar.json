@@ -57,6 +57,7 @@
   "traceHistoryNone": "لا يحمل أي بند عمل في سجل الخدمة كود عمل للحملة.",
   "traceInvoice": "الفاتورة",
   "traceInvoiceStatus": "حالة الفاتورة",
+  "traceOrderStatus": "حالة أمر العمل",
   "traceVerdictOpen": "لم يتم العثور على دليل مؤهل، لذا لا تزال الحملة مفتوحة.",
   "traceVerdictSSCRecord": "تم الإصلاح بحسب سجل الحملة.",
   "traceVerdictWarrantyClaim": "تم الإصلاح بحسب مطالبة ضمان.",

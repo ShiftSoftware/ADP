@@ -14,7 +14,7 @@ decides both the verdict and the repair date, and is reported as the repair sour
 
    qualifying status — Accepted, Certified or Invoiced unless the deployment configures its own list
 
-3. Matching labor line (by labor code) that is finished work — invoice status X or C unless the
+3. Matching labor line (by labor code) that is finished work — invoice status X or order status C unless the
 
    deployment configures its own rule  
 A deployment can put the evidence first: then the SSC record's own date decides only when there is  
@@ -121,16 +121,26 @@ When tracing is requested, every SSC carries a trace of the evidence behind its 
     	Then SSC "SSC-001" is marked as repaired
     	And SSC "SSC-001" has repair date "2024-06-01"
     
-    Scenario: SSC repaired via labor line with status C
+    Scenario: SSC repaired via labor line with order status C
     	Given SSC affected vehicles:
     		| VIN               | CampaignCode | Description   | LaborCode1 |
     		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
     	And labor lines:
-    		| LaborCode | InvoiceDate | InvoiceStatus |
-    		| LAB001    | 2024-07-01  | C             |
+    		| LaborCode | InvoiceDate | OrderStatus |
+    		| LAB001    | 2024-07-01  | C           |
     	When Checking "1G1ZC5E17BF283048"
     	Then SSC "SSC-001" is marked as repaired
     	And SSC "SSC-001" has repair date "2024-07-01"
+    
+    Scenario: Invoice status C on its own is not repair evidence
+    	Given SSC affected vehicles:
+    		| VIN               | CampaignCode | Description   | LaborCode1 |
+    		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+    	And labor lines:
+    		| LaborCode | InvoiceDate | InvoiceStatus | OrderStatus |
+    		| LAB001    | 2024-07-01  | C             | X           |
+    	When Checking "1G1ZC5E17BF283048"
+    	Then SSC "SSC-001" is marked as not repaired
     
     Scenario: SSC labor code with surrounding whitespace still matches the labor line
     	Given SSC affected vehicles:
@@ -264,7 +274,7 @@ When tracing is requested, every SSC carries a trace of the evidence behind its 
     		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001A    |
     	And labor lines:
     		| LaborCode | InvoiceDate | InvoiceStatus |
-    		| LAB001    | 2024-06-01  | C             |
+    		| LAB001    | 2024-06-01  | X             |
     	When Checking "1G1ZC5E17BF283048"
     	Then SSC "SSC-001" is marked as repaired
     
@@ -464,7 +474,7 @@ When tracing is requested, every SSC carries a trace of the evidence behind its 
     		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
     	And labor lines:
     		| LaborCode | InvoiceDate | InvoiceStatus | CompanyID | BranchID |
-    		| LAB001    | 2024-06-01  | C             | 5         | 21       |
+    		| LAB001    | 2024-06-01  | X             | 5         | 21       |
     	When Checking "1G1ZC5E17BF283048"
     	Then SSC "SSC-001" was repaired by company 5 branch 21
     	And SSC "SSC-001" was repaired by "South Motors" at "South Motors East"

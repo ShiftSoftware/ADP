@@ -27,7 +27,7 @@ public class SscRepairTraceLaborLineDTO
     public string CampaignLaborCode { get; set; }
     /// <summary>
     /// Whether the line counts as finished work, by <see cref="LookupOptions.SSCQualifyingLaborLine"/>. By default
-    /// that is invoice status X or C.
+    /// that is invoice status X or order status C.
     /// </summary>
     public bool StatusQualifies { get; set; }
     /// <summary>Whether this is the line that decided the verdict: the most recent qualifying line, consulted only when no warranty claim was selected.</summary>

@@ -177,14 +177,18 @@ public class LookupOptions
     /// returns true.
     /// <para>Dealer systems mark finished work in different ways. Some set an invoice status on the line. Others
     /// close the work order and leave the invoice status empty. The default, <see cref="DefaultSSCQualifyingLaborLine"/>,
-    /// accepts invoice status <c>X</c> or <c>C</c>. A deployment whose dealer system marks finished work in another
+    /// accepts invoice status <c>X</c> or order status <c>C</c>. A deployment whose dealer system marks finished work in another
     /// way sets its own rule here, for example on the order status. The rule must depend on the line only: it is
     /// called for every line that carries a campaign's labor code.</para>
     /// </summary>
     public Func<OrderLaborLineModel, bool> SSCQualifyingLaborLine { get; set; } = DefaultSSCQualifyingLaborLine;
-    /// <summary>The default for <see cref="SSCQualifyingLaborLine"/>: the line's invoice status is <c>X</c> or <c>C</c>.</summary>
+    /// <summary>
+    /// The default for <see cref="SSCQualifyingLaborLine"/>: the line's invoice status is <c>X</c> or its order status
+    /// is <c>C</c>. This is the Autoline rule (InvoiceState <c>X</c> or LoadStatus <c>C</c>) the platform started from;
+    /// invoice status <c>C</c> on its own is not finished work.
+    /// </summary>
     public static Func<OrderLaborLineModel, bool> DefaultSSCQualifyingLaborLine { get; } =
-        line => line?.InvoiceStatus?.Trim() is "X" or "C";
+        line => line?.InvoiceStatus?.Trim() is "X" || line?.OrderStatus?.Trim() is "C";
     /// <summary>
     /// When true, repair evidence decides an SSC (safety recall) before the SSC record's own repair date. The order
     /// is then: a qualifying warranty claim, a qualifying service-history labor line, and the record's date only

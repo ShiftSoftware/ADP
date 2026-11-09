@@ -59,6 +59,7 @@ const sscSchema = yupTypeMapper([
   'traceHistoryNone',
   'traceInvoice',
   'traceInvoiceStatus',
+  'traceOrderStatus',
   'traceVerdictOpen',
   'traceVerdictSSCRecord',
   'traceVerdictWarrantyClaim',

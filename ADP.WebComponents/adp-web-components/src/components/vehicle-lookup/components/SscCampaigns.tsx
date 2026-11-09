@@ -345,7 +345,7 @@ const LineEvidence = ({ line, locale }: { line: SscRepairTraceLaborLineDTO; loca
       </strong>
       <EvidencePill
         positive={line.statusQualifies}
-        text={`${locale.traceInvoiceStatus} ${line.invoiceStatus || '—'} · ${line.statusQualifies ? locale.traceStatusQualifies : locale.traceStatusNotQualifies}`}
+        text={`${locale.traceInvoiceStatus} ${line.invoiceStatus || '—'}${line.orderStatus ? ` · ${locale.traceOrderStatus} ${line.orderStatus}` : ''} · ${line.statusQualifies ? locale.traceStatusQualifies : locale.traceStatusNotQualifies}`}
       />
       {line.invoiceDate && <span class="trace-date">{line.invoiceDate}</span>}
       {line.selected && <span class="trace-decided">{locale.traceDecided}</span>}

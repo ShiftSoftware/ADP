@@ -23,7 +23,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 /// one of the campaign's labor operation codes.</item>
 /// <item>The most recent finished service-history labor line carrying one of the campaign's labor operation codes.
 /// A line is finished when <see cref="LookupOptions.SSCQualifyingLaborLine"/> says so (by default, invoice status
-/// X or C).</item>
+/// X or order status C).</item>
 /// </list>
 /// <para>A deployment that sets <see cref="LookupOptions.PreferSSCRepairEvidenceOverRecordDate"/> consults the SSC
 /// record last: its date decides only when there is no qualifying claim or line.</para>
