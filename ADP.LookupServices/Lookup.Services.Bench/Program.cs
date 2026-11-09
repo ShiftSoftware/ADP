@@ -17,7 +17,7 @@ using ShiftSoftware.ADP.Lookup.Services.Services;
 using ShiftSoftware.ShiftEntity.Core;
 
 // ---------------------------------------------------------------------------------------------
-// The D10 measurement (bulk-lookup.md): what the evaluators cost per VIN at a 230 K-vehicle scale,
+// The measurement: what the evaluators cost per VIN at a 230 K-vehicle scale,
 // and what the streamed data plane delivers, against the current per-VIN path on the same machine
 // and the same source. Read-only against the source; writes only its results file — and, with
 // --report=, the files the host stage (VehicleReportRun) produces. The source is a read snapshot, a

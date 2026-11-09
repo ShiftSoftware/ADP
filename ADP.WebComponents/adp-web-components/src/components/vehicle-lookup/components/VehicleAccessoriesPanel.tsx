@@ -198,8 +198,7 @@ export const pageRangeText = (page: number, size: PageSize, total: number, local
 /**
  * Whether a page change that takes `removedHeight` off the list needs the page to follow. The
  * controls are under the rows, so they rise by what the rows took; if that lifts them off the top
- * of the screen, the reader is left looking at nothing and the controls are brought back
- * (motion.md rule 10).
+ * of the screen, the reader is left looking at nothing and the controls are brought back.
  */
 export const pagingNeedsReveal = (controlsTop: number, removedHeight: number): boolean => controlsTop - removedHeight < 0;
 

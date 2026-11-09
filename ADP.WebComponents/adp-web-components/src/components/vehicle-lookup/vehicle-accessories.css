@@ -143,7 +143,7 @@
 }
 
 /* When a shorter page takes the page up under the reader, the controls are brought back with this
-   much of the list above them (motion.md rule 10; lib/reveal-below reads scroll-margin-top). */
+   much of the list above them (lib/reveal-below reads scroll-margin-top). */
 .accessories-pager {
   scroll-margin-top: min(40vh, 280px);
 }

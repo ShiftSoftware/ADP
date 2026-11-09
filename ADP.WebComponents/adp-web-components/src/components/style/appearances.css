@@ -1,5 +1,5 @@
 /*
-  Shared appearance tokens (.shift/guides/form-appearances.md). Private --_ap-* only: a component
+  Shared appearance tokens. Private --_ap-* only: a component
   resolves each value as var(--shift-<component>-x, var(--shift-x, var(--_ap-x, <baseline>))), so
   the host's --shift-* always win. Dark changes colour and shadow tokens only.
 */

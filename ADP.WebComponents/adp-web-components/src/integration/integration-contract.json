@@ -172,7 +172,7 @@
           "Rule precedence: range (min/max) → disabledDates → disabledWeekdays → not in enabledDates → isDateDisabled. The first rule that matches is the reason a day is blocked (data-reason on the cell). Rules only ever block: the allow-list never re-enables a day another rule blocked.",
           "Disabled days are focusable but cannot be selected. Inside min/max, the arrow, Home/End and Page keys land on every day of the month, including disabled ones, which carry aria-disabled so a screen-reader user can discover them (the WAI-ARIA APG allows focusable disabled items in composite widgets). Enter and Space do nothing on them. Days of the neighbouring months and days outside min/max are never focused.",
           "A min later than max is an empty range: every day is disabled, the month buttons, Today and the keyboard do not move, and the month stays where it opened unless the host sets month.",
-          "Appearance and colour scheme follow .shift form-appearances: every value resolves as --shift-calendar-x, then --shift-x, then the appearance, then the vanilla baseline, so host variables win in light and dark. The component never sets --shift-* itself.",
+          "Appearance and colour scheme follow the shared appearance rules: every value resolves as --shift-calendar-x, then --shift-x, then the appearance, then the vanilla baseline, so host variables win in light and dark. The component never sets --shift-* itself.",
           "Fonts: Nunito (vanilla, material, soft) or Manrope (sharp, minimal), with Noto Kufi Arabic first for ar and ku — all loaded by the package’s global script. Override with --shift-font-family and --shift-font-family-arabic.",
           "The box never changes size: six rows always, a fixed header band, and the months and years views fill exactly the days view. Only another density (an appearance with a different cell size or gap) or another size resizes it.",
           "Every movement — header roll, day carousel, view slide, year paging — runs on one clock: --shift-calendar-settle (or --shift-settle), 480ms by default; instant under prefers-reduced-motion."
@@ -379,7 +379,7 @@
           "Times sit in as many columns as fit (84px or wider at md), each at least 44px tall, so a narrow host gets fewer columns, never a scrollbar.",
           "Selection follows Enter, Space or a click, not focus: arrows move focus only and pass over disabled times, so moving through the day with the keyboard never picks one. This is the documented difference from the WAI-ARIA radio group, where arrows also check.",
           "When the times change, the outgoing grid fades while the incoming times rise one after another, and the height moves to the new row count on grid-template-rows. Loading shows skeletonCount placeholders the size of a time. Instant under prefers-reduced-motion.",
-          "Appearance and colour scheme follow .shift form-appearances: every value resolves as --shift-time-slots-x, then --shift-x, then the appearance, then the vanilla baseline. The component never sets --shift-* itself.",
+          "Appearance and colour scheme follow the shared appearance rules: every value resolves as --shift-time-slots-x, then --shift-x, then the appearance, then the vanilla baseline. The component never sets --shift-* itself.",
           "Fonts: Nunito (vanilla, material, soft) or Manrope (sharp, minimal), with Noto Kufi Arabic first for ar and ku, loaded by the package’s global script."
         ]
       },
@@ -652,7 +652,7 @@
           "The dialog always has a name: label; else, when the anchor is in the document tree and has a name of its own, aria-labelledby. For a form control (input, textarea, select) it points at the control’s name sources, never at the control, whose value would become the name: its aria-labelledby ids, else its <label> elements, except that when any label wraps the control the dialog gets the labels’ text as aria-label, with the control’s own contribution left out; a control with only aria-label gives the dialog that text, refreshed on every show(). Any other anchor, such as a button, is referenced itself. Ids the popover adds are removed again on cleanup. Otherwise the anchor’s aria-label or label text; else the localized “Pop-up”.",
           "Several popovers can be open at once. show() on one closes another only when both share the same anchor, and focus moving into another popover’s panel does not close this one. A pointer-down outside a panel and its anchor still closes it.",
           "Open grows and fades from the anchor edge, the sheet slides up; closing reverses. One duration, --shift-popover-settle (or --shift-settle), 320ms by default; instant under prefers-reduced-motion. The panel is position: fixed and never shifts the page layout.",
-          "The panel draws the chrome: surface, border, radius and panel shadow from the appearance. A shift-calendar in it draws none of its own and takes its size’s width; the page can still override both. minimal has no opaque surface or panel shadow in appearances.css; the panel fills them from the form-appearances guide until the shared tokens carry them."
+          "The panel draws the chrome: surface, border, radius and panel shadow from the appearance. A shift-calendar in it draws none of its own and takes its size’s width; the page can still override both. minimal has no opaque surface or panel shadow in appearances.css; the panel fills them in until the shared tokens carry them."
         ]
       },
       "reference": {
@@ -920,7 +920,7 @@
           "Moving focus, setting value and the previous/next buttons scroll the strip only, never the page or an overflow: hidden ancestor. On first render the selected card is placed without animation; later changes scroll smoothly (instantly under prefers-reduced-motion). Scrolling snaps per card; touch swipe and trackpad scroll natively.",
           "The previous and next buttons scroll by one visible page and are disabled at the ends. The edge fades grow with the distance scrolled, so they appear only where content continues.",
           "The strip’s height never changes with selection, month labels, badges, highlightToday or the colour scheme; only another size, another density (appearance), the caption row, or the phone layout below a 600px viewport (roomier cards, as in the booking prototype) changes it.",
-          "Appearance and colour scheme follow .shift form-appearances: every value resolves as --shift-day-strip-x, then --shift-x, then the appearance, then the vanilla baseline, so host variables win in light and dark. The component never sets --shift-* itself.",
+          "Appearance and colour scheme follow the shared appearance rules: every value resolves as --shift-day-strip-x, then --shift-x, then the appearance, then the vanilla baseline, so host variables win in light and dark. The component never sets --shift-* itself.",
           "Fonts: Nunito (vanilla, material, soft) or Manrope (sharp, minimal), with Noto Kufi Arabic first for ar and ku — all loaded by the package’s global script. Override with --shift-font-family and --shift-font-family-arabic."
         ]
       },

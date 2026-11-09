@@ -7,7 +7,7 @@ namespace ShiftSoftware.ADP.Darlastic.CaseBrowser;
 /// Azure File Share next to the source data (CompanyInvoiceData), NOT in local out/ and NOT in
 /// git: it is real customer PII, and the spike's git remote is cloud GitHub. Each dev machine
 /// keeps this one folder in sync by hand (alongside CompanyInvoiceData); in prod it maps to the
-/// tenant's own in-boundary Azure File Share. See .shift/guides/local-dev.md.
+/// tenant's own in-boundary Azure File Share.
 ///
 /// Only the human-decision artifacts live here. Everything else under out/ (real_attributes,
 /// merge_*, the labeling sample, eval_errors, explainer.html, …) is regenerated from the source

@@ -140,8 +140,7 @@ export const openDrawerKey = ({
  * check — a blank panel would read as "no campaigns", which is the same lie as case 2's.
  *
  * Two sessions independently built a green "no campaign" out of an empty list before this was
- * written down; `SscCampaigns.spec.tsx` now fails if it happens again. The wider rule is in
- * .shift/repos/adp/web-components/vehicle-lookup-invariants.md.
+ * written down; `SscCampaigns.spec.tsx` now fails if it happens again.
  */
 export const panelVerdict = ({ locale, vehicleLoaded, authorized, campaigns, checkStatus, skipped, error }: PanelState): PanelVerdict => {
   if (error) return { state: 'negative', text: error };
@@ -502,10 +501,10 @@ const SscTrace: FunctionalComponent<{ locale: SscLocale; item: SscDTO; trace?: S
 /**
  * The campaigns of one vehicle. The panel is three fixed parts, and every state is a different
  * content of the same three — nothing is added to or removed from the panel between states, which
- * is what lets every change be a movement (the rule is in lookup-motion.css and
- * .shift/repos/adp/web-components/motion.md). The card around them — paper, border, shadow and
- * the accent bar — is the wrapper's; the owner hands it `panelVerdict(...).state` for the accent,
- * and `.ssc-card` keeps the same verdict and phase as data attributes for the rules inside:
+ * is what lets every change be a movement (the rule is in lookup-motion.css). The card around
+ * them — paper, border, shadow and the accent bar — is the wrapper's; the owner hands it
+ * `panelVerdict(...).state` for the accent, and `.ssc-card` keeps the same verdict and phase as
+ * data attributes for the rules inside:
  *
  *  - the header: the title and the verdict pill. Idle the pill is a blank shape; in flight it
  *    carries the sheen; settled it names the verdict.

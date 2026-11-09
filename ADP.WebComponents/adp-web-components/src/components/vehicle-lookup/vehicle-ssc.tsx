@@ -40,8 +40,7 @@ const isAbort = (error: unknown) => (error as DOMException)?.name === 'AbortErro
  * <vehicle-warranty-details>.
  *
  * A vehicle is on exactly one of two paths, and the panel must never mix them (the rule is spelled
- * out on `panelVerdict` in ./components/SscCampaigns.tsx and in
- * .shift/repos/adp/web-components/vehicle-lookup-invariants.md):
+ * out on `panelVerdict` in ./components/SscCampaigns.tsx):
  *
  *  - authorized (in the distributor's records): the campaign list is the verdict;
  *  - unauthorized: the distributor has no records, so the only verdict is the manufacturer's

@@ -3,7 +3,7 @@ using ShiftSoftware.ShiftEntity.Model;
 namespace ShiftSoftware.ADP.Cases.Shared.Validation;
 
 /// <summary>
-/// Contract for a case type's upsert-time validation layer (skr-dtr D4/D15: pure, DB-free,
+/// Contract for a case type's upsert-time validation layer (pure, DB-free,
 /// test-first — lookups and identity go behind interfaces/delegates in the implementing service).
 /// Invoked from the repository's <c>UpsertAsync</c> BEFORE the workflow engine applies a trigger.
 /// </summary>

@@ -79,7 +79,7 @@ export type VerdictInput = {
  *  - the lookup failed: negative;
  *  - no vehicle yet: idle — nothing to judge;
  *  - a vehicle the distributor has no record of: neutral — warranty is not the distributor's to
- *    assert (vehicle-lookup-invariants.md), so neither green nor red may be shown for it;
+ *    assert, so neither green nor red may be shown for it;
  *  - a coverage running today: positive;
  *  - coverage that has lapsed or not begun, or a declared reason it has not started: negative —
  *    the "not active" chip's verdict, on the bar;

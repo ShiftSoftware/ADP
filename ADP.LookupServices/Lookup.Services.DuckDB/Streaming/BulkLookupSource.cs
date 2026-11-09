@@ -10,7 +10,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.DuckDB.Streaming;
 
 /// <summary>
 /// Where the bulk engine reads from: the declared families and the reference tables bound to one
-/// DuckDB-readable source (bulk-lookup.md step 4, the source binding).
+/// DuckDB-readable source (the source binding).
 /// <list type="bullet">
 /// <item><see cref="ReadSnapshot"/> — a read snapshot as a sync agent publishes it: bare tables, named as the per-VIN storage names them.</item>
 /// <item><see cref="HawtaStore"/> — a Hawta store (the agent's write DB, or a scratch rebuild of one): the SERVING tables under their schema, live rows only.</item>

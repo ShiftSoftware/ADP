@@ -1,8 +1,8 @@
 /*
  * base.css — the explicit reset every component built without Tailwind imports first.
- * A plain-CSS copy of the rules Tailwind's preflight injected into each shadow root
- * (.shift plain-css-migration README, Appendix A). The :host font rule is parity with
- * preflight; a component that wants its host's font overrides it on its own :host.
+ * A plain-CSS copy of the rules Tailwind's preflight injected into each shadow root. The
+ * :host font rule is parity with preflight; a component that wants its host's font overrides
+ * it on its own :host.
  */
 *,
 ::before,

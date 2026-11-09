@@ -319,7 +319,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
    * changes, the values fade out, the page swaps while they are out, and they fade back in; rows
    * the new page adds slide open and rows it drops slide shut. When every row on screen stays (a
    * bigger page from the first one), nothing fades and the new rows simply open below. The page
-   * is never scrolled, even when a shorter page lifts the controls (motion.md rule 10).
+   * is never scrolled, even when a shorter page lifts the controls.
    */
   private goTo(page: number, size: PageSize) {
     // A drawer belongs to the visit in its slot, and the slot is about to hold another visit.

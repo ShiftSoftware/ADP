@@ -3,7 +3,7 @@ namespace ShiftSoftware.ADP.Cases.Shared;
 /// <summary>
 /// The general case contract for workflow-driven request/case entities (SKR, DTR and future
 /// case types). Generic over the consumer's own status enum — each case domain defines its OWN
-/// <c>[Description]</c>-annotated status enum (per skr-dtr decision D3; the engine deliberately
+/// <c>[Description]</c>-annotated status enum (the engine deliberately
 /// does NOT impose ADP's <c>ClaimStatus</c>).
 /// </summary>
 /// <remarks>

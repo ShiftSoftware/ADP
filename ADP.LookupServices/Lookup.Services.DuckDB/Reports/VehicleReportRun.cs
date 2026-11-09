@@ -147,7 +147,7 @@ public static class VehicleReports
 }
 
 /// <summary>
-/// The host stage of the bulk engine (bulk-lookup.md step 4): one pass over a source, every
+/// The host stage of the bulk engine: one pass over a source, every
 /// vehicle evaluated once per distinct request, the requested report files written in VIN order
 /// and promoted together. A full recompute of a 230 K-vehicle universe takes under a minute on
 /// sixteen workers, so this is what a host runs on its cadence; the typed report

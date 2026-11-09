@@ -109,7 +109,7 @@ public class ExpressionSandboxTests
     [Fact]
     public void SchemaExample_FromSharedSchemaDoc_Works()
     {
-        // Taken verbatim from shared-schema.md "expression escape hatch" section.
+        // The schema's "expression escape hatch" example, verbatim.
         var src = "answers['nps'] >= 9 && answers['has-car'] == 'yes'";
         var answers = AnswerMap(("nps", "10"), ("has-car", "\"yes\""));
         Assert.True(ExpressionSandbox.EvaluateBoolean(src, answers));

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<Import Project="..\..\GlobalSettings.props" />
 
-	<!-- The bulk-lookup measurement harness (bulk-lookup.md D10): evaluator CPU per VIN and the
+	<!-- The bulk-lookup measurement harness: evaluator CPU per VIN and the
 	     streamed data plane's throughput, against the per-VIN path, over a local source. Deliberately
 	     NOT in ADP.sln and never packed: it needs a source on the developer's machine and a client
 	     profile. A client's rules, roster and report set are an IBenchProfile in the client's own

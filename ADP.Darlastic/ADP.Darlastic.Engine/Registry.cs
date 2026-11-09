@@ -10,7 +10,7 @@ namespace ShiftSoftware.ADP.Darlastic.Engine;
 /// Darlastic V0 — the SQL registry that turns the spike's stateless clustering into STABLE golden
 /// identities, plus the hash-guarded projection staging (the delta-out discipline).
 ///
-/// Contract (deployment-architecture.md "Golden-ID stability"):
+/// Contract (Golden-ID stability):
 ///   - Golden IDs are append-only and never reused. A merge writes a redirect (old -> surviving),
 ///     never a delete; a split keeps the ID with the max-overlap fragment and mints for the rest.
 ///     Redirect rows are chain-compressed on write, so a single hop always lands on a live identity.

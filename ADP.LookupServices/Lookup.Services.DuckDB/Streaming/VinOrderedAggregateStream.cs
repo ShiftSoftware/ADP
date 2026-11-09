@@ -10,7 +10,7 @@ using ShiftSoftware.ShiftEntity.Model.HashIds;
 namespace ShiftSoftware.ADP.Lookup.Services.DuckDB.Streaming;
 
 /// <summary>
-/// The bulk data plane (bulk-lookup.md D8): one VIN-ordered scan per declared family, merged
+/// The bulk data plane: one VIN-ordered scan per declared family, merged
 /// k-way into one <see cref="CompanyDataAggregateModel"/> per VIN, in VIN order. Nothing is held
 /// beyond the current vehicle's rows per family: no VIN lists, no IN-clauses, no reflection per
 /// cell, no JSON of the universe. The per-VIN storage assembles the same aggregate from the same

@@ -3,9 +3,9 @@ namespace ShiftSoftware.ADP.Cases.Shared.Workflow;
 /// <summary>
 /// A persistence-agnostic record of one case-history event, produced by
 /// <see cref="CaseWorkflow{TStatus, TTrigger}"/> for every applied transition and every note.
-/// The consumer maps it onto its own append-only, temporal history entity (per skr-dtr D5:
+/// The consumer maps it onto its own append-only, temporal history entity:
 /// history is immutable and visible to all roles; a note without a status change is recorded as a
-/// row whose <see cref="FromStatus"/> equals <see cref="ToStatus"/>).
+/// row whose <see cref="FromStatus"/> equals <see cref="ToStatus"/>.
 /// </summary>
 /// <typeparam name="TStatus">The consumer's case-status enum.</typeparam>
 public sealed record CaseStatusHistoryEntry<TStatus>(

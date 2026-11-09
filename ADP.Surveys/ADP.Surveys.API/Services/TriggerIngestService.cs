@@ -134,7 +134,7 @@ public class TriggerIngestService
     private async Task<List<TriggerMatch>> LoadPublishedTriggersForEventKindAsync(string eventKind, CancellationToken ct)
     {
         // Slice 2 simplistic load: pull all published surveys + their pinned versions in one
-        // round-trip, then parse triggers in memory. Per legacy-data-analysis.md the live-template
+        // round-trip, then parse triggers in memory. The live-template
         // count is small (~50/company), so the cost is bounded. Slice 4+ caches parsed schemas.
         var surveys = await db.Set<Survey>()
             .Include(s => s.Versions)
