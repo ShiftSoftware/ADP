@@ -5,6 +5,10 @@ countries**. The contract form asks which country's menu prices the contract and
 the menu lookup uses to scale the consumable charge. The [SingleCountry](../SingleCountry/README.md) sample is the
 other shape; apart from the countries, the two are the same, and that README has the full detail.
 
+**The vehicle lookup is not wired yet.** `Services/LookupEndpointContractMenuProvider.cs` throws
+`NotImplementedException`, so the contract form cannot load a vehicle until it is implemented against a
+multi-country vehicle lookup endpoint (sending the country and the transfer rate the user picked).
+
 - `ADP.ClaimableItems.Sample.MultiCountry.API`: the API on `http://localhost:5171`. It also serves the Blazor
   client, so this is the only project to run.
 - `ADP.ClaimableItems.Sample.MultiCountry.Web`: the Blazor WebAssembly client.
@@ -12,7 +16,7 @@ other shape; apart from the countries, the two are the same, and that README has
 ## Settings
 
 As in SingleCountry, the `appsettings.Development.json` files hold the local identity server's development values,
-copied from its own development settings. The Cosmos connection in `appsettings.json` points at the local emulator.
+copied from its own development settings.
 
 ### API: `appsettings.Development.json`
 
@@ -33,8 +37,7 @@ dotnet run --project ADP.ClaimableItems.Sample.MultiCountry.API
 ```
 
 Open `http://localhost:5171`, sign in, and go to **Service Contracts**. After the VIN and the mileage, pick the
-country and enter the transfer rate; the menu reloads for them. [test-vins.md](../test-vins.md) lists VINs with a
-contract-type menu in the local Cosmos emulator.
+country and enter the transfer rate; the menu reloads for them (once the provider is implemented).
 
 `ADP.ClaimableItems.Sample.MultiCountry.API.http` has the API calls. Permissions and migrations work as in
 SingleCountry.

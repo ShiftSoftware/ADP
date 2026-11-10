@@ -94,11 +94,11 @@ public static class ClaimableItemsApiExtensions
             ContractTimeZone = options.ContractTimeZone,
         });
 
-        // Service contracts. The default menu provider goes through the vehicle lookup, resolved only when a
-        // contract needs it; TryAdd lets a host register its own provider instead.
+        // Service contracts. The vehicle and its menu come from the host's IClaimableItemContractMenuProvider; until
+        // one is registered, opening a contract fails with a message saying so.
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<ClaimableItemContractMenuService>();
-        services.TryAddScoped<IClaimableItemContractMenuProvider, VehicleLookupContractMenuProvider>();
+        services.TryAddScoped<IClaimableItemContractMenuProvider, UnconfiguredContractMenuProvider>();
 
         mvcBuilder.AddApplicationPart(typeof(ClaimableItemsApiExtensions).Assembly);
 

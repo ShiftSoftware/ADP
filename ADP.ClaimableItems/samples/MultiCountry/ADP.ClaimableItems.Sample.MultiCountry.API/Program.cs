@@ -1,4 +1,3 @@
-using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ADP.Cases.Data.Extensions;
 using ShiftSoftware.ADP.Cases.Shared.Printing;
@@ -6,8 +5,7 @@ using ShiftSoftware.ADP.Cases.Shared.Services;
 using ShiftSoftware.ADP.ClaimableItems.API.Extensions;
 using ShiftSoftware.ADP.ClaimableItems.Sample.MultiCountry.API.Data;
 using ShiftSoftware.ADP.ClaimableItems.Sample.MultiCountry.API.Services;
-using ShiftSoftware.ADP.Lookup.Services.Enums;
-using ShiftSoftware.ADP.Lookup.Services.Extensions;
+using ShiftSoftware.ADP.ClaimableItems.Shared;
 using ShiftSoftware.ADP.Menus.Shared;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.EFCore;
@@ -27,7 +25,6 @@ string[] requiredSettings =
 [
     "ShiftIdentity:Issuer",
     "ShiftIdentity:PublicKey",
-    "ConnectionStrings:Cosmos",
 ];
 var missingSettings = requiredSettings.Where(x => string.IsNullOrWhiteSpace(configuration[x])).ToList();
 
@@ -75,19 +72,9 @@ builder.Services.AddTypeAuth(o =>
     o.AddActionTree<GeneralActionTree>();
 });
 
-// ---------- Vehicle lookup on Cosmos (the contract menu comes from it) ----------
-if (!string.IsNullOrWhiteSpace(configuration.GetConnectionString("Cosmos")))
-    builder.Services.AddSingleton(new CosmosClient(configuration.GetConnectionString("Cosmos")));
-
-builder.Services.AddLookupService(o =>
-{
-    o.VehicleLookupStorageSource = StorageSources.CosmosDB;
-    o.CosmosDatabaseNameSuffix = configuration["Lookup:CosmosDatabaseNameSuffix"];
-
-    // No default country: every contract names the country the user picked.
-});
-
+// ---------- The vehicle and its contract menu, from the distributor's vehicle lookup endpoint ----------
 builder.Services.AddSingleton<IMenuCountryProvider, SampleCountryProvider>();
+builder.Services.AddScoped<IClaimableItemContractMenuProvider, LookupEndpointContractMenuProvider>();
 
 // ---------- Claimable Items (service contracts) ----------
 builder.Services.AddScoped<ICompanyInfoProvider, SampleCompanyInfoProvider>();

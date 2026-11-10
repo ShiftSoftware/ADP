@@ -13,8 +13,8 @@ shows neither field. The [MultiCountry](../MultiCountry/README.md) sample is the
 | Piece | Where it comes from |
 |---|---|
 | Sign-in, users, companies, branches, countries | An existing **ShiftIdentity server** (external hosting). The API only validates its tokens. |
-| The vehicle and its contract-type menu | The **vehicle lookup on Cosmos** (`AddLookupService`). `appsettings.json` points at the local Cosmos emulator; menus must be replicated to it. |
-| Contracts | Its own SQL database. LocalDB by default; migrations run at start-up. |
+| The vehicle and its contract-type menu | The distributor's **vehicle lookup endpoint** (`Sample:VehicleLookupUrl`), through `Services/LookupEndpointContractMenuProvider.cs`. It asks for the contract menu, server to server. |
+| Contracts | Its own SQL database, on the local SQL Server Express instance (`localhost\SQLEXPRESS`) by default; migrations run at start-up. |
 | The one country | `Sample:Country`. Left `null`, the menu is priced with no country (country 0), as for a host with no country entity. |
 | Names on the print | `Sample:Distributor` (dealers and branches print as "Dealer {id}" / "Branch {id}"). |
 
@@ -30,9 +30,13 @@ API refuses to start, naming what is missing, if they are blank.
 - `ShiftIdentity:HashIds:Salt` and `MinHashLength`: the identity server's hash-id settings. They must match, or
   the company, branch and country IDs in its tokens and lists will not decode.
 - `Sample:Country`: `{ "Id": <the country's ID on the identity server>, "Name": "..." }`, or `null`.
+- `Sample:VehicleLookupUrl`: the vehicle lookup endpoint, with `{vin}` where the VIN goes. The provider adds
+  `includeServiceMenu=true&menuTypes=Contract`. The endpoint prices the menu itself, so no country or transfer rate
+  is sent.
+- `Sample:VehicleLookupFunctionKey`: the endpoint's function key, sent as `x-functions-key`. Leave it empty
+  locally, where function keys are not checked.
 
-Optional: `Lookup:CosmosDatabaseNameSuffix`, `ConnectionStrings:SQLServer`, `ConnectionStrings:Cosmos` (another
-account than the emulator), `Sample:ContractMinimumLines`, `Sample:ContractPeriodicMileageMargin`,
+Optional: `ConnectionStrings:SQLServer`, `Sample:ContractMinimumLines`, `Sample:ContractPeriodicMileageMargin`,
 `Sample:TimeZone` (a Windows or IANA time zone ID) and the `Sample:Distributor` fields.
 
 ### Blazor client: `wwwroot/appsettings.Development.json`
@@ -51,8 +55,9 @@ dotnet run --project ADP.ClaimableItems.Sample.SingleCountry.API
 ```
 
 Open `http://localhost:5161`, sign in, and go to **Service Contracts**. Enter a VIN that the lookup knows and
-whose model has a contract-type menu, then the mileage. [test-vins.md](../test-vins.md) lists some from the local
-Cosmos emulator.
+whose model has a contract-type menu, then the mileage. Run the vehicle lookup endpoint locally too.
+[test-vins.md](../test-vins.md) lists VINs with a contract-type menu in the local Cosmos emulator the endpoint
+reads.
 
 `ADP.ClaimableItems.Sample.SingleCountry.API.http` has the API calls, for a token copied from the browser.
 

@@ -3,9 +3,8 @@ using ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ClaimableItemContract;
 namespace ShiftSoftware.ADP.ClaimableItems.Shared;
 
 /// <summary>
-/// Where service contracts read a vehicle and its contract-type menu from. The API package registers a
-/// default that goes through the vehicle lookup (so the host must call <c>AddLookupService</c>) and reads the
-/// countries from the host's <c>IMenuCountryProvider</c>. A host can register its own instead; the
+/// Where service contracts read a vehicle and its contract-type menu from. The host implements it over its own
+/// vehicle lookup (an endpoint, usually) and registers it; the module does not read the lookup itself. The
 /// module's rules (mileage, unpriced parts, other contracts) are applied on top of whatever this returns.
 /// </summary>
 public interface IClaimableItemContractMenuProvider
