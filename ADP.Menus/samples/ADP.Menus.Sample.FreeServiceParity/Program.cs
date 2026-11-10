@@ -183,7 +183,7 @@ static string FindRepoRoot(string startDir)
     while (dir is not null)
     {
         if (Directory.Exists(Path.Combine(dir.FullName, ".git")) ||
-            File.Exists(Path.Combine(dir.FullName, "CLAUDE.md")))
+            File.Exists(Path.Combine(dir.FullName, "AGENTS.md")))
             return dir.FullName;
         dir = dir.Parent!;
     }

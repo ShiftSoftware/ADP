@@ -6,8 +6,7 @@
  * its height slides, or it cross-fades with what replaces it in the same place — and whatever sits
  * below it moves with it. In JSX that means `{condition && <div />}` is only ever used for content
  * that mounts or unmounts *inside* one of these primitives while that primitive hides it; a bare
- * mount or unmount is a pop. The write-up, with the review method and the state checklist, is
- * .shift/repos/adp/web-components/motion.md — read it before adding a state to a panel.
+ * mount or unmount is a pop.
  *
  *   .collapsible / .collapsible-body   a region that slides open and shut (grid-template-rows
  *                                      0fr ↔ 1fr). Keep the outgoing content mounted until it has
@@ -90,7 +89,7 @@
  * A .collapsible moves between zero and the content's height. This moves between two content
  * heights: a value that wraps to a second line on the next vehicle makes its block taller, and
  * that change lands in one frame, under a skeleton cover that is about to lift on it. A height
- * that changes without moving is a pop with a different name (motion.md rule 7), and no
+ * that changes without moving is a pop with a different name, and no
  * `height: auto` can be transitioned to — `interpolate-size: allow-keywords` is not on the
  * family's browser floor.
  *

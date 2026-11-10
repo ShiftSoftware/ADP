@@ -134,7 +134,7 @@
    size sits on the reading edge, the range and the arrows on the far one. 4px of padding around
    the controls leaves room for the 2px focus outline and its 2px offset, which the collapsible's
    overflow:hidden would otherwise clip. No scroll-margin: a shorter page lifts the controls and
-   the page stays where it is (motion.md rule 10). */
+   the page stays where it is. */
 .service-history-pager-row {
   display: flex;
   flex-wrap: wrap;

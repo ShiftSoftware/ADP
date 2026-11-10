@@ -5,7 +5,7 @@ import { VehicleInfoLayout } from './vehicle-info-layout';
 
 /**
  * The wrapper's structure: what a panel can rely on being there in every state. Jest pins the
- * anchors; the motion between them is reviewed with screenshots (motion.md).
+ * anchors; the motion between them is reviewed with screenshots.
  */
 
 type Props = Parameters<typeof VehicleInfoLayout>[0];

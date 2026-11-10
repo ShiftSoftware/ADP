@@ -203,7 +203,7 @@
                                   DialogIcon="@Icons.Material.Filled.Download"
                                   DialogColor="Color.Info"
                                   OnDefaultDialogOpen="onDefaultDialogOpen"
-                                  OnResult="CSVExportResponse"
+                                  OnResponse="CSVExportResponse"
                                   DialogConfirmText="Export"
                                   Endpoint="@($"WarrantyClaim/ExportManufacturerCSV?invoice={Uri.EscapeDataString(inputText ?? "")}&rates={Uri.EscapeDataString(System.Text.Json.JsonSerializer.Serialize(this.uiRates))}")"
                                   Confirm
@@ -400,8 +400,6 @@
     {
         this.isDistributor = CapabilityProvider.IsDistributor;
 
-        // await ShowExportResultFormAsync("warranty-csv-exports/warranty-claims-20251008182645.csv", "1212");
-
         await base.OnInitializedAsync();
     }
 
@@ -473,11 +471,10 @@
         return new ValueTask<bool>(true);
     }
 
-    private async Task ShowExportResultFormAsync(string csvExportPath, string invoiceNumber)
+    private async Task ShowExportResultFormAsync(string invoiceNumber)
     {
         var parameters = new DialogParameters<WarrantyClaimExportResultForm>
         {
-            { x => x.CSVExportPath, csvExportPath },
             { x => x.InvoiceNumber, invoiceNumber },
         };
 
@@ -494,30 +491,27 @@
         );
     }
 
-    private async ValueTask<bool> CSVExportResponse(ShiftEntityResponse<IList<WarrantyClaimListDTO>> data)
+    private async ValueTask<bool> CSVExportResponse(HttpResponseMessage response)
     {
-        var res = data;
+        // On failure the body is the usual JSON error. Return true so ActionButton shows it as normal.
+        if (!response.IsSuccessStatusCode)
+            return true;
 
-        if (res.Entity?.Count > 0)
-        {
-            this.MessageService.Warning($"({res.Entity!.Count}) claims has been updated.");
+        // Read these before anything else runs. The dialog resets inputText when it opens again.
+        var invoiceNumber = this.inputText ?? "";
+        var exportedCount = this.shiftList.SelectState.Count;
 
-            this.rates = System.Text.Json.JsonSerializer.Deserialize<WarrantyRatesDTO>(data.Additional!["Rates"].ToString()!)!;
+        await JSRuntime.DownloadResponseAsFileAsync(response, $"warranty-claims-{DateTime.Now:yyyyMMddHHmmss}.csv");
 
-            await this.ShowExportResultFormAsync(
-                data.Additional!["CSVExportPath"]!.ToString()!,
-                data.Additional!["InvoiceNumber"]!.ToString()!
-            );
-        }
-        else if (res.Entity?.Count == 0)
-        {
-            this.MessageService.Error($"No claims were updated.");
-        }
-        else if (res.Message is null)
-        {
-            this.MessageService.Error("An error occurred while updating the claims.");
-        }
+        this.MessageService.Warning($"({exportedCount}) claims has been updated.");
 
-        return true;
+        // The export saved new rates and changed the claims' status, so load both again.
+        await this.LoadRates();
+        this.shiftList.Reload();
+
+        await this.ShowExportResultFormAsync(invoiceNumber);
+
+        // The body was a file, not JSON. Return false so ActionButton does not try to read it as JSON.
+        return false;
     }
 }

@@ -68,8 +68,7 @@
  *   window.dispatchEvent(new CustomEvent('harness:log', { detail: { label: 'GET', detail: url } }));
  *
  * Control order is fixed on purpose (R5), and the language control flips page
- * direction because half of the supported set is RTL (R6). See
- * .shift/repos/adp/web-components/templates-design-language.md.
+ * direction because half of the supported set is RTL (R6).
  */
 
 import { chooseEnvironment, environmentFileUrl, environmentLabel, environmentsFrom } from './harness-environment.js';

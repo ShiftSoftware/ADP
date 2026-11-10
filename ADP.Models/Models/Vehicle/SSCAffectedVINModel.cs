@@ -100,7 +100,7 @@ public class SSCAffectedVINModel : IPartitionedItem, ICompanyProps
     /// <remarks>
     /// Computed accessor only — never persisted. Without <c>[JsonIgnore]</c> the getter is serialized into the
     /// stored document, and on read-back Newtonsoft (Cosmos path) re-populates the <see cref="Labors"/> list the
-    /// getter returns, duplicating every labor. See .shift/repos/adp/ssc-multi-part-labor/.
+    /// getter returns, duplicating every labor.
     /// </remarks>
     [DocIgnore]
     [Newtonsoft.Json.JsonIgnore]

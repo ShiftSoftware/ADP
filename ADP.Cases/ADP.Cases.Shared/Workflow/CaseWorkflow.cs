@@ -3,14 +3,14 @@ using ShiftSoftware.ShiftEntity.Model;
 namespace ShiftSoftware.ADP.Cases.Shared.Workflow;
 
 /// <summary>
-/// The declarative, pure, DB-free case-workflow engine (skr-dtr D4). Construct one per case type
+/// The declarative, pure, DB-free case-workflow engine. Construct one per case type
 /// with that domain's transition table; invoke <see cref="Apply"/> from the repository's
 /// <c>UpsertAsync</c> (or a batch endpoint) after the consumer has performed its own authorization.
 /// </summary>
 /// <remarks>
 /// Unlike the legacy <see cref="Services.SharedClaimService"/> (moved verbatim, mutate-then-throw),
 /// this engine is VALIDATE-FIRST: an illegal transition throws before any mutation. Timestamps come
-/// from an injected <see cref="TimeProvider"/> so tests are deterministic (skr-dtr D15).
+/// from an injected <see cref="TimeProvider"/> so tests are deterministic.
 /// </remarks>
 /// <typeparam name="TStatus">The consumer's case-status enum.</typeparam>
 /// <typeparam name="TTrigger">The consumer's trigger/action type (typically an enum).</typeparam>
@@ -78,7 +78,7 @@ public class CaseWorkflow<TStatus, TTrigger>
     }
 
     /// <summary>
-    /// Records a note WITHOUT a status change (skr-dtr §4.2.7: e.g. org staff adds a comment) — returns a
+    /// Records a note WITHOUT a status change (e.g. org staff adds a comment) — returns a
     /// history entry whose FromStatus equals ToStatus. The case must already have a status.
     /// </summary>
     public CaseStatusHistoryEntry<TStatus> AppendNote(ICase<TStatus> @case, string? actorUserId = null, string? comment = null)

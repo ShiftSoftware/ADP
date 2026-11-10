@@ -118,7 +118,7 @@ public static class ClaimableItemsReplicationExtensions
     /// consumer may author the catalog without hosting the claim flow (or vice versa).
     /// NOTE: partition keys are registered 2-level (VIN, ItemType) exactly as the original host always
     /// did, although NoSQLConstants defines the Vehicles container as 3-level — pre-existing
-    /// behavior, reproduced deliberately (see goldens-phase2.md §3).
+    /// behavior, reproduced deliberately.
     /// </summary>
     public static ShiftEntityCosmosDbOptions AddItemClaimReplication<TDbContext>(
         this ShiftEntityCosmosDbOptions x,

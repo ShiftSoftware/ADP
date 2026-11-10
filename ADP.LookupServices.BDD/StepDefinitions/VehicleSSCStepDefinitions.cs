@@ -275,7 +275,7 @@ public class VehicleSSCStepDefinitions
     public void ThenSSCTraceLaborLineIsSelected(string sscCode, string invoiceDate)
     {
         var line = GetTraceLaborLine(sscCode, invoiceDate);
-        Assert.True(line.StatusQualifies, "Expected the selected line's invoice status to qualify.");
+        Assert.True(line.StatusQualifies, "Expected the selected line's status to qualify.");
         Assert.True(line.Selected, "Expected the line to be the one that decided the verdict.");
     }
 
@@ -283,7 +283,7 @@ public class VehicleSSCStepDefinitions
     public void ThenSSCTraceLaborLineDoesNotQualify(string sscCode, string invoiceDate)
     {
         var line = GetTraceLaborLine(sscCode, invoiceDate);
-        Assert.False(line.StatusQualifies, "Expected the line's invoice status not to qualify.");
+        Assert.False(line.StatusQualifies, "Expected the line's status not to qualify.");
         Assert.False(line.Selected, "A line that does not qualify must not be selected.");
     }
 

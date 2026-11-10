@@ -1,6 +1,6 @@
 /*
  * The lookup table: the stylesheet fragment of <LookupTable> (lookup-table.tsx), the design
- * language's strip, body and rows as one reusable grid. Spec: .shift/repos/adp/web-components/lookup-table.md.
+ * language's strip, body and rows as one reusable grid.
  *
  * A FRAGMENT, not a stylesheet: a panel @imports it after base.css, lookup-tokens.css,
  * vehicle-info-layout.css (which brings the motion primitives and .sr-only) and lookup-head.css,
@@ -772,7 +772,7 @@
 
 /* In flight the strip does not change: the headings stay where they are, because the columns are
    known before the answer. Rows on screen stay where they are too (owner, 2026-10-25, overriding
-   motion.md rules 2 and 4 for this table): each value goes under the skeleton where it stands, the
+   the general motion rules for this table): each value goes under the skeleton where it stands, the
    next vehicle's values land under it, and only the rows that the answer adds or drops slide. A
    long list shutting and reopening on every lookup read as lag. The cover is shift-skeleton's,
    switched by the wrapper's `.loading` while in flight and by the row's own `.loading` (veil

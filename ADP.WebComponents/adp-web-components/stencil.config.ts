@@ -11,7 +11,7 @@ import tailwindConf from './tailwind.config';
 import autoprefixer from 'autoprefixer';
 
 // A styleUrl file whose first line is `/* tailwind: off */` is built without Tailwind's preflight;
-// it imports src/components/style/base.css instead (.shift plain-css-migration, Appendix B).
+// it imports src/components/style/base.css instead.
 const PLAIN_CSS_MARKER = /^\s*\/\*\s*tailwind:\s*off\b/;
 
 function isPlainCss(file: string): boolean {

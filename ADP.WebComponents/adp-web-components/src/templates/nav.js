@@ -15,8 +15,6 @@
  *
  * Harness pages do not use this — they get the integrated sticky bar from
  * harness.js. Both read the same `catalog.json`, so neither can go stale.
- *
- * See .shift/repos/adp/web-components/templates-design-language.md §8.
  */
 
 /*

@@ -50,7 +50,7 @@ try {
     assert.equal(response.status, 200, asset);
     assert.deepEqual(Buffer.from(await response.arrayBuffer()), await readFile(join(sharedRoot, asset)));
   }
-  for (const path of ['/shared/server.mjs','/shared/../shell.js','/server.mjs', '/README.md', '/../../CLAUDE.md', '/%2e%2e%2fCLAUDE.md']) {
+  for (const path of ['/shared/server.mjs','/shared/../shell.js','/server.mjs', '/README.md', '/../../AGENTS.md', '/%2e%2e%2fAGENTS.md']) {
     assert.equal((await fetch(base + path)).status, 404, path);
   }
   assert.equal((await fetch(base, {method: 'POST', body: 'no mutation'})).status, 405);

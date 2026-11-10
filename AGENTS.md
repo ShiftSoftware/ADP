@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to agents when working with code in this repository.
 
 ## Project Overview
 
@@ -9,37 +9,26 @@ ADP (Auto Distributor Platform) by ShiftSoftware. A multi-project .NET solution 
 > **This is a public, generic, multi-tenant repo — keep it client-agnostic.** Never name a specific client
 > (or its URLs, hostnames, internal system/repo names, warehouse/branch codes, or action-tree namespaces) in
 > code, comments, doc comments, test/scenario names, sample/mock data, or commit messages. Describe the *shape*
-> of the behaviour instead (e.g. "some deployments store parts T-prefixed"). Client-specific facts belong in
-> private planning, not here. Hosts consume these packages from their own private repos.
+> of the behaviour instead (e.g. "some deployments store parts T-prefixed"). Client-specific facts do not
+> belong here. Hosts consume these packages from their own private repos.
 
 > **Web components — read this first, before any other file:**
-> `.shift/repos/adp/web-components/component-design-language.md` is the component design language and it
-> takes priority over everything else in this file for any work that touches a component, the
-> wrapper, a stylesheet, a fixture or a showcase page. Every new or reworked component is built in
-> it; every review is against it. Read it in full at the start of the session — not the section you
-> think applies — then `.shift/repos/adp/web-components/motion.md` and
-> `.shift/repos/adp/web-components/vehicle-lookup-invariants.md`, which it depends on. If a request
-> conflicts with the design language, say so before building.
 >
-> **Form fields** follow `.shift/guides/form-appearances.md` (appearances, dark mode, size, fonts).
-> **Docs pages** on the site follow `.shift/repos/adp/web-components/docs-page-layout.md`: every new
-> component page is a copy of `src/templates/shift-components/shift-calendar.html` with its content
-> replaced, and older pages move to that layout when they are reworked. Read the relevant guide in full
-> before touching a form field or a docs page.
+> **Docs pages** on the site: every new component page is a copy of
+> `src/templates/shift-components/shift-calendar.html` with its content replaced, and older pages move
+> to that layout when they are reworked.
 >
 > **Forms:** the current forms are the only forms — forms v2 was rejected (2026-10-27). Their **logic** stays
 > untouched: no behaviour change in `src/components/forms/**`, `src/features/form-hook/**`,
 > `form-elements/form-*` or `form-elements/branch-*` — mappers, validation, submitted values, events and
 > `part` attributes stay exactly as they are, proven by `src/features/form-hook/v1-freeze.spec.tsx`.
 > **Styling** in those paths may change, and only as a plain-CSS migration with no visual change (the styling
-> rule below). New `shift-*` components may use `form-hook` as it is. Read
-> `.shift/repos/adp/web-components/plain-css-migration/november-2026-plan.md` before touching a form file.
+> rule below). New `shift-*` components may use `form-hook` as it is.
 >
 > **Owner rules for every agent (2026-10-27):**
 > - **Icons** are components, one per glyph, in `src/global/assets/<name>-icon.tsx`, imported as
 >   `~assets/<name>-icon` and sized by a class, like the existing ones. Reuse one before adding one. Never
->   inline `<svg>`, never path strings; `glyphs.ts` is legacy and nothing new goes in it. Read
->   `.shift/repos/adp/web-components/icons.md` before drawing any glyph.
+>   inline `<svg>`, never path strings; `glyphs.ts` is legacy and nothing new goes in it.
 > - **Comments** are as sparse as the code around them: a short line only where the why is not obvious.
 >   No narration of what the code does, no design essays in doc comments.
 > - **Tests**: as few as possible, important UI behaviour only. Never touch `ADP.TestData` or the
@@ -123,24 +112,13 @@ Built with **Stencil.js** (namespace: `shift-components`). Components are styled
 stylesheet per component; Tailwind 3 is still wired into the build for the components that have not
 been migrated yet.
 
-**Design language (priority read): `.shift/repos/adp/web-components/component-design-language.md`.**
-The complete language — philosophy, tokens, colour roles, typography, the card / head / strip / body
-anatomy, the split-cap verdict pill, the state model and its pure derivations, the load choreography,
-container-query breakpoints, the a11y contract, file layout, the pre-review checklist and the
-anti-patterns. `vehicle-ssc` and `vehicle-warranty-timeline` are the reference implementations, but
-the page is written to outlive them: a component built from it alone must be indistinguishable in
-language. Read it in full before starting a component, before touching a panel's head, pill, strip
-or card chrome, and before reviewing one.
-
 **Styling rule (in force since 2026-09-17): no new Tailwind in any component, and the component you
 touch is the one you migrate.** No utility classes in TSX, no `@apply`, no `cn()` from `~lib/cn`. If
 your change lands in a component that still uses Tailwind, first move it to plain CSS in its own
 "no visual change" commit, then make your change. Conditional classes use Stencil's
 `class={{ name: cond }}`. Class names are semantic and component-prefixed, never a bare word that is
 also a Tailwind utility (`hidden`, `flex`, `shadow`, …) — sibling utilities are appended after a
-component's own CSS until the plugin is removed, and would win. The procedure, the recipe table
-(what `text-sm`, `border`, `transition`, `shadow` really set) and the checklist:
-`.shift/repos/adp/web-components/plain-css-migration/guide.md`. Plan and tracking are next to it.
+component's own CSS until the plugin is removed, and would win.
 The dev showcase (`src/templates/`) is a separate Tailwind 4 + daisyUI stylesheet and is not part of
 this rule.
 
@@ -210,20 +188,10 @@ Arabic and Kurdish render in **Speda Bold**. The font file is not in the repo �
 `@font-face` tries `local()` first and then `assets/fonts/speda-bold.woff2`, falling back
 to Noto Kufi Arabic. See `src/templates/assets/fonts/README.md`.
 
-Full design language, rules and migration plan:
-`.shift/repos/adp/web-components/templates-design-language.md`
-
-State invariants for the vehicle-lookup panels — what a panel may assert about a vehicle that is
-not loaded yet, or that the distributor has no records for (an empty list is never a verdict):
-`.shift/repos/adp/web-components/vehicle-lookup-invariants.md`. Read it before touching a panel's
-empty, idle or unauthorized state, or a fixture.
-
 Motion — **nothing on screen appears or disappears without a transition**, a loading state must not
 presume the outcome, and every state pair (not only idle → loaded) is a transition to design. The
 owner reviews every component change against this, with pairs of still + mid-transition
-screenshots. The rule, its reasoning, the shared primitives (`src/components/style/lookup-motion.css`)
-and the review checklist: `.shift/repos/adp/web-components/motion.md`. Read it before adding a
-state to a component or changing what a state renders.
+screenshots. The shared primitives are in `src/components/style/lookup-motion.css`.
 
 **Path aliases** (configured in `stencil.config.ts`):
 `~lib`, `~locales`, `~features`, `~types`, `~assets`

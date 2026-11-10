@@ -57,6 +57,7 @@
   "traceHistoryNone": "No service-history labor line carries a campaign labor code.",
   "traceInvoice": "Invoice",
   "traceInvoiceStatus": "Invoice status",
+  "traceOrderStatus": "Order status",
   "traceVerdictOpen": "No qualifying evidence was found, so the campaign is still open.",
   "traceVerdictSSCRecord": "Repaired according to the campaign record.",
   "traceVerdictWarrantyClaim": "Repaired according to a warranty claim.",

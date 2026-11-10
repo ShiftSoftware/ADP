@@ -1,6 +1,6 @@
 /**
  * Eases blocks between two content heights, for a fixed structure whose values change under a
- * cover (motion.md rule 11; design language § 21).
+ * cover.
  *
  * A value that wraps to a second line on the next vehicle makes its block taller, and that change
  * would otherwise land in one frame under a cover about to lift on it. No primitive covers it:

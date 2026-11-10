@@ -67,7 +67,7 @@ Scenario: Non-sequential item alongside sequential items activates at start and 
 
 # Pins current behavior of non-sequential rolling when there are no sequential items.
 # This looks like a bug (item appears immediately expired) and is tracked as
-# issue #14 in bdd-expansion STATUS.md. Test locks current behavior so a refactor
+# issue #14. Test locks current behavior so a refactor
 # change is a conscious decision, not an accidental regression.
 Scenario: Sole non-sequential item expires at the free service start date (issue #14 — pinned)
   Given vehicles in dealer stock:

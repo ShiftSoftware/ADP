@@ -10,7 +10,7 @@ import { BADGE_GLYPHS, MEDIA_GLYPHS } from '../../components/vehicle-lookup/comp
  * The lookup table: the design language's table (§ 15 strip, § 18 rows, § 22 layouts) taken out of
  * `vehicle-ssc` and made reusable. A pure functional component with no state, no timers and no
  * memory; the panel that owns it runs the choreography (retainedBody, the leave, the reshape) and
- * hands it flags. Spec: .shift/repos/adp/web-components/lookup-table.md.
+ * hands it flags.
  *
  * It is a function and not an element because the strip's headings and the body's rows must be
  * `subgrid`s of one grid, inside the panel's own shadow root, between the panel's head and its

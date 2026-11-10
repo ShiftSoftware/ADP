@@ -22,7 +22,7 @@ public enum SscRepairSource
     WarrantyClaim = 2,
     /// <summary>
     /// A finished service-history labor line carries one of the campaign's labor operation codes (or a code
-    /// configured as interchangeable with one). By default a line is finished when its invoice status is X or C;
+    /// configured as interchangeable with one). By default a line is finished when its invoice status is X or its order status is C;
     /// a deployment can set its own rule (<c>LookupOptions.SSCQualifyingLaborLine</c>).
     /// </summary>
     ServiceHistory = 3,

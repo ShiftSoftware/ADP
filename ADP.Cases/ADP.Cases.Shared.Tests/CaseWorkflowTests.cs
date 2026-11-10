@@ -7,7 +7,7 @@ namespace ShiftSoftware.ADP.Cases.Shared.Tests;
 
 /// <summary>
 /// Behavior tests for the new declarative <see cref="CaseWorkflow{TStatus, TTrigger}"/> engine,
-/// exercised with an SKR-shaped transition table (skr-dtr requirements §4.3.4).
+/// exercised with an SKR-shaped transition table.
 /// Key contrast with the legacy claim engine: VALIDATE-FIRST — illegal triggers never mutate.
 /// </summary>
 public class CaseWorkflowTests

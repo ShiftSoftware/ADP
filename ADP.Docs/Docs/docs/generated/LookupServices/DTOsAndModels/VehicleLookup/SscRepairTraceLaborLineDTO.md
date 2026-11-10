@@ -13,5 +13,5 @@ One service-history labor line whose code is one of the SSC campaign's labor cod
 | OrderStatus <div><strong>``string``</strong></div> | The work order status as recorded by the dealer system. |
 | LaborCode <div><strong>``string``</strong></div> | The labor operation code on the line. |
 | CampaignLaborCode <div><strong>``string``</strong></div> | The campaign's own labor code the line's code stands for (equal to `LaborCode` on a direct match). |
-| StatusQualifies <div><strong>``bool``</strong></div> | Whether the line counts as finished work, by `LookupOptions.SSCQualifyingLaborLine`. By default that is invoice status X or C. |
+| StatusQualifies <div><strong>``bool``</strong></div> | Whether the line counts as finished work, by `LookupOptions.SSCQualifyingLaborLine`. By default that is invoice status X or order status C. |
 | Selected <div><strong>``bool``</strong></div> | Whether this is the line that decided the verdict: the most recent qualifying line, consulted only when no warranty claim was selected. |

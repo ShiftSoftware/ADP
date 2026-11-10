@@ -11,7 +11,7 @@ A **dynamic survey** module for the ADP platform. Models surveys, screens, quest
 
 All packages target **.NET 10**.
 
-The public-facing survey **renderer** (React + Vite) lives separately and talks to the API's anonymous `/schema` + `/responses` endpoints. See the dynamic-surveys plan for the full design.
+The public-facing survey **renderer** (React + Vite) lives separately and talks to the API's anonymous `/schema` + `/responses` endpoints.
 
 ## Sample app
 

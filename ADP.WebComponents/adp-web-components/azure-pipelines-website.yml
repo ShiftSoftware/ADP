@@ -23,7 +23,7 @@ trigger:
     include:
       - release-website-*
 
-# PR runs disabled: production must only ever be reached by a manual run (see .shift/guides/pipeline-pr-triggers.md)
+# PR runs disabled: production must only ever be reached by a manual run.
 pr: none
 
 variables:
