@@ -143,13 +143,13 @@
       const decodedVehicle = (vin, vinDecode) => ({ vin, isAuthorized: false, identifiers: { vin }, vehicleVariantInfo: {}, vehicleSpecification: {}, vinDecode });
 
       window.decodedFixtures = {
-        ZV8DECODEDVIN0001: decodedVehicle('ZV8DECODEDVIN0001', { katashiki: 'TLR200', modelDescription: 'TALORA' }),
+        ZV8DECODEDVIN0001: decodedVehicle('ZV8DECODEDVIN0001', { katashiki: 'TLR200', modelDescription: 'TALORA', modelYear: 2013 }),
         ZV8DECODEDVIN0002: decodedVehicle('ZV8DECODEDVIN0002', { katashiki: null, modelDescription: 'TALORA' }),
       };
 
       window.decodedFixtureTags = {
-        ZV8DECODEDVIN0001: 'not in distributor records · decoded from the VIN',
-        ZV8DECODEDVIN0002: 'decoded from the VIN · no single katashiki',
+        ZV8DECODEDVIN0001: 'not in distributor records · decoded from the VIN, with the year from character 10',
+        ZV8DECODEDVIN0002: 'decoded from the VIN · no single katashiki, no year code',
       };
 
       const blazorCallbacks = {

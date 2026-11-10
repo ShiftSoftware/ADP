@@ -334,6 +334,7 @@ public static class VehicleReportRows
 
             VinDecodeKatashiki = lookup?.VinDecode?.Katashiki ?? string.Empty,
             VinDecodeModelDescription = lookup?.VinDecode?.ModelDescription ?? string.Empty,
+            VinDecodeModelYear = lookup?.VinDecode?.ModelYear,
         };
     }
 

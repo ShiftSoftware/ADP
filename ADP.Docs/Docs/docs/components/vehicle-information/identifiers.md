@@ -205,11 +205,16 @@ Note: You can use [https://www.randomvin.com](https://www.randomvin.com) to gene
 ### Naming a vehicle the distributor has no record of
 A host can ask the lookup to name such a vehicle by setting `DecodeUnauthorizedVin` on the request options. The lookup then reads one row from the `VinModelMappings` container: the partition key is the WMI (VIN characters 1 to 3) and the id is the VDS (VIN characters 4 to 8). If there is a row, the response carries its base Katashiki and model name in `VinDecode`.
 
+`VinDecode.ModelYear` comes from VIN character 10, the year code of ISO 3779 and US 49 CFR 565, and only for a VIN that has a row: the host's rows name the manufacturers it decodes, and other manufacturers may use character 10 for something else.
+
+- The code repeats every 30 years. The lookup reads it as the most recent year that is not later than next year, so in 2026 the codes stand for 1998 to 2027. An older vehicle reads 30 years too late.
+- A `0`, or a character that is not a year code, gives no year. Some manufacturers fill character 10 with `0` on some markets.
+
 - Each host loads its own rows. These packages ship none.
 - The VIN stays unauthorized. The values are inferred, so they never reach `Identifiers`, `VehicleSpecification`, warranty, campaigns, service items or menus.
 - A VIN with no row adds nothing to the response.
 - On DuckDB the rows come from a `VinModelMapping` table. The per-VIN storage reads it as it is, and the bulk engine's reference storage reads it only when `LoadVinModelMappings` is on.
-- The top-level report carries the values in `VinDecodeKatashiki` and `VinDecodeModelDescription` when its request sets the option.
+- The top-level report carries the values in `VinDecodeKatashiki`, `VinDecodeModelDescription` and `VinDecodeModelYear` when its request sets the option.
 
 ## Non Primary Vehicle Information
 

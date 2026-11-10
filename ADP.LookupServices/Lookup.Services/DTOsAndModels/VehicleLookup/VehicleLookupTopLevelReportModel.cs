@@ -105,4 +105,10 @@ public class VehicleLookupTopLevelReportModel
     /// asked for it. Inferred, so it stays apart from <see cref="VehicleSpecModelDescription"/>.
     /// </summary>
     public string VinDecodeModelDescription { get; set; }
+
+    /// <summary>
+    /// The model year read from the VIN of a vehicle the distributor has no record of, when the request
+    /// asked for it. Inferred, so it stays apart from <see cref="VehicleSpecModelYear"/>.
+    /// </summary>
+    public int? VinDecodeModelYear { get; set; }
 }

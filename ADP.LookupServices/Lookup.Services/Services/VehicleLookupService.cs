@@ -177,7 +177,7 @@ public class VehicleLookupService
         };
 
         if (!data.IsAuthorized && requestOptions.DecodeUnauthorizedVin)
-            data.VinDecode = await new VehicleVinDecodeEvaluator(vehicleLookupStorageService).Evaluate(vin);
+            data.VinDecode = await new VehicleVinDecodeEvaluator(vehicleLookupStorageService, lookupOptions).Evaluate(vin);
 
         // Enrich SSC recall parts with in-stock availability. This only does anything when the host has wired
         // LookupOptions.SSCPartStockScopeResolver (i.e. a Hub request that carries a region/branch scope);

@@ -133,7 +133,7 @@ const recordValues = (record?: SpecificationRecord): string[] => {
  */
 export const hasRecords = (record?: SpecificationRecord): boolean => recordValues(record).some(Boolean);
 
-export type DecodedValues = { model: string; katashiki: string };
+export type DecodedValues = { model: string; katashiki: string; year?: number };
 
 /**
  * The one thing the panel may say about a vehicle the distributor has no record of: the API marks
@@ -144,8 +144,10 @@ export const decodedValues = (record: SpecificationRecord | undefined, isError: 
 
   const model = normalise(record.vinDecode?.modelDescription);
   const katashiki = normalise(record.vinDecode?.katashiki);
+  // VIN character 10. The API sends it only beside a model or a katashiki, so it never stands alone.
+  const year = record.vinDecode?.modelYear ?? undefined;
 
-  return model || katashiki ? { model, katashiki } : undefined;
+  return model || katashiki ? { model, katashiki, year } : undefined;
 };
 
 /** Amber, a statement without a verdict: without it nothing says where the values came from. */
@@ -247,7 +249,7 @@ export const identityCells = (record: SpecificationRecord | undefined, locale: S
       label: locale.modelYear,
       role: 'figure',
       // Four digits, never a locale grouping separator: a year is not a quantity.
-      text: year === undefined ? '' : String(year),
+      text: year !== undefined ? String(year) : decoded?.year !== undefined ? String(decoded.year) : '',
       note: recordYear === undefined ? undefined : `${locale.recordYearNote} ${recordYear}`,
     },
     { key: 'productionDate', label: locale.productionDate, role: 'figure', text: productionMonth(spec?.productionDate, lang) },
@@ -376,10 +378,10 @@ const SpecCellValue: FunctionalComponent<{ cell: SpecCell }> = ({ cell }) => {
   );
 };
 
-/** The head's statement: what the vehicle is, in the distributor's words or what the VIN says. Empty in every other state the panel may not speak for. */
+/** The head's statement: what the vehicle is, in the distributor's words or what the VIN says (model and year). Empty in every other state the panel may not speak for. */
 export const headStatement = (record: SpecificationRecord | undefined, readable: boolean, decoded?: DecodedValues) => ({
   value: readable ? headValue(record) : (decoded?.model ?? ''),
-  year: readable ? modelYearOf(record).year : undefined,
+  year: readable ? modelYearOf(record).year : decoded?.year,
   // The grade is the variant *description*. Never `identifiers.variant`: that is a code, and codes
   // are the body's — the head reads the words, the body reads the codes.
   grade: readable ? normalise(record?.vehicleSpecification?.variantDescription) : '',

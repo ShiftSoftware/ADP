@@ -12,10 +12,13 @@ public class VehicleVinDecodeEvaluator
     private const int VdsLength = 5;
 
     private readonly IVehicleLookupStorageService storage;
+    private readonly LookupOptions options;
 
-    public VehicleVinDecodeEvaluator(IVehicleLookupStorageService storage)
+    /// <param name="options">Its clock places the model year's 30-year window. Without it, the system clock does.</param>
+    public VehicleVinDecodeEvaluator(IVehicleLookupStorageService storage, LookupOptions options = null)
     {
         this.storage = storage;
+        this.options = options ?? new LookupOptions();
     }
 
     public async Task<VehicleVinDecodeDTO> Evaluate(string vin)
@@ -37,6 +40,9 @@ public class VehicleVinDecodeEvaluator
         {
             Katashiki = katashiki,
             ModelDescription = modelDescription,
+            // Only for a VIN with a mapping row: the host's rows name the manufacturers it decodes, and those are
+            // the ones known to put the year code in character 10. Other manufacturers may use it for something else.
+            ModelYear = VinModelYear.Decode(vin, options.GetUtcNow().Year),
         };
     }
 

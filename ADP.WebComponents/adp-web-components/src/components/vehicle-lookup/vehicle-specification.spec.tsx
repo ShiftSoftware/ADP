@@ -620,6 +620,8 @@ describe('vehicle-specification — the invariants', () => {
     expect(text(page, '.spec-title-value')).toBe('Sample Model');
     expect(text(page, '.spec-cell[data-label="Katashiki"] .spec-value-text')).toBe('ABC100');
     expect(shadow(page).querySelectorAll('.spec-identity .spec-value-content[data-empty="true"]')).toHaveLength(7);
+    // No year in the decode: the head carries none, and the year cell stays blank.
+    expect(shadow(page).querySelector('.spec-title-year')).toBeNull();
     expect(shadow(page).querySelector('.spec-details')?.getAttribute('data-empty')).toBe('true');
 
     // A vehicle in the records never shows it, whatever the response carries.
@@ -635,6 +637,39 @@ describe('vehicle-specification — the invariants', () => {
     expect(text(page, '.spec-title-value')).toBe('Record Model');
     expect(text(page, '.spec-cell[data-label="Katashiki"] .spec-value-text')).toBe('REC100');
     expect(shadow(page).querySelector('.lookup-summary .status-badge')).toBeNull();
+  });
+
+  it('shows the year the VIN decodes to in the head and the year cell, under the same pill', async () => {
+    const page = await newPageWith('');
+
+    await owner(page).fetchVin({
+      vin: 'ZZ9NOTOURR0000004',
+      isAuthorized: false,
+      identifiers: { vin: 'ZZ9NOTOURR0000004' },
+      vehicleSpecification: {},
+      vinDecode: { katashiki: 'ABC100', modelDescription: 'Sample Model', modelYear: 2024 },
+    } as any);
+    await page.waitForChanges();
+
+    expect(text(page, '.lookup-summary .status-badge > span')).toBe((specificationLocale as any).decodedFromVin);
+    expect(text(page, '.spec-title-value')).toBe('Sample Model');
+    expect(text(page, '.spec-title-year')).toBe('· 2024');
+    expect(text(page, '.spec-cell[data-label="Model year"] .spec-value-text')).toBe('2024');
+    expect(shadow(page).querySelectorAll('.spec-identity .spec-value-content[data-empty="true"]')).toHaveLength(6);
+    expect(shadow(page).querySelector('.spec-details')?.getAttribute('data-empty')).toBe('true');
+
+    // A vehicle in the records shows its own year, never the decoded one.
+    await owner(page).fetchVin({
+      vin: 'ZZ9NOTOURR0000005',
+      isAuthorized: true,
+      identifiers: { vin: 'ZZ9NOTOURR0000005', katashiki: 'REC100' },
+      vehicleSpecification: { modelDescription: 'Record Model', modelYear: 2019 },
+      vinDecode: { katashiki: 'ABC100', modelDescription: 'Sample Model', modelYear: 2024 },
+    } as any);
+    await page.waitForChanges();
+
+    expect(text(page, '.spec-cell[data-label="Model year"] .spec-value-text')).toBe('2019');
+    expect(text(page, '.spec-title-year')).toBe('· 2019');
   });
 
   it('keeps the two empties apart: a blank before a lookup, a dash for a vehicle with nothing in the slot', async () => {

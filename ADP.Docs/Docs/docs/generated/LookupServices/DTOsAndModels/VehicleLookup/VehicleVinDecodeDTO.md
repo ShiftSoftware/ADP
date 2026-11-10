@@ -9,3 +9,4 @@ What a VIN's first 8 characters say about a vehicle the distributor has no recor
 |----------|---------|
 | Katashiki <div><strong>``string``</strong></div> | The base Katashiki the VIN's first 8 characters point to. Null when they do not settle on one code. |
 | ModelDescription <div><strong>``string``</strong></div> | The model name the VIN's first 8 characters point to. |
+| ModelYear <div><strong>``int?``</strong></div> | The model year VIN character 10 stands for. Null when that character is `0` or not a year code. The code repeats every 30 years, so a vehicle older than that reads 30 years too late. |

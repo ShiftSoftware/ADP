@@ -891,6 +891,7 @@ public class DuckDBVehicleReportService(
 
             Map(x => x.VinDecodeKatashiki).Index(66);
             Map(x => x.VinDecodeModelDescription).Index(67);
+            Map(x => x.VinDecodeModelYear).Index(68);
         }
     }
 
