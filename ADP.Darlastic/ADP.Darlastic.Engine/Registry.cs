@@ -669,6 +669,27 @@ public static class Registry
     }
 
     /// <summary>
+    /// Load the Active sticky attribute overrides (<see cref="StewardVerdict.Override"/>) for a resolve to
+    /// apply. <see cref="StewardOverrides.None"/> when the table doesn't exist yet.
+    /// </summary>
+    public static StewardOverrides LoadStewardOverrides()
+    {
+        using var conn = new SqlConnection(ConnectionString);
+        conn.Open();
+        if (Convert.ToInt32(Scalar(conn, "SELECT CASE WHEN OBJECT_ID('Darlastic.StewardDecision') IS NULL THEN 0 ELSE 1 END")) == 0)
+            return StewardOverrides.None;
+
+        var o = new StewardOverrides();
+        using var cmd = new SqlCommand(
+            "SELECT SourceSystem, SourceRecordId, AttrType, Value, AtUtc, DecisionID FROM Darlastic.StewardDecision " +
+            "WHERE Active = 1 AND Kind = 'override' AND SourceSystem IS NOT NULL AND SourceRecordId IS NOT NULL " +
+            "AND AttrType IS NOT NULL AND Value IS NOT NULL", conn);
+        using var r = cmd.ExecuteReader();
+        while (r.Read()) o.Add(r.GetString(0), r.GetString(1), r.GetString(2), r.GetString(3), r.GetDateTime(4), r.GetInt64(5));
+        return o;
+    }
+
+    /// <summary>
     /// Record one steward verdict on a queued pair: the immutable <c>AuditEntry</c> always, plus an
     /// Active <c>StewardDecision</c> when the verdict constrains the engine
     /// (<see cref="StewardVerdict.IsConstraint"/>).
@@ -769,6 +790,9 @@ public static class Registry
         public int ProfilesNew, ProfilesReassigned, ProfilesRehashed, ProfilesRemoved;
         public int ArtifactsPending;
         public int StewardQueued;   // derived queue size — not a delta (excluded from IsZeroDelta)
+        /// <summary>Active sticky attribute overrides this run loaded (not a delta: an override that changes a
+        /// golden shows as a pending artifact).</summary>
+        public int StewardOverrides;
         public Dictionary<string, int> PendingByType = new(StringComparer.Ordinal);
         public List<string> AbsentSources = [];
 
@@ -801,6 +825,7 @@ public static class Registry
             $"artifacts pending {ArtifactsPending:N0}" +
             (PendingByType.Count > 0 ? " (" + string.Join(" / ", PendingByType.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => $"{kv.Key} {kv.Value:N0}")) + ")" : "") +
             $"; steward queue {StewardQueued:N0}" +
+            (StewardOverrides > 0 ? $"; attribute overrides {StewardOverrides:N0}" : "") +
             (MatchSettingsHash is not null ? $"; match configuration {MatchSettingsHash[..12]}" : "") +
             (AbsentSources.Count > 0 ? $"; ABSENT sources frozen: {string.Join(", ", AbsentSources)}" : "") +
             (Events is not null
@@ -1019,11 +1044,17 @@ public static class Registry
         // surface can list one row per golden customer. Without it, only the multi-record ones.
         long[]? recordReasons = merge.RecordReasons;
 
+        // Sticky attribute overrides (a person set this customer's name, phone ...): put over survivorship's
+        // choice for the customer that holds the override's anchor record. None for nearly every customer.
+        var overrides = LoadStewardOverrides();
+        m.StewardOverrides = overrides.Count;
+
         foreach (var root in orderedRoots)
         {
             long id = finalId[root];
             var members = clusters[root].Select(i => records[i]).ToList();
             var survived = Merge.SurviveGolden(members, nameOptions: names);
+            if (!overrides.IsEmpty) survived = Merge.ApplyOverrides(survived, overrides.For(members));
             goldenName[id] = survived.FirstOrDefault(g => g.AttrType == "full_name")?.Value ?? "";
             Stage(ArtGolden, id.ToString(CultureInfo.InvariantCulture), GoldenCanonical(id, survived, Key, clusters[root]));
 

@@ -197,4 +197,57 @@ public static class DarlasticModelBuilderExtensions
 
         return modelBuilder;
     }
+
+    /// <summary>
+    /// Adds the verification tables (the report log and the verified claims) to a host DbContext. Apart from
+    /// <see cref="ConfigureDarlasticEntities"/> on purpose: a host gets these two tables, and the migration
+    /// that creates them, only once it turns verification on. No resolve reads or writes them.
+    /// </summary>
+    public static ModelBuilder ConfigureDarlasticVerificationEntities(this ModelBuilder modelBuilder, string? schema = "Darlastic")
+    {
+        modelBuilder.Entity<VerificationEntry>(x =>
+        {
+            x.ToTable("VerificationLog", schema);
+            x.HasKey(e => e.EntryID);
+            x.Property(e => e.EntryID).UseIdentityColumn();
+            x.Property(e => e.Actor).HasMaxLength(128);
+            x.Property(e => e.Kind).HasColumnType("varchar(32)");
+            x.Property(e => e.ValueKey).HasMaxLength(128).UseCollation(KeyCollation);
+            x.Property(e => e.Method).HasMaxLength(64);
+            x.Property(e => e.Outcome).HasColumnType("varchar(16)");
+            x.Property(e => e.Location).HasMaxLength(128);
+            x.Property(e => e.SourceSystem).HasMaxLength(64).UseCollation(KeyCollation);
+            x.Property(e => e.SourceRecordId).HasMaxLength(64).UseCollation(KeyCollation);
+            x.Property(e => e.EvidenceReference).HasMaxLength(256);
+            x.HasIndex(e => new { e.IdentityID, e.AtUtc }).HasDatabaseName("IX_VerificationLog_Identity");
+        });
+
+        modelBuilder.Entity<VerifiedClaim>(x =>
+        {
+            x.ToTable("VerifiedClaim", schema);
+            x.HasKey(e => e.ClaimID);
+            x.Property(e => e.ClaimID).UseIdentityColumn();
+            x.Property(e => e.Kind).HasColumnType("varchar(32)");
+            x.Property(e => e.ValueKey).HasMaxLength(128).UseCollation(KeyCollation);
+            x.Property(e => e.Method).HasMaxLength(64);
+            x.Property(e => e.EndReason).HasColumnType("varchar(16)");
+            x.Property(e => e.Location).HasMaxLength(128);
+            x.Property(e => e.SourceSystem).HasMaxLength(64).UseCollation(KeyCollation);
+            x.Property(e => e.SourceRecordId).HasMaxLength(64).UseCollation(KeyCollation);
+
+            x.HasOne(e => e.StartedBy).WithMany().HasForeignKey(e => e.StartedByEntryID).OnDelete(DeleteBehavior.Restrict);
+            x.HasOne(e => e.EndedBy).WithMany().HasForeignKey(e => e.EndedByEntryID).OnDelete(DeleteBehavior.Restrict);
+
+            // A customer's claims, open and ended.
+            x.HasIndex(e => new { e.IdentityID, e.Kind }).HasDatabaseName("IX_VerifiedClaim_Identity");
+            // One open claim per customer and value: verifying again closes the old period first.
+            x.HasIndex(e => new { e.Kind, e.ValueKey, e.IdentityID }).IsUnique()
+                .HasFilter("[EndUtc] IS NULL").HasDatabaseName("UX_VerifiedClaim_OpenPerIdentity");
+            // An exclusive value (a phone, a vehicle) is verified for one customer at a time.
+            x.HasIndex(e => new { e.Kind, e.ValueKey }).IsUnique()
+                .HasFilter("[EndUtc] IS NULL AND [Exclusive] = 1").HasDatabaseName("UX_VerifiedClaim_OpenExclusive");
+        });
+
+        return modelBuilder;
+    }
 }

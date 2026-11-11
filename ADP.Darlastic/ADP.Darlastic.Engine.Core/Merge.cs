@@ -617,6 +617,24 @@ public static class Merge
         return golden;
     }
 
+    /// <summary>The <c>WonBy</c> of a value a person set (<see cref="StewardOverrides"/>).</summary>
+    public const string WonByOverride = "steward-override";
+
+    /// <summary>
+    /// Put a customer's sticky overrides over its survived values: an overridden attribute carries the
+    /// override's value (added when survivorship had none), with <see cref="WonByOverride"/>; every other
+    /// attribute is untouched. No overrides: the same list back.
+    /// </summary>
+    public static List<GoldenAttr> ApplyOverrides(List<GoldenAttr> survived, IReadOnlyList<(string Attr, string Value)> overrides)
+    {
+        if (overrides.Count == 0) return survived;
+        var result = new List<GoldenAttr>(survived.Count + overrides.Count);
+        foreach (var g in survived)
+            if (!overrides.Any(o => o.Attr == g.AttrType)) result.Add(g);
+        foreach (var (attr, value) in overrides) result.Add(new GoldenAttr(attr, value, WonByOverride));
+        return result;
+    }
+
     /// <summary>Display casing for golden name/city: the survived value is match-normalized
     /// (lowercased); title-case it for presentation ("sample person" → "Sample Person"). Deterministic
     /// (InvariantCulture) so the golden payload hash stays stable across runs. Matching is

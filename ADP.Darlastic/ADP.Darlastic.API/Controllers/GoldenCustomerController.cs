@@ -602,6 +602,80 @@ public class GoldenCustomerController : ControllerBase
     }
 
     /// <summary>
+    /// Every phone the customer's source records carry (redirect-chased): the survived values hold one, the
+    /// primary. Read from the staged records of the customer's live source profiles, so a key seek per record.
+    /// Masked like every other phone.
+    /// </summary>
+    [HttpGet("{id:long}/phones")]
+    [Authorize]
+    public async Task<ActionResult<GoldenCustomerPhonesDTO>> Phones(long id)
+    {
+        if (!CanReadGoldens())
+            return Forbid();
+
+        var live = await ChaseRedirectsAsync(id);
+        if (!await db.Set<GoldenIdentity>().AsNoTracking().AnyAsync(x => x.IdentityID == live))
+            return NotFound();
+
+        var records = await (
+            from p in db.Set<SourceProfile>().AsNoTracking()
+            where p.IdentityID == live && !p.Removed
+            join r in db.Set<StewardRecord>().AsNoTracking()
+                on new { p.SourceSystem, p.SourceRecordId } equals new { r.SourceSystem, r.SourceRecordId }
+            select new { p.SourceSystem, r.Payload }).ToListAsync();
+
+        var found = new Dictionary<string, (bool Incomplete, int Records, SortedSet<string> Sources)>(StringComparer.Ordinal);
+        void Count(string? phone, bool incomplete, string source)
+        {
+            if (string.IsNullOrWhiteSpace(phone)) return;
+            (bool Incomplete, int Records, SortedSet<string> Sources) entry =
+                found.TryGetValue(phone, out var have) ? have : (incomplete, 0, new SortedSet<string>(StringComparer.Ordinal));
+            entry.Sources.Add(source);
+            found[phone] = (entry.Incomplete && incomplete, entry.Records + 1, entry.Sources);
+        }
+        foreach (var record in records)
+        {
+            if (string.IsNullOrWhiteSpace(record.Payload)) continue;
+            try
+            {
+                using var doc = JsonDocument.Parse(record.Payload);
+                foreach (var (name, incomplete) in new[] { ("Phones", false), ("WeakPhones", true) })
+                    if (doc.RootElement.TryGetProperty(name, out var list) && list.ValueKind == JsonValueKind.Array)
+                        foreach (var item in list.EnumerateArray())
+                            if (item.ValueKind == JsonValueKind.String) Count(item.GetString(), incomplete, record.SourceSystem);
+            }
+            catch (JsonException)
+            {
+                // A staged record that does not parse says nothing about phones.
+            }
+        }
+
+        // The primary is the survived phone (a steward's override included): listed first even when no staged
+        // record carries it.
+        var primary = (await LoadStagedGoldenAsync(live))?.Attribute("phone");
+        if (!string.IsNullOrWhiteSpace(primary) && !found.ContainsKey(primary))
+            found[primary] = (false, 0, new SortedSet<string>(StringComparer.Ordinal));
+
+        var dto = new GoldenCustomerPhonesDTO
+        {
+            ID = live.ToString(CultureInfo.InvariantCulture),
+            Phones = [.. found
+                .OrderByDescending(f => f.Key == primary).ThenBy(f => f.Value.Incomplete).ThenByDescending(f => f.Value.Records)
+                .ThenBy(f => f.Key, StringComparer.Ordinal)
+                .Select(f => new GoldenCustomerPhoneDTO
+                {
+                    Phone = new PiiFieldDTO { Value = f.Key },
+                    Primary = f.Key == primary,
+                    Incomplete = f.Value.Incomplete,
+                    Records = f.Value.Records,
+                    Sources = [.. f.Value.Sources],
+                })],
+        };
+        foreach (var phone in dto.Phones) piiProtector.Protect(phone);
+        return Ok(dto);
+    }
+
+    /// <summary>
     /// One identity's provenance: the source records it unifies, its lifecycle, and the identities
     /// merged into it. Every read is a key seek — the identity by PK, its profiles on
     /// <c>IX_SourceProfile_Identity</c> — so this is cheap enough to open per row.

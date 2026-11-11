@@ -42,6 +42,13 @@ public class DarlasticActionOverrides
     /// Default <see cref="DarlasticActionTree.ExportGoldenCustomers"/>.</summary>
     public BooleanAction? ExportGoldenCustomers { get; set; }
 
+    /// <summary>Gate on verification — Read to see what is verified, Write to record a result, Delete to
+    /// revoke. Default <see cref="DarlasticActionTree.Verification"/>.</summary>
+    public TypeAuthAction? Verification { get; set; }
+
+    /// <summary><see cref="Verification"/> or the module's own action.</summary>
+    public TypeAuthAction ResolvedVerification => Verification ?? DarlasticActionTree.Verification;
+
     /// <summary><see cref="GoldenCustomers"/> or the module's own action.</summary>
     public TypeAuthAction ResolvedGoldenCustomers => GoldenCustomers ?? DarlasticActionTree.GoldenCustomers;
 

@@ -36,8 +36,39 @@ public static class StewardVerdict
     /// </summary>
     public const string Release = "release";
 
+    /// <summary>
+    /// "This customer's value for this attribute is X" — a sticky attribute override. Not a pair verdict: the
+    /// <c>StewardDecision</c> row names one source record (<c>SourceSystem</c>, <c>SourceRecordId</c>) as its
+    /// anchor, the attribute (<c>AttrType</c>, see <see cref="GoldenAttribute"/>) and the value
+    /// (<c>Value</c>). Every resolve gives the customer that holds the anchor record that value, whatever
+    /// survivorship would have chosen, and through any merge (the override travels with the record). The newest
+    /// Active override wins when a customer's records carry several for one attribute. Deactivating the row
+    /// returns the attribute to survivorship.
+    /// </summary>
+    public const string Override = "override";
+
     /// <summary>Verdicts that write an Active <c>StewardDecision</c> the engine replays.</summary>
     public static bool IsConstraint(string kind) => kind is Merge or Separate;
 
     public static bool IsKnown(string kind) => kind is Merge or Separate or Defer or Release;
+}
+
+/// <summary>
+/// The attribute types of a golden customer's survived values, as the engine stages them (the <c>t</c> of a
+/// staged golden's attributes) and as a <see cref="StewardVerdict.Override"/> names them.
+/// </summary>
+public static class GoldenAttribute
+{
+    public const string FullName = "full_name";
+
+    /// <summary>The primary phone, in the tenant's key form (the form the feeds store).</summary>
+    public const string Phone = "phone";
+
+    public const string City = "city";
+    public const string NationalId = "national_id";
+    public const string Email = "email";
+
+    public static readonly IReadOnlyList<string> All = [FullName, Phone, City, NationalId, Email];
+
+    public static bool IsKnown(string? type) => type is FullName or Phone or City or NationalId or Email;
 }

@@ -27,7 +27,8 @@ public sealed class RegistryRunCache
     internal async Task<T> GetAsync<T>(ShiftDbContext db, string name,
         Func<ShiftDbContext, CancellationToken, Task<T>> build, CancellationToken ct) where T : class
     {
-        var key = (db.Database.GetConnectionString() ?? "", name);
+        // A provider without connection strings (the in-memory one, in tests) is one registry per process.
+        var key = (db.Database.IsRelational() ? db.Database.GetConnectionString() ?? "" : "", name);
         string run = await LatestRunAsync(db, ct);
         if (entries.TryGetValue(key, out var hit) && hit.Run == run) return (T)hit.Value;
 

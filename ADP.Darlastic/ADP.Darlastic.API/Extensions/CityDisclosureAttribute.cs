@@ -33,11 +33,17 @@ internal sealed class CityDisclosureAttribute : Attribute, IAsyncResourceFilter
         if (share > 0)
         {
             var db = services.GetRequiredService<ShiftDbContext>();
-            context.HttpContext.Items[ItemKey] = await services.GetRequiredService<RegistryRunCache>().GetAsync(
-                db, $"shown-cities:{share}", (d, ct) => SharedCitiesAsync(d, share, ct), context.HttpContext.RequestAborted);
+            context.HttpContext.Items[ItemKey] = await SharedCitiesOfRunAsync(
+                db, services.GetRequiredService<RegistryRunCache>(), share, context.HttpContext.RequestAborted);
         }
         await next();
     }
+
+    /// <summary>The cities at least <paramref name="share"/> goldens carry, as of the latest finished run (read
+    /// once per run).</summary>
+    internal static Task<IReadOnlySet<string>> SharedCitiesOfRunAsync(ShiftDbContext db, RegistryRunCache cache, int share,
+        CancellationToken ct) =>
+        cache.GetAsync(db, $"shown-cities:{share}", (d, c) => SharedCitiesAsync(d, share, c), ct);
 
     /// <summary>The cities a caller without the reveal permission may see on this request, or null when
     /// every city may be shown (the option is off).</summary>

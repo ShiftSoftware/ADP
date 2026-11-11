@@ -101,8 +101,26 @@ public class DarlasticApiOptions
     /// hundreds of thousands of goldens, where that unpacking makes each page take seconds; the index
     /// costs one build per run (about two seconds and a few tens of megabytes per million goldens).
     /// The rows, their order, the totals and the reason counts are the same either way. Off by default.
+    ///
+    /// <para>On, the customer search of that list (a name or a phone) also reads memory: every golden's name and
+    /// phone, read once per run by the first search (one unpacking of every payload, about forty bytes per
+    /// golden) instead of on every search. Names and phones compare ignoring case; a database collation that also
+    /// ignores accents matched more through SQL.</para>
     /// </summary>
     public bool GoldenRowIndex { get; set; }
+
+    /// <summary>
+    /// Serve the case browser's summary (the header counts the page asks for first: staged records and records
+    /// per source, golden customers, customers per category, catalogued pairs per category) from values counted
+    /// once per resolve run instead of counting whole tables on every page load, which takes seconds once the
+    /// staged records number in the millions. Only a resolve changes what they count, with one exception: a
+    /// customer a host creates between runs joins the registry totals (<c>registryProfiles</c>,
+    /// <c>registryIdentities</c>) with the next run, and is counted in <c>awaitingResolve</c> meanwhile. Notes,
+    /// label decisions and the review queue's depth are always counted live; <c>awaitingResolve</c> (on the
+    /// summary and on every page of golden rows) is counted again whenever a run finishes or a host creates a
+    /// customer, instead of on every call. Off by default.
+    /// </summary>
+    public bool SummaryPerRun { get; set; }
 
     /// <summary>
     /// Show a city to a caller without the reveal permission only when at least this many golden
@@ -133,4 +151,10 @@ public class DarlasticApiOptions
     /// Off by default.
     /// </summary>
     public bool RecordSearchIndex { get; set; }
+
+    /// <summary>
+    /// Verification of customers, phones and vehicles: off by default, and off it adds nothing to the host's
+    /// model. See <see cref="DarlasticVerificationOptions"/>.
+    /// </summary>
+    public DarlasticVerificationOptions Verification { get; set; } = new();
 }

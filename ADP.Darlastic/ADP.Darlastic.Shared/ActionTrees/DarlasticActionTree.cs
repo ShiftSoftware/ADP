@@ -31,4 +31,11 @@ public class DarlasticActionTree
     /// <para>Booleans resolve through <c>Access.Maximum</c> — a Read grant does not turn one on.</para>
     /// </summary>
     public readonly static BooleanAction ExportGoldenCustomers = new("Export Golden Customers");
+
+    /// <summary>
+    /// Verification of customers, phones and vehicles. Read = see what is verified and since when;
+    /// Write = record a verification result; Delete = revoke a verified claim. Apart from
+    /// <see cref="StewardQueue"/>: verifying a customer at a desk never changes which records are merged.
+    /// </summary>
+    public readonly static ReadWriteDeleteAction Verification = new("Verification");
 }

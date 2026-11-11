@@ -212,43 +212,14 @@ public class CaseBrowserCompatController : ControllerBase
     {
         if (Denied(false)) return Forbid();
 
-        var counts = await db.Set<CaseCategoryCount>().AsNoTracking().ToListAsync(ct);
+        // What only a resolve changes: counted once per run when the host asks for that, on every call otherwise.
+        var counted = options.SummaryPerRun
+            ? await runCache.GetAsync(db, SummaryCounts.CacheName, SummaryCounts.CountAsync, ct)
+            : await SummaryCounts.CountAsync(db, ct);
+
         var run = await db.Set<ResolveRun>().AsNoTracking()
             .OrderByDescending(r => r.RunID).FirstOrDefaultAsync(ct);
-
-        var profiles = await db.Set<SourceProfile>().AsNoTracking().CountAsync(ct);
-        var identities = await db.Set<GoldenIdentity>().AsNoTracking()
-            .CountAsync(i => i.Status == IdentityStatus.Active, ct);
-
-        // The catalog is capped per category by the resolve, so this is thousands of rows, not
-        // millions — cheap to hold and the only way to report per-category browsable counts.
-        var catalog = await db.Set<CaseCatalogEntry>().AsNoTracking()
-            .Select(c => new { c.Categories }).ToListAsync(ct);
-
-        var stagedRecords = await db.Set<StewardRecord>().AsNoTracking().CountAsync(ct);
         var queueDepth = await db.Set<StewardQueueEntry>().AsNoTracking().CountAsync(ct);
-
-        var sources = await db.Set<StewardRecord>().AsNoTracking()
-            .GroupBy(r => r.SourceSystem)
-            .Select(g => new { Key = g.Key, N = g.Count() })
-            .ToListAsync(ct);
-
-        // Cluster categories are staged per identity as a bitmask. Counting them corpus-wide is a
-        // bitmask test per row over 10^5 rows, so it runs in SQL rather than in memory. The
-        // standalone reports its in-memory cluster counts here; this reports the corpus, which is
-        // strictly better information under the same key.
-        // Multi-record identities only: a run with per-golden evidence summarises single-record
-        // identities too, and the identity view is about how several records came together.
-        var clusterCats = new Dictionary<string, long>();
-        foreach (var cc in Enum.GetValues<ClusterCat>())
-        {
-            if (cc == ClusterCat.None) continue;
-            long mask = (long)cc;
-            clusterCats[cc.ToString()] = await db.Set<IdentitySummary>().AsNoTracking()
-                .CountAsync(s => s.MemberCount > 1 && (s.Categories & mask) != 0, ct);
-        }
-
-        bool reasonsStaged = await ReasonsStagedAsync(ct);
 
         var inView = new Dictionary<string, int>();
         var corpus = new Dictionary<string, object>();
@@ -257,23 +228,29 @@ public class CaseBrowserCompatController : ControllerBase
             if (cat == CaseCat.None) continue;
             string name = cat.ToString();
             long mask = (long)cat;
-            inView[name] = catalog.Count(c => (c.Categories & mask) != 0);
-            var row = counts.FirstOrDefault(c => c.Category == name);
+            inView[name] = counted.CatalogCategories.Count(c => (c & mask) != 0);
+            var row = counted.CategoryCounts.FirstOrDefault(c => c.Category == name);
             // Always emit a row, at zero if need be: a missing key reads to the sidebar as "not
             // measured" and silently falls back to the in-view count.
             corpus[name] = new { total = row?.Total ?? 0L, sampled = row?.Sampled ?? inView[name] };
         }
 
+        int stagedRecords = counted.StagedRecords;
+        int profiles = counted.Profiles, identities = counted.Identities;
+        bool reasonsStaged = counted.ReasonsStaged;
+        var clusterCats = counted.ClusterCategories;
+        var sources = counted.Sources;
+        var catalog = counted.CatalogCategories;
+
         return new JsonResult(new
         {
             records = stagedRecords,
             totalPairs = catalog.Count + queueDepth,
-            identities = await db.Set<IdentitySummary>().AsNoTracking().CountAsync(s => s.MemberCount > 1, ct),
-            multiRecordIdentities = await db.Set<IdentitySummary>().AsNoTracking()
-                .CountAsync(s => s.MemberCount > 1, ct),
+            identities = counted.MultiRecordIdentities,
+            multiRecordIdentities = counted.MultiRecordIdentities,
             // Golden customers: the view's own count (one row per golden), and the identities a
             // CRM created since the last resolve, which have no golden yet and are never a row.
-            goldenTotal = await db.Set<GoldenCustomer>().AsNoTracking().CountAsync(ct),
+            goldenTotal = counted.GoldenTotal,
             awaitingResolve = await AwaitingResolveAsync(ct),
             // What this host can serve and this caller can see. `goldens` is on only when the last
             // resolve staged per-golden evidence; without it the page keeps its pair view as the
@@ -295,7 +272,7 @@ public class CaseBrowserCompatController : ControllerBase
             corpusCategories = corpus,
             categories = inView,
             clusterCategories = clusterCats,
-            sources = sources.ToDictionary(s => s.Key, s => s.N),
+            sources,
             audits = await db.Set<LabelAudit>().AsNoTracking().CountAsync(ct),
             // The gold set is a file in the shared corpus, not registry state. Reported as zero
             // rather than omitted so the page renders a number instead of "undefined".
@@ -327,10 +304,24 @@ public class CaseBrowserCompatController : ControllerBase
         if (minScore is { } lo) rows = rows.Where(r => r.Score >= lo).ToList();
         if (maxScore is { } hi) rows = rows.Where(r => r.Score <= hi).ToList();
 
-        // Load the sides for every surviving row: q and dob filter on record content, and the page
-        // renders both sides of every row anyway, so this is the same read either way.
-        var sides = await LoadSides(rows.SelectMany(r =>
-            new[] { (r.SourceSystemA, r.SourceRecordIdA), (r.SourceSystemB, r.SourceRecordIdB) }), ct);
+        static IEnumerable<(string, string)> KeysOf(IEnumerable<CaseCatalogEntry> entries) => entries.SelectMany(r =>
+            new[] { (r.SourceSystemA, r.SourceRecordIdA), (r.SourceSystemB, r.SourceRecordIdB) });
+
+        // q, dob and the birth-year-gap order read record content, so they need both records of every
+        // surviving row. Anything else (the list as it opens, a category, a source, a score range, the
+        // score orders) is decided by the catalogue's own columns: the page is chosen first and only its
+        // rows' records are read, instead of every catalogued pair's on every page.
+        bool readsContent = !string.IsNullOrWhiteSpace(q) || !string.IsNullOrWhiteSpace(dob) || sort == "gap";
+        if (!readsContent)
+        {
+            // The same order as below: the stable sort of the rows as read.
+            rows = sort == "score-asc" ? rows.OrderBy(r => r.Score).ToList() : rows.OrderByDescending(r => r.Score).ToList();
+            int all = rows.Count;
+            rows = rows.Skip(page * size).Take(size).ToList();
+            return new JsonResult(new { total = all, page, size, items = await CaseItems(rows, await LoadSides(KeysOf(rows), ct), ct) });
+        }
+
+        var sides = await LoadSides(KeysOf(rows), ct);
 
         if (!string.IsNullOrWhiteSpace(q))
         {
@@ -355,10 +346,18 @@ public class CaseBrowserCompatController : ControllerBase
         int total = rows.Count;
         var window = rows.Skip(page * size).Take(size).ToList();
 
+        return new JsonResult(new { total, page, size, items = await CaseItems(window, sides, ct) });
+    }
+
+    /// <summary>One page of the pairs list as the page reads it, from the pairs and their records.</summary>
+    private async Task<object> CaseItems(List<CaseCatalogEntry> window,
+        Dictionary<(string, string), (RealRecord? rec, (string sys, string id) key, long? identityId, int clusterSize)> sides,
+        CancellationToken ct)
+    {
         var queued = await QueuedKeys(window.Select(r => r.PairKey), ct);
         var audits = await AuditsByKey(window.Select(r => r.PairKey), ct);
 
-        var items = window.Select(r => new
+        return window.Select(r => new
         {
             a = RecordJson(sides.GetValueOrDefault((r.SourceSystemA, r.SourceRecordIdA))),
             b = RecordJson(sides.GetValueOrDefault((r.SourceSystemB, r.SourceRecordIdB))),
@@ -374,8 +373,6 @@ public class CaseBrowserCompatController : ControllerBase
                 : null,
             queued = queued.Contains(r.PairKey),
         }).ToList();
-
-        return new JsonResult(new { total, page, size, items });
     }
 
     [HttpGet("case")]
@@ -504,9 +501,19 @@ public class CaseBrowserCompatController : ControllerBase
         long? exactId = null;
         if (!string.IsNullOrWhiteSpace(q))
         {
-            var (matches, exact) = SearchGoldens(GoldenSearchRows(), q.Trim());
-            found = [.. await matches.Select(x => x.ID).ToListAsync(ct)];
-            exactId = exact;
+            // The rule of SearchGoldens, on the per-run snapshot of every golden's name and phone.
+            string needle = q.Trim();
+            var search = await runCache.GetAsync(db, GoldenSearchIndex.CacheName, GoldenSearchIndex.BuildAsync, ct);
+            string digits = Digits(needle);
+            if (digits.Length > 0 && needle.All(c => char.IsDigit(c) || c is '+' or ' ' or '-' or '(' or ')'))
+            {
+                exactId = digits.Length <= 18 && long.TryParse(digits, out var id) ? id : null;
+                found = search.ByPhone(digits, Pii.PartialSearch);
+                // A customer number that names no golden is at no position below, so it adds no row.
+                if (exactId is { } wanted) found.Add(wanted);
+            }
+            else
+                found = search.ByName(needle, Pii.PartialSearch);
         }
 
         // The view's order: a customer number typed in full first, then most records first (or by
@@ -531,10 +538,8 @@ public class CaseBrowserCompatController : ControllerBase
         var window = rest.Skip(skip).Take(size).ToList();
 
         var ids = window.Select(i => index.Ids[i]).ToList();
-        var details = await db.Set<GoldenCustomer>().AsNoTracking()
-            .Where(g => ids.Contains(g.ID))
-            .Select(g => new { g.ID, g.FullName, g.Phone, g.City })
-            .ToDictionaryAsync(g => g.ID, ct);
+        // The page's own rows by key: the view cannot seek on its ID (StagedGoldenPayload).
+        var details = await StagedGoldenPayload.AttributesAsync(db, ids, ct);
         var sourceCounts = await db.Set<IdentitySummary>().AsNoTracking()
             .Where(s => ids.Contains(s.IdentityID))
             .Select(s => new { s.IdentityID, s.SourceCount })
@@ -550,9 +555,9 @@ public class CaseBrowserCompatController : ControllerBase
             return new
             {
                 id = id.ToString(CultureInfo.InvariantCulture),
-                name = Shown(PiiKind.Name, g?.FullName),
-                phone = Shown(PiiKind.Phone, g?.Phone),
-                city = PiiView.ShowCity(g?.City),
+                name = Shown(PiiKind.Name, g?.GetValueOrDefault("full_name")),
+                phone = Shown(PiiKind.Phone, g?.GetValueOrDefault("phone")),
+                city = PiiView.ShowCity(g?.GetValueOrDefault("city")),
                 members = index.Members[i],
                 sources = sourceCounts.TryGetValue(id, out var sc) ? sc : systems.Count,
                 sourceSystems = systems,
@@ -574,11 +579,6 @@ public class CaseBrowserCompatController : ControllerBase
             items,
         });
     }
-
-    /// <summary>The view's rows with only what a golden search reads (no summary join, no reasons).</summary>
-    private IQueryable<GoldenRow> GoldenSearchRows() =>
-        db.Set<GoldenCustomer>().AsNoTracking()
-            .Select(g => new GoldenRow { ID = g.ID, FullName = g.FullName, Phone = g.Phone });
 
     /// <summary>The source systems of each golden's live records, in ordinal order.</summary>
     private async Task<Dictionary<long, List<string>>> SourceSystemsOfAsync(List<long> ids, CancellationToken ct) =>
@@ -671,6 +671,18 @@ public class CaseBrowserCompatController : ControllerBase
     /// golden rows rather than mixed into them.
     /// </summary>
     private async Task<int> AwaitingResolveAsync(CancellationToken ct)
+    {
+        if (!options.SummaryPerRun) return await CountAwaitingResolveAsync(ct);
+
+        // The count probes every live identity for its golden: a second at a million identities, on every page.
+        // Only two things change it: a resolve (the per-run cache starts over) and a host creating a customer,
+        // which allocates the next identity number. So it is counted again only when the newest number moved.
+        long newest = await db.Set<GoldenIdentity>().AsNoTracking().MaxAsync(i => (long?)i.IdentityID, ct) ?? 0;
+        var kept = await runCache.GetAsync(db, AwaitingResolveCount.CacheName, (_, _) => Task.FromResult(new AwaitingResolveCount()), ct);
+        return await kept.GetAsync(newest, () => CountAwaitingResolveAsync(ct));
+    }
+
+    private async Task<int> CountAwaitingResolveAsync(CancellationToken ct)
     {
         string sql = $"""
             SELECT COUNT(*) AS [Value]
@@ -1324,7 +1336,7 @@ public class CaseBrowserCompatController : ControllerBase
     private async Task<Dictionary<(string, string), (RealRecord? rec, (string sys, string id) key, long? identityId, int clusterSize)>>
         LoadSides(IEnumerable<(string sys, string id)> keys, CancellationToken ct)
     {
-        var wanted = keys.Distinct().ToList();
+        var wanted = keys.ToHashSet();
         var result = new Dictionary<(string, string), (RealRecord?, (string, string), long?, int)>();
         if (wanted.Count == 0) return result;
 

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using ShiftSoftware.ADP.Darlastic.API.Verification;
 using ShiftSoftware.ADP.Darlastic.Data.Extensions;
 using ShiftSoftware.ADP.Darlastic.Engine;
 using ShiftSoftware.ADP.Darlastic.Shared.ActionTrees;
@@ -51,6 +52,8 @@ public static class DarlasticApiExtensions
         // What readers derive from the whole registry once per resolve run (the case browser's golden row
         // index, the cities enough customers share). Holds nothing until an option asks for one.
         services.TryAddSingleton<RegistryRunCache>();
+        // Lets a host read those values ahead of the first request (at start, after a resolve it runs).
+        services.TryAddScoped<RegistryRunWarmup>();
 
         // Registry model (tables + the GoldenCustomer view) lands in the host's DbContext model;
         // the host's own migrations create and version everything under options.Schema.
@@ -59,7 +62,12 @@ public static class DarlasticApiExtensions
         // registration is read from the application service provider, so it reaches every
         // ShiftDbContext in the process, not just TDbContext. See DarlasticApiOptions.
         if (options.RegisterModelContributor)
-            services.AddSingleton<IModelBuildingContributor>(new DarlasticModelBuildingContributor(options.Schema));
+            services.AddSingleton<IModelBuildingContributor>(
+                new DarlasticModelBuildingContributor(options.Schema, options.Verification.Enabled));
+
+        // Verification (off unless the host turns it on): what a host's own checks report to, and what answers
+        // "is this customer verified". Registered either way so a host can take it as a dependency; off, it refuses.
+        services.TryAddScoped<VerificationService>();
 
         // Skipped for a host that gates entirely on its own actions (options.Actions) — the module's
         // tree would otherwise sit unused and unusable in that host's permissions UI.
