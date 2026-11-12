@@ -187,8 +187,8 @@ the menu item row is never saved. Those rows stay clean and are therefore invisi
 
 ## Sample
 
-[`samples/ADP.Menus.Sample.API`](https://github.com/ShiftSoftware/ADP/tree/master/ADP.Menus/samples/ADP.Menus.Sample.API)
+[`samples/SingleCountry/ADP.Menus.Sample.SingleCountry.API`](https://github.com/ShiftSoftware/ADP/tree/master/ADP.Menus/samples/SingleCountry/ADP.Menus.Sample.SingleCountry.API)
 provisions the containers at startup and registers the trigger.
-[`samples/ADP.Menus.Sample.Functions`](https://github.com/ShiftSoftware/ADP/tree/master/ADP.Menus/samples/ADP.Menus.Sample.Functions)
+[`samples/SingleCountry/ADP.Menus.Sample.SingleCountry.Functions`](https://github.com/ShiftSoftware/ADP/tree/master/ADP.Menus/samples/SingleCountry/ADP.Menus.Sample.SingleCountry.Functions)
 is the sweep half: one hourly timer per table, `POST api/replicate-all` for a full backfill, and
 `GET api/replication-status` for the check above.

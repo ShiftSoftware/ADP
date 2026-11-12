@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<AzureFunctionsVersion>v4</AzureFunctionsVersion>
+		<OutputType>Exe</OutputType>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>ShiftSoftware.ADP.Menus.Sample.MultiCountry.Functions</RootNamespace>
+		<IsPackable>false</IsPackable>
+		<UserSecretsId>b954314a-21d0-4400-af00-82c71a800264</UserSecretsId>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.52.0" />
+		<PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.1.0" />
+		<PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.3.0" />
+		<PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.1.1" />
+		<PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" Version="4.3.1" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.14" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.14" />
+	</ItemGroup>
+
+	<!--
+	  ADP.Menus.Data ships MenuDB (the menu tables' own DbContext) and the reusable catch-up
+	  replication. The sample API owns the write side (the save trigger) and this project owns the sweep
+	  side, but both drive the SAME projections — so there is nothing to reference between them.
+
+	  Lookup.Services is the READ side: it turns a basic model code back into menu codes and prices out
+	  of the documents the sweep above writes. Having both in one host is what makes this sample a full
+	  round trip — replicate, then read back what was replicated.
+	-->
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\ADP.Menus.Data\ADP.Menus.Data.csproj" />
+		<ProjectReference Include="..\..\..\ADP.Menus.Sync\ADP.Menus.Sync.csproj" />
+		<ProjectReference Include="..\..\..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj" />
+		<!-- The DuckDB storage for the menu lookup — what GET api/menu-duckdb/{code} reads with. -->
+		<ProjectReference Include="..\..\..\..\ADP.LookupServices\Lookup.Services.DuckDB\Lookup.Services.DuckDB.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="host.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="local.settings.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>Never</CopyToPublishDirectory>
+		</None>
+	</ItemGroup>
+
+</Project>

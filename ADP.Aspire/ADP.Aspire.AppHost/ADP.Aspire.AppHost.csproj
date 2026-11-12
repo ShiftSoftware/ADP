@@ -11,9 +11,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ADP.Menus\samples\ADP.Menus.Sample.API\ADP.Menus.Sample.API.csproj" />
-    <ProjectReference Include="..\..\ADP.Menus\samples\ADP.Menus.Sample.Web\ADP.Menus.Sample.Web.csproj" />
-    <ProjectReference Include="..\..\ADP.Menus\samples\ADP.Menus.Sample.Functions\ADP.Menus.Sample.Functions.csproj" />
+    <ProjectReference Include="..\..\ADP.Menus\samples\SingleCountry\ADP.Menus.Sample.SingleCountry.API\ADP.Menus.Sample.SingleCountry.API.csproj" />
+    <ProjectReference Include="..\..\ADP.Menus\samples\SingleCountry\ADP.Menus.Sample.SingleCountry.Web\ADP.Menus.Sample.SingleCountry.Web.csproj" />
+    <ProjectReference Include="..\..\ADP.Menus\samples\SingleCountry\ADP.Menus.Sample.SingleCountry.Functions\ADP.Menus.Sample.SingleCountry.Functions.csproj" />
+    <ProjectReference Include="..\..\ADP.Menus\samples\MultiCountry\ADP.Menus.Sample.MultiCountry.API\ADP.Menus.Sample.MultiCountry.API.csproj" />
+    <ProjectReference Include="..\..\ADP.Menus\samples\MultiCountry\ADP.Menus.Sample.MultiCountry.Web\ADP.Menus.Sample.MultiCountry.Web.csproj" />
+    <ProjectReference Include="..\..\ADP.Menus\samples\MultiCountry\ADP.Menus.Sample.MultiCountry.Functions\ADP.Menus.Sample.MultiCountry.Functions.csproj" />
     <ProjectReference Include="..\..\ADP.ClaimableItems\samples\SingleCountry\ADP.ClaimableItems.Sample.SingleCountry.API\ADP.ClaimableItems.Sample.SingleCountry.API.csproj" />
     <ProjectReference Include="..\..\ADP.ClaimableItems\samples\SingleCountry\ADP.ClaimableItems.Sample.SingleCountry.Web\ADP.ClaimableItems.Sample.SingleCountry.Web.csproj" />
     <ProjectReference Include="..\..\ADP.ClaimableItems\samples\MultiCountry\ADP.ClaimableItems.Sample.MultiCountry.API\ADP.ClaimableItems.Sample.MultiCountry.API.csproj" />

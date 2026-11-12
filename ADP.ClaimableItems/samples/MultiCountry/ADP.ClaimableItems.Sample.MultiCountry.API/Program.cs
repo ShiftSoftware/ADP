@@ -106,7 +106,10 @@ using (var scope = app.Services.CreateScope())
 
 app.UseCors(x => x.WithOrigins("*").AllowAnyMethod().AllowAnyHeader());
 
-app.UseBlazorFrameworkFiles();
+// Aspire runs the Blazor app as its own resource and turns this off; run on its own, the API serves it.
+var hostBlazorClient = app.Configuration.GetValue("Sample:HostBlazorClient", true);
+if (hostBlazorClient)
+    app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 
 app.UseAuthentication();
@@ -114,6 +117,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapRazorPages();
-app.MapFallbackToFile("index.html");
+if (hostBlazorClient)
+    app.MapFallbackToFile("index.html");
 
 app.Run();

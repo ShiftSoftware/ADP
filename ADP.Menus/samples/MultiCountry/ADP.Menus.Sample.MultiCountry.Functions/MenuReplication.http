@@ -1,0 +1,148 @@
+@host = http://localhost:7072
+
+### A basic model code that exists in your imported catalogue. Everything below uses it.
+@basicModelCode = AXAA54
+
+### A VIN to reach the same menu from the other end. Only used by the vehicle section at the bottom,
+### which needs the CompanyData/Vehicles containers this sample does not provision.
+@vin = JTMHX01J6M4217945
+
+### ─────────────────────────────── replicate ───────────────────────────────
+
+### Full backfill — re-syncs EVERY menu row into Cosmos, not just the dirty ones.
+### Run this to switch replication on for an existing catalogue, after rebuilding a container, or
+### after the system-wide parts-price update (which leaves MenuItem rows clean, so only a full pass
+### repairs their documents).
+###
+### The hourly timers are disabled locally; this endpoint is how you replicate while developing.
+###
+### The response carries the same per-table counts as replication-status below. A sweep that failed
+### to write some rows finishes exactly like one that wrote them all, so read `status.pending` rather
+### than the status code — and if it is non-zero, just run this again.
+POST {{host}}/api/replicate-all
+
+### How far replication has got — per table: total rows, never replicated, still pending.
+### `isUpToDate: true` is what a finished backfill looks like.
+GET {{host}}/api/replication-status
+
+### ─────────────────────────── sync to DuckDB ───────────────────────────
+
+### Syncs every menu table from SQL into ONE DuckDB database file (menus.duckdb beside the host, or
+### ConnectionStrings:DuckDB), one table after another — the local-file counterpart of replicate-all,
+### and the store the DuckDB-backed menu lookup reads.
+###
+### Incremental by default: each table pulls only the rows saved at or past ITS OWN destination-side
+### MAX(LastSaveDate) watermark; the first run over a fresh file is automatically a full pull. No
+### configuration is needed — DuckDB has no server.
+###
+### The response reports each table: `succeeded`, `upserted`, `pruned`, and the `watermark` the pull
+### started from (null = full pull). Read those rather than the status code — a failed table does not
+### stop the run, and rerunning is idempotent. One writer at a time: do not overlap two of these.
+POST {{host}}/api/duckdb-sync
+
+### Full reload — every table re-pulls EVERYTHING and prunes rows whose ids left SQL. This is the
+### reconciler for hard deletes (an incremental pull cannot see a row that no longer exists), the
+### DuckDB counterpart of replicate-all's updateAll. Run it on a schedule, or after a bulk cleanup.
+POST {{host}}/api/duckdb-sync?fullReload=true
+
+### ...then read the menu back FROM DUCKDB. Same parameters, same response shape and — the claim
+### worth testing — the same answer as GET api/menu/{code} below, because everything above the
+### storage seam is identical; only the storage differs. Run duckdb-sync, then call both endpoints
+### for one code and diff them.
+###
+### Answers 503 with a pointer at duckdb-sync when the store was never synced (a missing file is
+### never silently created; the lookup opens it read-only).
+GET {{host}}/api/menu-duckdb/{{basicModelCode}}
+
+### The language / country / free-filter variants work identically to the Cosmos endpoint.
+GET {{host}}/api/menu-duckdb/{{basicModelCode}}?language=ar&countryId=2
+
+### ──────────────────────────── then read it back ────────────────────────────
+
+### The service menu for one basic model code — the read side of everything above.
+### One single-partition query, then the SAME generator the DMS export uses, so the codes here are the
+### codes the dealer's DMS received. Run this after replicate-all and compare against the export.
+###
+### Returns the variants of the model, each with:
+###   periodicServices  — the scheduled services, ordered by distance
+###   standaloneServices — the ones sold on their own
+### and per line: code, labourCode, parts with prices, and the discounted totalPrice.
+###
+### `notFound: true` means nothing is replicated under this model code — run replicate-all first.
+### It is NOT the same as a menu that exists but generates no lines (every variant deleted, or
+### intervals whose groups carry no labour detail), which returns notFound: false with no services.
+###
+### There is no dealer cost anywhere in the response, by construction — the lookup never asks the
+### generator for it.
+GET {{host}}/api/menu/{{basicModelCode}}
+
+### The same menu in another language. Menu codes are language-dependent (the prefixes, postfixes and
+### operation codes are multi-language), so correlate lines across languages by `lineKey`, never by
+### `code`.
+GET {{host}}/api/menu/{{basicModelCode}}?language=ar
+
+### A specific country: selects the part prices and the labour rate on each line.
+### An unmatched country is valid — parts fall back to price 0 and the line is flagged
+### `hasUnpricedParts: true`, so the total is understated rather than silently wrong.
+GET {{host}}/api/menu/{{basicModelCode}}?countryId=2
+
+### Only the variants authored FREE OF CHARGE. `menuTypes` takes any subset of Paid | Free | Contract,
+### comma-separated or repeated; absent returns every variant. It selects VARIANTS — an excluded variant
+### contributes neither its scheduled nor its standalone services — and it changes NO price: a free
+### variant's lines carry the same totals any other variant's would, with `menuType: "Free"` beside them.
+### Render "free" from the type; do not print the total.
+###
+### A filter that excludes every variant answers with no variants and `notFound: false`. The model HAS a
+### menu; this request asked for a part of it that is empty.
+GET {{host}}/api/menu/{{basicModelCode}}?menuTypes=Free
+
+### ...and everything that is NOT free.
+GET {{host}}/api/menu/{{basicModelCode}}?menuTypes=Paid,Contract
+
+### ─────────────────── or reach the same menu from a VIN ───────────────────
+
+### PREREQUISITE: these need the CompanyData/Vehicles containers, which this sample does NOT provision —
+### menu replication only fills the Services database. Against a menus-only emulator they answer 503 and
+### say so. Point ConnectionStrings:ReplicationCosmos at an account that also has vehicle data to run them.
+
+### The vehicle lookup with the model's service menu attached.
+###
+### Everything above takes a basic model code as given. A vehicle lookup does not have one: it DERIVES it
+### from the vehicle's Katashiki (first segment before the hyphen, trailing L/R dropped past five
+### characters) and matches that against a code an author typed into the menus database. Nothing
+### guarantees the two agree — that is open item O3 — so the response echoes all three:
+###
+###   katashiki       what the vehicle carries
+###   basicModelCode  what was derived from it, and looked for — echoed even on a miss
+###   serviceMenu.status  whether it matched, and if not, why
+###
+### status is the measurement: hit rate = Found / (Found + NotFound) over a real VIN population.
+### NoBasicModelCode is NOT a miss — the vehicle had no Katashiki, so there was no key to join on.
+### Unavailable / NotRegistered mean the menu subsystem could not be consulted; note the vehicle lookup
+### still succeeded, because a menu fault is never allowed to fail it.
+###
+### An unknown VIN is an ordinary answer here, not a 404: no Katashiki, so NoBasicModelCode.
+GET {{host}}/api/vehicle/{{vin}}
+
+### Same vehicle, Arabic. Menu codes are language-dependent; correlate by `lineKey`, never by `code`.
+GET {{host}}/api/vehicle/{{vin}}?language=ar
+
+### A specific country for the part prices and labour rate on each line.
+GET {{host}}/api/vehicle/{{vin}}?countryId=2
+
+### An explicit transfer rate. It scales the consumable, so it moves the price quoted to a customer — and
+### a caller-supplied value WINS over the host's CountrySettingsResolver, by design: a value that is
+### silently ignored is worse than one that is absent. It moves no menu or labour CODE, because the
+### labour-rate mapping is always keyed by the variant's primary rate.
+###
+### Bound from the query string here only because this sample is function-key protected. A public
+### endpoint must fix it server-side, or leave it unset and let the resolver decide.
+GET {{host}}/api/vehicle/{{vin}}?transferRate=1.15
+
+### The menu-type filter, same values as the menu endpoint. Every returned line carries `menuType`
+### (the variant's type, travelling on the line because the flat shape has no variant object),
+### so a caller can equally ask for everything and group client-side.
+###
+### Excluding every variant leaves `status: "Found"` with no services — NOT `NotFound`, which is reserved
+### for a model that has no menu at all and is counted as a join miss.
+GET {{host}}/api/vehicle/{{vin}}?menuTypes=Free

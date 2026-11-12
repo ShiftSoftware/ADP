@@ -386,7 +386,7 @@ Three things a renderer should get right:
 
 ## Sample
 
-[`samples/ADP.Menus.Sample.Functions`](https://github.com/ShiftSoftware/ADP/tree/master/ADP.Menus/samples/ADP.Menus.Sample.Functions)
+[`samples/SingleCountry/ADP.Menus.Sample.SingleCountry.Functions`](https://github.com/ShiftSoftware/ADP/tree/master/ADP.Menus/samples/SingleCountry/ADP.Menus.Sample.SingleCountry.Functions)
 is the full round trip in one host: it replicates the catalogue into Cosmos (hourly timers plus
 `POST api/replicate-all`) and reads it back two ways.
 
