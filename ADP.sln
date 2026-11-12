@@ -209,6 +209,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADP.ClaimableItems.Sample.M
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADP.ClaimableItems.Sample.MultiCountry.Web", "ADP.ClaimableItems\samples\MultiCountry\ADP.ClaimableItems.Sample.MultiCountry.Web\ADP.ClaimableItems.Sample.MultiCountry.Web.csproj", "{8A2AF9C4-4957-42D9-B517-4A73B7D23A76}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ADP.Aspire", "ADP.Aspire", "{83E5E2DE-2016-339E-B14D-E68A9F74F9E2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADP.Aspire.AppHost", "ADP.Aspire\ADP.Aspire.AppHost\ADP.Aspire.AppHost.csproj", "{8BFC531F-7614-43C5-A582-504BE024E0C0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -975,6 +979,18 @@ Global
 		{8A2AF9C4-4957-42D9-B517-4A73B7D23A76}.Release|x64.Build.0 = Release|Any CPU
 		{8A2AF9C4-4957-42D9-B517-4A73B7D23A76}.Release|x86.ActiveCfg = Release|Any CPU
 		{8A2AF9C4-4957-42D9-B517-4A73B7D23A76}.Release|x86.Build.0 = Release|Any CPU
+		{8BFC531F-7614-43C5-A582-504BE024E0C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8BFC531F-7614-43C5-A582-504BE024E0C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8BFC531F-7614-43C5-A582-504BE024E0C0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8BFC531F-7614-43C5-A582-504BE024E0C0}.Debug|x64.Build.0 = Debug|Any CPU
+		{8BFC531F-7614-43C5-A582-504BE024E0C0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8BFC531F-7614-43C5-A582-504BE024E0C0}.Debug|x86.Build.0 = Debug|Any CPU
+		{8BFC531F-7614-43C5-A582-504BE024E0C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8BFC531F-7614-43C5-A582-504BE024E0C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8BFC531F-7614-43C5-A582-504BE024E0C0}.Release|x64.ActiveCfg = Release|Any CPU
+		{8BFC531F-7614-43C5-A582-504BE024E0C0}.Release|x64.Build.0 = Release|Any CPU
+		{8BFC531F-7614-43C5-A582-504BE024E0C0}.Release|x86.ActiveCfg = Release|Any CPU
+		{8BFC531F-7614-43C5-A582-504BE024E0C0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1052,6 +1068,7 @@ Global
 		{F4EA08DF-F6B7-40E1-AC13-C8630CA83D59} = {A154F596-4BFD-0600-E4FA-418817BC8798}
 		{C4DBB1CC-B9D8-44A7-B7BD-22B341DD3FC8} = {A154F596-4BFD-0600-E4FA-418817BC8798}
 		{8A2AF9C4-4957-42D9-B517-4A73B7D23A76} = {A154F596-4BFD-0600-E4FA-418817BC8798}
+		{8BFC531F-7614-43C5-A582-504BE024E0C0} = {83E5E2DE-2016-339E-B14D-E68A9F74F9E2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9C2AF932-542F-4C6B-B4FA-33D955041860}

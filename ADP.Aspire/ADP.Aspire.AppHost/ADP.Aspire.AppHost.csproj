@@ -1,0 +1,23 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.6.5">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>6f6d9ec9-d12c-4c39-bf38-0ff109982d70</UserSecretsId>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);NU1903;NU1608;NU1900;ASPIRE010</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ADP.Menus\samples\ADP.Menus.Sample.API\ADP.Menus.Sample.API.csproj" />
+    <ProjectReference Include="..\..\ADP.Menus\samples\ADP.Menus.Sample.Web\ADP.Menus.Sample.Web.csproj" />
+    <ProjectReference Include="..\..\ADP.Menus\samples\ADP.Menus.Sample.Functions\ADP.Menus.Sample.Functions.csproj" />
+    <ProjectReference Include="..\..\ADP.ClaimableItems\samples\SingleCountry\ADP.ClaimableItems.Sample.SingleCountry.API\ADP.ClaimableItems.Sample.SingleCountry.API.csproj" />
+    <ProjectReference Include="..\..\ADP.ClaimableItems\samples\SingleCountry\ADP.ClaimableItems.Sample.SingleCountry.Web\ADP.ClaimableItems.Sample.SingleCountry.Web.csproj" />
+    <ProjectReference Include="..\..\ADP.ClaimableItems\samples\MultiCountry\ADP.ClaimableItems.Sample.MultiCountry.API\ADP.ClaimableItems.Sample.MultiCountry.API.csproj" />
+    <ProjectReference Include="..\..\ADP.ClaimableItems\samples\MultiCountry\ADP.ClaimableItems.Sample.MultiCountry.Web\ADP.ClaimableItems.Sample.MultiCountry.Web.csproj" />
+  </ItemGroup>
+
+</Project>
