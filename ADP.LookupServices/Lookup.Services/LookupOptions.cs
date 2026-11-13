@@ -315,9 +315,9 @@ public class LookupOptions
             && DirectEndCustomerSaleAccountNumbersByCompany.TryGetValue(companyID, out var directSaleAccounts)
             && directSaleAccounts?.Contains(accountNumber) == true;
     }
-    /// <summary>The HMAC secret key used for signing service item claim requests.</summary>
+    /// <summary>The HMAC secret key used for signing service item claim requests and the warranty activation token. With no key, no activation token is issued.</summary>
     public string SigningSecretKey { get; set; } = string.Empty;
-    /// <summary>How long a generated claim signature remains valid.</summary>
+    /// <summary>How long a generated claim signature or warranty activation token remains valid.</summary>
     public TimeSpan SignatureValidityDuration { get; set; }
     /// <summary>Clock used for all time-dependent lookup output — service-item status/claimability, warranty-active flags and <c>SignatureExpiry</c>. Defaults to <see cref="TimeProvider.System"/>; override with a fixed provider to produce deterministic output for sample/doc generation or tests.</summary>
     public TimeProvider TimeProvider { get; set; } = TimeProvider.System;

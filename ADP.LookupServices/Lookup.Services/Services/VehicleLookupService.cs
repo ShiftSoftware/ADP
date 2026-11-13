@@ -298,6 +298,9 @@ public class VehicleLookupService
             // vehicles, and those are exactly the vehicles that need an activation / blocked affordance.
             data.Warranty.ActivationStatus = new ActivationStatusEvaluator(companyDataAggregate, lookupOptions)
                 .Evaluate(serviceItemsResult.activationRequired, requestOptions.RequestingCompanyID);
+
+            data.Warranty.ActivationToken = WarrantyActivationToken.Issue(
+                data.Warranty.ActivationStatus, vin, requestOptions.RequestingCompanyID, lookupOptions);
         }
 
         // KPI INTEGRITY — READ BEFORE CHANGING.
