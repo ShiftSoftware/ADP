@@ -34,6 +34,13 @@ public class ClaimableItemContract :
     public string? ModelDescription { get; set; }
     public long? BrandID { get; set; }
 
+    /// <summary>
+    /// The menus module's vehicle model and menu the user picked, when the VIN is not official or has no menu
+    /// of its own. IDs in the menus database: no foreign key, it is another database.
+    /// </summary>
+    public long? MenuVehicleModelID { get; set; }
+    public long? MenuID { get; set; }
+
     public string CustomerName { get; set; } = default!;
     public string? CustomerPhone { get; set; }
 

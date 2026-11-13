@@ -17,7 +17,7 @@ namespace ShiftSoftware.ADP.ClaimableItems.Sample.MultiCountry.API.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.13")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128)
                 .HasAnnotation("ShiftEntity:HistoryIndexedTables", "Cases|CertificatesHistory|ID;ClaimableItems|CampaignHistory|ID;ClaimableItems|CampaignVinEntryHistory|ID;ClaimableItems|ClaimableItemContractHistory|ID;ClaimableItems|ClaimableItemContractLineHistory|ID;ClaimableItems|ClaimableItemHistory|ID;ClaimableItems|ItemClaimHistory|ID");
 
@@ -501,8 +501,14 @@ namespace ShiftSoftware.ADP.ClaimableItems.Sample.MultiCountry.API.Migrations
                     b.Property<long?>("LastSavedByUserID")
                         .HasColumnType("bigint");
 
+                    b.Property<long?>("MenuID")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("MenuLanguage")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<long?>("MenuVehicleModelID")
+                        .HasColumnType("bigint");
 
                     b.Property<long>("Mileage")
                         .HasColumnType("bigint");

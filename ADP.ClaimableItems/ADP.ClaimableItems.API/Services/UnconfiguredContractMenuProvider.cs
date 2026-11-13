@@ -13,6 +13,9 @@ internal class UnconfiguredContractMenuProvider : IClaimableItemContractMenuProv
     public Task<ClaimableItemContractVehicleMenu> GetVehicleMenuAsync(string vin, long? countryId, decimal transferRate, string language) =>
         throw NotConfigured();
 
+    public Task<ClaimableItemContractVehicleMenu> GetModelMenuAsync(string basicModelCode, long? countryId, decimal transferRate, string language) =>
+        throw NotConfigured();
+
     private static InvalidOperationException NotConfigured() => new(
         "Service contracts need the host to register an IClaimableItemContractMenuProvider that returns the vehicle " +
         "and its contract-type menu from the host's vehicle lookup.");

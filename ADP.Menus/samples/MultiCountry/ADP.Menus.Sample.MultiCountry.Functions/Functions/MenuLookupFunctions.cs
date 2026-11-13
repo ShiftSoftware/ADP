@@ -70,6 +70,15 @@ public class MenuLookupFunctions
             // unparseable is dropped rather than 400-ing: this narrows a result set, so the safe failure is
             // returning too much, not too little.
             MenuTypes = MenuTypeQuery.Parse(request),
+
+            // As on GET api/vehicle/{vin}: bound from the query only because this sample is function-key protected.
+            TransferRate = decimal.TryParse(
+                request.Query["transferRate"].FirstOrDefault(),
+                System.Globalization.NumberStyles.Number,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var transferRate)
+                ? transferRate
+                : null,
         };
 
         try

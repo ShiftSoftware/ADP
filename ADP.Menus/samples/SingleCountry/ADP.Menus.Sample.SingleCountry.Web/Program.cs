@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using ShiftSoftware.ADP.Menus.Web.Extensions;
 using ShiftSoftware.ADP.Menus.Shared;
@@ -15,6 +15,7 @@ using ShiftSoftware.ShiftIdentity.Dashboard.Blazor.Extensions;
 using ShiftSoftware.TypeAuth.Blazor.Extensions;
 using ShiftSoftware.ADP.Menus.Sample.SingleCountry.Web;
 using System.Globalization;
+using System.Net.Http.Json;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -35,6 +36,25 @@ var shiftIdentityFrontEndURL = configuration.GetValue<string>("ShiftIdentity:Fro
 // Empty means this app: it carries the identity pages (sign-in, auth code), whether the API hosts it or it runs on its own.
 shiftIdentityFrontEndURL = string.IsNullOrWhiteSpace(shiftIdentityFrontEndURL) ? builder.HostEnvironment.BaseAddress : shiftIdentityFrontEndURL;
 
+// Run on its own, the API hosts the sample's fake identity and this stays null. Under Aspire the API validates
+// an external identity server's tokens and says here where to sign in.
+ExternalIdentity? externalIdentity = null;
+try
+{
+    using var settingsClient = new HttpClient();
+    externalIdentity = (await settingsClient.GetFromJsonAsync<SampleSettings>(menuApiBaseUrl + "sample-settings"))?.ExternalIdentity;
+}
+catch (Exception e) when (e is HttpRequestException or System.Text.Json.JsonException)
+{
+}
+
+if (externalIdentity is not null)
+{
+    shiftIdentityApiURL = externalIdentity.BaseUrl;
+    shiftIdentityFrontEndURL = externalIdentity.FrontEndBaseUrl;
+}
+
+builder.Services.AddSingleton(new SampleIdentity(externalIdentity is not null));
 builder.Services.AddScoped(sp =>
 {
     var httpClient = new HttpClient(sp.GetRequiredService<TokenMessageHandlerWithAutoRefresh>())
@@ -63,8 +83,11 @@ builder.Services.AddShiftBlazor(config =>
 
 // The refresh token lives in a cookie on CookieDomain (the access token in local storage), so apps on the same
 // parent domain share the session.
+// With an external server too: its sign-in site writes the same cookie, so a session opened there (or in
+// another app on the cookie domain) is picked up here with no redirect. The app ID is only used when there is
+// no session yet.
 builder.Services.AddShiftIdentity(
-    configuration.GetValue<string>("ShiftIdentity:AppName")!,
+    externalIdentity?.AppId ?? configuration.GetValue<string>("ShiftIdentity:AppName")!,
     shiftIdentityApiURL,
     shiftIdentityFrontEndURL,
     configure: o =>
@@ -73,21 +96,23 @@ builder.Services.AddShiftIdentity(
         o.CookieDomain = configuration.GetValue<string>("CookieDomain");
     });
 
-builder.Services.AddShiftIdentityDashboardBlazor(x =>
-{
-    // Must match the API side, which registers AddShiftIdentityDashboard<DB> with
-    // ShiftIdentityHostingTypes.Internal — this sample hosts identity in-process, and
-    // appsettings.Development.json points ShiftIdentity:BaseUrl at this same app.
-    // Set to External the client treats identity as a separate front-end and routes the
-    // dashboard away to FrontEndBaseUrl instead of rendering it here, so the identity
-    // dashboard endpoints the API maps are never called.
-    x.ShiftIdentityHostingType = ShiftIdentityHostingTypes.Internal;
-    x.LogoPath = "/img/shift-full.png";
-    x.Title = "ADP.Menus";
-    // Must match the API's Settings:Authority:Enabled: sign-in lives on the authority's routes.
-    x.StagedAuthority = true;
-    x.DynamicTypeAuthActionExpander = () => Task.CompletedTask;
-});
+// The identity dashboard belongs to the fake identity; an external server has its own.
+if (externalIdentity is null)
+    builder.Services.AddShiftIdentityDashboardBlazor(x =>
+    {
+        // Must match the API side, which registers AddShiftIdentityDashboard<DB> with
+        // ShiftIdentityHostingTypes.Internal — this sample hosts identity in-process, and
+        // appsettings.Development.json points ShiftIdentity:BaseUrl at this same app.
+        // Set to External the client treats identity as a separate front-end and routes the
+        // dashboard away to FrontEndBaseUrl instead of rendering it here, so the identity
+        // dashboard endpoints the API maps are never called.
+        x.ShiftIdentityHostingType = ShiftIdentityHostingTypes.Internal;
+        x.LogoPath = "/img/shift-full.png";
+        x.Title = "ADP.Menus";
+        // Must match the API's Settings:Authority:Enabled: sign-in lives on the authority's routes.
+        x.StagedAuthority = true;
+        x.DynamicTypeAuthActionExpander = () => Task.CompletedTask;
+    });
 
 builder.Services.AddTypeAuth(x =>
 {
@@ -127,3 +152,7 @@ CultureInfo.DefaultThreadCurrentUICulture = culture;
 await host.RefreshTokenAsync(50);
 
 await host.RunAsync();
+
+public record SampleSettings(ExternalIdentity? ExternalIdentity);
+public record ExternalIdentity(string AppId, string BaseUrl, string FrontEndBaseUrl);
+public record SampleIdentity(bool IsExternal);

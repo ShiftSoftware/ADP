@@ -4,9 +4,13 @@ using ShiftSoftware.ADP.ClaimableItems.Shared;
 using ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ClaimableItemContract;
 using ShiftSoftware.ADP.ClaimableItems.Shared.Enums;
 using ShiftSoftware.ADP.ClaimableItems.Web.Components;
+using ShiftSoftware.ADP.ClaimableItems.Web.Extensions;
+using ShiftSoftware.ADP.Menus.Shared.DTOs.Menu;
 using ShiftSoftware.ShiftBlazor.Enums;
 using ShiftSoftware.ShiftBlazor.Services;
+using ShiftSoftware.ShiftBlazor.Utils;
 using ShiftSoftware.ShiftEntity.Model;
+using ShiftSoftware.ShiftEntity.Model.Dtos;
 using ShiftSoftware.TypeAuth.Core;
 using ShiftSoftware.TypeAuth.Core.Actions;
 using System.Globalization;
@@ -115,6 +119,34 @@ public partial class ClaimableItemContractForm
         await LoadLookupAsync();
     }
 
+    // The pickers need the lookup to allow a picked menu and the host to say where the menus API is.
+    private bool ShowMenuSelection =>
+        !ReadOnly && lookup is { MenuIsSelectable: true }
+        && !string.IsNullOrWhiteSpace(CIOptions.Value.MenuVehicleModelUrl) && !string.IsNullOrWhiteSpace(CIOptions.Value.MenuUrl);
+
+    private (string BaseUrl, string EntitySet) MenuVehicleModelList => ClaimableItemsWebOptions.SplitListUrl(CIOptions.Value.MenuVehicleModelUrl!);
+
+    private (string BaseUrl, string EntitySet) MenuList => ClaimableItemsWebOptions.SplitListUrl(CIOptions.Value.MenuUrl!);
+
+    private void FilterMenusByModel(ODataFilterGenerator filter) =>
+        filter.Add(nameof(MenuListDTO.VehicleModelID), ODataOperator.Equal, Contract.MenuVehicleModel?.Value);
+
+    private async Task MenuVehicleModelChangedAsync(ShiftEntitySelectDTO? model)
+    {
+        Contract.MenuVehicleModel = model;
+        Contract.ModelDescription = model?.Text;
+        Contract.Menu = null;
+        Contract.BasicModelCode = null;
+        await LoadLookupAsync();
+    }
+
+    private async Task MenuChangedAsync(ShiftEntitySelectDTO? menu)
+    {
+        Contract.Menu = menu;
+        Contract.BasicModelCode = menu?.Text;
+        await LoadLookupAsync();
+    }
+
     private async Task LoadLookupAsync()
     {
         var version = ++lookupVersion;
@@ -174,6 +206,10 @@ public partial class ClaimableItemContractForm
         if (IsExisting)
             query.Add($"contractId={Uri.EscapeDataString(Contract.ID!)}");
 
+        // Ignored by the server when the VIN has a menu of its own.
+        if (Contract.Menu is not null && !string.IsNullOrWhiteSpace(Contract.BasicModelCode))
+            query.Add($"basicModelCode={Uri.EscapeDataString(Contract.BasicModelCode)}");
+
         return $"{CIOptions.Value.ResolvedRoutePrefix}ClaimableItemContract/vin-lookup/{Uri.EscapeDataString(vin)}?{string.Join("&", query)}";
     }
 
@@ -184,11 +220,26 @@ public partial class ClaimableItemContractForm
     private void ApplyLookup(ClaimableItemContractVehicleLookupDTO result)
     {
         Contract.Katashiki = result.Katashiki;
-        Contract.BasicModelCode = result.BasicModelCode;
         Contract.Variant = result.Variant;
         Contract.ModelCode = result.ModelCode;
-        Contract.ModelDescription = result.ModelDescription;
         Contract.MenuLanguage = result.MenuLanguage;
+
+        if (result.MenuIsSelectable)
+        {
+            // The picked model's name and code stay; the vehicle's own fill what is not picked yet.
+            if (Contract.MenuVehicleModel is null)
+                Contract.ModelDescription = result.ModelDescription;
+
+            if (Contract.Menu is null)
+                Contract.BasicModelCode = result.BasicModelCode;
+        }
+        else
+        {
+            Contract.MenuVehicleModel = null;
+            Contract.Menu = null;
+            Contract.BasicModelCode = result.BasicModelCode;
+            Contract.ModelDescription = result.ModelDescription;
+        }
 
         if (result.CountryIsFixed)
         {
@@ -222,8 +273,11 @@ public partial class ClaimableItemContractForm
 
             return lookup.Status switch
             {
-                ClaimableItemContractLookupStatus.NotOfficial => (Severity.Warning, "This VIN is not one of the official vehicles. Contracts for other vehicles are not supported yet."),
+                ClaimableItemContractLookupStatus.NotOfficial when ShowMenuSelection => (Severity.Info, "This VIN is not one of the official vehicles. Select the model and the basic model code whose menu the contract uses."),
+                ClaimableItemContractLookupStatus.NotOfficial => (Severity.Warning, "This VIN is not one of the official vehicles. Contracts for other vehicles are not enabled."),
                 ClaimableItemContractLookupStatus.CountryRequired => (Severity.Info, "Select the country whose menu prices the contract uses."),
+                ClaimableItemContractLookupStatus.MenuNotFound when lookup.MenuIsSelected => (Severity.Warning, "The selected basic model code has no contract menu. Select another one."),
+                ClaimableItemContractLookupStatus.MenuNotFound when ShowMenuSelection => (Severity.Info, "This vehicle has no contract menu. Select the model and the basic model code whose menu the contract uses."),
                 ClaimableItemContractLookupStatus.MenuNotFound => (Severity.Warning, "This vehicle has no contract menu."),
                 ClaimableItemContractLookupStatus.MenuUnavailable => (Severity.Error, "The vehicle's service menu could not be read. Try again later."),
                 _ => null,

@@ -24,6 +24,15 @@ public class ClaimableItemContractVehicleLookupDTO
     [BrandHashIdConverter]
     public ShiftEntitySelectDTO? Brand { get; set; }
 
+    /// <summary>
+    /// The VIN is not official or has no menu of its own, so the menu is (or has to be) the one of a model the
+    /// user picks. False when the host does not allow that.
+    /// </summary>
+    public bool MenuIsSelectable { get; set; }
+
+    /// <summary>The lines come from the model the user picked, not from the VIN.</summary>
+    public bool MenuIsSelected { get; set; }
+
     /// <summary>The countries a contract can be priced for. Empty when none is configured.</summary>
     [CountryHashIdConverter]
     public List<ShiftEntitySelectDTO> Countries { get; set; } = new();

@@ -90,6 +90,29 @@ public class ClaimableItemsWebOptions
     public string? IdentityApiUrl { get; set; }
 
     /// <summary>
+    /// Full URL of the menus module's vehicle model list (e.g. "https://host/api/Menu/VehicleModel"), where the
+    /// contract form reads the models a user can pick for a VIN that is not official or has no menu. It must
+    /// accept the same sign-in as this app. The form offers the pickers only when this and
+    /// <see cref="MenuUrl"/> are both set.
+    /// </summary>
+    public string? MenuVehicleModelUrl { get; set; }
+
+    /// <summary>
+    /// Full URL of the menus module's menu list (e.g. "https://host/api/Menu/Menu"), where the contract form
+    /// reads the picked model's basic model codes.
+    /// </summary>
+    public string? MenuUrl { get; set; }
+
+    /// <summary>A full list URL as the base URL and entity set an autocomplete takes.</summary>
+    public static (string BaseUrl, string EntitySet) SplitListUrl(string url)
+    {
+        url = url.TrimEnd('/');
+        var slash = url.LastIndexOf('/');
+
+        return (url[..(slash + 1)], url[(slash + 1)..]);
+    }
+
+    /// <summary>
     /// Route prefix the module's API controllers are mounted under, relative to the HttpClient base
     /// address (e.g. set "ClaimableItems" when the API uses RoutePrefix "api/ClaimableItems" and the
     /// HttpClient base already contains "/api/").

@@ -1,4 +1,6 @@
 using ShiftSoftware.ADP.ClaimableItems.Shared.Enums;
+using ShiftSoftware.ADP.Menus.Shared.DTOs.Menu;
+using ShiftSoftware.ADP.Menus.Shared.DTOs.VehicleModel;
 using ShiftSoftware.ShiftEntity.Core.Flags;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
 using ShiftSoftware.ShiftEntity.Model.HashIds;
@@ -26,6 +28,17 @@ public class ClaimableItemContractDTO : ShiftEntityViewAndUpsertDTO, IHasDraftCh
 
     [BrandHashIdConverter]
     public ShiftEntitySelectDTO? Brand { get; set; }
+
+    /// <summary>
+    /// The menus module's vehicle model and menu (its basic model code) the user picked, for a VIN that is not
+    /// official or has no menu of its own. Null when the menu is the VIN's. With a menu picked,
+    /// <see cref="BasicModelCode"/> is that menu's code and <see cref="ModelDescription"/> the model's name.
+    /// </summary>
+    [VehicleModelHashId]
+    public ShiftEntitySelectDTO? MenuVehicleModel { get; set; }
+
+    [MenuHashId]
+    public ShiftEntitySelectDTO? Menu { get; set; }
 
     public string CustomerName { get; set; } = default!;
     public string? CustomerPhone { get; set; }

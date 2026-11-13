@@ -7,16 +7,20 @@ namespace ShiftSoftware.ADP.Menus.Sample.SingleCountry.Web
     public partial class App
     {
         private ShiftIdentityHostingTypes shiftIdentityHostingTypes;
-        private List<System.Reflection.Assembly> additionalAssemblies;
+        private List<System.Reflection.Assembly> additionalAssemblies = new();
 
-        public App()
+        [Microsoft.AspNetCore.Components.Inject]
+        private SampleIdentity SampleIdentity { get; set; } = default!;
+
+        protected override void OnInitialized()
         {
-            additionalAssemblies = new()
-            {
-                typeof(ShiftIdentityBlazorMaker).Assembly,
-                typeof(ShiftIdentityDashboarBlazorMaker).Assembly,
-            };
-            shiftIdentityHostingTypes = ShiftIdentityHostingTypes.Internal;
+            additionalAssemblies = new() { typeof(ShiftIdentityBlazorMaker).Assembly };
+
+            // The dashboard's pages are registered only with the fake identity (see Program.cs).
+            if (!SampleIdentity.IsExternal)
+                additionalAssemblies.Add(typeof(ShiftIdentityDashboarBlazorMaker).Assembly);
+
+            shiftIdentityHostingTypes = SampleIdentity.IsExternal ? ShiftIdentityHostingTypes.External : ShiftIdentityHostingTypes.Internal;
         }
     }
 }

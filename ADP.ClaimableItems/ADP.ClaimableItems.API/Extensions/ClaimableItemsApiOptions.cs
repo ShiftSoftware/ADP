@@ -60,6 +60,13 @@ public class ClaimableItemsApiOptions
     /// </summary>
     public BooleanAction? PrintContractAction { get; set; }
 
+    /// <summary>
+    /// Lets the user pick a menus-module model and basic model code for a VIN that is not official or has no
+    /// menu of its own. Default true; needs <c>IClaimableItemContractMenuProvider.GetModelMenuAsync</c>, and
+    /// the Web options' <c>MenuVehicleModelUrl</c> and <c>MenuUrl</c> for the form to offer the pickers.
+    /// </summary>
+    public bool ContractAllowMenuSelection { get; set; } = true;
+
     /// <summary>The fewest services a contract can be issued with. Default 1.</summary>
     public int ContractMinimumLines { get; set; } = 1;
 

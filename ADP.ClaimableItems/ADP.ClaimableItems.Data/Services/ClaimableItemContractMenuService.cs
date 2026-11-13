@@ -50,6 +50,7 @@ public class ClaimableItemContractMenuService
     /// <param name="transferRate">The user's entry. Ignored (fixed at 1) when one country or none is configured.</param>
     /// <param name="excludeContractId">The contract being edited, so its own lines do not count as taken.</param>
     /// <param name="today">Lines that expired before this date no longer hold their menu.</param>
+    /// <param name="selectedBasicModelCode">The model the user picked. Used only when the VIN has no menu of its own.</param>
     public async Task<ClaimableItemContractVehicleLookupDTO> LookupAsync(
         string vin,
         long? mileage,
@@ -57,7 +58,8 @@ public class ClaimableItemContractMenuService
         decimal? transferRate,
         string? language,
         long? excludeContractId,
-        DateTime today)
+        DateTime today,
+        string? selectedBasicModelCode = null)
     {
         vin = NormalizeVin(vin);
 
@@ -104,10 +106,23 @@ public class ClaimableItemContractMenuService
         result.ModelDescription = menu.ModelDescription;
         result.Brand = menu.BrandID is null ? null : new ShiftEntitySelectDTO { Value = menu.BrandID.Value.ToString() };
 
-        if (!menu.IsOfficial)
+        // No menu of its own: the menu of the model the user picked, when the host allows picking one.
+        if (!menu.IsOfficial || menu.MenuStatus == ClaimableItemContractVehicleMenuStatus.NotFound)
         {
-            result.Status = ClaimableItemContractLookupStatus.NotOfficial;
-            return result;
+            result.MenuIsSelectable = options.ContractAllowMenuSelection;
+            selectedBasicModelCode = selectedBasicModelCode?.Trim();
+
+            if (!result.MenuIsSelectable || string.IsNullOrEmpty(selectedBasicModelCode))
+            {
+                result.Status = menu.IsOfficial
+                    ? ClaimableItemContractLookupStatus.MenuNotFound
+                    : ClaimableItemContractLookupStatus.NotOfficial;
+                return result;
+            }
+
+            menu = await provider.GetModelMenuAsync(selectedBasicModelCode, countryId, rate, result.MenuLanguage);
+            result.MenuIsSelected = true;
+            result.BasicModelCode = selectedBasicModelCode;
         }
 
         if (menu.MenuStatus != ClaimableItemContractVehicleMenuStatus.Found)

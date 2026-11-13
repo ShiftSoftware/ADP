@@ -17,6 +17,15 @@ public interface IClaimableItemContractMenuProvider
     /// </summary>
     /// <param name="countryId">Null when no country is configured: the lookup's default applies.</param>
     Task<ClaimableItemContractVehicleMenu> GetVehicleMenuAsync(string vin, long? countryId, decimal transferRate, string language);
+
+    /// <summary>
+    /// EVERY contract-type line of one model's menu, by its basic model code: what a contract uses when the
+    /// user picks the model because the VIN is not official or has no menu. Only <see cref="ClaimableItemContractVehicleMenu.MenuStatus"/>
+    /// and <see cref="ClaimableItemContractVehicleMenu.Lines"/> are read. A host that does not implement it
+    /// cannot sell contracts for such vehicles.
+    /// </summary>
+    Task<ClaimableItemContractVehicleMenu> GetModelMenuAsync(string basicModelCode, long? countryId, decimal transferRate, string language) =>
+        Task.FromResult(new ClaimableItemContractVehicleMenu { MenuStatus = ClaimableItemContractVehicleMenuStatus.Unavailable });
 }
 
 public class ClaimableItemContractCountry

@@ -32,6 +32,7 @@ public class ClaimableItemContractController : ShiftEntitySecureControllerAsync<
     /// <param name="countryId">Needed only when several countries are configured.</param>
     /// <param name="transferRate">Used only when several countries are configured.</param>
     /// <param name="contractId">The contract being edited, so its own lines do not count as taken.</param>
+    /// <param name="basicModelCode">The model the user picked. Used only when the VIN has no menu of its own.</param>
     [HttpGet("vin-lookup/{vin}")]
     public async Task<ActionResult<ClaimableItemContractVehicleLookupDTO>> VinLookup(
         string vin,
@@ -39,7 +40,8 @@ public class ClaimableItemContractController : ShiftEntitySecureControllerAsync<
         [FromQuery] string? countryId = null,
         [FromQuery] decimal? transferRate = null,
         [FromQuery] string? language = null,
-        [FromQuery] string? contractId = null)
+        [FromQuery] string? contractId = null,
+        [FromQuery] string? basicModelCode = null)
     {
         if (!CanAccessContracts(write: false))
             return Forbid();
@@ -54,7 +56,8 @@ public class ClaimableItemContractController : ShiftEntitySecureControllerAsync<
             transferRate,
             language,
             string.IsNullOrWhiteSpace(contractId) ? null : hashIdService.Decode<ClaimableItemContractDTO>(contractId),
-            menuService.Today);
+            menuService.Today,
+            basicModelCode);
 
         return Ok(ClaimableItemContractMenuService.ForForm(lookup));
     }

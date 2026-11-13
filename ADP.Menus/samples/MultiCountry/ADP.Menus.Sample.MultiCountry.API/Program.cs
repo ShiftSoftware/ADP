@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ADP.Menus.API.Extensions;
@@ -20,6 +20,11 @@ using ShiftSoftware.TypeAuth.AspNetCore.Extensions;
 using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Run on its own, this sample hosts a fake identity inside this API. Given an external identity server's
+// settings (Sample:ExternalIdentity, which the Aspire AppHost supplies), it only validates that server's tokens.
+var externalIdentity = builder.Configuration.GetSection("Sample:ExternalIdentity");
+var useExternalIdentity = !string.IsNullOrWhiteSpace(externalIdentity["Issuer"]);
 
 builder.Services.AddDbContext<DB>(db =>
     db.UseSqlServer(builder.Configuration.GetConnectionString("SQLServer")));
@@ -71,10 +76,14 @@ mvcBuilder.AddShiftEntityWeb(x =>
     x.WrapValidationErrorResponseWithShiftEntityResponse(true);
 
     x.HashId.RegisterHashId(builder.Configuration.GetValue<bool>("Settings:HashIdSettings:AcceptUnencodedIds"));
-    x.HashId.RegisterIdentityHashId(
-        builder.Configuration.GetValue<string>("Settings:IdentityHashIdSettings:Salt") ?? "",
-        builder.Configuration.GetValue<int>("Settings:IdentityHashIdSettings:MinHashLength")
-    );
+    // Must match the identity server in use, or company, branch and country IDs will not decode.
+    if (useExternalIdentity)
+        x.HashId.RegisterIdentityHashId(externalIdentity["HashIds:Salt"] ?? "", externalIdentity.GetValue<int>("HashIds:MinHashLength"));
+    else
+        x.HashId.RegisterIdentityHashId(
+            builder.Configuration.GetValue<string>("Settings:IdentityHashIdSettings:Salt") ?? "",
+            builder.Configuration.GetValue<int>("Settings:IdentityHashIdSettings:MinHashLength")
+        );
 
     x.AddAzureStorage(azureStorageAccounts.ToArray());
 
@@ -85,80 +94,85 @@ mvcBuilder.AddShiftEntityWeb(x =>
     // Without this the dashboard's CRUD endpoints are never created: requests to api/User,
     // api/Company, … fall through to MapFallbackToFile and come back as the Blazor index.html
     // with a 200, which reads like a broken page rather than a missing route.
-    x.AddShiftIdentityDataAssembly();
+    if (!useExternalIdentity)
+        x.AddShiftIdentityDataAssembly();
 });
 
 // ---------- ShiftIdentity token validation ----------
-mvcBuilder.AddShiftIdentity(
-    builder.Configuration.GetValue<string>("Settings:TokenSettings:Issuer") ?? "",
-    builder.Configuration.GetValue<string>("Settings:TokenSettings:PublicKey") ?? ""
-);
+if (useExternalIdentity)
+    mvcBuilder.AddShiftIdentity(externalIdentity["Issuer"]!, externalIdentity["PublicKey"] ?? "");
+else
+    mvcBuilder.AddShiftIdentity(
+        builder.Configuration.GetValue<string>("Settings:TokenSettings:Issuer") ?? "",
+        builder.Configuration.GetValue<string>("Settings:TokenSettings:PublicKey") ?? ""
+    );
 
 // ---------- ShiftIdentity Dashboard (internal hosting: identity lives inside this API) ----------
 builder.Services.AddScoped<ISendEmailVerification, SendEmailService>();
 builder.Services.AddScoped<ISendEmailResetPassword, SendEmailService>();
 
-mvcBuilder.AddShiftIdentityDashboard<DB>(
-    new ShiftIdentityConfiguration
-    {
-        ShiftIdentityHostingType = ShiftIdentityHostingTypes.Internal,
-        // The identity authority (Settings:Authority): password sign-in lives on its api/identity/v2 routes.
-        // Settings:FactorProtection holds the keys that protect stored authenticators. It needs the identity
-        // security tables: a database EnsureCreated made before them stops the host at startup, so drop the
-        // sample's database once and let it be created again.
-        Authority = builder.Configuration.GetSection("Settings:Authority").Get<AuthoritySettingsModel>() ?? new(),
-        FactorProtection = builder.Configuration.GetSection("Settings:FactorProtection").Get<FactorProtectionSettings>() ?? new(),
-        Token = new TokenSettingsModel
+if (!useExternalIdentity)
+    mvcBuilder.AddShiftIdentityDashboard<DB>(
+        new ShiftIdentityConfiguration
         {
-            ExpireSeconds = builder.Configuration.GetValue<int>("Settings:TokenSettings:TokenExpirySeconds"),
-            Issuer = builder.Configuration.GetValue<string>("Settings:TokenSettings:Issuer")!,
-            RSAPrivateKeyBase64 = builder.Configuration.GetValue<string>("Settings:TokenSettings:PrivateKey")!,
-        },
-        Security = new SecuritySettingsModel
-        {
-            LockDownInMinutes = 0,
-            LoginAttemptsForLockDown = 1000000,
-            RequirePasswordChange = false
-        },
-        MfaSettings = new(),
-        RefreshToken = new RefreshTokenSettingsModel
-        {
-            Audience = "adp-menus",
-            ExpireSeconds = 100000,
-            Issuer = builder.Configuration.GetValue<string>("Settings:TokenSettings:Issuer")!,
-            Key = builder.Configuration.GetValue<string>("Settings:TokenSettings:RefreshTokenKey")!,
-        },
-        HashIdSettings = new HashIdSettings
-        {
-            AcceptUnencodedIds = true,
-            UserIdsSalt = "k02iUHSb2ier9fiui02349AbfJEI",
-            UserIdsMinHashLength = 5
-        },
-        SASToken = new SASTokenModel
-        {
-            ExpiresInSeconds = 3600,
-            Key = "One-Two-Three-Four-Five",
-        },
-        ShiftIdentityFeatureLocking = new ShiftIdentityFeatureLocking
-        {
-            RegionFeatureIsLocked = false,
-            CityFeatureIsLocked = false,
-            BrandFeatureIsLocked = false,
-            DepartmentFeatureIsLocked = false,
-            ServiceFeatureIsLocked = false,
-            CompanyFeatureIsLocked = false,
-            CompanyBranchFeatureIsLocked = false,
-            AppFeatureIsLocked = false,
-            AccessTreeFeatureIsLocked = false,
-            UserFeatureIsLocked = false,
-            TeamFeatureIsLocked = false,
-        },
-        DefaultDataLevelAccessOptions = new ShiftIdentityDefaultDataLevelAccessOptions
-        {
-            DisableDefaultCountryFilter = true
+            ShiftIdentityHostingType = ShiftIdentityHostingTypes.Internal,
+            // The identity authority (Settings:Authority): password sign-in lives on its api/identity/v2 routes.
+            // Settings:FactorProtection holds the keys that protect stored authenticators. It needs the identity
+            // security tables: a database EnsureCreated made before them stops the host at startup, so drop the
+            // sample's database once and let it be created again.
+            Authority = builder.Configuration.GetSection("Settings:Authority").Get<AuthoritySettingsModel>() ?? new(),
+            FactorProtection = builder.Configuration.GetSection("Settings:FactorProtection").Get<FactorProtectionSettings>() ?? new(),
+            Token = new TokenSettingsModel
+            {
+                ExpireSeconds = builder.Configuration.GetValue<int>("Settings:TokenSettings:TokenExpirySeconds"),
+                Issuer = builder.Configuration.GetValue<string>("Settings:TokenSettings:Issuer")!,
+                RSAPrivateKeyBase64 = builder.Configuration.GetValue<string>("Settings:TokenSettings:PrivateKey")!,
+            },
+            Security = new SecuritySettingsModel
+            {
+                LockDownInMinutes = 0,
+                LoginAttemptsForLockDown = 1000000,
+                RequirePasswordChange = false
+            },
+            MfaSettings = new(),
+            RefreshToken = new RefreshTokenSettingsModel
+            {
+                Audience = "adp-menus",
+                ExpireSeconds = 100000,
+                Issuer = builder.Configuration.GetValue<string>("Settings:TokenSettings:Issuer")!,
+                Key = builder.Configuration.GetValue<string>("Settings:TokenSettings:RefreshTokenKey")!,
+            },
+            HashIdSettings = new HashIdSettings
+            {
+                AcceptUnencodedIds = true,
+                UserIdsSalt = "k02iUHSb2ier9fiui02349AbfJEI",
+                UserIdsMinHashLength = 5
+            },
+            SASToken = new SASTokenModel
+            {
+                ExpiresInSeconds = 3600,
+                Key = "One-Two-Three-Four-Five",
+            },
+            ShiftIdentityFeatureLocking = new ShiftIdentityFeatureLocking
+            {
+                RegionFeatureIsLocked = false,
+                CityFeatureIsLocked = false,
+                BrandFeatureIsLocked = false,
+                DepartmentFeatureIsLocked = false,
+                ServiceFeatureIsLocked = false,
+                CompanyFeatureIsLocked = false,
+                CompanyBranchFeatureIsLocked = false,
+                AppFeatureIsLocked = false,
+                AccessTreeFeatureIsLocked = false,
+                UserFeatureIsLocked = false,
+                TeamFeatureIsLocked = false,
+            },
+            DefaultDataLevelAccessOptions = new ShiftIdentityDefaultDataLevelAccessOptions
+            {
+                DisableDefaultCountryFilter = true
+            }
         }
-    }
-);
+    );
 
 // ---------- TypeAuth (consumer owns this; adds Menu action tree when enabled) ----------
 builder.Services.AddTypeAuth(o =>
@@ -172,7 +186,8 @@ builder.Services.AddTypeAuth(o =>
 builder.Services.AddMenuApiServices<DB>(mvcBuilder, options =>
 {
     options.RoutePrefix = "api/Menu";
-    options.EnableMenuActionTreeAuthorization = true;
+    // The menu action tree is on the fake identity; an external server's access trees may not hold it.
+    options.EnableMenuActionTreeAuthorization = !useExternalIdentity;
     options.Languages = new()
     {
         new MenuLanguageOption("en-US", "English"),
@@ -239,6 +254,15 @@ app.UseRequestLocalization(options =>
 
 app.MapControllers();
 
+// What the Blazor client cannot be given directly: a WebAssembly app has no environment, so it asks here
+// whether to sign in on an external identity server, and where.
+app.MapGet("/api/sample-settings", () => new
+{
+    ExternalIdentity = useExternalIdentity
+        ? new { AppId = externalIdentity["AppId"], BaseUrl = externalIdentity["BaseUrl"], FrontEndBaseUrl = externalIdentity["FrontEndBaseUrl"] }
+        : null,
+});
+
 // ShiftIdentity's auth + identity-server endpoints (login / refresh / MFA / auth-code, users,
 // company calendar, …). These used to be classic controllers picked up by MapControllers() above;
 // the 2026-07 framework release moved them to minimal APIs, which the host has to map explicitly.
@@ -246,7 +270,8 @@ app.MapControllers();
 // MapFallbackToFile below, so login fails in a way that looks like a routing bug rather than a
 // missing endpoint. Only hosts running ShiftIdentityHostingTypes.Internal (as this sample does)
 // need it; hosts that merely validate tokens issued by a separate identity service do not.
-app.MapShiftIdentityDashboard();
+if (!useExternalIdentity)
+    app.MapShiftIdentityDashboard();
 
 // Attribute-driven CRUD for [ShiftEntityEndpoint<>] / [ShiftEntitySecureEndpoint<>] entities —
 // the identity dashboard's own resources. DI registration happens in RegisterShiftRepositories;
@@ -346,25 +371,28 @@ if (replicationIsConfigured)
 }
 
 // Seed identity (SuperUser, Country, Region, Company, Branch) and grant full access.
-await app.SeedDBAsync("SuperUser", "OneTwo", new ShiftSoftware.ShiftIdentity.Data.DBSeedOptions
+if (!useExternalIdentity)
 {
-    CountryExternalId = "1",
-    CountryShortCode = "IQ",
-    CountryCallingCode = "+964",
+    await app.SeedDBAsync("SuperUser", "OneTwo", new ShiftSoftware.ShiftIdentity.Data.DBSeedOptions
+    {
+        CountryExternalId = "1",
+        CountryShortCode = "IQ",
+        CountryCallingCode = "+964",
 
-    RegionExternalId = "1",
-    RegionShortCode = "KRG",
+        RegionExternalId = "1",
+        RegionShortCode = "KRG",
 
-    CompanyShortCode = "SFT",
-    CompanyExternalId = "-1",
-    CompanyAlternativeExternalId = "shift-software",
-    CompanyType = CompanyTypes.NotSpecified,
+        CompanyShortCode = "SFT",
+        CompanyExternalId = "-1",
+        CompanyAlternativeExternalId = "shift-software",
+        CompanyType = CompanyTypes.NotSpecified,
 
-    CompanyBranchExternalId = "-11",
-    CompanyBranchShortCode = "SFT-EBL"
-});
+        CompanyBranchExternalId = "-11",
+        CompanyBranchShortCode = "SFT-EBL"
+    });
 
-await app.SetFullAccessAsync("t1", "t3");
+    await app.SetFullAccessAsync("t1", "t3");
+}
 
 app.UseCors(x => x.WithOrigins("*").AllowAnyMethod().AllowAnyHeader());
 

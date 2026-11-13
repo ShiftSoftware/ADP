@@ -141,6 +141,11 @@ public class VehicleMenuLookupFunctions
             // the first question anyone asks about a miss.
             basicModelCode = vehicle.BasicModelCode,
 
+            // What a caller needs to tell an official vehicle from any other, and to name it.
+            isAuthorized = vehicle.IsAuthorized,
+            identifiers = vehicle.Identifiers,
+            vehicleSpecification = vehicle.VehicleSpecification,
+
             serviceMenu = menu,
         });
     }

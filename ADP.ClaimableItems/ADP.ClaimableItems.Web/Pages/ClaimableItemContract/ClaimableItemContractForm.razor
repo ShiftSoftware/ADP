@@ -2,6 +2,8 @@
 
 @inject IOptions<ClaimableItemsWebOptions> CIOptions
 @inject HttpClient Http
+@using ShiftSoftware.ADP.Menus.Shared.DTOs.Menu
+@using ShiftSoftware.ADP.Menus.Shared.DTOs.VehicleModel
 
 <ShiftEntityForm T="ClaimableItemContractDTO"
                  @bind-Mode="Mode"
@@ -112,6 +114,37 @@
                             </MudItem>
                             <MudItem lg="4" md="4" sm="4" xs="12">
                                 <MudField Label="Variant" Variant="Variant.Text">@Contract.Variant</MudField>
+                            </MudItem>
+                        }
+
+                        @* A VIN with no menu of its own: the user picks the model, then one of its basic model codes. *@
+                        @if (ShowMenuSelection)
+                        {
+                            <MudItem lg="6" md="6" sm="6" xs="12">
+                                <ShiftAutocomplete Label="Menu Model"
+                                                   TEntitySet="VehicleModelListDTO"
+                                                   EntitySet="@MenuVehicleModelList.EntitySet"
+                                                   BaseUrl="@MenuVehicleModelList.BaseUrl"
+                                                   Value="Contract.MenuVehicleModel"
+                                                   ValueChanged="MenuVehicleModelChangedAsync" />
+                            </MudItem>
+
+                            <MudItem lg="6" md="6" sm="6" xs="12">
+                                <ShiftAutocomplete @key="Contract.MenuVehicleModel?.Value"
+                                                   Label="Basic Model Code"
+                                                   TEntitySet="MenuListDTO"
+                                                   EntitySet="@MenuList.EntitySet"
+                                                   BaseUrl="@MenuList.BaseUrl"
+                                                   Disabled="Contract.MenuVehicleModel is null"
+                                                   Filter="FilterMenusByModel"
+                                                   Value="Contract.Menu"
+                                                   ValueChanged="MenuChangedAsync" />
+                            </MudItem>
+                        }
+                        else if (ReadOnly && Contract.Menu is not null)
+                        {
+                            <MudItem lg="4" md="4" sm="4" xs="12">
+                                <MudField Label="Basic Model Code (selected)" Variant="Variant.Text">@Contract.BasicModelCode</MudField>
                             </MudItem>
                         }
 

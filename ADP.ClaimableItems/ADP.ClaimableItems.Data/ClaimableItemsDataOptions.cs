@@ -36,6 +36,13 @@ public class ClaimableItemsDataOptions
     /// </summary>
     public BooleanAction? CancelContractAction { get; set; }
 
+    /// <summary>
+    /// Lets the user pick a menus-module model and basic model code for a VIN that is not official or has no
+    /// menu of its own, so a contract can still be written for it. Default true; needs the host's
+    /// <c>IClaimableItemContractMenuProvider.GetModelMenuAsync</c>.
+    /// </summary>
+    public bool ContractAllowMenuSelection { get; set; } = true;
+
     /// <summary>The fewest services a contract can be issued with. Default 1.</summary>
     public int ContractMinimumLines { get; set; } = 1;
 

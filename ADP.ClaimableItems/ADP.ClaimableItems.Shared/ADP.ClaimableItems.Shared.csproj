@@ -40,6 +40,10 @@
 		     package only when this project is packed standalone. -->
 		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
 		<ProjectReference Include="..\..\ADP.Models\Models\Models.csproj" Condition="Exists('..\..\ADP.Models\Models\Models.csproj')" />
+		<!-- A contract can point at a menus-module vehicle model and menu; their hash-id converters and list DTOs
+		     come from here. Same in-repo/package convention. -->
+		<PackageReference Include="ShiftSoftware.ADP.Menus.Shared" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Menus\ADP.Menus.Shared\ADP.Menus.Shared.csproj')" />
+		<ProjectReference Include="..\..\ADP.Menus\ADP.Menus.Shared\ADP.Menus.Shared.csproj" Condition="Exists('..\..\ADP.Menus\ADP.Menus.Shared\ADP.Menus.Shared.csproj')" />
 	</ItemGroup>
 
 </Project>

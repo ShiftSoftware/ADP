@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ShiftSoftware.ADP.ClaimableItems.Shared;
@@ -10,10 +11,11 @@ using ShiftSoftware.ShiftEntity.Model.HashIds;
 namespace ShiftSoftware.ADP.ClaimableItems.Sample.SingleCountry.API.Services;
 
 /// <summary>
-/// Reads the vehicle and its contract menu from the distributor's vehicle lookup endpoint
-/// (<c>Sample:VehicleLookupUrl</c>, with <c>{vin}</c> in it), asking it to include the model's contract menu. A
-/// server-to-server call: the endpoint's function key, when it needs one, is <c>Sample:VehicleLookupFunctionKey</c>.
-/// One country, so no country or transfer rate is sent: the endpoint prices the menu itself.
+/// Reads the vehicle and the contract menus from the single-country menus sample's lookup functions
+/// (<c>Sample:MenuLookupUrl</c>, the functions host's base URL): <c>api/vehicle/{vin}</c> for a VIN and
+/// <c>api/menu/{basicModelCode}</c> for a model the user picked. Server-to-server calls: the function key, when
+/// the host needs one, is <c>Sample:MenuLookupFunctionKey</c>. One country, so no country or transfer rate is
+/// sent: the functions price the menu themselves.
 /// </summary>
 public class LookupEndpointContractMenuProvider : IClaimableItemContractMenuProvider
 {
@@ -25,7 +27,7 @@ public class LookupEndpointContractMenuProvider : IClaimableItemContractMenuProv
     private readonly HttpClient http;
     private readonly IMenuCountryProvider countryProvider;
     private readonly IHashIdService hashIdService;
-    private readonly string urlTemplate;
+    private readonly string baseUrl;
     private readonly string? functionKey;
 
     public LookupEndpointContractMenuProvider(
@@ -37,8 +39,8 @@ public class LookupEndpointContractMenuProvider : IClaimableItemContractMenuProv
         this.http = http;
         this.countryProvider = countryProvider;
         this.hashIdService = hashIdService;
-        urlTemplate = configuration["Sample:VehicleLookupUrl"] ?? "";
-        functionKey = configuration["Sample:VehicleLookupFunctionKey"];
+        baseUrl = (configuration["Sample:MenuLookupUrl"] ?? "").TrimEnd('/');
+        functionKey = configuration["Sample:MenuLookupFunctionKey"];
     }
 
     public async ValueTask<IReadOnlyList<ClaimableItemContractCountry>> GetSupportedCountriesAsync() =>
@@ -48,23 +50,13 @@ public class LookupEndpointContractMenuProvider : IClaimableItemContractMenuProv
 
     public async Task<ClaimableItemContractVehicleMenu> GetVehicleMenuAsync(string vin, long? countryId, decimal transferRate, string language)
     {
-        var url = urlTemplate.Replace("{vin}", Uri.EscapeDataString(vin));
-        url += (url.Contains('?') ? "&" : "?") + "includeServiceMenu=true&menuTypes=Contract";
+        using var response = await GetAsync($"api/vehicle/{Uri.EscapeDataString(vin)}", language);
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        // A lookup with no vehicle data answers 503: every VIN is then one the user picks a model for.
+        if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.ServiceUnavailable)
+            return new ClaimableItemContractVehicleMenu { MenuStatus = ClaimableItemContractVehicleMenuStatus.NotFound };
 
-        if (!string.IsNullOrWhiteSpace(functionKey))
-            request.Headers.Add("x-functions-key", functionKey);
-
-        if (!string.IsNullOrWhiteSpace(language))
-            request.Headers.AcceptLanguage.ParseAdd(language);
-
-        using var response = await http.SendAsync(request);
-
-        if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException(
-                $"The vehicle lookup answered {(int)response.StatusCode} ({response.StatusCode}) for {vin}. A 401 means a missing or " +
-                "wrong Sample:VehicleLookupFunctionKey.");
+        EnsureSuccess(response, vin);
 
         var lookup = await response.Content.ReadFromJsonAsync<VehicleLookup>(Json)
             ?? throw new InvalidOperationException($"The vehicle lookup returned nothing for {vin}.");
@@ -87,23 +79,68 @@ public class LookupEndpointContractMenuProvider : IClaimableItemContractMenuProv
                 "NoBasicModelCode" or "NotFound" => ClaimableItemContractVehicleMenuStatus.NotFound,
                 _ => ClaimableItemContractVehicleMenuStatus.Unavailable,
             },
-            Lines = menu?.Services.Select(ToMenuLine).ToList() ?? [],
+            Lines = menu?.Services.Select(x => ToMenuLine(x, x.VariantID, x.VariantName)).ToList() ?? [],
         };
     }
 
-    private static ClaimableItemContractMenuLineDTO ToMenuLine(MenuLine line) => new()
+    public async Task<ClaimableItemContractVehicleMenu> GetModelMenuAsync(string basicModelCode, long? countryId, decimal transferRate, string language)
+    {
+        // A code may hold a slash; the route is a catch-all, so the slash stays a slash.
+        var path = string.Join('/', basicModelCode.Split('/').Select(Uri.EscapeDataString));
+
+        using var response = await GetAsync($"api/menu/{path}", language);
+
+        // 503: the menu store is not provisioned. 409: the menu's data is incomplete.
+        if (response.StatusCode is HttpStatusCode.ServiceUnavailable or HttpStatusCode.Conflict)
+            return new ClaimableItemContractVehicleMenu { MenuStatus = ClaimableItemContractVehicleMenuStatus.Unavailable };
+
+        EnsureSuccess(response, basicModelCode);
+
+        var menu = await response.Content.ReadFromJsonAsync<ModelMenu>(Json)
+            ?? throw new InvalidOperationException($"The menu lookup returned nothing for {basicModelCode}.");
+
+        return new ClaimableItemContractVehicleMenu
+        {
+            BasicModelCode = menu.BasicModelCode,
+            MenuStatus = menu.NotFound ? ClaimableItemContractVehicleMenuStatus.NotFound : ClaimableItemContractVehicleMenuStatus.Found,
+            Lines = menu.Variants
+                .SelectMany(variant => variant.PeriodicServices.Concat(variant.StandaloneServices)
+                    .Select(line => ToMenuLine(line, variant.VariantID, variant.VariantName)))
+                .ToList(),
+        };
+    }
+
+    private async Task<HttpResponseMessage> GetAsync(string path, string language)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/{path}?menuTypes=Contract&language={Uri.EscapeDataString(language)}");
+
+        if (!string.IsNullOrWhiteSpace(functionKey))
+            request.Headers.Add("x-functions-key", functionKey);
+
+        return await http.SendAsync(request);
+    }
+
+    private static void EnsureSuccess(HttpResponseMessage response, string subject)
+    {
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(
+                $"The menu lookup answered {(int)response.StatusCode} ({response.StatusCode}) for {subject}. A 401 means a missing or " +
+                "wrong Sample:MenuLookupFunctionKey.");
+    }
+
+    private static ClaimableItemContractMenuLineDTO ToMenuLine(MenuLine line, long variantId, string? variantName) => new()
     {
         MenuLineKey = line.LineKey,
         MenuCode = line.Code,
         LabourCode = line.LabourCode,
-        VariantID = line.VariantID,
-        VariantName = line.VariantName,
+        VariantID = variantId,
+        VariantName = variantName,
         LineType = line.LineType switch
         {
             "Periodic" => ClaimableItemContractLineType.Periodic,
             "StandaloneUngrouped" => ClaimableItemContractLineType.Standalone,
             "StandaloneGrouped" => ClaimableItemContractLineType.StandaloneGroup,
-            _ => throw new InvalidOperationException($"The vehicle lookup returned an unknown menu line type '{line.LineType}'."),
+            _ => throw new InvalidOperationException($"The menu lookup returned an unknown menu line type '{line.LineType}'."),
         },
         ServiceIntervalCode = line.ServiceIntervalCode,
         ServiceIntervalValueInMeter = line.ServiceIntervalValueInMeter,
@@ -115,14 +152,14 @@ public class LookupEndpointContractMenuProvider : IClaimableItemContractMenuProv
         HasUnpricedParts = line.HasUnpricedParts,
     };
 
-    // Only the parts of the endpoint's response that a contract needs.
+    // Only the parts of the functions' responses that a contract needs.
     private class VehicleLookup
     {
         public bool IsAuthorized { get; set; }
         public string? BasicModelCode { get; set; }
         public VehicleIdentifiers? Identifiers { get; set; }
         public VehicleSpecification? VehicleSpecification { get; set; }
-        public ServiceMenu? ServiceMenu { get; set; }
+        public VehicleMenu? ServiceMenu { get; set; }
     }
 
     private class VehicleIdentifiers
@@ -138,10 +175,25 @@ public class LookupEndpointContractMenuProvider : IClaimableItemContractMenuProv
         public string? ModelDescription { get; set; }
     }
 
-    private class ServiceMenu
+    private class VehicleMenu
     {
         public string? Status { get; set; }
         public List<MenuLine> Services { get; set; } = [];
+    }
+
+    private class ModelMenu
+    {
+        public string? BasicModelCode { get; set; }
+        public bool NotFound { get; set; }
+        public List<ModelMenuVariant> Variants { get; set; } = [];
+    }
+
+    private class ModelMenuVariant
+    {
+        public long VariantID { get; set; }
+        public string? VariantName { get; set; }
+        public List<MenuLine> PeriodicServices { get; set; } = [];
+        public List<MenuLine> StandaloneServices { get; set; } = [];
     }
 
     private class MenuLine

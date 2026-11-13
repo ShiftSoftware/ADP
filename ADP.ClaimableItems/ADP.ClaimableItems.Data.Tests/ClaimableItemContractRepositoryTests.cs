@@ -191,6 +191,38 @@ public class ClaimableItemContractRepositoryTests
     }
 
     [Fact]
+    public async Task An_unofficial_vehicle_takes_the_menu_of_the_model_the_user_picked()
+    {
+        await using var scope = NewScope();
+        var (db, repository, provider) = Resolve(scope);
+        provider.IsOfficial = false;
+
+        var contract = await InsertAsync(db, repository, WithPickedMenu(NewDto(0m, Periodic("P|9|10"))));
+
+        Assert.Equal("PICKED", provider.LastModelCode);
+        Assert.Equal(80m, contract.Lines.Single().Cost);
+        Assert.Equal(12, contract.MenuVehicleModelID);
+        Assert.Equal(34, contract.MenuID);
+        Assert.Equal("PICKED", contract.BasicModelCode);
+        Assert.Equal("Picked Model", contract.ModelDescription);
+    }
+
+    [Fact]
+    public async Task A_vehicle_with_its_own_menu_ignores_a_picked_model()
+    {
+        await using var scope = NewScope();
+        var (db, repository, provider) = Resolve(scope);
+
+        var contract = await InsertAsync(db, repository, WithPickedMenu(NewDto(0m, Periodic("P|1|10"))));
+
+        Assert.Null(provider.LastModelCode);
+        Assert.Null(contract.MenuVehicleModelID);
+        Assert.Null(contract.MenuID);
+        Assert.Equal("KAT", contract.BasicModelCode);
+        Assert.Equal("Model 1", contract.ModelDescription);
+    }
+
+    [Fact]
     public async Task With_one_country_the_server_sets_the_country_and_a_transfer_rate_of_1()
     {
         await using var scope = NewScope();
@@ -738,6 +770,15 @@ public class ClaimableItemContractRepositoryTests
         Lines = lines.ToList(),
     };
 
+    private static ClaimableItemContractDTO WithPickedMenu(ClaimableItemContractDTO dto)
+    {
+        dto.MenuVehicleModel = new() { Value = "12", Text = "Picked Model" };
+        dto.Menu = new() { Value = "34", Text = "PICKED" };
+        dto.BasicModelCode = "PICKED";
+        dto.ModelDescription = "Picked Model";
+        return dto;
+    }
+
     private static ClaimableItemContractLineDTO Periodic(string key) => new()
     {
         MenuLineKey = key,
@@ -871,6 +912,19 @@ public class ClaimableItemContractRepositoryTests
             menu.Lines.ForEach(x => x.Price += PriceChange);
 
             return Task.FromResult(menu);
+        }
+
+        public string? LastModelCode { get; private set; }
+
+        public Task<ClaimableItemContractVehicleMenu> GetModelMenuAsync(string basicModelCode, long? countryId, decimal transferRate, string language)
+        {
+            LastModelCode = basicModelCode;
+
+            return Task.FromResult(new ClaimableItemContractVehicleMenu
+            {
+                MenuStatus = ClaimableItemContractVehicleMenuStatus.Found,
+                Lines = [PeriodicLine("P|9|10", 10000, 80m)],
+            });
         }
 
         private static ClaimableItemContractMenuLineDTO PeriodicLine(string key, int km, decimal price) => new()

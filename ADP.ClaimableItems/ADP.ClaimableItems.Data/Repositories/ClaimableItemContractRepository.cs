@@ -392,23 +392,40 @@ public class ClaimableItemContractRepository
     {
         contract.VIN = ClaimableItemContractMenuService.NormalizeVin(contract.VIN);
 
+        // The client's model and basic model code count only when the VIN has no menu of its own.
+        var selectedBasicModelCode = contract.MenuVehicleModelID is not null && contract.MenuID is not null ? contract.BasicModelCode : null;
+
         var lookup = await menuService.LookupAsync(
-            contract.VIN, contract.Mileage, contract.CountryID, contract.TransferRate, contract.MenuLanguage, excludeContractId, today);
+            contract.VIN, contract.Mileage, contract.CountryID, contract.TransferRate, contract.MenuLanguage, excludeContractId, today, selectedBasicModelCode);
 
         if (lookup.Status != ClaimableItemContractLookupStatus.Found)
             throw Error(lookup.Status switch
             {
-                ClaimableItemContractLookupStatus.NotOfficial => "This VIN is not one of the official vehicles. Contracts for other vehicles are not supported yet.",
+                ClaimableItemContractLookupStatus.NotOfficial when lookup.MenuIsSelectable => "This VIN is not one of the official vehicles. Select the model and the basic model code whose menu the contract uses.",
+                ClaimableItemContractLookupStatus.NotOfficial => "This VIN is not one of the official vehicles, and contracts for other vehicles are not enabled.",
                 ClaimableItemContractLookupStatus.CountryRequired => "Select the country whose menu prices the contract uses.",
+                ClaimableItemContractLookupStatus.MenuNotFound when lookup.MenuIsSelected => $"The basic model code {lookup.BasicModelCode} has no contract menu. Select another one.",
+                ClaimableItemContractLookupStatus.MenuNotFound when lookup.MenuIsSelectable => "This vehicle has no contract menu. Select the model and the basic model code whose menu the contract uses.",
                 ClaimableItemContractLookupStatus.MenuNotFound => "This vehicle has no contract menu.",
                 _ => "The vehicle's service menu could not be read. Try again later.",
             });
+
+        if (lookup.MenuIsSelected)
+        {
+            // The model's name, as the client sent it with the model it picked.
+            contract.ModelDescription = string.IsNullOrWhiteSpace(contract.ModelDescription) ? lookup.ModelDescription : contract.ModelDescription.Trim();
+        }
+        else
+        {
+            contract.MenuVehicleModelID = null;
+            contract.MenuID = null;
+            contract.ModelDescription = lookup.ModelDescription;
+        }
 
         contract.Katashiki = lookup.Katashiki;
         contract.BasicModelCode = lookup.BasicModelCode;
         contract.Variant = lookup.Variant;
         contract.ModelCode = lookup.ModelCode;
-        contract.ModelDescription = lookup.ModelDescription;
         contract.BrandID = lookup.Brand is null ? null : long.Parse(lookup.Brand.Value);
         contract.CountryID = lookup.Country is null ? null : long.Parse(lookup.Country.Value);
         contract.TransferRate = lookup.TransferRate;

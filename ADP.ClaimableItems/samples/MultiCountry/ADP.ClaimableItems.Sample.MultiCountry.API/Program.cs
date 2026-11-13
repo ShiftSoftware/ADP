@@ -25,6 +25,7 @@ string[] requiredSettings =
 [
     "ShiftIdentity:Issuer",
     "ShiftIdentity:PublicKey",
+    "Sample:MenuLookupUrl",
 ];
 var missingSettings = requiredSettings.Where(x => string.IsNullOrWhiteSpace(configuration[x])).ToList();
 
@@ -72,9 +73,9 @@ builder.Services.AddTypeAuth(o =>
     o.AddActionTree<GeneralActionTree>();
 });
 
-// ---------- The vehicle and its contract menu, from the distributor's vehicle lookup endpoint ----------
+// ---------- The vehicle and the contract menus, from the multi-country menus sample's lookup functions ----------
 builder.Services.AddSingleton<IMenuCountryProvider, SampleCountryProvider>();
-builder.Services.AddScoped<IClaimableItemContractMenuProvider, LookupEndpointContractMenuProvider>();
+builder.Services.AddHttpClient<IClaimableItemContractMenuProvider, LookupEndpointContractMenuProvider>();
 
 // ---------- Claimable Items (service contracts) ----------
 builder.Services.AddScoped<ICompanyInfoProvider, SampleCompanyInfoProvider>();
@@ -117,6 +118,10 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapRazorPages();
+
+// What the Blazor client cannot be given directly: a WebAssembly app has no environment, so the URLs this host
+// gets (from Aspire, or its settings) reach the client through here.
+app.MapGet("/api/sample-settings", () => new { MenusApiUrl = app.Configuration["Sample:MenusApiUrl"] });
 if (hostBlazorClient)
     app.MapFallbackToFile("index.html");
 

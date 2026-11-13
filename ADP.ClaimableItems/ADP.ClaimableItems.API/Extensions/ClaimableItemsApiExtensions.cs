@@ -89,6 +89,7 @@ public static class ClaimableItemsApiExtensions
             ContractPeriodicMileageMargin = options.ContractPeriodicMileageMargin,
             IssueContractAction = options.IssueContractAction,
             CancelContractAction = options.CancelContractAction,
+            ContractAllowMenuSelection = options.ContractAllowMenuSelection,
             ContractMinimumLines = options.ContractMinimumLines,
             ContractPriceIncrements = options.ContractPriceIncrements,
             ContractTimeZone = options.ContractTimeZone,
@@ -129,6 +130,7 @@ public static class ClaimableItemsApiExtensions
         target.IssueContractAction = source.IssueContractAction;
         target.CancelContractAction = source.CancelContractAction;
         target.PrintContractAction = source.PrintContractAction;
+        target.ContractAllowMenuSelection = source.ContractAllowMenuSelection;
         target.ContractMinimumLines = source.ContractMinimumLines;
         target.ContractPriceIncrements = source.ContractPriceIncrements;
         target.ContractTimeZone = source.ContractTimeZone;
