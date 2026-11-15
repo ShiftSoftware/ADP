@@ -65,6 +65,9 @@ public class GeneratorEnvironment
 
     public List<ServiceItemModel> ServiceItems { get; set; } = new();
     public Dictionary<string, PartAggregateCosmosModel> Parts { get; set; } = new();
+
+    /// <summary>The VinModelMappings container, matched on <c>WMI + VDS</c>. Read only when <see cref="GeneratorRequestOptions.DecodeUnauthorizedVin"/> is on.</summary>
+    public List<VinModelMappingModel> VinModelMappings { get; set; } = new();
 }
 
 /// <summary>
@@ -121,6 +124,9 @@ public class GeneratorRequestOptions
     /// </summary>
     public bool GeneratePaintThicknessCertificateUrls { get; set; } = true;
 
+    /// <summary>Name a VIN the distributor has no record of from <see cref="GeneratorEnvironment.VinModelMappings"/>. Off by default, as for a host.</summary>
+    public bool DecodeUnauthorizedVin { get; set; }
+
     /// <summary>
     /// The quantity the part lookup asks for at the distributor's stock locations — the input that decides
     /// <c>Available</c> / <c>PartiallyAvailable</c> / <c>QuantityNotWithinLookupThreshold</c>. An explicit
@@ -147,6 +153,7 @@ public class GeneratorRequestOptions
         VehicleServiceHistoryConsistencyLevel = VehicleServiceHistoryConsistencyLevel,
         TraceSSCEvaluation = TraceSSCEvaluation,
         GeneratePaintThicknessCertificateUrls = GeneratePaintThicknessCertificateUrls,
+        DecodeUnauthorizedVin = DecodeUnauthorizedVin,
     };
 
     public int? DistributorStockLookupQuantityFor(string partNumber) =>

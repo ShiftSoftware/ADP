@@ -163,6 +163,10 @@ foreach (var envFile in Directory.GetFiles(environmentsDir, "*.json").OrderBy(f 
             return Task.FromResult(match!);
         });
 
+    storageService.GetVinModelMappingAsync(Arg.Any<string>(), Arg.Any<string>())
+        .Returns(callInfo => Task.FromResult(env.VinModelMappings.FirstOrDefault(m =>
+            m.WMI == callInfo.ArgAt<string>(0) && m.VDS == callInfo.ArgAt<string>(1))));
+
     // Wire up service items
     storageService.GetServiceItemsAsync(Arg.Any<bool>())
         .Returns(Task.FromResult<IEnumerable<ServiceItemModel>>(env.ServiceItems));
@@ -310,6 +314,9 @@ static async Task<VehicleLookupDTO> GenerateVehicleLookup(
         SaleInformation = await new VehicleSaleInformationEvaluator(aggregate, options, serviceProvider, storageService)
             .Evaluate(vehicle, ownership, requestOptions),
     };
+
+    if (!data.IsAuthorized && requestOptions.DecodeUnauthorizedVin)
+        data.VinDecode = await new VehicleVinDecodeEvaluator(storageService, options).Evaluate(vin);
 
     await ApplySscPartAvailability(data.SSC, vin, env, options, requestOptions, serviceProvider);
 

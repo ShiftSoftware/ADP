@@ -31,21 +31,10 @@
       dir="ltr"
       x-data="harness({
         mocks: 'vehicle-lookup',
-        defaultEnvironment: 'broker-market',
-        labels: {
-          ZU9LG6DGXS6464981: 'four inspections · readings and photos on every row',
-          ZS8AJAYC9P6174790: 'three inspections · PDI and two pre-owned',
-          ZS8SV9KXXST918958: 'one inspection · certificate available',
-          ZS8MFGFV7R6554235: 'one pre-owned inspection · no certificate',
-          JTEBU5JR8L5234567: 'one inspection · no photos at all (broker-dealer)',
-          ZT8P9NAL1LG988010: 'one inspection · some rows without photos (standard-dealer)',
-          ZS8AJAYCXR6471313: 'no readings on record',
-          ZT8LY7CZ0S2959088: 'no readings on record',
-          JTMW43FV10D123456: 'no readings on record',
-          ZV8GHHHP37P214642: 'not in distributor records',
-          ZV9LMW6D75T151181: 'not in distributor records',
-          UNKNOWN_VIN_12345: 'not in distributor records',
-        },
+        siteEnvironment: 'website',
+
+        labels: window.harnessTags('vehicle-paint-thickness'),
+        labelsOnly: true,
         // `paintThickness` is present on nearly every fixture; the readings are what
         // the table actually draws.
         has: vehicle => vehicle?.paintThicknessInspections?.length > 0,
