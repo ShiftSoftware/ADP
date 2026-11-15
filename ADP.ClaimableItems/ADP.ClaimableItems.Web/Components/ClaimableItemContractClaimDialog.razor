@@ -1,0 +1,46 @@
+@* Asks for the dealer's invoice and job number of a claimed service. Closes with them, or cancelled. *@
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">@Title</MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudText Class="mb-4">@Message</MudText>
+        <MudTextField T="string"
+                      @bind-Value="claim.InvoiceNumber"
+                      Label="Invoice Number"
+                      Variant="Variant.Outlined"
+                      Immediate
+                      AutoFocus />
+        <MudTextField T="string"
+                      @bind-Value="claim.JobNumber"
+                      Label="Job Number"
+                      Variant="Variant.Outlined"
+                      Class="mt-3"
+                      Immediate />
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="() => MudDialog.Cancel()">Back</MudButton>
+        <MudButton Color="Color.Success"
+                   Variant="Variant.Filled"
+                   Disabled="string.IsNullOrWhiteSpace(claim.InvoiceNumber) || string.IsNullOrWhiteSpace(claim.JobNumber)"
+                   OnClick="() => MudDialog.Close(DialogResult.Ok(claim))">
+            Claim
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string Title { get; set; } = "Claim";
+
+    [Parameter]
+    public string Message { get; set; } = string.Empty;
+
+    private readonly ClaimableItemContractLineClaimDTO claim = new();
+}

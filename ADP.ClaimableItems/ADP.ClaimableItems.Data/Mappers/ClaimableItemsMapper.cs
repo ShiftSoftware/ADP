@@ -190,7 +190,15 @@ public class ClaimableItemsMapper : ShiftMapperBase
             .ForMember(e => e.ExpireDate, opt => opt.Ignore())
             .ForMember(e => e.IsCancelled, opt => opt.Ignore())
             .ForMember(e => e.CancelledDate, opt => opt.Ignore())
-            .ForMember(e => e.CancelReason, opt => opt.Ignore());
+            .ForMember(e => e.CancelReason, opt => opt.Ignore())
+            .ForMember(e => e.IsClaimed, opt => opt.Ignore())
+            .ForMember(e => e.ClaimDate, opt => opt.Ignore())
+            .ForMember(e => e.ClaimCompanyID, opt => opt.Ignore())
+            .ForMember(e => e.ClaimCompanyBranchID, opt => opt.Ignore())
+            .ForMember(e => e.ClaimInvoiceNumber, opt => opt.Ignore())
+            .ForMember(e => e.ClaimJobNumber, opt => opt.Ignore())
+            .ForMember(e => e.ClaimCost, opt => opt.Ignore())
+            .ForMember(e => e.IsSkipped, opt => opt.Ignore());
     }
 
     // ────────────────────────────────────────────────────────────────────────────────────────────────────────

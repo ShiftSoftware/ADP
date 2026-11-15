@@ -223,6 +223,79 @@ public class ClaimableItemContractRepositoryTests
     }
 
     [Fact]
+    public async Task Claiming_a_periodic_service_records_the_dealer_and_the_cost_and_skips_the_earlier_ones()
+    {
+        await using var scope = NewScope();
+        var (db, repository, _) = Resolve(scope);
+        var periodic = new[] { Periodic("P|1|10"), Periodic("P|1|20"), Periodic("P|1|30") };
+        Array.ForEach(periodic, x => x.Duration = 4);
+        var contract = await IssueNewAsync(db, repository, [.. periodic, Standalone("S|1|7")]);
+
+        await repository.ClaimLineAsync(contract.ID, Line(contract, "P|1|20").ID, Invoice("INV-1"), 7, 5, 6);
+        await db.SaveChangesAsync();
+
+        var claimed = Line(contract, "P|1|20");
+        Assert.True(claimed.IsClaimed);
+        Assert.Equal(120m, claimed.ClaimCost);
+        Assert.Equal((5L, 6L, "INV-1", "JOB-1"), (claimed.ClaimCompanyID!.Value, claimed.ClaimCompanyBranchID!.Value, claimed.ClaimInvoiceNumber, claimed.ClaimJobNumber));
+        Assert.True(Line(contract, "P|1|10").IsSkipped);
+        Assert.False(Line(contract, "P|1|30").IsSkipped);
+        Assert.False(Line(contract, "S|1|7").IsSkipped);
+    }
+
+    [Fact]
+    public async Task A_service_is_claimed_once_and_a_skipped_one_never()
+    {
+        await using var scope = NewScope();
+        var (db, repository, _) = Resolve(scope);
+        var contract = await IssueNewAsync(db, repository, Periodic("P|1|10"), Periodic("P|1|20"));
+
+        await repository.ClaimLineAsync(contract.ID, Line(contract, "P|1|20").ID, Invoice("INV-1"), 7, 5, 6);
+        await db.SaveChangesAsync();
+
+        var again = await Assert.ThrowsAsync<ShiftEntityException>(() => repository.ClaimLineAsync(contract.ID, Line(contract, "P|1|20").ID, Invoice("INV-2"), 7, 5, 6));
+        Assert.Contains("already claimed", again.Message.Body);
+
+        var skipped = await Assert.ThrowsAsync<ShiftEntityException>(() => repository.ClaimLineAsync(contract.ID, Line(contract, "P|1|10").ID, Invoice("INV-2"), 7, 5, 6));
+        Assert.Contains("passed over", skipped.Message.Body);
+    }
+
+    [Fact]
+    public async Task A_dealer_branch_uses_an_invoice_for_one_periodic_service_only()
+    {
+        await using var scope = NewScope();
+        var (db, repository, _) = Resolve(scope);
+        var contract = await IssueNewAsync(db, repository, Periodic("P|1|10"), Periodic("P|1|20"), Standalone("S|1|7"));
+
+        await repository.ClaimLineAsync(contract.ID, Line(contract, "P|1|10").ID, Invoice("INV-1"), 7, 5, 6);
+        await db.SaveChangesAsync();
+
+        var error = await Assert.ThrowsAsync<ShiftEntityException>(() => repository.ClaimLineAsync(contract.ID, Line(contract, "P|1|20").ID, Invoice("INV-1"), 7, 5, 6));
+        Assert.Contains("already been used for another claim", error.Message.Body);
+
+        // A standalone service on the same invoice, or the same invoice number at another branch, is fine.
+        await repository.ClaimLineAsync(contract.ID, Line(contract, "S|1|7").ID, Invoice("INV-1"), 7, 5, 6);
+        await repository.ClaimLineAsync(contract.ID, Line(contract, "P|1|20").ID, Invoice("INV-1"), 7, 5, 8);
+    }
+
+    [Fact]
+    public async Task A_draft_or_an_invoice_for_another_vin_cannot_be_claimed()
+    {
+        await using var scope = NewScope();
+        var (db, repository, _) = Resolve(scope);
+
+        var draft = await InsertAsync(db, repository, NewDto(0m, Periodic("P|1|10")));
+        var draftError = await Assert.ThrowsAsync<ShiftEntityException>(() => repository.ClaimLineAsync(draft.ID, draft.Lines.Single().ID, Invoice("INV-1"), 7, 5, 6));
+        Assert.Contains("draft", draftError.Message.Body);
+
+        var issued = await IssueNewAsync(db, repository, Standalone("S|1|7"));
+        var claim = Invoice("INV-1");
+        claim.VIN = "JTMHX01J6M4200000";
+        var vinError = await Assert.ThrowsAsync<ShiftEntityException>(() => repository.ClaimLineAsync(issued.ID, issued.Lines.Single().ID, claim, 7, 5, 6));
+        Assert.Contains("The invoice has VIN", vinError.Message.Body);
+    }
+
+    [Fact]
     public async Task With_one_country_the_server_sets_the_country_and_a_transfer_rate_of_1()
     {
         await using var scope = NewScope();
@@ -769,6 +842,8 @@ public class ClaimableItemContractRepositoryTests
         PriceIncrement = priceIncrement,
         Lines = lines.ToList(),
     };
+
+    private static ClaimableItemContractLineClaimDTO Invoice(string number) => new() { InvoiceNumber = number, JobNumber = "JOB-1" };
 
     private static ClaimableItemContractDTO WithPickedMenu(ClaimableItemContractDTO dto)
     {

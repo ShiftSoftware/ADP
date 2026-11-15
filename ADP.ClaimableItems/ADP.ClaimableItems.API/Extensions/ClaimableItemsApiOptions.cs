@@ -61,6 +61,12 @@ public class ClaimableItemsApiOptions
     public BooleanAction? PrintContractAction { get; set; }
 
     /// <summary>
+    /// The TypeAuth boolean node a user needs to claim a service of a contract (consumer-supplied, per D9).
+    /// Null (default) → anyone who may write contracts may claim.
+    /// </summary>
+    public BooleanAction? ClaimContractAction { get; set; }
+
+    /// <summary>
     /// Lets the user pick a menus-module model and basic model code for a VIN that is not official or has no
     /// menu of its own. Default true; needs <c>IClaimableItemContractMenuProvider.GetModelMenuAsync</c>, and
     /// the Web options' <c>MenuVehicleModelUrl</c> and <c>MenuUrl</c> for the form to offer the pickers.

@@ -70,7 +70,14 @@ public partial class ClaimableItemContractForm
     // Every saved contract prints; the print says when it is a draft or cancelled.
     private bool CanPrint => IsExisting && ReadOnly && Allows(CIOptions.Value.PrintContractAction);
 
-    private bool ShowLineActions => !ReadOnly || CanCancel;
+    private bool CanClaim => IsExisting && ReadOnly && Contract.Status == ClaimableItemContractStatus.Issued
+        && (CIOptions.Value.ClaimContractAction is { } claimAction ? TypeAuthService.CanAccess(claimAction) : CanWriteContracts);
+
+    // The server refuses the same lines; this only hides the button.
+    private static bool IsClaimable(ClaimableItemContractLineDTO line) =>
+        !line.IsCancelled && !line.IsClaimed && !line.IsSkipped && !(line.ExpireDate?.Date < DateTime.Today);
+
+    private bool ShowLineActions => !ReadOnly || CanCancel || CanClaim;
 
     private bool CanWriteContracts =>
         CIOptions.Value.ClaimableItemContractsAction is not { } action || TypeAuthService.CanWrite(action);
@@ -403,6 +410,24 @@ public partial class ClaimableItemContractForm
             await RunActionAsync($"lines/{line.ID}/cancel", new ClaimableItemContractCancelDTO { Reason = reason }, "The service is cancelled.");
     }
 
+    private async Task ClaimLineAsync(ClaimableItemContractLineDTO line)
+    {
+        var title = $"Claim {line.MenuCode ?? line.Description}";
+
+        var dialog = await DialogService.ShowAsync<ClaimableItemContractClaimDialog>(title, new DialogParameters<ClaimableItemContractClaimDialog>
+        {
+            { x => x.Title, title },
+            { x => x.Message, line.LineType == ClaimableItemContractLineType.Periodic
+                ? "Enter the invoice of the service. Earlier periodic services still unclaimed are passed over and can no longer be claimed."
+                : "Enter the invoice of the service." },
+        });
+
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: ClaimableItemContractLineClaimDTO claim })
+            await RunActionAsync($"lines/{line.ID}/claim", claim, "The service is claimed.");
+    }
+
     private async Task<string?> AskReasonAsync(string title, string message, string confirmText)
     {
         var dialog = await DialogService.ShowAsync<ClaimableItemContractCancelDialog>(title, new DialogParameters<ClaimableItemContractCancelDialog>
@@ -418,7 +443,7 @@ public partial class ClaimableItemContractForm
     }
 
     /// <summary>Posts one of the contract actions and shows the contract as the server returns it.</summary>
-    private async Task RunActionAsync(string path, ClaimableItemContractCancelDTO? body, string done)
+    private async Task RunActionAsync(string path, object? body, string done)
     {
         actionRunning = true;
 
@@ -426,7 +451,7 @@ public partial class ClaimableItemContractForm
         {
             var url = $"{CIOptions.Value.ResolvedRoutePrefix}ClaimableItemContract/{Uri.EscapeDataString(Contract.ID!)}/{path}";
 
-            using var response = await Http.PostAsJsonAsync(url, body ?? new ClaimableItemContractCancelDTO());
+            using var response = await Http.PostAsJsonAsync<object>(url, body ?? new ClaimableItemContractCancelDTO());
 
             ShiftEntityResponse<ClaimableItemContractDTO>? result = null;
             try

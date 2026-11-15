@@ -396,6 +396,14 @@
                                             {
                                                 <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Outlined">Cancelled</MudChip>
                                             }
+                                            else if (line.IsClaimed)
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">Claimed</MudChip>
+                                            }
+                                            else if (line.IsSkipped)
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">Skipped</MudChip>
+                                            }
                                         </td>
                                         <td class="whitespace-nowrap">@line.MenuCode</td>
                                         <td>
@@ -403,6 +411,12 @@
                                             @if (!ReadOnly && IsNotOffered(line))
                                             {
                                                 <MudText Typo="Typo.caption" Color="Color.Error" Class="d-block">No longer offered for this vehicle. Remove it before saving.</MudText>
+                                            }
+                                            @if (line.IsClaimed)
+                                            {
+                                                <MudText Typo="Typo.caption" Color="Color.Success" Class="d-block">
+                                                    Claimed @line.ClaimDate?.ToLocalTime().ToString("yyyy-MM-dd"): invoice @line.ClaimInvoiceNumber, job @line.ClaimJobNumber, cost @line.ClaimCost?.ToString("#,0.00")
+                                                </MudText>
                                             }
                                             @if (line.IsCancelled && !string.IsNullOrWhiteSpace(line.CancelReason))
                                             {
@@ -450,15 +464,29 @@
                                                                    Icon="@Icons.Material.Filled.Delete"
                                                                    OnClick="() => Contract.Lines.Remove(line)" />
                                                 }
-                                                else if (!line.IsCancelled)
+                                                else if (!line.IsCancelled && !line.IsClaimed)
                                                 {
-                                                    <MudTooltip Text="Cancel this service">
-                                                        <MudIconButton Size="Size.Small"
-                                                                       Color="Color.Error"
-                                                                       Icon="@Icons.Material.Filled.Cancel"
-                                                                       Disabled="actionRunning"
-                                                                       OnClick="() => CancelLineAsync(line)" />
-                                                    </MudTooltip>
+                                                    @if (CanClaim && IsClaimable(line))
+                                                    {
+                                                        <MudTooltip Text="Claim this service">
+                                                            <MudIconButton Size="Size.Small"
+                                                                           Color="Color.Success"
+                                                                           Icon="@Icons.Material.Filled.TaskAlt"
+                                                                           Disabled="actionRunning"
+                                                                           OnClick="() => ClaimLineAsync(line)" />
+                                                        </MudTooltip>
+                                                    }
+
+                                                    @if (CanCancel)
+                                                    {
+                                                        <MudTooltip Text="Cancel this service">
+                                                            <MudIconButton Size="Size.Small"
+                                                                           Color="Color.Error"
+                                                                           Icon="@Icons.Material.Filled.Cancel"
+                                                                           Disabled="actionRunning"
+                                                                           OnClick="() => CancelLineAsync(line)" />
+                                                        </MudTooltip>
+                                                    }
                                                 }
                                             </td>
                                         }

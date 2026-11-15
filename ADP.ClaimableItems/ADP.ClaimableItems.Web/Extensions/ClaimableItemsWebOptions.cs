@@ -35,6 +35,12 @@ public class ClaimableItemsWebOptions
     public BooleanAction? CancelContractAction { get; set; }
 
     /// <summary>
+    /// TypeAuth node that shows the contract form's Claim buttons (the same node the API options take). Null →
+    /// shown to anyone who may write contracts.
+    /// </summary>
+    public BooleanAction? ClaimContractAction { get; set; }
+
+    /// <summary>
     /// TypeAuth node that shows the contract form's Print button (the same node the API options take). Null →
     /// shown on every saved contract.
     /// </summary>

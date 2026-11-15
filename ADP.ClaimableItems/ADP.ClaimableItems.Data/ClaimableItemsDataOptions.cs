@@ -37,6 +37,12 @@ public class ClaimableItemsDataOptions
     public BooleanAction? CancelContractAction { get; set; }
 
     /// <summary>
+    /// The TypeAuth boolean node a user needs to claim a service of a contract (consumer-supplied, per D9).
+    /// Null (default) → anyone who may write contracts may claim.
+    /// </summary>
+    public BooleanAction? ClaimContractAction { get; set; }
+
+    /// <summary>
     /// Lets the user pick a menus-module model and basic model code for a VIN that is not official or has no
     /// menu of its own, so a contract can still be written for it. Default true; needs the host's
     /// <c>IClaimableItemContractMenuProvider.GetModelMenuAsync</c>.

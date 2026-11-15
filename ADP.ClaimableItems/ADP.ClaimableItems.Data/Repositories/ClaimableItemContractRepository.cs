@@ -117,7 +117,8 @@ public class ClaimableItemContractRepository
 
         var now = menuService.UtcNow;
 
-        foreach (var line in contract.Lines.Where(x => !x.IsCancelled))
+        // A claimed service was done; it stays as it is.
+        foreach (var line in contract.Lines.Where(x => !x.IsCancelled && !x.IsClaimed))
             CancelLine(line, reason, userId, now);
 
         CancelContract(contract, reason, userId, now);
@@ -144,11 +145,89 @@ public class ClaimableItemContractRepository
         if (line.IsCancelled)
             throw Error($"The {Name(line)} service is already cancelled.");
 
+        if (line.IsClaimed)
+            throw Error($"The {Name(line)} service is already claimed, so it cannot be cancelled.");
+
         var now = menuService.UtcNow;
         CancelLine(line, reason, userId, now);
 
         if (contract.Lines.All(x => x.IsCancelled))
             CancelContract(contract, reason, userId, now);
+
+        return contract;
+    }
+
+    /// <summary>
+    /// Claims one service of an issued contract for the dealer that did it. The rules are the legacy ones: a
+    /// service is claimed once, the invoice's VIN (when the caller read one) is the contract's, and a dealer
+    /// branch uses an invoice and job number for one periodic service only. The dealer is owed the line's cost,
+    /// not the customer price. Claiming a periodic service passes over the earlier ones still unclaimed. Any
+    /// dealer may claim, not only the one that sold the contract, so data-level access is not applied. The
+    /// caller saves the changes.
+    /// </summary>
+    public async Task<ClaimableItemContract> ClaimLineAsync(
+        long id, long lineId, ClaimableItemContractLineClaimDTO? claim, long? userId, long? companyId, long? companyBranchId)
+    {
+        EnsureCanClaim();
+
+        var invoiceNumber = string.IsNullOrWhiteSpace(claim?.InvoiceNumber) ? throw Error("Enter the invoice number.") : claim.InvoiceNumber.Trim();
+        var jobNumber = string.IsNullOrWhiteSpace(claim?.JobNumber) ? throw Error("Enter the job number.") : claim.JobNumber.Trim();
+
+        var contract = await FindContractAsync(id, disableDefaultDataLevelAccess: true);
+
+        if (contract.IsDraft)
+            throw Error("A draft contract cannot be claimed; issue it first.");
+
+        if (contract.IsCancelled)
+            throw Error("The contract is cancelled.");
+
+        if (!string.IsNullOrWhiteSpace(claim!.VIN) && !string.Equals(claim.VIN.Trim(), contract.VIN, StringComparison.OrdinalIgnoreCase))
+            throw Error($"This service is claimed for VIN ({contract.VIN}). The invoice has VIN ({claim.VIN.Trim().ToUpperInvariant()}).");
+
+        var line = contract.Lines.FirstOrDefault(x => x.ID == lineId && !x.IsDeleted)
+            ?? throw new ShiftEntityException(new Message("Not Found", "The contract has no such service."), (int)HttpStatusCode.NotFound);
+
+        if (line.IsClaimed)
+            throw Error($"The {Name(line)} service is already claimed for this VIN.");
+
+        if (line.IsCancelled)
+            throw Error($"The {Name(line)} service is cancelled.");
+
+        if (line.IsSkipped)
+            throw Error($"The {Name(line)} service was passed over when a later service was claimed.");
+
+        if (line.ExpireDate is { } expireDate && expireDate.Date < menuService.Today)
+            throw Error($"The {Name(line)} service expired on {expireDate:yyyy-MM-dd}.");
+
+        var periodic = line.LineType == ClaimableItemContractLineType.Periodic;
+
+        if (periodic && await db.Set<ClaimableItemContractLine>().AnyAsync(x =>
+                x.IsClaimed && !x.IsDeleted
+                && x.LineType == ClaimableItemContractLineType.Periodic
+                && x.ClaimCompanyID == companyId
+                && x.ClaimCompanyBranchID == companyBranchId
+                && x.ClaimInvoiceNumber == invoiceNumber
+                && x.ClaimJobNumber == jobNumber))
+            throw Error($"Invoice ({invoiceNumber}) has already been used for another claim.");
+
+        line.IsClaimed = true;
+        line.ClaimDate = menuService.UtcNow;
+        line.ClaimedByUserID = userId;
+        line.ClaimCompanyID = companyId;
+        line.ClaimCompanyBranchID = companyBranchId;
+        line.ClaimInvoiceNumber = invoiceNumber;
+        line.ClaimJobNumber = jobNumber;
+        line.ClaimQRCode = string.IsNullOrWhiteSpace(claim.QRCode) ? null : claim.QRCode;
+        line.ClaimCost = line.Cost;
+
+        if (periodic)
+        {
+            foreach (var earlier in contract.Lines.Where(x =>
+                x.LineType == ClaimableItemContractLineType.Periodic
+                && !x.IsDeleted && !x.IsCancelled && !x.IsClaimed
+                && (x.ServiceIntervalValueInMeter ?? 0) < (line.ServiceIntervalValueInMeter ?? 0)))
+                earlier.IsSkipped = true;
+        }
 
         return contract;
     }
@@ -219,7 +298,7 @@ public class ClaimableItemContractRepository
                 x.Description,
                 Type = Describe(x.LineType),
                 ExpireDate = dateFormatter.GetFormattedDate(x.ExpireDate),
-                Status = contract.IsDraft ? "Draft" : x.IsCancelled ? "Cancelled" : x.ExpireDate?.Date < today ? "Expired" : "Active",
+                Status = contract.IsDraft ? "Draft" : x.IsCancelled ? "Cancelled" : x.IsClaimed ? "Claimed" : x.IsSkipped ? "Skipped" : x.ExpireDate?.Date < today ? "Expired" : "Active",
                 Price = x.PriceWithIncrement.ToString("N2"),
             }).ToList<object>())
             .AddDataObject("Footer", new
@@ -297,6 +376,18 @@ public class ClaimableItemContractRepository
     /// <see cref="ClaimableItemsDataOptions.CancelContractAction"/> when the host sets it, and allows otherwise.
     /// </summary>
     protected virtual bool CanCancel() => CanAccess(Options.CancelContractAction, nameof(ClaimableItemsDataOptions.CancelContractAction));
+
+    /// <summary>
+    /// Whether the current user may claim a contract's services. The default checks
+    /// <see cref="ClaimableItemsDataOptions.ClaimContractAction"/> when the host sets it, and allows otherwise.
+    /// </summary>
+    protected virtual bool CanClaim() => CanAccess(Options.ClaimContractAction, nameof(ClaimableItemsDataOptions.ClaimContractAction));
+
+    private void EnsureCanClaim()
+    {
+        if (!CanClaim())
+            throw new ShiftEntityException(new Message("Forbidden", "You are not allowed to claim service contracts."), (int)HttpStatusCode.Forbidden);
+    }
 
     private bool CanAccess(BooleanAction? action, string optionName)
     {

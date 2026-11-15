@@ -589,7 +589,32 @@ namespace ShiftSoftware.ADP.ClaimableItems.Sample.SingleCountry.API.Migrations
                     b.Property<DateTime?>("CancelledDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<long?>("ClaimCompanyBranchID")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("ClaimCompanyID")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal?>("ClaimCost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("ClaimDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ClaimInvoiceNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ClaimJobNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ClaimQRCode")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<long>("ClaimableItemContractID")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("ClaimedByUserID")
                         .HasColumnType("bigint");
 
                     b.Property<decimal>("Cost")
@@ -621,7 +646,13 @@ namespace ShiftSoftware.ADP.ClaimableItems.Sample.SingleCountry.API.Migrations
                     b.Property<bool>("IsCancelled")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsClaimed")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSkipped")
                         .HasColumnType("bit");
 
                     b.Property<string>("LabourCode")

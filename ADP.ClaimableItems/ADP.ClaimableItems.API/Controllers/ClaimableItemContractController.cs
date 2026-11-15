@@ -78,6 +78,18 @@ public class ClaimableItemContractController : ShiftEntitySecureControllerAsync<
         RunAsync(key, (repository, id, userId) => repository.CancelLineAsync(id, lineId, body?.Reason, userId));
 
     /// <summary>
+    /// Claims one service of an issued contract for the signed-in user's dealer and branch. Open to a user with
+    /// <see cref="ClaimableItemsApiOptions.ClaimContractAction"/> (when the host sets it) even without write
+    /// access to contracts, and to any dealer, not only the one that sold the contract.
+    /// </summary>
+    [HttpPost("{key}/lines/{lineId:long}/claim")]
+    public Task<ActionResult<ShiftEntityResponse<ClaimableItemContractDTO>>> ClaimLine(string key, long lineId, [FromBody] ClaimableItemContractLineClaimDTO body) =>
+        RunAsync(
+            key,
+            (repository, id, userId) => repository.ClaimLineAsync(id, lineId, body, userId, HttpContext.GetCompanyID(), HttpContext.GetCompanyBranchID()),
+            requireWrite: options.ClaimContractAction is null);
+
+    /// <summary>
     /// The framework's print token (its route is inherited), issued for a contract the user can read and, when the host
     /// sets <see cref="ClaimableItemsApiOptions.PrintContractAction"/>, only to a user who has it. The print itself is
     /// <see cref="ClaimableItemContractRepository.PrintAsync"/>.
@@ -109,9 +121,10 @@ public class ClaimableItemContractController : ShiftEntitySecureControllerAsync<
 
     private async Task<ActionResult<ShiftEntityResponse<ClaimableItemContractDTO>>> RunAsync(
         string key,
-        Func<ClaimableItemContractRepository, long, long?, Task<ClaimableItemContract>> action)
+        Func<ClaimableItemContractRepository, long, long?, Task<ClaimableItemContract>> action,
+        bool requireWrite = true)
     {
-        if (!CanAccessContracts(write: true))
+        if (requireWrite && !CanAccessContracts(write: true))
             return Forbid();
 
         var repository = HttpContext.RequestServices.GetRequiredService<ClaimableItemContractRepository>();

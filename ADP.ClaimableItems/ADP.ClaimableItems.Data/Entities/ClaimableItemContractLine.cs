@@ -54,5 +54,26 @@ public class ClaimableItemContractLine : ShiftEntity<ClaimableItemContractLine>
     public long? CancelledByUserID { get; set; }
     public string? CancelReason { get; set; }
 
+    /// <summary>The service was done at a dealer and claimed. Set by the claim action, once.</summary>
+    public bool IsClaimed { get; set; }
+
+    /// <summary>UTC.</summary>
+    public DateTime? ClaimDate { get; set; }
+    public long? ClaimedByUserID { get; set; }
+
+    /// <summary>The dealer and branch that did the service; not necessarily the one that sold the contract.</summary>
+    public long? ClaimCompanyID { get; set; }
+    public long? ClaimCompanyBranchID { get; set; }
+
+    public string? ClaimInvoiceNumber { get; set; }
+    public string? ClaimJobNumber { get; set; }
+    public string? ClaimQRCode { get; set; }
+
+    /// <summary>What the dealer is owed: the line's <see cref="Cost"/>, not the customer price.</summary>
+    [Precision(18, 2)]
+    public decimal? ClaimCost { get; set; }
+
+    /// <summary>An earlier periodic service passed over when a later one was claimed. It can no longer be claimed.</summary>
+    public bool IsSkipped { get; set; }
     public int Sort { get; set; }
 }

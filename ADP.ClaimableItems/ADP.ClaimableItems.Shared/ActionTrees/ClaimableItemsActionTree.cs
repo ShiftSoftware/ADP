@@ -22,4 +22,5 @@ public class ClaimableItemsActionTree
     public readonly static BooleanAction IssueClaimableItemContracts = new("Issue Service Contracts");
     public readonly static BooleanAction CancelClaimableItemContracts = new("Cancel Service Contracts");
     public readonly static BooleanAction PrintClaimableItemContracts = new("Print Service Contracts");
+    public readonly static BooleanAction ClaimClaimableItemContracts = new("Claim Service Contracts");
 }

@@ -1,4 +1,6 @@
 using ShiftSoftware.ADP.ClaimableItems.Shared.Enums;
+using ShiftSoftware.ShiftEntity.Model.Dtos;
+using ShiftSoftware.ShiftEntity.Model.HashIds;
 using System.Text.Json.Serialization;
 
 namespace ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ClaimableItemContract;
@@ -55,5 +57,22 @@ public class ClaimableItemContractLineDTO
     public DateTime? CancelledDate { get; set; }
     public string? CancelReason { get; set; }
 
+    // Server: set by the claim action, never by a save.
+    public bool IsClaimed { get; set; }
+    public DateTime? ClaimDate { get; set; }
+    public string? ClaimInvoiceNumber { get; set; }
+    public string? ClaimJobNumber { get; set; }
+
+    /// <summary>What the dealer is owed for the service: the line's <see cref="Cost"/>.</summary>
+    public decimal? ClaimCost { get; set; }
+
+    [CompanyHashIdConverter]
+    public ShiftEntitySelectDTO? ClaimCompany { get; set; }
+
+    [CompanyBranchHashIdConverter]
+    public ShiftEntitySelectDTO? ClaimCompanyBranch { get; set; }
+
+    /// <summary>Server: an earlier periodic service passed over when a later one was claimed.</summary>
+    public bool IsSkipped { get; set; }
     public int Sort { get; set; }
 }
