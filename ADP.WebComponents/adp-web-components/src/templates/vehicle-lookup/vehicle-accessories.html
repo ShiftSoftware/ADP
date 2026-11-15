@@ -31,12 +31,9 @@
       dir="ltr"
       x-data="harness({
         mocks: 'vehicle-lookup',
-        labels: {
-          ZT8LY7CZ0S2959088: 'no accessories on record',
-          JTMW43FV10D123456: 'no accessories on record',
-          ZV9LMW6D75T151181: 'not in distributor records',
-          UNKNOWN_VIN_12345: 'not in distributor records',
-        },
+        siteEnvironment: 'website',
+        labels: window.harnessTags('vehicle-accessories'),
+        labelsOnly: true,
         has: vehicle => vehicle?.accessories?.length > 0,
       })"
     >

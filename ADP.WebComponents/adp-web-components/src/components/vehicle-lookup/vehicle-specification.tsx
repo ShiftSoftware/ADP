@@ -12,13 +12,13 @@ import {
   SpecificationRecord,
   VehicleSpecificationPanel,
   decodedValues,
-  decodedVerdict,
   detailGroups,
   hasRecords,
   identityCells,
+  specificationVerdict,
 } from './components/VehicleSpecificationPanel';
 
-import { VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState, recordVerdict } from '~features/vehicle-info-layout';
+import { VehicleInfoLayout, VehicleInfoLayoutInterface, VerdictState } from '~features/vehicle-info-layout';
 import { VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState } from '~features/vehicle-lookup-component/vehicle-lookup-api-integration';
@@ -340,17 +340,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
     const record = this.record();
     const error = this.isError ? this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard : undefined;
 
-    const verdict = decodedValues(record, this.isError)
-      ? decodedVerdict(this.locale)
-      : recordVerdict({
-          locale: this.locale.sharedLocales,
-          error,
-          vehicleLoaded: !!record?.vin,
-          authorized: record?.isAuthorized,
-          // By value, not by object: the evaluators hand back `{}` for a VIN they know nothing about,
-          // and a green accent over a blank card is a verdict read off an absence.
-          hasRecords: hasRecords(record),
-        });
+    const verdict = specificationVerdict(record, this.locale, error);
     this.currentVerdict = verdict.accent;
 
     // The wrapper's phase follows the panel's: the head leaves and the covers come up whenever a

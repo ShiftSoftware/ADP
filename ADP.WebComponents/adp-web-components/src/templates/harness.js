@@ -104,6 +104,8 @@ import {
  */
 const SITE_ROOT = new URL('../', import.meta.url);
 const ENVIRONMENT_STORAGE_KEY = 'adp-harness-environment';
+// The release build rewrites this tag to the CDN, so finding it means the Stencil dev server.
+const onDevServer = () => Boolean(document.querySelector('script[src="/build/shift-components.esm.js"]'));
 const ENVIRONMENT_SETTLE_MS = 320;
 const TODAY_STORAGE_KEY = 'adp-harness-today';
 const TODAY_MODE_STORAGE_KEY = 'adp-harness-today-mode';
@@ -281,9 +283,6 @@ const DEFAULTS = {
   // what its component actually needs — `has: vehicle => vehicle.accessories?.length`
   // — and the rest are counted out rather than sitting there rendering nothing.
   has: null,
-  // Vehicles only this page shows, added to every environment: a state the generated fixtures
-  // cannot reach, such as a field only some hosts turn on.
-  extraFixtures: null,
   languages: ['en', 'ku', 'ar', 'ru'],
   rtl: ['ar', 'ku'],
   platforms: [
@@ -297,6 +296,9 @@ const DEFAULTS = {
   // The environment a page opens on when neither the link nor this tab has chosen one. Most pages
   // are fine on the first; a page whose states only one environment reaches names it here.
   defaultEnvironment: null,
+  // The one environment the published site offers, with the picker hidden; on the dev server it is
+  // the default and every environment stays in the picker.
+  siteEnvironment: null,
   today: true,
   theme: true,
   connection: {},
@@ -343,7 +345,7 @@ window.harness = function harness(options = {}) {
     platforms: config.platforms,
     show: {
       language: config.language,
-      environment: config.environment && Boolean(config.mocks),
+      environment: config.environment && Boolean(config.mocks) && !(config.siteEnvironment && !onDevServer()),
       today: config.today && config.subject !== false,
       theme: config.theme,
       connection: config.connection !== false && config.subject !== false,
@@ -390,8 +392,6 @@ window.harness = function harness(options = {}) {
     activeComponent: null,
     // True for the frames a tab change re-tags the chips in, so their tooltips cannot animate.
     retagging: false,
-    // How many fixtures `has` filtered out. Shown, never silently dropped.
-    hidden: 0,
     fixture: null,
     generatedFixture: null,
     // Forms flip this from formReadyCallback; an external submit button waits on it.
@@ -437,13 +437,6 @@ window.harness = function harness(options = {}) {
       frame(() => frame(() => (this.retagging = false)));
     },
 
-    /** Two different cuts: "no data" would be a lie for the tagged-list one. */
-    get hiddenExplanation() {
-      return config.labelsOnly
-        ? `${this.hidden} more in this environment — the list above is one vehicle per state`
-        : `${this.hidden} fixture(s) hidden — no data for this component`;
-    },
-
     /**
      * A rail with one fixed tag set spells its tags out. One whose set changes under the reader
      * cannot: tags of different lengths make chips of different widths, so every tab change
@@ -457,7 +450,16 @@ window.harness = function harness(options = {}) {
     get fixtures() {
       const labels = this.activeLabels;
 
-      return [{ value: '', label: 'Empty' }, { value: 'error', label: 'Error' }, ...this.keys.map(key => ({ value: key, label: key, note: labels[key], vin: true }))];
+      const fixture = key => {
+        const [tone, note] = Array.isArray(labels[key]) ? labels[key] : [null, labels[key]];
+        return { value: key, label: key, note, tone, vin: true };
+      };
+
+      return [{ value: '', label: 'Empty' }, { value: 'error', label: 'Error' }, ...this.keys.map(fixture)];
+    },
+
+    solidCase(item) {
+      return !this.tagsAsMarker && Boolean(item.tone);
     },
 
     async init() {
@@ -550,10 +552,12 @@ window.harness = function harness(options = {}) {
         if (!response.ok) throw new Error(`${response.status}`);
 
         this.environments = environmentsFrom(await response.json());
+        if (config.siteEnvironment && !onDevServer()) this.environments = this.environments.filter(environment => environment.name === config.siteEnvironment);
         if (!this.environments.length) throw new Error('the generated index contains no environments');
 
         const url = new URL(window.location.href);
-        const selected = chooseEnvironment(this.environments, url.searchParams.get('env'), readStoredEnvironment(), config.defaultEnvironment);
+        const fallback = config.siteEnvironment ?? config.defaultEnvironment;
+        const selected = chooseEnvironment(this.environments, url.searchParams.get('env'), readStoredEnvironment(), fallback);
 
         await this.loadEnvironment(selected.name, true);
       } catch (error) {
@@ -580,7 +584,6 @@ window.harness = function harness(options = {}) {
       this.fixture = '';
       this.data = null;
       this.keys = [];
-      this.hidden = 0;
       this.todayAnchor = isCalendarDate(selected.anchor) ? selected.anchor : '';
       this.subject.mockUrl = mockUrl.href;
 
@@ -616,7 +619,7 @@ window.harness = function harness(options = {}) {
         const response = await fetch(mockUrl);
         if (!response.ok) throw new Error(`${response.status}`);
 
-        const data = { ...((await response.json()) ?? {}), ...config.extraFixtures };
+        const data = (await response.json()) ?? {};
         if (request !== this.environmentRequest) return;
 
         this.data = data;
@@ -940,7 +943,6 @@ window.harness = function harness(options = {}) {
       };
 
       this.keys = kept.slice().sort((a, b) => rank(a) - rank(b) || kept.indexOf(a) - kept.indexOf(b));
-      this.hidden = keys.length - this.keys.length;
     },
 
     // Running the current key again is a click on its chip (or on Search), so
@@ -1016,7 +1018,8 @@ function summarise(response) {
  */
 const FIXTURES = /* html */ `
   <div class="flex flex-col" :class="retagging && 'harness-retagging'">
-    <div class="flex flex-wrap gap-1.5" role="group" aria-label="Fixtures">
+    <span class="text-base-content mb-2 font-sans text-base font-semibold" id="harness-test-cases">Test cases</span>
+    <div class="flex flex-wrap gap-1.5" role="group" aria-labelledby="harness-test-cases">
       <template x-for="item in fixtures" :key="item.value">
         <!-- On the wrapper, not the button: the native title waits ~1s, and the button clips its
              own overflow for the marker, which would clip a tooltip drawn from it. The class is on
@@ -1024,40 +1027,46 @@ const FIXTURES = /* html */ `
              destroyed each tooltip, and a created one could flash in before fading out. An empty
              data-tip is daisyUI's "no tooltip", so an untagged chip still shows nothing on hover. -->
         <span class="inline-flex" :class="{ 'tooltip tooltip-bottom': tagsAsMarker && item.vin }" :data-tip="tagsAsMarker && item.vin ? item.note || '' : null">
+        <!-- A tagged case is a solid button in the colour of the panel's bar for that vehicle
+             (harness.src.css, data-tone), an untoned tag in info blue, everything else outlined.
+             A panel's own page shows the case alone, the VIN on hover. The composite shows the VIN,
+             the case on hover, and its colour is a fill that slides in from the start edge and back
+             out as the tab changes. The selected one is solid blue
+             (harness.src.css). -->
         <button
           type="button"
-          class="btn btn-xs relative overflow-hidden ps-1.5 font-mono font-normal"
-          :class="[fixture === item.value ? 'btn-primary' : 'btn-outline', tagsAsMarker && item.vin ? 'pe-3.5' : 'pe-1.5']"
+          class="btn btn-sm relative overflow-hidden rounded-sm px-2.5 font-sans font-semibold"
+          :class="[
+            item.value === 'error' ? 'btn-error' : !item.note || tagsAsMarker ? 'btn-outline' : item.tone ? 'harness-tone-solid' : 'btn-info',
+            fixture === item.value && 'harness-chip-selected',
+          ]"
+          :data-tone="item.note && item.tone ? item.tone : null"
+          :title="solidCase(item) ? item.value : null"
           :disabled="connected || environmentChanging"
           :aria-pressed="fixture === item.value"
           @click="run(item.value)"
         >
-          <span x-text="item.label"></span>
-          <!-- A band down the trailing edge, the same width on every chip, so changing tab cannot
-               reflow the rail. Blue on the selected chip too: the tag is still true there. -->
           <span
             x-show="tagsAsMarker && item.vin"
-            class="absolute inset-y-0 end-0 w-3"
-            :class="item.note ? 'bg-info' : 'bg-base-content/20'"
-            :aria-label="item.note || 'no tag for this component'"
-            role="img"
+            class="harness-tone-fill absolute inset-y-0 start-0 transition-[width,background-color] duration-[480ms] ease-in-out"
+            :class="item.note ? 'w-full' : 'w-0'"
+            x-data="{ last: null }"
+            x-effect="if (item.note) last = item.tone || 'info'"
+            :data-tone="last"
+            aria-hidden="true"
           ></span>
-
-          <!-- The tag in words, for a rail that keeps one set. The theme's info blue, so it reads
-               as its own thing beside the mono VIN; on the selected chip it inherits that ink. -->
           <span
-            x-show="!tagsAsMarker && item.note"
-            class="font-sans font-medium"
-            :class="fixture === item.value ? 'opacity-90' : 'text-info'"
-            x-text="item.note"
+            x-show="!solidCase(item)"
+            class="harness-tone-ink relative transition-colors duration-[480ms] ease-in-out"
+            :data-tone="tagsAsMarker && item.note ? item.tone || 'info' : null"
+            x-text="item.label"
           ></span>
+          <span x-show="!tagsAsMarker && item.note" x-text="item.note"></span>
         </button>
         </span>
       </template>
     </div>
 
-    <!-- Never a silent cut: a page that filters says how much it filtered, and why. -->
-    <p class="text-base-content/50 mt-1.5 text-xs" x-show="hidden" x-text="hiddenExplanation"></p>
 
     <div
       class="grid overflow-hidden transition-[grid-template-rows,opacity] duration-[320ms]"

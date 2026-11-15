@@ -31,19 +31,12 @@
       dir="ltr"
       x-data="harness({
         mocks: 'vehicle-lookup',
+        siteEnvironment: 'website',
         connection: { claim: true },
         has: vehicle => vehicle?.serviceItems?.length > 0,
         start: new URLSearchParams(location.search).get('vin'),
-        labels: {
-          ZT8P9NAL1LG988010: 'not available · null',
-          ZT919TCX9L8082249: 'not available · empty',
-          ZU8PC1Z95PP935130: 'realistic',
-          ZV8DK3F90PP174225: 'realistic, at distributor stock',
-          BLOCKEDNOTALLOC01: 'blocked, not allocated',
-          ZS8WJEXK206451985: 'no claimable items on record',
-          ZV9LMW6D75T151181: 'not in distributor records',
-          UNKNOWN_VIN_12345: 'not in distributor records',
-        },
+        labels: window.harnessTags('vehicle-claimable-items'),
+        labelsOnly: true,
         events: {
           /* Both of these replace the profile's default line and do the page's own work. */
           loadedResponse(response) {

@@ -6,7 +6,8 @@ import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup
 
 import { ArrowIcon } from '~assets/arrow-icon';
 
-import { LookupHeadWait, PanelVerdict, StatusBadge } from '~features/vehicle-info-layout';
+import { LookupHeadWait, PanelVerdict, StatusBadge, recordVerdict } from '~features/vehicle-info-layout';
+import { ComponentLocale } from '~features/multi-lingual';
 
 export type SpecificationLocale = InferType<typeof specificationSchema>;
 
@@ -152,6 +153,20 @@ export const decodedValues = (record: SpecificationRecord | undefined, isError: 
 
 /** Amber, a statement without a verdict: without it nothing says where the values came from. */
 export const decodedVerdict = (locale: SpecificationLocale): PanelVerdict => ({ state: 'neutral', text: locale.decodedFromVin, accent: 'neutral' });
+
+/** The panel's pill and accent; `error` is the translated message of a failed lookup. */
+export const specificationVerdict = (record: SpecificationRecord | undefined, locale: ComponentLocale<typeof specificationSchema>, error?: string): PanelVerdict =>
+  decodedValues(record, !!error)
+    ? decodedVerdict(locale)
+    : recordVerdict({
+        locale: locale.sharedLocales,
+        error,
+        vehicleLoaded: !!record?.vin,
+        authorized: record?.isAuthorized,
+        // By value, not by object: the evaluators hand back `{}` for a VIN they know nothing about,
+        // and a green accent over a blank card is a verdict read off an absence.
+        hasRecords: hasRecords(record),
+      });
 
 /**
  * One labelled value: `text`, an optional smaller `note`, or `colour` for the two code+name cells.

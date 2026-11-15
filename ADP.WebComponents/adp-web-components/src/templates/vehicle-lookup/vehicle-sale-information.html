@@ -31,7 +31,8 @@
       dir="ltr"
       x-data="harness({
         mocks: 'vehicle-lookup',
-        defaultEnvironment: 'broker-market',
+        siteEnvironment: 'website',
+
         labelsOnly: true,
         labels: window.harnessTags('vehicle-sale-information'),
         /* Under labelsOnly the tags decide membership, so the empty-record and no-sale vehicles stay listed; this only answers if that is switched off. */

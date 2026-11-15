@@ -205,6 +205,74 @@ html[lang='ku'] {
   white-space: normal;
   text-wrap: pretty;
   text-align: start;
+  /* A tab change re-colours every chip at once: slow enough to read as a fade, not a flash. */
+  transition-property: color, background-color, border-color, box-shadow;
+  transition-duration: 480ms;
+  transition-timing-function: ease-in-out;
+}
+
+/* The selected case is solid blue, whatever its own colour; the composite's fill follows. */
+[data-harness-fixtures] [role='group'] .btn.harness-chip-selected {
+  --btn-bg: var(--color-info);
+  --btn-border: var(--color-info);
+  --btn-fg: var(--color-info-content);
+  color: var(--color-info-content);
+}
+
+[data-harness-fixtures] [role='group'] .btn.harness-chip-selected .harness-tone-fill,
+[data-harness-fixtures] [role='group'] .btn.harness-chip-selected .harness-tone-fill[data-tone] {
+  background: var(--color-info);
+}
+
+[data-harness-fixtures] [role='group'] .btn.harness-chip-selected .harness-tone-ink {
+  color: var(--color-info-content);
+}
+
+/* A tagged case as a solid button in the bar's exact colour for that vehicle (the panels' own
+   tokens and host overrides), its text white where that reads and dark on amber and grey, where
+   white does not. */
+[data-tone='positive'] {
+  --tone-bar: var(--shift-lookup-green, #2c8a58);
+  --tone-text: #fff;
+}
+
+[data-tone='negative'] {
+  --tone-bar: var(--shift-lookup-red, #b42318);
+  --tone-text: #fff;
+}
+
+[data-tone='neutral'] {
+  --tone-bar: var(--shift-lookup-amber, #b7791f);
+  --tone-text: #1b1f24;
+}
+
+[data-tone='attention'] {
+  --tone-bar: var(--shift-lookup-violet, #755aa5);
+  --tone-text: #fff;
+}
+
+[data-tone='idle'] {
+  --tone-bar: var(--shift-lookup-line, #d5dce2);
+  --tone-text: #1b1f24;
+}
+
+.harness-tone-solid[data-tone] {
+  --btn-color: var(--tone-bar);
+  --btn-fg: var(--tone-text);
+}
+
+[data-tone='info'] {
+  --tone-bar: var(--color-info);
+  --tone-text: var(--color-info-content);
+}
+
+/* The composite's fill keeps its last colour while it slides out, so it leaves rather than blinks. */
+.harness-tone-fill[data-tone] {
+  background: var(--tone-bar);
+}
+
+.harness-tone-ink[data-tone] {
+  color: var(--tone-text);
 }
 
 @media (min-width: 40rem) {

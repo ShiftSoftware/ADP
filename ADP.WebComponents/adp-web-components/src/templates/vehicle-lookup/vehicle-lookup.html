@@ -35,6 +35,7 @@
       x-data="harness({
         profile: 'composite',
         mocks: 'vehicle-lookup',
+        siteEnvironment: 'website',
         /*
          * The shell's own fixtures: vehicles worth opening whichever tab is showing.
          * Used whenever the tab on screen has no set of its own in `componentLabels`.
@@ -100,6 +101,8 @@
                 :readonly="loading"
                 @keydown.enter.prevent="run(vin)"
               />
+              <!-- Errors sit inside the field, so there is no empty line held for them and nothing below moves. -->
+              <span class="text-error text-xs whitespace-nowrap" role="status" x-text="error"></span>
             </label>
 
             <button type="button" class="btn btn-sm btn-primary" :disabled="loading" @click="run(vin)">
@@ -107,15 +110,6 @@
               Search
             </button>
           </div>
-
-          <!-- The line is always there, one line tall; the message fades into it, so showing or clearing an error never moves the fixtures below. -->
-          <p
-            class="text-error min-h-4 text-xs transition-opacity duration-300"
-            :class="error ? 'opacity-100' : 'pointer-events-none opacity-0'"
-            :aria-hidden="error ? null : 'true'"
-            role="status"
-            x-text="error"
-          ></p>
 
           <!-- Generated fixtures, under the field they fill: harness chrome inside the host's panel, so a dashed rule marks where one ends. -->
           <div data-harness-fixtures class="border-base-300 border-t border-dashed pt-2" x-cloak></div>
@@ -131,35 +125,12 @@
           `tab` is the page's, not the component's: the strip belongs to the host. It also tells the
           harness which panel is on screen, so the fixture rail can offer that panel's vehicles.
         -->
-        <div role="tablist" class="tabs tabs-box tabs-sm self-start" x-data="{ tab: 'vehicle-specification' }" x-init="setActiveComponent(tab)">
-          <template
-            x-for="item in [
-              { value: 'vehicle-specification', label: 'Specification' },
-              { value: 'vehicle-sale-information', label: 'Sale information' },
-              { value: 'vehicle-accessories', label: 'Accessories' },
-              { value: 'vehicle-warranty-timeline', label: 'Warranty' },
-              { value: 'vehicle-ssc', label: 'SSC' },
-              { value: 'vehicle-service-history', label: 'Service history' },
-              { value: 'vehicle-paint-thickness', label: 'Paint thickness' },
-              { value: 'vehicle-claimable-items', label: 'Claimable items' },
-            ]"
-            :key="item.value"
-          >
-            <button
-              type="button"
-              role="tab"
-              class="tab"
-              :class="tab === item.value && 'tab-active'"
-              :aria-selected="tab === item.value"
-              @click="tab = item.value; subject.activeElement = item.value; setActiveComponent(item.value)"
-              x-text="item.label"
-            ></button>
-          </template>
-        </div>
-
-        <!-- Host configuration, handed to the sale panel through children-props. -->
+        <!-- Host configuration, handed to the sale panel through children-props. Always laid out so showing it
+             never moves the page: on the other tabs it is transparent, unclickable and inert. -->
         <div
-          class="flex flex-wrap items-center gap-x-6 gap-y-2 self-start text-sm"
+          class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 self-center text-sm transition-opacity duration-200"
+          :class="activeComponent !== 'vehicle-sale-information' && 'pointer-events-none opacity-0'"
+          :inert="activeComponent !== 'vehicle-sale-information'"
           x-data="{ supplyChain: false, fields: 'default' }"
           x-effect="window.setSaleProps({ supplyChain, fields })"
         >
@@ -179,6 +150,47 @@
               </button>
             </div>
           </div>
+        </div>
+
+        <div
+          role="tablist"
+          class="bg-base-200 border-base-300 relative flex flex-wrap justify-center gap-1 self-center rounded-lg border p-1"
+          x-data="{
+            tab: 'vehicle-specification',
+            pill: '',
+            place() {
+              const active = this.$root.querySelector('[aria-selected=true]');
+              if (active) this.pill = `left:${active.offsetLeft}px;top:${active.offsetTop}px;width:${active.offsetWidth}px;height:${active.offsetHeight}px`;
+            },
+          }"
+          x-init="setActiveComponent(tab); $nextTick(() => place())"
+          @resize.window="place()"
+        >
+          <!-- The active tab's yellow pill: one element that slides and resizes to the tab chosen. -->
+          <span aria-hidden="true" class="bg-primary absolute rounded-md shadow-sm transition-all duration-300 ease-out" :style="pill"></span>
+          <template
+            x-for="item in [
+              { value: 'vehicle-specification', label: 'Specification' },
+              { value: 'vehicle-sale-information', label: 'Sale information' },
+              { value: 'vehicle-accessories', label: 'Accessories' },
+              { value: 'vehicle-warranty-timeline', label: 'Warranty' },
+              { value: 'vehicle-ssc', label: 'SSC' },
+              { value: 'vehicle-service-history', label: 'Service history' },
+              { value: 'vehicle-paint-thickness', label: 'Paint thickness' },
+              { value: 'vehicle-claimable-items', label: 'Claimable items' },
+            ]"
+            :key="item.value"
+          >
+            <button
+              type="button"
+              role="tab"
+              class="relative cursor-pointer rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors duration-300"
+              :class="tab === item.value ? 'text-primary-content' : 'text-base-content/60 hover:text-base-content'"
+              :aria-selected="tab === item.value"
+              @click="tab = item.value; subject.activeElement = item.value; setActiveComponent(item.value); $nextTick(() => place())"
+              x-text="item.label"
+            ></button>
+          </template>
         </div>
 
         <!-- No card of the page's own around the component: the component draws the design language's card itself. -->
