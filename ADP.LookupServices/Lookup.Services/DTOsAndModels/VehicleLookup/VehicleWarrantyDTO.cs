@@ -72,6 +72,14 @@ public class VehicleWarrantyDTO
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public WarrantyActivationStatus ActivationStatus { get; set; }
 
+    /// <summary>
+    /// Proof that this lookup offered activation to the requesting company for this VIN, for the host's activation
+    /// endpoint to check with <see cref="WarrantyActivationToken.Validate"/>. Set only when <see cref="ActivationStatus"/>
+    /// is <see cref="WarrantyActivationStatus.Required"/>, a requesting company is given and
+    /// <c>LookupOptions.SigningSecretKey</c> is configured. It expires after <c>LookupOptions.SignatureValidityDuration</c>.
+    /// </summary>
+    public string? ActivationToken { get; set; }
+
     // Stored (not a wall-clock getter): see note on HasActiveWarranty.
     /// <summary>
     /// Whether the vehicle currently has an active extended warranty (end date is in the future).
