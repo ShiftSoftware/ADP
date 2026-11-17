@@ -3,6 +3,7 @@ using ShiftSoftware.ADP.Menus.Data.DataServices;
 using ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ADP.Menus.Shared;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.MenuVariant;
+using ShiftSoftware.ADP.Menus.Shared.Enums;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.EFCore;
 using ShiftSoftware.ShiftEntity.Model;
@@ -60,9 +61,12 @@ public class MenuVariantRepository : ShiftRepository<ShiftDbContext, MenuVariant
             .Select(x => new
             {
                 x.ID,
-                x.ReplacementItem.AllowMultiplePartNumbers
+                x.ReplacementItem.AllowMultiplePartNumbers,
+                x.ReplacementItem.StandaloneReplacementItemGroupID
             })
-            .ToDictionaryAsync(x => x.ID, x => x.AllowMultiplePartNumbers);
+            .ToDictionaryAsync(x => x.ID);
+
+        NormalizeMenuTypes(dto, replacementItemRules.ToDictionary(x => x.Key, x => x.Value.StandaloneReplacementItemGroupID));
 
         foreach (var item in dto.Items)
         {
@@ -73,7 +77,7 @@ public class MenuVariantRepository : ShiftRepository<ShiftDbContext, MenuVariant
             if (partsCount == 0)
                 throw new ShiftEntityException(new("Conflict", "Each menu item must contain at least one part"));
 
-            var allowMultiple = replacementItemRules.GetValueOrDefault(item.ReplacementItemVehicleModelID.Value);
+            var allowMultiple = replacementItemRules.GetValueOrDefault(item.ReplacementItemVehicleModelID.Value)?.AllowMultiplePartNumbers ?? false;
             if (!allowMultiple && partsCount != 1)
                 throw new ShiftEntityException(new("Conflict", "This replacement item allows exactly one part number"));
         }
@@ -189,6 +193,48 @@ public class MenuVariantRepository : ShiftRepository<ShiftDbContext, MenuVariant
 
         foreach (var child in dropped)
             db.Remove(child);
+    }
+
+    /// <summary>
+    /// Settles which of the variant's menu types each period and standalone item is visible under, on the DTO,
+    /// before it is mapped. With one type everything belongs to it, whatever the client sent. With more, a row
+    /// listing none is visible under all of them, a row listing only types the variant does not have is
+    /// rejected, and the items of one standalone group must agree — they fold into a single line.
+    /// </summary>
+    private static void NormalizeMenuTypes(MenuVariantDTO dto, IReadOnlyDictionary<long, long?> standaloneGroupByItem)
+    {
+        var variantTypes = MenuTypeSet.Normalize(dto.MenuTypes);
+
+        if (variantTypes.Count == 0)
+            throw new ShiftEntityException(new Message("Conflict", "A menu variant needs at least one menu type."));
+
+        dto.MenuTypes = variantTypes;
+
+        foreach (var period in dto.PeriodicAvailabilities ?? [])
+            period.MenuTypes = Settle(period.MenuTypes, variantTypes, "Each service interval must be visible under at least one of the variant's menu types.");
+
+        foreach (var item in dto.Items ?? [])
+            item.StandaloneMenuTypes = Settle(item.StandaloneMenuTypes, variantTypes, "Each standalone item must be visible under at least one of the variant's menu types.");
+
+        var groupsThatDisagree = (dto.Items ?? [])
+            .Where(x => x.ReplacementItemVehicleModelID.HasValue)
+            .Select(x => new { Group = standaloneGroupByItem.GetValueOrDefault(x.ReplacementItemVehicleModelID!.Value), Types = MenuTypeSet.ToJson(x.StandaloneMenuTypes) })
+            .Where(x => x.Group.HasValue)
+            .GroupBy(x => x.Group)
+            .Any(x => x.Select(i => i.Types).Distinct().Count() > 1);
+
+        if (groupsThatDisagree)
+            throw new ShiftEntityException(new Message("Conflict", "Items of the same standalone group must be visible under the same menu types."));
+    }
+
+    private static List<MenuType> Settle(List<MenuType>? own, List<MenuType> variantTypes, string error)
+    {
+        if (variantTypes.Count == 1 || MenuTypeSet.Normalize(own).Count == 0)
+            return variantTypes.ToList();
+
+        var types = MenuTypeSet.Normalize(own).Where(variantTypes.Contains).ToList();
+
+        return types.Count > 0 ? types : throw new ShiftEntityException(new Message("Conflict", error));
     }
 
     private static void ValidateLabourRates(MenuVariantDTO dto, IReadOnlyList<CountryInfo> countries)

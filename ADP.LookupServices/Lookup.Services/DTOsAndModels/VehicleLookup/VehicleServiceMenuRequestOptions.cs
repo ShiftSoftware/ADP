@@ -46,13 +46,14 @@ public class VehicleServiceMenuRequestOptions
     public long? CountryID { get; set; }
 
     /// <summary>
-    /// Which of the model's variants to include, by their <see cref="MenuType"/>: only the variants whose
-    /// type is in the list. Null or empty (the default) includes every variant.
+    /// Which <see cref="MenuType"/>s to include: only variants offered under a type in the list, and of
+    /// those only the services that type covers. Null or empty (the default) includes every type.
     ///
-    /// <para>The filter selects variants, and every line carries its variant's type as
-    /// <see cref="VehicleServiceMenuLineDTO.MenuType"/> — so a caller can equally ask for everything and
-    /// group client-side. Filtering here is cheaper (an excluded variant is never generated), and it is
-    /// the honest choice for an endpoint that must not disclose the other kind at all.</para>
+    /// <para>Every line carries the type it is read under as <see cref="VehicleServiceMenuLineDTO.MenuType"/>
+    /// — so a caller can equally ask for everything and group client-side. A service a variant offers
+    /// under several types then appears once per type, with the same <c>LineKey</c>. Filtering here is
+    /// cheaper (an excluded variant is never generated), and it is the honest choice for an endpoint that
+    /// must not disclose the other kind at all.</para>
     ///
     /// <para>A filter that excludes every variant leaves <c>Services</c> empty with
     /// <c>Status = Found</c>: the model HAS a menu, and this request asked for a part of it that is empty.

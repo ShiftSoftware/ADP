@@ -307,7 +307,7 @@ public class EfToGenerationAggregatorTests
 
         var request = EfToGenerationAggregator.Build(fixture.Variants, fixture.LabourRateMappings, fixture.BrandMappings);
 
-        Assert.Equal(menuType.ToString(), request.Variants.Single().MenuType.ToString());
+        Assert.Equal(menuType.ToString(), request.Variants.Single().MenuTypes.Single().ToString());
     }
 
     /// <summary>

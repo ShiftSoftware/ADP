@@ -176,7 +176,7 @@ public static class CosmosToGenerationAggregator
             StandaloneMenuPostfix = variant.StandaloneMenuPostfix,
             LabourRate = variant.LabourRate,
             DiscountPercentage = variant.DiscountPercentage,
-            MenuType = variant.MenuType,
+            MenuTypes = variant.MenuTypes ?? [],
             HasStandaloneItems = variant.HasStandaloneItems,
 
             CountryLabourRates = (variant.CountryLabourRates ?? [])
@@ -194,6 +194,7 @@ public static class CosmosToGenerationAggregator
                 .Select(period => new MenuGenerationPeriod
                 {
                     ServiceIntervalID = period.ServiceIntervalID,
+                    MenuTypes = period.MenuTypes ?? [],
                 })
                 .ToList(),
 
@@ -220,6 +221,7 @@ public static class CosmosToGenerationAggregator
         {
             MenuItemID = item.MenuItemID,
             StandaloneAllowedTime = item.StandaloneAllowedTime,
+            StandaloneMenuTypes = item.StandaloneMenuTypes ?? [],
 
             // Deleted groups are stripped, and MUST be: the generator resolves each id against
             // Reference.Groups with an INDEXER, so an id left here without a matching entry throws

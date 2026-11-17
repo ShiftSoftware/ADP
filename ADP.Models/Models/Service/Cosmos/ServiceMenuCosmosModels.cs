@@ -60,7 +60,7 @@ public class ServiceIntervalCosmosModel
 
     /// <summary>
     /// The periodic-line description for a <see cref="MenuType.Paid"/> variant. The three descriptions
-    /// are picked by the variant's <see cref="MenuVariantCosmosModel.MenuType"/> and used verbatim —
+    /// are picked by the menu type a line is read under and used verbatim —
     /// never language-resolved.
     ///
     /// <para>Documents written while the interval had a single <c>Description</c> carry none of the
@@ -236,13 +236,11 @@ public class MenuVariantCosmosModel : IPartitionedItem
     public decimal? DiscountPercentage { get; set; }
 
     /// <summary>
-    /// How the variant's menu is offered — paid, free or under contract. Carried, never computed on: it
-    /// changes no generated price, so a reader that filters or renders on it owns that decision.
-    ///
-    /// <para>Defaults to <see cref="MenuType.Paid"/>, so documents written before this field existed read
-    /// as paid until a catch-up sweep refreshes them.</para>
+    /// Every type the variant's menu is offered under — at least one. Which of its services each type
+    /// covers is on the period and item documents. Carried, never computed on: it changes no generated
+    /// price, so a reader that filters or renders on it owns that decision.
     /// </summary>
-    public MenuType MenuType { get; set; }
+    public List<MenuType> MenuTypes { get; set; }
 
     public bool HasStandaloneItems { get; set; }
 
@@ -309,6 +307,11 @@ public class MenuPeriodCosmosModel : IPartitionedItem
     /// <summary>The interval, embedded and kept fresh by the service-interval fan-out.</summary>
     public ServiceIntervalCosmosModel ServiceInterval { get; set; }
 
+    /// <summary>
+    /// The variant's menu types this interval is visible under. Empty means every type the variant has.
+    /// </summary>
+    public List<MenuType> MenuTypes { get; set; }
+
     public bool IsDeleted { get; set; }
 }
 
@@ -359,6 +362,12 @@ public class MenuItemCosmosModel : IPartitionedItem
     public long MenuItemID { get; set; }
     public long VariantID { get; set; }
     public decimal StandaloneAllowedTime { get; set; }
+
+    /// <summary>
+    /// The variant's menu types the item's standalone line is visible under. Empty means every type the
+    /// variant has.
+    /// </summary>
+    public List<MenuType> StandaloneMenuTypes { get; set; }
 
     /// <summary>False when the item has no replacement-item link at all — such items generate nothing.</summary>
     public bool HasReplacementItem { get; set; }

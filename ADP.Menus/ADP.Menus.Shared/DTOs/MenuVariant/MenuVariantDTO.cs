@@ -38,8 +38,12 @@ public class MenuVariantDTO : ShiftEntityViewAndUpsertDTO
 
     public decimal? DiscountPercentage { get; set; }
 
-    /// <summary>How the variant's menu is offered — paid, free or under contract. A label only — it changes no price.</summary>
-    public MenuType MenuType { get; set; }
+    /// <summary>
+    /// The types the variant's menu is offered under — any of paid, free, contract — at least one. A label only;
+    /// it changes no price or code. With one type every period and standalone item belongs to it; with more,
+    /// each lists the types it is visible under.
+    /// </summary>
+    public List<MenuType> MenuTypes { get; set; } = [MenuType.Paid];
 
     public bool HasStandaloneItems { get; set; }
 
@@ -62,6 +66,9 @@ public class MenuVariantDTOValidator : AbstractValidator<MenuVariantDTO>
         RuleFor(x => x.MenuPrefix).NotEmpty();
         RuleFor(x => x.LabourRate).NotNull();
         RuleFor(x => x.DiscountPercentage).InclusiveBetween(0, 100);
+        RuleFor(x => x.MenuTypes)
+            .Must(x => MenuTypeSet.Normalize(x).Count > 0)
+            .WithMessage("Select at least one menu type.");
         RuleForEach(x => x.Items).SetValidator(x => new MenuItemDTOValidator(x.HasStandaloneItems));
         RuleForEach(x => x.LabourRates)
             .ChildRules(x =>

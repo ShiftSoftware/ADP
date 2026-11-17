@@ -47,9 +47,12 @@ public class ServiceMenuLookupRequest
     public decimal? TransferRate { get; set; }
 
     /// <summary>
-    /// Which variants to return, by their <see cref="MenuType"/>: only the variants whose type is in the
-    /// list. Null or empty (the default) returns every variant, so a caller that never heard of this option
-    /// keeps the behaviour it had before the option existed.
+    /// Which <see cref="MenuType"/>s to return: only variants offered under a type in the list, and of
+    /// those only the services that type covers. Null or empty (the default) returns every type, so a
+    /// caller that never heard of this option keeps the behaviour it had before the option existed.
+    ///
+    /// <para>A variant offered under several types is returned once per type, and a service both types
+    /// cover appears under each with the same <see cref="ServiceMenuLineDTO.LineKey"/>, code and prices.</para>
     ///
     /// <para><b>It filters, it does not price.</b> The money on a free or contract variant's lines is
     /// generated exactly as it would be for a paid one; nothing zeroes a total. Read

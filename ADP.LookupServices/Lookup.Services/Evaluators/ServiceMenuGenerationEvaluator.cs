@@ -76,10 +76,10 @@ public class ServiceMenuGenerationEvaluator
     /// empty list, and the caller is the one holding the filter, so it is the one that can tell them apart.
     /// </summary>
     /// <param name="menuTypes">
-    /// Which variants to generate, by their <see cref="MenuType"/>; null or empty generates every variant.
-    /// Applied to the aggregated request
-    /// BEFORE <see cref="MenuCodeGenerator"/> runs, so an excluded variant is never generated — which
-    /// also means an excluded variant can never raise the exception below.
+    /// Which <see cref="MenuType"/>s to return; null or empty returns every type. A variant offered under
+    /// none of them is dropped from the aggregated request BEFORE <see cref="MenuCodeGenerator"/> runs, so
+    /// it is never generated — which also means it can never raise the exception below. A variant offered
+    /// under several types returns, per requested type, the services that type covers.
     /// </param>
     /// <exception cref="ServiceMenuGenerationException">
     /// Reference data the documents point at is missing. The shared generator raises
@@ -102,14 +102,16 @@ public class ServiceMenuGenerationEvaluator
         // keeps the generator's input honest — it still receives "the variants to generate", and merely
         // receives fewer of them.
         if (menuTypes is { Count: > 0 })
-            request.Variants.RemoveAll(variant => !menuTypes.Contains(variant.MenuType));
+            request.Variants.RemoveAll(variant => !variant.EffectiveMenuTypes().Any(menuTypes.Contains));
 
         if (request.Variants.Count == 0)
             return [];
 
         try
         {
-            return MenuCodeGenerator.Generate(request, config).ToList();
+            // The generator emits each line once, as the export needs it. The lookup reads menus per type,
+            // so a line offered under several comes back once for each the caller asked for.
+            return GeneratedMenuLineTypes.Split(MenuCodeGenerator.Generate(request, config), request.Reference, menuTypes);
         }
         catch (KeyNotFoundException ex)
         {

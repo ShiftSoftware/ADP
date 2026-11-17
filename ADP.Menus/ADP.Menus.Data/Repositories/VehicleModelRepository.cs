@@ -321,6 +321,7 @@ public class VehicleModelRepository : ShiftRepository<ShiftDbContext, VehicleMod
                     MenuVariantID = vu.VariantID,
                     ReplacementItemVehicleModelID = rivm.ID,
                     StandaloneAllowedTime = vu.StandaloneAllowedTime ?? rivm.StandaloneAllowedTime,
+                    // Left at None, which reads as every menu type the variant has.
                     LastPropagatedAt = propagatedAt
                 };
                 ApplyPartsToMenuItem(newItem, vu.Parts);

@@ -363,7 +363,7 @@
                                     @foreach (var serviceInterval in serviceIntervals)
                                     {
                                         <MudItem xs="4" sm="3" md="2" lg="2">
-                                            <MudCheckBox Label="@serviceInterval.Value.Code" @bind-Value="serviceInterval.Value.IsSelected" />
+                                            <MudCheckBox T="bool" Label="@serviceInterval.Value.Code" Value="serviceInterval.Value.IsSelected" ValueChanged="@(x => SetIntervalSelected(serviceInterval.Value, x))" />
                                         </MudItem>
                                     }
                                 </MudGrid>
@@ -372,6 +372,47 @@
 
                             <MudTabPanel Text="Menu">
                                 <div @key="selectedVariant">
+                                <MudPaper Outlined="true" Class="menu-section-card">
+                                    <MudText Typo="Typo.subtitle1" Class="menu-section-title">Menu Types</MudText>
+                                    <div class="menu-types-row">
+                                        @foreach (var menuType in Enum.GetValues<MenuType>())
+                                        {
+                                            var type = menuType;
+                                            <MudCheckBox T="bool"
+                                                         Label="@type.Describe()"
+                                                         Value="selectedVariant.MenuTypes.Contains(type)"
+                                                         ValueChanged="@(x => SetVariantMenuType(type, x))"
+                                                         Disabled="!CanManageVariants" />
+                                        }
+                                    </div>
+
+                                    @if (HasSeveralMenuTypes)
+                                    {
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="menu-types-hint">
+                                            Choose what each type shows. Codes, quantities and prices are the variant's for every type.
+                                        </MudText>
+
+                                        @foreach (var menuType in selectedVariant.MenuTypes)
+                                        {
+                                            var type = menuType;
+                                            <div class="menu-type-visibility-row">
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">@type.Describe()</MudChip>
+                                                <MudText Typo="Typo.body2">@VisibilitySummary(type)</MudText>
+                                                <MudButton Size="Size.Small"
+                                                           Variant="Variant.Text"
+                                                           StartIcon="@Icons.Material.Filled.Tune"
+                                                           Disabled="!CanManageVariants"
+                                                           OnClick="@(() => OpenVisibilityDialog(type))">Choose</MudButton>
+                                            </div>
+                                        }
+
+                                        @if (UncoveredSummary() is { } uncovered)
+                                        {
+                                            <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-2">Not visible under any type: @uncovered</MudAlert>
+                                        }
+                                    }
+                                </MudPaper>
+
                                 <MudPaper Outlined="true" Class="menu-section-card">
                                     <MudText Typo="Typo.subtitle1" Class="menu-section-title">Periodic</MudText>
                                     <div class="menu-field-row">
@@ -433,19 +474,6 @@
 
                                 <MudPaper Outlined="true" Class="menu-section-card">
                                     <MudText Typo="Typo.subtitle1" Class="menu-section-title">Pricing</MudText>
-                                    <div class="menu-field-row">
-                                        <MudSelectExtended T="MenuType"
-                                                           Label="Menu Type"
-                                                           AnchorOrigin="Origin.BottomLeft"
-                                                           TransformOrigin="Origin.TopLeft"
-                                                           @bind-Value="selectedVariant.MenuType"
-                                                           Disabled="!CanManageVariants">
-                                            @foreach (var menuType in Enum.GetValues<MenuType>())
-                                            {
-                                                <MudSelectItem Value="@menuType">@menuType.Describe()</MudSelectItem>
-                                            }
-                                        </MudSelectExtended>
-                                    </div>
                                     <div class="menu-field-row menu-field-row--narrow">
                                         <MudTextFieldExtended Label="Discount Percentage" @bind-Value="selectedVariant.DiscountPercentage" />
                                     </div>
@@ -680,6 +708,25 @@
     .menu-field-row--narrow {
         max-width: 260px;
     }
+
+    .menu-types-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 24px;
+    }
+
+    .menu-types-hint {
+        display: block;
+        margin: 4px 0 8px;
+    }
+
+    .menu-type-visibility-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 4px 0;
+    }
 </style>
 
 @code {
@@ -843,6 +890,7 @@
 
     private async Task SelectVariant(MenuVariantDTO variant)
     {
+        StashSelectedPeriods();
         selectedVariant = variant;
         EnsureVariantLabourRates(selectedVariant);
         EnsureVariantPartCountryPrices(selectedVariant);
@@ -851,7 +899,8 @@
             await LoadReplacementItems(TheItem.VehicleModel.Value, selectedVariant);
 
         await LoadLabourDetails(selectedVariant);
-        await LoadServiceIntervals(selectedVariant.PeriodicAvailabilities.Select(x => x.ID));
+        await LoadServiceIntervals(selectedVariant.PeriodicAvailabilities);
+        FillStandaloneVisibility(selectedVariant);
     }
 
     private async Task CreateVariant()
@@ -859,6 +908,7 @@
         if (!CanManageVariants)
             return;
 
+        StashSelectedPeriods();
         selectedVariant = new MenuVariantDTO
         {
             MenuID = TheItem.ID ?? string.Empty,
@@ -886,6 +936,7 @@
         if (!CanManageVariants)
             return;
 
+        StashSelectedPeriods();
         selectedVariant = CloneVariant(variant);
         selectedVariant.ID = null;
         selectedVariant.MenuID = TheItem.ID ?? string.Empty;
@@ -895,7 +946,8 @@
         workingVariants.Add(selectedVariant);
 
         await LoadLabourDetails(selectedVariant);
-        await LoadServiceIntervals(selectedVariant.PeriodicAvailabilities.Select(x => x.ID));
+        await LoadServiceIntervals(selectedVariant.PeriodicAvailabilities);
+        FillStandaloneVisibility(selectedVariant);
     }
 
     private async Task<bool> SaveVariantInternal(MenuVariantDTO? variant, bool showSuccessMessage = true, bool reloadAfterSave = true)
@@ -910,11 +962,17 @@
             if (string.IsNullOrWhiteSpace(variant.Name))
                 variant.Name = GetNextDefaultVariantName();
 
+            if (UncoveredSummary(variant) is { } uncovered)
+            {
+                MessageService.Error($"Variant \"{variant.Name}\": not visible under any menu type: {uncovered}. Choose a type for each on the Menu tab.");
+                return false;
+            }
+
             EnsureVariantLabourRates(variant);
             EnsureVariantPartCountryPrices(variant);
             variant.MenuID = TheItem.ID!;
             if (ReferenceEquals(variant, selectedVariant))
-                variant.PeriodicAvailabilities = serviceIntervals?.Where(x => x.Value.IsSelected).Select(x => new ServiceIntervalIDSelectorDTO { ID = x.Key }).ToList() ?? [];
+                variant.PeriodicAvailabilities = SelectedPeriods();
 
             var response = await MenuService.SaveVariantAsync(variant);
             if (!response.IsSuccessStatusCode)
@@ -959,7 +1017,7 @@
             var variantToSave = variant;
 
             if (ReferenceEquals(variant, selectedVariant))
-                variantToSave.PeriodicAvailabilities = serviceIntervals?.Where(x => x.Value.IsSelected).Select(x => new ServiceIntervalIDSelectorDTO { ID = x.Key }).ToList() ?? [];
+                variantToSave.PeriodicAvailabilities = SelectedPeriods();
 
             var result = await SaveVariantInternal(variantToSave, showSuccessMessage: false, reloadAfterSave: false);
             if (!result)
@@ -1180,6 +1238,9 @@
         EnsureVariantLabourRates(entity);
         EnsureVariantPartCountryPrices(entity);
 
+        // Rows just brought in from the vehicle model start visible under every type.
+        FillStandaloneVisibility(entity);
+
         if (overrideData)
         {
             entity.LabourDetails = vehicleModel.Data.LabourDetails
@@ -1211,7 +1272,8 @@
 
     void ToggleServiceIntervalSelects(bool value)
     {
-        serviceIntervals?.Values.ToList().ForEach(x => x.IsSelected = value);
+        foreach (var interval in serviceIntervals?.Values.ToList() ?? [])
+            SetIntervalSelected(interval, value);
     }
 
     async Task LoadLabourDetails(MenuVariantDTO entity)
@@ -1245,16 +1307,214 @@
                 i.StandaloneAllowedTime = value;
     }
 
-    async Task LoadServiceIntervals(IEnumerable<string>? selectedIds = null)
+    async Task LoadServiceIntervals(IEnumerable<ServiceIntervalIDSelectorDTO>? selected = null)
     {
         serviceIntervals = (await ServiceIntervalService.GetListAsync())?
             .ToDictionary(x => x.ID!, x => x);
 
-        if (selectedIds is not null)
-            foreach (var id in selectedIds)
-                if (serviceIntervals?.ContainsKey(id) ?? false)
-                    serviceIntervals[id].IsSelected = true;
+        var variantTypes = selectedVariant?.MenuTypes ?? [];
+
+        foreach (var period in selected ?? [])
+        {
+            if (serviceIntervals is null || !serviceIntervals.TryGetValue(period.ID, out var interval))
+                continue;
+
+            interval.IsSelected = true;
+            interval.MenuTypes = MenuTypeSet.Resolve(period.MenuTypes, variantTypes);
+        }
     }
+
+    // ---- menu types ---------------------------------------------------------------------------------
+    // The Service Intervals tab and the Parts tab decide what the variant has. With several menu types, each
+    // type's dialog decides which of those it shows; nothing else differs between types. Client side every
+    // selected interval and item carries an explicit list, so an empty one means "visible under no type".
+
+    private bool HasSeveralMenuTypes => selectedVariant is not null && selectedVariant.MenuTypes.Count > 1;
+
+    private List<ServiceIntervalIDSelectorDTO> SelectedPeriods() =>
+        (serviceIntervals ?? [])
+            .Where(x => x.Value.IsSelected)
+            .Select(x => new ServiceIntervalIDSelectorDTO { ID = x.Key, MenuTypes = x.Value.MenuTypes.ToList() })
+            .ToList();
+
+    /// <summary>Writes the interval grid back onto the selected variant before another one replaces it.</summary>
+    private void StashSelectedPeriods()
+    {
+        if (selectedVariant is not null && serviceIntervals is not null)
+            selectedVariant.PeriodicAvailabilities = SelectedPeriods();
+    }
+
+    private void FillStandaloneVisibility(MenuVariantDTO variant)
+    {
+        foreach (var item in variant.Items ?? [])
+            item.StandaloneMenuTypes = MenuTypeSet.Resolve(item.StandaloneMenuTypes, variant.MenuTypes);
+    }
+
+    private void SetIntervalSelected(ServiceIntervalListSelectableUI interval, bool selected)
+    {
+        interval.IsSelected = selected;
+
+        // A newly added interval starts visible under every type; the dialog narrows it.
+        if (selected && selectedVariant is not null)
+            interval.MenuTypes = selectedVariant.MenuTypes.ToList();
+    }
+
+    private void SetVariantMenuType(MenuType menuType, bool offered)
+    {
+        if (selectedVariant is null)
+            return;
+
+        var current = selectedVariant.MenuTypes;
+        var updated = MenuTypeSet.Normalize(offered ? current.Append(menuType) : current.Where(x => x != menuType));
+
+        if (updated.SameAs(current))
+            return;
+
+        if (updated.Count == 0)
+        {
+            MessageService.Warning("A variant needs at least one menu type.");
+            return;
+        }
+
+        var intervals = serviceIntervals?.Values.Where(x => x.IsSelected).ToList() ?? [];
+
+        // An added type starts showing everything; a removed one is taken off every row, and a row it leaves
+        // with nothing falls back to all the remaining types rather than silently disappearing.
+        foreach (var interval in intervals)
+            interval.MenuTypes = Retype(interval.MenuTypes, menuType, offered, updated);
+
+        foreach (var item in selectedVariant.Items ?? [])
+            item.StandaloneMenuTypes = Retype(item.StandaloneMenuTypes, menuType, offered, updated);
+
+        selectedVariant.MenuTypes = updated;
+    }
+
+    private static List<MenuType> Retype(List<MenuType> own, MenuType menuType, bool offered, List<MenuType> variantTypes)
+    {
+        var types = MenuTypeSet.Normalize(offered ? own.Append(menuType) : own.Where(x => x != menuType));
+        return types.Count > 0 ? types : variantTypes.ToList();
+    }
+
+    private List<ServiceIntervalListSelectableUI> SelectedIntervalsInOrder() =>
+        (serviceIntervals?.Values ?? Enumerable.Empty<ServiceIntervalListSelectableUI>())
+            .Where(x => x.IsSelected)
+            .OrderBy(x => x.ValueInMeter)
+            .ToList();
+
+    /// <summary>
+    /// One option per ungrouped item and one per standalone group, whose items move together because they fold
+    /// into a single line. Items with no standalone quantity are left out: they produce no standalone line.
+    /// </summary>
+    private List<(string Key, string Label, string? Detail, List<MenuItemDTO> Items)> StandaloneOptions(MenuVariantDTO variant)
+    {
+        if (!variant.HasStandaloneItems)
+            return [];
+
+        return (variant.Items ?? [])
+            .Where(x => x.ReplacementItem is not null && (x.Parts ?? []).Any(part => part.StandaloneQuantity > 0))
+            .GroupBy(x => x.ReplacementItem.StandaloneReplacementItemGroup?.Value is { } group ? $"group:{group}" : $"item:{x.ReplacementItemVehicleModelID}")
+            .Select(group =>
+            {
+                var first = group.First();
+                var standaloneGroup = first.ReplacementItem.StandaloneReplacementItemGroup;
+
+                return standaloneGroup is null
+                    ? (group.Key, first.ReplacementItem.Name, (string?)null, group.ToList())
+                    : (group.Key, standaloneGroup.Text ?? "Group", string.Join(", ", group.Select(x => x.ReplacementItem.Name)), group.ToList());
+            })
+            .OrderBy(x => x.Item1.StartsWith("group:") ? 1 : 0)
+            .ThenBy(x => x.Item2, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+    }
+
+    private string VisibilitySummary(MenuType menuType)
+    {
+        if (selectedVariant is null)
+            return string.Empty;
+
+        var intervals = SelectedIntervalsInOrder();
+        var shown = intervals.Where(x => x.MenuTypes.Contains(menuType)).ToList();
+        var text = $"{shown.Count} of {intervals.Count} service intervals{DescribeRange(shown, intervals)}";
+
+        var standalone = StandaloneOptions(selectedVariant);
+        if (standalone.Count > 0)
+            text += $" · {standalone.Count(x => x.Items.First().StandaloneMenuTypes.Contains(menuType))} of {standalone.Count} standalone";
+
+        return text;
+    }
+
+    /// <summary>"(5K – 60K)" when the shown intervals are one unbroken run of the variant's.</summary>
+    private static string DescribeRange(List<ServiceIntervalListSelectableUI> shown, List<ServiceIntervalListSelectableUI> all)
+    {
+        if (shown.Count < 2 || shown.Count == all.Count)
+            return string.Empty;
+
+        var start = all.IndexOf(shown[0]);
+        var contiguous = all.Skip(start).Take(shown.Count).SequenceEqual(shown);
+
+        return contiguous ? $" ({shown[0].Code} – {shown[^1].Code})" : string.Empty;
+    }
+
+    /// <summary>The rows of <paramref name="variant"/> that no type shows, or null when there are none or it has one type.</summary>
+    private string? UncoveredSummary(MenuVariantDTO? variant = null)
+    {
+        variant ??= selectedVariant;
+
+        if (variant is null || variant.MenuTypes.Count <= 1)
+            return null;
+
+        var names = new List<string>();
+
+        if (ReferenceEquals(variant, selectedVariant))
+            names.AddRange(SelectedIntervalsInOrder().Where(x => !x.MenuTypes.Any(variant.MenuTypes.Contains)).Select(x => x.Code));
+        else
+            names.AddRange(variant.PeriodicAvailabilities.Where(x => x.MenuTypes.Count > 0 && !x.MenuTypes.Any(variant.MenuTypes.Contains)).Select(x => serviceIntervals?.GetValueOrDefault(x.ID)?.Code ?? x.ID));
+
+        names.AddRange(StandaloneOptions(variant)
+            .Where(x => !x.Items.First().StandaloneMenuTypes.Any(variant.MenuTypes.Contains))
+            .Select(x => x.Label));
+
+        return names.Count > 0 ? string.Join(", ", names) : null;
+    }
+
+    private async Task OpenVisibilityDialog(MenuType menuType)
+    {
+        if (selectedVariant is null)
+            return;
+
+        var intervals = SelectedIntervalsInOrder();
+        var standalone = StandaloneOptions(selectedVariant);
+
+        var parameters = new DialogParameters
+        {
+            { nameof(MenuTypeVisibilityDialog.MenuType), menuType },
+            {
+                nameof(MenuTypeVisibilityDialog.Intervals),
+                intervals.Select(x => new MenuTypeVisibilityDialog.VisibilityOption(x.ID!, x.Code, null, x.MenuTypes.Contains(menuType))).ToList()
+            },
+            {
+                nameof(MenuTypeVisibilityDialog.Standalone),
+                standalone.Select(x => new MenuTypeVisibilityDialog.VisibilityOption(x.Key, x.Label, x.Detail, x.Items.First().StandaloneMenuTypes.Contains(menuType))).ToList()
+            },
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<MenuTypeVisibilityDialog>($"Visible under {menuType.Describe()}", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled || result.Data is not MenuTypeVisibilityDialog.VisibilityResult chosen)
+            return;
+
+        foreach (var interval in intervals)
+            interval.MenuTypes = SetType(interval.MenuTypes, menuType, chosen.IntervalKeys.Contains(interval.ID!));
+
+        foreach (var option in standalone)
+            foreach (var item in option.Items)
+                item.StandaloneMenuTypes = SetType(item.StandaloneMenuTypes, menuType, chosen.StandaloneKeys.Contains(option.Key));
+    }
+
+    private static List<MenuType> SetType(List<MenuType> own, MenuType menuType, bool visible) =>
+        MenuTypeSet.Normalize(visible ? own.Append(menuType) : own.Where(x => x != menuType));
 
     async Task PartNumberChanged(MenuItemPartDTO part, string partNumber)
     {
@@ -1717,7 +1977,7 @@
             LabourRate = source.LabourRate,
             LabourRates = source.LabourRates.Select(CloneLabourRate).ToList(),
             DiscountPercentage = source.DiscountPercentage,
-            MenuType = source.MenuType,
+            MenuTypes = source.MenuTypes.ToList(),
             HasStandaloneItems = source.HasStandaloneItems,
             LabourDetails = source.LabourDetails.Select(x => new LabourDetailsDTO
             {
@@ -1728,7 +1988,8 @@
             }).ToList(),
             PeriodicAvailabilities = source.PeriodicAvailabilities.Select(x => new ServiceIntervalIDSelectorDTO
             {
-                ID = x.ID
+                ID = x.ID,
+                MenuTypes = x.MenuTypes.ToList()
             }).ToList(),
             Items = source.Items.Select(x => new MenuItemDTO
             {
@@ -1766,6 +2027,7 @@
                     }).ToList()
                 }).ToList(),
                 StandaloneAllowedTime = x.StandaloneAllowedTime,
+                StandaloneMenuTypes = x.StandaloneMenuTypes.ToList(),
                 NotStoredInMenuItemsTable = x.NotStoredInMenuItemsTable
             }).ToList()
         };

@@ -1,5 +1,6 @@
 using ShiftMapper;
 using ShiftSoftware.ADP.Menus.Data.Entities;
+using ShiftSoftware.ADP.Menus.Shared.Enums;
 using ShiftSoftware.ADP.Models.Service.DuckDB;
 
 namespace ShiftSoftware.ADP.Menus.Data.Mappers;
@@ -29,14 +30,15 @@ public class MenuDuckDBMapper : ShiftMapperBase
     {
         CreateMap<Menu, MenuDuckDBModel>();
         CreateMap<VehicleModel, MenuVehicleModelDuckDBModel>();
-        // The entity's MenuType is the menus module's own enum and the row's is ADP.Models'; the name match
-        // skips a property whose type differs, so the cast is spelled out.
+        // The type lists are written as the same JSON array of enum values the menus database stores.
         CreateMap<MenuVariant, MenuVariantDuckDBModel>()
-            .ForMember(d => d.MenuType, opt => opt.MapFrom(e => (ShiftSoftware.ADP.Models.Enums.MenuType)e.MenuType));
+            .ForMember(d => d.MenuTypes, opt => opt.MapFrom(e => MenuTypeSet.ToJson(e.MenuTypes)));
         CreateMap<MenuVariantLabourRate, MenuVariantLabourRateDuckDBModel>();
-        CreateMap<MenuPeriodicAvailability, MenuPeriodicAvailabilityDuckDBModel>();
+        CreateMap<MenuPeriodicAvailability, MenuPeriodicAvailabilityDuckDBModel>()
+            .ForMember(d => d.MenuTypes, opt => opt.MapFrom(e => MenuTypeSet.ToJson(e.MenuTypes)));
         CreateMap<MenuLabourDetails, MenuLabourDetailsDuckDBModel>();
-        CreateMap<MenuItem, MenuItemDuckDBModel>();
+        CreateMap<MenuItem, MenuItemDuckDBModel>()
+            .ForMember(d => d.StandaloneMenuTypes, opt => opt.MapFrom(e => MenuTypeSet.ToJson(e.StandaloneMenuTypes)));
         CreateMap<MenuItemPart, MenuItemPartDuckDBModel>();
         CreateMap<MenuItemPartCountryPrice, MenuItemPartCountryPriceDuckDBModel>();
         CreateMap<ServiceInterval, ServiceIntervalDuckDBModel>();

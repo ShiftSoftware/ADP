@@ -9,6 +9,7 @@ using ShiftSoftware.ADP.Menus.Shared.DTOs.MenuVersion;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.ReplcamentItem;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.ServiceInterval;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.VehicleModel;
+using ShiftSoftware.ADP.Menus.Shared.Enums;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.Core.Mapping;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
@@ -131,7 +132,7 @@ public class MenuMapper : ShiftMapperBase
         // framework's string → long rule converts the hash-id string to the foreign key.
         CreateMap<MenuVariant, MenuVariantDTO>()
             .ForMember(d => d.PeriodicAvailabilities, opt => opt.MapFrom(e => e.PeriodicAvailabilities
-                .Select(s => new ServiceIntervalIDSelectorDTO { ID = s.ServiceIntervalID.ToString() })
+                .Select(s => new ServiceIntervalIDSelectorDTO { ID = s.ServiceIntervalID.ToString(), MenuTypes = s.MenuTypes.ToList() })
                 .ToList()))
             .ForMember(d => d.Items, opt => opt.MapFrom(e => e.Items
                 .Where(mi => !mi.IsDeleted && (mi.ReplacementItemVehicleModel == null || !mi.ReplacementItemVehicleModel.IsDeleted))
@@ -139,6 +140,7 @@ public class MenuMapper : ShiftMapperBase
                 {
                     ReplacementItemVehicleModelID = mi.ReplacementItemVehicleModelID,
                     StandaloneAllowedTime = mi.StandaloneAllowedTime,
+                    StandaloneMenuTypes = mi.StandaloneMenuTypes.ToList(),
 
                     // Flattened across RIVM → ReplacementItem → its standalone group.
                     ReplacementItem = mi.ReplacementItemVehicleModel == null || mi.ReplacementItemVehicleModel.ReplacementItem == null
@@ -253,7 +255,9 @@ public class MenuMapper : ShiftMapperBase
             var existingItem = entity.PeriodicAvailabilities
                 .FirstOrDefault(r => r.ServiceIntervalID.ToString() == item.ID);
             if (existingItem == null)
-                entity.PeriodicAvailabilities.Add(new MenuPeriodicAvailability { ServiceIntervalID = item.ID.ToLong() });
+                entity.PeriodicAvailabilities.Add(new MenuPeriodicAvailability { ServiceIntervalID = item.ID.ToLong(), MenuTypes = MenuTypeSet.Normalize(item.MenuTypes) });
+            else if (!existingItem.MenuTypes.SameAs(item.MenuTypes))
+                existingItem.MenuTypes = MenuTypeSet.Normalize(item.MenuTypes);
         }
 
         entity.Items ??= [];
@@ -304,6 +308,7 @@ public class MenuMapper : ShiftMapperBase
     {
         dest.ReplacementItemVehicleModelID = src.ReplacementItemVehicleModelID;
         dest.StandaloneAllowedTime = src.StandaloneAllowedTime.GetValueOrDefault();
+        dest.StandaloneMenuTypes = MenuTypeSet.Normalize(src.StandaloneMenuTypes);
 
         // Stamp LastPropagatedAt on every MenuItem save (MenuForm path). Saving counts as the user confirming
         // the values against current vehicle-model defaults — same effect as propagating via the bulk dialog.

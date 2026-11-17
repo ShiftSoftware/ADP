@@ -107,16 +107,25 @@ the request: a variant id is a primary key inside the menus database and nothing
 
 ### Menu types
 
-Every variant has a **menu type** — `Paid` (the default), `Free` or `Contract` — picked from the *Menu Type*
-field on the Menu tab of a menu variant. That travels through replication to
+Every variant is offered under one or more **menu types** — `Paid` (the default), `Free`, `Contract` — ticked
+under *Menu Types* on the Menu tab of a menu variant. That travels through replication to
 `ServiceMenuVariantDTO.MenuType` on the nested shape and to `VehicleServiceMenuLineDTO.MenuType` on every line
 of the flat one, serialized as the name (`"Free"`), not a number.
 
-The type also picks a scheduled line's `Description`: each service interval is authored with a *Paid*, a
-*Free* and a *Contract* description, and a line takes the one for its variant's type. Standalone lines are
-unaffected — they carry the item's or group's name.
+With one type, every service interval and standalone item of the variant belongs to it. With several, the
+Service Intervals and Parts tabs still decide what the variant has, and each type's *Choose* dialog on the Menu
+tab picks which of those it shows — one by one, by a from–to range of intervals, or all at once — for example
+one menu that is free up to a given interval and paid across the whole schedule. Each row stores the types it is
+visible under as a JSON array of the enum values (`[0,1]` for Paid and Free); nothing else is stored per type. The lookup then returns the
+variant **once per type**, each with the services that type covers; a service both types cover appears under
+each with the same `LineKey`, code and prices. Only the lookup reads the split: the DMS export generates the
+same lines and codes whatever is ticked.
 
-`MenuTypes` narrows a request to any subset of them; null or empty returns every variant:
+The type also picks a scheduled line's `Description`: each service interval is authored with a *Paid*, a
+*Free* and a *Contract* description, and a line takes the one for the type it is returned under. Standalone
+lines are unaffected — they carry the item's or group's name.
+
+`MenuTypes` narrows a request to any subset of them; null or empty returns every type:
 
 ```csharp
 var freeMenus = await serviceMenuLookupService.GetMenuAsync(new ServiceMenuLookupRequest
@@ -127,19 +136,15 @@ var freeMenus = await serviceMenuLookupService.GetMenuAsync(new ServiceMenuLooku
 });
 ```
 
-The same option exists on `VehicleServiceMenuRequestOptions` for the VIN path. It selects **variants** — a
-variant it excludes contributes neither its scheduled nor its standalone services — and it is applied before
-generation, so an excluded variant costs nothing to skip.
+The same option exists on `VehicleServiceMenuRequestOptions` for the VIN path. A variant offered under none of
+the requested types contributes neither its scheduled nor its standalone services, and is dropped before
+generation, so it costs nothing to skip.
 
 !!! warning "The menu type does not change any price"
     Nothing zeroes a total for a free or contract variant: `LabourTotalPrice`, `PartsTotalPrice` and
     `TotalPrice` are generated exactly as they are for a paid one, and the DMS export's figures are untouched.
     Read `MenuType` and render *"free"* (or *"under contract"*) instead of the total — a UI that prints the
     total verbatim quotes a customer for a menu the catalogue calls free.
-
-!!! note "Documents written before the field existed read as `Paid`"
-    Until a catch-up sweep (Cosmos) or a full reload (DuckDB) rewrites them, variants replicated while the
-    field was still the `IsFree` flag come back as `Paid` — including the ones that were free.
 
 A filter that excludes every variant returns **no variants with `NotFound = false`** (and, on the vehicle
 lookup, `Status = Found` with no services). That is not the same as a model with no menu — the menu exists,

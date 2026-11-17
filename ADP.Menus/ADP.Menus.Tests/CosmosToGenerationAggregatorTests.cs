@@ -191,11 +191,11 @@ public class CosmosToGenerationAggregatorTests
         var documents = MenuCosmosDocumentFixture.WithEveryMenuType();
 
         // On the document, as replication wrote it.
-        Assert.Equal(menuType, documents.Variants.Single(variant => variant.VariantID == variantID).MenuType);
+        Assert.Equal([menuType], documents.Variants.Single(variant => variant.VariantID == variantID).MenuTypes);
 
         // On the neutral request the generator is handed.
         var request = CosmosToGenerationAggregator.Build(documents);
-        Assert.Equal(menuType, request.Variants.Single(variant => variant.VariantID == variantID).MenuType);
+        Assert.Equal([menuType], request.Variants.Single(variant => variant.VariantID == variantID).MenuTypes);
 
         // And on every line the variant produced — periodic and standalone alike.
         var lines = Generate(documents).Where(line => line.VariantID == variantID).ToList();
@@ -229,17 +229,17 @@ public class CosmosToGenerationAggregatorTests
     }
 
     /// <summary>
-    /// A document written before the field existed reads as paid rather than throwing or defaulting to
-    /// free — the safe direction, since "free" is the claim that gives something away.
+    /// A variant with no menu type reads as paid rather than throwing or defaulting to free — the safe
+    /// direction, since "free" is the claim that gives something away.
     /// </summary>
     [Fact]
-    public void ADocumentWithoutTheMenuType_ReadsAsPaid()
+    public void AVariantWithoutAMenuType_ReadsAsPaid()
     {
         Assert.Equal(MenuType.Paid, default(MenuType));
 
         var documents = MenuCosmosDocumentFixture.Build();
+        documents.Variants.ForEach(variant => variant.MenuTypes = []);
 
-        Assert.All(documents.Variants, variant => Assert.Equal(MenuType.Paid, variant.MenuType));
         Assert.All(Generate(documents), line => Assert.Equal(MenuType.Paid, line.MenuType));
     }
 

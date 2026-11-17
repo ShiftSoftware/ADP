@@ -88,7 +88,7 @@ public class MenuReplicationMapper : ShiftMapperBase
 
             // The entity carries the menus module's own MenuType and the document ADP.Models' one; same names and
             // values, but different types, which the name match silently skips — so the cast is spelled out.
-            .ForMember(d => d.MenuType, opt => opt.MapFrom(e => (ShiftSoftware.ADP.Models.Enums.MenuType)e.MenuType))
+            .ForMember(d => d.MenuTypes, opt => opt.MapFrom(e => e.MenuTypes.Select(menuType => (ShiftSoftware.ADP.Models.Enums.MenuType)menuType).ToList()))
 
             // Owned by the variant and never queried alone. Carried with their delete flags so the generator, not
             // this projection, decides which country rate applies.
@@ -109,6 +109,7 @@ public class MenuReplicationMapper : ShiftMapperBase
         CreateMap<MenuPeriodicAvailability, MenuPeriodCosmosModel>()
             .ForMember(d => d.BasicModelCode, opt => opt.MapFrom(e => e.MenuVariant == null || e.MenuVariant.Menu == null ? null! : e.MenuVariant.Menu.BasicModelCode))
             .ForMember(d => d.VariantID, opt => opt.MapFrom(e => e.MenuVariantID))
+            .ForMember(d => d.MenuTypes, opt => opt.MapFrom(e => e.MenuTypes.Select(menuType => (ShiftSoftware.ADP.Models.Enums.MenuType)menuType).ToList()))
             .ForMember(d => d.ServiceInterval, opt => opt.Ignore());
 
         CreateMap<MenuLabourDetails, MenuLabourCosmosModel>()
@@ -123,6 +124,7 @@ public class MenuReplicationMapper : ShiftMapperBase
         CreateMap<MenuItem, MenuItemCosmosModel>()
             .ForMember(d => d.BasicModelCode, opt => opt.MapFrom(e => e.MenuVariant == null || e.MenuVariant.Menu == null ? null! : e.MenuVariant.Menu.BasicModelCode))
             .ForMember(d => d.MenuItemID, opt => opt.MapFrom(e => e.ID))
+            .ForMember(d => d.StandaloneMenuTypes, opt => opt.MapFrom(e => e.StandaloneMenuTypes.Select(menuType => (ShiftSoftware.ADP.Models.Enums.MenuType)menuType).ToList()))
             .ForMember(d => d.VariantID, opt => opt.MapFrom(e => e.MenuVariantID))
 
             // The generator's own guards, resolved here so it never has to reason about EF nulls. These are about

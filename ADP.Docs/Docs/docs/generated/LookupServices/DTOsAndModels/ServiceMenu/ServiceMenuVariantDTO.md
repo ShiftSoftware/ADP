@@ -11,6 +11,6 @@ One menu variant of a model, and the services it offers.
 | BrandID <div><strong>``string``</strong></div> | The Brand Hash ID from the Identity System. |
 | BrandCode <div><strong>``string``</strong></div> | The brand mapping's company code, as the DMS export writes it. Null when the brand has no mapping row. Distinct from the abbreviation embedded in each line's labour code. |
 | DiscountPercentage <div><strong>``decimal?``</strong></div> | The discount percentage applied to every line's total. Null when the variant has none. |
-| MenuType <div><strong>``MenuType``</strong></div> | How the variant's menu is offered — paid, free or under contract. |
+| MenuType <div><strong>``MenuType``</strong></div> | How the services below are offered — paid, free or under contract. A variant offered under several types is returned once per type, with the same `VariantID` and the services that type covers. |
 | PeriodicServices <div><strong>``List<ServiceMenuLineDTO>``</strong></div> | The scheduled services, one per service interval the variant is available for, ordered by distance. An interval whose group carries no labour detail produces no line — matching the export. |
 | StandaloneServices <div><strong>``List<ServiceMenuLineDTO>``</strong></div> | The standalone (non-scheduled) services — individual items and item groups that can be sold on their own. Empty when the variant has no standalone items. |

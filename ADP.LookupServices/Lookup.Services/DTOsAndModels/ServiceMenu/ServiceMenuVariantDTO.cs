@@ -32,7 +32,9 @@ public class ServiceMenuVariantDTO
     public decimal? DiscountPercentage { get; set; }
 
     /// <summary>
-    /// How the variant's menu is offered — paid, free or under contract.
+    /// How the services below are offered — paid, free or under contract. A variant offered under several
+    /// types is returned once per type, with the same <see cref="VariantID"/> and the services that type
+    /// covers.
     ///
     /// <para><b>The prices below are unaffected.</b> Nothing in the pipeline zeroes a total for a free or
     /// contract variant, so a UI that shows the line totals verbatim quotes a customer for a menu the

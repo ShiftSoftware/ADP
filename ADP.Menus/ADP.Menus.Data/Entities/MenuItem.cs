@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ShiftSoftware.ADP.Menus.Shared.Enums;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.Model.Replication;
 
@@ -15,6 +16,12 @@ public class MenuItem : ShiftEntity<MenuItem>, IShiftEntityReplication
 
     [Precision(6, 2)]
     public decimal StandaloneAllowedTime { get; set; }
+
+    /// <summary>
+    /// The variant's menu types the item's standalone line is visible under, as a JSON array of the enum
+    /// values. Empty reads as all of them. Items of one standalone group carry the same list.
+    /// </summary>
+    public List<MenuType> StandaloneMenuTypes { get; set; } = [];
 
     /// <summary>
     /// When the values on this MenuItem were last reconciled against the vehicle-model

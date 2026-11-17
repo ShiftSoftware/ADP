@@ -1,4 +1,5 @@
 using ShiftSoftware.ADP.Menus.Generation;
+using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Service.Cosmos;
 using ShiftSoftware.ADP.Models.Service.DuckDB;
 using System;
@@ -251,7 +252,7 @@ public class DuckDBServiceMenuLookupStorageService : IServiceMenuLookupStorageSe
                 StandaloneMenuPostfix = variant.StandaloneMenuPostfix,
                 LabourRate = variant.LabourRate,
                 DiscountPercentage = variant.DiscountPercentage,
-                MenuType = variant.MenuType,
+                MenuTypes = MenuTypeList.Parse(variant.MenuTypes),
                 HasStandaloneItems = variant.HasStandaloneItems,
 
                 // Joined live from the Menu row — in Cosmos this flag must be flattened onto the
@@ -287,6 +288,7 @@ public class DuckDBServiceMenuLookupStorageService : IServiceMenuLookupStorageSe
                 VariantID = period.MenuVariantID,
                 ServiceIntervalID = period.ServiceIntervalID,
                 ServiceInterval = reference.IntervalDocument(period.ServiceIntervalID),
+                MenuTypes = MenuTypeList.Parse(period.MenuTypes),
                 IsDeleted = period.IsDeleted,
             });
         }
@@ -334,6 +336,7 @@ public class DuckDBServiceMenuLookupStorageService : IServiceMenuLookupStorageSe
                 MenuItemID = item.ID,
                 VariantID = item.MenuVariantID,
                 StandaloneAllowedTime = item.StandaloneAllowedTime,
+                StandaloneMenuTypes = MenuTypeList.Parse(item.StandaloneMenuTypes),
 
                 // About the LINK row, not the replacement item's own flag — MenuReplicationMapper's MenuItem map.
                 HasReplacementItem = link is not null,

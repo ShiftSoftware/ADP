@@ -216,6 +216,10 @@ namespace ShiftSoftware.ADP.Menus.Sample.MultiCountry.API.Migrations
                         .HasPrecision(6, 2)
                         .HasColumnType("decimal(6,2)");
 
+                    b.PrimitiveCollection<string>("StandaloneMenuTypes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("ID");
 
                     b.HasIndex("ReplacementItemVehicleModelID");
@@ -424,6 +428,10 @@ namespace ShiftSoftware.ADP.Menus.Sample.MultiCountry.API.Migrations
                     b.Property<long?>("LastSavedByUserID")
                         .HasColumnType("bigint");
 
+                    b.PrimitiveCollection<string>("MenuTypes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<long>("MenuVariantID")
                         .HasColumnType("bigint");
 
@@ -493,8 +501,9 @@ namespace ShiftSoftware.ADP.Menus.Sample.MultiCountry.API.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int>("MenuType")
-                        .HasColumnType("int");
+                    b.PrimitiveCollection<string>("MenuTypes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()

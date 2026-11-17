@@ -29,11 +29,20 @@ public class MenuVariant : ShiftEntity<MenuVariant>, IShiftEntityReplication
     public decimal? DiscountPercentage { get; set; }
 
     /// <summary>
-    /// How the variant's menu is offered — paid, free or under contract. Authored here and carried as a
-    /// label only — it does not change any generated price, so a consumer that shows "free" decides that
-    /// for itself.
+    /// The types the variant's menu is offered under — any of paid, free, under contract — at least one;
+    /// stored as a JSON array of the enum values, e.g. [0,1]. Carried as a label only: it changes no
+    /// generated price or code. With more than one, each period and item lists which of them it is
+    /// visible under, and only the lookup reads that.
     /// </summary>
-    public MenuType MenuType { get; set; }
+    public List<MenuType> MenuTypes { get; set; } = [MenuType.Paid];
+
+    /// <summary>The first of <see cref="MenuTypes"/> in enum order. Setting it makes the variant single-typed.</summary>
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public MenuType MenuType
+    {
+        get => MenuTypeSet.Normalize(MenuTypes).FirstOrDefault();
+        set => MenuTypes = [value];
+    }
 
     public bool HasStandaloneItems { get; set; }
 

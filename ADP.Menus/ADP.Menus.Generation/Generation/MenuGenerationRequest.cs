@@ -1,6 +1,7 @@
 using ShiftSoftware.ADP.Models.Enums;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ShiftSoftware.ADP.Menus.Generation;
 
@@ -73,12 +74,30 @@ public class MenuGenerationVariant
     public decimal? DiscountPercentage { get; set; }
 
     /// <summary>
-    /// How the variant's menu is offered — paid, free or under contract. The generator stamps it onto
-    /// every line it produces and does nothing else with it — no price, code or inclusion rule reads it. A
-    /// consumer that wants "free menus only" filters the variants BEFORE generating rather than asking for
-    /// it here.
+    /// Every type the variant is offered under — at least one; an empty list reads as
+    /// <see cref="MenuType.Paid"/>, the enum's default. The generator stamps the types onto the lines and does nothing else with them — no price, code or
+    /// inclusion rule reads them, and a variant produces the same lines whatever is set here. Splitting
+    /// or filtering by type is the consumer's step: <see cref="GeneratedMenuLineTypes"/>.
     /// </summary>
-    public MenuType MenuType { get; set; }
+    public List<MenuType> MenuTypes { get; set; } = [];
+
+    /// <summary><see cref="MenuTypes"/> distinct and in enum order; <see cref="MenuType.Paid"/> when it is empty.</summary>
+    public List<MenuType> EffectiveMenuTypes() =>
+        MenuTypes is { Count: > 0 }
+            ? MenuTypes.Distinct().OrderBy(menuType => menuType).ToList()
+            : [MenuType.Paid];
+
+    /// <summary>
+    /// The types a period or standalone item of this variant is offered under: its own, limited to the
+    /// variant's — or all of the variant's when it names none.
+    /// </summary>
+    public List<MenuType> TypesOf(List<MenuType> own)
+    {
+        var variantTypes = EffectiveMenuTypes();
+        var types = variantTypes.Where(menuType => own is not null && own.Contains(menuType)).ToList();
+
+        return types.Count > 0 ? types : variantTypes;
+    }
 
     /// <summary>When false the variant contributes no standalone lines at all.</summary>
     public bool HasStandaloneItems { get; set; }
@@ -99,6 +118,9 @@ public class MenuGenerationCountryLabourRate
 public class MenuGenerationPeriod
 {
     public long ServiceIntervalID { get; set; }
+
+    /// <summary>The variant's menu types the interval is offered under. Null or empty means all of them.</summary>
+    public List<MenuType> MenuTypes { get; set; } = [];
 }
 
 /// <summary>Labour time and consumable for a service-interval GROUP.</summary>
@@ -117,6 +139,12 @@ public class MenuGenerationItem
     public long MenuItemID { get; set; }
 
     public decimal StandaloneAllowedTime { get; set; }
+
+    /// <summary>
+    /// The variant's menu types the standalone line is offered under. Null or empty means all of them. A
+    /// grouped line takes its first item's.
+    /// </summary>
+    public List<MenuType> StandaloneMenuTypes { get; set; } = [];
 
     /// <summary>
     /// The service-interval groups the underlying replacement item serves. A part joins a PERIODIC line

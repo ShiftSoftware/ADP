@@ -37,8 +37,9 @@ public static class ServiceMenuScheduleEvaluator
         var variants = new List<ServiceMenuVariantDTO>();
 
         // GroupBy preserves first-appearance order, and the aggregator already ordered variants by id,
-        // so the result follows the same order the request was built in.
-        foreach (var group in lines.GroupBy(line => line.VariantID))
+        // so the result follows the same order the request was built in. A variant offered under several
+        // menu types is one entry per type, each holding the services that type covers.
+        foreach (var group in lines.GroupBy(line => (line.VariantID, line.MenuType)))
         {
             var first = group.First();
 

@@ -39,8 +39,8 @@ public class VehicleServiceMenuLineDTO
     public string VariantName { get; set; }
 
     /// <summary>
-    /// How the variant's menu is offered — paid, free or under contract. A variant-level value travelling
-    /// on the line, like <see cref="VariantName"/> — every line of a variant carries it.
+    /// How this service is offered — paid, free or under contract. A service its variant offers under
+    /// several types appears once per type, with the same <see cref="LineKey"/>, code and prices.
     ///
     /// <para><b>The money fields below are unaffected.</b> Nothing zeroes a total for a free or contract
     /// variant, so a UI that renders <see cref="TotalPrice"/> verbatim quotes a customer for a menu the

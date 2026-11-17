@@ -1,0 +1,198 @@
+@*
+    Picks which of a variant's service intervals and standalone services are visible under one menu type.
+    Only visibility: codes, quantities and prices stay those of the variant.
+*@
+
+<MudDialog DefaultFocus="DefaultFocus.FirstChild">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Visible under @MenuType.Describe()</MudText>
+    </TitleContent>
+    <DialogContent>
+        <div class="visibility-dialog">
+            <div class="visibility-section-head">
+                <MudText Typo="Typo.subtitle2">Service intervals (@intervalKeys.Count of @Intervals.Count)</MudText>
+                <div>
+                    <MudButton Size="Size.Small" Variant="Variant.Text" Disabled="Intervals.Count == 0" OnClick="@(() => SetAllIntervals(true))">All</MudButton>
+                    <MudButton Size="Size.Small" Variant="Variant.Text" Disabled="Intervals.Count == 0" OnClick="@(() => SetAllIntervals(false))">None</MudButton>
+                </div>
+            </div>
+
+            @if (Intervals.Count == 0)
+            {
+                <MudAlert Severity="Severity.Info" Dense="true">Select the variant's service intervals on the Service Intervals tab first.</MudAlert>
+            }
+            else
+            {
+                <div class="visibility-range">
+                    <MudSelect T="string" Label="From" Dense="true" Margin="Margin.Dense" @bind-Value="rangeFrom">
+                        @foreach (var interval in Intervals)
+                        {
+                            <MudSelectItem T="string" Value="@interval.Key">@interval.Label</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudSelect T="string" Label="To" Dense="true" Margin="Margin.Dense" @bind-Value="rangeTo">
+                        @foreach (var interval in Intervals)
+                        {
+                            <MudSelectItem T="string" Value="@interval.Key">@interval.Label</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary" Disabled="!HasRange" OnClick="@(() => SetRange(true))">Add range</MudButton>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" Disabled="!HasRange" OnClick="@(() => SetRange(false))">Remove range</MudButton>
+                </div>
+
+                <div class="visibility-intervals">
+                    @foreach (var interval in Intervals)
+                    {
+                        var key = interval.Key;
+                        <MudCheckBox T="bool" Dense="true" Label="@interval.Label"
+                                     Value="intervalKeys.Contains(key)"
+                                     ValueChanged="@(x => Toggle(intervalKeys, key, x))" />
+                    }
+                </div>
+            }
+
+            @if (Standalone.Count > 0)
+            {
+                <div class="visibility-section-head visibility-section-head--spaced">
+                    <MudText Typo="Typo.subtitle2">Standalone services (@standaloneKeys.Count of @Standalone.Count)</MudText>
+                    <div>
+                        <MudButton Size="Size.Small" Variant="Variant.Text" OnClick="@(() => SetAllStandalone(true))">All</MudButton>
+                        <MudButton Size="Size.Small" Variant="Variant.Text" OnClick="@(() => SetAllStandalone(false))">None</MudButton>
+                    </div>
+                </div>
+
+                <div class="visibility-standalone">
+                    @foreach (var option in Standalone)
+                    {
+                        var key = option.Key;
+                        <div class="visibility-standalone-row">
+                            <MudCheckBox T="bool" Dense="true" Label="@option.Label"
+                                         Value="standaloneKeys.Contains(key)"
+                                         ValueChanged="@(x => Toggle(standaloneKeys, key, x))" />
+                            @if (!string.IsNullOrWhiteSpace(option.Detail))
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="visibility-standalone-detail">@option.Detail</MudText>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Apply">Apply</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .visibility-dialog {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 65vh;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    .visibility-section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .visibility-section-head--spaced {
+        margin-top: 16px;
+    }
+
+    .visibility-range {
+        display: grid;
+        grid-template-columns: minmax(110px, 1fr) minmax(110px, 1fr) auto auto;
+        gap: 8px;
+        align-items: end;
+    }
+
+    .visibility-intervals {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    }
+
+    .visibility-standalone-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .visibility-standalone-detail {
+        margin-left: 4px;
+    }
+</style>
+
+@code {
+    [CascadingParameter] public IMudDialogInstance MudDialogInstance { get; set; } = default!;
+
+    [Parameter] public MenuType MenuType { get; set; }
+
+    /// <summary>The variant's service intervals, in distance order.</summary>
+    [Parameter] public List<VisibilityOption> Intervals { get; set; } = [];
+
+    /// <summary>The variant's standalone services: one per ungrouped item and one per standalone group.</summary>
+    [Parameter] public List<VisibilityOption> Standalone { get; set; } = [];
+
+    private HashSet<string> intervalKeys = [];
+    private HashSet<string> standaloneKeys = [];
+    private string? rangeFrom;
+    private string? rangeTo;
+
+    private bool HasRange => rangeFrom is not null && rangeTo is not null;
+
+    protected override void OnInitialized()
+    {
+        intervalKeys = Intervals.Where(x => x.Visible).Select(x => x.Key).ToHashSet();
+        standaloneKeys = Standalone.Where(x => x.Visible).Select(x => x.Key).ToHashSet();
+        rangeFrom = Intervals.FirstOrDefault()?.Key;
+        rangeTo = Intervals.LastOrDefault()?.Key;
+    }
+
+    private static void Toggle(HashSet<string> keys, string key, bool visible)
+    {
+        if (visible)
+            keys.Add(key);
+        else
+            keys.Remove(key);
+    }
+
+    private void SetAllIntervals(bool visible)
+    {
+        foreach (var interval in Intervals)
+            Toggle(intervalKeys, interval.Key, visible);
+    }
+
+    private void SetAllStandalone(bool visible)
+    {
+        foreach (var option in Standalone)
+            Toggle(standaloneKeys, option.Key, visible);
+    }
+
+    /// <summary>Both ends inclusive, in either order.</summary>
+    private void SetRange(bool visible)
+    {
+        var from = Intervals.FindIndex(x => x.Key == rangeFrom);
+        var to = Intervals.FindIndex(x => x.Key == rangeTo);
+
+        if (from < 0 || to < 0)
+            return;
+
+        for (var i = Math.Min(from, to); i <= Math.Max(from, to); i++)
+            Toggle(intervalKeys, Intervals[i].Key, visible);
+    }
+
+    private void Apply() => MudDialogInstance.Close(DialogResult.Ok(new VisibilityResult(intervalKeys, standaloneKeys)));
+
+    private void Cancel() => MudDialogInstance.Close(DialogResult.Cancel());
+
+    public record VisibilityOption(string Key, string Label, string? Detail, bool Visible);
+
+    public record VisibilityResult(HashSet<string> IntervalKeys, HashSet<string> StandaloneKeys);
+}

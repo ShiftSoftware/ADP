@@ -89,7 +89,10 @@ public class MenuVariantDuckDBModel : IServiceMenuDuckDBRow
     public string StandaloneMenuPostfix { get; set; }
     public decimal LabourRate { get; set; }
     public decimal? DiscountPercentage { get; set; }
-    public MenuType MenuType { get; set; }
+
+    /// <summary>Every type the variant is offered under, at least one, as a JSON array of enum values (<see cref="MenuTypeList"/>).</summary>
+    public string MenuTypes { get; set; }
+
     public bool HasStandaloneItems { get; set; }
     public bool IsDeleted { get; set; }
     public DateTimeOffset LastSaveDate { get; set; }
@@ -110,6 +113,10 @@ public class MenuPeriodicAvailabilityDuckDBModel : IServiceMenuDuckDBRow
     public long ID { get; set; }
     public long MenuVariantID { get; set; }
     public long ServiceIntervalID { get; set; }
+
+    /// <summary>The variant's types this interval is visible under, as a JSON array of enum values (<see cref="MenuTypeList"/>). Empty means all of them.</summary>
+    public string MenuTypes { get; set; }
+
     public bool IsDeleted { get; set; }
     public DateTimeOffset LastSaveDate { get; set; }
 }
@@ -131,6 +138,10 @@ public class MenuItemDuckDBModel : IServiceMenuDuckDBRow
     public long MenuVariantID { get; set; }
     public long? ReplacementItemVehicleModelID { get; set; }
     public decimal StandaloneAllowedTime { get; set; }
+
+    /// <summary>The variant's types the standalone line is visible under, as a JSON array of enum values (<see cref="MenuTypeList"/>). Empty means all of them.</summary>
+    public string StandaloneMenuTypes { get; set; }
+
     public bool IsDeleted { get; set; }
     public DateTimeOffset LastSaveDate { get; set; }
 }

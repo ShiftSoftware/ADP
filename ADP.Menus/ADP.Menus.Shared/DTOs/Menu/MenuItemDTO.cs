@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using ShiftSoftware.ADP.Menus.Shared.Enums;
 using System.ComponentModel.DataAnnotations;
 
 namespace ShiftSoftware.ADP.Menus.Shared.DTOs.Menu;
@@ -17,6 +18,12 @@ public class MenuItemDTO
     public List<MenuItemPartDTO> Parts { get; set; } = new();
 
     public decimal? StandaloneAllowedTime { get; set; }
+
+    /// <summary>
+    /// The variant's menu types the standalone line is visible under. Ignored when the variant has one type;
+    /// empty means all. Items of one standalone group must carry the same list.
+    /// </summary>
+    public List<MenuType> StandaloneMenuTypes { get; set; } = [];
 
     public bool NotStoredInMenuItemsTable { get; set; }
 

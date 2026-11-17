@@ -123,7 +123,7 @@ public static class EfToGenerationAggregator
         StandaloneMenuPostfix = source.StandaloneMenuPostfix,
         LabourRate = source.LabourRate,
         DiscountPercentage = source.DiscountPercentage,
-        MenuType = (ShiftSoftware.ADP.Models.Enums.MenuType)source.MenuType,
+        MenuTypes = source.MenuTypes.Select(menuType => (ShiftSoftware.ADP.Models.Enums.MenuType)menuType).ToList(),
         HasStandaloneItems = source.HasStandaloneItems,
         CountryLabourRates = source.LabourRates
             .Where(x => !x.IsDeleted)
@@ -135,6 +135,7 @@ public static class EfToGenerationAggregator
         Periods = LivePeriods(source).Select(x => new MenuGenerationPeriod
         {
             ServiceIntervalID = x.ServiceIntervalID,
+            MenuTypes = x.MenuTypes.Select(menuType => (ShiftSoftware.ADP.Models.Enums.MenuType)menuType).ToList(),
         }).ToList(),
         Labours = LiveLabours(source).Select(x => new MenuGenerationLabour
         {
@@ -189,6 +190,7 @@ public static class EfToGenerationAggregator
         {
             MenuItemID = source.ID,
             StandaloneAllowedTime = source.StandaloneAllowedTime,
+            StandaloneMenuTypes = source.StandaloneMenuTypes.Select(menuType => (ShiftSoftware.ADP.Models.Enums.MenuType)menuType).ToList(),
             ReplacementItemServiceIntervalGroupIDs = replacementItem is null
                 ? []
                 : LiveIntervalGroupLinks(replacementItem).Select(x => x.ServiceIntervalGroupID).ToList(),

@@ -68,6 +68,7 @@ public static class MenuCodeGenerator
         foreach (var period in variant.Periods)
         {
             var interval = reference.Intervals[period.ServiceIntervalID];
+            var menuTypes = variant.TypesOf(period.MenuTypes);
 
             var code = $"{menuPrefix} {variant.BasicModelCode} {interval.Code} {menuPostfix}".Trim();
 
@@ -97,9 +98,9 @@ public static class MenuCodeGenerator
                 LineType = MenuLineType.Periodic,
                 Code = code,
                 LabourCode = labourCode,
-                // The variant's menu type picks the description; verbatim, NOT language-resolved — matches
-                // the source.
-                Description = interval.DescriptionFor(variant.MenuType),
+                // The line's primary menu type picks the description; verbatim, NOT language-resolved —
+                // matches the source.
+                Description = interval.DescriptionFor(menuTypes[0]),
 
                 MenuCodePrefix = menuPrefix,
                 MenuCodeSegment = interval.Code,
@@ -121,7 +122,8 @@ public static class MenuCodeGenerator
                 Model = variant.Model,
                 VariantID = variant.VariantID,
                 VariantName = variant.VariantName,
-                MenuType = variant.MenuType,
+                MenuType = menuTypes[0],
+                MenuTypes = menuTypes,
 
                 LabourRate = ResolveLabourRate(variant, config),
                 PrimaryLabourRate = variant.LabourRate,
@@ -169,6 +171,7 @@ public static class MenuCodeGenerator
         foreach (var item in standaloneItems.Where(item => item.StandaloneGroup is null))
         {
             var operationCode = MenuTextHelpers.Resolve(item.StandaloneOperationCode, config.Language);
+            var menuTypes = variant.TypesOf(item.StandaloneMenuTypes);
             var code = $"{standalonePrefix} {operationCode} {variant.BasicModelCode} {standalonePostfix}".Trim();
             var allowedTimeText = MenuTextHelpers.GetAllowedTimeText(item.StandaloneAllowedTime);
             var labourRateCode = ResolveLabourRateCode(variant, reference);
@@ -200,7 +203,8 @@ public static class MenuCodeGenerator
                 Model = variant.Model,
                 VariantID = variant.VariantID,
                 VariantName = variant.VariantName,
-                MenuType = variant.MenuType,
+                MenuType = menuTypes[0],
+                MenuTypes = menuTypes,
 
                 LabourRate = ResolveLabourRate(variant, config),
                 PrimaryLabourRate = variant.LabourRate,
@@ -228,6 +232,7 @@ public static class MenuCodeGenerator
             // It follows input order, so the aggregator's ordering decides which item wins.
             var first = group.First();
             var standaloneGroup = first.StandaloneGroup;
+            var menuTypes = variant.TypesOf(first.StandaloneMenuTypes);
 
             var menuCode = MenuTextHelpers.Resolve(standaloneGroup.MenuCode, config.Language);
             var code = $"{standalonePrefix} {menuCode} {variant.BasicModelCode} {standalonePostfix}".Trim();
@@ -262,7 +267,8 @@ public static class MenuCodeGenerator
                 Model = variant.Model,
                 VariantID = variant.VariantID,
                 VariantName = variant.VariantName,
-                MenuType = variant.MenuType,
+                MenuType = menuTypes[0],
+                MenuTypes = menuTypes,
 
                 LabourRate = ResolveLabourRate(variant, config),
                 PrimaryLabourRate = variant.LabourRate,

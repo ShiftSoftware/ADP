@@ -132,11 +132,20 @@ public class GeneratedMenuLine
     public string VariantName { get; set; }
 
     /// <summary>
-    /// The variant's menu type (paid, free or contract), stamped onto every line it produced. It takes
-    /// part in no arithmetic — the money fields below are the same whatever it is — so a consumer that
-    /// quotes a free menu as 0 does that itself.
+    /// The menu type this line is read under (paid, free or contract). Straight off the generator it is
+    /// the first of <see cref="MenuTypes"/>; after <see cref="GeneratedMenuLineTypes.Split"/> it is the one
+    /// type that copy of the line stands for. It takes part in no arithmetic — the money fields below are
+    /// the same whatever it is — so a consumer that quotes a free menu as 0 does that itself.
     /// </summary>
     public MenuType MenuType { get; set; }
+
+    /// <summary>
+    /// Every menu type the line is offered under, in enum order — never empty. The line is generated once
+    /// whatever this holds; <see cref="GeneratedMenuLineTypes.Split"/> turns it into one line per type.
+    /// </summary>
+    public List<MenuType> MenuTypes { get; set; } = [];
+
+    internal GeneratedMenuLine Copy() => (GeneratedMenuLine)MemberwiseClone();
 
     // ---- source-row correlation ---------------------------------------------------------------
 
