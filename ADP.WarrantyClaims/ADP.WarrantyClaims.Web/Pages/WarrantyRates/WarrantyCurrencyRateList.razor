@@ -1,0 +1,35 @@
+@attribute [Authorize]
+@attribute [Route($"/{nameof(WarrantyCurrencyRateList)}")]
+
+@* The rates of the claim currencies to USD. A rate is units of the currency per 1 USD. A new claim
+   takes the row with the latest effective date that has started. *@
+
+@inject IOptions<WarrantyClaimsWebOptions> WCOptions
+
+<ShiftList EntitySet="WarrantyCurrencyRate"
+           Title="Currency Rates (per 1 USD)"
+           T="WarrantyCurrencyRateListDTO"
+           Dense
+           ComponentType="typeof(WarrantyCurrencyRateForm)"
+           ShowIDColumn="true"
+           HighlightSortedColumn
+           TypeAuthAction="WCOptions.Value.WarrantyRatesAction"
+           EnableExport>
+
+    <ToolbarStartTemplate>
+        <MudButton Href="@($"/{nameof(WarrantyRatesList)}")"
+                   Variant="Variant.Outlined"
+                   Size="Size.Small"
+                   StartIcon="@Icons.Material.Filled.Tune">
+            Warranty Rates
+        </MudButton>
+    </ToolbarStartTemplate>
+
+    <ChildContent>
+        <Sort Property="x => x.EffectiveDate" Direction="SortDirection.Descending" />
+
+        <PropertyColumn Property="x => x.Currency" Title="Currency" />
+        <PropertyColumn Filterable="false" Property="x => x.Rate" Title="Rate (per 1 USD)" HeaderClass="whitespace-nowrap" />
+        <PropertyColumn Filterable="false" Format="yyyy-MM-dd" Property="x => x.EffectiveDate" Title="Effective From" HeaderClass="whitespace-nowrap" />
+    </ChildContent>
+</ShiftList>

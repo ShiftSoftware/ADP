@@ -156,6 +156,12 @@ public class WarrantyClaimRepository :
             //this.db.WarrantyClaimCSVEntry.RemoveRange(entity.WarrantyClaimCSVEntries.ToList());
         }
 
+        // First, because the line transformation and the totals the DTO computes need the currency and rate.
+        // A new claim has no branch yet; the base upsert stamps it from the same claim.
+        var companyBranchID = actionType == ActionTypes.Insert ? this.identityClaimProvider.GetCompanyBranchID() : entity.CompanyBranchID;
+
+        await this.warrantyClaimService.ApplyCurrencyAsync(actionType, entity, dto, companyBranchID, canSetRate: isDistributor, this.GetCurrentCurrencyRateAsync);
+
         this.warrantyClaimService.WarrantyLinesValidationAndTransformation(actionType, entity, dto, isDistributor);
 
         //Make sure all validations and transformations are done in the service and not here
@@ -188,6 +194,8 @@ public class WarrantyClaimRepository :
 
         upserted.HasAttachment = dto?.Attachments?.Count > 0;
 
+        this.warrantyClaimService.UpdateCurrencyAmounts(upserted);
+
         if (actionType == ActionTypes.Insert)
         {
             var q = await this.GetIQueryable(disableDefaultDataLevelAccess: true, disableGlobalFilters: true);
@@ -212,6 +220,27 @@ public class WarrantyClaimRepository :
         this.GenerateCSVEntries(entity);
 
         return upserted;
+    }
+
+    private async Task<decimal?> GetCurrentCurrencyRateAsync(string currency) =>
+        (await WarrantyCurrencyRateRepository.CurrentAsync(this.db.Set<WarrantyCurrencyRate>(), currency, DateTime.UtcNow))?.Rate;
+
+    /// <summary>
+    /// The currency, rate and labor rate of a saved claim, or of a claim the current user is about to create
+    /// (<paramref name="claimID"/> null), with <paramref name="requestedRate"/> applied when the user may set
+    /// it. Also returns the branch, for the part price lookup. The claim form reads this to show what a save
+    /// would store.
+    /// </summary>
+    public async Task<(WarrantyClaimCurrencyDTO Currency, long? CompanyBranchID)> GetClaimCurrencyAsync(long? claimID, decimal? requestedRate, string? franchise)
+    {
+        var claim = claimID is null ? null : await this.FindAsync(claimID.Value);
+
+        var companyBranchID = claim is null ? this.identityClaimProvider.GetCompanyBranchID() : claim.CompanyBranchID;
+
+        var currency = await this.warrantyClaimService.ResolveCurrencyAsync(
+            claim, companyBranchID, franchise ?? claim?.Franchise, requestedRate, canSetRate: isDistributor, this.GetCurrentCurrencyRateAsync);
+
+        return (currency, companyBranchID);
     }
 
     public void GenerateCSVEntries(WarrantyClaim entity)
@@ -342,6 +371,8 @@ public class WarrantyClaimRepository :
                 (report.FindObject("PictureLogo") as FastReport.PictureObject)!.ImageLocation =
                 (report.FindObject("PictureLogo2") as FastReport.PictureObject)!.ImageLocation =
                 distributorInfo.Logo;
+
+                report.UseClaimCurrency(claim.Currency);
             });
     }
 

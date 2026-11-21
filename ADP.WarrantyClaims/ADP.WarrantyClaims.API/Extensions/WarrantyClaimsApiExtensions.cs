@@ -72,6 +72,10 @@ public static class WarrantyClaimsApiExtensions
         // response body, so there is no export storage to register.
         services.TryAddScoped<ShiftSoftware.ADP.WarrantyClaims.Shared.IWarrantyRatesStore, Data.Services.DefaultWarrantyRatesStore>();
 
+        // Module default for the claim currency seam: USD claims at labor rate 25, as before the seam
+        // existed. TryAdd, so a host registration wins whichever side of this call it is made on.
+        services.TryAddSingleton<ShiftSoftware.ADP.WarrantyClaims.Shared.IWarrantyClaimCurrencyResolver, ShiftSoftware.ADP.WarrantyClaims.Shared.DefaultWarrantyClaimCurrencyResolver>();
+
         // Per-report frx override paths, captured as a singleton value object so the Data-layer print
         // methods can read it without referencing this options type (same capture-at-registration
         // pattern as the model-building contributor above). All-null = embedded defaults.

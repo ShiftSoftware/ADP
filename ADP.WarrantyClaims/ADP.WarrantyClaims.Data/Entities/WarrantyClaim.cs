@@ -18,6 +18,7 @@ namespace ShiftSoftware.ADP.WarrantyClaims.Data.Entities;
 [Index(nameof(ProcessDate))]
 public class WarrantyClaim : ShiftEntity<WarrantyClaim>,
     IClaim,
+    IHasDocumentCurrency,
     IEntityHasCompany<WarrantyClaim>,
     IEntityHasCompanyBranch<WarrantyClaim>,
     IEntityHasUniqueHash<WarrantyClaim>,
@@ -138,6 +139,22 @@ public class WarrantyClaim : ShiftEntity<WarrantyClaim>,
     public long? CertificateID { get; set; }
     public virtual Certificate? Certificate { get; set; }
 
+    // The dealer side of the claim (LaborRate, part Price, sublet Amount and the totals without a
+    // Distributor or JPY suffix) is in this currency. The distributor side stays in USD and the
+    // manufacturer side in JPY. CurrencyRate is units of Currency per 1 USD, and the *USD members hold
+    // the USD equivalents computed on save (WarrantyClaimService.UpdateCurrencyAmounts).
+    [Column(TypeName = "varchar")]
+    [MaxLength(3)]
+    public string Currency { get; set; } = DocumentCurrency.USD;
+
+    [Precision(18, 6)]
+    public decimal CurrencyRate { get; set; } = 1;
+
+    public decimal LaborRateUSD { get; set; }
+    public decimal? LaborTotalAmountUSD { get; set; }
+    public decimal? SubletTotalAmountUSD { get; set; }
+    public decimal? PartsTotalAmountUSD { get; set; }
+    public decimal? TotalClaimAmountUSD { get; set; }
 
 
     public int? InvoiceCurrency { get; set; }

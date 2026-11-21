@@ -12,6 +12,7 @@ public class WarrantyClaimPartLine : ShiftEntity<WarrantyClaimPartLine>
     public string? PartDescription { get; set; }
     public int? Qty { get; set; }
     public decimal Price { get; set; }
+    public decimal PriceUSD { get; set; }
     public decimal? DistributorPrice { get; set; }
     public decimal? DistributorPriceJPY { get; set; }
     public bool FoundInLookup { get; set; }

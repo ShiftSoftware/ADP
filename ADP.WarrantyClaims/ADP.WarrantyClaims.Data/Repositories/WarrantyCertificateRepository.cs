@@ -119,6 +119,10 @@ public class WarrantyCertificateRepository : ShiftRepository<ShiftDbContext, Cer
         if (claims.Select(x => x.CompanyID).Distinct().Count() > 1)
             throw new ShiftEntityException(new Message("Error", "All claims must belong to the same company."));
 
+        // The certificate and its invoice total the claims, so they must be in one currency.
+        if (claims.Select(x => x.Currency).Distinct().Count() > 1)
+            throw new ShiftEntityException(new Message("Error", "All claims must be in the same currency."));
+
         foreach (var item in claims)
         {
             if (actionType == ActionTypes.Insert)
@@ -304,6 +308,8 @@ public class WarrantyCertificateRepository : ShiftRepository<ShiftDbContext, Cer
                 (report.FindObject("PictureLogo") as FastReport.PictureObject)!.ImageLocation = distributorInfo.Logo;
                 (report.FindObject("TextFooterAddress") as FastReport.TextObject)!.Text = distributorInfo.Address;
                 (report.FindObject("TextFooterContactDetails") as FastReport.TextObject)!.Text = $"{distributorInfo.Phone}\r\n{distributorInfo.Website}";
+
+                report.UseClaimCurrency(certificateClaims.FirstOrDefault()?.Currency);
             });
     }
 

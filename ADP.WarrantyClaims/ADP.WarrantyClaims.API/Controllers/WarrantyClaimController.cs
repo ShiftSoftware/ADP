@@ -277,6 +277,41 @@ public class WarrantyClaimController : ShiftEntitySecureControllerAsync<Warranty
     }
 
     /// <summary>
+    /// The currency, rate and labor rate of a claim: the saved claim <paramref name="id"/>, or the one the
+    /// current user would create. <paramref name="currencyRate"/> is a rate the user typed; it counts only
+    /// from a user who may set the rate. Authenticated-only, like the lookups above.
+    /// </summary>
+    [HttpGet("claim-currency")]
+    public async Task<IActionResult> GetClaimCurrency([FromQuery] string? id, [FromQuery] decimal? currencyRate, [FromQuery] string? franchise)
+    {
+        var (currency, _) = await this.repository.GetClaimCurrencyAsync(DecodeClaimID(id), currencyRate, franchise);
+
+        return Ok(currency);
+    }
+
+    /// <summary>
+    /// The price of a part for a claim, in the claim's currency (<see cref="IPartLookupProvider.LookupForClaimAsync"/>).
+    /// Takes the claim the same way as <c>claim-currency</c>.
+    /// </summary>
+    [HttpGet("part-price/{partNumber}")]
+    public async Task<IActionResult> GetPartPrice(string partNumber, [FromQuery] string? id, [FromQuery] decimal? currencyRate)
+    {
+        var partLookupProvider = GetRequiredSeam<IPartLookupProvider>();
+
+        var (currency, companyBranchID) = await this.repository.GetClaimCurrencyAsync(DecodeClaimID(id), currencyRate, franchise: null);
+
+        return Ok(await partLookupProvider.LookupForClaimAsync(partNumber, new WarrantyClaimPartLookupContext
+        {
+            CompanyBranchID = companyBranchID,
+            Currency = currency.Currency,
+            CurrencyRate = currency.CurrencyRate ?? 0,
+        }));
+    }
+
+    private long? DecodeClaimID(string? id) =>
+        string.IsNullOrWhiteSpace(id) ? null : hashIdService.Decode<WarrantyClaimDTO>(id);
+
+    /// <summary>
     /// NEW endpoint (Phase 3 Slice 3.3): the current warranty rates from the consumer's store. The
     /// module's list/form pages previously fetched these from the host's own Setting controller —
     /// the last module-Web route that only the original host served. Authenticated-only, like the

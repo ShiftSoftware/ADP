@@ -21,6 +21,7 @@ public class WarrantyClaimListDTO : ShiftEntityListDTO
     public decimal? HourTotal { get; set; }
     public decimal? HourTotalDistributor { get; set; }
     public decimal? TotalClaimAmount { get; set; }
+    public string? Currency { get; set; }
     public decimal? TotalClaimAmountDistributor { get; set; }
     public DateTimeOffset? ProcessDate { get; set; }
     public DateTimeOffset? DistributorProcessDate { get; set; }

@@ -74,11 +74,11 @@ public partial class WarrantyClaimForm
 
         try
         {
-            var part = (await this.Http.GetFromJsonAsync<PartLookupDTO>($"WarrantyClaim/part-lookup/{newValue}"))!;
+            var part = (await this.Http.GetFromJsonAsync<WarrantyClaimPartPriceDTO>($"WarrantyClaim/part-price/{newValue}{ClaimCurrencyQuery()}"))!;
 
             line.PartDescription = part.PartDescription;
 
-            line.Price = part.Prices.FirstOrDefault()?.WarrantyPrice?.Value;
+            line.Price = part.WarrantyPrice;
 
             line.DistributorPrice = part.DistributorPurchasePrice;
 
@@ -92,6 +92,119 @@ public partial class WarrantyClaimForm
         line.Loading = false;
 
         this.StateHasChanged();
+    }
+
+    private bool canEditCurrencyRate = false;
+    private bool missingCurrencyRate = false;
+
+    // Dealer-side amount inputs take the decimals of the claim's currency.
+    private string AmountFormat
+    {
+        get
+        {
+            var decimals = Cases.Shared.DocumentCurrency.Decimals(TheItem.Currency);
+
+            return decimals == 0 ? "#,0" : "#,0." + new string('0', decimals);
+        }
+    }
+
+    // The saved claim and the rate on the form, as the claim-currency and part-price endpoints take them.
+    // A copy that will be saved as a new claim is asked about as a new claim.
+    private string ClaimCurrencyQuery(decimal? currencyRate = null)
+    {
+        var query = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(TheItem.ID) && !ForceSaveAsNew)
+            query.Add($"id={Uri.EscapeDataString(TheItem.ID)}");
+
+        currencyRate ??= TheItem.CurrencyRate;
+
+        if (currencyRate > 0)
+            query.Add($"currencyRate={currencyRate.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+
+        if (!string.IsNullOrWhiteSpace(TheItem.Franchise))
+            query.Add($"franchise={Uri.EscapeDataString(TheItem.Franchise)}");
+
+        return query.Count == 0 ? "" : "?" + string.Join("&", query);
+    }
+
+    // What the server would store for this claim: its currency, the rate and the labor rate at that rate.
+    private async Task LoadClaimCurrency(decimal? currencyRate = null)
+    {
+        try
+        {
+            var currency = (await this.Http.GetFromJsonAsync<WarrantyClaimCurrencyDTO>($"WarrantyClaim/claim-currency{ClaimCurrencyQuery(currencyRate)}"))!;
+
+            TheItem.Currency = currency.Currency;
+            TheItem.CurrencyRate = currency.CurrencyRate;
+            TheItem.LaborRate = currency.LaborRate;
+
+            canEditCurrencyRate = currency.CanEditRate;
+            missingCurrencyRate = currency.CurrencyRate is null;
+        }
+        catch
+        {
+
+        }
+
+        StateHasChanged();
+    }
+
+    // A copy takes the currency and rate of a new claim, which can differ from its source's (a claim made
+    // before the branch claimed in its own currency). Lookup parts are priced again, and the amounts that
+    // were typed are carried over at the two rates, so no figure is read in the wrong currency.
+    private async Task RepriceCopyAsync(string sourceCurrency, decimal sourceRate)
+    {
+        decimal? carryOver(decimal? amount) => amount is null
+            ? null
+            : Cases.Shared.DocumentCurrency.FromUSD(Cases.Shared.DocumentCurrency.ToUSD(amount.Value, sourceCurrency, sourceRate), TheItem.Currency, TheItem.CurrencyRate ?? 0);
+
+        foreach (var sublet in TheItem.WarrantyClaimSubletLines)
+            sublet.Amount = carryOver(sublet.Amount);
+
+        // Every part line first, so a lookup that fails below still leaves a price in the right currency.
+        foreach (var part in TheItem.WarrantyClaimPartLines)
+            part.Price = carryOver(part.Price);
+
+        await this.RepriceLookupPartsAsync();
+    }
+
+    // A new rate prices the labor and every part line that came from the lookup again. Amounts that were
+    // typed (sublets, parts not found in the lookup) stay as typed.
+    private async Task CurrencyRateChanged(decimal? newRate)
+    {
+        TheItem.CurrencyRate = newRate;
+
+        if (newRate is null || newRate <= 0 || Mode < FormModes.Edit)
+            return;
+
+        await LoadClaimCurrency(newRate);
+
+        await this.RepriceLookupPartsAsync();
+    }
+
+    private async Task RepriceLookupPartsAsync()
+    {
+        foreach (var line in TheItem.WarrantyClaimPartLines.Where(x => x.FoundInLookup && !string.IsNullOrWhiteSpace(x.PartNumber)))
+        {
+            line.Loading = true;
+
+            try
+            {
+                var part = (await this.Http.GetFromJsonAsync<WarrantyClaimPartPriceDTO>($"WarrantyClaim/part-price/{line.PartNumber}{ClaimCurrencyQuery()}"))!;
+
+                if (part.WarrantyPrice is not null)
+                    line.Price = part.WarrantyPrice;
+            }
+            catch
+            {
+
+            }
+
+            line.Loading = false;
+        }
+
+        StateHasChanged();
     }
 
     private async Task VINChanged()
@@ -378,6 +491,8 @@ public partial class WarrantyClaimForm
             {
                 await this.LoadRates();
 
+                await this.LoadClaimCurrency();
+
                 //SetTestData();
             }
 
@@ -390,6 +505,21 @@ public partial class WarrantyClaimForm
         if (task == FormTasks.Fetch && !string.IsNullOrWhiteSpace(TheItem?.VIN) && TheItem.VIN.Trim().Length == 17)
         {
             await this.LoadDeliveryDateEvaluationAsync();
+        }
+
+        // Whether this user may change the rate; for a copy, the currency and rate a new claim gets.
+        if (task == FormTasks.Fetch && (ForceSaveAsNew || !Cases.Shared.DocumentCurrency.IsUSD(TheItem?.Currency)))
+        {
+            var sourceCurrency = TheItem!.Currency;
+            var sourceRate = TheItem.CurrencyRate ?? 0;
+
+            if (ForceSaveAsNew)
+                TheItem.CurrencyRate = null;
+
+            await this.LoadClaimCurrency();
+
+            if (ForceSaveAsNew && TheItem.CurrencyRate > 0 && (TheItem.Currency != sourceCurrency || TheItem.CurrencyRate != sourceRate))
+                await this.RepriceCopyAsync(sourceCurrency, sourceRate);
         }
 
         if (Mode != FormModes.View && !ForceSaveAsNew)

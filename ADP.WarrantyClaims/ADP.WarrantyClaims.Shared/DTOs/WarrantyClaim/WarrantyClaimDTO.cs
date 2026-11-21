@@ -1,4 +1,5 @@
 using FluentValidation;
+using ShiftSoftware.ADP.Cases.Shared;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.WarrantyClaims.Shared.Constants;
 using ShiftSoftware.ADP.WarrantyClaims.Shared.Enums;
@@ -47,18 +48,26 @@ public class WarrantyClaimDTO : ShiftEntityViewAndUpsertDTO
     public List<WarrantyClaimSubletLineDTO> WarrantyClaimSubletLines { get; set; } = new();
     public List<WarrantyClaimPartLineDTO> WarrantyClaimPartLines { get; set; } = new();
     public string? LaborOperationNoMain { get; set; }
-    public decimal LaborRate { get => Franchise == Franchises.Toyota.Key ? 25 : 25; }
-    public decimal LaborRateJPY { get => LaborRate * this.LaborExchangeRate; }
+
+    // The dealer side (LaborRate, part Price, sublet Amount and their totals) is in Currency.
+    // CurrencyRate is units of Currency per 1 USD; left null, the server uses the claim's stored rate
+    // or today's rate for a new claim. The server sets Currency and LaborRate from the host's
+    // IWarrantyClaimCurrencyResolver on save; the distributor and JPY figures use the USD labor rate.
+    public string Currency { get; set; } = DocumentCurrency.USD;
+    public decimal? CurrencyRate { get; set; }
+    public decimal LaborRate { get; set; } = DefaultWarrantyClaimCurrencyResolver.LaborRate;
+    public decimal LaborRateUSD { get => DocumentCurrency.ToUSD(LaborRate, Currency, CurrencyRate ?? 0); }
+    public decimal LaborRateJPY { get => LaborRateUSD * this.LaborExchangeRate; }
     public decimal HourTotal { get => WarrantyClaimLaborLines.Sum(x => x.Hour ?? 0m); }
     public decimal HourTotalDistributor { get => WarrantyClaimLaborLines.Sum(x => x.DistributorHour ?? 0m); }
     public decimal? LaborTotalAmount { get => HourTotal * LaborRate; }
-    public decimal? LaborTotalAmountDistributor { get => HourTotalDistributor * LaborRate; }
+    public decimal? LaborTotalAmountDistributor { get => HourTotalDistributor * LaborRateUSD; }
 
     [JsonIgnore]
     public decimal? LaborTotalAmountDistributorJPY { get => LaborTotalAmountDistributor * this.LaborExchangeRate; }
 
     public decimal? SubletTotalAmount { get => WarrantyClaimSubletLines.Sum(x => x.Amount); }
-    public decimal? SubletTotalAmountJPY { get => SubletTotalAmount * this.SubletExchangeRate; }
+    public decimal? SubletTotalAmountJPY { get => SubletTotalAmountUSD * this.SubletExchangeRate; }
 
     public decimal? SubletTotalAmountDistributor { get => WarrantyClaimSubletLines.Sum(x => x.DistributorAmount); }
     public decimal? SubletTotalAmountDistributorJPY { get => SubletTotalAmountDistributor * this.SubletExchangeRate; }
@@ -84,6 +93,13 @@ public class WarrantyClaimDTO : ShiftEntityViewAndUpsertDTO
     public decimal? PartsTotalAmountDistributor { get => WarrantyClaimPartLines.Sum(x => (x.DistributorPrice ?? 0m) * (x.Qty ?? 0) * PRR1); }
     public decimal? PartsTotalAmountDistributorJPY { get => PartsTotalAmountDistributor * this.PartExchangeRate; }
     public decimal? TotalClaimAmount { get => LaborTotalAmount + SubletTotalAmount + PartsTotalAmount; }
+
+    // The USD equivalents, as the server stores them on save: each total converted on its own, the claim
+    // total their sum.
+    public decimal? LaborTotalAmountUSD { get => DocumentCurrency.ToUSD(LaborTotalAmount, Currency, CurrencyRate ?? 0); }
+    public decimal? SubletTotalAmountUSD { get => DocumentCurrency.ToUSD(SubletTotalAmount, Currency, CurrencyRate ?? 0); }
+    public decimal? PartsTotalAmountUSD { get => DocumentCurrency.ToUSD(PartsTotalAmount, Currency, CurrencyRate ?? 0); }
+    public decimal? TotalClaimAmountUSD { get => DocumentCurrency.IsUSD(Currency) ? TotalClaimAmount : LaborTotalAmountUSD + SubletTotalAmountUSD + PartsTotalAmountUSD; }
     public decimal? TotalClaimAmountDistributor { get => LaborTotalAmountDistributor + SubletTotalAmountDistributor + PartsTotalAmountDistributor; }
     public decimal? TotalClaimAmountDistributorJPY { get => LaborTotalAmountDistributorJPY + SubletTotalAmountDistributorJPY + PartsTotalAmountDistributorJPY; }
     public DateTime? ProcessDate { get; set; }
@@ -161,6 +177,10 @@ public class WarrantyClaimValidator : AbstractValidator<WarrantyClaimDTO>
 
         RuleFor(x => x.SubletExchangeRate)
             .NotEmpty();
+
+        RuleFor(x => x.CurrencyRate)
+            .GreaterThan(0)
+            .When(x => x.CurrencyRate is not null);
 
         //RuleFor(x => x.ClaimNumber)
         //    .NotEmpty()

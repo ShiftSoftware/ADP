@@ -61,7 +61,7 @@ public class DistributorFinancialRepository : ShiftRepository<ShiftDbContext, Wa
                 SubletTotalAmountDistributor = x.SubletTotalAmountDistributor.ToCurrencyFormat(),
                 PartsTotalAmountDistributor = x.PartsTotalAmountDistributor.ToCurrencyFormat(),
                 TotalClaimAmountDistributor = x.TotalClaimAmountDistributor.ToCurrencyFormat(),
-                TotalClaimAmount = x.TotalClaimAmount.ToCurrencyFormat(),
+                TotalClaimAmount = x.DealerTotalInUSD.ToCurrencyFormat(),
                 DistributorMargin = x.DistributorMargin.ToCurrencyFormat(),
                 ManufacturerSettledTotalClaimAmount = (x.ManufacturerSettledTotalClaimAmount ?? 0m).ToCurrencyFormat(),
                 GainsAndLosses = x.RealizedGainsAndLosses.ToCurrencyFormat(),
@@ -74,7 +74,7 @@ public class DistributorFinancialRepository : ShiftRepository<ShiftDbContext, Wa
                 Sublet = x.Sum(x => x.SubletTotalAmountDistributor).ToCurrencyFormat(),
                 Parts = x.Sum(x => x.PartsTotalAmountDistributor).ToCurrencyFormat(),
                 Total = x.Sum(x => x.TotalClaimAmountDistributor).ToCurrencyFormat(),
-                DealerTotal = x.Sum(x => x.TotalClaimAmount).ToCurrencyFormat(),
+                DealerTotal = x.Sum(x => x.DealerTotalInUSD).ToCurrencyFormat(),
                 ManufacturerSettled = x.Sum(x => x.ManufacturerSettledTotalClaimAmount ?? 0m).ToCurrencyFormat(),
                 GainsAndLosses = x.Sum(x => x.RealizedGainsAndLosses).ToCurrencyFormat(),
                 DistributorMargin = x.Sum(x => x.DistributorMargin).ToCurrencyFormat()

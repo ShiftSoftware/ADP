@@ -9,6 +9,7 @@ public class WarrantyClaimSubletLine : ShiftEntity<WarrantyClaimSubletLine>
     public string? SubletType { get; set; }
     public string? InvoiceNo { get; set; }
     public decimal Amount { get; set; }
+    public decimal AmountUSD { get; set; }
     public decimal AmountJPY { get; set; }
 
     // Distributor amount — what the distributor claims from the manufacturer, which can differ from the dealer's

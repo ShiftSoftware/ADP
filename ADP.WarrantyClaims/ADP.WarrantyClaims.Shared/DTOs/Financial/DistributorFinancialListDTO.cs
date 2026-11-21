@@ -1,3 +1,4 @@
+using ShiftSoftware.ADP.Cases.Shared;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
 using System.Text.Json.Serialization;
@@ -65,9 +66,16 @@ public class DistributorFinancialListDTO : ShiftEntityListDTO
     public decimal? SubletTotalAmountDistributor { get; set; }
     public decimal? PartsTotalAmount { get; set; }
     public decimal? PartsTotalAmountDistributor { get; set; }
-    public decimal? DistributorMargin { get => TotalClaimAmountDistributor - TotalClaimAmount; }
+
+    // The dealer-side amounts above are in the claim's Currency. The distributor and manufacturer figures
+    // are in USD, so everything computed against them uses the dealer total's stored USD equivalent.
+    public string? Currency { get; set; }
+    public decimal? TotalClaimAmountUSD { get; set; }
+    public decimal? DealerTotalInUSD { get => DocumentCurrency.IsUSD(Currency) ? TotalClaimAmount : TotalClaimAmountUSD; }
+
+    public decimal? DistributorMargin { get => TotalClaimAmountDistributor - DealerTotalInUSD; }
     public decimal? ManufacturerSettledTotalClaimAmount { get; set; }
-    public decimal? RealizedGainsAndLosses { get =>  ManufacturerSettledTotalClaimAmount - TotalClaimAmount; }
-    public decimal? AllGainsAndLosses { get =>  (ManufacturerSettledTotalClaimAmount ?? 0m) - TotalClaimAmount; }
-    public decimal? OutstandingDealerPayment { get => this.ClaimStatus == ShiftSoftware.ADP.Models.Enums.ClaimStatus.Invoiced ? 0m : TotalClaimAmount; }
+    public decimal? RealizedGainsAndLosses { get =>  ManufacturerSettledTotalClaimAmount - DealerTotalInUSD; }
+    public decimal? AllGainsAndLosses { get =>  (ManufacturerSettledTotalClaimAmount ?? 0m) - DealerTotalInUSD; }
+    public decimal? OutstandingDealerPayment { get => this.ClaimStatus == ShiftSoftware.ADP.Models.Enums.ClaimStatus.Invoiced ? 0m : DealerTotalInUSD; }
 }

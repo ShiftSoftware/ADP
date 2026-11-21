@@ -1,0 +1,38 @@
+@attribute [Route($"/{nameof(WarrantyCurrencyRateForm)}/{{Key?}}")]
+
+@inject IOptions<WarrantyClaimsWebOptions> WCOptions
+
+<ShiftEntityForm T="WarrantyCurrencyRateDTO"
+                 Endpoint="WarrantyCurrencyRate"
+                 Title="Currency Rate"
+                 @bind-Value="CurrencyRate"
+                 TypeAuthAction="WCOptions.Value.WarrantyRatesAction"
+                 @bind-Key="@Key">
+    <MudGrid Spacing="8" Class="pt-4">
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <MudTextFieldExtended Label="Currency (ISO code)"
+                                  MaxLength="3"
+                                  For="() => context.Item.Currency"
+                                  @bind-Value="context.Item.Currency" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <MudNumericFieldExtended Label="Rate (units per 1 USD)"
+                                     For="() => context.Item.Rate"
+                                     @bind-Value="context.Item.Rate" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <MudDatePickerExtended Label="Effective From"
+                                   @bind-Date="context.Item.EffectiveDate"
+                                   For="() => context.Item.EffectiveDate" />
+        </MudItem>
+    </MudGrid>
+</ShiftEntityForm>
+
+@code {
+    [Parameter]
+    public object? Key { get; set; }
+
+    private WarrantyCurrencyRateDTO CurrencyRate = new() { EffectiveDate = DateTime.Today };
+}

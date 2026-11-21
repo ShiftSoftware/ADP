@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ShiftSoftware.ADP.Cases.Shared;
 using ShiftSoftware.ADP.WarrantyClaims.Data.Entities;
 
 namespace ShiftSoftware.ADP.WarrantyClaims.Data.Extensions;
@@ -7,7 +8,7 @@ public static class WarrantyClaimsModelBuilderExtensions
 {
     /// <summary>
     /// Registers the warranty entities (WarrantyClaim + labor/sublet/part lines +
-    /// ManufacturerSettlmentSheet + AdditionalLaborOperationCode + WarrantyRates) on the consumer's model.
+    /// ManufacturerSettlmentSheet + AdditionalLaborOperationCode + WarrantyRates + WarrantyCurrencyRate) on the consumer's model.
     /// Relationships (the line FKs, the WarrantyClaimSubletLine shadow FK, the WarrantyClaim ->
     /// Cases.Certificate / ManufacturerSettlmentSheet / self-ref navs), the filtered unique-hash index
     /// and temporal history are all discovered by ShiftEntity conventions from the
@@ -21,13 +22,20 @@ public static class WarrantyClaimsModelBuilderExtensions
     /// </param>
     public static ModelBuilder ConfigureWarrantyClaimsEntities(this ModelBuilder modelBuilder, string? schema = null)
     {
-        modelBuilder.Entity<WarrantyClaim>();
+        // The column defaults make the host's migration turn every existing claim into a USD claim at
+        // rate 1. WarrantyClaimsMigrationExtensions.MigrateWarrantyClaimsToUSD fills the USD equivalents.
+        modelBuilder.Entity<WarrantyClaim>(claim =>
+        {
+            claim.Property(x => x.Currency).HasDefaultValue(DocumentCurrency.USD);
+            claim.Property(x => x.CurrencyRate).HasDefaultValue(1m);
+        });
         modelBuilder.Entity<WarrantyClaimLaborLine>();
         modelBuilder.Entity<WarrantyClaimSubletLine>();
         modelBuilder.Entity<WarrantyClaimPartLine>();
         modelBuilder.Entity<ManufacturerSettlmentSheet>();
         modelBuilder.Entity<AdditionalLaborOperationCode>();
         modelBuilder.Entity<WarrantyRates>();
+        modelBuilder.Entity<WarrantyCurrencyRate>();
 
         if (!string.IsNullOrWhiteSpace(schema))
         {

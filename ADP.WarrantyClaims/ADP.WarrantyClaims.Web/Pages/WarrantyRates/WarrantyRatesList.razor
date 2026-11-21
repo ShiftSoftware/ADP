@@ -19,5 +19,16 @@
            HighlightSortedColumn
            TypeAuthAction="WCOptions.Value.WarrantyRatesAction"
            EnableExport>
-    <Sort Property="x => x.ID" Direction="SortDirection.Descending" />
+    <ToolbarStartTemplate>
+        <MudButton Href="@($"/{nameof(WarrantyCurrencyRateList)}")"
+                   Variant="Variant.Outlined"
+                   Size="Size.Small"
+                   StartIcon="@Icons.Material.Filled.CurrencyExchange">
+            Currency Rates
+        </MudButton>
+    </ToolbarStartTemplate>
+
+    <ChildContent>
+        <Sort Property="x => x.ID" Direction="SortDirection.Descending" />
+    </ChildContent>
 </ShiftList>

@@ -4,6 +4,7 @@
 @using ShiftSoftware.ADP.WarrantyClaims.Shared.Enums
 @using ShiftSoftware.ADP.WarrantyClaims.Shared.Constants
 @using ShiftSoftware.ADP.Models.Enums
+@using ShiftSoftware.ADP.Cases.Shared
 
 @inject IWarrantyClaimsCapabilityProvider capabilityProvider
 @inject IOptions<WarrantyClaimsWebOptions> WCOptions
@@ -45,6 +46,29 @@
                                        StartIcon="@Icons.Material.Filled.Refresh"
                                        Size="Size.Small"
                                        OnClick="@(async () => await LoadRates())">
+                                Retry
+                            </MudButton>
+                        </div>
+                    </div>
+                </MudAlert>
+            </MudItem>
+        }
+
+        @if (missingCurrencyRate)
+        {
+            <MudItem lg="12" md="12" sm="12" xs="12">
+                <MudAlert Severity="Severity.Error" NoIcon>
+                    <div style="display: flex ;align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <MudIcon Icon="@Icons.Material.Outlined.Error" />
+                            No rate to USD is set for @TheItem.Currency — a claim cannot be saved until it is added on the Warranty Rates page.
+                        </div>
+                        <div>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Error"
+                                       StartIcon="@Icons.Material.Filled.Refresh"
+                                       Size="Size.Small"
+                                       OnClick="@(async () => await LoadClaimCurrency())">
                                 Retry
                             </MudButton>
                         </div>
@@ -671,7 +695,7 @@
                     <MudGrid Spacing="3">
                         <MudItem lg="2" md="3" sm="6" xs="12">
                             <MudField Variant="Variant.Outlined" Label="Labor Rate">
-                                @TheItem.LaborRate.ToCurrencyFormat()
+                                @TheItem.LaborRate.ToCurrencyFormat(TheItem.Currency)
                             </MudField>
                         </MudItem>
 
@@ -683,7 +707,7 @@
 
                         <MudItem lg="2" md="3" sm="6" xs="12">
                             <MudField Variant="Variant.Outlined" Label="Labor Total (Amount)">
-                                @TheItem.LaborTotalAmount.ToCurrencyFormat()
+                                @TheItem.LaborTotalAmount.ToCurrencyFormat(TheItem.Currency)
                             </MudField>
                         </MudItem>
 
@@ -795,7 +819,7 @@
 
                                     <MudItem Class="pt-1 pb-1" lg="2" md="4" sm="6" xs="12">
                                         <MudNumericFieldExtended Label="Amount"
-                                                                 Format="#,0.00"
+                                                                 Format="@AmountFormat"
                                                                  Step="0.1m"
                                                                  @bind-Value="line.Amount"
                                                                  For="() => line.Amount" />
@@ -870,7 +894,7 @@
 
                         <MudItem lg="4" md="6" sm="6" xs="12">
                             <MudField Variant="Variant.Outlined" Label="Sublet Total">
-                                @TheItem.SubletTotalAmount.ToCurrencyFormat()
+                                @TheItem.SubletTotalAmount.ToCurrencyFormat(TheItem.Currency)
                             </MudField>
                         </MudItem>
 
@@ -1125,7 +1149,7 @@
 
                                     <MudItem Class="pt-1 pb-1" lg="1" md="4" sm="6" xs="12">
                                         <MudNumericFieldExtended Label="Price"
-                                                                 Format="#,0.00"
+                                                                 Format="@AmountFormat"
                                                                  Step="0.1m"
                                                                  ReadOnly="line.FoundInLookup"
                                                                  Disabled="line.FoundInLookup"
@@ -1203,7 +1227,7 @@
 
                         <MudItem lg="2" md="3" sm="6" xs="12">
                             <MudField Variant="Variant.Outlined" Label="Parts Total">
-                                @TheItem.PartsTotalAmount.ToCurrencyFormat()
+                                @TheItem.PartsTotalAmount.ToCurrencyFormat(TheItem.Currency)
                             </MudField>
                         </MudItem>
                     </MudGrid>
@@ -1261,9 +1285,28 @@
                     <MudGrid Spacing="3">
                         <MudItem lg="3" md="3" sm="6" xs="12">
                             <MudField Variant="Variant.Outlined" Label="Total Claim Amount">
-                                @TheItem.TotalClaimAmount.ToCurrencyFormat()
+                                @TheItem.TotalClaimAmount.ToCurrencyFormat(TheItem.Currency)
                             </MudField>
                         </MudItem>
+
+                        @if (!DocumentCurrency.IsUSD(TheItem.Currency))
+                        {
+                            <MudItem lg="3" md="3" sm="6" xs="12">
+                                <MudNumericFieldExtended T="decimal?"
+                                                         Label="@($"Rate ({TheItem.Currency} per 1 USD)")"
+                                                         Format="#,0.######"
+                                                         ReadOnly="!canEditCurrencyRate"
+                                                         Disabled="!canEditCurrencyRate"
+                                                         Value="TheItem.CurrencyRate"
+                                                         ValueChanged="CurrencyRateChanged" />
+                            </MudItem>
+
+                            <MudItem lg="3" md="3" sm="6" xs="12">
+                                <MudField Variant="Variant.Outlined" Label="Total Claim Amount (USD)">
+                                    @TheItem.TotalClaimAmountUSD.ToCurrencyFormat()
+                                </MudField>
+                            </MudItem>
+                        }
 
                         @if (isDistributor)
                         {
