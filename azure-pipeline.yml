@@ -18,6 +18,15 @@ steps:
    submodules: true
    persistCredentials: true
 
+# The hosted image leaves too little disk for this solution: the build alone filled it and hung. Its
+# preinstalled SDKs for other platforms are not used here.
+ - script: |
+    df -h /
+    sudo rm -rf /usr/local/lib/android /opt/ghc /usr/local/.ghcup /usr/share/swift /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+    docker image prune --all --force > /dev/null || true
+    df -h /
+   displayName: 'Free disk space'
+
 # Configuration is spelled "Release" everywhere below on purpose. The solution maps whatever casing it
 # is given onto its own "Release" entries, so every project builds into bin/Release/ — but a step that
 # names a PROJECT (like the --no-build test below) takes the casing literally, and on this Linux agent
@@ -172,10 +181,11 @@ steps:
    displayName: 'pack ADP.Darlastic.Web'
 
 
- - script: dotnet test ADP.LookupServices.BDD
+ # --no-build: run what Build All Projects made, rather than a second (Debug) build of everything they reference.
+ - script: dotnet test ADP.LookupServices.BDD --configuration Release --no-build
    displayName: 'ADP.LookupServices BDD Tests'
 
- - script: dotnet test ADP.Cases/ADP.Cases.Shared.Tests
+ - script: dotnet test ADP.Cases/ADP.Cases.Shared.Tests --configuration Release --no-build
    displayName: 'ADP.Cases engine tests'
 
  - script: dotnet test ADP.Surveys/ADP.Surveys.Shared.Tests --configuration Release
