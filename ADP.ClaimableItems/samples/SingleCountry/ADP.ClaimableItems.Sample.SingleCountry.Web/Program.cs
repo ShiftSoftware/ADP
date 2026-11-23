@@ -63,7 +63,7 @@ builder.Services.AddShiftBlazor(config =>
 // session opened there (or in another app on that domain) is picked up here with no redirect. The app ID is
 // only used when there is no session yet.
 builder.Services.AddShiftIdentity(
-    configuration.GetValue<string>("ShiftIdentity:AppId")!,
+    AppIdFor(configuration.GetValue<string>("ShiftIdentity:AppId")!, builder.HostEnvironment.BaseAddress, baseUrl),
     shiftIdentityApiURL,
     shiftIdentityFrontEndURL,
     configure: o =>
@@ -101,5 +101,10 @@ CultureInfo.DefaultThreadCurrentUICulture = culture;
 await host.RefreshTokenAsync(50);
 
 await host.RunAsync();
+
+// Run on its own, the API serves this app from its own address; under Aspire the app has an address of its own.
+// The identity server registers each address as an app, the API-served one with an "-api" suffix.
+static string AppIdFor(string appId, string appAddress, string apiAddress) =>
+    new Uri(appAddress).Authority == new Uri(apiAddress).Authority ? appId + "-api" : appId;
 
 internal record SampleSettings(string? MenusApiUrl);

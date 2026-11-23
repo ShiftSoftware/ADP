@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<RootNamespace>ShiftSoftware.ADP.Identity.Sample.MultiCountry.API</RootNamespace>
+		<NoWarn>$(NoWarn);NU1903;NU1608;NU1900</NoWarn>
+		<IsPackable>false</IsPackable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.14" />
+		<PackageReference Include="ShiftSoftware.ShiftIdentity.Dashboard.AspNetCore" Version="2026.11.22.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- The modules' action trees, so access trees on this server can grant them. -->
+		<ProjectReference Include="..\..\..\ADP.Menus\ADP.Menus.Shared\ADP.Menus.Shared.csproj" />
+		<ProjectReference Include="..\..\..\ADP.ClaimableItems\ADP.ClaimableItems.Shared\ADP.ClaimableItems.Shared.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Update="identity-seed.json" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+</Project>

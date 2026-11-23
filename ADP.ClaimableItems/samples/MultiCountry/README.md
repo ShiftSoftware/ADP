@@ -15,8 +15,8 @@ the user picked, and its API (`Sample:MenusApiUrl`, `http://localhost:5136`) for
 
 ## Settings
 
-As in SingleCountry, the `appsettings.Development.json` files hold the local identity server's development values,
-copied from its own development settings.
+As in SingleCountry, the `appsettings.Development.json` files hold the identity server's development values, here
+the multi-country sample identity server's ([ADP.Identity](../../../ADP.Identity/README.md): API `http://localhost:5223`, sign-in `http://localhost:5224`).
 
 ### API: `appsettings.Development.json`
 
@@ -28,8 +28,9 @@ two URLs. The optional settings are the same as SingleCountry's.
 
 ### Blazor client: `wwwroot/appsettings.Development.json`
 
-`ShiftIdentity:AppId` (`claimable-items-sample-dev`, registered on the identity server with
-`http://localhost:5171` as its redirect), `ShiftIdentity:BaseURL` and `ShiftIdentity:FrontEndBaseURL`.
+`ShiftIdentity:AppId` (`claimable-items-sample`, registered on the identity server for `http://localhost:5172` and,
+as `claimable-items-sample-api`, for `http://localhost:5171`), `ShiftIdentity:BaseURL` and
+`ShiftIdentity:FrontEndBaseURL`.
 
 ## Run
 

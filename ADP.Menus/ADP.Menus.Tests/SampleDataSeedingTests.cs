@@ -65,7 +65,7 @@ public class SampleDataSeedingTests
 
         await using var db = Open(connectionString);
 
-        // The schema is the sample API's to create (it calls EnsureCreatedAsync at startup). Seeding into
+        // The schema is the sample API's to create (it applies its migrations at startup). Seeding into
         // a database that does not exist yet would be the wrong kind of helpful, so say so and skip.
         try
         {

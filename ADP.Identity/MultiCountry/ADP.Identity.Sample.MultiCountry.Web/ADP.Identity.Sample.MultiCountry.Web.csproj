@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ShiftSoftware.ADP.Identity.Sample.MultiCountry.Web</RootNamespace>
+    <BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);NU1903;NU1608;NU1900</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.14" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.14" PrivateAssets="all" />
+    <PackageReference Include="ShiftSoftware.ShiftIdentity.Dashboard.Blazor" Version="2026.11.22.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The modules' action trees, so the access tree editor can grant them. -->
+    <ProjectReference Include="..\..\..\ADP.Menus\ADP.Menus.Shared\ADP.Menus.Shared.csproj" />
+    <ProjectReference Include="..\..\..\ADP.ClaimableItems\ADP.ClaimableItems.Shared\ADP.ClaimableItems.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

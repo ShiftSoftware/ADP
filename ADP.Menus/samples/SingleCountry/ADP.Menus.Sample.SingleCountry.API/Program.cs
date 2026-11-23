@@ -8,23 +8,22 @@ using ShiftSoftware.ADP.Menus.Sync.Extensions;
 using ShiftSoftware.ADP.Menus.Sync.Replication;
 using ShiftSoftware.ADP.Menus.Sample.SingleCountry.API.Data;
 using ShiftSoftware.ADP.Menus.Sample.SingleCountry.API.DataServices;
-using ShiftSoftware.ADP.Menus.Sample.SingleCountry.API.Services;
 using ShiftSoftware.ADP.Menus.Shared;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.Core.Services;
-using ShiftSoftware.ShiftEntity.Model.Enums;
 using ShiftSoftware.ShiftIdentity.Core;
-using ShiftSoftware.ShiftIdentity.Core.Models;
-using ShiftSoftware.ShiftIdentity.Dashboard.AspNetCore.Extentsions;
 using ShiftSoftware.TypeAuth.AspNetCore.Extensions;
 using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Run on its own, this sample hosts a fake identity inside this API. Given an external identity server's
-// settings (Sample:ExternalIdentity, which the Aspire AppHost supplies), it only validates that server's tokens.
-var externalIdentity = builder.Configuration.GetSection("Sample:ExternalIdentity");
-var useExternalIdentity = !string.IsNullOrWhiteSpace(externalIdentity["Issuer"]);
+// Identity is EXTERNAL: users sign in on the single-country sample identity server (ADP.Identity), and this API
+// only validates its tokens. Its issuer, public key and hash-id salt are in appsettings.Development.json.
+var identity = builder.Configuration.GetSection("ShiftIdentity");
+
+// Checked after Build() rather than here, so `dotnet ef` (which stops at Build) works without them.
+string[] requiredSettings = ["ShiftIdentity:Issuer", "ShiftIdentity:PublicKey"];
+var missingSettings = requiredSettings.Where(x => string.IsNullOrWhiteSpace(builder.Configuration[x])).ToList();
 
 builder.Services.AddDbContext<DB>(db =>
     db.UseSqlServer(builder.Configuration.GetConnectionString("SQLServer")));
@@ -76,103 +75,15 @@ mvcBuilder.AddShiftEntityWeb(x =>
     x.WrapValidationErrorResponseWithShiftEntityResponse(true);
 
     x.HashId.RegisterHashId(builder.Configuration.GetValue<bool>("Settings:HashIdSettings:AcceptUnencodedIds"));
-    // Must match the identity server in use, or company, branch and country IDs will not decode.
-    if (useExternalIdentity)
-        x.HashId.RegisterIdentityHashId(externalIdentity["HashIds:Salt"] ?? "", externalIdentity.GetValue<int>("HashIds:MinHashLength"));
-    else
-        x.HashId.RegisterIdentityHashId(
-            builder.Configuration.GetValue<string>("Settings:IdentityHashIdSettings:Salt") ?? "",
-            builder.Configuration.GetValue<int>("Settings:IdentityHashIdSettings:MinHashLength")
-        );
+    // Must match the identity server, or company, branch and country IDs will not decode.
+    x.HashId.RegisterIdentityHashId(identity["HashIds:Salt"] ?? "", identity.GetValue<int>("HashIds:MinHashLength"));
 
     x.AddAzureStorage(azureStorageAccounts.ToArray());
-
-    // Registers ShiftSoftware.ShiftIdentity.Data as a data assembly. That assembly holds the 13
-    // [ShiftEntitySecureEndpoint<>] identity entities (User, Company, Brand, City, Region,
-    // Department, Service, Team, App, CompanyBranch, AccessTree, Country, CompanyCalendar), and
-    // MapShiftEntityEndpoints<DB>() below discovers its routes from the REGISTERED data assemblies.
-    // Without this the dashboard's CRUD endpoints are never created: requests to api/User,
-    // api/Company, … fall through to MapFallbackToFile and come back as the Blazor index.html
-    // with a 200, which reads like a broken page rather than a missing route.
-    if (!useExternalIdentity)
-        x.AddShiftIdentityDataAssembly();
 });
 
-// ---------- ShiftIdentity token validation ----------
-if (useExternalIdentity)
-    mvcBuilder.AddShiftIdentity(externalIdentity["Issuer"]!, externalIdentity["PublicKey"] ?? "");
-else
-    mvcBuilder.AddShiftIdentity(
-        builder.Configuration.GetValue<string>("Settings:TokenSettings:Issuer") ?? "",
-        builder.Configuration.GetValue<string>("Settings:TokenSettings:PublicKey") ?? ""
-    );
-
-// ---------- ShiftIdentity Dashboard (internal hosting: identity lives inside this API) ----------
-builder.Services.AddScoped<ISendEmailVerification, SendEmailService>();
-builder.Services.AddScoped<ISendEmailResetPassword, SendEmailService>();
-
-if (!useExternalIdentity)
-    mvcBuilder.AddShiftIdentityDashboard<DB>(
-        new ShiftIdentityConfiguration
-        {
-            ShiftIdentityHostingType = ShiftIdentityHostingTypes.Internal,
-            // The identity authority (Settings:Authority): password sign-in lives on its api/identity/v2 routes.
-            // Settings:FactorProtection holds the keys that protect stored authenticators. It needs the identity
-            // security tables: a database EnsureCreated made before them stops the host at startup, so drop the
-            // sample's database once and let it be created again.
-            Authority = builder.Configuration.GetSection("Settings:Authority").Get<AuthoritySettingsModel>() ?? new(),
-            FactorProtection = builder.Configuration.GetSection("Settings:FactorProtection").Get<FactorProtectionSettings>() ?? new(),
-            Token = new TokenSettingsModel
-            {
-                ExpireSeconds = builder.Configuration.GetValue<int>("Settings:TokenSettings:TokenExpirySeconds"),
-                Issuer = builder.Configuration.GetValue<string>("Settings:TokenSettings:Issuer")!,
-                RSAPrivateKeyBase64 = builder.Configuration.GetValue<string>("Settings:TokenSettings:PrivateKey")!,
-            },
-            Security = new SecuritySettingsModel
-            {
-                LockDownInMinutes = 0,
-                LoginAttemptsForLockDown = 1000000,
-                RequirePasswordChange = false
-            },
-            MfaSettings = new(),
-            RefreshToken = new RefreshTokenSettingsModel
-            {
-                Audience = "adp-menus",
-                ExpireSeconds = 100000,
-                Issuer = builder.Configuration.GetValue<string>("Settings:TokenSettings:Issuer")!,
-                Key = builder.Configuration.GetValue<string>("Settings:TokenSettings:RefreshTokenKey")!,
-            },
-            HashIdSettings = new HashIdSettings
-            {
-                AcceptUnencodedIds = true,
-                UserIdsSalt = "k02iUHSb2ier9fiui02349AbfJEI",
-                UserIdsMinHashLength = 5
-            },
-            SASToken = new SASTokenModel
-            {
-                ExpiresInSeconds = 3600,
-                Key = "One-Two-Three-Four-Five",
-            },
-            ShiftIdentityFeatureLocking = new ShiftIdentityFeatureLocking
-            {
-                RegionFeatureIsLocked = false,
-                CityFeatureIsLocked = false,
-                BrandFeatureIsLocked = false,
-                DepartmentFeatureIsLocked = false,
-                ServiceFeatureIsLocked = false,
-                CompanyFeatureIsLocked = false,
-                CompanyBranchFeatureIsLocked = false,
-                AppFeatureIsLocked = false,
-                AccessTreeFeatureIsLocked = false,
-                UserFeatureIsLocked = false,
-                TeamFeatureIsLocked = false,
-            },
-            DefaultDataLevelAccessOptions = new ShiftIdentityDefaultDataLevelAccessOptions
-            {
-                DisableDefaultCountryFilter = true
-            }
-        }
-    );
+// ---------- External identity: validate the identity server's tokens ----------
+if (missingSettings.Count == 0)
+    mvcBuilder.AddShiftIdentity(identity["Issuer"]!, identity["PublicKey"]!);
 
 // ---------- TypeAuth (consumer owns this; adds Menu action tree when enabled) ----------
 builder.Services.AddTypeAuth(o =>
@@ -186,8 +97,8 @@ builder.Services.AddTypeAuth(o =>
 builder.Services.AddMenuApiServices<DB>(mvcBuilder, options =>
 {
     options.RoutePrefix = "api/Menu";
-    // The menu action tree is on the fake identity; an external server's access trees may not hold it.
-    options.EnableMenuActionTreeAuthorization = !useExternalIdentity;
+    // The sample identity server registers the menu action tree, so its access trees grant it.
+    options.EnableMenuActionTreeAuthorization = true;
     options.Languages = new()
     {
         new MenuLanguageOption("en-US", "English"),
@@ -219,15 +130,15 @@ if (replicationIsConfigured)
 builder.Services.AddScoped<ShiftSoftware.ADP.Menus.Sample.SingleCountry.API.Data.Repositories.TodoItemRepository>();
 
 // ---------- ShiftMapper ----------
-// Registers THIS assembly's generated mapper, which holds the Todo repository's maps. The menu and identity maps
-// need no line here — AddMenuApiServices and AddShiftIdentityDashboard register their own assemblies' — but this
-// one carries them too, re-generated here, and answers first.
+// Registers THIS assembly's generated mapper, which holds the Todo repository's maps. The menu maps need no line
+// here — AddMenuApiServices registers its own assembly's — but this one carries them too, re-generated here, and
+// answers first.
 builder.Services.AddShiftMapper();
 
 // ---------- Development-only data import ----------
 // Sample scaffolding for loading a realistic dataset into the local sample database. The endpoints
-// refuse to run outside Development; sources come from ConnectionStrings:IdentityImportSource and
-// ConnectionStrings:MenuImportSource. Not part of any ADP.Menus package.
+// refuse to run outside Development; the source comes from ConnectionStrings:MenuImportSource. Not part of
+// any ADP.Menus package.
 builder.Services.AddScoped<ShiftSoftware.ADP.Menus.Sample.SingleCountry.API.DevTools.SchemaCopyService>();
 
 builder.Services.AddRazorPages();
@@ -254,42 +165,28 @@ app.UseRequestLocalization(options =>
 
 app.MapControllers();
 
-// What the Blazor client cannot be given directly: a WebAssembly app has no environment, so it asks here
-// whether to sign in on an external identity server, and where.
-app.MapGet("/api/sample-settings", () => new
-{
-    ExternalIdentity = useExternalIdentity
-        ? new { AppId = externalIdentity["AppId"], BaseUrl = externalIdentity["BaseUrl"], FrontEndBaseUrl = externalIdentity["FrontEndBaseUrl"] }
-        : null,
-});
-
-// ShiftIdentity's auth + identity-server endpoints (login / refresh / MFA / auth-code, users,
-// company calendar, …). These used to be classic controllers picked up by MapControllers() above;
-// the 2026-07 framework release moved them to minimal APIs, which the host has to map explicitly.
-// Without this call POST api/identity/v2/login does not exist — the request falls through to the
-// MapFallbackToFile below, so login fails in a way that looks like a routing bug rather than a
-// missing endpoint. Only hosts running ShiftIdentityHostingTypes.Internal (as this sample does)
-// need it; hosts that merely validate tokens issued by a separate identity service do not.
-if (!useExternalIdentity)
-    app.MapShiftIdentityDashboard();
-
-// Attribute-driven CRUD for [ShiftEntityEndpoint<>] / [ShiftEntitySecureEndpoint<>] entities —
-// the identity dashboard's own resources. DI registration happens in RegisterShiftRepositories;
-// this maps the routes. The Menus module's own controllers are classic
-// ShiftEntitySecureControllerAsync and stay on MapControllers() above.
+// Attribute-driven CRUD for [ShiftEntityEndpoint<>] / [ShiftEntitySecureEndpoint<>] entities. The Menus
+// module's own controllers are classic ShiftEntitySecureControllerAsync and stay on MapControllers() above.
 app.MapShiftEntityEndpoints<DB>();
+
+if (missingSettings.Count > 0)
+    throw new InvalidOperationException(
+        $"Set these in the API's appsettings.Development.json before running the sample: {string.Join(", ", missingSettings)}.");
 
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<DB>();
-    // Sample reset: drop and recreate on every startup so the schema always matches
-    // the current DbContext shape (identity tables included). Safe because this is a
-    // throwaway sample DB — don't copy this pattern into real projects.
-    if (app.Environment.IsDevelopment())
-    {
-        //await db.Database.EnsureDeletedAsync();
-    }
-    await db.Database.EnsureCreatedAsync();
+
+    // A database the sample used to make with EnsureCreated has the tables but not the migration history, so the
+    // first migration would fail on tables that already exist.
+    if (await db.Database.CanConnectAsync()
+        && !(await db.Database.GetAppliedMigrationsAsync()).Contains(db.Database.GetMigrations().First())
+        && await db.Database.SqlQueryRaw<int>("SELECT COUNT(*) AS [Value] FROM sys.tables WHERE SCHEMA_NAME(schema_id) = 'Menu'").SingleAsync() > 0)
+        throw new InvalidOperationException(
+            $"The database '{db.Database.GetDbConnection().Database}' was created without migrations. Drop it and start the "
+            + "API again to have it created by migrations, or add the migrations its schema already has to [__EFMigrationsHistory].");
+
+    await db.Database.MigrateAsync();
 
     // Nothing is seeded here any more, deliberately.
     //
@@ -370,30 +267,6 @@ if (replicationIsConfigured)
     }
 }
 
-// Seed identity (SuperUser, Country, Region, Company, Branch) and grant full access.
-if (!useExternalIdentity)
-{
-    await app.SeedDBAsync("SuperUser", "OneTwo", new ShiftSoftware.ShiftIdentity.Data.DBSeedOptions
-    {
-        CountryExternalId = "1",
-        CountryShortCode = "IQ",
-        CountryCallingCode = "+964",
-
-        RegionExternalId = "1",
-        RegionShortCode = "KRG",
-
-        CompanyShortCode = "SFT",
-        CompanyExternalId = "-1",
-        CompanyAlternativeExternalId = "shift-software",
-        CompanyType = CompanyTypes.NotSpecified,
-
-        CompanyBranchExternalId = "-11",
-        CompanyBranchShortCode = "SFT-EBL"
-    });
-
-    await app.SetFullAccessAsync("t1", "t3");
-}
-
 app.UseCors(x => x.WithOrigins("*").AllowAnyMethod().AllowAnyHeader());
 
 if (app.Environment.IsDevelopment())
@@ -434,10 +307,9 @@ app.Run();
 // so WebApplicationFactory<Program> can boot this host in-process. Adds no members, changes no
 // behaviour, inert at run time.
 //
-// Note this sample needs NO seeding-suppression branch, unlike the Surveys one: it seeds only
-// identity rows (SuperUser + org hierarchy), and the comment at ~line 246 records that demo menu
-// seeding was deliberately removed. Nothing it writes lands in the [Menu] schema tables the
-// parity cases list, so the adversarial seed is the only source of rows there.
+// Note this sample needs NO seeding-suppression branch, unlike the Surveys one: it seeds nothing
+// at startup (identity lives on the external identity server, and demo menu seeding was
+// deliberately removed), so the adversarial seed is the only source of rows there.
 //
 // KEPT DELIBERATELY at Step 08, which removed the endpoint-parity harness that originally
 // needed it. Top-level statements generate an INTERNAL Program class, which

@@ -30,7 +30,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.14" />
-		<PackageReference Include="ShiftSoftware.ShiftBlazor" Version="2026.11.8.1" />
+		<PackageReference Include="ShiftSoftware.ShiftBlazor" Version="2026.11.22.1" />
 	</ItemGroup>
 
 	<ItemGroup>

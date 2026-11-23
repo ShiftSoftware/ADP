@@ -29,33 +29,6 @@
         <MudStack Spacing="4">
 
             <MudPaper Class="pa-4" Outlined>
-                <MudText Typo="Typo.h6">Identity data</MudText>
-                <MudText Typo="Typo.body2" Class="mb-3">
-                    Replaces the <code>ShiftIdentity</code> schema. The seeded superuser is kept, so you can
-                    still sign in — restart the API afterwards to re-link it to a company and branch.
-                </MudText>
-
-                @if (!availability.IdentityConfigured)
-                {
-                    <MudAlert Severity="Severity.Info" Dense Class="mb-3">
-                        No source configured. @availability.ConfigurationHint
-                    </MudAlert>
-                }
-
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Primary"
-                           Disabled="@(busy || !availability.IdentityConfigured)"
-                           StartIcon="@(identityRunning ? null : Icons.Material.Filled.Group)"
-                           OnClick="ImportIdentityAsync">
-                    @if (identityRunning)
-                    {
-                        <MudProgressCircular Size="Size.Small" Indeterminate Class="mr-2" />
-                    }
-                    Import identity data
-                </MudButton>
-            </MudPaper>
-
-            <MudPaper Class="pa-4" Outlined>
                 <MudText Typo="Typo.h6">Menu data</MudText>
                 <MudText Typo="Typo.body2" Class="mb-3">
                     Replaces the <code>Menu</code> schema, including the sample's own demo menus.
@@ -138,9 +111,8 @@
     private DevDataImportResultDTO? lastResult;
     private string lastRunTitle = string.Empty;
 
-    private bool identityRunning;
     private bool menuRunning;
-    private bool busy => identityRunning || menuRunning;
+    private bool busy => menuRunning;
 
     protected override async Task OnInitializedAsync()
     {
@@ -158,12 +130,6 @@
             };
         }
     }
-
-    private Task ImportIdentityAsync() => RunAsync(
-        title: "Identity data import",
-        confirmation: "This deletes ALL identity data in the sample database (except the seeded superuser) and replaces it from your configured source. Continue?",
-        endpoint: "DevDataImport/identity",
-        setRunning: value => identityRunning = value);
 
     private Task ImportMenuAsync() => RunAsync(
         title: "Menu data import",

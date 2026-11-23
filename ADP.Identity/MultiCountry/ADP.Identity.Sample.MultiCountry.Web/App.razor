@@ -1,0 +1,20 @@
+@using ShiftSoftware.ShiftIdentity.Blazor
+@using ShiftSoftware.ShiftIdentity.Core
+@using ShiftSoftware.ShiftIdentity.Dashboard.Blazor
+
+<CascadingAuthenticationState>
+    <DefaultApp AppTitle="ADP Identity (multi-country)"
+                AppAssembly="@typeof(App).Assembly"
+                IdentityHostingType="ShiftIdentityHostingTypes.Internal"
+                AdditionalAssemblies="additionalAssemblies">
+
+        <NavMenuTemplate>
+            <ShiftSoftware.ShiftIdentity.Dashboard.Blazor.Shared.NavMenu isDrawerOpen="@context.IsDrawerOpen" />
+        </NavMenuTemplate>
+    </DefaultApp>
+</CascadingAuthenticationState>
+
+@code {
+    private readonly List<System.Reflection.Assembly> additionalAssemblies =
+        [typeof(ShiftIdentityBlazorMaker).Assembly, typeof(ShiftIdentityDashboarBlazorMaker).Assembly];
+}

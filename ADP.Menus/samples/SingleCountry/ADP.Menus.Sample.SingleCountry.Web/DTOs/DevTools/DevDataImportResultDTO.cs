@@ -28,8 +28,6 @@ public class DevDataImportResultDTO
 /// <summary>Which copy sources a developer has configured locally — drives which buttons are enabled.</summary>
 public class DevDataImportAvailabilityDTO
 {
-    public bool IdentityConfigured { get; set; }
-
     public bool MenuConfigured { get; set; }
 
     public string ConfigurationHint { get; set; } = string.Empty;

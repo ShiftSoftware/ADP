@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using ShiftSoftware.ADP.Menus.Data.Extensions;
-using ShiftSoftware.ShiftIdentity.Data;
+using ShiftSoftware.ShiftEntity.EFCore;
 
 namespace ShiftSoftware.ADP.Menus.Tests.SampleSeeding;
 
@@ -15,7 +15,7 @@ namespace ShiftSoftware.ADP.Menus.Tests.SampleSeeding;
 /// here would have no menu entities in its model at all. Referencing the sample web app from a test
 /// project to stand its whole container up would be worse than the duplication.</para>
 ///
-/// <para>Subclassing <c>ShiftIdentityDbContext</c> (for <c>[ShiftIdentity].[Brands]</c>) and calling
+/// <para>Subclassing <c>ShiftDbContext</c> and calling
 /// <see cref="MenuModelBuilderExtensions.ConfigureMenuEntities"/> directly reproduces that model exactly.
 /// This is the same move <c>MenuReplicationDB</c> makes in the sample Functions host, and for the same
 /// reason: EF Core names a table after its <c>DbSet</c> property when one exists, so a context that
@@ -26,7 +26,7 @@ namespace ShiftSoftware.ADP.Menus.Tests.SampleSeeding;
 /// (<c>LastReplicationDate</c> null), which is exactly right: the Functions host's
 /// <c>POST api/replicate-all</c> is what puts them in Cosmos, and it is a step you take deliberately.</para>
 /// </summary>
-public class SampleSeedDB : ShiftIdentityDbContext
+public class SampleSeedDB : ShiftDbContext
 {
     public SampleSeedDB(DbContextOptions options) : base(options)
     {

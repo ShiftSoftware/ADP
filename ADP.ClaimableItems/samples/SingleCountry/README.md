@@ -12,7 +12,7 @@ shows neither field. The [MultiCountry](../MultiCountry/README.md) sample is the
 
 | Piece | Where it comes from |
 |---|---|
-| Sign-in, users, companies, branches, countries | An existing **ShiftIdentity server** (external hosting). The API only validates its tokens. |
+| Sign-in, users, companies, branches, countries | The single-country **sample identity server** ([ADP.Identity](../../../ADP.Identity/README.md): API `http://localhost:5105`, sign-in `http://localhost:5106`). The API only validates its tokens. |
 | The vehicle and its contract-type menu | The [single-country menus sample](../../../ADP.Menus/samples/SingleCountry)'s **lookup functions** (`Sample:MenuLookupUrl`), through `Services/LookupEndpointContractMenuProvider.cs`, server to server: `api/vehicle/{vin}` for a VIN, `api/menu/{basicModelCode}` for a picked model. |
 | The models and basic model codes a user can pick | The same menus sample's **API** (`Sample:MenusApiUrl`), read by the browser. See [A VIN with no menu](#a-vin-with-no-menu). |
 | Contracts | Its own SQL database, on the local SQL Server Express instance (`localhost\SQLEXPRESS`) by default; migrations run at start-up. |
@@ -21,7 +21,7 @@ shows neither field. The [MultiCountry](../MultiCountry/README.md) sample is the
 
 ## Settings
 
-The `appsettings.Development.json` files hold the local identity server's development values, copied from its own
+The `appsettings.Development.json` files hold the sample identity server's development values, copied from its own
 development settings, so the sample runs as checked out. To point it at another identity server, change them; the
 API refuses to start, naming what is missing, if they are blank.
 
@@ -46,12 +46,13 @@ Optional: `ConnectionStrings:SQLServer`, `Sample:ContractMinimumLines`, `Sample:
 
 ### Blazor client: `wwwroot/appsettings.Development.json`
 
-- `ShiftIdentity:AppId`: `claimable-items-sample-dev`, which must be registered on the identity server with
-  `http://localhost:5161` as its redirect.
+- `ShiftIdentity:AppId`: `claimable-items-sample`. The identity server registers it for the Blazor app's own address
+  (`http://localhost:5162`, under Aspire) and, with an `-api` suffix, for this API's (`http://localhost:5161`).
 - `ShiftIdentity:BaseURL`: the identity server's API, ending in `/api/`.
 - `ShiftIdentity:FrontEndBaseURL`: the identity server's sign-in site.
 
-Run the identity server locally as well; the sample signs in on it.
+Run the identity server's API and sign-in app as well (see [ADP.Identity](../../../ADP.Identity/README.md)); the
+sample signs in on them.
 
 ## Run
 
@@ -71,11 +72,8 @@ When the VIN is not an official vehicle, or its model has no contract menu, the 
 and stores the model's and the menu's IDs.
 
 - The pickers read `VehicleModel` and `Menu` from the menus sample's API, straight from the browser. That API must
-  accept the token this sample signs in with, so **both samples have to trust the same identity server**, with the
-  same hash-id settings. Under the Aspire AppHost that is done: the menus sample is given this sample's identity
-  server (from the `appsettings.Development.json` files here) and its app ID (`menus-sample-dev`, or the AppHost's
-  `MenusSamples:SingleCountry:IdentityAppId`) must be registered there with the menus Blazor app's URL as its
-  redirect. Run on its own, the menus sample hosts a fake identity and the pickers get a 401.
+  accept the token this sample signs in with, so **both samples trust the same identity server**, the single-country
+  sample identity server, with the same hash-id settings.
 - Against a lookup that has menus but no vehicle data, every VIN is one the user picks a model for.
 - `ContractAllowMenuSelection = false` in the API options turns this off; leaving the Web options' `MenuVehicleModelUrl` or `MenuUrl`
   unset hides the pickers.
@@ -84,9 +82,8 @@ and stores the model's and the menu's IDs.
 
 ## Permissions
 
-The module's own action tree is not on the identity server, so the sample turns the contract permissions off:
-any signed-in user may create, issue, cancel and print. A host that adds the module's nodes to its access trees
-sets `EnableClaimableItemsActionTreeAuthorization`, `ClaimableItemContractsAction`, `IssueContractAction`,
+The sample turns the contract permissions off: any signed-in user may create, issue, cancel and print. The sample
+identity server registers the module's action tree, so its access trees can grant it. To turn the permissions on, set `EnableClaimableItemsActionTreeAuthorization`, `ClaimableItemContractsAction`, `IssueContractAction`,
 `CancelContractAction` and `PrintContractAction` in both the API and the Web options.
 
 ## Migrations

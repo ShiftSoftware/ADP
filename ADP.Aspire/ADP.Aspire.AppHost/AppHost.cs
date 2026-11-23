@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Configuration;
-
 var builder = DistributedApplication.CreateBuilder(args);
 
 // The Functions samples' local.settings.json use UseDevelopmentStorage=true, so Azurite runs as a plain process
@@ -37,52 +35,33 @@ void UseMenus(
         .WithRelationship(menusFunctions.Resource, "menu lookup")
         .WithRelationship(menusApi.Resource, "menus");
 
-// Run on its own, a menus sample hosts a fake identity. Here it signs in on the external identity server of the
-// claimable-items sample of the same shape, read from that sample's development settings, so one sign-in covers
-// both and the contract form can read the menus API. The app ID must be registered on that server with the menus
-// Blazor app's URL as its redirect.
-void UseIdentityOf<TClaimableItemsApi, TClaimableItemsWeb>(IResourceBuilder<ProjectResource> menusApi, string appIdKey)
-    where TClaimableItemsApi : IProjectMetadata, new()
-    where TClaimableItemsWeb : IProjectMetadata, new()
-{
-    IConfiguration Settings(string projectPath, params string[] file) => new ConfigurationBuilder()
-        .AddJsonFile(Path.Combine([Path.GetDirectoryName(projectPath)!, .. file]), optional: true)
-        .Build();
+// The sample identity servers (ADP.Identity), one per shape: an API that keeps its users, companies and countries in
+// SQLite in memory, seeded at startup, and a Blazor app that is its sign-in site and dashboard. The samples of the
+// same shape trust its tokens, with its issuer, public key and hash-id salt in their development settings.
+IResourceBuilder<ProjectResource> UseIdentity(IResourceBuilder<ProjectResource> project, IResourceBuilder<ProjectResource> identity) =>
+    project.WaitFor(identity).WithRelationship(identity.Resource, "identity");
 
-    var api = Settings(new TClaimableItemsApi().ProjectPath, "appsettings.Development.json").GetSection("ShiftIdentity");
-    var web = Settings(new TClaimableItemsWeb().ProjectPath, "wwwroot", "appsettings.Development.json").GetSection("ShiftIdentity");
-
-    if (string.IsNullOrWhiteSpace(api["Issuer"]))
-        return;
-
-    menusApi
-        .WithEnvironment("Sample__ExternalIdentity__Issuer", api["Issuer"])
-        .WithEnvironment("Sample__ExternalIdentity__PublicKey", api["PublicKey"])
-        .WithEnvironment("Sample__ExternalIdentity__HashIds__Salt", api["HashIds:Salt"])
-        .WithEnvironment("Sample__ExternalIdentity__HashIds__MinHashLength", api["HashIds:MinHashLength"])
-        .WithEnvironment("Sample__ExternalIdentity__AppId", builder.Configuration[appIdKey] ?? "menus-sample-dev")
-        .WithEnvironment("Sample__ExternalIdentity__BaseUrl", web["BaseURL"])
-        .WithEnvironment("Sample__ExternalIdentity__FrontEndBaseUrl", web["FrontEndBaseURL"]);
-}
+var identitySingle = builder.AddProject<Projects.ADP_Identity_Sample_SingleCountry_API>("identity-single-country-api");
+UseIdentity(builder.AddProject<Projects.ADP_Identity_Sample_SingleCountry_Web>("identity-single-country-web"), identitySingle);
+var identityMulti = builder.AddProject<Projects.ADP_Identity_Sample_MultiCountry_API>("identity-multi-country-api");
+UseIdentity(builder.AddProject<Projects.ADP_Identity_Sample_MultiCountry_Web>("identity-multi-country-web"), identityMulti);
 
 // Menus — single country
-var menusSingleApi = AddApi<Projects.ADP_Menus_Sample_SingleCountry_API>("menus-single-country-api");
-builder.AddProject<Projects.ADP_Menus_Sample_SingleCountry_Web>("menus-single-country-web");
-UseIdentityOf<Projects.ADP_ClaimableItems_Sample_SingleCountry_API, Projects.ADP_ClaimableItems_Sample_SingleCountry_Web>(menusSingleApi, "MenusSamples:SingleCountry:IdentityAppId");
+var menusSingleApi = UseIdentity(AddApi<Projects.ADP_Menus_Sample_SingleCountry_API>("menus-single-country-api"), identitySingle);
+UseIdentity(builder.AddProject<Projects.ADP_Menus_Sample_SingleCountry_Web>("menus-single-country-web"), identitySingle);
 var menusSingleFunctions = AddFunctions<Projects.ADP_Menus_Sample_SingleCountry_Functions>("menus-single-country-functions", 7071);
 
 // Menus — multi country
-var menusMultiApi = AddApi<Projects.ADP_Menus_Sample_MultiCountry_API>("menus-multi-country-api");
-builder.AddProject<Projects.ADP_Menus_Sample_MultiCountry_Web>("menus-multi-country-web");
-UseIdentityOf<Projects.ADP_ClaimableItems_Sample_MultiCountry_API, Projects.ADP_ClaimableItems_Sample_MultiCountry_Web>(menusMultiApi, "MenusSamples:MultiCountry:IdentityAppId");
+var menusMultiApi = UseIdentity(AddApi<Projects.ADP_Menus_Sample_MultiCountry_API>("menus-multi-country-api"), identityMulti);
+UseIdentity(builder.AddProject<Projects.ADP_Menus_Sample_MultiCountry_Web>("menus-multi-country-web"), identityMulti);
 var menusMultiFunctions = AddFunctions<Projects.ADP_Menus_Sample_MultiCountry_Functions>("menus-multi-country-functions", 7072);
 
 // Claimable items — single country
-UseMenus(AddApi<Projects.ADP_ClaimableItems_Sample_SingleCountry_API>("claimable-items-single-country-api"), menusSingleApi, menusSingleFunctions);
-builder.AddProject<Projects.ADP_ClaimableItems_Sample_SingleCountry_Web>("claimable-items-single-country-web");
+UseMenus(UseIdentity(AddApi<Projects.ADP_ClaimableItems_Sample_SingleCountry_API>("claimable-items-single-country-api"), identitySingle), menusSingleApi, menusSingleFunctions);
+UseIdentity(builder.AddProject<Projects.ADP_ClaimableItems_Sample_SingleCountry_Web>("claimable-items-single-country-web"), identitySingle);
 
 // Claimable items — multi country
-UseMenus(AddApi<Projects.ADP_ClaimableItems_Sample_MultiCountry_API>("claimable-items-multi-country-api"), menusMultiApi, menusMultiFunctions);
-builder.AddProject<Projects.ADP_ClaimableItems_Sample_MultiCountry_Web>("claimable-items-multi-country-web");
+UseMenus(UseIdentity(AddApi<Projects.ADP_ClaimableItems_Sample_MultiCountry_API>("claimable-items-multi-country-api"), identityMulti), menusMultiApi, menusMultiFunctions);
+UseIdentity(builder.AddProject<Projects.ADP_ClaimableItems_Sample_MultiCountry_Web>("claimable-items-multi-country-web"), identityMulti);
 
 builder.Build().Run();

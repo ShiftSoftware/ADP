@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ADP.Menus.Shared.Enums;
 using ShiftSoftware.ShiftEntity.Core;
-using ShiftSoftware.ShiftIdentity.Data.Entities;
 
 using System.Text.Json;
 
@@ -52,6 +51,8 @@ public sealed record SampleSeedReport(IReadOnlyList<SampleSeedTableResult> Table
 /// </summary>
 public static class SampleSeedData
 {
+    // The brands live on the sample identity servers (ADP.Identity). These are the multi-country server's IDs; the
+    // single-country one numbers Toyota 1 and Lexus 2.
     private const long ToyotaBrandID = 2;
     private const long LexusBrandID = 3;
 
@@ -76,7 +77,6 @@ public static class SampleSeedData
         var tables = new List<SampleSeedTableResult>
         {
             // Authored ids throughout, so these are matched on the id and written with IDENTITY_INSERT.
-            await AddMissingByIdAsync(db, "[ShiftIdentity].[Brands]", BrandData(), cancellationToken),
             await AddMissingByIdAsync(db, "[Menu].[ReplacementItem]", ReplacementItemData(), cancellationToken),
             await AddMissingByIdAsync(db, "[Menu].[ServiceIntervalGroup]", ServiceIntervalGroupData(), cancellationToken),
             await AddMissingByIdAsync(db, "[Menu].[ServiceInterval]", ServiceIntervalData(), cancellationToken),
@@ -645,13 +645,6 @@ public static class SampleSeedData
             .ToList();
 
     // ---- the catalogue, verbatim ---------------------------------------------------------------------
-
-    private static IEnumerable<Brand> BrandData() =>
-    [
-        new Brand { ID = 1, Name = "Hino" },
-        new Brand { ID = 2, Name = "Toyota" },
-        new Brand { ID = 3, Name = "Lexus" },
-    ];
 
     private static IEnumerable<BrandMapping> BrandMappingData() =>
     [

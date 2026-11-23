@@ -1,0 +1,120 @@
+// A regional distributor and its dealers in several countries. IDs, relationships, company types and each
+// branch's brands, departments and services follow a real deployment; every company and branch name, code,
+// phone number and address is invented. Every user's password is OneTwo.
+{
+  "countries": [
+    {"key": "country-1", "id": 1, "name": "Built-in System Country", "callingCode": "+964", "isProtected": true},
+    {"key": "country-3", "id": 3, "name": "Uzbekistan", "shortCode": "UZ", "callingCode": "+998", "isProtected": false},
+    {"key": "country-4", "id": 4, "name": "Turkmenistan", "shortCode": "TM", "callingCode": "+993", "isProtected": false},
+    {"key": "country-5", "id": 5, "name": "Tajikistan", "shortCode": "TJ", "callingCode": "+992", "isProtected": false},
+    {"key": "country-6", "id": 6, "name": "United Arab Emirates", "shortCode": "AE", "callingCode": "+971", "isProtected": false},
+    {"key": "country-7", "id": 7, "name": "Japan", "shortCode": "JP", "callingCode": "+81", "isProtected": false}
+  ],
+  "regions": [
+    {"key": "region-1", "id": 1, "name": "Built-in System Region", "country": "country-1", "isProtected": true},
+    {"key": "region-4", "id": 4, "name": "Uzbekistan", "country": "country-3", "isProtected": false},
+    {"key": "region-5", "id": 5, "name": "United Arab Emirates", "country": "country-6", "isProtected": false},
+    {"key": "region-6", "id": 6, "name": "Turkmenistan", "country": "country-4", "isProtected": false},
+    {"key": "region-7", "id": 7, "name": "Tajikistan", "country": "country-5", "isProtected": false},
+    {"key": "region-8", "id": 8, "name": "Japan", "country": "country-7", "isProtected": false}
+  ],
+  "cities": [
+    {"key": "city-1", "id": 1, "name": "Built-in System City", "region": "region-1", "isProtected": true},
+    {"key": "city-4", "id": 4, "name": "Tashkent", "region": "region-4", "isProtected": false},
+    {"key": "city-5", "id": 5, "name": "Ashgabat", "region": "region-6", "isProtected": false},
+    {"key": "city-6", "id": 6, "name": "Dushanbe", "region": "region-7", "isProtected": false},
+    {"key": "city-7", "id": 7, "name": "Dubai", "region": "region-5", "isProtected": false},
+    {"key": "city-8", "id": 8, "name": "Tokyo", "region": "region-8", "isProtected": false},
+    {"key": "city-9", "id": 9, "name": "Khujand", "region": "region-7", "isProtected": false},
+    {"key": "city-10", "id": 10, "name": "Balkan", "region": "region-6", "isProtected": false},
+    {"key": "city-11", "id": 11, "name": "Samarkand", "region": "region-4", "isProtected": false},
+    {"key": "city-12", "id": 12, "name": "Buhara", "region": "region-4", "isProtected": false},
+    {"key": "city-13", "id": 13, "name": "Hiva", "region": "region-4", "isProtected": false},
+    {"key": "city-14", "id": 14, "name": "Andijan", "region": "region-4", "isProtected": false},
+    {"key": "city-15", "id": 15, "name": "Karshi", "region": "region-4", "isProtected": false},
+    {"key": "city-16", "id": 16, "name": "Nukus", "region": "region-4", "isProtected": false},
+    {"key": "city-17", "id": 17, "name": "Namangan", "region": "region-4", "isProtected": false},
+    {"key": "city-18", "id": 18, "name": "Fergana", "region": "region-4", "isProtected": false},
+    {"key": "city-19", "id": 19, "name": "Kokand", "region": "region-4", "isProtected": false},
+    {"key": "city-20", "id": 20, "name": "Termez", "region": "region-4", "isProtected": false},
+    {"key": "city-21", "id": 21, "name": "Shahrisabz", "region": "region-4", "isProtected": false},
+    {"key": "city-22", "id": 22, "name": "Navoi", "region": "region-4", "isProtected": false},
+    {"key": "city-23", "id": 23, "name": "Urgench", "region": "region-4", "isProtected": false},
+    {"key": "city-24", "id": 24, "name": "Jizakh", "region": "region-4", "isProtected": false},
+    {"key": "city-25", "id": 25, "name": "Gulistan", "region": "region-4", "isProtected": false},
+    {"key": "city-26", "id": 26, "name": "Chirchik", "region": "region-4", "isProtected": false},
+    {"key": "city-27", "id": 27, "name": "Angren", "region": "region-4", "isProtected": false}
+  ],
+  "companies": [
+    {"key": "company-1", "id": 1, "name": "Built-in System Company", "companyType": "NotSpecified", "isProtected": true},
+    {"key": "company-3", "id": 3, "name": "Silk Road Motors", "shortCode": "SRM", "companyType": "DistributorOrFranchisee", "hqEmail": "info@silkroadmotors.example", "website": "https://silkroadmotors.example"},
+    {"key": "company-4", "id": 4, "name": "Caravan Logistics", "shortCode": "CRV", "companyType": "SupplierOrServiceProvider", "hqEmail": "info@caravanlogistics.example", "website": "https://caravanlogistics.example"},
+    {"key": "company-5", "id": 5, "name": "Registan Motors", "shortCode": "RGM", "companyType": "RetailerOrDealer", "hqEmail": "info@registanmotors.example", "website": "https://registanmotors.example"},
+    {"key": "company-6", "id": 6, "name": "Chorsu Auto", "shortCode": "CHA", "companyType": "RetailerOrDealer", "hqEmail": "info@chorsuauto.example", "website": "https://chorsuauto.example"},
+    {"key": "company-7", "id": 7, "name": "Amir Auto", "shortCode": "AMA", "companyType": "RetailerOrDealer", "hqEmail": "info@amirauto.example", "website": "https://amirauto.example"},
+    {"key": "company-8", "id": 8, "name": "Kopetdag Motors", "shortCode": "KPD", "companyType": "RetailerOrDealer", "hqEmail": "info@kopetdagmotors.example", "website": "https://kopetdagmotors.example"},
+    {"key": "company-9", "id": 9, "name": "Merv Motors", "shortCode": "MRV", "companyType": "RetailerOrDealer", "hqEmail": "info@mervmotors.example", "website": "https://mervmotors.example"},
+    {"key": "company-10", "id": 10, "name": "Pamir Motors", "shortCode": "PMR", "companyType": "RetailerOrDealer", "hqEmail": "info@pamirmotors.example", "website": "https://pamirmotors.example"},
+    {"key": "company-11", "id": 11, "name": "Shift Software", "shortCode": "SFT", "companyType": "SupplierOrServiceProvider", "hqEmail": "info@shiftsoftware.example", "website": "https://shiftsoftware.example"},
+    {"key": "company-12", "id": 12, "name": "Zarafshan Motors", "shortCode": "ZRF", "companyType": "RetailerOrDealer", "hqEmail": "info@zarafshanmotors.example", "website": "https://zarafshanmotors.example"}
+  ],
+  "brands": [
+    {"key": "brand-2", "id": 2, "name": "Toyota"},
+    {"key": "brand-3", "id": 3, "name": "Lexus"}
+  ],
+  "departments": [
+    {"key": "department-2", "id": 2, "name": "Sales"},
+    {"key": "department-3", "id": 3, "name": "Service"},
+    {"key": "department-4", "id": 4, "name": "Warranty"},
+    {"key": "department-5", "id": 5, "name": "Parts"},
+    {"key": "department-6", "id": 6, "name": "Finance"},
+    {"key": "department-7", "id": 7, "name": "Customer Relation"},
+    {"key": "department-8", "id": 8, "name": "Training"},
+    {"key": "department-9", "id": 9, "name": "Marketing"}
+  ],
+  "services": [
+    {"key": "service-2", "id": 2, "name": "Test Drive"},
+    {"key": "service-3", "id": 3, "name": "Vehicle Quotation"},
+    {"key": "service-4", "id": 4, "name": "Service Booking"},
+    {"key": "service-5", "id": 5, "name": "General"}
+  ],
+  "companyBranches": [
+    {"key": "branch-1", "id": 1, "name": "Built-in System Branch", "company": "company-1", "city": "city-1", "shortCode": "built-in", "isProtected": true},
+    {"key": "branch-4", "id": 4, "name": "Silk Road Motors Dubai 1", "company": "company-3", "city": "city-7", "shortCode": "SRM-004", "phone": "+971 000 0004", "email": "branch4@silkroadmotors.example", "address": "Branch 4, Dubai", "brands": ["brand-2"], "departments": ["department-2", "department-3", "department-4", "department-5", "department-6", "department-7", "department-9", "department-8"]},
+    {"key": "branch-5", "id": 5, "name": "Caravan Logistics Tashkent", "company": "company-4", "city": "city-4", "shortCode": "CRV-005", "phone": "+998 000 0005", "email": "branch5@caravanlogistics.example", "address": "Branch 5, Tashkent", "brands": ["brand-2", "brand-3"], "departments": ["department-2", "department-3", "department-4", "department-7", "department-5", "department-6", "department-9", "department-8"]},
+    {"key": "branch-6", "id": 6, "name": "Registan Motors Tashkent 1", "company": "company-5", "city": "city-4", "shortCode": "RGM-006", "phone": "+998 000 0006", "email": "branch6@registanmotors.example", "address": "Branch 6, Tashkent", "displayOrder": 5, "brands": ["brand-2"], "departments": ["department-2", "department-3", "department-4", "department-5", "department-7"], "services": ["service-2"]},
+    {"key": "branch-7", "id": 7, "name": "Chorsu Auto Tashkent", "company": "company-6", "city": "city-4", "shortCode": "CHA-007", "phone": "+998 000 0007", "email": "branch7@chorsuauto.example", "address": "Branch 7, Tashkent", "displayOrder": 9, "brands": ["brand-2"], "departments": ["department-3", "department-4", "department-5", "department-7", "department-8", "department-9"], "services": ["service-2"]},
+    {"key": "branch-8", "id": 8, "name": "Amir Auto Tashkent", "company": "company-7", "city": "city-4", "shortCode": "AMA-008", "phone": "+998 000 0008", "email": "branch8@amirauto.example", "address": "Branch 8, Tashkent", "displayOrder": 1, "departments": ["department-2", "department-3", "department-4", "department-5", "department-8", "department-9", "department-7"], "services": ["service-2"]},
+    {"key": "branch-9", "id": 9, "name": "Pamir Motors Dushanbe", "company": "company-10", "city": "city-6", "shortCode": "PMR-009", "phone": "+992 000 0009", "email": "branch9@pamirmotors.example", "address": "Branch 9, Dushanbe", "displayOrder": 7, "brands": ["brand-2"], "departments": ["department-2", "department-3", "department-9", "department-8", "department-7", "department-5", "department-4"]},
+    {"key": "branch-10", "id": 10, "name": "Pamir Motors Khujand", "company": "company-10", "city": "city-9", "shortCode": "PMR-010", "phone": "+992 000 0010", "email": "branch10@pamirmotors.example", "address": "Branch 10, Khujand", "displayOrder": 8, "brands": ["brand-2"], "departments": ["department-2", "department-3", "department-4", "department-5"]},
+    {"key": "branch-11", "id": 11, "name": "Kopetdag Motors Ashgabat", "company": "company-8", "city": "city-5", "shortCode": "KPD-011", "phone": "+993 000 0011", "email": "branch11@kopetdagmotors.example", "address": "Branch 11, Ashgabat", "displayOrder": 2, "departments": ["department-2", "department-3", "department-4", "department-5", "department-7", "department-9", "department-8"]},
+    {"key": "branch-12", "id": 12, "name": "Merv Motors Ashgabat", "company": "company-9", "city": "city-5", "shortCode": "MRV-012", "phone": "+993 000 0012", "email": "branch12@mervmotors.example", "address": "Branch 12, Ashgabat", "displayOrder": 3, "brands": ["brand-2"], "departments": ["department-2", "department-4", "department-3", "department-5", "department-7", "department-8", "department-9"]},
+    {"key": "branch-13", "id": 13, "name": "Merv Motors Balkan", "company": "company-9", "city": "city-10", "shortCode": "MRV-013", "phone": "+993 000 0013", "email": "branch13@mervmotors.example", "address": "Branch 13, Balkan", "brands": ["brand-2", "brand-3"], "departments": ["department-2", "department-3", "department-4", "department-5", "department-6", "department-7", "department-8", "department-9"], "services": ["service-2", "service-3", "service-4", "service-5"]},
+    {"key": "branch-14", "id": 14, "name": "Zarafshan Motors Samarkand", "company": "company-12", "city": "city-11", "shortCode": "ZRF-014", "phone": "+998 000 0014", "email": "branch14@zarafshanmotors.example", "address": "Branch 14, Samarkand", "displayOrder": 4},
+    {"key": "branch-15", "id": 15, "name": "Silk Road Motors Dubai 2", "company": "company-3", "city": "city-7", "shortCode": "SRM-015", "phone": "+971 000 0015", "email": "branch15@silkroadmotors.example", "address": "Branch 15, Dubai", "brands": ["brand-2"]},
+    {"key": "branch-16", "id": 16, "name": "Registan Motors Tashkent 2", "company": "company-5", "city": "city-4", "shortCode": "RGM-016", "phone": "+998 000 0016", "email": "branch16@registanmotors.example", "address": "Branch 16, Tashkent", "displayOrder": 6, "brands": ["brand-2"], "departments": ["department-2", "department-3", "department-4", "department-5", "department-7"], "services": ["service-2"]}
+  ],
+  "teams": [
+    {"key": "team-1", "name": "Regional After-Sales", "company": "company-3", "companyBranches": ["branch-4"]},
+    {"key": "team-2", "name": "Service Advisors Uzbekistan", "company": "company-5", "companyBranches": ["branch-6", "branch-16"]}
+  ],
+  "accessTrees": [
+    {"key": "admin", "name": "Administrator", "fullAccess": true}
+  ],
+  "apps": [
+    {"appId": "menus-sample", "displayName": "Service Menus", "redirectUri": "http://localhost:5096"},
+    {"appId": "menus-sample-api", "displayName": "Service Menus", "redirectUri": "http://localhost:5136"},
+    {"appId": "claimable-items-sample", "displayName": "Service Contracts", "redirectUri": "http://localhost:5172"},
+    {"appId": "claimable-items-sample-api", "displayName": "Service Contracts", "redirectUri": "http://localhost:5171"}
+  ],
+  "users": [
+    {"username": "superuser", "password": "1", "fullName": "Super User", "isProtected": true, "companyBranch": "branch-4", "accessTrees": ["admin"]},
+    {"username": "aziz.yusupov", "password": "1", "fullName": "Aziz Yusupov", "email": "aziz.yusupov@silkroadmotors.example", "emailVerified": true, "phone": "+971 50 000 1101", "companyBranch": "branch-4", "accessTrees": ["admin"], "teams": ["team-1"]},
+    {"username": "dilnoza.karimova", "password": "1", "fullName": "Dilnoza Karimova", "email": "dilnoza.karimova@registanmotors.example", "emailVerified": true, "phone": "+998 90 000 3101", "companyBranch": "branch-6", "accessTrees": ["admin"], "teams": ["team-2"]},
+    {"username": "bekzod.rakhimov", "password": "1", "fullName": "Bekzod Rakhimov", "email": "bekzod.rakhimov@zarafshanmotors.example", "emailVerified": true, "phone": "+998 90 000 3201", "companyBranch": "branch-14", "accessTrees": ["admin"]},
+    {"username": "merdan.atayev", "password": "1", "fullName": "Merdan Atayev", "email": "merdan.atayev@kopetdagmotors.example", "emailVerified": true, "phone": "+993 65 000 4101", "companyBranch": "branch-11", "accessTrees": ["admin"]},
+    {"username": "ogulgerek.nurova", "password": "1", "fullName": "Ogulgerek Nurova", "email": "ogulgerek.nurova@mervmotors.example", "emailVerified": true, "phone": "+993 65 000 4201", "companyBranch": "branch-13", "accessTrees": ["admin"]},
+    {"username": "farrukh.saidov", "password": "1", "fullName": "Farrukh Saidov", "email": "farrukh.saidov@pamirmotors.example", "emailVerified": true, "phone": "+992 93 000 5101", "companyBranch": "branch-9", "accessTrees": ["admin"]},
+    {"username": "manizha.nazarova", "password": "1", "fullName": "Manizha Nazarova", "email": "manizha.nazarova@pamirmotors.example", "emailVerified": true, "phone": "+992 92 000 5201", "companyBranch": "branch-10", "accessTrees": ["admin"]}
+  ]
+}

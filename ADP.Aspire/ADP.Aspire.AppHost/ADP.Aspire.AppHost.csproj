@@ -11,6 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\ADP.Identity\SingleCountry\ADP.Identity.Sample.SingleCountry.API\ADP.Identity.Sample.SingleCountry.API.csproj" />
+    <ProjectReference Include="..\..\ADP.Identity\SingleCountry\ADP.Identity.Sample.SingleCountry.Web\ADP.Identity.Sample.SingleCountry.Web.csproj" />
+    <ProjectReference Include="..\..\ADP.Identity\MultiCountry\ADP.Identity.Sample.MultiCountry.API\ADP.Identity.Sample.MultiCountry.API.csproj" />
+    <ProjectReference Include="..\..\ADP.Identity\MultiCountry\ADP.Identity.Sample.MultiCountry.Web\ADP.Identity.Sample.MultiCountry.Web.csproj" />
     <ProjectReference Include="..\..\ADP.Menus\samples\SingleCountry\ADP.Menus.Sample.SingleCountry.API\ADP.Menus.Sample.SingleCountry.API.csproj" />
     <ProjectReference Include="..\..\ADP.Menus\samples\SingleCountry\ADP.Menus.Sample.SingleCountry.Web\ADP.Menus.Sample.SingleCountry.Web.csproj" />
     <ProjectReference Include="..\..\ADP.Menus\samples\SingleCountry\ADP.Menus.Sample.SingleCountry.Functions\ADP.Menus.Sample.SingleCountry.Functions.csproj" />

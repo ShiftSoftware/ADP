@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
@@ -29,11 +29,11 @@
 
 		<!--
 		  For the opt-in sample-data seeding test, which writes the demo catalogue into the sample's SQL
-		  database. ShiftIdentity.Data supplies ShiftIdentityDbContext and the Brand entity, so
-		  SampleSeedDB can reproduce the sample API's model without referencing the web app itself.
+		  database. ShiftIdentity.Data also feeds this project's generated mapper (see
+		  MenuMapperRegistrationTests).
 		-->
 		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.14" />
-		<PackageReference Include="ShiftSoftware.ShiftIdentity.Data" Version="2026.11.8.1" />
+		<PackageReference Include="ShiftSoftware.ShiftIdentity.Data" Version="2026.11.22.1" />
 	</ItemGroup>
 
 	<ItemGroup>

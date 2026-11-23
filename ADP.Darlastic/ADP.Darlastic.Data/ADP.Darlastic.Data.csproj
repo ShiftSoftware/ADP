@@ -50,6 +50,6 @@
 		     use (PiiFieldDTO, [Pii], PiiDtoProtector, PiiOptions, the OData query guard) first shipped
 		     in 2026.10.5.1. Hosts above the floor still resolve their own higher version, because a
 		     floor only ever widens; raising it drops every host below it. -->
-		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.11.8.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.11.22.1" />
 	</ItemGroup>
 </Project>
