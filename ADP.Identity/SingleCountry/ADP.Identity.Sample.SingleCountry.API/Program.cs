@@ -15,7 +15,7 @@ using ShiftSoftware.TypeAuth.AspNetCore.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
-builder.Services.AddDbContext<DB>(x => x.UseSqlite(configuration.GetConnectionString("Identity")));
+builder.Services.AddDbContext<DB>(x => x.UseSqlite(configuration.GetConnectionString("Identity"), sqlite => sqlite.UseCaseInsensitiveText()));
 
 builder.Services.AddLocalization();
 builder.Services.AddHttpContextAccessor();
