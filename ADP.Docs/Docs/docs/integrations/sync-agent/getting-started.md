@@ -17,7 +17,6 @@ The Sync Agent provides extension methods on `IServiceCollection` to register it
 ```csharp
 services.AddSyncService();                  // Registers SyncEngine<T> and SyncEngine<TSource, TDestination>
 services.AddEFCoreSyncDataSource();         // Registers EFCoreSyncDataSource adapters
-services.AddEFCoreSyncDataDestination();    // Registers EFCoreSyncDataDestination adapters
 services.AddCosmosSyncDataDestination();    // Registers CosmosSyncDataDestination adapters
 
 // For CSV-based pipelines
@@ -177,50 +176,7 @@ public class PriceSyncJob
 
 ---
 
-## Example 3: EF Core to EF Core (Database to Database)
-
-Syncing data between two SQL Server databases — useful for replicating data across environments or aggregating dealer data.
-
-```csharp
-public class OrderSyncJob
-{
-    private readonly IServiceProvider _services;
-
-    public OrderSyncJob(IServiceProvider services) => _services = services;
-
-    public async Task<bool> RunAsync()
-    {
-        await using var engine = new SyncEngine<OrderEntity>(_services);
-
-        engine.Configure(batchSize: 200, maxRetryCount: 1);
-
-        // Source: read from DealerDbContext
-        var source = engine
-            .SetDataAddapter<EFCoreSyncDataSource<OrderEntity, DealerDbContext>>(_services);
-
-        source.Configure(new EFCoreSyncDataSourceConfigurations<OrderEntity>
-        {
-            Query = (query, actionType) => query.Where(o => o.Status == "Completed"),
-            EntityKey = o => o.OrderId,
-        });
-
-        // Destination: write to CentralDbContext
-        var destination = engine
-            .SetDataAddapter<EFCoreSyncDataDestination<OrderEntity, CentralDbContext>>(_services);
-
-        destination.Configure(new EFCoreSyncDataDestinationConfigurations());
-
-        // Same type — use identity mapping
-        engine.SetupMapping(async (items, actionType) => items);
-
-        return await engine.RunAsync();
-    }
-}
-```
-
----
-
-## Example 4: EF Core to DuckDB
+## Example 3: EF Core to DuckDB
 
 Syncing operational data into DuckDB for analytics and reporting.
 

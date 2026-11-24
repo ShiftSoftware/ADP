@@ -179,7 +179,7 @@ This means a typical pipeline setup is as simple as:
 
 1. Create a `SyncEngine`.
 2. Attach a **source adapter** (e.g., CSV, EF Core).
-3. Attach a **destination adapter** (e.g., Cosmos DB, EF Core, DuckDB).
+3. Attach a **destination adapter** (e.g., Cosmos DB, DuckDB).
 4. Provide a mapping function.
 5. Call `RunAsync()`.
 

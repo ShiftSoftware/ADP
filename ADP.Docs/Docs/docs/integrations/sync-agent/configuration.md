@@ -219,5 +219,4 @@ Refer to the [Data Adapters](data-adapters.md) page for configuration details sp
 - [CSV Source Configuration](data-adapters.md#csv-source-configuration)
 - [EF Core Source Configuration](data-adapters.md#ef-core-source-configuration)
 - [Cosmos DB Destination Configuration](data-adapters.md#cosmos-db-destination-configuration)
-- [EF Core Destination Configuration](data-adapters.md#ef-core-destination-configuration)
 - [DuckDB Destination Configuration](data-adapters.md#duckdb-destination-configuration)

@@ -171,34 +171,6 @@ destination.Configure(new CosmosSyncDataDestinationConfigurations<PartDoc>
 
 ---
 
-### EF Core Destination Adapter
-
-The `EFCoreSyncDataDestination` writes data to a SQL Server database (or any EF Core-compatible provider) using bulk operations powered by [EFCore.BulkExtensions](https://github.com/borisdj/EFCore.BulkExtensions).
-
-Key features:
-
-- **Bulk insert or update** — uses `BulkInsertOrUpdateAsync` for high-performance writes.
-- **Configurable BulkConfig** — full access to the underlying BulkExtensions configuration.
-
-```csharp
-var destination = engine.SetDataAddapter<EFCoreSyncDataDestination<PartEntity, AppDbContext>>(services);
-
-destination.Configure(new EFCoreSyncDataDestinationConfigurations
-{
-    BulkConfig = new BulkConfig { SetOutputIdentity = true }
-});
-```
-
-#### EF Core Destination Configuration
-
-`EFCoreSyncDataDestinationConfigurations`:
-
-| Property | Type | Description |
-|---|---|---|
-| `BulkConfig` | `BulkConfig` | Configuration for EFCore.BulkExtensions (batch size, identity handling, etc.). |
-
----
-
 ### DuckDB Destination Adapter
 
 The `DuckDBSyncDataDestination` writes data to a [DuckDB](https://duckdb.org/) database — an in-process analytical database that's ideal for reporting, analytics, and data warehousing scenarios.
