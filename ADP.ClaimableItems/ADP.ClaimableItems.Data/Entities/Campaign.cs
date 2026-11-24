@@ -26,8 +26,8 @@ public class Campaign : ShiftEntity<Campaign>, IEntityHasUniqueHash<Campaign>, I
 
     public string? DistributorCertificateNumberPrefix { get; set; }
 
-    // FK to the consumer-owned VehicleInspectionType (a cross-feature entity that stays in the consumer,
-    // e.g. the original host application). Kept as a plain nullable FK column with NO navigation — the relationship is
+    // FK to the consumer-owned VehicleInspectionType (a cross-feature entity that stays in the consumer).
+    // Kept as a plain nullable FK column with NO navigation — the relationship is
     // configured from the principal side by the consumer (VehicleInspectionType.Campaigns), which preserves
     // the existing FK constraint without this module depending on the consumer's type.
     public long? VehicleInspectionTypeID { get; set; }

@@ -12,8 +12,8 @@ using ShiftSoftware.ShiftEntity.Web;
 namespace ShiftSoftware.ADP.ClaimableItems.API.Controllers;
 
 /// <summary>
-/// Item-claim certificate CRUD + the batch Invoice endpoint. Moved from the original host application (Phase 2 Slice 6);
-/// routes/EntitySet name preserved via the controller name + route-prefix convention.
+/// Item-claim certificate CRUD + the batch Invoice endpoint. Routes and the EntitySet name are frozen
+/// via the controller name + route-prefix convention.
 /// </summary>
 [Route("[controller]")]
 public class ItemClaimCertificateController : ShiftEntitySecureControllerAsync<ItemClaimCertificateRepository, Certificate, CertificateListDTO, ItemClaimCertificateDTO>
@@ -35,8 +35,7 @@ public class ItemClaimCertificateController : ShiftEntitySecureControllerAsync<I
         {
             await this.repository.Invoice(items, invoiceDate);
 
-            // NOTE: the original host implementation wrapped the response as WarrantyClaimListDTO instances (a wire
-            // quirk); the Entity payload is a list of default-valued DTOs the client never reads.
+            // NOTE: the Entity payload is a list of default-valued DTOs the client never reads.
             return Ok(new ShiftEntityResponse<IEnumerable<ItemClaimListDTO>>()
             {
                 Entity = items.Select(x => new ItemClaimListDTO { })

@@ -7,12 +7,12 @@ public static class CasesModelBuilderExtensions
 {
     /// <summary>
     /// Registers the ADP.Cases entities into the consumer's model. NOTE: a consumer whose DbContext
-    /// already declares <c>DbSet&lt;Certificate&gt; Certificates</c> (the original host application does — that DbSet name is
+    /// already declares <c>DbSet&lt;Certificate&gt; Certificates</c> (that DbSet name is
     /// what preserves the prod table name) does not strictly need this call while schema is null;
     /// it exists for consumers without DbSets and for schema-isolated hosts (sample/schema-isolated style).
     /// </summary>
     /// <param name="schema">Schema for the module's tables + temporal history tables.
-    /// Pass null (as the original host application does) to keep everything in the default schema (dbo) — required for the
+    /// Pass null to keep everything in the default schema (dbo) — required for the
     /// pre-existing prod temporal tables.</param>
     public static ModelBuilder ConfigureCasesEntities(this ModelBuilder modelBuilder, string? schema = "Cases")
     {

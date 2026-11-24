@@ -9,14 +9,13 @@ namespace ShiftSoftware.ADP.WarrantyClaims.Data.Services;
 
 /// <summary>
 /// The module's default <see cref="IWarrantyRatesStore"/> (Phase 3 Slice 3.6, D24): the warranty
-/// rates live in the module-owned temporal <see cref="Entities.WarrantyRates"/> entity. Absorbs the
-/// original host's store implementation byte-identically — both halves of the dissolved rates flow:
-/// the export endpoint's <c>JsonSerializer.Deserialize</c> of the raw <c>rates</c> query JSON
-/// (default serializer options, exactly as the host deserialized its Setting DTO) and the
+/// rates live in the module-owned temporal <see cref="Entities.WarrantyRates"/> entity. It does both
+/// halves of the rates flow: the export endpoint's <c>JsonSerializer.Deserialize</c> of the raw
+/// <c>rates</c> query JSON (default serializer options) and the
 /// audit-upsert (FindAsync + Update when the DTO carries an ID, Insert otherwise). The echo object
 /// handed back for <c>Additional["Rates"]</c> is the deserialized <see cref="WarrantyRatesDTO"/>
-/// itself — base view-and-upsert properties included — so the export response JSON keeps the shape
-/// the host always served. Registered TryAddScoped by the module API extension: the repository
+/// itself — base view-and-upsert properties included — because that export response shape is frozen.
+/// Registered TryAddScoped by the module API extension: the repository
 /// shares the request's DbContext, so the module controller's SaveChanges (AFTER the CSV file
 /// write — frozen ordering) persists the upsert; a consumer registration made BEFORE the module
 /// extension replaces this default (e.g. an org that keeps rates elsewhere).
@@ -59,7 +58,7 @@ public class DefaultWarrantyRatesStore : IWarrantyRatesStore
         return new WarrantyRatesPersistResult
         {
             // Only the four rate fields feed the module's export math — the ID deliberately does not
-            // ride along (it never did: same mapping as the dissolved repository overload).
+            // ride along.
             Rates = new WarrantyRatesDTO
             {
                 PRR = warrantyRates!.PRR,

@@ -21,9 +21,8 @@ using ShiftSoftware.ShiftEntity.Model.Enums;
 namespace ShiftSoftware.ADP.WarrantyClaims.Data.Repositories;
 
 /// <summary>
-/// The warranty claim repository. Moved from the original host application (Services.Data.Repositories.WarrantyClaimRepository)
-/// (Phase 2b) — line replacement, service validation, delivery-date race check + propagation, status
-/// transitions and manufacturer CSV export are verbatim.
+/// The warranty claim repository: line replacement, service validation, delivery-date race check +
+/// propagation, status transitions and manufacturer CSV export.
 /// </summary>
 /// <remarks>
 /// CONSUMER SEAMS:
@@ -248,10 +247,9 @@ public class WarrantyClaimRepository :
         this.warrantyClaimService.GenerateCSV(entity);
     }
 
-    // Moved verbatim from the original host's derived repository (Phase 3 Slice 3.2): only the frx
-    // source (embedded default / consumer override), the company info (ICompanyInfoProvider), the
-    // date formatter (IPrintoutDateFormatter) and the distributor code (WarrantyClaimsDataOptions) go
-    // through the consumer seams now.
+    // The frx source is the embedded default or the consumer override; the company info
+    // (ICompanyInfoProvider), the date formatter (IPrintoutDateFormatter) and the distributor code
+    // (WarrantyClaimsDataOptions) come from the consumer.
     public override async Task<Stream> PrintAsync(string id)
     {
         var companyInfoProvider = PrintingServices.GetRequiredCompanyInfoProvider(this.db);
@@ -485,8 +483,7 @@ public class WarrantyClaimRepository :
         this.warrantyClaimService.UpdateAmounts(warrantyRates, claim);
     }
 
-    // Moved verbatim from the original host's derived repository (Phase 3 Slice 3.2). Method-name
-    // typo preserved: the module controller already routes print-invoice through it.
+    // Method-name typo kept: the module controller already routes print-invoice through it.
     public virtual async Task<Stream> PrintManuufacturerInvoiceAsync(string id)
     {
         var companyInfoProvider = PrintingServices.GetRequiredCompanyInfoProvider(this.db);

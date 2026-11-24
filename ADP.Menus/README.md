@@ -32,4 +32,4 @@ Working end-to-end samples live in [`samples/SingleCountry`](samples/SingleCount
 
 ## License
 
-Apache-2.0 © Shift Software
+Apache-2.0. See [Licence and ownership](../LICENSING.md).

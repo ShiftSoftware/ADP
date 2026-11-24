@@ -12,8 +12,7 @@ public static class WarrantyClaimsReplicationExtensions
 {
     /// <summary>
     /// Opt-in Cosmos replication for warranty claims: WarrantyClaim → WarrantyClaimModel into
-    /// CompanyData/Vehicles with the 2-level partition key (VIN, ItemType) — moved verbatim from the original
-    /// host application's inline SetUpReplication block. Call this from inside the consumer's
+    /// CompanyData/Vehicles with the 2-level partition key (VIN, ItemType). Call this from inside the consumer's
     /// <c>AddShiftEntityCosmosDbReplicationTrigger</c> callback, passing the org Cosmos client. A
     /// read-only consumer simply does NOT call this, so the module replicates nothing.
     /// NOTE: the labor-lines-only <c>PrepareForReplicationAsync</c> refetch stays on

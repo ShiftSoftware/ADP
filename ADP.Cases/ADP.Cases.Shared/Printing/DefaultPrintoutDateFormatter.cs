@@ -2,9 +2,8 @@ namespace ShiftSoftware.ADP.Cases.Shared.Printing;
 
 /// <summary>
 /// The module default <see cref="IPrintoutDateFormatter"/>: two plain format strings, defaulting to
-/// the formats the original host configures in every environment (<c>PrintoutDateFormat</c> =
-/// "yyyy-MM-dd", <c>PrintoutDateTimeFormat</c> = "yyyy-MM-dd hh:mm tt"). Formatting uses the current
-/// culture, exactly like the original host's PrintOutDateFormatter.
+/// "yyyy-MM-dd" for dates and "yyyy-MM-dd hh:mm tt" for date-times. Formatting uses the current
+/// culture.
 /// </summary>
 public class DefaultPrintoutDateFormatter : IPrintoutDateFormatter
 {

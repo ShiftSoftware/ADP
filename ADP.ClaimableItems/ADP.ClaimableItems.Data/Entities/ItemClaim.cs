@@ -10,20 +10,19 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ShiftSoftware.ADP.ClaimableItems.Data.Entities;
 
 /// <summary>
-/// The item-claim record. Moved from the original host application's Services.Data.Entities.ItemClaim (Phase 2 Slice 5,
-/// empty-migration-diff gated — prod table dbo.ItemClaim + temporal history unchanged).
+/// The item-claim record. Existing hosts already have the table (dbo.ItemClaim + temporal history) in production.
 /// Implements the ADP.Cases <see cref="IClaim"/> engine contract (status transitions run through
 /// the shared SharedClaimService).
 /// </summary>
 /// <remarks>
-/// Deliberate differences from the original host implementation — relationships only, never columns:
+/// Deliberate choices — relationships only, never columns:
 /// <list type="bullet">
-/// <item><c>VehicleInspectionResult</c> navigation dropped (consumer-owned entity); the plain
+/// <item>No <c>VehicleInspectionResult</c> navigation (consumer-owned entity); the plain
 /// <see cref="VehicleInspectionResultID"/> column stays and the consumer configures the FK from its
 /// side (host: <c>DB.OnModelCreating</c>). Flows that need inspection data (voucher printing, list
 /// flattening) live in the consumer's derived repository.</item>
-/// <item>Certificate navigations RETAINED, retyped to the ADP.Cases <see cref="Certificate"/>
-/// (ClaimableItems.Data references Cases.Data; the reverse collections on Certificate are gone).</item>
+/// <item>Certificate navigations use the ADP.Cases <see cref="Certificate"/>
+/// (ClaimableItems.Data references Cases.Data; Certificate has no reverse collections).</item>
 /// <item><see cref="CalculateUniqueHash"/> intentionally EXCLUDES CampaignVinEntryID while the
 /// Cosmos doc id includes it — prod asymmetry preserved bug-for-bug (D16).</item>
 /// </list>

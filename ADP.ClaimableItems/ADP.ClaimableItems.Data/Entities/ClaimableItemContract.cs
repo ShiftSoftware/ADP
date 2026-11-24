@@ -8,10 +8,9 @@ namespace ShiftSoftware.ADP.ClaimableItems.Data.Entities;
 
 /// <summary>
 /// A service contract: menu services sold for one VIN, valid from <see cref="StartDate"/> to
-/// <see cref="EndDate"/>. Moved here from the original host application as an empty placeholder
-/// (Phase 2 Slice 5) because ItemClaim FKs it AND its ID participates in both the claim UniqueHash and
-/// the Cosmos doc-id formats (see D18); the columns came later. The table keeps its name
-/// (dbo.ClaimableItemContract + History in the original host).
+/// <see cref="EndDate"/>. ItemClaim FKs it AND its ID participates in both the claim UniqueHash and
+/// the Cosmos doc-id formats (see D18). The table name is frozen for hosts already using it
+/// (dbo.ClaimableItemContract + History).
 /// </summary>
 /// <remarks>
 /// Draft → issued → cancelled. Only a draft is edited or deleted; <see cref="IsCancelled"/> is set by the

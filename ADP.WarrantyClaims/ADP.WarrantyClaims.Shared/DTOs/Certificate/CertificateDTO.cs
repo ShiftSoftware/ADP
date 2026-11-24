@@ -16,9 +16,8 @@ public class CertificateDTO : ShiftEntityViewAndUpsertDTO
     [Required]
     public DateTime? PeriodEndDate { get; set; }
 
-    // Now the WARRANTY certificate DTO only (Phase 2 Slice 6): the item-claim certificate flow
-    // moved to ADP.ClaimableItems with its own ItemClaimCertificateDTO; the always-empty
-    // ReimbursementItemClaims list this class used to carry is gone with it.
+    // The WARRANTY certificate DTO only: the item-claim certificate flow is in ADP.ClaimableItems with
+    // its own ItemClaimCertificateDTO.
     public List<WarrantyCertificateLineDTO> WarrantyClaims { get; set; } = new();
 
     public string? Notes { get; set; }

@@ -2,10 +2,8 @@ namespace System;
 
 /// <summary>
 /// JPY currency formatting the manufacturer-invoice printout renders, and USD currency formatting
-/// the financial-report printout renders. The original host defined these as <c>System</c>-namespace
-/// extensions (Services.Shared/Extensions/SystemExtentsions.cs) and the module Web project carries
-/// its own copy for the claim form — the Data-side print methods must not reach into either, so an
-/// internal copy travels with them. Kept byte-identical in behavior.
+/// the financial-report printout renders. The module Web project has its own copy for the claim form,
+/// which the Data-side print methods must not reach into; keep the behavior of the two identical.
 /// </summary>
 internal static class WarrantyClaimsDataSystemExtensions
 {

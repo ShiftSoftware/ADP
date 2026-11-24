@@ -12,11 +12,10 @@ using ShiftSoftware.TypeAuth.Core;
 namespace ShiftSoftware.ADP.WarrantyClaims.API.Controllers;
 
 /// <summary>
-/// The dealer-side financial analytics list. Moved from the original host application (Phase 3
-/// Slice 3.5, D23) at its exact original route. The original controller passed <c>base(null)</c> —
-/// authentication-only at the controller level, with only the Get override's Financial read check —
-/// and the host keeps that behavior by leaving <see cref="WarrantyClaimsApiOptions.DealerFinancialAction"/>
-/// null. Lax-auth quirk logged for the standing security pass; do not "fix" it in a move slice.
+/// The dealer-side financial analytics list. Its route is frozen. When
+/// <see cref="WarrantyClaimsApiOptions.DealerFinancialAction"/> is null the controller is
+/// authentication-only, with only the Get override's Financial read check; an existing host leaves it
+/// null. Lax-auth quirk logged for the standing security pass; do not "fix" it here.
 /// </summary>
 [Route("[controller]")]
 public class DealerFinancialController : ShiftEntitySecureControllerAsync<DealerFinancialRepository, Data.Entities.WarrantyClaim, DealerFinancialListDTO, WarrantyClaimDTO>

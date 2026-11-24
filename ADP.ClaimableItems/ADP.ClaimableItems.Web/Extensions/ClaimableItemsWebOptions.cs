@@ -6,7 +6,7 @@ public class ClaimableItemsWebOptions
 {
     /// <summary>
     /// TypeAuth node gating the ClaimableItem admin pages (List/Form). Consumer-supplied so existing
-    /// grants keep resolving (decision D9) — e.g. the original host application passes
+    /// grants keep resolving (decision D9) — e.g. a host passes
     /// its existing <c>ClaimableItemSetup</c> node. Null → the pages are not gated.
     /// </summary>
     public ReadWriteDeleteAction? ClaimableItemSetupAction { get; set; }
@@ -47,26 +47,26 @@ public class ClaimableItemsWebOptions
     public BooleanAction? PrintContractAction { get; set; }
 
     /// <summary>
-    /// TypeAuth node gating the ItemClaim pages (consumer-supplied, per D9 — the original host application passes
+    /// TypeAuth node gating the ItemClaim pages (consumer-supplied, per D9 — e.g. a host passes
     /// <c>Claiming</c>). Null → not gated.
     /// </summary>
     public ReadWriteDeleteAction? ClaimingAction { get; set; }
 
     /// <summary>
     /// TypeAuth node gating the ItemClaimCertificate pages + the certify shortcut on the claim list
-    /// (consumer-supplied, per D9 — the original host application passes <c>ClaimableItemCertifying</c>). Null → not gated.
+    /// (consumer-supplied, per D9 — e.g. a host passes <c>ClaimableItemCertifying</c>). Null → not gated.
     /// </summary>
     public ReadWriteDeleteAction? CertifyingAction { get; set; }
 
     /// <summary>
-    /// TypeAuth node gating the ItemClaimInvoice pages (consumer-supplied, per D9 — the original host application passes
+    /// TypeAuth node gating the ItemClaimInvoice pages (consumer-supplied, per D9 — e.g. a host passes
     /// <c>ClaimableItemInvoicing</c>). Null → not gated.
     /// </summary>
     public ReadWriteDeleteAction? InvoicingAction { get; set; }
 
     /// <summary>
     /// TypeAuth node (a BooleanAction) that allows editing the otherwise-immutable fields of a Draft
-    /// claim on the ItemClaim form (consumer-supplied — the original host application passes <c>PostClaimModification</c>).
+    /// claim on the ItemClaim form (consumer-supplied — e.g. a host passes <c>PostClaimModification</c>).
     /// Null → never allowed.
     /// </summary>
     public BooleanAction? PostClaimModificationAction { get; set; }
@@ -85,7 +85,7 @@ public class ClaimableItemsWebOptions
     /// <summary>
     /// When true, registers the module's own default <c>ClaimableItemsActionTree</c> into the Blazor
     /// TypeAuth options (for fresh consumers / the sample). Leave false (default) when the consumer already
-    /// registers its own action tree with the catalog nodes (e.g. the original host application), to avoid a duplicate group (D9).
+    /// registers its own action tree with the catalog nodes, to avoid a duplicate group (D9).
     /// </summary>
     public bool RegisterModuleActionTree { get; set; } = false;
 

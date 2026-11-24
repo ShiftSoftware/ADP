@@ -25,7 +25,7 @@ public static class WarrantyClaimsWebExtensions
             services.Configure(configure);
 
         // Expose the module assembly for Blazor routing discovery (AdditionalAssemblies) — this is what
-        // makes the warranty pages (which keep their original routes) resolve from the consumer's router.
+        // makes the warranty pages resolve from the consumer's router.
         services.Configure<AppStartupOptions>(o => o.AddAssembly(typeof(WarrantyClaimsWebExtensions).Assembly));
 
         // Capability seam for the warranty pages: consumers register their own adapter BEFORE or AFTER

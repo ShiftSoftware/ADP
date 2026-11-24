@@ -317,6 +317,7 @@ nav:
           - Free Service Provisioning: generated/Features/FreeServiceProvisioning.md
 
   - Web Components: web-components/index.md
+  - Licence and ownership: licensing.md
 
 markdown_extensions:
   - pymdownx.snippets

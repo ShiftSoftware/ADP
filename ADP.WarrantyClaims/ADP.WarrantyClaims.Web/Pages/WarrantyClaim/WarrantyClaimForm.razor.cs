@@ -447,8 +447,7 @@ public partial class WarrantyClaimForm
 
         try
         {
-            // Phase 3 Slice 3.3: the module API now serves the rates (IWarrantyRatesStore) — the form no
-            // longer reads the host's own Setting route.
+            // The module API serves the rates (IWarrantyRatesStore).
             var warrantyRates = await this.Http.GetFromJsonAsync<WarrantyRatesDTO>("WarrantyClaim/current-rates");
 
             // PRR1 / exchange rates are required by WarrantyClaimValidator (NotEmpty rejects 0) but have

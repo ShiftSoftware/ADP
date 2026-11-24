@@ -8,7 +8,7 @@ namespace ShiftSoftware.ADP.Cases.Shared.Workflow;
 /// <c>UpsertAsync</c> (or a batch endpoint) after the consumer has performed its own authorization.
 /// </summary>
 /// <remarks>
-/// Unlike the legacy <see cref="Services.SharedClaimService"/> (moved verbatim, mutate-then-throw),
+/// Unlike the legacy <see cref="Services.SharedClaimService"/> (mutate-then-throw),
 /// this engine is VALIDATE-FIRST: an illegal transition throws before any mutation. Timestamps come
 /// from an injected <see cref="TimeProvider"/> so tests are deterministic.
 /// </remarks>

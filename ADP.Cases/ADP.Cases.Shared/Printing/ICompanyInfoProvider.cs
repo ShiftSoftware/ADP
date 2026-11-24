@@ -5,9 +5,8 @@ namespace ShiftSoftware.ADP.Cases.Shared.Printing;
 /// ships NO default implementation — printing requires the consumer to register one
 /// (<c>services.AddScoped&lt;ICompanyInfoProvider, YourCompanyInfoProvider&gt;()</c>); module print
 /// methods throw a descriptive <see cref="System.InvalidOperationException"/> when it is missing.
-/// The original host implements this over its CompanyInfoService (identity Cosmos + signed logo
-/// URLs); implementations should return placeholder values rather than throw when a lookup fails,
-/// so a printout still renders.
+/// A host can implement this over its identity data and signed logo URLs. Implementations should
+/// return placeholder values rather than throw when a lookup fails, so a printout still renders.
 /// </summary>
 public interface ICompanyInfoProvider
 {

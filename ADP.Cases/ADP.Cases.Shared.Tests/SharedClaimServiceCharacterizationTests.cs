@@ -8,8 +8,8 @@ using Xunit;
 namespace ShiftSoftware.ADP.Cases.Shared.Tests;
 
 /// <summary>
-/// CHARACTERIZATION tests for the VERBATIM-moved SharedClaimService (Phase 2, D16).
-/// These encode the CURRENT production behavior of the original host application's claim status machine — including the
+/// CHARACTERIZATION tests for SharedClaimService.
+/// These encode the CURRENT production behavior of the claim status machine — including the
 /// mutate-then-throw convention and the 10-error aggregation cap. If one of these fails after a
 /// change, production behavior changed: that is a bug in the change, not in the test.
 /// </summary>

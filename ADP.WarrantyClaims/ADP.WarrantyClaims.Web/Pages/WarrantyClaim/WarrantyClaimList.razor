@@ -439,7 +439,7 @@
     {
         try
         {
-            // Phase 3 Slice 3.3: the module API now serves the rates (IWarrantyRatesStore).
+            // The module API serves the rates (IWarrantyRatesStore).
             this.rates = (await this.Http.GetFromJsonAsync<WarrantyRatesDTO>($"WarrantyClaim/current-rates"))!;
 
             StateHasChanged();

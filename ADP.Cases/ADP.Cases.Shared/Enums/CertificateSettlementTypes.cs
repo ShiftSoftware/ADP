@@ -3,8 +3,7 @@ using System.ComponentModel;
 namespace ShiftSoftware.ADP.Cases.Shared.Enums;
 
 /// <summary>
-/// Settlement direction of a certificate. Moved VERBATIM from the original host application
-/// <c>Services.Shared.Enums.CertificateSettlementTypes</c> (Phase 2 Slice 4, D13).
+/// Settlement direction of a certificate.
 /// FROZEN: integer values are persisted in the production Certificates table.
 /// </summary>
 public enum CertificateSettlementTypes

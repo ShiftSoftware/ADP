@@ -9,8 +9,7 @@ using ShiftSoftware.ShiftEntity.EFCore;
 namespace ShiftSoftware.ADP.WarrantyClaims.Data.Repositories;
 
 /// <summary>
-/// The distributor-side financial analytics repository over the warranty claim. Moved from the
-/// original host application (Phase 3 Slice 3.5, D23).
+/// The distributor-side financial analytics repository over the warranty claim.
 /// </summary>
 /// <remarks>
 /// Printing (<see cref="PrintAsync"/>) renders the embedded FinancialReport template (overridable via

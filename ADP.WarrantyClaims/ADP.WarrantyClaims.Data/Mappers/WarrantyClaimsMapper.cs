@@ -135,9 +135,8 @@ public class WarrantyClaimsMapper : ShiftMapperBase
         // which projects one claim through both maps and asserts they differ by exactly these six members and the
         // margin computed from one of them (DistributorMargin = TotalClaimAmountDistributor - TotalClaimAmount).
         //
-        // TotalClaimAmountDistributor was the original host's sixth ignore, added to hide distributor data from
-        // dealers. The extraction carried only five, so dealers were served the distributor's total and margin until
-        // the sixth was restored.
+        // TotalClaimAmountDistributor must stay ignored: without it dealers are served the distributor's total
+        // and margin.
         CreateMap<WarrantyClaim, DealerFinancialListDTO>()
             .IncludeBase<WarrantyClaim, DistributorFinancialListDTO>()
             .ForMember(d => d.DistComment1, opt => opt.Ignore())

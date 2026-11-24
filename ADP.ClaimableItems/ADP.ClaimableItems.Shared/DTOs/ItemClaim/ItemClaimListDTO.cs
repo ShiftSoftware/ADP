@@ -7,10 +7,10 @@ using System.Text.Json.Serialization;
 namespace ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ItemClaim;
 
 /// <summary>
-/// Item-claim list DTO. Moved VERBATIM from the original host application's Services.Shared.DTOs.ItemClaim (Phase 2 Slice 5).
+/// Item-claim list DTO.
 /// NOTE: the VehicleInspectionResult* members flatten a CONSUMER-owned navigation the module entity
 /// does not carry — the module's default list projection leaves them null; a consumer that needs
-/// them (the original host application does) overrides <c>MapToList</c> in a derived repository with a manual join.
+/// them overrides <c>MapToList</c> in a derived repository with a manual join.
 /// </summary>
 public class ItemClaimListDTO : ShiftEntityListDTO
 {

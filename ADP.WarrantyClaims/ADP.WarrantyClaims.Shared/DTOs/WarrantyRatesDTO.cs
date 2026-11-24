@@ -3,13 +3,12 @@ using ShiftSoftware.ShiftEntity.Model.Dtos;
 namespace ShiftSoftware.ADP.WarrantyClaims.Shared.DTOs;
 
 /// <summary>
-/// The warranty exchange-rate/PRR inputs the module's amount calculations need, and (since Phase 3
-/// Slice 3.6, D24) the view/upsert DTO of the module-owned <c>WarrantyRates</c> entity — the
-/// original host's Setting entity/DTO merged into the module. Derives from
-/// <see cref="ShiftEntityViewAndUpsertDTO"/> exactly like the host DTO it absorbed, so the CRUD
-/// wire shape (ID + IsDeleted + audit fields + the 4 rates), the export flow's
-/// <c>Additional["Rates"]</c> echo and the <c>rates</c> query-param payload all stay identical.
-/// The ID has no hash-id converter (raw numeric string), matching the original.
+/// The warranty exchange-rate/PRR inputs the module's amount calculations need, and the view/upsert
+/// DTO of the module-owned <c>WarrantyRates</c> entity. Derives from
+/// <see cref="ShiftEntityViewAndUpsertDTO"/>, which is part of the frozen wire shapes: the CRUD
+/// payload (ID + IsDeleted + audit fields + the 4 rates), the export flow's
+/// <c>Additional["Rates"]</c> echo and the <c>rates</c> query-param payload.
+/// The ID has no hash-id converter (raw numeric string).
 /// </summary>
 public class WarrantyRatesDTO : ShiftEntityViewAndUpsertDTO
 {

@@ -17,8 +17,7 @@ using System.Net;
 namespace ShiftSoftware.ADP.ClaimableItems.Data.Repositories;
 
 /// <summary>
-/// The item-claim repository. Moved from the original host application's Services.Data.Repositories.ItemClaimRepository
-/// (Phase 2 Slice 5) — the upsert immutability guard and status-transition flow are verbatim.
+/// The item-claim repository: the upsert immutability guard and the status-transition flow.
 /// </summary>
 /// <remarks>
 /// CONSUMER SEAM: register a derived repository (<c>services.AddScoped&lt;ItemClaimRepository,
@@ -132,18 +131,17 @@ public class ItemClaimRepository : ShiftRepository<ShiftDbContext, ItemClaim, It
         => throw new NotSupportedException(
             "Item-claim voucher printing needs consumer-gathered customer data. Register a derived ItemClaimRepository whose PrintAsync override collects it and calls PrintClaimVoucher.");
 
-    // Localized-text JSON ({"en":"...","ru":"..."}) → one language. Same helper the original host
-    // inspection repository exposes; duplicated here so the module stays consumer-free.
+    // Localized-text JSON ({"en":"...","ru":"..."}) → one language.
     private static string TranslateLocalized(string jsonString, string lang)
     {
         return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(jsonString)![lang];
     }
 
     /// <summary>
-    /// Renders the item-claim voucher PDF — the RENDER half of the voucher split (Phase 3 Slice 3.2),
-    /// moved verbatim from the original host. Data gathering stays consumer-side: customer identity,
-    /// phone and the resolved address string come in as parameters (the host joins its
-    /// VehicleInspectionResult table and resolves the city/country address from identity Cosmos),
+    /// Renders the item-claim voucher PDF — the RENDER half of the voucher split (Phase 3 Slice 3.2).
+    /// Data gathering stays consumer-side: customer identity,
+    /// phone and the resolved address string come in as parameters (a host can join its
+    /// VehicleInspectionResult table and resolve the city/country address from its identity data),
     /// as do the two localized signature captions and the print language. Branch/distributor info
     /// flows through the consumer's <see cref="Cases.Shared.Printing.ICompanyInfoProvider"/>; the
     /// .frx is the module-embedded default unless overridden via

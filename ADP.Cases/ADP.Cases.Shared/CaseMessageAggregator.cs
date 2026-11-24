@@ -8,8 +8,8 @@ namespace ShiftSoftware.ADP.Cases.Shared;
 /// shape all consumer list pages already render.
 /// </summary>
 /// <remarks>
-/// <see cref="Services.SharedClaimService"/> intentionally keeps its own inline VERBATIM copy of
-/// this logic (D16 — byte-faithful move); new engine consumers use this helper instead.
+/// <see cref="Services.SharedClaimService"/> intentionally keeps its own inline copy of this logic
+/// (its behavior is frozen); new engine consumers use this helper instead.
 /// </remarks>
 public static class CaseMessageAggregator
 {

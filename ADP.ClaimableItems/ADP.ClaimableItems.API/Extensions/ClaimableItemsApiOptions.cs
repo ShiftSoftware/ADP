@@ -16,7 +16,7 @@ public class ClaimableItemsApiOptions
 
     /// <summary>
     /// The TypeAuth action node gating the ClaimableItem catalog CRUD controller. The consumer supplies
-    /// its OWN node (e.g. the original host application passes its existing <c>ClaimableItemSetup</c> node)
+    /// its OWN node (e.g. a host passes its existing <c>ClaimableItemSetup</c> node)
     /// so existing permission grants keep resolving — the module never reproduces the node (decision D9).
     /// Only used when <see cref="EnableClaimableItemsActionTreeAuthorization"/> is true.
     /// </summary>
@@ -90,29 +90,29 @@ public class ClaimableItemsApiOptions
 
     /// <summary>
     /// The TypeAuth action node gating the ItemClaim controller (CRUD + the hot claim endpoint,
-    /// which additionally requires Write on this node). Consumer-supplied, per D9 — the original
-    /// host application passes its existing <c>Claiming</c> node.
+    /// which additionally requires Write on this node). Consumer-supplied, per D9 — e.g. a host
+    /// passes its existing <c>Claiming</c> node.
     /// Only used when <see cref="EnableClaimableItemsActionTreeAuthorization"/> is true.
     /// </summary>
     public ReadWriteDeleteAction? ClaimingAction { get; set; }
 
     /// <summary>
     /// The TypeAuth action node gating the ItemClaimCertificate controller (consumer-supplied, per
-    /// D9 — the original host application passes <c>ClaimableItemCertifying</c>). Only used when
+    /// D9 — e.g. a host passes <c>ClaimableItemCertifying</c>). Only used when
     /// <see cref="EnableClaimableItemsActionTreeAuthorization"/> is true.
     /// </summary>
     public ReadWriteDeleteAction? CertifyingAction { get; set; }
 
     /// <summary>
     /// The TypeAuth action node gating the ItemClaimInvoice controller (consumer-supplied, per D9 —
-    /// the original host application passes <c>ClaimableItemInvoicing</c>). Only used when
+    /// e.g. a host passes <c>ClaimableItemInvoicing</c>). Only used when
     /// <see cref="EnableClaimableItemsActionTreeAuthorization"/> is true.
     /// </summary>
     public ReadWriteDeleteAction? InvoicingAction { get; set; }
 
     /// <summary>
     /// The TypeAuth boolean node that allows editing the otherwise-immutable claim fields of a Draft
-    /// item claim (consumer-supplied, per D9 — the original host application passes its existing
+    /// item claim (consumer-supplied, per D9 — e.g. a host passes its existing
     /// <c>PostClaimModification</c> node; same node its Web options pass for the form UI). Read by
     /// the ItemClaim repository's <c>CanModifyPostClaim</c> default (Phase 3 Slice 3.6). Null
     /// (default) → never allowed, unless a derived repository overrides the check.
@@ -134,17 +134,15 @@ public class ClaimableItemsApiOptions
     /// <summary>
     /// When true, the module registers its own default <c>ClaimableItemsActionTree</c> into TypeAuth
     /// (for fresh consumers / the sample). Leave false (default) when the consumer already supplies its own
-    /// action tree that owns the catalog permission nodes — e.g. the original host application registers
-    /// its own action-tree catalog nodes, and registering the module tree too would create a
+    /// action tree that owns the catalog permission nodes: registering the module tree too would create a
     /// duplicate permission group (see decision D9).
     /// </summary>
     public bool RegisterModuleActionTree { get; set; } = false;
 
     /// <summary>
     /// SQL schema every module-owned entity (and its temporal history table) is placed under.
-    /// Defaults to "ClaimableItems" for the sample host. The original host application passes
-    /// <c>null</c> so the existing year-old <c>dbo</c> temporal tables are NOT renamed under
-    /// SYSTEM_VERSIONING (extraction plan risk R1 / decision D3).
+    /// Defaults to "ClaimableItems" for the sample host. A host with existing <c>dbo</c> temporal tables
+    /// passes <c>null</c> so they are NOT renamed under SYSTEM_VERSIONING (decision D3).
     /// </summary>
     public string? Schema { get; set; } = "ClaimableItems";
 }

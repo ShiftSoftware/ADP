@@ -5,8 +5,7 @@ using System.Text.Json.Serialization;
 namespace ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ItemClaim;
 
 /// <summary>
-/// Item-claim form/view DTO. Moved VERBATIM from the original host application's Services.Shared.DTOs.ItemClaim (Phase 2
-/// Slice 5) — property names/converters are frozen (admin UI + UpdateStatus flows).
+/// Item-claim form/view DTO. Property names/converters are frozen (admin UI + UpdateStatus flows).
 /// </summary>
 public class ItemClaimDTO : ShiftEntityViewAndUpsertDTO
 {

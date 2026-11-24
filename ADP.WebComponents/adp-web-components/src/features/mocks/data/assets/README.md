@@ -45,7 +45,7 @@ One family per use, so no generic picture is reused across unrelated things.
 
 Every file is an original vector drawing made for this repository and kept as a static SVG (the
 script that first drew them was removed as cleanup; edit the files directly). No photographs, no
-third-party artwork, no embedded fonts — text uses the viewer's system font. Licensed with the package (MIT, `package.json`). No file may
+third-party artwork, no embedded fonts — text uses the viewer's system font. Licensed with the package (Apache-2.0, `package.json`). No file may
 reference a real brand, client, storage account or place; a CC0 photograph added later must be
 listed here with its source and licence.
 

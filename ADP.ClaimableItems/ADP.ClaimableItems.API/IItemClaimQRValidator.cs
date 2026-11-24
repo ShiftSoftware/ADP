@@ -2,8 +2,8 @@ namespace ShiftSoftware.ADP.ClaimableItems.API;
 
 /// <summary>
 /// Consumer seam for validating the scanned QR of an inspection-based item claim (the claim
-/// payload's <c>ServiceItem.VehicleInspectionID</c> is set). QR/voucher policy is org-specific —
-/// The original host implementation validates a SAS token and cross-checks the inspection record (exact-match for EveryTrigger
+/// payload's <c>ServiceItem.VehicleInspectionID</c> is set). QR/voucher policy is org-specific — for
+/// example, a host validates a SAS token and cross-checks the inspection record (exact-match for EveryTrigger
 /// campaigns, sibling-inspection acceptance otherwise); other orgs have their own rules.
 /// Register an implementation in the consumer's DI. When an inspection-based claim arrives and NO
 /// validator is registered, the claim endpoint fails closed (configuration error).

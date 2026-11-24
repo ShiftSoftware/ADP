@@ -6,8 +6,7 @@ using ShiftSoftware.ShiftEntity.EFCore;
 namespace ShiftSoftware.ADP.WarrantyClaims.Data.Repositories;
 
 /// <summary>
-/// The warranty-rates repository. Moved from the original host application's SettingRepository and
-/// renamed with its entity (Phase 3 Slice 3.6, D24) — the admin CRUD surface plus the
+/// The warranty-rates repository: the admin CRUD surface plus the
 /// current-rates query the module's <see cref="Services.DefaultWarrantyRatesStore"/> and the
 /// WarrantyRates controller serve.
 /// </summary>

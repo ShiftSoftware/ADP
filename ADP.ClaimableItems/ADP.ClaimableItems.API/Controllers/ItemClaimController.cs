@@ -19,8 +19,8 @@ namespace ShiftSoftware.ADP.ClaimableItems.API.Controllers;
 
 /// <summary>
 /// The item-claim controller, including the production hot path <c>POST {prefix}/ItemClaim/claim</c>
-/// that the ADP vehicle-item-claim-form web component submits to. Moved from the original host application (Phase 2 Slice 5)
-/// with the wire contract FROZEN: multipart <c>payload</c> (LookupServices ItemClaimDTO JSON) +
+/// that the ADP vehicle-item-claim-form web component submits to. The wire contract is FROZEN:
+/// multipart <c>payload</c> (LookupServices ItemClaimDTO JSON) +
 /// repeated <c>document</c> files; 200 → <c>{Success, ID}</c>; error → <c>{Success:false, Message}</c>;
 /// HMAC signature validated against the host's <c>ADPSigningSecreteKey</c> configuration value.
 /// Org-specific concerns are consumer seams: <see cref="IItemClaimQRValidator"/> (QR/voucher policy)
@@ -95,8 +95,8 @@ public class ItemClaimController : ShiftEntitySecureControllerAsync<ItemClaimRep
     [HttpPost("claim")]
     public async Task<ActionResult<ShiftEntityResponse<ItemClaimDTO>>> Claim([FromForm] string payload, [FromForm] IFormFile[] document)
     {
-        // The original endpoint carried [TypeAuth(..., Claiming, Write)] — the node is consumer-owned
-        // (D9), so the equivalent check runs imperatively against the options-supplied action.
+        // The Claiming node is consumer-owned (D9), so the Write check runs imperatively against the
+        // options-supplied action.
         if (options.Value.EnableClaimableItemsActionTreeAuthorization &&
             options.Value.ClaimingAction is not null &&
             !typeAuthService.Can(options.Value.ClaimingAction, Access.Write))
@@ -229,8 +229,8 @@ public class ItemClaimController : ShiftEntitySecureControllerAsync<ItemClaimRep
                 {
                     Success = true,
                     ID = item.ID.ToString(),
-                    //PrintURL intentionally not returned — matches the deployed host behavior (it was
-                    //commented out there; the web component's print box only fires when it's present).
+                    //PrintURL intentionally not returned (the web component's print box only fires when it's
+                    //present).
                 });
             }
             catch (ShiftEntityException ex)
@@ -256,9 +256,7 @@ public class ItemClaimController : ShiftEntitySecureControllerAsync<ItemClaimRep
         {
             await this.repository.UpdateClaimStatusAsync(items, actionType, inputText);
 
-            // NOTE: the original host implementation wrapped the response as WarrantyClaimListDTO instances (a wire
-            // quirk); the Entity payload is a list of default-valued DTOs the client never reads.
-            // The module returns default ItemClaimListDTOs instead — reviewed micro-deviation.
+            // NOTE: the Entity payload is a list of default-valued ItemClaimListDTOs the client never reads.
             return Ok(new ShiftEntityResponse<IEnumerable<ItemClaimListDTO>>()
             {
                 Entity = items.Select(x => new ItemClaimListDTO { })

@@ -1,10 +1,8 @@
 namespace System;
 
 /// <summary>
-/// Currency-formatting helpers the WarrantyClaimForm renders (USD via en-US, JPY via ja-JP). These were
-/// <c>System</c>-namespace extensions in the original host application (Services.Shared/Extensions/SystemExtentsions.cs);
-/// the moved form must not reach back into the consumer, so a module-owned copy travels with the page.
-/// Kept byte-identical to the original host behavior.
+/// Currency-formatting helpers the WarrantyClaimForm renders (USD via en-US, JPY via ja-JP). The Data
+/// project has its own copy for the printouts; keep the behavior of the two identical.
 /// </summary>
 public static class WarrantyClaimsSystemExtensions
 {

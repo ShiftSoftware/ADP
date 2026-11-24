@@ -17,13 +17,11 @@
 		<PackageId>ShiftSoftware.ADP.Darlastic.Engine.Core</PackageId>
 		<Title>ShiftSoftware ADP.Darlastic — Engine Core</Title>
 		<Description>The dependency-free half of the ADP.Darlastic identity-resolution engine: scoring, normalization (transliteration, mojibake recovery, name skeletons), clustering with name-chain survivorship, case categorisation, and the scorer's own explain trace. No SQL Server, no Cosmos — so a serving surface can compute a pair's score and derivation at read time without taking a storage dependency.</Description>
-		<Copyright>Copyright (c) Shift Software 2026</Copyright>
 		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
 		<PackageIcon>icon.png</PackageIcon>
 		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>shift;shiftsoftware;adp;darlastic;customers;mdm;identity;matching;golden-record</PackageTags>
-		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>

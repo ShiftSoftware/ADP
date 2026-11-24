@@ -7,8 +7,7 @@ namespace ShiftSoftware.ADP.ClaimableItems.Data.Triggers;
 
 /// <summary>
 /// Assigns the sequential per-(CompanyID, ClaimableItemID) ClaimNumber AFTER insert, with a second
-/// SaveChanges. Moved VERBATIM from the original host application's Services.Data.Triggers.ItemClaimAfterSaveTrigger (Phase 2
-/// Slice 5) — including the last-by-ID read-back and its concurrency race (D16: port bug-for-bug;
+/// SaveChanges. The last-by-ID read-back and its concurrency race are kept on purpose (D16:
 /// fixing it would change observable numbering behavior).
 /// The consumer registers it: <c>AddTransient&lt;IAfterSaveTrigger&lt;ItemClaim&gt;, ItemClaimAfterSaveTrigger&gt;()</c>.
 /// </summary>

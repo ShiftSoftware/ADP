@@ -41,7 +41,11 @@
   },
   "files": [
     "dist/",
-    "loader/"
+    "loader/",
+    "LICENSE",
+    "NOTICE",
+    "LICENSING.md",
+    "THIRD-PARTY-NOTICES.txt"
   ],
   "scripts": {
     "test": "stencil test --spec",
@@ -95,7 +99,7 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.66.0"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "clsx": "^2.1.1",
     "countries-and-timezones": "^3.8.0",

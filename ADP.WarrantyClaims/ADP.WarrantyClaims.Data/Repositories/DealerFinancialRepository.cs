@@ -34,7 +34,7 @@ namespace ShiftSoftware.ADP.WarrantyClaims.Data.Repositories;
 /// <b>And the route does not save you.</b> <c>DealerFinancialController</c> is its own route with its
 /// own DTO, its gate is weaker than a bare <c>CanRead</c> (a three-way conjunct that a full-access
 /// principal passes, and that is inert when action-tree authorization is off or the action is left
-/// null - which the controller's own doc comment records the host doing), and this repository is
+/// null - which the controller's own doc comment records an existing host doing), and this repository is
 /// bare <c>base(db)</c> with no <c>FilterByTypeAuthValues</c>, so there is no row scoping either.
 /// The mapper is the whole control.
 /// </para>

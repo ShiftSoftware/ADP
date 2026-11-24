@@ -5,11 +5,8 @@ using System.ComponentModel.DataAnnotations;
 namespace ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ItemClaimCertificate;
 
 /// <summary>
-/// Item-claim certificate form/view DTO (Phase 2 Slice 6). Split from the original host's union-shaped
-/// <c>CertificateDTO</c>, which carried BOTH warranty and item-claim line lists on one class:
-/// this one keeps only the item-claim side. Property names are unchanged; the always-empty
-/// <c>WarrantyClaims</c> list is simply absent from item-claim certificate payloads now
-/// (reviewed micro-deviation — the form never bound it).
+/// Item-claim certificate form/view DTO. Carries only the item-claim lines: item-claim certificate
+/// payloads have no <c>WarrantyClaims</c> list. Property names are frozen.
 /// </summary>
 public class ItemClaimCertificateDTO : ShiftEntityViewAndUpsertDTO
 {

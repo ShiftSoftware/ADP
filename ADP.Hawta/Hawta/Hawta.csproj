@@ -15,13 +15,11 @@
 		<PackageId>ShiftSoftware.ADP.Hawta</PackageId>
 		<Title>ShiftSoftware ADP.Hawta</Title>
 		<Description>Hawta is the ADP data-alignment engine for snapshot ingestion, change detection, publishing, and downstream replication.</Description>
-		<Copyright>Copyright (c) Shift Software 2026</Copyright>
 		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
 		<PackageIcon>icon.png</PackageIcon>
 		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>shift;shiftsoftware;adp;hawta;data;ingestion;snapshot;alignment;sync</PackageTags>
-		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>

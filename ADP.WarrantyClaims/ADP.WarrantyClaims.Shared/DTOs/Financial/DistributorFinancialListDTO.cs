@@ -7,10 +7,9 @@ namespace ShiftSoftware.ADP.WarrantyClaims.Shared.DTOs.Financial;
 
 /// <summary>
 /// The distributor-side financial analytics projection over the warranty claim (list + PDF export).
-/// Moved from the original host application (Phase 3 Slice 3.5, D23) with its members genericized to
-/// the module vocabulary (ClaimNumber / Distributor* / Manufacturer*) — the entity and this DTO now
-/// share names, so the entity -&gt; DTO map is convention-based again (see
-/// Data/AutoMapperProfiles/Financial.cs for the few explicit pins that remain).
+/// Its members use the module vocabulary (ClaimNumber / Distributor* / Manufacturer*) — the entity and
+/// this DTO share names, so the entity -&gt; DTO map is convention-based (see
+/// Data/Mappers/WarrantyClaimsMapper.cs for the few explicit pins).
 /// </summary>
 public class DistributorFinancialListDTO : ShiftEntityListDTO
 {

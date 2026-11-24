@@ -14,13 +14,11 @@
 		<PackageId>ShiftSoftware.ADP.WarrantyClaims.API</PackageId>
 		<Title>ShiftSoftware ADP.WarrantyClaims — API</Title>
 		<Description>ASP.NET Core controllers, extensions and registration helpers for the ShiftSoftware ADP.WarrantyClaims package — the warranty claim module.</Description>
-		<Copyright>Copyright (c) Shift Software 2026</Copyright>
 		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
 		<PackageIcon>icon.png</PackageIcon>
 		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>shift;shiftsoftware;adp;warranty;warranty-claims;claims;automotive;aspnetcore</PackageTags>
-		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -14,7 +14,10 @@
   "files": [
     "dist",
     "src",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "LICENSING.md"
   ],
   "license": "Apache-2.0",
   "repository": {

@@ -26,12 +26,12 @@ public static class ClaimableItemsWebExtensions
             services.Configure(configure);
 
         // Register the module's default action tree only when the consumer opts in (fresh consumers /
-        // sample). The original host application supplies its own action-tree nodes via the options, so it leaves this false (D9).
+        // sample). A consumer that supplies its own action-tree nodes via the options leaves this false (D9).
         if (options.RegisterModuleActionTree)
             services.Configure<TypeAuthBlazorOptions>(o => o.AddActionTree<ClaimableItemsActionTree>());
 
         // Expose the module assembly for Blazor routing discovery (AdditionalAssemblies) — this is what
-        // makes the catalog pages (which keep their original routes) resolve from the consumer's router.
+        // makes the catalog pages resolve from the consumer's router.
         services.Configure<AppStartupOptions>(o => o.AddAssembly(typeof(ClaimableItemsWebExtensions).Assembly));
 
         // Capability seam for the claim pages (Slice 7): consumers register their own adapter BEFORE

@@ -12,12 +12,11 @@ public static class WarrantyClaimsModelBuilderExtensions
     /// Relationships (the line FKs, the WarrantyClaimSubletLine shadow FK, the WarrantyClaim ->
     /// Cases.Certificate / ManufacturerSettlmentSheet / self-ref navs), the filtered unique-hash index
     /// and temporal history are all discovered by ShiftEntity conventions from the
-    /// [TemporalShiftEntity] attribute, IEntityHasUniqueHash, and the navigations — exactly as when
-    /// these entities lived in the consumer's own Data project (empty-migration-diff gated).
+    /// [TemporalShiftEntity] attribute, IEntityHasUniqueHash, and the navigations.
     /// </summary>
     /// <param name="schema">
-    /// SQL schema to place every module-owned entity (and its temporal history table) under. The original
-    /// distributor consumer passes <c>null</c> so the existing year-old <c>dbo</c> temporal tables are
+    /// SQL schema to place every module-owned entity (and its temporal history table) under. A host
+    /// with existing <c>dbo</c> temporal tables passes <c>null</c> so they are
     /// NOT renamed under SYSTEM_VERSIONING. When null the entities keep the model's default schema.
     /// </param>
     public static ModelBuilder ConfigureWarrantyClaimsEntities(this ModelBuilder modelBuilder, string? schema = null)

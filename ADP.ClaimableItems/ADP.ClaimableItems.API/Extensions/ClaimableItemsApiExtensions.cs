@@ -61,7 +61,7 @@ public static class ClaimableItemsApiExtensions
             services.Configure<TypeAuthAspNetCoreOptions>(o => o.AddActionTree<ClaimableItemsActionTree>());
 
         // Contribute the module's entity configuration to the consumer's DbContext at model-build time.
-        // The schema is captured here (null for the original host application → keep dbo; "ClaimableItems" for the sample).
+        // The schema is captured here (null → keep dbo; "ClaimableItems" for the sample).
         services.AddSingleton<IModelBuildingContributor>(new ClaimableItemsModelBuildingContributor(options.Schema));
 
         services.Configure<MvcOptions>(mvcOptions =>

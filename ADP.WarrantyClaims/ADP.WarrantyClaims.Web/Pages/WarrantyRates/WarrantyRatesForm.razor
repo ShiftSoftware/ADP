@@ -1,7 +1,6 @@
 @attribute [Route($"/{nameof(WarrantyRatesForm)}/{{Key?}}")]
 
-@* The warranty-rates admin form. Moved from the original host application's Setting pages and
-   renamed with its entity (Phase 3 Slice 3.6, D24). HideEdit is a preserved host quirk: every save
+@* The warranty-rates admin form. HideEdit is deliberate: every save
    is a new audit row (the controller's Put throws), so existing rows are view-only. *@
 
 @inherits ShiftForm<WarrantyRatesForm, WarrantyRatesDTO>

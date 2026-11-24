@@ -6,8 +6,7 @@ namespace ShiftSoftware.ADP.Cases.Shared.Services;
 
 /// <summary>
 /// The claim status state machine shared by all claim-type cases (WarrantyClaim + ItemClaim).
-/// Moved VERBATIM from the original host application's <c>Services.Data.Services.SharedClaimService</c> (Phase 2, D16) — the
-/// method body is byte-faithful and protected by characterization tests in ADP.Cases.Shared.Tests.
+/// Its behavior is frozen and protected by characterization tests in ADP.Cases.Shared.Tests.
 /// </summary>
 /// <remarks>
 /// LOAD-BEARING SEMANTICS (do not "fix"):

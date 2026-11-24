@@ -12,7 +12,7 @@ public class ClaimableItemsDataOptions
 {
     /// <summary>
     /// The TypeAuth boolean node that allows editing the otherwise-immutable claim fields of a Draft
-    /// item claim (consumer-supplied, per D9 — the original host application passes its existing
+    /// item claim (consumer-supplied, per D9 — e.g. a host passes its existing
     /// <c>PostClaimModification</c> node). Null (default) → never allowed, unless a derived
     /// repository overrides <c>ItemClaimRepository.CanModifyPostClaim</c>.
     /// </summary>

@@ -14,13 +14,11 @@
 		<PackageId>ShiftSoftware.ADP.Menus.Web</PackageId>
 		<Title>ShiftSoftware ADP.Menus — Web</Title>
 		<Description>Blazor WebAssembly pages, forms and services for the ShiftSoftware ADP.Menus package — an automotive service menu (parts &amp; labour) module.</Description>
-		<Copyright>Copyright (c) Shift Software 2026</Copyright>
 		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
 		<PackageIcon>icon.png</PackageIcon>
 		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>shift;shiftsoftware;adp;menus;automotive;service;parts;labour;blazor</PackageTags>
-		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -14,13 +14,11 @@
 		<IsPackable>true</IsPackable>
 		<Title>ShiftSoftware ADP.Menus — Sync</Title>
 		<Description>Data movement for the ShiftSoftware ADP.Menus catalog, from its SQL source of truth: SQL-to-Cosmos replication (the save trigger and the catch-up sweep that keep the ServiceMenus containers fresh) and SQL-to-DuckDB sync (a SyncEngine flow projecting through the same mappers, for menu lookups served from DuckDB storage by ShiftSoftware.ADP.Lookup.Services.DuckDB).</Description>
-		<Copyright>Copyright (c) Shift Software 2026</Copyright>
 		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
 		<PackageIcon>icon.png</PackageIcon>
 		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>shift;shiftsoftware;adp;menus;automotive;service;replication;cosmos;duckdb;sync</PackageTags>
-		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>

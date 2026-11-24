@@ -15,8 +15,7 @@ using ShiftSoftware.TypeAuth.Core;
 namespace ShiftSoftware.ADP.WarrantyClaims.API.Controllers;
 
 /// <summary>
-/// The distributor-side financial analytics list + PDF export. Moved from the original host
-/// application (Phase 3 Slice 3.5, D23) at its exact original route.
+/// The distributor-side financial analytics list + PDF export. Its route is frozen.
 /// </summary>
 [Route("[controller]")]
 public class DistributorFinancialController : ShiftEntitySecureControllerAsync<DistributorFinancialRepository, Data.Entities.WarrantyClaim, DistributorFinancialListDTO, WarrantyClaimDTO>

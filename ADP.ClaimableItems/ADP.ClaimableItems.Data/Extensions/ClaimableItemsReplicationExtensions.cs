@@ -113,12 +113,10 @@ public static class ClaimableItemsReplicationExtensions
 
     /// <summary>
     /// Opt-in Cosmos replication for the claim record: ItemClaim → ItemClaimModel into
-    /// CompanyData/Vehicles (Phase 2 Slice 5 — moved verbatim from the original host's
-    /// SetUpReplication block). Registered separately from the catalog replication because a
+    /// CompanyData/Vehicles. Registered separately from the catalog replication because a
     /// consumer may author the catalog without hosting the claim flow (or vice versa).
-    /// NOTE: partition keys are registered 2-level (VIN, ItemType) exactly as the original host always
-    /// did, although NoSQLConstants defines the Vehicles container as 3-level — pre-existing
-    /// behavior, reproduced deliberately.
+    /// NOTE: partition keys are registered 2-level (VIN, ItemType), although NoSQLConstants defines the
+    /// Vehicles container as 3-level — existing behavior, kept deliberately.
     /// </summary>
     public static ShiftEntityCosmosDbOptions AddItemClaimReplication<TDbContext>(
         this ShiftEntityCosmosDbOptions x,
@@ -154,11 +152,11 @@ public static class ClaimableItemsReplicationExtensions
         // long -> string conversion. Made explicit here.
         IntegrationID = item.ID.ToString(),
 
-        // EVERY READ OF item.Campaign IS NULL-SAFE. CampaignID is nullable, and the original host's AutoMapper map
-        // null-propagated through the navigation: an item without a campaign (or one saved before the navigation was
-        // loaded) still got its document, with default campaign fields. A bare `item.Campaign!` threw instead. The
-        // trigger and the catch-up swallow per-row errors, so such an item had no document at all. The defaults
-        // below are what AutoMapper wrote: default dates and enums, null scalars, empty collections and dictionaries.
+        // EVERY READ OF item.Campaign IS NULL-SAFE. CampaignID is nullable: an item without a campaign (or one saved
+        // before the navigation was loaded) must still get its document, with default campaign fields. A bare
+        // `item.Campaign!` throws instead, and the trigger and the catch-up swallow per-row errors, so such an item
+        // would have no document at all. The defaults below are default dates and enums, null scalars, empty
+        // collections and dictionaries.
         CampaignStartDate = item.Campaign?.StartDate ?? default,
         CampaignEndDate = item.Campaign?.ExpireDate ?? default,
 

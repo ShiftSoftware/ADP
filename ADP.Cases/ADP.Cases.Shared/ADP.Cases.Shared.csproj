@@ -14,13 +14,11 @@
 		<PackageId>ShiftSoftware.ADP.Cases.Shared</PackageId>
 		<Title>ShiftSoftware ADP.Cases — Shared</Title>
 		<Description>Shared Case/Claim engine contracts for the ShiftSoftware ADP.Cases package — ICase/IClaim, the declarative status-workflow engine, case status history and validation contracts consumed by case-type modules (item claims, warranty claims, request/case-style workflows).</Description>
-		<Copyright>Copyright (c) Shift Software 2026</Copyright>
 		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
 		<PackageIcon>icon.png</PackageIcon>
 		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>shift;shiftsoftware;adp;cases;claims;workflow;automotive</PackageTags>
-		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>

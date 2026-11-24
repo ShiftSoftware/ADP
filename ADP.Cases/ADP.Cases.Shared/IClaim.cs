@@ -3,10 +3,9 @@ using ShiftSoftware.ADP.Models.Enums;
 namespace ShiftSoftware.ADP.Cases.Shared;
 
 /// <summary>
-/// The shared claim contract implemented by claim-type cases (the host's WarrantyClaim and the
-/// ClaimableItems module's ItemClaim). Moved VERBATIM from the original host application's <c>Services.Data.Entities.IClaim</c>
-/// (Phase 2, decision D14/D16) — member names and types are frozen: implementers in production
-/// depend on them, and <see cref="Services.SharedClaimService"/> mutates them.
+/// The shared claim contract implemented by claim-type cases (such as WarrantyClaim and ItemClaim).
+/// Member names and types are frozen: implementers in production depend on them, and
+/// <see cref="Services.SharedClaimService"/> mutates them.
 /// </summary>
 /// <remarks>
 /// This is deliberately a SIBLING contract to <see cref="ICase{TStatus}"/>, not a sub-interface:

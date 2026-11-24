@@ -24,9 +24,9 @@ public interface IWarrantyRatesStore
     /// when the payload carries the store's row ID, insert otherwise — every export leaves an audit
     /// row), and returns both the <see cref="WarrantyRatesDTO"/> the export math runs on and the
     /// opaque echo object placed in the response's <c>Additional["Rates"]</c>. The echo is
-    /// deliberately consumer-shaped (the original host echoes its own Setting DTO — base
-    /// view-and-upsert properties included — deserialized from <paramref name="ratesJson"/>) so the
-    /// response JSON stays byte-identical to the pre-module endpoint.
+    /// deliberately consumer-shaped (for example, the full DTO — base view-and-upsert properties
+    /// included — deserialized from <paramref name="ratesJson"/>) so the response JSON keeps the shape
+    /// existing clients receive.
     /// Implementations must only TRACK the persistence — the controller calls SaveChanges after the
     /// CSV file write (frozen ordering).
     /// </summary>

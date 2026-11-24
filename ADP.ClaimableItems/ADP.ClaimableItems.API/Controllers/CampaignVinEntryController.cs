@@ -9,8 +9,7 @@ using ShiftSoftware.ShiftEntity.Web;
 
 namespace ShiftSoftware.ADP.ClaimableItems.API.Controllers;
 
-// [AllowAnonymous] is intentional and preserved from the original host implementation (the VIN-entry endpoint is exposed
-// without authentication).
+// [AllowAnonymous] is intentional (the VIN-entry endpoint is exposed without authentication).
 [Route("[controller]")]
 [AllowAnonymous]
 public class CampaignVinEntryController : ShiftEntitySecureControllerAsync<CampaignVinEntryRepository, CampaignVinEntry, CampaignVinEntryListDTO, CampaignVinEntryDTO>

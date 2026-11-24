@@ -22,15 +22,13 @@ namespace ShiftSoftware.ADP.WarrantyClaims.API.Controllers;
 
 /// <summary>
 /// The warranty claim controller: CRUD (action from options) + UpdateStatus, UpdateDeliveryDate
-/// (DeliveryDateOverwrite Maximum), the VIN lookup, and the SAS print-invoice endpoints. Moved from the original host application
-/// (Phase 2b) with routes/EntitySet name preserved via the controller name + route-prefix convention.
-/// The former extras endpoints (ExportManufacturerCSV / flat-rate / part-lookup) moved
-/// here too (Phase 3 Slice 3.3) at their byte-identical routes, with the consumer-only dependencies
-/// behind the <see cref="IWarrantyRatesStore"/> /
+/// (DeliveryDateOverwrite Maximum), the VIN lookup, and the SAS print-invoice endpoints. Routes and the
+/// EntitySet name are frozen via the controller name + route-prefix convention.
+/// The extra endpoints (ExportManufacturerCSV / flat-rate / part-lookup) have frozen routes too, and keep
+/// their consumer-only dependencies behind the <see cref="IWarrantyRatesStore"/> /
 /// <see cref="IFlatRateProvider"/> / <see cref="IPartLookupProvider"/> seams — resolved lazily per
-/// action so consumers that never call them need no registrations. The new <c>current-rates</c>
-/// endpoint closes the last module-Web-to-host hidden dependency (the list/form pages previously read
-/// a current-rates route only the original host's own Setting controller served).
+/// action so consumers that never call them need no registrations. The <c>current-rates</c>
+/// endpoint serves the rates the module's list/form pages read.
 /// </summary>
 [Route("[controller]")]
 public class WarrantyClaimController : ShiftEntitySecureControllerAsync<WarrantyClaimRepository, ShiftSoftware.ADP.WarrantyClaims.Data.Entities.WarrantyClaim, WarrantyClaimListDTO, WarrantyClaimDTO>
@@ -84,9 +82,8 @@ public class WarrantyClaimController : ShiftEntitySecureControllerAsync<Warranty
     [HttpPost("UpdateDeliveryDate/{deliveryDate}")]
     public async Task<IActionResult> UpdateDeliveryDate([FromBody] ShiftSoftware.ShiftEntity.Model.Dtos.SelectStateDTO<WarrantyClaimListDTO> selectedItems, [FromRoute] DateTime deliveryDate)
     {
-        // The original host application gated this with [TypeAuth(..., DeliveryDateOverwrite, Access.Maximum)]. The
-        // node is consumer-owned (D9), so the equivalent check runs imperatively against the options-
-        // supplied boolean action.
+        // The delivery-date override node is consumer-owned (D9), so the Access.Maximum check runs
+        // imperatively against the options-supplied boolean action.
         if (options.Value.EnableWarrantyClaimsActionTreeAuthorization &&
             options.Value.DeliveryDateOverwriteAction is not null &&
             !typeAuthService.Can(options.Value.DeliveryDateOverwriteAction, Access.Maximum))
@@ -198,9 +195,8 @@ public class WarrantyClaimController : ShiftEntitySecureControllerAsync<Warranty
     [HttpPost("ExportManufacturerCSV")]
     public async Task<IActionResult> ExportManufacturerCSV([FromBody] ShiftSoftware.ShiftEntity.Model.Dtos.SelectStateDTO<WarrantyClaimListDTO> selectedItems, [FromQuery] string invoice, [FromQuery] string rates)
     {
-        // The original host gated this with [TypeAuth(..., WarrantyClaimCSV, Access.Read)]. The node is
-        // consumer-owned (D9), so the equivalent READ check runs imperatively against the options-
-        // supplied action. Frozen quirk, preserved deliberately: a mutating export (claims stamped
+        // The CSV export node is consumer-owned (D9), so the READ check runs imperatively against the
+        // options-supplied action. Frozen quirk, preserved deliberately: a mutating export (claims stamped
         // Exported + rates row upserted) behind a READ check — logged for the standing security pass.
         if (options.Value.EnableWarrantyClaimsActionTreeAuthorization &&
             options.Value.CsvExportAction is not null &&
@@ -215,8 +211,8 @@ public class WarrantyClaimController : ShiftEntitySecureControllerAsync<Warranty
         this.repository.shouldIncludeSubletLines = true;
         this.repository.shouldIncludePartLines = true;
 
-        // The selection is resolved under the controller's own WarrantyClaim action, as the original host
-        // resolved it: a user who holds the CSV export action but cannot read warranty claims gets an empty
+        // The selection is resolved under the controller's own WarrantyClaim action:
+        // a user who holds the CSV export action but cannot read warranty claims gets an empty
         // selection and exports nothing, so the export never stamps claims its user cannot read. Data-level
         // access applies either way.
         var claims = await this.GetSelectedEntitiesAsync(selectedItems);
@@ -248,7 +244,7 @@ public class WarrantyClaimController : ShiftEntitySecureControllerAsync<Warranty
         }
     }
 
-    // No authorization node, matching the original host endpoint: authenticated-only (the app-wide
+    // No authorization node: authenticated-only (the app-wide
     // authentication policy applies; [AllowAnonymous] is deliberately absent).
     [HttpGet("flat-rate/{vds}/{wmi?}/{brandHashId}")]
     public async Task<IActionResult> GetFlatRate(string vds, string? wmi, string brandHashId)
@@ -257,15 +253,14 @@ public class WarrantyClaimController : ShiftEntitySecureControllerAsync<Warranty
 
         var result = await flatRateProvider.GetFlatRatesAsync(vds, wmi, brandHashId);
 
-        // The original host appended the header only on its stored-procedure path; the provider
-        // signals that by returning a count (null = no header), so presence/absence is preserved.
+        // The provider decides whether the header is sent by returning a count (null = no header).
         if (result.TotalCount is not null)
             Response.Headers.Append("X-Total-Count", result.TotalCount.Value.ToString());
 
         return Ok(result.FlatRates);
     }
 
-    // No authorization node, matching the original host endpoint: authenticated-only.
+    // No authorization node: authenticated-only.
     [HttpGet("part-lookup/{partNumber}")]
     public async Task<IActionResult> PartLookup(string partNumber)
     {
@@ -312,10 +307,8 @@ public class WarrantyClaimController : ShiftEntitySecureControllerAsync<Warranty
         string.IsNullOrWhiteSpace(id) ? null : hashIdService.Decode<WarrantyClaimDTO>(id);
 
     /// <summary>
-    /// NEW endpoint (Phase 3 Slice 3.3): the current warranty rates from the consumer's store. The
-    /// module's list/form pages previously fetched these from the host's own Setting controller —
-    /// the last module-Web route that only the original host served. Authenticated-only, like the
-    /// host route it replaces.
+    /// The current warranty rates from the consumer's store, read by the module's list/form pages.
+    /// Authenticated-only.
     /// </summary>
     [HttpGet("current-rates")]
     public async Task<IActionResult> GetCurrentRates()

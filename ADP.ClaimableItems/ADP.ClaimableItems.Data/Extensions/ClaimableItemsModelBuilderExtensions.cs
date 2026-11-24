@@ -11,9 +11,8 @@ public static class ClaimableItemsModelBuilderExtensions
     /// </summary>
     /// <param name="schema">
     /// SQL schema to place every module-owned entity (and its temporal history table) under.
-    /// The sample host passes <c>"ClaimableItems"</c>; the original host application passes
-    /// <c>null</c> so the existing year-old <c>dbo</c> temporal tables are NOT renamed under
-    /// SYSTEM_VERSIONING (see risk R1 / decision D3 in the extraction plan). When null the
+    /// The sample host passes <c>"ClaimableItems"</c>; a host with existing <c>dbo</c> temporal tables
+    /// passes <c>null</c> so they are NOT renamed under SYSTEM_VERSIONING (see decision D3). When null the
     /// entities keep the model's default schema.
     /// </param>
     public static ModelBuilder ConfigureClaimableItemsEntities(this ModelBuilder modelBuilder, string? schema = "ClaimableItems")

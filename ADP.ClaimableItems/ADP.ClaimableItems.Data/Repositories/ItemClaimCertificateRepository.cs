@@ -15,10 +15,10 @@ namespace ShiftSoftware.ADP.ClaimableItems.Data.Repositories;
 /// <summary>
 /// Certifying + invoicing of item claims over the shared ADP.Cases <see cref="Certificate"/>
 /// (filtered to <see cref="CertificateTypes.ClaimableItemClaim"/>; <see cref="IsInvoiceMode"/>
-/// turns the same repository into the invoice surface). Moved from the original host application (Phase 2 Slice 6) — the
-/// certify/un-certify/invoice state tail, single-company/single-campaign rules, and the numbering
-/// sequences (CertificateNo per company+type+settlement+campaign; DistributorCertificateNo per year,
-/// seed 10 for VehicleInspection-trigger campaigns, campaign-defined display prefix) are verbatim.
+/// turns the same repository into the invoice surface). It owns the certify/un-certify/invoice state
+/// tail, the single-company/single-campaign rules, and the numbering sequences (CertificateNo per
+/// company+type+settlement+campaign; DistributorCertificateNo per year, seed 10 for
+/// VehicleInspection-trigger campaigns, campaign-defined display prefix).
 /// Printing (<see cref="PrintAsync"/>) is module-owned (Phase 3 Slice 3.2): embedded
 /// ItemClaimCertificate/ItemClaimInvoice .frx (overridable via
 /// <c>ClaimableItemsApiOptions.ReportOverrides</c>) + Campaign printout templating, rendered with the
@@ -50,8 +50,7 @@ public class ItemClaimCertificateRepository : ShiftRepository<ShiftDbContext, Ce
         this.itemClaimRepository = itemClaimRepository;
     }
 
-    // Localized-text JSON ({"en":"...","ru":"..."}) → one language. Same helper the original host
-    // inspection repository exposes; duplicated here so the module stays consumer-free.
+    // Localized-text JSON ({"en":"...","ru":"..."}) → one language.
     private static string TranslateLocalized(string jsonString, string lang)
     {
         return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(jsonString)![lang];
@@ -85,8 +84,7 @@ public class ItemClaimCertificateRepository : ShiftRepository<ShiftDbContext, Ce
         // Projected as SQL over the claims query, as the list endpoint projects it. An override may join
         // the consumer's own tables (for example its inspection results), and only a query provider can
         // run such a join: projecting a materialized list in memory failed with "must be reducible node".
-        // The SQL projection also reads each claim's campaign, so CampaignName is filled, as the original
-        // host's certificate view filled it (it loaded the lines together with the certificate's campaign).
+        // The SQL projection also reads each claim's campaign, so CampaignName is filled.
         dto.ReimbursementItemClaims = await this.itemClaimRepository
             .MapToList(this.db.Set<Entities.ItemClaim>().Where(x => x.ReimbursementCertificateID == entity.ID))
             .ToListAsync();
@@ -356,12 +354,10 @@ public class ItemClaimCertificateRepository : ShiftRepository<ShiftDbContext, Ce
         await this.SaveChangesAsync();
     }
 
-    // Moved verbatim from the original host's derived repository (Phase 3 Slice 3.2): only the frx
-    // source (embedded default / consumer override), the company info (ICompanyInfoProvider), the
-    // date formatter (IPrintoutDateFormatter) and the hashid decode type change — everything else,
-    // including the Campaign printout templating, is byte-identical.
-    // One fix since the move: in invoice mode the report callback skips the objects that only the
-    // certificate template has. The original code did not skip them, so every invoice print failed.
+    // The frx source is the embedded default or the consumer override; the company info
+    // (ICompanyInfoProvider) and the date formatter (IPrintoutDateFormatter) come from the consumer seams.
+    // In invoice mode the report callback skips the objects that only the certificate template has;
+    // without that, every invoice print fails.
     public override async Task<Stream> PrintAsync(string id)
     {
         var companyInfoProvider = PrintingServices.GetRequiredCompanyInfoProvider(this.db);
@@ -369,7 +365,7 @@ public class ItemClaimCertificateRepository : ShiftRepository<ShiftDbContext, Ce
         var hashIdService = PrintingServices.GetRequiredService<IHashIdService>(this.db,
             "Printing requires ShiftSoftware.ShiftEntity.Core.IHashIdService (registered by AddShiftEntityWeb).");
 
-        // Historical quirk (D16): the host always minted/decoded these print tokens with its
+        // Historical quirk (D16): these print tokens were always minted/decoded with the
         // WarrantyClaimDTO hashid type. ClaimableItems must not reference WarrantyClaims, so the
         // decode uses the module's own ItemClaimCertificateDTO — WIRE-IDENTICAL, because no
         // claim/warranty/certificate DTO carries an ID-level hashid attribute, which makes

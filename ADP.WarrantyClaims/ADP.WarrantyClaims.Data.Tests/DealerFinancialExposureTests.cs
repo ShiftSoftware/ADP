@@ -35,8 +35,7 @@ public class DealerFinancialExposureTests
 {
     /// <summary>
     /// The complete set of members withheld from dealers: the six <c>.ForMember(..., x =&gt; x.Ignore())</c>
-    /// calls of the original host's dealer map (the extraction carried five; TotalClaimAmountDistributor was
-    /// restored later), plus DistributorMargin, which is computed from TotalClaimAmountDistributor.
+    /// calls of the dealer map, plus DistributorMargin, which is computed from TotalClaimAmountDistributor.
     /// </summary>
     private static readonly string[] WithheldFromDealer =
     {

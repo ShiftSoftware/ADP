@@ -30,7 +30,7 @@ public class ReplicationProjectionTests
     [Fact]
     public void An_item_without_its_campaign_still_gets_a_document_with_default_campaign_fields()
     {
-        // The original host's AutoMapper map null-propagated through the navigation.
+        // The projection null-propagates through the navigation.
         var document = ClaimableItemsReplicationExtensions.ToServiceItemModel(AnItem(campaign: null));
 
         Assert.Equal("7", document.id);

@@ -11,7 +11,7 @@ namespace ShiftSoftware.ADP.ClaimableItems.API.Controllers;
 
 /// <summary>
 /// Item-claim invoice surface — the certificate repository in invoice mode (an invoice is a
-/// view-mode of Certificate, not a separate entity). Moved from the original host application (Phase 2 Slice 6).
+/// view-mode of Certificate, not a separate entity).
 /// </summary>
 [Route("[controller]")]
 public class ItemClaimInvoiceController : ShiftEntitySecureControllerAsync<ItemClaimCertificateRepository, Certificate, CertificateListDTO, ItemClaimCertificateDTO>

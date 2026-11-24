@@ -4,9 +4,8 @@ using ShiftSoftware.ADP.ClaimableItems.Shared.Localization;
 
 namespace ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.CampaignVinEntry;
 
-// Moved into the module (was kept in the host earlier because it localized via the host's Resource). It now uses the
-// module's own resource (IStringLocalizer<ClaimableItemsResource>) — the same "package owns its resource,
-// consumer's AddLocalization resolves it" idiom ShiftBlazor uses.
+// Localizes via the module's own resource (IStringLocalizer<ClaimableItemsResource>) — the same
+// "package owns its resource, consumer's AddLocalization resolves it" idiom ShiftBlazor uses.
 public class CampaignVinEntryValidator : AbstractValidator<CampaignVinEntryDTO>
 {
     public CampaignVinEntryValidator(IStringLocalizer<ClaimableItemsResource> loc)

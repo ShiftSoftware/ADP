@@ -50,7 +50,7 @@ public static class WarrantyClaimsApiExtensions
         });
 
         // Contribute the module's entity configuration to the consumer's DbContext at model-build time.
-        // The schema is captured here (null for the original host application → keep dbo).
+        // The schema is captured here (null → keep dbo).
         services.AddSingleton<ShiftSoftware.ShiftEntity.EFCore.IModelBuildingContributor>(new WarrantyClaimsModelBuildingContributor(options.Schema));
 
         services.Configure<MvcOptions>(mvcOptions =>

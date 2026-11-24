@@ -20,9 +20,8 @@ namespace ShiftSoftware.ADP.WarrantyClaims.Data.Repositories;
 
 /// <summary>
 /// The warranty certificate repository over the shared ADP.Cases <see cref="Certificate"/> entity.
-/// Moved from the original host application (Services.Data.Repositories.WarrantyCertificateRepository) (Phase 2b). The Certificate
-/// carries no claims collection, so every use is a dependent-side query on WarrantyClaim.CertificateID.
-/// The dead <c>IIdentityCosmosDbService</c> dependency the original injected is dropped.
+/// The Certificate carries no claims collection, so every use is a dependent-side query on
+/// WarrantyClaim.CertificateID.
 /// </summary>
 /// <remarks>
 /// CONSUMER SEAM: <see cref="FormatDate"/> — message-text date formatting. Printing
@@ -37,8 +36,7 @@ public class WarrantyCertificateRepository : ShiftRepository<ShiftDbContext, Cer
     private readonly IWarrantyClaimsCapabilityProvider capabilityProvider;
     public bool IsInvoiceMode = false;
 
-    // NOTE (Phase 2 Slice 4): Certificate moved to ADP.Cases.Data and no longer carries a
-    // WarrantyClaims collection — the old IncludeRelatedEntitiesWithFindAsync is gone; every use
+    // NOTE: Certificate (ADP.Cases.Data) carries no WarrantyClaims collection; every use
     // of the collection below is a dependent-side query on WarrantyClaim.CertificateID instead.
     // The maps are in Mappers/WarrantyClaimsMapper.cs - including why WarrantyClaims is left to ViewAsync below.
     public WarrantyCertificateRepository(ShiftDbContext db, IWarrantyClaimsCapabilityProvider capabilityProvider) : base(db)
@@ -237,9 +235,8 @@ public class WarrantyCertificateRepository : ShiftRepository<ShiftDbContext, Cer
         }
     }
 
-    // Moved verbatim from the original host's derived repository (Phase 3 Slice 3.2): only the frx
-    // source (embedded default / consumer override), the company info (ICompanyInfoProvider) and the
-    // date formatter (IPrintoutDateFormatter) go through the consumer seams now.
+    // The frx source is the embedded default or the consumer override; the company info
+    // (ICompanyInfoProvider) and the date formatter (IPrintoutDateFormatter) come from the consumer seams.
     public override async Task<Stream> PrintAsync(string id)
     {
         var companyInfoProvider = PrintingServices.GetRequiredCompanyInfoProvider(this.db);
