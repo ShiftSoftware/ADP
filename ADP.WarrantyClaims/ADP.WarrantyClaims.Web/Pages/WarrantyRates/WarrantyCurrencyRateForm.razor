@@ -34,5 +34,6 @@
     [Parameter]
     public object? Key { get; set; }
 
-    private WarrantyCurrencyRateDTO CurrencyRate = new() { EffectiveDate = DateTime.Today };
+    // Without a kind: a local date is sent with the browser's offset, and a server in another zone stores the day before.
+    private WarrantyCurrencyRateDTO CurrencyRate = new() { EffectiveDate = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Unspecified) };
 }
