@@ -32,6 +32,17 @@ public class ClaimCurrencyTests
             new(DocumentCurrency.FromUSD(25, context.Currency, context.CurrencyRate));
     }
 
+    /// <summary>A host that pays its dealers 23.25 USD an hour but charges the manufacturer 25, as part lines split.</summary>
+    private class SplitLaborRateResolver : IWarrantyClaimCurrencyResolver
+    {
+        public ValueTask<string> GetCurrencyAsync(long? companyBranchID) => new(Local);
+
+        public ValueTask<decimal> GetLaborRateAsync(WarrantyClaimLaborRateContext context) =>
+            new(DocumentCurrency.FromUSD(23.25m, context.Currency, context.CurrencyRate));
+
+        public ValueTask<decimal?> GetDistributorLaborRateAsync(WarrantyClaimLaborRateContext context) => new(25m);
+    }
+
     private static Task<decimal?> NoRateLookup(string currency) =>
         throw new InvalidOperationException("The rate table must not be read here.");
 
@@ -223,6 +234,66 @@ public class ClaimCurrencyTests
 
         Assert.Equal("CurrencyRateLocked", exception.AdditionalData!["ErrorCode"]);
         Assert.Equal(12_500, claim.CurrencyRate);
+    }
+
+    [Fact]
+    public async Task A_distributor_labor_rate_prices_the_distributor_and_manufacturer_labor_but_not_the_dealers()
+    {
+        var service = new WarrantyClaimService(currencyResolver: new SplitLaborRateResolver());
+
+        var claim = await SaveAsync(service, ActionTypes.Insert, new(), ADealerClaim(), _ => Task.FromResult<decimal?>(12_000));
+
+        // Dealer: 23.25 USD at 12,000 for 1.5 hours.
+        Assert.Equal(279_000, claim.LaborRate);
+        Assert.Equal(418_500, claim.LaborTotalAmount);
+        Assert.Equal(23.25m, claim.LaborRateUSD);
+
+        // Distributor: 25 USD for the same 1.5 hours.
+        Assert.Equal(25, claim.LaborRateDistributor);
+        Assert.Equal(37.5m, claim.LaborTotalAmountDistributor);
+
+        // Manufacturer: the yen are built on the distributor's 25.
+        service.UpdateAmounts(new WarrantyRatesDTO { PRR = 1, LaborExchangeRate = 150, SubletExchangeRate = 150, PartExchangeRate = 150 }, claim);
+
+        Assert.Equal(3_750, claim.LaborRateJPY);
+        Assert.Equal(37.5m, claim.LaborTotalAmountDistributor);
+        Assert.Equal(5_625, claim.LaborTotalAmountDistributorJPY);
+    }
+
+    [Fact]
+    public async Task A_saved_claim_keeps_its_distributor_labor_rate_and_a_dealer_can_not_send_one()
+    {
+        var service = new WarrantyClaimService(currencyResolver: new SplitLaborRateResolver());
+
+        var claim = await SaveAsync(service, ActionTypes.Insert, new(), ADealerClaim(), _ => Task.FromResult<decimal?>(12_000));
+
+        var fromDealer = ADealerClaim();
+        fromDealer.CurrencyRate = null;
+        fromDealer.LaborRateDistributor = 1;
+
+        await SaveAsync(service, ActionTypes.Update, claim, fromDealer, NoRateLookup);
+
+        Assert.Equal(25, claim.LaborRateDistributor);
+        Assert.Equal(37.5m, claim.LaborTotalAmountDistributor);
+    }
+
+    /// <summary>A claim saved before the distributor labor rate existed: one rate for both sides, as before.</summary>
+    [Fact]
+    public async Task A_claim_without_a_distributor_labor_rate_uses_the_dealers_in_USD()
+    {
+        var service = new WarrantyClaimService(currencyResolver: new SplitLaborRateResolver());
+
+        var claim = new Entities.WarrantyClaim { Currency = Local, CurrencyRate = 12_500, LaborRate = 312_500, LaborRateUSD = 25 };
+
+        await SaveAsync(service, ActionTypes.Update, claim, ADealerClaim(), NoRateLookup);
+
+        Assert.Null(claim.LaborRateDistributor);
+        Assert.Equal(312_500, claim.LaborRate);
+        Assert.Equal(37.5m, claim.LaborTotalAmountDistributor);
+
+        service.UpdateAmounts(new WarrantyRatesDTO { PRR = 1, LaborExchangeRate = 150, SubletExchangeRate = 150, PartExchangeRate = 150 }, claim);
+
+        Assert.Equal(3_750, claim.LaborRateJPY);
     }
 
     /// <summary>The distributor's figures are in USD, so the margin is taken against the dealer total in USD.</summary>

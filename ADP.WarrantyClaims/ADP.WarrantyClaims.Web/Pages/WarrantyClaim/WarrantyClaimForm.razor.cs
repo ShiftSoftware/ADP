@@ -138,6 +138,7 @@ public partial class WarrantyClaimForm
             TheItem.Currency = currency.Currency;
             TheItem.CurrencyRate = currency.CurrencyRate;
             TheItem.LaborRate = currency.LaborRate;
+            TheItem.LaborRateDistributor = currency.LaborRateDistributor;
 
             canEditCurrencyRate = currency.CanEditRate;
             missingCurrencyRate = currency.CurrencyRate is null;

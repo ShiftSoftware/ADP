@@ -151,6 +151,12 @@ public class WarrantyClaim : ShiftEntity<WarrantyClaim>,
     public decimal CurrencyRate { get; set; } = 1;
 
     public decimal LaborRateUSD { get; set; }
+
+    // The distributor's labor rate per hour in USD, from IWarrantyClaimCurrencyResolver.GetDistributorLaborRateAsync,
+    // like a part line's DistributorPrice next to its Price. Null means the dealer's labor rate in USD, which is
+    // every claim saved before this column existed.
+    public decimal? LaborRateDistributor { get; set; }
+
     public decimal? LaborTotalAmountUSD { get; set; }
     public decimal? SubletTotalAmountUSD { get; set; }
     public decimal? PartsTotalAmountUSD { get; set; }

@@ -140,6 +140,7 @@ public class WarrantyClaimRepository :
             dto.WarrantyClaimLaborLines.ForEach(x => x.DistributorHour = null);
             dto.WarrantyClaimSubletLines.ForEach(x => x.DistributorAmount = null);
             dto.WarrantyClaimPartLines.ForEach(x => x.DistributorPrice = null);
+            dto.LaborRateDistributor = null;
         }
 
         return dto;
@@ -238,6 +239,10 @@ public class WarrantyClaimRepository :
 
         var currency = await this.warrantyClaimService.ResolveCurrencyAsync(
             claim, companyBranchID, franchise ?? claim?.Franchise, requestedRate, canSetRate: isDistributor, this.GetCurrentCurrencyRateAsync);
+
+        // Distributor-only, as the claim view keeps it (ViewAsync).
+        if (!isDistributor)
+            currency.LaborRateDistributor = null;
 
         return (currency, companyBranchID);
     }

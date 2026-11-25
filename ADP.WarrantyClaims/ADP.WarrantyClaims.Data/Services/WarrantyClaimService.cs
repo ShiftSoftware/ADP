@@ -61,6 +61,9 @@ public class WarrantyClaimService
         dto.Currency = resolved.Currency;
         dto.CurrencyRate = resolved.CurrencyRate;
         dto.LaborRate = resolved.LaborRate;
+
+        // Set by the server only, like the labor rate: whatever the request carries is replaced.
+        dto.LaborRateDistributor = resolved.LaborRateDistributor;
     }
 
     /// <summary>
@@ -93,20 +96,25 @@ public class WarrantyClaimService
             rate = await currentRate(currency!);
 
         decimal laborRate = 0;
+        decimal? laborRateDistributor = null;
 
         if (stored is not null && rate == stored.CurrencyRate)
         {
             laborRate = stored.LaborRate;
+            laborRateDistributor = stored.LaborRateDistributor;
         }
         else if (rate > 0)
         {
-            laborRate = await this.currencyResolver.GetLaborRateAsync(new WarrantyClaimLaborRateContext
+            var context = new WarrantyClaimLaborRateContext
             {
                 CompanyBranchID = companyBranchID,
                 Franchise = franchise,
                 Currency = currency!,
                 CurrencyRate = rate.Value,
-            });
+            };
+
+            laborRate = await this.currencyResolver.GetLaborRateAsync(context);
+            laborRateDistributor = await this.currencyResolver.GetDistributorLaborRateAsync(context);
         }
 
         return new WarrantyClaimCurrencyDTO
@@ -114,6 +122,7 @@ public class WarrantyClaimService
             Currency = currency!,
             CurrencyRate = rate,
             LaborRate = laborRate,
+            LaborRateDistributor = laborRateDistributor,
             CanEditRate = canEditRate,
         };
     }
@@ -152,6 +161,10 @@ public class WarrantyClaimService
     // claim reads the amount itself, so a claim saved before the USD members existed needs no backfill.
     private static decimal LaborRateInUSD(WarrantyClaim claim) =>
         DocumentCurrency.IsUSD(claim.Currency) ? claim.LaborRate : claim.LaborRateUSD;
+
+    // The distributor's labor rate in USD: its own when the host set one, else the dealer's in USD.
+    private static decimal DistributorLaborRateInUSD(WarrantyClaim claim) =>
+        claim.LaborRateDistributor ?? LaborRateInUSD(claim);
 
     private static decimal AmountInUSD(WarrantyClaim claim, WarrantyClaimSubletLine sublet) =>
         DocumentCurrency.IsUSD(claim.Currency) ? sublet.Amount : sublet.AmountUSD;
@@ -937,8 +950,9 @@ public class WarrantyClaimService
         claim.PartExchangeRate = warrantyRates.PartExchangeRate;
         claim.PRR1 = warrantyRates.PRR;
 
-        // The yen rates are per USD, so the dealer-side inputs are taken in USD.
-        var laborRateUSD = LaborRateInUSD(claim);
+        // The yen rates are per USD, so the inputs are taken in USD. Labor is the distributor's rate: what the
+        // manufacturer is charged, which can differ from what the dealer is paid.
+        var laborRateUSD = DistributorLaborRateInUSD(claim);
 
         claim.LaborRateJPY = Math.Ceiling(laborRateUSD * claim.LaborExchangeRate.Value);
         claim.WarrantyClaimSubletLines.ToList().ForEach(x => x.AmountJPY = Math.Ceiling(AmountInUSD(claim, x) * claim.SubletExchangeRate.Value));

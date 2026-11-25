@@ -20,6 +20,14 @@ public interface IWarrantyClaimCurrencyResolver
     /// <see cref="DocumentCurrency.FromUSD"/> and the context's rate.
     /// </summary>
     ValueTask<decimal> GetLaborRateAsync(WarrantyClaimLaborRateContext context);
+
+    /// <summary>
+    /// The distributor's labor rate per hour in USD: what the distributor labor total and the manufacturer's
+    /// yen figures are built on, as part lines have a <c>DistributorPrice</c> apart from the dealer's price.
+    /// Asked at the same moments as <see cref="GetLaborRateAsync"/>. Null, the default, means the dealer's
+    /// labor rate in USD, so a host that does not implement it keeps one rate for both sides.
+    /// </summary>
+    ValueTask<decimal?> GetDistributorLaborRateAsync(WarrantyClaimLaborRateContext context) => new((decimal?)null);
 }
 
 public class WarrantyClaimLaborRateContext

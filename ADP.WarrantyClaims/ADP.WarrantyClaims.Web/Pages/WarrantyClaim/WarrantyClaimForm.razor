@@ -714,6 +714,12 @@
                         @if (isDistributor)
                         {
                             <MudItem lg="2" md="3" sm="6" xs="12">
+                                <MudField Variant="Variant.Outlined" Label="Distributor Labor Rate">
+                                    @((TheItem.LaborRateDistributor ?? TheItem.LaborRateUSD).ToCurrencyFormat())
+                                </MudField>
+                            </MudItem>
+
+                            <MudItem lg="2" md="3" sm="6" xs="12">
                                 <MudField Variant="Variant.Outlined" Label="Distributor Labor Total (Hrs)">
                                     @TheItem.HourTotalDistributor
                                 </MudField>
