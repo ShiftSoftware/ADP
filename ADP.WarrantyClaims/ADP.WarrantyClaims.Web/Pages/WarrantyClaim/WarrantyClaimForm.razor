@@ -77,6 +77,29 @@
             </MudItem>
         }
 
+        @if (missingLaborRate)
+        {
+            <MudItem lg="12" md="12" sm="12" xs="12">
+                <MudAlert Severity="Severity.Error" NoIcon>
+                    <div style="display: flex ;align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <MudIcon Icon="@Icons.Material.Outlined.Error" />
+                            No labor rate is set for @TheItem.Currency — a claim cannot be saved until it is added on the Labor Rates page.
+                        </div>
+                        <div>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Error"
+                                       StartIcon="@Icons.Material.Filled.Refresh"
+                                       Size="Size.Small"
+                                       OnClick="@(async () => await LoadClaimCurrency())">
+                                Retry
+                            </MudButton>
+                        </div>
+                    </div>
+                </MudAlert>
+            </MudItem>
+        }
+
         <MudItem lg="3" md="4" sm="6" xs="12">
             <MudTextFieldExtended Label="Claim No."
                                   ReadOnly
@@ -713,6 +736,12 @@
 
                         @if (isDistributor)
                         {
+                            <MudItem lg="2" md="3" sm="6" xs="12">
+                                <MudField Variant="Variant.Outlined" Label="Distributor Labor Rate">
+                                    @((TheItem.LaborRateDistributor ?? TheItem.LaborRateUSD).ToCurrencyFormat())
+                                </MudField>
+                            </MudItem>
+
                             <MudItem lg="2" md="3" sm="6" xs="12">
                                 <MudField Variant="Variant.Outlined" Label="Distributor Labor Total (Hrs)">
                                     @TheItem.HourTotalDistributor

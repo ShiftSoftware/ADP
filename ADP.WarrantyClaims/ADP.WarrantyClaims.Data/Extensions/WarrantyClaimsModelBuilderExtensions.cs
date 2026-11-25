@@ -8,7 +8,7 @@ public static class WarrantyClaimsModelBuilderExtensions
 {
     /// <summary>
     /// Registers the warranty entities (WarrantyClaim + labor/sublet/part lines +
-    /// ManufacturerSettlmentSheet + AdditionalLaborOperationCode + WarrantyRates + WarrantyCurrencyRate) on the consumer's model.
+    /// ManufacturerSettlmentSheet + AdditionalLaborOperationCode + WarrantyRates + WarrantyCurrencyRate + WarrantyLaborRate) on the consumer's model.
     /// Relationships (the line FKs, the WarrantyClaimSubletLine shadow FK, the WarrantyClaim ->
     /// Cases.Certificate / ManufacturerSettlmentSheet / self-ref navs), the filtered unique-hash index
     /// and temporal history are all discovered by ShiftEntity conventions from the
@@ -35,6 +35,7 @@ public static class WarrantyClaimsModelBuilderExtensions
         modelBuilder.Entity<AdditionalLaborOperationCode>();
         modelBuilder.Entity<WarrantyRates>();
         modelBuilder.Entity<WarrantyCurrencyRate>();
+        modelBuilder.Entity<WarrantyLaborRate>();
 
         if (!string.IsNullOrWhiteSpace(schema))
         {

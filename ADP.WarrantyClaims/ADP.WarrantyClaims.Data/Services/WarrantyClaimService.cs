@@ -37,10 +37,11 @@ public class WarrantyClaimService
     /// amount the DTO computes uses them. <paramref name="claim"/> is the stored claim as it was loaded.
     /// The currency comes from the host's resolver when the claim is created and never changes afterwards.
     /// The rate is the one sent by someone who may set it, else the stored one, else today's from
-    /// <paramref name="currentRate"/>. The labor rate is asked from the resolver on create and when the rate
-    /// changes; otherwise the stored one is kept. Once the claim is certified a different rate is rejected.
+    /// <paramref name="currentRate"/>. The labor rates come from the currency's row (<paramref name="currentLaborRate"/>)
+    /// when the claim is created and are kept from then on. A currency without a row takes the resolver's, which is
+    /// asked again when the rate changes. Once the claim is certified a different rate is rejected.
     /// </summary>
-    public async Task ApplyCurrencyAsync(ActionTypes actionType, WarrantyClaim claim, WarrantyClaimDTO dto, long? companyBranchID, bool canSetRate, Func<string, Task<decimal?>> currentRate)
+    public async Task ApplyCurrencyAsync(ActionTypes actionType, WarrantyClaim claim, WarrantyClaimDTO dto, long? companyBranchID, bool canSetRate, Func<string, Task<decimal?>> currentRate, Func<string, Task<WarrantyLaborRate?>> currentLaborRate)
     {
         var stored = actionType == ActionTypes.Insert ? null : claim;
 
@@ -50,7 +51,7 @@ public class WarrantyClaimService
                 "The currency rate of a certified claim can not be changed. Remove the Certificate First."),
                 additionalData: new Dictionary<string, object> { ["ErrorCode"] = "CurrencyRateLocked" });
 
-        var resolved = await this.ResolveCurrencyAsync(stored, companyBranchID, dto.Franchise, dto.CurrencyRate, canSetRate, currentRate);
+        var resolved = await this.ResolveCurrencyAsync(stored, companyBranchID, dto.Franchise, dto.CurrencyRate, canSetRate, currentRate, currentLaborRate);
 
         if (resolved.CurrencyRate is null || resolved.CurrencyRate <= 0)
             throw new ShiftEntityException(new Message(
@@ -58,18 +59,27 @@ public class WarrantyClaimService
                 $"No rate to USD is set for {resolved.Currency}. Add it on the Warranty Rates page."),
                 additionalData: new Dictionary<string, object> { ["ErrorCode"] = "MissingCurrencyRate" });
 
+        if (resolved.LaborRate is not { } laborRate)
+            throw new ShiftEntityException(new Message(
+                "Missing Labor Rate",
+                $"No labor rate is set for {resolved.Currency}. Add it on the Labor Rates page."),
+                additionalData: new Dictionary<string, object> { ["ErrorCode"] = "MissingLaborRate" });
+
         dto.Currency = resolved.Currency;
         dto.CurrencyRate = resolved.CurrencyRate;
-        dto.LaborRate = resolved.LaborRate;
+        dto.LaborRate = laborRate;
+
+        // Set by the server only, like the labor rate: whatever the request carries is replaced.
+        dto.LaborRateDistributor = resolved.LaborRateDistributor;
     }
 
     /// <summary>
     /// The currency, rate and labor rate that apply to a claim: <paramref name="stored"/> for a saved claim,
     /// null for a new one. A requested rate counts only from someone who may set it
     /// (<paramref name="canSetRate"/>) and only until the claim is certified. The rate is null when a new
-    /// local-currency claim has no rate in the table.
+    /// local-currency claim has no rate in the table, and the labor rate when a new claim has none.
     /// </summary>
-    public async Task<WarrantyClaimCurrencyDTO> ResolveCurrencyAsync(WarrantyClaim? stored, long? companyBranchID, string? franchise, decimal? requestedRate, bool canSetRate, Func<string, Task<decimal?>> currentRate)
+    public async Task<WarrantyClaimCurrencyDTO> ResolveCurrencyAsync(WarrantyClaim? stored, long? companyBranchID, string? franchise, decimal? requestedRate, bool canSetRate, Func<string, Task<decimal?>> currentRate, Func<string, Task<WarrantyLaborRate?>> currentLaborRate)
     {
         var currency = stored is null
             ? (await this.currencyResolver.GetCurrencyAsync(companyBranchID))?.Trim().ToUpperInvariant()
@@ -92,21 +102,34 @@ public class WarrantyClaimService
         else
             rate = await currentRate(currency!);
 
-        decimal laborRate = 0;
+        var laborRate = stored?.LaborRate;
+        var laborRateDistributor = stored?.LaborRateDistributor;
 
-        if (stored is not null && rate == stored.CurrencyRate)
+        if (stored is null || rate != stored.CurrencyRate)
         {
-            laborRate = stored.LaborRate;
-        }
-        else if (rate > 0)
-        {
-            laborRate = await this.currencyResolver.GetLaborRateAsync(new WarrantyClaimLaborRateContext
+            var row = await currentLaborRate(currency!);
+
+            if (row is not null && stored is null)
             {
-                CompanyBranchID = companyBranchID,
-                Franchise = franchise,
-                Currency = currency!,
-                CurrencyRate = rate.Value,
-            });
+                laborRate = row.LaborRate;
+                laborRateDistributor = row.LaborRateDistributor;
+            }
+            else if (row is not null)
+            {
+                // A labor rate kept in the claim's own currency does not move with the currency's rate to USD, and
+                // neither does the distributor's: one that was the dealer's in USD stays at the figure it had.
+                laborRateDistributor ??= LaborRateInUSD(stored!);
+            }
+            else if (rate > 0)
+            {
+                laborRate = await this.currencyResolver.GetLaborRateAsync(new WarrantyClaimLaborRateContext
+                {
+                    CompanyBranchID = companyBranchID,
+                    Franchise = franchise,
+                    Currency = currency!,
+                    CurrencyRate = rate.Value,
+                }) ?? laborRate;
+            }
         }
 
         return new WarrantyClaimCurrencyDTO
@@ -114,6 +137,7 @@ public class WarrantyClaimService
             Currency = currency!,
             CurrencyRate = rate,
             LaborRate = laborRate,
+            LaborRateDistributor = laborRateDistributor,
             CanEditRate = canEditRate,
         };
     }
@@ -152,6 +176,10 @@ public class WarrantyClaimService
     // claim reads the amount itself, so a claim saved before the USD members existed needs no backfill.
     private static decimal LaborRateInUSD(WarrantyClaim claim) =>
         DocumentCurrency.IsUSD(claim.Currency) ? claim.LaborRate : claim.LaborRateUSD;
+
+    // The distributor's labor rate in USD: its own when the host set one, else the dealer's in USD.
+    private static decimal DistributorLaborRateInUSD(WarrantyClaim claim) =>
+        claim.LaborRateDistributor ?? LaborRateInUSD(claim);
 
     private static decimal AmountInUSD(WarrantyClaim claim, WarrantyClaimSubletLine sublet) =>
         DocumentCurrency.IsUSD(claim.Currency) ? sublet.Amount : sublet.AmountUSD;
@@ -937,30 +965,72 @@ public class WarrantyClaimService
         claim.PartExchangeRate = warrantyRates.PartExchangeRate;
         claim.PRR1 = warrantyRates.PRR;
 
-        // The yen rates are per USD, so the dealer-side inputs are taken in USD.
-        var laborRateUSD = LaborRateInUSD(claim);
+        this.UpdateDistributorAmounts(claim);
 
-        claim.LaborRateJPY = Math.Ceiling(laborRateUSD * claim.LaborExchangeRate.Value);
+        this.UpdateManufacturerAmounts(claim);
+    }
+
+    /// <summary>
+    /// A save computes the yen without rounding the yen rates up, as the export does. On a claim that was already
+    /// exported the figures are computed again the export's way, so a save does not move them off it.
+    /// </summary>
+    public void KeepExportRounding(WarrantyClaim claim)
+    {
+        if (claim.ManufacturerStatus is null or WarrantyManufacturerClaimStatus.NA)
+            return;
+
+        if (claim.LaborExchangeRate is null || claim.SubletExchangeRate is null || claim.PartExchangeRate is null || claim.PRR1 is null)
+            return;
+
+        this.UpdateDistributorAmounts(claim);
+    }
+
+    /// <summary>
+    /// The distributor's labor in USD and JPY, from the claim's distributor labor rate and hours. The claim's
+    /// distributor totals move by the difference. The yen need the claim's labor exchange rate and stay as they are
+    /// without it.
+    /// </summary>
+    public void UpdateDistributorLabor(WarrantyClaim claim)
+    {
+        // The yen rate is per USD, so the rate is taken in USD. It is the distributor's: what the manufacturer is
+        // charged, which can differ from what the dealer is paid.
+        var laborRateUSD = DistributorLaborRateInUSD(claim);
+
+        var labor = claim.HourTotalDistributor * laborRateUSD;
+        claim.TotalClaimAmountDistributor += (labor ?? 0) - (claim.LaborTotalAmountDistributor ?? 0);
+        claim.LaborTotalAmountDistributor = labor;
+
+        if (claim.LaborExchangeRate is not { } yenPerUSD)
+            return;
+
+        claim.LaborRateJPY = Math.Ceiling(laborRateUSD * yenPerUSD);
+
+        var laborJPY = claim.HourTotalDistributor * claim.LaborRateJPY;
+        claim.TotalClaimAmountDistributorJPY += (laborJPY ?? 0) - (claim.LaborTotalAmountDistributorJPY ?? 0);
+        claim.LaborTotalAmountDistributorJPY = laborJPY;
+    }
+
+    private void UpdateDistributorAmounts(WarrantyClaim claim)
+    {
+        this.UpdateDistributorLabor(claim);
+
+        // The yen rates are per USD, so the inputs are taken in USD.
         claim.WarrantyClaimSubletLines.ToList().ForEach(x => x.AmountJPY = Math.Ceiling(AmountInUSD(claim, x) * claim.SubletExchangeRate.Value));
         claim.WarrantyClaimSubletLines.ToList().ForEach(x => x.DistributorAmountJPY = Math.Ceiling((x.DistributorAmount ?? 0) * claim.SubletExchangeRate.Value));
         claim.WarrantyClaimPartLines.ToList().ForEach(x => x.DistributorPriceJPY = Math.Ceiling((x.DistributorPrice ?? 0) * claim.PartExchangeRate.Value));
 
 
-        claim.LaborTotalAmountDistributor = claim.HourTotalDistributor * laborRateUSD;
         claim.SubletTotalAmount = claim.WarrantyClaimSubletLines.Sum(x => x.Amount);
         claim.SubletTotalAmountDistributor = claim.WarrantyClaimSubletLines.Sum(x => x.DistributorAmount ?? 0m);
         claim.PartsTotalAmountDistributor = claim.WarrantyClaimPartLines.Sum(x => (x.DistributorPrice ?? 0m) * (x.Qty ?? 0m)) * claim.PRR1;
 
 
-        claim.LaborTotalAmountDistributorJPY = claim.HourTotalDistributor * claim.LaborRateJPY;
         claim.SubletTotalAmountJPY = claim.WarrantyClaimSubletLines.Sum(x => x.AmountJPY);
         claim.SubletTotalAmountDistributorJPY = claim.WarrantyClaimSubletLines.Sum(x => x.DistributorAmountJPY ?? 0m);
         claim.PartsTotalAmountDistributorJPY = claim.WarrantyClaimPartLines.Sum(x => (x.DistributorPriceJPY ?? 0m) * (x.Qty ?? 0m)) * claim.PRR1.Value;
 
         claim.TotalClaimAmountDistributor = claim.LaborTotalAmountDistributor + claim.SubletTotalAmountDistributor + claim.PartsTotalAmountDistributor;
         claim.TotalClaimAmountDistributorJPY = claim.LaborTotalAmountDistributorJPY + claim.SubletTotalAmountDistributorJPY + claim.PartsTotalAmountDistributorJPY;
-
-        this.UpdateManufacturerAmounts(claim);
     }
 
     public void UpdateManufacturerAmounts(WarrantyClaim claim)

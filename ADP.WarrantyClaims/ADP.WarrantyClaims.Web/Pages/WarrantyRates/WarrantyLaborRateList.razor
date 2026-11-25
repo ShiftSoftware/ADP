@@ -1,0 +1,36 @@
+@attribute [Authorize]
+@attribute [Route($"/{nameof(WarrantyLaborRateList)}")]
+
+@* The labor rates per hour, by claim currency: the dealer's in that currency, the distributor's in USD. A new
+   claim takes the row with the latest effective date that has started. Distributor-only, on the server too. *@
+
+@inject IOptions<WarrantyClaimsWebOptions> WCOptions
+
+<ShiftList EntitySet="WarrantyLaborRate"
+           Title="Labor Rates (per hour)"
+           T="WarrantyLaborRateListDTO"
+           Dense
+           ComponentType="typeof(WarrantyLaborRateForm)"
+           ShowIDColumn="true"
+           HighlightSortedColumn
+           TypeAuthAction="WCOptions.Value.WarrantyRatesAction"
+           EnableExport>
+
+    <ToolbarStartTemplate>
+        <MudButton Href="@($"/{nameof(WarrantyRatesList)}")"
+                   Variant="Variant.Outlined"
+                   Size="Size.Small"
+                   StartIcon="@Icons.Material.Filled.Tune">
+            Warranty Rates
+        </MudButton>
+    </ToolbarStartTemplate>
+
+    <ChildContent>
+        <Sort Property="x => x.EffectiveDate" Direction="SortDirection.Descending" />
+
+        <PropertyColumn Property="x => x.Currency" Title="Claim Currency" />
+        <PropertyColumn Filterable="false" Format="#,0.00" Property="x => x.LaborRate" Title="Dealer Rate (claim currency)" HeaderClass="whitespace-nowrap" />
+        <PropertyColumn Filterable="false" Format="#,0.00" Property="x => x.LaborRateDistributor" Title="Distributor Rate (USD)" HeaderClass="whitespace-nowrap" />
+        <PropertyColumn Filterable="false" Format="yyyy-MM-dd" Property="x => x.EffectiveDate" Title="Effective From" HeaderClass="whitespace-nowrap" />
+    </ChildContent>
+</ShiftList>

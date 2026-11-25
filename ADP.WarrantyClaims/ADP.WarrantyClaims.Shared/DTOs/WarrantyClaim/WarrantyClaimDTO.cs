@@ -51,17 +51,19 @@ public class WarrantyClaimDTO : ShiftEntityViewAndUpsertDTO
 
     // The dealer side (LaborRate, part Price, sublet Amount and their totals) is in Currency.
     // CurrencyRate is units of Currency per 1 USD; left null, the server uses the claim's stored rate
-    // or today's rate for a new claim. The server sets Currency and LaborRate from the host's
-    // IWarrantyClaimCurrencyResolver on save; the distributor and JPY figures use the USD labor rate.
+    // or today's rate for a new claim. The server sets Currency, LaborRate and
+    // LaborRateDistributor (USD) on save, from the host's IWarrantyClaimCurrencyResolver and the labor rate
+    // rows. The distributor and JPY figures use LaborRateDistributor, or the dealer's labor rate in USD when it is null.
     public string Currency { get; set; } = DocumentCurrency.USD;
     public decimal? CurrencyRate { get; set; }
     public decimal LaborRate { get; set; } = DefaultWarrantyClaimCurrencyResolver.LaborRate;
     public decimal LaborRateUSD { get => DocumentCurrency.ToUSD(LaborRate, Currency, CurrencyRate ?? 0); }
-    public decimal LaborRateJPY { get => LaborRateUSD * this.LaborExchangeRate; }
+    public decimal? LaborRateDistributor { get; set; }
+    public decimal LaborRateJPY { get => (LaborRateDistributor ?? LaborRateUSD) * this.LaborExchangeRate; }
     public decimal HourTotal { get => WarrantyClaimLaborLines.Sum(x => x.Hour ?? 0m); }
     public decimal HourTotalDistributor { get => WarrantyClaimLaborLines.Sum(x => x.DistributorHour ?? 0m); }
     public decimal? LaborTotalAmount { get => HourTotal * LaborRate; }
-    public decimal? LaborTotalAmountDistributor { get => HourTotalDistributor * LaborRateUSD; }
+    public decimal? LaborTotalAmountDistributor { get => HourTotalDistributor * (LaborRateDistributor ?? LaborRateUSD); }
 
     [JsonIgnore]
     public decimal? LaborTotalAmountDistributorJPY { get => LaborTotalAmountDistributor * this.LaborExchangeRate; }

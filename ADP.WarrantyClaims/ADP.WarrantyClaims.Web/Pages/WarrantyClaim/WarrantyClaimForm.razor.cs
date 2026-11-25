@@ -96,6 +96,7 @@ public partial class WarrantyClaimForm
 
     private bool canEditCurrencyRate = false;
     private bool missingCurrencyRate = false;
+    private bool missingLaborRate = false;
 
     // Dealer-side amount inputs take the decimals of the claim's currency.
     private string AmountFormat
@@ -137,10 +138,12 @@ public partial class WarrantyClaimForm
 
             TheItem.Currency = currency.Currency;
             TheItem.CurrencyRate = currency.CurrencyRate;
-            TheItem.LaborRate = currency.LaborRate;
+            TheItem.LaborRate = currency.LaborRate ?? 0;
+            TheItem.LaborRateDistributor = currency.LaborRateDistributor;
 
             canEditCurrencyRate = currency.CanEditRate;
             missingCurrencyRate = currency.CurrencyRate is null;
+            missingLaborRate = currency.LaborRate is null && !missingCurrencyRate;
         }
         catch
         {

@@ -5,6 +5,7 @@
    ID-only, newest first. *@
 
 @inject IOptions<WarrantyClaimsWebOptions> WCOptions
+@inject IWarrantyClaimsCapabilityProvider CapabilityProvider
 
 <ShiftList EntitySet="WarrantyRates"
            Title="Warranty Rates"
@@ -23,6 +24,16 @@
                    StartIcon="@Icons.Material.Filled.CurrencyExchange">
             Currency Rates
         </MudButton>
+
+        @if (CapabilityProvider.IsDistributor)
+        {
+            <MudButton Href="@($"/{nameof(WarrantyLaborRateList)}")"
+                       Variant="Variant.Outlined"
+                       Size="Size.Small"
+                       StartIcon="@Icons.Material.Filled.Engineering">
+                Labor Rates
+            </MudButton>
+        }
     </ToolbarStartTemplate>
 
     <ChildContent>

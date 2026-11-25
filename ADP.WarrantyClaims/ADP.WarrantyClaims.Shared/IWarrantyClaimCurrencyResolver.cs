@@ -15,11 +15,14 @@ public interface IWarrantyClaimCurrencyResolver
     ValueTask<string> GetCurrencyAsync(long? companyBranchID);
 
     /// <summary>
-    /// The labor rate per hour in the claim's currency. Asked when the claim is created and again when its
-    /// currency rate changes. A host with a USD figure converts it with
-    /// <see cref="DocumentCurrency.FromUSD"/> and the context's rate.
+    /// The labor rate per hour in the claim's currency, for a currency that has no row on the Labor Rates page. A row
+    /// wins over this. Asked when the claim is created and again when its currency rate changes. A host with a USD
+    /// figure converts it with <see cref="DocumentCurrency.FromUSD"/> and the context's rate. Null means the host has
+    /// no rate, so a new claim can not be saved until a row is added. The default is
+    /// <see cref="DefaultWarrantyClaimCurrencyResolver.LaborRate"/> for USD and none for another currency.
     /// </summary>
-    ValueTask<decimal> GetLaborRateAsync(WarrantyClaimLaborRateContext context);
+    ValueTask<decimal?> GetLaborRateAsync(WarrantyClaimLaborRateContext context) =>
+        new(DocumentCurrency.IsUSD(context.Currency) ? DefaultWarrantyClaimCurrencyResolver.LaborRate : null);
 }
 
 public class WarrantyClaimLaborRateContext
@@ -39,6 +42,4 @@ public class DefaultWarrantyClaimCurrencyResolver : IWarrantyClaimCurrencyResolv
     public const decimal LaborRate = 25;
 
     public ValueTask<string> GetCurrencyAsync(long? companyBranchID) => new(DocumentCurrency.USD);
-
-    public ValueTask<decimal> GetLaborRateAsync(WarrantyClaimLaborRateContext context) => new(LaborRate);
 }

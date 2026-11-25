@@ -1,0 +1,44 @@
+@attribute [Route($"/{nameof(WarrantyLaborRateForm)}/{{Key?}}")]
+
+@inject IOptions<WarrantyClaimsWebOptions> WCOptions
+
+<ShiftEntityForm T="WarrantyLaborRateDTO"
+                 Endpoint="WarrantyLaborRate"
+                 Title="Labor Rate"
+                 @bind-Value="LaborRate"
+                 TypeAuthAction="WCOptions.Value.WarrantyRatesAction"
+                 @bind-Key="@Key">
+    <MudGrid Spacing="8" Class="pt-4">
+        <MudItem Class="pt-2 pb-2" lg="3" md="3" sm="6" xs="12">
+            <MudTextFieldExtended Label="Claim Currency (ISO code)"
+                                  MaxLength="3"
+                                  For="() => context.Item.Currency"
+                                  @bind-Value="context.Item.Currency" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="3" md="3" sm="6" xs="12">
+            <MudNumericFieldExtended Label="Dealer Rate (per hour, claim currency)"
+                                     For="() => context.Item.LaborRate"
+                                     @bind-Value="context.Item.LaborRate" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="3" md="3" sm="6" xs="12">
+            <MudNumericFieldExtended Label="Distributor Rate (per hour, USD)"
+                                     For="() => context.Item.LaborRateDistributor"
+                                     @bind-Value="context.Item.LaborRateDistributor" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="3" md="3" sm="6" xs="12">
+            <MudDatePickerExtended Label="Effective From"
+                                   @bind-Date="context.Item.EffectiveDate"
+                                   For="() => context.Item.EffectiveDate" />
+        </MudItem>
+    </MudGrid>
+</ShiftEntityForm>
+
+@code {
+    [Parameter]
+    public object? Key { get; set; }
+
+    private WarrantyLaborRateDTO LaborRate = new() { EffectiveDate = DateTime.Today };
+}

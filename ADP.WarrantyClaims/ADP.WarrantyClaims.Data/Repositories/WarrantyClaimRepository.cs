@@ -131,6 +131,13 @@ public class WarrantyClaimRepository :
         return q;
     }
 
+    public override IQueryable<WarrantyClaimListDTO> MapToList(IQueryable<WarrantyClaim> queryable, MappingContext context = default)
+    {
+        var list = base.MapToList(queryable, context);
+
+        return isDistributor ? list : DealerClaimList.WithoutDistributorFigures(list);
+    }
+
     public override async ValueTask<WarrantyClaimDTO> ViewAsync(WarrantyClaim entity)
     {
         var dto = await base.ViewAsync(entity);
@@ -140,6 +147,7 @@ public class WarrantyClaimRepository :
             dto.WarrantyClaimLaborLines.ForEach(x => x.DistributorHour = null);
             dto.WarrantyClaimSubletLines.ForEach(x => x.DistributorAmount = null);
             dto.WarrantyClaimPartLines.ForEach(x => x.DistributorPrice = null);
+            dto.LaborRateDistributor = null;
         }
 
         return dto;
@@ -159,7 +167,7 @@ public class WarrantyClaimRepository :
         // A new claim has no branch yet; the base upsert stamps it from the same claim.
         var companyBranchID = actionType == ActionTypes.Insert ? this.identityClaimProvider.GetCompanyBranchID() : entity.CompanyBranchID;
 
-        await this.warrantyClaimService.ApplyCurrencyAsync(actionType, entity, dto, companyBranchID, canSetRate: isDistributor, this.GetCurrentCurrencyRateAsync);
+        await this.warrantyClaimService.ApplyCurrencyAsync(actionType, entity, dto, companyBranchID, canSetRate: isDistributor, this.GetCurrentCurrencyRateAsync, this.GetCurrentLaborRateAsync);
 
         this.warrantyClaimService.WarrantyLinesValidationAndTransformation(actionType, entity, dto, isDistributor);
 
@@ -194,6 +202,7 @@ public class WarrantyClaimRepository :
         upserted.HasAttachment = dto?.Attachments?.Count > 0;
 
         this.warrantyClaimService.UpdateCurrencyAmounts(upserted);
+        this.warrantyClaimService.KeepExportRounding(upserted);
 
         if (actionType == ActionTypes.Insert)
         {
@@ -224,6 +233,9 @@ public class WarrantyClaimRepository :
     private async Task<decimal?> GetCurrentCurrencyRateAsync(string currency) =>
         (await WarrantyCurrencyRateRepository.CurrentAsync(this.db.Set<WarrantyCurrencyRate>(), currency, DateTime.UtcNow))?.Rate;
 
+    private Task<WarrantyLaborRate?> GetCurrentLaborRateAsync(string currency) =>
+        WarrantyLaborRateRepository.CurrentAsync(this.db.Set<WarrantyLaborRate>(), currency, DateTime.UtcNow);
+
     /// <summary>
     /// The currency, rate and labor rate of a saved claim, or of a claim the current user is about to create
     /// (<paramref name="claimID"/> null), with <paramref name="requestedRate"/> applied when the user may set
@@ -237,7 +249,11 @@ public class WarrantyClaimRepository :
         var companyBranchID = claim is null ? this.identityClaimProvider.GetCompanyBranchID() : claim.CompanyBranchID;
 
         var currency = await this.warrantyClaimService.ResolveCurrencyAsync(
-            claim, companyBranchID, franchise ?? claim?.Franchise, requestedRate, canSetRate: isDistributor, this.GetCurrentCurrencyRateAsync);
+            claim, companyBranchID, franchise ?? claim?.Franchise, requestedRate, canSetRate: isDistributor, this.GetCurrentCurrencyRateAsync, this.GetCurrentLaborRateAsync);
+
+        // Distributor-only, as the claim view keeps it (ViewAsync).
+        if (!isDistributor)
+            currency.LaborRateDistributor = null;
 
         return (currency, companyBranchID);
     }

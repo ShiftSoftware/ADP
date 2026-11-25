@@ -8,8 +8,14 @@ public class WarrantyClaimCurrencyDTO
     /// <summary>Units of <see cref="Currency"/> per 1 USD. Null when no rate is set for the currency yet.</summary>
     public decimal? CurrencyRate { get; set; }
 
-    /// <summary>Labor rate per hour in <see cref="Currency"/>, at <see cref="CurrencyRate"/>.</summary>
-    public decimal LaborRate { get; set; }
+    /// <summary>The dealer's labor rate per hour in <see cref="Currency"/>, null when none is set.</summary>
+    public decimal? LaborRate { get; set; }
+
+    /// <summary>
+    /// The distributor's labor rate per hour in USD, null when it is the dealer's labor rate in USD.
+    /// Distributor-only: a dealer is never sent it.
+    /// </summary>
+    public decimal? LaborRateDistributor { get; set; }
 
     /// <summary>Whether the current user may change the rate of this claim.</summary>
     public bool CanEditRate { get; set; }
