@@ -88,7 +88,8 @@ public partial class ClaimableItemContractForm
     {
         if (Key is null)
         {
-            Contract.StartDate = DateTime.Today;
+            // Without a kind: a local date is sent with the browser's offset, and a server in another zone stores the day before.
+            Contract.StartDate = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Unspecified);
             Contract.DurationUnit = ClaimableItemContractDurationUnit.Years;
         }
     }

@@ -96,11 +96,13 @@
 </ShiftList>
 
 @code {
-    private DateTime? invoiceDate = DateTime.UtcNow.Date;
+    // Today where the user is, without a kind, like a date picked in the dialog: UtcNow.Date is yesterday in the early
+    // hours of a zone ahead of UTC.
+    private DateTime? invoiceDate = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Unspecified);
 
     private ValueTask<bool> StatusUpdateResponse(ShiftEntityResponse<IList<CertificateListDTO>> data)
     {
-        this.invoiceDate = DateTime.UtcNow.Date;
+        this.invoiceDate = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Unspecified);
 
         var res = data;
 

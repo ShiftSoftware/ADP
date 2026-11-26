@@ -162,10 +162,14 @@
         {
             if (Mode == FormModes.Create)
             {
-                TheItem.CertificateDate = DateTime.Now.Date;
+                // Without a kind: a local date is sent with the browser's offset, and a server in another zone stores (and
+                // prints) the day before.
+                TheItem.CertificateDate = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Unspecified);
 
-                TheItem.PeriodStartDate = new DateTime(TheItem.CertificateDate.Value.Year, TheItem.CertificateDate.Value.Month, 1);
-                TheItem.PeriodEndDate = TheItem.PeriodStartDate.Value.AddDays(-1);
+                // The previous month, which is what a certificate usually covers.
+                var thisMonth = new DateTime(TheItem.CertificateDate.Value.Year, TheItem.CertificateDate.Value.Month, 1);
+                TheItem.PeriodStartDate = thisMonth.AddMonths(-1);
+                TheItem.PeriodEndDate = thisMonth.AddDays(-1);
 
                 StateHasChanged();
             }

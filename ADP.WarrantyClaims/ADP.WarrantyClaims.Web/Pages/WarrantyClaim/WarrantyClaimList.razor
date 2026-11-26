@@ -379,7 +379,9 @@
 @code {
     private bool isDistributor = false;
     private string? inputText;
-    private DateTime? deliveryDate = DateTime.UtcNow.Date;
+    // Today where the user is, without a kind, like a date picked in the dialog: UtcNow.Date is yesterday in the early
+    // hours of a zone ahead of UTC.
+    private DateTime? deliveryDate = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Unspecified);
 
     private WarrantyRatesDTO uiRates = new WarrantyRatesDTO();
 

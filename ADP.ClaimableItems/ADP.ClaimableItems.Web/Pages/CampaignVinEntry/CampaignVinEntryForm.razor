@@ -78,7 +78,8 @@
         {
             if (Mode == FormModes.Create)
             {
-                TheItem.RecordedDate = DateTime.Now.Date;
+                // Without a kind: a local date is sent with the browser's offset, and a server in another zone stores the day before.
+                TheItem.RecordedDate = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Unspecified);
             }
 
             StateHasChanged();
