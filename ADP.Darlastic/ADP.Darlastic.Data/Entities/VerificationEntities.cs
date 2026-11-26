@@ -24,11 +24,21 @@ public class VerificationEntry
     /// number); empty for a kind without a value.</summary>
     public string ValueKey { get; set; } = default!;
 
+    /// <summary>What kind of value it is, for a kind whose values come in types (an identity document: national
+    /// ID, passport ...); empty otherwise. Part of what identifies the value.</summary>
+    public string ValueType { get; set; } = "";
+
     /// <summary>The host's name for how it verified.</summary>
     public string Method { get; set; } = default!;
 
-    /// <summary>verified / failed / revoked.</summary>
+    /// <summary>verified / submitted / held / failed / revoked / rejected.</summary>
     public string Outcome { get; set; } = default!;
+
+    /// <summary>The claim a review decided on, when this row is a review's decision (its actor is the reviewer).</summary>
+    public long? ReviewOfClaimID { get; set; }
+
+    /// <summary>The reviewer's words, when they left any.</summary>
+    public string? Note { get; set; }
 
     /// <summary>Where, in the host's words (a dealer or branch).</summary>
     public string? Location { get; set; }
@@ -45,6 +55,10 @@ public class VerificationEntry
 /// One period in which a claim held for a customer. Open (<see cref="EndUtc"/> null) while it holds; a row is
 /// never deleted, so the history reads "verified for A from March to July, then for B".
 ///
+/// <para>A claim below the verified level (<see cref="Level"/>: submitted, or held because another customer
+/// has the value) is a row here too, open while it waits for a review. A review that approves it ends it
+/// (promoted) and opens the verified period as a new row.</para>
+///
 /// <para>For an exclusive kind at most one open row exists per (kind, value), enforced by a unique filtered
 /// index: two desks verifying one phone for two customers at the same moment cannot both win.</para>
 /// </summary>
@@ -59,14 +73,25 @@ public class VerifiedClaim
     public string Kind { get; set; } = default!;
     public string ValueKey { get; set; } = default!;
 
-    /// <summary>The kind was exclusive when this was recorded (the unique index filters on it).</summary>
+    /// <summary>The value's type, for a kind whose values come in types; empty otherwise.</summary>
+    public string ValueType { get; set; } = "";
+
+    /// <summary>verified / submitted / held.</summary>
+    public string Level { get; set; } = "verified";
+
+    /// <summary>Held only: the other customer's claim on the same value that this one ran into.</summary>
+    public long? ConflictClaimID { get; set; }
+
+    /// <summary>At most one open row with this set may exist per value (the unique index filters on it): a
+    /// verified claim of an exclusive kind, and a verified or submitted claim of a kind whose values belong to
+    /// one customer for good.</summary>
     public bool Exclusive { get; set; }
 
     public string Method { get; set; } = default!;
     public DateTime StartUtc { get; set; }
     public DateTime? EndUtc { get; set; }
 
-    /// <summary>superseded / renewed / revoked.</summary>
+    /// <summary>superseded / renewed / revoked / promoted / rejected.</summary>
     public string? EndReason { get; set; }
 
     public long StartedByEntryID { get; set; }

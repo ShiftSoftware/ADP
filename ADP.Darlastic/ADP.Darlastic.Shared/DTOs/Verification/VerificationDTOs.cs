@@ -12,6 +12,12 @@ public class VerificationReportDTO
     /// <summary>What the claim is about: the phone number, the VIN. Normalized by the kind's settings.</summary>
     public string? Value { get; set; }
 
+    /// <summary>The value's type, for a kind whose values come in types (a document: national ID, passport ...).</summary>
+    public string? ValueType { get; set; }
+
+    /// <summary>Revoking only: the open claim to end, by its number, instead of naming its value again.</summary>
+    public long? ClaimID { get; set; }
+
     /// <summary>The host's name for how it was verified ("otp-sms", "nfc", "staff-check" ...).</summary>
     public string Method { get; set; } = default!;
 
@@ -44,6 +50,14 @@ public class VerificationResultDTO
     /// <summary>The claim the report opened; null for a failed or revoking report.</summary>
     public long? ClaimID { get; set; }
 
+    /// <summary>The level of that claim (<see cref="VerificationLevel"/>), or of the claim the customer already
+    /// had on the value when the report changed nothing.</summary>
+    public string? Level { get; set; }
+
+    /// <summary>The value belongs to one customer and another already holds it: the attempt waits for a
+    /// review. Never says who.</summary>
+    public bool Held { get; set; }
+
     /// <summary>Claims this report ended, each with the customer that held it and why it ended.</summary>
     public List<VerificationEndedClaimDTO> Ended { get; set; } = [];
 }
@@ -68,6 +82,15 @@ public class VerifiedClaimDTO
     /// <summary>The value as this caller may see it; empty for a kind without one.</summary>
     public string? Value { get; set; }
 
+    /// <summary>The value's type, for a kind whose values come in types; null otherwise.</summary>
+    public string? ValueType { get; set; }
+
+    /// <summary><see cref="VerificationLevel"/>: verified, submitted or held.</summary>
+    public string Level { get; set; } = VerificationLevel.Verified;
+
+    /// <summary>Open below the verified level: waiting for a review.</summary>
+    public bool Pending { get; set; }
+
     public string Method { get; set; } = default!;
     public DateTime StartUtc { get; set; }
     public DateTime? EndUtc { get; set; }
@@ -76,7 +99,7 @@ public class VerifiedClaimDTO
     /// <summary>When the kind's validity ends this claim; null when it never expires.</summary>
     public DateTime? ExpiresUtc { get; set; }
 
-    /// <summary>Holds now: not ended and not expired.</summary>
+    /// <summary>Holds now: verified, not ended and not expired.</summary>
     public bool Holds { get; set; }
 
     public string? Location { get; set; }
@@ -84,7 +107,8 @@ public class VerifiedClaimDTO
     public string? SourceRecordId { get; set; }
 }
 
-/// <summary>A customer's verification: every claim that holds, and with history the periods that ended.</summary>
+/// <summary>A customer's verification: every claim that holds or waits for a review, and with history the
+/// periods that ended.</summary>
 public class CustomerVerificationDTO
 {
     /// <summary>The live customer (after following a merge).</summary>
@@ -125,12 +149,78 @@ public class VerificationRequirementStatusDTO
 
     public bool Met { get; set; }
 
-    /// <summary>Why not, in a word: "not-verified", "value-missing" (the visit gave no value of this kind) or
-    /// "value-invalid". Never whether another customer holds the value.</summary>
+    /// <summary>Why not, in a word: "not-verified", "pending-review" (a claim is open below the level the rule
+    /// asks for), "value-missing" (the visit gave no value of this kind) or "value-invalid". Never whether
+    /// another customer holds the value.</summary>
     public string? Missing { get; set; }
 
-    /// <summary>The claim that meets it.</summary>
+    /// <summary>The level the rule asks for.</summary>
+    public string RequiredLevel { get; set; } = VerificationLevel.Verified;
+
+    /// <summary>The level the customer's strongest claim for this requirement has; null with none.</summary>
+    public string? Level { get; set; }
+
+    /// <summary>The claim that meets it, or the one still below the level asked for.</summary>
     public long? ClaimID { get; set; }
     public string? Method { get; set; }
     public DateTime? SinceUtc { get; set; }
+}
+
+/// <summary>The claims that wait for a review, oldest first.</summary>
+public class VerificationReviewQueueDTO
+{
+    /// <summary>How many wait in all.</summary>
+    public int Total { get; set; }
+
+    public List<VerificationReviewItemDTO> Items { get; set; } = [];
+}
+
+/// <summary>One claim waiting for a review: submitted under a method that needs one, or held because the value
+/// belongs to one customer and another has it.</summary>
+public class VerificationReviewItemDTO
+{
+    public long ClaimID { get; set; }
+
+    /// <summary>The customer the claim is for, as they are numbered now; null when they no longer exist.</summary>
+    public string? IdentityID { get; set; }
+
+    public string Kind { get; set; } = default!;
+    public string? ValueType { get; set; }
+
+    /// <summary>The value as this caller may see it; null for a hashed value.</summary>
+    public string? Value { get; set; }
+
+    /// <summary>submitted or held.</summary>
+    public string Level { get; set; } = default!;
+
+    public string Method { get; set; } = default!;
+    public DateTime SubmittedUtc { get; set; }
+    public string SubmittedBy { get; set; } = default!;
+    public string? Location { get; set; }
+
+    /// <summary>The host's reference to its own evidence for the attempt.</summary>
+    public string? EvidenceReference { get; set; }
+
+    /// <summary>Held: the customer that holds the value, as numbered now.</summary>
+    public string? ConflictIdentityID { get; set; }
+
+    /// <summary>Held: the other claim, its level and since when; null once that claim ended.</summary>
+    public long? ConflictClaimID { get; set; }
+    public string? ConflictLevel { get; set; }
+    public DateTime? ConflictSinceUtc { get; set; }
+
+    /// <summary>Held: the other claim still stands for a different customer, so approving is refused. False
+    /// once the two were merged or the other claim ended.</summary>
+    public bool ConflictOpen { get; set; }
+}
+
+/// <summary>A reviewer's decision on a claim that waits.</summary>
+public class VerificationReviewDecisionDTO
+{
+    public long ClaimID { get; set; }
+
+    /// <summary>True moves it to verified; false rejects it.</summary>
+    public bool Approve { get; set; }
+
+    public string? Note { get; set; }
 }

@@ -46,6 +46,11 @@ public class DarlasticActionOverrides
     /// revoke. Default <see cref="DarlasticActionTree.Verification"/>.</summary>
     public TypeAuthAction? Verification { get; set; }
 
+    /// <summary>Gate on reviewing verification that waits for a decision (seeing the queue, approving,
+    /// rejecting): the Write level of this action. Null (the default): the Delete level of
+    /// <see cref="Verification"/>, the level that already revokes.</summary>
+    public TypeAuthAction? VerificationReview { get; set; }
+
     /// <summary><see cref="Verification"/> or the module's own action.</summary>
     public TypeAuthAction ResolvedVerification => Verification ?? DarlasticActionTree.Verification;
 

@@ -213,8 +213,10 @@ public static class DarlasticModelBuilderExtensions
             x.Property(e => e.Actor).HasMaxLength(128);
             x.Property(e => e.Kind).HasColumnType("varchar(32)");
             x.Property(e => e.ValueKey).HasMaxLength(128).UseCollation(KeyCollation);
+            x.Property(e => e.ValueType).HasColumnType("varchar(32)").HasDefaultValue("");
             x.Property(e => e.Method).HasMaxLength(64);
             x.Property(e => e.Outcome).HasColumnType("varchar(16)");
+            x.Property(e => e.Note).HasMaxLength(512);
             x.Property(e => e.Location).HasMaxLength(128);
             x.Property(e => e.SourceSystem).HasMaxLength(64).UseCollation(KeyCollation);
             x.Property(e => e.SourceRecordId).HasMaxLength(64).UseCollation(KeyCollation);
@@ -229,6 +231,8 @@ public static class DarlasticModelBuilderExtensions
             x.Property(e => e.ClaimID).UseIdentityColumn();
             x.Property(e => e.Kind).HasColumnType("varchar(32)");
             x.Property(e => e.ValueKey).HasMaxLength(128).UseCollation(KeyCollation);
+            x.Property(e => e.ValueType).HasColumnType("varchar(32)").HasDefaultValue("");
+            x.Property(e => e.Level).HasColumnType("varchar(16)").HasDefaultValue("verified");
             x.Property(e => e.Method).HasMaxLength(64);
             x.Property(e => e.EndReason).HasColumnType("varchar(16)");
             x.Property(e => e.Location).HasMaxLength(128);
@@ -241,11 +245,15 @@ public static class DarlasticModelBuilderExtensions
             // A customer's claims, open and ended.
             x.HasIndex(e => new { e.IdentityID, e.Kind }).HasDatabaseName("IX_VerifiedClaim_Identity");
             // One open claim per customer and value: verifying again closes the old period first.
-            x.HasIndex(e => new { e.Kind, e.ValueKey, e.IdentityID }).IsUnique()
+            x.HasIndex(e => new { e.Kind, e.ValueType, e.ValueKey, e.IdentityID }).IsUnique()
                 .HasFilter("[EndUtc] IS NULL").HasDatabaseName("UX_VerifiedClaim_OpenPerIdentity");
-            // An exclusive value (a phone, a vehicle) is verified for one customer at a time.
-            x.HasIndex(e => new { e.Kind, e.ValueKey }).IsUnique()
+            // An exclusive value (a phone, a vehicle) is verified for one customer at a time; a value that
+            // belongs to one customer for good (an identity document) is verified or submitted for one only.
+            x.HasIndex(e => new { e.Kind, e.ValueType, e.ValueKey }).IsUnique()
                 .HasFilter("[EndUtc] IS NULL AND [Exclusive] = 1").HasDatabaseName("UX_VerifiedClaim_OpenExclusive");
+            // The review queue: open claims below the verified level, oldest first.
+            x.HasIndex(e => e.StartUtc)
+                .HasFilter("[EndUtc] IS NULL AND [Level] <> 'verified'").HasDatabaseName("IX_VerifiedClaim_AwaitingReview");
         });
 
         return modelBuilder;

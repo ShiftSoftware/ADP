@@ -48,6 +48,16 @@ public class VerificationController : ControllerBase
         return !typeAuth.Can(options.Actions.ResolvedVerification, access);
     }
 
+    /// <summary>Reviewing: the host's own action at its Write level, else the Delete level of verification.</summary>
+    private bool ReviewDenied()
+    {
+        if (!options.EnableDarlasticActionTreeAuthorization) return false;
+        var typeAuth = HttpContext.RequestServices.GetRequiredService<ITypeAuthService>();
+        return options.Actions.VerificationReview is { } review
+            ? !typeAuth.Can(review, Access.Write)
+            : !typeAuth.Can(options.Actions.ResolvedVerification, Access.Delete);
+    }
+
     private string Actor => User?.FindFirstValue(ClaimTypes.NameIdentifier) ?? User?.Identity?.Name ?? "unknown";
 
     private static bool TryId(string? text, out long id) =>
@@ -100,6 +110,8 @@ public class VerificationController : ControllerBase
                     SpecificValue = r.Requirement.SpecificValue,
                     Met = r.Met,
                     Missing = r.Missing,
+                    RequiredLevel = VerificationLevel.CanBeRequired(r.Requirement.Level) ? r.Requirement.Level : VerificationLevel.Verified,
+                    Level = r.Claim?.Level,
                     ClaimID = r.Claim?.ClaimID,
                     Method = r.Claim?.Method,
                     SinceUtc = r.Claim?.StartUtc,
@@ -110,8 +122,9 @@ public class VerificationController : ControllerBase
     }
 
     /// <summary>
-    /// Record a result. A <c>revoked</c> report needs the delete action and is always accepted; a
-    /// <c>verified</c> or <c>failed</c> one needs the write action and a host that accepts reports over HTTP
+    /// Record a result. A <c>revoked</c> report needs the delete action and is always accepted (it names the
+    /// value, or the claim by its number); a
+    /// <c>verified</c>, <c>submitted</c> or <c>failed</c> one needs the write action and a host that accepts reports over HTTP
     /// (<see cref="DarlasticVerificationOptions.AcceptReportsOverHttp"/>), otherwise 404: such a host reports
     /// from its own server code after its own check.
     /// </summary>
@@ -130,44 +143,121 @@ public class VerificationController : ControllerBase
 
         try
         {
-            var result = await service.ReportAsync(new VerificationReport(
-                identityId, input.Kind, input.Value, input.Method, outcome, Actor,
-                input.Location, input.SourceSystem, input.SourceRecordId, input.EvidenceReference), ct);
-
-            return Ok(new VerificationResultDTO
+            if (revoke && input.ClaimID is { } claimId)
             {
-                EntryID = result.Entry.EntryID,
-                IdentityID = Text(result.Entry.IdentityID),
-                Kind = result.Entry.Kind,
-                Outcome = result.Entry.Outcome,
-                ClaimID = result.Opened?.ClaimID,
-                Ended = [.. result.Ended.Select(c => new VerificationEndedClaimDTO
-                {
-                    ClaimID = c.ClaimID,
-                    IdentityID = Text(c.IdentityID),
-                    Reason = c.EndReason!,
-                })],
-            });
+                // The claim is the named customer's own (through merges), never another customer's by number.
+                var live = await service.LiveIdentityAsync(identityId, ct);
+                if (live is null) return NotFound();
+                if (!(await service.ClaimsAsync(live.Value, history: false, ct)).Any(c => c.Claim.ClaimID == claimId)) return NotFound();
+                return Ok(ToDto(await service.RevokeClaimAsync(claimId, Actor, ct)));
+            }
+
+            return Ok(ToDto(await service.ReportAsync(new VerificationReport(
+                identityId, input.Kind, input.Value, input.Method, outcome, Actor,
+                input.Location, input.SourceSystem, input.SourceRecordId, input.EvidenceReference, input.ValueType), ct)));
         }
         catch (VerificationException problem) { return Refused(problem); }
     }
 
-    private ActionResult Refused(VerificationException problem) =>
-        problem.Problem == VerificationProblem.UnknownIdentity ? NotFound() : BadRequest(new { problem.Message });
+    /// <summary>The claims that wait for a review (submitted, or held behind another customer's claim), oldest first.</summary>
+    [HttpGet("review")]
+    [Authorize]
+    public async Task<ActionResult<VerificationReviewQueueDTO>> Review(int skip = 0, int top = 50, CancellationToken ct = default)
+    {
+        if (!service.Enabled) return NotFound();
+        if (ReviewDenied()) return Forbid();
+
+        var pii = RecordPiiView.ForCaller(HttpContext, masker, piiOptions);
+        var (items, total) = await service.AwaitingReviewAsync(skip, top, ct);
+        return Ok(new VerificationReviewQueueDTO
+        {
+            Total = total,
+            Items = [.. items.Select(i => new VerificationReviewItemDTO
+            {
+                ClaimID = i.Claim.ClaimID,
+                IdentityID = i.LiveIdentityID is { } live ? Text(live) : null,
+                Kind = i.Claim.Kind,
+                ValueType = i.Claim.ValueType.Length == 0 ? null : i.Claim.ValueType,
+                Value = Shown(i.Claim, pii),
+                Level = i.Claim.Level,
+                Method = i.Claim.Method,
+                SubmittedUtc = i.Claim.StartUtc,
+                SubmittedBy = i.Submitted.Actor,
+                Location = i.Claim.Location,
+                EvidenceReference = i.Submitted.EvidenceReference,
+                ConflictIdentityID = i.ConflictLiveIdentityID is { } other ? Text(other) : null,
+                ConflictClaimID = i.ConflictsWith is { EndUtc: null } open ? open.ClaimID : null,
+                ConflictLevel = i.ConflictsWith is { EndUtc: null } ? i.ConflictsWith.Level : null,
+                ConflictSinceUtc = i.ConflictsWith is { EndUtc: null } ? i.ConflictsWith.StartUtc : null,
+                ConflictOpen = i.ConflictsWith is { EndUtc: null } && i.ConflictLiveIdentityID != i.LiveIdentityID,
+            })],
+        });
+    }
+
+    /// <summary>Decide a claim that waits: approve it (it becomes verified) or reject it. Approving a held claim
+    /// is refused (409) while another customer still holds the value.</summary>
+    [HttpPost("review")]
+    [Authorize]
+    public async Task<ActionResult<VerificationResultDTO>> Decide([FromBody] VerificationReviewDecisionDTO input, CancellationToken ct = default)
+    {
+        if (!service.Enabled) return NotFound();
+        if (ReviewDenied()) return Forbid();
+        if (input is null || input.ClaimID <= 0) return BadRequest("A decision names its claim.");
+
+        try
+        {
+            return Ok(ToDto(await service.ReviewAsync(input.ClaimID, input.Approve, Actor, input.Note, ct)));
+        }
+        catch (VerificationException problem) { return Refused(problem); }
+    }
+
+    private static VerificationResultDTO ToDto(VerificationResult result) => new()
+    {
+        EntryID = result.Entry.EntryID,
+        IdentityID = Text(result.Entry.IdentityID),
+        Kind = result.Entry.Kind,
+        Outcome = result.Entry.Outcome,
+        ClaimID = result.Opened?.ClaimID,
+        Level = (result.Opened ?? result.Unchanged)?.Level,
+        Held = result.ConflictsWith is not null,
+        Ended = [.. result.Ended.Select(c => new VerificationEndedClaimDTO
+        {
+            ClaimID = c.ClaimID,
+            IdentityID = Text(c.IdentityID),
+            Reason = c.EndReason!,
+        })],
+    };
+
+    private ActionResult Refused(VerificationException problem) => problem.Problem switch
+    {
+        VerificationProblem.UnknownIdentity or VerificationProblem.UnknownClaim => NotFound(),
+        VerificationProblem.ConflictUnresolved or VerificationProblem.ReviewBySubmitter =>
+            Conflict(new { problem.Message, Problem = problem.Problem.ToString() }),
+        _ => BadRequest(new { problem.Message, Problem = problem.Problem.ToString() }),
+    };
+
+    /// <summary>A claim's value as this caller may see it. A hashed value is never shown; a kind the host no
+    /// longer configures shows nothing either.</summary>
+    private string? Shown(VerifiedClaim claim, RecordPiiView pii)
+    {
+        options.Verification.Kinds.TryGetValue(claim.Kind, out var kind);
+        return kind is null || kind.HashValue || claim.ValueKey.Length == 0 ? null
+            : kind.Pii is { } piiKind ? pii.Show(piiKind, claim.ValueKey)
+            : claim.ValueKey;
+    }
 
     private VerifiedClaimDTO ToDto(ClaimState state, RecordPiiView pii)
     {
         var claim = state.Claim;
-        options.Verification.Kinds.TryGetValue(claim.Kind, out var kind);
         return new VerifiedClaimDTO
         {
             ClaimID = claim.ClaimID,
             IdentityID = Text(claim.IdentityID),
             Kind = claim.Kind,
-            // A hashed value is never shown; a kind the host no longer configures shows nothing either.
-            Value = kind is null || kind.HashValue || claim.ValueKey.Length == 0 ? null
-                : kind.Pii is { } piiKind ? pii.Show(piiKind, claim.ValueKey)
-                : claim.ValueKey,
+            Value = Shown(claim, pii),
+            ValueType = claim.ValueType.Length == 0 ? null : claim.ValueType,
+            Level = claim.Level,
+            Pending = state.Pending,
             Method = claim.Method,
             StartUtc = claim.StartUtc,
             EndUtc = claim.EndUtc,

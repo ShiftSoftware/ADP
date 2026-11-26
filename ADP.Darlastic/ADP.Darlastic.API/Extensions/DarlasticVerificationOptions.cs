@@ -79,6 +79,12 @@ public class DarlasticVerificationOptions
     /// </summary>
     public bool AcceptReportsOverHttp { get; set; }
 
+    /// <summary>
+    /// Let the person who reported a claim also review it. Off by default: a review is a second pair of eyes,
+    /// so the reviewer of a submitted or held claim must be someone else.
+    /// </summary>
+    public bool AllowReviewBySubmitter { get; set; }
+
     /// <summary>The rule for a context: its own, else the default rule, else nothing required.</summary>
     public IReadOnlyList<VerificationRequirement> RuleFor(string? context) =>
         Rules.TryGetValue(context?.Trim() ?? "", out var rule) ? rule
@@ -91,6 +97,27 @@ public class VerificationKindOptions
 {
     /// <summary>The value is verified for one customer at a time: verifying it for another ends the first.</summary>
     public bool Exclusive { get; set; }
+
+    /// <summary>
+    /// The value belongs to one customer for good (an identity document), unlike a phone or a vehicle, which
+    /// move from one customer to the next. Verifying it for a second customer ends nothing: that attempt is
+    /// held (<see cref="VerificationLevel.Held"/>) and waits for a review, which sees who holds it. It is a
+    /// missed merge, a mistake or fraud. Applies to reports that carry a value the module stores; wins over
+    /// <see cref="Exclusive"/>. With <see cref="HashValue"/> and no
+    /// <see cref="DarlasticVerificationOptions.ValueHashKey"/> the module could not tell, so such a report is
+    /// refused.
+    /// </summary>
+    public bool OneHolder { get; set; }
+
+    /// <summary>The types this kind's values come in (an identity document: national ID, passport, driving
+    /// licence). Empty (the default): the values have no type. Not empty: a report with a value names one of
+    /// them, and the type is part of what identifies the value, so a customer can hold several.</summary>
+    public HashSet<string> ValueTypes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Methods that never prove the claim by themselves (a document a person looked at, a photo of
+    /// it): a report under one of them is accepted as <c>submitted</c> only, and a review moves it to
+    /// verified.</summary>
+    public HashSet<string> ReviewedMethods { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>A report must carry a value (a phone, a VIN).</summary>
     public bool ValueRequired { get; set; }
@@ -118,4 +145,7 @@ public class VerificationKindOptions
 /// <param name="Kind">The kind that must hold.</param>
 /// <param name="SpecificValue">The visit's own value of that kind must be the verified one (the vehicle in for
 /// service), not just any value.</param>
-public record VerificationRequirement(string Kind, bool SpecificValue = false);
+/// <param name="Level">The level the claim must have reached: <see cref="VerificationLevel.Verified"/> (the
+/// default), or <see cref="VerificationLevel.Submitted"/> for a context that goes ahead while a review is
+/// still open.</param>
+public record VerificationRequirement(string Kind, bool SpecificValue = false, string Level = VerificationLevel.Verified);

@@ -377,6 +377,327 @@ public class VerificationTests
         Assert.IsType<ForbidResult>((await gated.Report(new() { IdentityID = "100", Kind = "phone", Value = Phone, Method = "m", Outcome = "revoked" })).Result);
     }
 
+    // ── levels, typed documents, one holder, review ──────────────────────────────────────────────
+
+    private const string NationalId = "national-id", Passport = "passport";
+
+    /// <summary>A host whose person kind is an identity document: typed, one customer's for good, hashed, and
+    /// "looked-at" needing a review.</summary>
+    private static DarlasticApiOptions Documents()
+    {
+        var options = Enabled();
+        options.Verification.ValueHashKey = "synthetic-test-key";
+        var person = options.Verification.Kinds[VerificationKind.Person];
+        person.OneHolder = true;
+        person.ValueRequired = true;
+        person.ValueTypes = new(StringComparer.OrdinalIgnoreCase) { NationalId, Passport };
+        person.ReviewedMethods = new(StringComparer.OrdinalIgnoreCase) { "looked-at" };
+        return options;
+    }
+
+    private static VerificationReport Document(long identity, string type, string number, string outcome = VerificationOutcome.Verified,
+        string method = "reader", string actor = "desk") =>
+        new(identity, VerificationKind.Person, number, method, outcome, actor, ValueType: type);
+
+    [Fact]
+    public async Task A_submitted_claim_waits_for_a_review_that_moves_it_to_verified()
+    {
+        using var registry = new Registry();
+        var options = Documents();
+        var service = registry.Service(options);
+
+        var submitted = await service.ReportAsync(Document(A, NationalId, "SYNTH-1", VerificationOutcome.Submitted, "looked-at"));
+
+        Assert.Equal(VerificationLevel.Submitted, submitted.Opened!.Level);
+        var waiting = Assert.Single(await service.ClaimsAsync(A));
+        Assert.False(waiting.Holds);
+        Assert.True(waiting.Pending);
+
+        // The default rule asks for verified: a submitted claim does not meet it, and says why.
+        var status = await service.StatusAsync(A);
+        Assert.False(status.Verified);
+        Assert.Equal("pending-review", Assert.Single(status.Requirements).Missing);
+
+        var (queue, total) = await service.AwaitingReviewAsync();
+        Assert.Equal(1, total);
+        Assert.Equal(submitted.Opened.ClaimID, Assert.Single(queue).Claim.ClaimID);
+        Assert.Equal("desk", queue[0].Submitted.Actor);
+
+        var approved = await service.ReviewAsync(submitted.Opened.ClaimID, approve: true, "back-office", "matches the photo");
+
+        Assert.Equal(VerificationLevel.Verified, approved.Opened!.Level);
+        Assert.Equal("looked-at", approved.Opened.Method);
+        Assert.Equal(VerificationEndReason.Promoted, Assert.Single(approved.Ended).EndReason);
+        Assert.Equal("back-office", approved.Entry.Actor);
+        Assert.Equal(submitted.Opened.ClaimID, approved.Entry.ReviewOfClaimID);
+        Assert.Equal("matches the photo", approved.Entry.Note);
+        Assert.True(Assert.Single(await service.ClaimsAsync(A)).Holds);
+        Assert.True((await service.StatusAsync(A)).Verified);
+        Assert.Empty((await service.AwaitingReviewAsync()).Items);
+
+        // Decided once: the same claim cannot be reviewed again.
+        var again = await Assert.ThrowsAsync<VerificationException>(() => service.ReviewAsync(submitted.Opened.ClaimID, true, "back-office"));
+        Assert.Equal(VerificationProblem.UnknownClaim, again.Problem);
+    }
+
+    [Fact]
+    public async Task A_rejected_claim_ends_and_a_rule_can_accept_the_submitted_level()
+    {
+        using var registry = new Registry();
+        var options = Documents();
+        options.Verification.Rules["walk-in"] = [new(VerificationKind.Person, Level: VerificationLevel.Submitted)];
+        var service = registry.Service(options);
+
+        var submitted = await service.ReportAsync(Document(A, Passport, "SYNTH-2", VerificationOutcome.Submitted, "looked-at"));
+
+        var walkIn = await service.StatusAsync(A, "walk-in");
+        Assert.True(walkIn.Verified);
+        Assert.Equal(VerificationLevel.Submitted, Assert.Single(walkIn.Requirements).Claim!.Level);
+        Assert.False((await service.StatusAsync(A)).Verified);
+
+        var rejected = await service.ReviewAsync(submitted.Opened!.ClaimID, approve: false, "back-office", "unreadable");
+
+        Assert.Null(rejected.Opened);
+        Assert.Equal(VerificationOutcome.Rejected, rejected.Entry.Outcome);
+        Assert.Equal(VerificationEndReason.Rejected, Assert.Single(rejected.Ended).EndReason);
+        Assert.Empty(await service.ClaimsAsync(A));
+        Assert.False((await service.StatusAsync(A, "walk-in")).Verified);
+    }
+
+    [Fact]
+    public async Task A_method_that_needs_a_review_cannot_report_verified_and_nobody_reviews_their_own_report()
+    {
+        using var registry = new Registry();
+        var options = Documents();
+        var service = registry.Service(options);
+
+        var direct = await Assert.ThrowsAsync<VerificationException>(() =>
+            service.ReportAsync(Document(A, NationalId, "SYNTH-3", VerificationOutcome.Verified, "looked-at")));
+        Assert.Equal(VerificationProblem.MethodNeedsReview, direct.Problem);
+
+        var submitted = await service.ReportAsync(Document(A, NationalId, "SYNTH-3", VerificationOutcome.Submitted, "looked-at", actor: "desk"));
+        var own = await Assert.ThrowsAsync<VerificationException>(() => service.ReviewAsync(submitted.Opened!.ClaimID, true, "desk"));
+        Assert.Equal(VerificationProblem.ReviewBySubmitter, own.Problem);
+
+        options.Verification.AllowReviewBySubmitter = true;
+        Assert.NotNull((await registry.Service(options).ReviewAsync(submitted.Opened!.ClaimID, true, "desk")).Opened);
+    }
+
+    [Fact]
+    public async Task A_customer_holds_several_documents_each_with_its_type()
+    {
+        using var registry = new Registry();
+        var service = registry.Service(Documents());
+
+        await service.ReportAsync(Document(A, NationalId, "SYNTH-4"));
+        await service.ReportAsync(Document(A, Passport, "SYNTH-5"));
+        // The same number under another type is another document.
+        await service.ReportAsync(Document(A, Passport, "SYNTH-4"));
+
+        var claims = await service.ClaimsAsync(A);
+        Assert.Equal(3, claims.Count);
+        Assert.All(claims, c => Assert.True(c.Holds));
+        Assert.Equal([NationalId, Passport, Passport], claims.Select(c => c.Claim.ValueType).Order());
+        Assert.Equal(3, claims.Select(c => c.Claim.ValueKey).Distinct().Count());
+        Assert.All(claims, c => Assert.Equal(64, c.Claim.ValueKey.Length));
+
+        // Reading the same document again renews its period and leaves the others.
+        var renewed = await service.ReportAsync(Document(A, NationalId, " synth 4 "));
+        Assert.Equal(VerificationEndReason.Renewed, Assert.Single(renewed.Ended).EndReason);
+        Assert.Equal(3, (await service.ClaimsAsync(A)).Count);
+
+        // One document is taken back by its claim number.
+        var passport = claims.First(c => c.Claim.ValueType == Passport).Claim.ClaimID;
+        var revoked = await service.RevokeClaimAsync(passport, "desk");
+        Assert.Equal(VerificationEndReason.Revoked, Assert.Single(revoked.Ended).EndReason);
+        Assert.Equal(2, (await service.ClaimsAsync(A)).Count);
+
+        var noType = await Assert.ThrowsAsync<VerificationException>(() =>
+            service.ReportAsync(new(A, VerificationKind.Person, "SYNTH-4", "reader", VerificationOutcome.Verified, "desk")));
+        Assert.Equal(VerificationProblem.ValueTypeInvalid, noType.Problem);
+        var unknownType = await Assert.ThrowsAsync<VerificationException>(() => service.ReportAsync(Document(A, "library-card", "SYNTH-4")));
+        Assert.Equal(VerificationProblem.ValueTypeInvalid, unknownType.Problem);
+        var typedPhone = await Assert.ThrowsAsync<VerificationException>(() =>
+            service.ReportAsync(new(A, VerificationKind.Phone, Phone, "otp", VerificationOutcome.Verified, "desk", ValueType: "mobile")));
+        Assert.Equal(VerificationProblem.ValueTypeInvalid, typedPhone.Problem);
+    }
+
+    [Fact]
+    public async Task A_document_another_customer_holds_is_held_for_review_and_ends_nothing()
+    {
+        using var registry = new Registry();
+        var service = registry.Service(Documents());
+        var first = await service.ReportAsync(Document(A, NationalId, "SYNTH-6"));
+
+        var second = await service.ReportAsync(Document(B, NationalId, "synth-6"));
+
+        Assert.Equal(VerificationOutcome.Held, second.Entry.Outcome);
+        Assert.Equal(VerificationLevel.Held, second.Opened!.Level);
+        Assert.Equal(first.Opened!.ClaimID, second.Opened.ConflictClaimID);
+        Assert.Equal(first.Opened.ClaimID, second.ConflictsWith!.ClaimID);
+        Assert.Empty(second.Ended);
+
+        // A keeps the document; B is not verified by a held attempt, under any rule.
+        Assert.True(Assert.Single(await service.ClaimsAsync(A)).Holds);
+        var held = Assert.Single(await service.ClaimsAsync(B));
+        Assert.False(held.Holds);
+        Assert.True(held.Pending);
+        var status = await service.StatusAsync(B);
+        Assert.False(status.Verified);
+        Assert.Equal("not-verified", Assert.Single(status.Requirements).Missing);
+
+        // The reviewer sees who holds it.
+        var item = Assert.Single((await service.AwaitingReviewAsync()).Items);
+        Assert.Equal(B, item.LiveIdentityID);
+        Assert.Equal(A, item.ConflictLiveIdentityID);
+        Assert.Equal(first.Opened.ClaimID, item.ConflictsWith!.ClaimID);
+
+        // Trying again changes nothing: one held claim.
+        var again = await service.ReportAsync(Document(B, NationalId, "SYNTH-6"));
+        Assert.Null(again.Opened);
+        Assert.Equal(second.Opened.ClaimID, again.Unchanged!.ClaimID);
+        Assert.Single(await service.ClaimsAsync(B));
+
+        // While A holds it, approving B is refused.
+        var refused = await Assert.ThrowsAsync<VerificationException>(() => service.ReviewAsync(second.Opened.ClaimID, true, "back-office"));
+        Assert.Equal(VerificationProblem.ConflictUnresolved, refused.Problem);
+        Assert.True(Assert.Single(await service.ClaimsAsync(A)).Holds);
+
+        // The other document of B is untouched by all this.
+        Assert.Equal(VerificationLevel.Verified, (await service.ReportAsync(Document(B, Passport, "SYNTH-7"))).Opened!.Level);
+        Assert.True((await service.StatusAsync(B)).Verified);
+    }
+
+    [Fact]
+    public async Task A_held_document_is_settled_by_merging_the_customers_or_by_ending_the_other_claim()
+    {
+        // A missed merge: once the two are one customer, the held claim can be approved.
+        using (var registry = new Registry())
+        {
+            var service = registry.Service(Documents());
+            await service.ReportAsync(Document(A, NationalId, "SYNTH-8"));
+            var held = await service.ReportAsync(Document(B, NationalId, "SYNTH-8"));
+
+            await registry.RedirectAsync(from: A, to: B);
+
+            var item = Assert.Single((await service.AwaitingReviewAsync()).Items);
+            Assert.Equal(item.LiveIdentityID, item.ConflictLiveIdentityID);
+            var approved = await service.ReviewAsync(held.Opened!.ClaimID, true, "back-office");
+            Assert.Equal(B, approved.Opened!.IdentityID);
+            var one = Assert.Single(await service.ClaimsAsync(B));
+            Assert.True(one.Holds);
+        }
+
+        // A mistake on the first customer: their claim is revoked, then the second is approved.
+        using (var registry = new Registry())
+        {
+            var service = registry.Service(Documents());
+            var first = await service.ReportAsync(Document(A, NationalId, "SYNTH-9"));
+            var held = await service.ReportAsync(Document(B, NationalId, "SYNTH-9"));
+
+            await service.RevokeClaimAsync(first.Opened!.ClaimID, "back-office");
+            await service.ReviewAsync(held.Opened!.ClaimID, true, "back-office");
+
+            Assert.Empty(await service.ClaimsAsync(A));
+            Assert.True(Assert.Single(await service.ClaimsAsync(B)).Holds);
+            // And now it is B's: A trying again is the one held.
+            Assert.Equal(VerificationLevel.Held, (await service.ReportAsync(Document(A, NationalId, "SYNTH-9"))).Opened!.Level);
+        }
+
+        // A submitted document takes the value too: a reader on another customer is held behind it.
+        using (var registry = new Registry())
+        {
+            var service = registry.Service(Documents());
+            await service.ReportAsync(Document(A, NationalId, "SYNTH-10", VerificationOutcome.Submitted, "looked-at"));
+            Assert.Equal(VerificationLevel.Held, (await service.ReportAsync(Document(B, NationalId, "SYNTH-10"))).Opened!.Level);
+        }
+    }
+
+    [Fact]
+    public async Task One_holder_without_a_key_is_refused_and_a_submitted_report_never_steps_a_verified_claim_down()
+    {
+        using var registry = new Registry();
+        var keyless = Documents();
+        keyless.Verification.ValueHashKey = null;
+        var refused = await Assert.ThrowsAsync<VerificationException>(() => registry.Service(keyless).ReportAsync(Document(A, NationalId, "SYNTH-11")));
+        Assert.Equal(VerificationProblem.NotConfigured, refused.Problem);
+
+        var service = registry.Service(Documents());
+        var verified = await service.ReportAsync(Document(A, NationalId, "SYNTH-11"));
+        var submitted = await service.ReportAsync(Document(A, NationalId, "SYNTH-11", VerificationOutcome.Submitted, "looked-at"));
+
+        Assert.Null(submitted.Opened);
+        Assert.Empty(submitted.Ended);
+        Assert.Equal(verified.Opened!.ClaimID, submitted.Unchanged!.ClaimID);
+        Assert.True(Assert.Single(await service.ClaimsAsync(A)).Holds);
+    }
+
+    [Fact]
+    public async Task A_submitted_phone_takes_nothing_until_a_review_approves_it()
+    {
+        using var registry = new Registry();
+        var service = registry.Service();
+        await service.ReportAsync(Verified(A, VerificationKind.Phone, Phone));
+
+        var submitted = await service.ReportAsync(new(B, VerificationKind.Phone, Phone, "called", VerificationOutcome.Submitted, "desk"));
+
+        Assert.Empty(submitted.Ended);
+        Assert.False(submitted.Opened!.Exclusive);
+        Assert.True(Assert.Single(await service.ClaimsAsync(A)).Holds);
+
+        var approved = await service.ReviewAsync(submitted.Opened.ClaimID, true, "back-office");
+
+        Assert.Contains(approved.Ended, c => c.IdentityID == A && c.EndReason == VerificationEndReason.Superseded);
+        Assert.Empty(await service.ClaimsAsync(A));
+        Assert.True(Assert.Single(await service.ClaimsAsync(B)).Holds);
+    }
+
+    [Fact]
+    public async Task Over_http_the_review_queue_and_decisions_need_the_review_access_and_a_held_report_never_names_the_holder()
+    {
+        using var registry = new Registry();
+        var options = Documents();
+        options.Verification.AcceptReportsOverHttp = true;
+        var controller = registry.Controller(options);
+
+        await controller.Report(new() { IdentityID = "100", Kind = "person", Value = "SYNTH-12", ValueType = NationalId, Method = "reader" });
+        var held = Assert.IsType<VerificationResultDTO>(Assert.IsType<OkObjectResult>((await controller.Report(
+            new() { IdentityID = "200", Kind = "person", Value = "SYNTH-12", ValueType = NationalId, Method = "reader" })).Result).Value);
+
+        Assert.True(held.Held);
+        Assert.Equal(VerificationOutcome.Held, held.Outcome);
+        Assert.Equal(VerificationLevel.Held, held.Level);
+        Assert.Empty(held.Ended);   // nothing in the answer says who holds it
+
+        var claims = Assert.IsType<CustomerVerificationDTO>(Assert.IsType<OkObjectResult>((await controller.Get(200)).Result).Value);
+        var claim = Assert.Single(claims.Claims);
+        Assert.True(claim.Pending);
+        Assert.False(claim.Holds);
+        Assert.Equal(NationalId, claim.ValueType);
+        Assert.Null(claim.Value);
+
+        var queue = Assert.IsType<VerificationReviewQueueDTO>(Assert.IsType<OkObjectResult>((await controller.Review()).Result).Value);
+        var item = Assert.Single(queue.Items);
+        Assert.Equal("200", item.IdentityID);
+        Assert.Equal("100", item.ConflictIdentityID);
+        Assert.True(item.ConflictOpen);
+        Assert.Null(item.Value);
+
+        Assert.IsType<ConflictObjectResult>((await controller.Decide(new() { ClaimID = item.ClaimID, Approve = true })).Result);
+        Assert.IsType<NotFoundResult>((await controller.Decide(new() { ClaimID = 987654, Approve = true })).Result);
+
+        // A claim is revoked by its number only through its own customer.
+        Assert.IsType<NotFoundResult>((await controller.Report(new() { IdentityID = "300", Outcome = "revoked", ClaimID = item.ClaimID, Kind = "person", Method = "m" })).Result);
+        Assert.IsType<OkObjectResult>((await controller.Report(new() { IdentityID = "200", Outcome = "revoked", ClaimID = item.ClaimID, Kind = "person", Method = "m" })).Result);
+        Assert.Empty(Assert.IsType<VerificationReviewQueueDTO>(Assert.IsType<OkObjectResult>((await controller.Review()).Result).Value).Items);
+
+        // With the action tree on and a caller who holds nothing, the queue and a decision are forbidden.
+        options.EnableDarlasticActionTreeAuthorization = true;
+        var gated = registry.Controller(options);
+        Assert.IsType<ForbidResult>((await gated.Review()).Result);
+        Assert.IsType<ForbidResult>((await gated.Decide(new() { ClaimID = 1, Approve = false })).Result);
+    }
+
     private static DarlasticApiOptions Enabled()
     {
         var options = new DarlasticApiOptions();
