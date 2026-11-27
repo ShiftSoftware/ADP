@@ -364,7 +364,7 @@ public class WarrantyClaimService
             }
             else
             {
-                if (claim.ClaimStatus == ClaimStatus.Draft || claim.ClaimStatus == ClaimStatus.RejectedWithError)
+                if (WarrantyClaimAccess.IsOpenToDealer(claim.ClaimStatus))
                 { }//Can modify
                 else
                     throw new ShiftEntityException(new Message(

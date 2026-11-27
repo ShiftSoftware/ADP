@@ -16,9 +16,21 @@
                  Endpoint="@(CIOptions.Value.ResolvedRoutePrefix + "ItemClaim")"
                  Title="Item Claim"
                  ShowPrint
-                 OnResult="(r) => { this.postClaimModification = ((CIOptions.Value.PostClaimModificationAction is not null && this.TypeAuthService.CanAccess(CIOptions.Value.PostClaimModificationAction)) && r.Entity!.ClaimStatus == ClaimStatus.Draft); return ValueTask.FromResult(true); }"
                  TypeAuthAction="CIOptions.Value.ClaimingAction"
                  @bind-Key="@Key">
+    <ToolbarStartTemplate>
+        <ClaimActionButtons T="ItemClaimDTO"
+                            Endpoint="@(CIOptions.Value.ResolvedRoutePrefix + "ItemClaim")"
+                            Id="@TheItem.ID"
+                            Status="TheItem.ClaimStatus"
+                            IsDistributor="IsDistributor"
+                            CanAct="IsDistributor || CanWrite"
+                            CanAddNote="CanWrite"
+                            ClaimName="@($"Claim {TheItem.ClaimNumber}")"
+                            Visible="ShowsSavedClaim && !TheItem.IsDeleted" />
+    </ToolbarStartTemplate>
+
+    <ChildContent>
     <MudGrid Spacing="8" Class="pt-4">
         <MudItem Class="pt-2 pb-2" lg="6" md="6" sm="12" xs="12">
             <MudAlert Severity="Severity.Info" Icon="@Icons.Material.Filled.Numbers">
@@ -61,8 +73,8 @@
 
         <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
             <ShiftDateTimePicker Label="Claim Date"
-                                 ReadOnly="!postClaimModification"
-                                 Disabled="!postClaimModification && (Mode == FormModes.Edit)"
+                                 ReadOnly="!CanModifyPostClaim"
+                                 Disabled="!CanModifyPostClaim && (Mode == FormModes.Edit)"
                                  @bind-DateTimeOffset='TheItem.ClaimDate' />
         </MudItem>
 
@@ -84,8 +96,8 @@
 
         <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
             <MudNumericFieldExtended Label="Cost"
-                                     ReadOnly="!postClaimModification"
-                                     Disabled="!postClaimModification && (Mode == FormModes.Edit)"
+                                     ReadOnly="!CanModifyPostClaim"
+                                     Disabled="!CanModifyPostClaim && (Mode == FormModes.Edit)"
                                      @bind-Value='TheItem.Cost' />
         </MudItem>
 
@@ -119,10 +131,25 @@
                 </MudAlert>
             </MudItem>
         }
+
+        @if (ShowsSavedClaim)
+        {
+            <CaseHistory TStatus="ClaimStatus" Lines="TheItem.StatusHistory" />
+        }
     </MudGrid>
+    </ChildContent>
 </ShiftEntityForm>
 
 
 @code {
-    private bool postClaimModification = false;
+    private bool CanModifyPostClaim =>
+        TheItem.ClaimStatus == ClaimStatus.Draft
+        && CIOptions.Value.PostClaimModificationAction is { } action && TypeAuthService.CanAccess(action);
+
+    private bool ShowsSavedClaim => Mode == FormModes.View && !string.IsNullOrWhiteSpace(TheItem.ID);
+
+    // The rule the list shows the distributor's actions by.
+    private bool IsDistributor => CIOptions.Value.CertifyingAction is { } action && TypeAuthService.CanWrite(action);
+
+    private bool CanWrite => CIOptions.Value.ClaimingAction is not { } action || TypeAuthService.CanWrite(action);
 }

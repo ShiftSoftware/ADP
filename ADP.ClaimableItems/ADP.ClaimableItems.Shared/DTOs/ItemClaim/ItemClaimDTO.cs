@@ -1,3 +1,4 @@
+using ShiftSoftware.ADP.Cases.Shared.DTOs;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
 using System.Text.Json.Serialization;
@@ -39,4 +40,7 @@ public class ItemClaimDTO : ShiftEntityViewAndUpsertDTO
     public string? DistributorErrorMessage { get; set; }
 
     public bool ReSubmitForDistributorReview { get; set; }
+
+    /// <summary>Newest first. Read-only: a save ignores it.</summary>
+    public List<CaseStatusHistoryDTO<ClaimStatus>> StatusHistory { get; set; } = new();
 }

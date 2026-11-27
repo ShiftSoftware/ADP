@@ -43,7 +43,7 @@
                               Confirm
                               DialogColor="Color.Success"
                               OnResult="StatusUpdateResponse"
-                              EndPoint="@($"ItemClaim/UpdateStatus/{UpdateStatusActionTypes.DistributorAccepted}")"
+                              EndPoint="@($"{CIOptions.Value.ResolvedRoutePrefix}ItemClaim/UpdateStatus/{UpdateStatusActionTypes.DistributorAccepted}")"
                               T="ItemClaimListDTO">
                     Accept
                 </ActionButton>
@@ -58,7 +58,7 @@
                               DialogConfirmText="Save"
                               DialogColor="Color.Warning"
                               OnResult="StatusUpdateResponse"
-                              EndPoint="@($"ItemClaim/UpdateStatus/{UpdateStatusActionTypes.DistributorError}/{Uri.EscapeDataString(inputText ?? "")}")"
+                              EndPoint="@($"{CIOptions.Value.ResolvedRoutePrefix}ItemClaim/UpdateStatus/{UpdateStatusActionTypes.DistributorError}/{Uri.EscapeDataString(inputText ?? "")}")"
                               T="ItemClaimListDTO">
                     <DialogBodyTemplate>
                         <MudTextFieldExtended @bind-Value="inputText" Label="Error Message" />
@@ -76,7 +76,7 @@
                               Confirm
                               DialogColor="Color.Error"
                               OnResult="StatusUpdateResponse"
-                              EndPoint="@($"ItemClaim/UpdateStatus/{UpdateStatusActionTypes.DistributorRejected}")"
+                              EndPoint="@($"{CIOptions.Value.ResolvedRoutePrefix}ItemClaim/UpdateStatus/{UpdateStatusActionTypes.DistributorRejected}")"
                               T="ItemClaimListDTO">
                     Reject
                 </ActionButton>

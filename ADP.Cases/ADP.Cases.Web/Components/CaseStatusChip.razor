@@ -1,0 +1,28 @@
+@typeparam TStatus where TStatus : struct, Enum
+
+<MudChip T="string"
+         Class="@Class"
+         Size="Size.Small"
+         Variant="@Variant"
+         Color="@(Muted ? Color.Default : CaseActionLook.StatusColor(Status?.ToString()))">
+    @(Text ?? Status?.Describe())
+</MudChip>
+
+@code {
+    [Parameter]
+    public TStatus? Status { get; set; }
+
+    /// <summary>What to show instead of the status's own name.</summary>
+    [Parameter]
+    public string? Text { get; set; }
+
+    /// <summary>Leaves the colour off, for a line that moved nothing.</summary>
+    [Parameter]
+    public bool Muted { get; set; }
+
+    [Parameter]
+    public Variant Variant { get; set; } = Variant.Text;
+
+    [Parameter]
+    public string? Class { get; set; }
+}

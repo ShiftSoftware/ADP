@@ -1,13 +1,20 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
+using ShiftSoftware.ADP.Cases.Shared;
+using ShiftSoftware.ADP.Cases.Shared.DTOs;
+using ShiftSoftware.ADP.Cases.Shared.Enums;
 using ShiftSoftware.ADP.ClaimableItems.API.Extensions;
 using ShiftSoftware.ADP.ClaimableItems.Data.Entities;
 using ShiftSoftware.ADP.ClaimableItems.Data.Repositories;
 using ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ItemClaim;
 using ShiftSoftware.ADP.ClaimableItems.Shared.Localization;
+using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.Core.Services;
 using ShiftSoftware.ShiftEntity.Model;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
@@ -250,6 +257,10 @@ public class ItemClaimController : ShiftEntitySecureControllerAsync<ItemClaimRep
     [HttpPost("UpdateStatus/{actionType}/{inputText?}")]
     public async Task<IActionResult> ProcessBatchAction([FromBody] ShiftSoftware.ShiftEntity.Model.Dtos.SelectStateDTO<ItemClaimListDTO> selectedItems, [FromRoute] ShiftSoftware.ADP.Cases.Shared.Enums.UpdateStatusActionTypes actionType, [FromRoute] string? inputText)
     {
+        // An unknown action in the route binds as the enum's zero, SubmitToDistributor.
+        if (ModelState.GetFieldValidationState(nameof(actionType)) == ModelValidationState.Invalid)
+            return BadRequest(new ShiftEntityResponse<ItemClaimListDTO> { Message = new Message("Operation Prevented", "Unknown action.") });
+
         var items = await this.GetSelectedEntitiesAsync(selectedItems);
 
         try
@@ -261,6 +272,53 @@ public class ItemClaimController : ShiftEntitySecureControllerAsync<ItemClaimRep
             {
                 Entity = items.Select(x => new ItemClaimListDTO { })
             });
+        }
+        catch (ShiftEntityException ex)
+        {
+            return StatusCode(ex.HttpStatusCode, new ShiftEntityResponse<ItemClaimDTO>
+            {
+                Message = ex.Message,
+                Additional = ex.AdditionalData,
+            });
+        }
+    }
+
+    /// <summary>
+    /// UpdateStatus for one claim, from its form: submitting it, accepting it, returning it with an error or rejecting
+    /// it. Answers with the claim as it now reads.
+    /// </summary>
+    [HttpPost("{key}/action/{actionType}")]
+    [Authorize]
+    public async Task<IActionResult> ApplyAction(string key, [FromRoute] UpdateStatusActionTypes actionType, [FromBody] CaseActionDTO? action)
+    {
+        if (ModelState.GetFieldValidationState(nameof(actionType)) == ModelValidationState.Invalid || !ClaimActionAccess.IsFormAction(actionType))
+            return BadRequest(new ShiftEntityResponse<ItemClaimDTO> { Message = new Message("Operation Prevented", "Unknown action.") });
+
+        if (!Can(Access.Read))
+            return Forbid();
+
+        return await RespondAsync(() => this.repository.ApplyActionAsync(HttpContext.RequestServices.GetRequiredService<IHashIdService>().Decode<ItemClaimDTO>(key), actionType, action?.Comment));
+    }
+
+    /// <summary>Adds a note to a claim: a history line that moves nothing. Answers with the claim as it now reads.</summary>
+    [HttpPost("{key}/note")]
+    [Authorize]
+    public async Task<IActionResult> AddNote(string key, [FromBody] CaseActionDTO? note)
+    {
+        if (!Can(Access.Write))
+            return Forbid();
+
+        return await RespondAsync(() => this.repository.AddNoteAsync(HttpContext.RequestServices.GetRequiredService<IHashIdService>().Decode<ItemClaimDTO>(key), note?.Comment));
+    }
+
+    private bool Can(Access access) =>
+        !options.Value.EnableClaimableItemsActionTreeAuthorization || options.Value.ClaimingAction is not { } action || typeAuthService.Can(action, access);
+
+    private async Task<IActionResult> RespondAsync(Func<Task<ItemClaim>> apply)
+    {
+        try
+        {
+            return Ok(new ShiftEntityResponse<ItemClaimDTO>(await this.repository.ViewAsync(await apply())));
         }
         catch (ShiftEntityException ex)
         {

@@ -1,0 +1,33 @@
+@* The "Save as draft" box of a case form. Sending a draft in comes with a save, because the save is what checks the
+   required fields. The page hides the box once the case has been sent. *@
+
+<ConditionalSection Title="Draft" Visible="Visible">
+    <MudItem lg="12" md="12" sm="12" xs="12">
+        <MudCheckBox T="bool"
+                     Label="Save as draft"
+                     ReadOnly="ReadOnly"
+                     Value="Value"
+                     ValueChanged="ValueChanged" />
+        <MudText Typo="Typo.caption" Class="mud-text-secondary">
+            A draft stays with your dealership. It is not sent to @DistributorName and does not have to be complete. To send it, clear this box and save.
+        </MudText>
+    </MudItem>
+</ConditionalSection>
+
+@code {
+    [Parameter]
+    public bool Visible { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public bool Value { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> ValueChanged { get; set; }
+
+    /// <summary>What the distributor is called in a sentence.</summary>
+    [Parameter]
+    public string DistributorName { get; set; } = "the distributor";
+}

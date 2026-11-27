@@ -6,8 +6,10 @@ using ShiftSoftware.ADP.Cases.Shared.Enums;
 using ShiftSoftware.ADP.Cases.Shared.Services;
 using ShiftSoftware.ADP.ClaimableItems.Data.Entities;
 using ShiftSoftware.ADP.ClaimableItems.Data.Printing;
+using ShiftSoftware.ADP.ClaimableItems.Data.Services;
 using ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ItemClaim;
 using ShiftSoftware.ADP.ClaimableItems.Shared.Enums;
+using ShiftSoftware.ADP.ClaimableItems.Web;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.EFCore;
@@ -28,6 +30,7 @@ namespace ShiftSoftware.ADP.ClaimableItems.Data.Repositories;
 /// while in Draft. Default (Phase 3 Slice 3.6): the consumer-supplied
 /// <c>ClaimableItemsApiOptions.PostClaimModificationAction</c> TypeAuth node; false when unset.
 /// Override only for a non-TypeAuth permission model.</item>
+/// <item><see cref="IsDistributor"/> — who may run the distributor's status actions.</item>
 /// <item><see cref="ShiftRepository{DB, EntityType, ListDTO, ViewAndUpsertDTO}.PrintAsync"/> —
 /// voucher DATA GATHERING (host: inspection customer info + Cosmos city/country address; not
 /// generic). The override collects those inputs and calls the module-owned
@@ -84,6 +87,14 @@ public class ItemClaimRepository : ShiftRepository<ShiftDbContext, ItemClaim, It
 
         var upserted = await base.UpsertAsync(entity, dto, actionType, userId, idempotencyKey, disableDefaultDataLevelAccess, disableGlobalFilters);
 
+        // A save moves nothing: the actions, the certificates and the resubmission below do. A new claim opens as a draft
+        // or, from the claim endpoint, as submitted.
+        upserted.ClaimStatus =
+            actionType == ActionTypes.Update ? oldEntity.ClaimStatus :
+            dto.ClaimStatus == ClaimStatus.PendingProcess ? ClaimStatus.PendingProcess : ClaimStatus.Draft;
+
+        upserted.DistributorErrorMessage = oldEntity.DistributorErrorMessage;
+
         var postClaimModification = this.CanModifyPostClaim();
 
         if (actionType == ActionTypes.Update)
@@ -107,7 +118,7 @@ public class ItemClaimRepository : ShiftRepository<ShiftDbContext, ItemClaim, It
                 );
             }
 
-            if (dto.ReSubmitForDistributorReview)
+            if (dto.ReSubmitForDistributorReview && oldEntity.ClaimStatus == ClaimStatus.RejectedWithError)
                 upserted.ClaimStatus = ClaimStatus.PendingProcess;
 
         }
@@ -117,14 +128,68 @@ public class ItemClaimRepository : ShiftRepository<ShiftDbContext, ItemClaim, It
         return upserted;
     }
 
+    /// <summary>
+    /// Whether the current user may run the distributor's status actions. Consumer seam: the API's
+    /// <see cref="IClaimableItemsCapabilityProvider"/> registration decides; without one, Write on
+    /// <c>ClaimableItemsApiOptions.CertifyingAction</c>, the rule the claim list shows those actions by. False with
+    /// neither.
+    /// </summary>
+    protected virtual bool IsDistributor() => ClaimableItemsCapability.IsDistributor(this.db);
+
+    public override async ValueTask<ItemClaimDTO> ViewAsync(ItemClaim entity)
+    {
+        var dto = await base.ViewAsync(entity);
+
+        dto.StatusHistory = await ItemClaimHistory.Instance.ReadAsync(this.db, entity.ID, this.IsDistributor());
+
+        return dto;
+    }
+
     public async Task UpdateClaimStatusAsync(List<ItemClaim> items, UpdateStatusActionTypes actionType, string? inputText)
     {
+        ClaimActionAccess.RequireAllowed(actionType, this.IsDistributor());
+
         this.sharedClaimService.UpdateClaimStatus(
             items.Select(x => (IClaim)x).ToList(),
             actionType, inputText
         );
 
+        ItemClaimHistory.Instance.Record(this.db, inputText);
+
         await this.SaveChangesAsync();
+    }
+
+    /// <summary>One of the form's actions on one claim. <paramref name="comment"/> goes on its history line.</summary>
+    public async Task<ItemClaim> ApplyActionAsync(long id, UpdateStatusActionTypes actionType, string? comment)
+    {
+        ClaimActionAccess.RequireAllowed(actionType, this.IsDistributor());
+
+        var claim = await this.FindForActionAsync(id);
+
+        await this.UpdateClaimStatusAsync([claim], actionType, comment);
+
+        return claim;
+    }
+
+    /// <summary>Adds a history line that moves nothing. A save is open to the dealer in every status, so this is too.</summary>
+    public async Task<ItemClaim> AddNoteAsync(long id, string? comment)
+    {
+        var claim = await this.FindForActionAsync(id);
+
+        ItemClaimHistory.Instance.AddNote(this.db, claim, comment);
+
+        await this.SaveChangesAsync();
+
+        return claim;
+    }
+
+    private async Task<ItemClaim> FindForActionAsync(long id)
+    {
+        var claim = await this.FindAsync(id);
+
+        return claim is null || claim.IsDeleted
+            ? throw new ShiftEntityException(new Message("Not Found", "This claim does not exist."), httpStatusCode: (int)HttpStatusCode.NotFound)
+            : claim;
     }
 
     public override Task<Stream> PrintAsync(string id)

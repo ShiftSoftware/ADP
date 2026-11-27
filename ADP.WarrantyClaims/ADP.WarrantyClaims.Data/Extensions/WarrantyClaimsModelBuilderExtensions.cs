@@ -7,7 +7,7 @@ namespace ShiftSoftware.ADP.WarrantyClaims.Data.Extensions;
 public static class WarrantyClaimsModelBuilderExtensions
 {
     /// <summary>
-    /// Registers the warranty entities (WarrantyClaim + labor/sublet/part lines +
+    /// Registers the warranty entities (WarrantyClaim + labor/sublet/part lines + status history +
     /// ManufacturerSettlmentSheet + AdditionalLaborOperationCode + WarrantyRates + WarrantyCurrencyRate + WarrantyLaborRate) on the consumer's model.
     /// Relationships (the line FKs, the WarrantyClaimSubletLine shadow FK, the WarrantyClaim ->
     /// Cases.Certificate / ManufacturerSettlmentSheet / self-ref navs), the filtered unique-hash index
@@ -31,6 +31,7 @@ public static class WarrantyClaimsModelBuilderExtensions
         modelBuilder.Entity<WarrantyClaimLaborLine>();
         modelBuilder.Entity<WarrantyClaimSubletLine>();
         modelBuilder.Entity<WarrantyClaimPartLine>();
+        modelBuilder.Entity<WarrantyClaimStatusHistory>();
         modelBuilder.Entity<ManufacturerSettlmentSheet>();
         modelBuilder.Entity<AdditionalLaborOperationCode>();
         modelBuilder.Entity<WarrantyRates>();

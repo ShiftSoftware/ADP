@@ -5,10 +5,12 @@
 @using ShiftSoftware.ADP.WarrantyClaims.Shared.Constants
 @using ShiftSoftware.ADP.Models.Enums
 @using ShiftSoftware.ADP.Cases.Shared
+@using ShiftSoftware.TypeAuth.Core
 
 @inject IWarrantyClaimsCapabilityProvider capabilityProvider
 @inject IOptions<WarrantyClaimsWebOptions> WCOptions
 @inject HttpClient Http
+@inject ITypeAuthService TypeAuthService
 
 @inherits ShiftForm<WarrantyClaimForm, WarrantyClaimDTO>
 
@@ -24,6 +26,19 @@
                  OnTaskStart="OnTaskStart"
                  @bind-Key="@Key">
 
+    <ToolbarStartTemplate>
+        <ClaimActionButtons T="WarrantyClaimDTO"
+                            Endpoint="@(WCOptions.Value.ResolvedRoutePrefix + "WarrantyClaim")"
+                            Id="@TheItem.ID"
+                            Status="TheItem.ClaimStatus"
+                            IsDistributor="isDistributor"
+                            CanAddNote="CanAddNote"
+                            ClaimName="@($"Claim {TheItem.ClaimNumber}")"
+                            Visible="ShowsSavedClaim && !TheItem.IsDeleted"
+                            OnApplied="() => OnTaskFinished(FormTasks.Fetch)" />
+    </ToolbarStartTemplate>
+
+    <ChildContent>
     <MudGrid Spacing="4">
 
         @if (loadingRates)
@@ -1534,6 +1549,12 @@
                 </MudCardContent>
             </MudCard>
         </MudItem>
+
+        @if (ShowsSavedClaim)
+        {
+            <CaseHistory TStatus="ClaimStatus" Lines="TheItem.StatusHistory" />
+        }
     </MudGrid>
+    </ChildContent>
 
 </ShiftEntityForm>

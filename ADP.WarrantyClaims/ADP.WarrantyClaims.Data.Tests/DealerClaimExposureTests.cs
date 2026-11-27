@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using ShiftSoftware.ADP.Cases.Data.Extensions;
+using ShiftSoftware.ADP.Cases.Shared.Enums;
+using ShiftSoftware.ADP.Cases.Shared.Services;
+using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.WarrantyClaims.Data.Extensions;
 using ShiftSoftware.ADP.WarrantyClaims.Data.Repositories;
 using ShiftSoftware.ADP.WarrantyClaims.Data.Services;
@@ -21,8 +24,9 @@ using Entities = ShiftSoftware.ADP.WarrantyClaims.Data.Entities;
 namespace ShiftSoftware.ADP.WarrantyClaims.Data.Tests;
 
 /// <summary>
-/// What a dealer gets of a claim through the claim repository, and what it may do with the rates. The distributor's
-/// labor rate and totals stay with the distributor: a response that leaks them is still a 200 of the same shape.
+/// What a dealer gets of a claim through the claim repository, and what it may do with its status and the rates. The
+/// distributor's labor rate and totals stay with the distributor: a response that leaks them is still a 200 of the same
+/// shape.
 /// </summary>
 public class DealerClaimExposureTests
 {
@@ -114,7 +118,66 @@ public class DealerClaimExposureTests
         Assert.Null(await WarrantyLaborRateRepository.CurrentAsync(rates, "XTS", new DateTime(2026, 6, 1)));
     }
 
+    [Fact]
+    public async Task A_dealer_submits_a_claim_and_the_distributor_accepts_it()
+    {
+        await using var host = await Host.CreateAsync();
+        var claim = await host.ClaimAsync();
+        claim.ClaimStatus = ClaimStatus.Draft;
+
+        await host.Claims(isDistributor: false).UpdateClaimStatusAsync([claim], UpdateStatusActionTypes.SubmitToDistributor, null);
+        Assert.Equal(ClaimStatus.PendingProcess, claim.ClaimStatus);
+
+        await host.Claims(isDistributor: true).UpdateClaimStatusAsync([claim], UpdateStatusActionTypes.DistributorAccepted, null);
+        Assert.Equal(ClaimStatus.Accepted, claim.ClaimStatus);
+    }
+
+    [Theory]
+    [MemberData(nameof(DistributorActions))]
+    public async Task A_dealer_is_refused_every_other_status_action_and_nothing_changes(UpdateStatusActionTypes action)
+    {
+        await using var host = await Host.CreateAsync();
+        var claim = await host.ClaimAsync();
+        claim.ClaimStatus = ClaimStatus.PendingProcess;
+        claim.ManufacturerStatus = WarrantyManufacturerClaimStatus.Exported;
+        await host.Db.SaveChangesAsync();
+
+        var refused = await Assert.ThrowsAsync<ShiftEntityException>(
+            () => host.Claims(isDistributor: false).UpdateClaimStatusAsync([claim], action, "INV-1"));
+
+        Assert.Equal(403, refused.HttpStatusCode);
+        Assert.False(host.Db.ChangeTracker.HasChanges());
+    }
+
+    public static TheoryData<UpdateStatusActionTypes> DistributorActions =>
+        [.. Enum.GetValues<UpdateStatusActionTypes>().Where(x => x != UpdateStatusActionTypes.SubmitToDistributor)];
+
     private record Capability(bool IsDistributor) : IWarrantyClaimsCapabilityProvider;
+
+    // The financial pages only list, but a repository comes with a save and a delete of its own.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_financial_list_neither_saves_nor_deletes_a_claim(bool ofTheDealer)
+    {
+        await using var host = await Host.CreateAsync();
+        var claim = await host.ClaimAsync();
+        claim.ClaimStatus = ClaimStatus.Draft;
+        var sent = new WarrantyClaimDTO { ClaimStatus = ClaimStatus.Invoiced };
+
+        Func<Task> save = ofTheDealer
+            ? async () => await new DealerFinancialRepository(host.Db).UpsertAsync(claim, sent, ActionTypes.Update, null, null, true, true)
+            : async () => await new DistributorFinancialRepository(host.Db).UpsertAsync(claim, sent, ActionTypes.Update, null, null, true, true);
+
+        Func<Task> delete = ofTheDealer
+            ? async () => await new DealerFinancialRepository(host.Db).DeleteAsync(claim, null, true, true)
+            : async () => await new DistributorFinancialRepository(host.Db).DeleteAsync(claim, null, true, true);
+
+        Assert.Equal(405, (await Assert.ThrowsAsync<ShiftEntityException>(save)).HttpStatusCode);
+        Assert.Equal(405, (await Assert.ThrowsAsync<ShiftEntityException>(delete)).HttpStatusCode);
+        Assert.Equal(ClaimStatus.Draft, claim.ClaimStatus);
+        Assert.False(claim.IsDeleted);
+    }
 
     private sealed class Host : IAsyncDisposable
     {
@@ -130,7 +193,7 @@ public class DealerClaimExposureTests
         public ShiftDbContext Db => this.scope.ServiceProvider.GetRequiredService<ShiftDbContext>();
 
         public WarrantyClaimRepository Claims(bool isDistributor) =>
-            new(this.Db, new WarrantyClaimService(), new Capability(isDistributor), sharedClaimService: null!, deliveryDateService: null!);
+            new(this.Db, new WarrantyClaimService(), new Capability(isDistributor), new SharedClaimService(), deliveryDateService: null!);
 
         public Task<Entities.WarrantyClaim> ClaimAsync() =>
             this.Db.Set<Entities.WarrantyClaim>().Include(x => x.WarrantyClaimLaborLines).SingleAsync();

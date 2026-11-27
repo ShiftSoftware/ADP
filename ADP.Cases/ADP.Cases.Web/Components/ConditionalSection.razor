@@ -1,0 +1,59 @@
+@* A titled block of a form, which can appear and disappear as another field is answered. *@
+
+@if (Visible || KeepAlive)
+{
+    <MudItem lg="12" md="12" sm="12" xs="12" Class="@(Visible ? null : "d-none")">
+        <MudCard Elevation="2">
+            <MudCardHeader Class="pt-1 pb-1 background-gray">
+                <CardHeaderContent>
+                    <MudText Typo="Typo.subtitle2">@Title</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+
+            <MudCardContent Class="pt-2 pb-2">
+                <MudGrid Spacing="3">
+                    @ChildContent
+                </MudGrid>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+}
+
+@code {
+    /// <summary>The heading shown at the top of the section.</summary>
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = default!;
+
+    /// <summary>Whether the section applies right now. Sections that always apply leave this alone.</summary>
+    [Parameter]
+    public bool Visible { get; set; } = true;
+
+    /// <summary>
+    /// Keeps what is inside the section while it is not shown, for a section whose own contents decide whether there is
+    /// anything to show.
+    /// </summary>
+    [Parameter]
+    public bool KeepAlive { get; set; }
+
+    /// <summary>
+    /// Called once each time the section goes from shown to hidden, so the page can empty it: what was typed into a
+    /// section nobody can see any more must not be sent on the next save.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnHidden { get; set; }
+
+    /// <summary>The fields inside the section. They are laid out in a grid.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    // Null until the first time, so a form that opens on a hidden section does not empty what it has just loaded.
+    private bool? wasVisible;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (wasVisible == true && !Visible)
+            await OnHidden.InvokeAsync();
+
+        wasVisible = Visible;
+    }
+}

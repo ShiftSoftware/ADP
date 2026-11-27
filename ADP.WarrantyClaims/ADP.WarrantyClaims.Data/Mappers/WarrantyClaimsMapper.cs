@@ -77,6 +77,8 @@ public class WarrantyClaimsMapper : ShiftMapperBase
         // explicit line writer this replaces did. (A request cannot reach that today: the DTO's computed totals, which
         // this map also writes, read all three collections first.)
         CreateMap<WarrantyClaim, WarrantyClaimDTO>()
+            // The claim repository fills it (ViewAsync).
+            .ForMember(d => d.StatusHistory, opt => opt.Ignore())
             .ReverseMap()
             .ForMember(e => e.WarrantyClaimLaborLines, opt => opt.Condition((dto, _, _) => dto.WarrantyClaimLaborLines != null))
             .ForMember(e => e.WarrantyClaimSubletLines, opt => opt.Condition((dto, _, _) => dto.WarrantyClaimSubletLines != null))

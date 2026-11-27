@@ -150,6 +150,8 @@ public class WarrantyClaimRepository :
             dto.LaborRateDistributor = null;
         }
 
+        dto.StatusHistory = await WarrantyClaimHistory.Instance.ReadAsync(this.db, entity.ID, isDistributor);
+
         return dto;
     }
 
@@ -197,7 +199,23 @@ public class WarrantyClaimRepository :
             }
         }
 
+        var stored = new { entity.ClaimStatus, entity.ManufacturerStatus, entity.ProcessDate, entity.DistributorErrorMessage, entity.InvoiceNo };
+
         var upserted = await base.UpsertAsync(entity, dto, actionType, userId, idempotencyKey, disableDefaultDataLevelAccess, disableGlobalFilters);
+
+        // A save moves nothing: the actions, the certificates and the exports do. The service has given a new claim its
+        // first statuses. The distributor's form edits the invoice number.
+        if (actionType == ActionTypes.Update)
+        {
+            upserted.ClaimStatus = stored.ClaimStatus;
+            upserted.ManufacturerStatus = stored.ManufacturerStatus;
+        }
+
+        upserted.ProcessDate = stored.ProcessDate;
+        upserted.DistributorErrorMessage = stored.DistributorErrorMessage;
+
+        if (!isDistributor)
+            upserted.InvoiceNo = stored.InvoiceNo;
 
         upserted.HasAttachment = dto?.Attachments?.Count > 0;
 
@@ -392,6 +410,8 @@ public class WarrantyClaimRepository :
 
     public async Task UpdateClaimStatusAsync(List<WarrantyClaim> items, UpdateStatusActionTypes actionType, string? inputText)
     {
+        ClaimActionAccess.RequireAllowed(actionType, this.isDistributor);
+
         this.sharedClaimService.UpdateClaimStatus(
             items.Select(x => (IClaim)x).ToList(),
             actionType, inputText
@@ -410,7 +430,47 @@ public class WarrantyClaimRepository :
             }
         }
 
+        WarrantyClaimHistory.Instance.Record(this.db, inputText);
+
         await this.SaveChangesAsync();
+    }
+
+    /// <summary>One of the form's actions on one claim. <paramref name="comment"/> goes on its history line.</summary>
+    public async Task<WarrantyClaim> ApplyActionAsync(long id, UpdateStatusActionTypes actionType, string? comment)
+    {
+        ClaimActionAccess.RequireAllowed(actionType, this.isDistributor);
+
+        var claim = await this.FindForActionAsync(id);
+
+        await this.UpdateClaimStatusAsync([claim], actionType, comment);
+
+        return claim;
+    }
+
+    /// <summary>Adds a history line that moves nothing.</summary>
+    public async Task<WarrantyClaim> AddNoteAsync(long id, string? comment)
+    {
+        var claim = await this.FindForActionAsync(id);
+
+        if (!WarrantyClaimAccess.CanAddNote(claim.ClaimStatus, this.isDistributor))
+            throw new ShiftEntityException(
+                new Message("Operation Prevented", "You can not add a note to this claim any more."),
+                httpStatusCode: (int)System.Net.HttpStatusCode.Forbidden);
+
+        WarrantyClaimHistory.Instance.AddNote(this.db, claim, comment);
+
+        await this.SaveChangesAsync();
+
+        return claim;
+    }
+
+    private async Task<WarrantyClaim> FindForActionAsync(long id)
+    {
+        var claim = await this.FindAsync(id);
+
+        return claim is null || claim.IsDeleted
+            ? throw new ShiftEntityException(new Message("Not Found", "This claim does not exist."), httpStatusCode: (int)System.Net.HttpStatusCode.NotFound)
+            : claim;
     }
 
     /// <summary>

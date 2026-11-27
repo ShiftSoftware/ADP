@@ -1,6 +1,7 @@
 using ShiftSoftware.ADP.WarrantyClaims.Data.Entities;
 using ShiftSoftware.ADP.WarrantyClaims.Shared.DTOs.Financial;
 using ShiftSoftware.ADP.WarrantyClaims.Shared.DTOs.WarrantyClaim;
+using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.EFCore;
 
 namespace ShiftSoftware.ADP.WarrantyClaims.Data.Repositories;
@@ -51,4 +52,12 @@ public class DealerFinancialRepository : ShiftRepository<ShiftDbContext, Warrant
     public DealerFinancialRepository(ShiftDbContext db) : base(db)
     {
     }
+
+    // The base also offers a save and a delete, which would write the whole claim, its status included, past the
+    // claim repository's rules.
+    public override ValueTask<WarrantyClaim> UpsertAsync(WarrantyClaim entity, WarrantyClaimDTO dto, ActionTypes actionType, long? userId, Guid? idempotencyKey, bool disableDefaultDataLevelAccess, bool disableGlobalFilters)
+        => throw FinancialLists.ReadOnly();
+
+    public override ValueTask<WarrantyClaim> DeleteAsync(WarrantyClaim entity, long? userId, bool disableDefaultDataLevelAccess, bool disableGlobalFilters)
+        => throw FinancialLists.ReadOnly();
 }

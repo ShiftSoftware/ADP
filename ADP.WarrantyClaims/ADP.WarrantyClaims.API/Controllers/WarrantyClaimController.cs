@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using ShiftSoftware.ADP.Cases.Shared;
+using ShiftSoftware.ADP.Cases.Shared.DTOs;
 using ShiftSoftware.ADP.Cases.Shared.Enums;
 using ShiftSoftware.ADP.WarrantyClaims.API.Extensions;
 using ShiftSoftware.ADP.WarrantyClaims.Data.Repositories;
@@ -57,6 +60,10 @@ public class WarrantyClaimController : ShiftEntitySecureControllerAsync<Warranty
     [HttpPost("UpdateStatus/{actionType}/{inputText?}")]
     public async Task<IActionResult> ProcessBatchAction([FromBody] ShiftSoftware.ShiftEntity.Model.Dtos.SelectStateDTO<WarrantyClaimListDTO> selectedItems, [FromRoute] UpdateStatusActionTypes actionType, [FromRoute] string? inputText)
     {
+        // An unknown action in the route binds as the enum's zero, SubmitToDistributor.
+        if (ModelState.GetFieldValidationState(nameof(actionType)) == ModelValidationState.Invalid)
+            return BadRequest(new ShiftEntityResponse<WarrantyClaimListDTO> { Message = new Message("Operation Prevented", "Unknown action.") });
+
         var items = await this.GetSelectedEntitiesAsync(selectedItems);
 
         try
@@ -78,6 +85,52 @@ public class WarrantyClaimController : ShiftEntitySecureControllerAsync<Warranty
         }
     }
 
+    /// <summary>
+    /// UpdateStatus for one claim, from its form: submitting it, accepting it, returning it with an error or rejecting
+    /// it. Answers with the claim as it now reads.
+    /// </summary>
+    [HttpPost("{key}/action/{actionType}")]
+    [Authorize]
+    public async Task<IActionResult> ApplyAction(string key, [FromRoute] UpdateStatusActionTypes actionType, [FromBody] CaseActionDTO? action)
+    {
+        if (ModelState.GetFieldValidationState(nameof(actionType)) == ModelValidationState.Invalid || !ClaimActionAccess.IsFormAction(actionType))
+            return BadRequest(new ShiftEntityResponse<WarrantyClaimDTO> { Message = new Message("Operation Prevented", "Unknown action.") });
+
+        if (!Can(Access.Read))
+            return Forbid();
+
+        return await RespondAsync(() => this.repository.ApplyActionAsync(hashIdService.Decode<WarrantyClaimDTO>(key), actionType, action?.Comment));
+    }
+
+    /// <summary>Adds a note to a claim: a history line that moves nothing. Answers with the claim as it now reads.</summary>
+    [HttpPost("{key}/note")]
+    [Authorize]
+    public async Task<IActionResult> AddNote(string key, [FromBody] CaseActionDTO? note)
+    {
+        if (!Can(Access.Write))
+            return Forbid();
+
+        return await RespondAsync(() => this.repository.AddNoteAsync(hashIdService.Decode<WarrantyClaimDTO>(key), note?.Comment));
+    }
+
+    private bool Can(Access access) =>
+        !options.Value.EnableWarrantyClaimsActionTreeAuthorization || options.Value.WarrantyClaimAction is not { } action || typeAuthService.Can(action, access);
+
+    private async Task<IActionResult> RespondAsync(Func<Task<ShiftSoftware.ADP.WarrantyClaims.Data.Entities.WarrantyClaim>> apply)
+    {
+        try
+        {
+            return Ok(new ShiftEntityResponse<WarrantyClaimDTO>(await this.repository.ViewAsync(await apply())));
+        }
+        catch (ShiftEntityException ex)
+        {
+            return StatusCode(ex.HttpStatusCode, new ShiftEntityResponse<WarrantyClaimDTO>
+            {
+                Message = ex.Message,
+                Additional = ex.AdditionalData,
+            });
+        }
+    }
 
     [HttpPost("UpdateDeliveryDate/{deliveryDate}")]
     public async Task<IActionResult> UpdateDeliveryDate([FromBody] ShiftSoftware.ShiftEntity.Model.Dtos.SelectStateDTO<WarrantyClaimListDTO> selectedItems, [FromRoute] DateTime deliveryDate)

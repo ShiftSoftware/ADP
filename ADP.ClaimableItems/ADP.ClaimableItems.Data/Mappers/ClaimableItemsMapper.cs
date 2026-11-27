@@ -247,6 +247,9 @@ public class ClaimableItemsMapper : ShiftMapperBase
             // persisted. Nothing to read on the way out.
             .ForMember(d => d.ReSubmitForDistributorReview, opt => opt.Ignore())
 
+            // The repository fills it (ViewAsync).
+            .ForMember(d => d.StatusHistory, opt => opt.Ignore())
+
             // ── ENTITY ────────────────────────────────────────────────────────────────────
             // The key, exactly as the previous generated map wrote it (a blank select clears it). The navigation of
             // the same name, ignoring case, is not written from the DTO: it is loaded, never assigned.

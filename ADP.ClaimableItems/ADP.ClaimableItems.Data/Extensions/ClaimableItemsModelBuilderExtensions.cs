@@ -33,6 +33,7 @@ public static class ClaimableItemsModelBuilderExtensions
         modelBuilder.Entity<ClaimableItemContract>();
         modelBuilder.Entity<ClaimableItemContractLine>();
         modelBuilder.Entity<ItemClaim>();
+        modelBuilder.Entity<ItemClaimStatusHistory>();
 
         if (!string.IsNullOrWhiteSpace(schema))
         {

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using MudBlazor;
+using ShiftSoftware.ADP.WarrantyClaims.Shared;
 using ShiftSoftware.ADP.WarrantyClaims.Shared.Constants;
 using ShiftSoftware.ADP.WarrantyClaims.Shared.DTOs;
 using ShiftSoftware.ADP.WarrantyClaims.Shared.DTOs.WarrantyClaim;
@@ -252,6 +253,12 @@ public partial class WarrantyClaimForm
     }
 
     private bool IsDeliveryDateLocked => this.DeliveryDateEvaluation?.VerifiedDate is not null;
+
+    private bool ShowsSavedClaim => Mode == FormModes.View && !string.IsNullOrWhiteSpace(TheItem.ID);
+
+    private bool CanAddNote =>
+        WarrantyClaimAccess.CanAddNote(TheItem.ClaimStatus, isDistributor)
+        && (WCOptions.Value.WarrantyClaimAction is not { } action || TypeAuthService.CanWrite(action));
 
     private void PreDeliveryChanged(bool v)
     {

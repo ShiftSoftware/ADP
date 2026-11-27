@@ -43,6 +43,7 @@ public static class ClaimableItemsApiExtensions
 
         services.AddScoped<ShiftDbContext>(sp => sp.GetRequiredService<TDbContext>());
         services.RegisterShiftRepositories(typeof(DataMarker).Assembly);
+        services.AddItemClaimHistory<TDbContext>();
 
         // Register the module's assemblies so the consumer doesn't have to. Both Data AND Shared
         // are added as data assemblies because the FluentValidation validators live colocated with
@@ -86,6 +87,7 @@ public static class ClaimableItemsApiExtensions
         services.AddSingleton(new Data.ClaimableItemsDataOptions
         {
             PostClaimModificationAction = options.PostClaimModificationAction,
+            CertifyingAction = options.CertifyingAction,
             ContractPeriodicMileageMargin = options.ContractPeriodicMileageMargin,
             IssueContractAction = options.IssueContractAction,
             CancelContractAction = options.CancelContractAction,

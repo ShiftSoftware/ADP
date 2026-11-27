@@ -1,5 +1,6 @@
 using FluentValidation;
 using ShiftSoftware.ADP.Cases.Shared;
+using ShiftSoftware.ADP.Cases.Shared.DTOs;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.WarrantyClaims.Shared.Constants;
 using ShiftSoftware.ADP.WarrantyClaims.Shared.Enums;
@@ -154,6 +155,9 @@ public class WarrantyClaimDTO : ShiftEntityViewAndUpsertDTO
     public ShiftEntitySelectDTO? ReferenceWarrantyClaim { get; set; }
 
     public List<ShiftFileDTO>? Attachments { get; set; }
+
+    /// <summary>Newest first. Read-only: a save ignores it.</summary>
+    public List<CaseStatusHistoryDTO<ClaimStatus>> StatusHistory { get; set; } = new();
 }
 
 public class WarrantyClaimValidator : AbstractValidator<WarrantyClaimDTO>

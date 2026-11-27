@@ -99,7 +99,8 @@ public class ClaimableItemsApiOptions
     /// <summary>
     /// The TypeAuth action node gating the ItemClaimCertificate controller (consumer-supplied, per
     /// D9 — e.g. a host passes <c>ClaimableItemCertifying</c>). Only used when
-    /// <see cref="EnableClaimableItemsActionTreeAuthorization"/> is true.
+    /// <see cref="EnableClaimableItemsActionTreeAuthorization"/> is true, except that Write on it always decides who
+    /// may run the distributor's item-claim status actions when the API has no <c>IClaimableItemsCapabilityProvider</c>.
     /// </summary>
     public ReadWriteDeleteAction? CertifyingAction { get; set; }
 

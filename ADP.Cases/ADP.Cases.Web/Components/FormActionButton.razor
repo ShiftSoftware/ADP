@@ -1,0 +1,249 @@
+@typeparam T where T : ShiftEntityViewAndUpsertDTO, new()
+
+@inject HttpClient Http
+@inject IDialogService DialogService
+@inject MessageService Messages
+
+@* An action button for a form's header, the sibling of the list's ActionButton: it asks with the same dialog and posts
+   to Endpoint, and on success the form takes the item the server sent back. Only in View mode, on a saved item: an
+   action acts on what is stored. *@
+
+<MudButton Variant="@Variant"
+           Color="@Color"
+           Size="@Size"
+           StartIcon="@(running ? null : StartIcon)"
+           Class="@Class"
+           Disabled="@IsDisabled"
+           OnClick="RunAsync">
+    @if (running)
+    {
+        <MudProgressCircular Color="@Color" Indeterminate="true" Size="Size.Small" Class="me-2" Style="width:16px;height:16px;" />
+    }
+    @ChildContent
+</MudButton>
+
+@code {
+    /// <summary>The form this button belongs to. ShiftEntityForm cascades itself under this name.</summary>
+    [CascadingParameter(Name = "ShiftForm")]
+    public ShiftEntityForm<T>? Form { get; set; }
+
+    /// <summary>Where the action is posted, relative to the API's base address.</summary>
+    [Parameter, EditorRequired]
+    public string Endpoint { get; set; } = default!;
+
+    /// <summary>The request body, read when the action is sent (after the dialog). Null posts no body.</summary>
+    [Parameter]
+    public Func<object?>? Body { get; set; }
+
+    /// <summary>When true, a dialog asks for confirmation (and shows <see cref="DialogBodyTemplate"/>) first.</summary>
+    [Parameter]
+    public bool Confirm { get; set; }
+
+    [Parameter]
+    public string? DialogTitle { get; set; }
+
+    /// <summary>The dialog's text. Ignored when <see cref="DialogBodyTemplate"/> is set.</summary>
+    [Parameter]
+    public string? DialogText { get; set; }
+
+    /// <summary>The dialog's body, in place of <see cref="DialogText"/>: for example a field for a comment.</summary>
+    [Parameter]
+    public RenderFragment? DialogBodyTemplate { get; set; }
+
+    [Parameter]
+    public string DialogIcon { get; set; } = Icons.Material.Filled.Warning;
+
+    [Parameter]
+    public Color DialogColor { get; set; } = Color.Primary;
+
+    [Parameter]
+    public string? DialogConfirmText { get; set; }
+
+    [Parameter]
+    public string? DialogCancelText { get; set; }
+
+    [Parameter]
+    public MaxWidth DialogWidth { get; set; } = MaxWidth.Small;
+
+    /// <summary>
+    /// Runs before the dialog opens, for example to clear a comment left from the last time. Return false to stop.
+    /// </summary>
+    [Parameter]
+    public Func<ValueTask<bool>>? OnBeforeDialogOpen { get; set; }
+
+    /// <summary>
+    /// What is wrong with what the dialog asked for, or null. While there is something, confirming shows it and opens
+    /// the dialog again.
+    /// </summary>
+    [Parameter]
+    public Func<string?>? Validate { get; set; }
+
+    /// <summary>Gets the server's answer first. Return false to stop the default handling.</summary>
+    [Parameter]
+    public Func<ShiftEntityResponse<T>?, ValueTask<bool>>? OnResult { get; set; }
+
+    /// <summary>
+    /// After the form has taken the item the server sent back. The form runs no task for an action, so a page that does
+    /// something when its form has fetched an item does it here too.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnApplied { get; set; }
+
+    /// <summary>Shown as a snackbar when the action succeeds.</summary>
+    [Parameter]
+    public string? TaskSuccessMessage { get; set; }
+
+    [Parameter]
+    public Color Color { get; set; } = Color.Default;
+
+    [Parameter]
+    public Variant Variant { get; set; } = Variant.Outlined;
+
+    [Parameter]
+    public Size Size { get; set; } = Size.Small;
+
+    [Parameter]
+    public string? StartIcon { get; set; }
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private bool running;
+
+    private bool IsDisabled =>
+        Disabled
+        || running
+        || Form is null
+        || Form.Mode != FormModes.View
+        || Form.TaskInProgress != FormTasks.None
+        || string.IsNullOrWhiteSpace(Form.Value.ID);
+
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new LocalDateTimeOffsetJsonConverter() },
+    };
+
+    private async Task RunAsync()
+    {
+        if (IsDisabled)
+            return;
+
+        if (OnBeforeDialogOpen is not null && !await OnBeforeDialogOpen())
+            return;
+
+        if (Confirm && !await ConfirmAsync())
+            return;
+
+        running = true;
+        StateHasChanged();
+
+        try
+        {
+            using var response = await Http.PostAsJsonAsync(Endpoint, Body?.Invoke());
+
+            ShiftEntityResponse<T>? result = null;
+
+            try
+            {
+                result = await response.Content.ReadFromJsonAsync<ShiftEntityResponse<T>>(JsonOptions);
+            }
+            catch (JsonException)
+            {
+                // A body that is not a ShiftEntityResponse (a bare 403 or 500) is reported below.
+            }
+
+            if (OnResult is not null && !await OnResult(result))
+                return;
+
+            if (response.IsSuccessStatusCode && result?.Entity is not null)
+            {
+                if (Form is not null)
+                {
+                    // What @bind-Value listens to.
+                    await Form.ValueChanged.InvokeAsync(result.Entity);
+
+                    // Without this the list behind the form keeps showing the status from before the action.
+                    Form.MarkAsChanged();
+                }
+
+                if (TaskSuccessMessage is not null)
+                    Messages.Success(TaskSuccessMessage);
+
+                await OnApplied.InvokeAsync();
+
+                return;
+            }
+
+            await ShowErrorAsync(result?.Message ?? new Message("Error", $"The action failed ({(int)response.StatusCode} {response.ReasonPhrase})."));
+        }
+        catch (HttpRequestException e)
+        {
+            await ShowErrorAsync(new Message("Error", e.Message));
+        }
+        finally
+        {
+            running = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<bool> ConfirmAsync()
+    {
+        while (await AskAsync())
+        {
+            if (Validate?.Invoke() is not { } problem)
+                return true;
+
+            Messages.Error(problem);
+        }
+
+        return false;
+    }
+
+    private async Task<bool> AskAsync()
+    {
+        RenderFragment<Message>? body = DialogBodyTemplate is null ? null : _ => DialogBodyTemplate;
+
+        var parameters = new DialogParameters
+        {
+            { "Message", new Message(DialogTitle ?? "Are you sure?", DialogText ?? "") },
+            { "MessageBodyTemplate", body },
+            { "Color", DialogColor },
+            { "Icon", DialogIcon },
+            { "ConfirmText", DialogConfirmText },
+            // PopupMessage only draws a cancel button when it has a text for it.
+            { "CancelText", DialogCancelText ?? "Cancel" },
+        };
+
+        var dialog = await DialogService.ShowAsync<PopupMessage>("", parameters, new DialogOptions
+        {
+            MaxWidth = DialogWidth,
+            FullWidth = true,
+            NoHeader = true,
+            CloseOnEscapeKey = false,
+        });
+
+        var result = await dialog.Result;
+
+        return result is { Canceled: false };
+    }
+
+    private Task ShowErrorAsync(Message message) =>
+        DialogService.ShowAsync<PopupMessage>("", new DialogParameters
+        {
+            { "Message", message },
+            { "Color", Color.Error },
+            { "Icon", Icons.Material.Filled.Error },
+        }, new DialogOptions
+        {
+            MaxWidth = MaxWidth.ExtraSmall,
+            NoHeader = true,
+            CloseOnEscapeKey = false,
+        });
+}

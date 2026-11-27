@@ -1,0 +1,167 @@
+@typeparam T where T : ShiftEntityViewAndUpsertDTO, new()
+
+@* The actions on a claim, for the start of its form's header: the ones the claim's status and the side allow, as the
+   list's buttons, and "Add Note". *@
+
+@if (Visible)
+{
+    <MudStack Row Spacing="2" AlignItems="AlignItems.Center" Class="ms-2" Style="min-width: 0; overflow-x: auto; white-space: nowrap;">
+        @foreach (var action in Actions)
+        {
+            var look = CaseActionLook.Of(action.ToString());
+            var label = LabelOf(action);
+            var to = MovesTo(action).Describe();
+            var isError = action == UpdateStatusActionTypes.DistributorError;
+
+            <FormActionButton @key="action"
+                              T="T"
+                              Endpoint="@($"{Endpoint}/{Id}/action/{action}")"
+                              Body="@(() => new CaseActionDTO { Comment = comment })"
+                              OnBeforeDialogOpen="ClearCommentAsync"
+                              Validate="@(isError ? () => Required("Write the error message first.") : null)"
+                              OnApplied="OnApplied"
+                              Confirm
+                              DialogTitle="@($"{(isError ? "Mark as Error" : label)} — {ClaimName}")"
+                              DialogIcon="@look.Icon"
+                              DialogColor="@look.Color"
+                              DialogConfirmText="@(isError ? "Save" : label)"
+                              TaskSuccessMessage="@($"{ClaimName} is now {to}.")"
+                              Color="@look.Color"
+                              StartIcon="@look.Icon"
+                              Class="flex-shrink-0">
+                <DialogBodyTemplate>
+                    <MudText Typo="Typo.body2" Class="mb-4">
+                        The claim moves to <strong>@to</strong>, and this goes on its history.
+                    </MudText>
+                    <MudTextField T="string"
+                                  @bind-Value="comment"
+                                  Label="@(isError ? "Error Message" : "Comment")"
+                                  Lines="4"
+                                  Variant="Variant.Outlined"
+                                  Immediate="true"
+                                  Required="isError"
+                                  HelperText="@CommentHelp(isError)" />
+                </DialogBodyTemplate>
+                <ChildContent>@label</ChildContent>
+            </FormActionButton>
+        }
+
+        @if (CanAddNote)
+        {
+            var look = CaseActionLook.Of("Note");
+
+            <FormActionButton T="T"
+                              Endpoint="@($"{Endpoint}/{Id}/note")"
+                              Body="@(() => new CaseActionDTO { Comment = comment })"
+                              OnBeforeDialogOpen="ClearCommentAsync"
+                              Validate="@(() => Required("Write the note first."))"
+                              OnApplied="OnApplied"
+                              Confirm
+                              DialogTitle="@($"Add Note — {ClaimName}")"
+                              DialogIcon="@look.Icon"
+                              DialogColor="Color.Primary"
+                              DialogConfirmText="Add Note"
+                              TaskSuccessMessage="@($"Note added to {ClaimName}.")"
+                              Color="@look.Color"
+                              StartIcon="@look.Icon"
+                              Class="flex-shrink-0">
+                <DialogBodyTemplate>
+                    <MudText Typo="Typo.body2" Class="mb-4">
+                        This goes on the claim's history. The status does not change.
+                    </MudText>
+                    <MudTextField T="string"
+                                  @bind-Value="comment"
+                                  Label="Note"
+                                  Lines="4"
+                                  Variant="Variant.Outlined"
+                                  Immediate="true"
+                                  Required="true"
+                                  HelperText="@($"Shown to {OtherSide} in the history.")" />
+                </DialogBodyTemplate>
+                <ChildContent>Add Note</ChildContent>
+            </FormActionButton>
+        }
+    </MudStack>
+}
+
+@code {
+    /// <summary>The claim type's endpoint, relative to the API's base address.</summary>
+    [Parameter, EditorRequired]
+    public string Endpoint { get; set; } = default!;
+
+    /// <summary>The claim the form shows.</summary>
+    [Parameter, EditorRequired]
+    public string? Id { get; set; }
+
+    /// <summary>The stored status of that claim.</summary>
+    [Parameter]
+    public ClaimStatus? Status { get; set; }
+
+    /// <summary>Whose buttons these are.</summary>
+    [Parameter]
+    public bool IsDistributor { get; set; }
+
+    /// <summary>How the claim is named in the dialog and the snackbar, for example "Claim 8164".</summary>
+    [Parameter, EditorRequired]
+    public string ClaimName { get; set; } = default!;
+
+    /// <summary>Whether to show any buttons: a saved claim, in View mode.</summary>
+    [Parameter]
+    public bool Visible { get; set; }
+
+    /// <summary>Whether the person may take their side's actions at all.</summary>
+    [Parameter]
+    public bool CanAct { get; set; } = true;
+
+    /// <summary>The claim type's own rule for notes.</summary>
+    [Parameter]
+    public bool CanAddNote { get; set; }
+
+    /// <summary>After an action or a note, once the form has taken the claim the server sent back.</summary>
+    [Parameter]
+    public EventCallback OnApplied { get; set; }
+
+    /// <summary>What the distributor is called in a sentence.</summary>
+    [Parameter]
+    public string DistributorName { get; set; } = "the distributor";
+
+    private string? comment;
+
+    // The distributor may submit a claim too, but is not offered it.
+    private IEnumerable<UpdateStatusActionTypes> Actions => CanAct
+        ? ClaimActionAccess.ActionsFrom(Status, IsDistributor)
+            .Where(x => ClaimActionAccess.IsDistributorOnly(x) == IsDistributor)
+            .OrderBy(x => CaseActionLook.Of(x.ToString()).Order)
+        : [];
+
+    private string OtherSide => IsDistributor ? "the dealer" : DistributorName;
+
+    private string CommentHelp(bool isError) => isError
+        ? "Shown to the dealer on the claim and in its history."
+        : $"Optional. Shown to {OtherSide} in the history.";
+
+    private string? Required(string problem) => string.IsNullOrWhiteSpace(comment) ? problem : null;
+
+    private static string LabelOf(UpdateStatusActionTypes action) => action switch
+    {
+        UpdateStatusActionTypes.SubmitToDistributor => "Submit to Distributor",
+        UpdateStatusActionTypes.DistributorAccepted => "Accept",
+        UpdateStatusActionTypes.DistributorError => "Error",
+        UpdateStatusActionTypes.DistributorRejected => "Reject",
+        _ => action.ToString(),
+    };
+
+    private static ClaimStatus MovesTo(UpdateStatusActionTypes action) => action switch
+    {
+        UpdateStatusActionTypes.DistributorAccepted => ClaimStatus.Accepted,
+        UpdateStatusActionTypes.DistributorError => ClaimStatus.RejectedWithError,
+        UpdateStatusActionTypes.DistributorRejected => ClaimStatus.RejectedPermanently,
+        _ => ClaimStatus.PendingProcess,
+    };
+
+    private ValueTask<bool> ClearCommentAsync()
+    {
+        comment = null;
+        return ValueTask.FromResult(true);
+    }
+}

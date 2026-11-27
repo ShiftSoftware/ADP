@@ -1,0 +1,72 @@
+@typeparam TStatus where TStatus : struct, Enum
+
+@* A case's history, newest first: every status change and every note, with who made it and on which side. *@
+
+<ConditionalSection Title="@Title" Visible="@(Lines.Count > 0)">
+    <MudItem lg="12" md="12" sm="12" xs="12">
+        <MudSimpleTable Dense="true" Striped="true" Elevation="0">
+            <thead>
+                <tr>
+                    <th>Date / Time</th>
+                    <th>User</th>
+                    <th>Status</th>
+                    <th>Comment</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var line in Lines)
+                {
+                    <tr>
+                        <td class="whitespace-nowrap">@line.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                        <td class="whitespace-nowrap">
+                            @line.ActorUserName
+                            @if (!string.IsNullOrWhiteSpace(line.ActorRole))
+                            {
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary d-block">@line.ActorRole</MudText>
+                            }
+                        </td>
+                        <td class="whitespace-nowrap">
+                            <CaseStatusChip TStatus="TStatus" Status="line.ToStatus" Text="@Describe(line)" Muted="line.IsNote" />
+                        </td>
+                        <td style="white-space: pre-wrap;">@line.Comment</td>
+                    </tr>
+                }
+            </tbody>
+        </MudSimpleTable>
+    </MudItem>
+</ConditionalSection>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<CaseStatusHistoryDTO<TStatus>> Lines { get; set; } = [];
+
+    /// <summary>
+    /// The status a case is in while the dealer is being asked for more. The heading counts the times it was sent there;
+    /// null for a case type without one.
+    /// </summary>
+    [Parameter]
+    public TStatus? Amend { get; set; }
+
+    private string Title
+    {
+        get
+        {
+            var entries = $"History — {Lines.Count} {(Lines.Count == 1 ? "entry" : "entries")}";
+
+            if (Amend is not { } amend)
+                return entries;
+
+            var amends = Lines.Count(x => Is(x.ToStatus, amend) && !(x.FromStatus is { } from && Is(from, amend)));
+
+            return $"{entries}, sent to {amend.Describe()} {amends} {(amends == 1 ? "time" : "times")}";
+        }
+    }
+
+    private static bool Is(TStatus status, TStatus other) => EqualityComparer<TStatus>.Default.Equals(status, other);
+
+    // A note's status did not move, so an arrow from a status to itself would be misleading.
+    private static string Describe(CaseStatusHistoryDTO<TStatus> line) =>
+        line.IsNote ? "Note"
+        : line.FromStatus is { } from ? $"{from.Describe()} → {line.ToStatus.Describe()}"
+        : line.ToStatus.Describe();
+}

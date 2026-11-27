@@ -25,6 +25,8 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\ADP.Cases.Shared\ADP.Cases.Shared.csproj" />
+		<!-- CaseFlow. -->
+		<ProjectReference Include="..\ADP.Cases.Data\ADP.Cases.Data.csproj" />
 	</ItemGroup>
 
 </Project>

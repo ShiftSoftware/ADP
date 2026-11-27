@@ -19,6 +19,12 @@ public class ClaimableItemsDataOptions
     public BooleanAction? PostClaimModificationAction { get; set; }
 
     /// <summary>
+    /// The TypeAuth node whose Write lets a user run the distributor's item-claim actions, unless the consumer
+    /// registers an <c>IClaimableItemsCapabilityProvider</c> (see <c>ItemClaimRepository.IsDistributor</c>).
+    /// </summary>
+    public ReadWriteDeleteAction? CertifyingAction { get; set; }
+
+    /// <summary>
     /// Km of tolerance when a service contract leaves out periodic services the vehicle has already
     /// passed: a periodic menu due at or below <c>mileage + margin</c> is not offered. Default 0.
     /// </summary>

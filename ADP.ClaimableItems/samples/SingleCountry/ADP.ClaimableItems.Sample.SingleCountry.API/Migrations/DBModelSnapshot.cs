@@ -877,6 +877,66 @@ namespace ShiftSoftware.ADP.ClaimableItems.Sample.SingleCountry.API.Migrations
                             }));
                 });
 
+            modelBuilder.Entity("ShiftSoftware.ADP.ClaimableItems.Data.Entities.ItemClaimStatusHistory", b =>
+                {
+                    b.Property<long>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasJsonPropertyName("ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ID"));
+
+                    b.Property<string>("ActorRole")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long?>("ActorUserID")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ActorUserName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("ClaimID")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("CreateDate")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long?>("CreatedByUserID")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("DistributorOnly")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("FromStatus")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("LastSaveDate")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long?>("LastSavedByUserID")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("Timestamp")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("ToStatus")
+                        .HasColumnType("int");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("ClaimID", "Timestamp");
+
+                    b.ToTable("ItemClaimStatusHistory", "ClaimableItems");
+
+                    b.HasAnnotation("SqlServer:TemporalHistoryTableSchema", "ClaimableItems");
+                });
+
             modelBuilder.Entity("ShiftSoftware.ADP.ClaimableItems.Data.Entities.CampaignVinEntry", b =>
                 {
                     b.HasOne("ShiftSoftware.ADP.ClaimableItems.Data.Entities.Campaign", "Campaign")
@@ -949,6 +1009,17 @@ namespace ShiftSoftware.ADP.ClaimableItems.Sample.SingleCountry.API.Migrations
                     b.Navigation("ContributionCertificate");
 
                     b.Navigation("ReimbursementCertificate");
+                });
+
+            modelBuilder.Entity("ShiftSoftware.ADP.ClaimableItems.Data.Entities.ItemClaimStatusHistory", b =>
+                {
+                    b.HasOne("ShiftSoftware.ADP.ClaimableItems.Data.Entities.ItemClaim", "Claim")
+                        .WithMany()
+                        .HasForeignKey("ClaimID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Claim");
                 });
 
             modelBuilder.Entity("ShiftSoftware.ADP.ClaimableItems.Data.Entities.Campaign", b =>

@@ -1,0 +1,96 @@
+@typeparam TListDTO where TListDTO : ShiftEntityDTOBase, new()
+@typeparam TStatus where TStatus : struct, Enum
+@typeparam TTrigger where TTrigger : struct, Enum
+
+@* The distributor's actions on the ticked rows, for the start of a case list's toolbar. Every button is always there,
+   because the ticked rows can be in different statuses. The server applies an action to all of them or, when one cannot
+   take it, to none, and says which. *@
+
+@if (Visible)
+{
+    <MudStack Row Spacing="2" AlignItems="AlignItems.Center">
+        @foreach (var trigger in Definition.ActionsOf(CaseRoles.Distributor).OrderBy(t => CaseActionLook.Of(t.ToString()).Order))
+        {
+            var look = CaseActionLook.Of(trigger.ToString());
+            var label = trigger.Describe();
+
+            <ActionButton T="TListDTO"
+                          Endpoint="@($"{Endpoint}/batch-action/{trigger}")"
+                          OnDefaultDialogOpen="OpeningAsync"
+                          OnBeforeRequest="AddCommentAsync"
+                          DisableConfirmByTypingCount
+                          DialogTitle="@label"
+                          DialogIcon="@look.Icon"
+                          DialogColor="@look.Color"
+                          DialogConfirmText="@label"
+                          DialogWidth="MaxWidth.Small"
+                          TaskSuccessMessage="@($"{label}: {{0}} {Definition.Noun}(s).")"
+                          Color="@look.Color"
+                          Variant="Variant.Outlined"
+                          Size="Size.Small"
+                          StartIcon="@look.Icon">
+                <DialogBodyTemplate Context="selection">
+                    <MudText Typo="Typo.body2" Class="mb-4">
+                        <strong>@label</strong> applies to the @(selection.Count == 1 ? $"selected {Definition.Noun}" : $"{selection.Count} selected {Definition.Noun}s"),
+                        and this goes on @(selection.Count == 1 ? "its" : "each one's") history.
+                    </MudText>
+                    <MudTextField T="string"
+                                  @bind-Value="comment"
+                                  Label="Response"
+                                  Lines="4"
+                                  Variant="Variant.Outlined"
+                                  Immediate="true"
+                                  HelperText="Optional. Shown to the dealer in the history." />
+                </DialogBodyTemplate>
+                <ChildContent>@label</ChildContent>
+            </ActionButton>
+        }
+    </MudStack>
+}
+
+@code {
+    /// <summary>The case type's rules.</summary>
+    [Parameter, EditorRequired]
+    public CaseDefinition<TStatus, TTrigger> Definition { get; set; } = default!;
+
+    /// <summary>The case type's endpoint, relative to the API's base address.</summary>
+    [Parameter, EditorRequired]
+    public string Endpoint { get; set; } = default!;
+
+    /// <summary>Whether the person may act on cases at all.</summary>
+    [Parameter]
+    public bool Visible { get; set; }
+
+    private string? comment;
+    private SelectState<TListDTO>? selected;
+
+    private ValueTask<bool> OpeningAsync(SelectState<TListDTO> selection)
+    {
+        comment = null;
+        selected = selection;
+
+        return ValueTask.FromResult(selection.Count > 0);
+    }
+
+    // The list's button posts the selection alone. The comment goes with it in the body, so it can be long and stays out
+    // of request logs.
+    private ValueTask<bool> AddCommentAsync(HttpRequestMessage request)
+    {
+        if (selected is not null)
+        {
+            request.Content = JsonContent.Create(new CaseBatchActionDTO<TListDTO>
+            {
+                Comment = comment,
+                Selection = new SelectStateDTO<TListDTO>
+                {
+                    All = selected.All,
+                    Items = selected.Items,
+                    Total = selected.Total,
+                    Filter = selected.Filter,
+                },
+            });
+        }
+
+        return ValueTask.FromResult(true);
+    }
+}

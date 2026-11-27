@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using ShiftSoftware.ADP.Cases.Shared.Printing;
 using ShiftSoftware.ADP.WarrantyClaims.Data.Extensions;
+using ShiftSoftware.ADP.WarrantyClaims.Data.Services;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.EFCore;
 
@@ -36,6 +37,7 @@ public static class WarrantyClaimsApiExtensions
 
         services.AddScoped<ShiftDbContext>(sp => sp.GetRequiredService<TDbContext>());
         services.RegisterShiftRepositories(typeof(DataMarker).Assembly);
+        services.AddWarrantyClaimHistory<TDbContext>();
 
         // Register the module's assemblies so the consumer doesn't have to. Both Data AND Shared are
         // added as data assemblies because the FluentValidation validators live colocated with the DTOs

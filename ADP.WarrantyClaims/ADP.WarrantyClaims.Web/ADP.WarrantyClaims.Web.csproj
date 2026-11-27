@@ -41,5 +41,7 @@
 		<ProjectReference Include="..\ADP.WarrantyClaims.Shared\ADP.WarrantyClaims.Shared.csproj" />
 		<!-- Certificate/Invoice lists render CertificateListDTO + UpdateStatusActionTypes from the Cases engine. -->
 		<ProjectReference Include="..\..\ADP.Cases\ADP.Cases.Shared\ADP.Cases.Shared.csproj" />
+		<!-- The claim form's action buttons and history. -->
+		<ProjectReference Include="..\..\ADP.Cases\ADP.Cases.Web\ADP.Cases.Web.csproj" />
 	</ItemGroup>
 </Project>
