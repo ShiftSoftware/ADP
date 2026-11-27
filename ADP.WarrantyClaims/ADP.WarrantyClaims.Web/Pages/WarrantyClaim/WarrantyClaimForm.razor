@@ -1333,7 +1333,9 @@
                             </MudField>
                         </MudItem>
 
-                        @if (!DocumentCurrency.IsUSD(TheItem.Currency))
+                        @* The rate and the USD equivalent are the distributor's: a dealer is paid in the claim's currency, and
+                           reading a lower-looking USD figure, dealers took it for what they would receive. *@
+                        @if (isDistributor && !DocumentCurrency.IsUSD(TheItem.Currency))
                         {
                             <MudItem lg="3" md="3" sm="6" xs="12">
                                 <MudNumericFieldExtended T="decimal?"
